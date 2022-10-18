@@ -1,2 +1,5 @@
 # Ipython Notebook
 .ipynb_checkpoints
+
+# cache
+PYPOWER-5.1.15/doc/__pycache__/
