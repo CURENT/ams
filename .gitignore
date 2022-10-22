@@ -2,4 +2,4 @@
 .ipynb_checkpoints
 
 # cache
-PYPOWER-5.1.15/doc/__pycache__/
+__pycache__/
