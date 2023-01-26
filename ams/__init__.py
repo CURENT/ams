@@ -1,3 +1,6 @@
+from . import _version
+__version__ = _version.get_versions()['version']
+
 from ams import io         # NOQA
 from ams import core       # NOQA
 from ams import models     # NOQA
