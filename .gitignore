@@ -1,6 +1,9 @@
 # Ipython Notebook
 .ipynb_checkpoints
 
+# Distribution / packaging
+*.egg-info/
+
 # cache
 __pycache__/
 
