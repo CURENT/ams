@@ -1,6 +1,0 @@
-numpy
-scipy
-pandas
-matplotlib
-jupyter
-flake8
