@@ -6,24 +6,20 @@
 ==============
 AMS documentation
 ==============
-ANDES is an open-source Python library for power system modeling, computation,
+**Useful Links**: `Source Repository`_ | `Report Issues`_ | `Q&A`_ 
+
+.. _`Source Repository`: https://github.com/jinningwang/ams
+.. _`Report Issues`: https://github.com/jinningwang/ams/issues
+.. _`Q&A`: https://github.com/jinningwang/ams/discussions
+.. _`LTB Repository`: https://github.com/CURENT/ltb2
+
 AMS is still under DEVELOPMENT, stay tuned!
 
 AMS is an open-source packages for dispatch modeling and co-simulation with dynanic.
-ANDES is the energy management system simulation engine for the CURENT Largescale
-Testbed (LTB).
+
+AMS is the dispatch simulation engine for the CURENT Largescale Testbed (LTB).
 More information about CURENT LTB can be found at the `LTB Repository`_.
-.. _`LTB Repository`: https://github.com/CURENT/ltb2
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
