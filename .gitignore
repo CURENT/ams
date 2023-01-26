@@ -7,5 +7,18 @@
 # cache
 __pycache__/
 
+# vscode
+.vscode/*
+
+# Sphinx documentation
+docs/source/modelref.rst
+docs/source/configref.rst
+docs/source/groupdoc
+docs/source/_examples
+docs/build/
+docs/jupyter_execute/
+docs/source/_build/
+_generated
+
 # VSCodeCounter
 .VSCodeCounter/
