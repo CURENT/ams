@@ -80,7 +80,7 @@ More information about CURENT LTB can be found at the `LTB Repository`_.
             :classes: btn-block btn-secondary stretched-link
 
     ---
-   :column: col-12 p-3
+    :column: col-12 p-3
 
     Using AMS for Research?
     ^^^^^^^^^^^^^^^^^^^^^^^^^

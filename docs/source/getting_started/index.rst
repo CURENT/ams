@@ -3,7 +3,7 @@
 
    <embed>
    <h1 style="letter-spacing: 0.4em; font-size: 2.5em !important;
-   margin-bottom: 0; padding-bottom: 0"> ANDES </h1>
+   margin-bottom: 0; padding-bottom: 0"> AMS </h1>
 
    <p style="color: #00746F; font-variant: small-caps; font-weight: bold;
    margin-bottom: 2em">
