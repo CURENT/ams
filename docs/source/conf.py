@@ -55,8 +55,70 @@ release = '0.1'
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
+# If true, `todo` and `todoList` produce output, else they produce nothing.
+todo_include_todos = False
+
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'pydata_sphinx_theme'
+
+# Theme options are theme-specific and customize the look and feel of a theme
+# further.  For a list of options available for each theme, see the
+# documentation.
+#
+html_theme_options = {
+    "use_edit_page_button": True,
+}
+
+html_context = {
+    "github_url": "https://github.com",
+    "github_user": "jinningwang",
+    "github_repo": "ams",
+    "github_version": "master",
+    "doc_path": "docs/source",
+}
+
+# Add any paths that contain custom static files (such as style sheets) here,
+# relative to this directory. They are copied after the builtin static files,
+# so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+# -- Options for HTMLHelp output ------------------------------------------
+
+# Output file base name for HTML help builder.
+htmlhelp_basename = 'ams'
+
+# -- Options for Texinfo output -------------------------------------------
+
+# Grouping the document tree into Texinfo files. List of tuples
+# (source start file, target name, title, author,
+#  dir menu entry, description, category)
+# texinfo_documents = [
+#     (master_doc, 'andes', 'ANDES Manual',
+#      author, 'andes', 'Python Software for Symbolic Power System Modeling and Numerical Analysis',
+#      'Miscellaneous'),
+# ]
+
+
+# Example configuration for intersphinx: refer to the Python standard library.
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3/', None),
+    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
+    'pandas': ('https://pandas.pydata.org/pandas-docs/stable', None),
+    'matplotlib': ('https://matplotlib.org', None),
+}
+
+# Favorite icon
+html_favicon = 'images/curent.ico'
+
+# Disable smartquotes to display double dashes correctly
+smartquotes = False
+
+# import and execute model reference generation script
+exec(open("genroutineref.py").read())
+
+# sphinx-panels shouldn't add bootstrap css since the pydata-sphinx-theme
+# already loads it
+panels_add_bootstrap_css = False
