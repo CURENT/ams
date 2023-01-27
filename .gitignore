@@ -3,6 +3,7 @@
 
 # Distribution / packaging
 *.egg-info
+build/
 dist/
 
 # cache
