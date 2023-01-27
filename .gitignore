@@ -2,7 +2,8 @@
 .ipynb_checkpoints
 
 # Distribution / packaging
-*.egg-info/
+*.egg-info
+dist/
 
 # cache
 __pycache__/

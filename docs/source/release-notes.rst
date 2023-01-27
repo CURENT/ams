@@ -12,4 +12,4 @@ Pre-v1.0.0
 v0.4 (2023-01)
 -------------------
 
-This release outlines the packages.
+This release outlines the package.
