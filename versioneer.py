@@ -25,7 +25,7 @@ system, and maybe making new tarballs.
 
 * `pip install versioneer` to somewhere in your $PATH
 * add a `[versioneer]` section to your setup.cfg (see [Install](INSTALL.md))
-* run `versioneer install` in your source tree, commit the results
+* run `python versioneer.py install` in your source tree, commit the results
 * Verify version information with `python setup.py version`
 
 ## Version Identifiers
