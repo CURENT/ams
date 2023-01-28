@@ -9,6 +9,10 @@ dist/
 # cache
 __pycache__/
 
+# Editor files
+#mac
+.DS_Store
+
 # vscode
 .vscode/*
 
