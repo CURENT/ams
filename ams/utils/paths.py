@@ -1,5 +1,6 @@
 """
-Utility functions for loading ams stock test cases
+Utility functions for loading ams stock test cases,
+mainly revised from ``andes.utils.paths``.
 """
 import logging
 import os
