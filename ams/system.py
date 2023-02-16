@@ -208,27 +208,3 @@ class System(andes_System):
 
             self.__dict__[name] = cls()
             self.groups[name] = self.__dict__[name]
-
-    def import_models(self):
-        """
-        Import and instantiate models as System member attributes.
-
-        Models defined in ``models/__init__.py`` will be instantiated `sequentially` as attributes with the same
-        name as the class name.
-        In addition, all models will be stored in dictionary ``System.models`` with model names as
-        keys and the corresponding instances as values.
-
-        Examples
-        --------
-        ``system.Bus`` stores the `Bus` object, and ``system.GENCLS`` stores the classical
-        generator object,
-
-        ``system.models['Bus']`` points the same instance as ``system.Bus``.
-        """
-        for fname, cls_list in file_classes:
-            for model_name in cls_list:
-                the_module = importlib.import_module('andes.models.' + fname)
-                the_class = getattr(the_module, model_name)
-                self.__dict__[model_name] = the_class(system=self, config=self._config_object)
-                self.models[model_name] = self.__dict__[model_name]
-                self.models[model_name].config.check()
