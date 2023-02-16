@@ -6,8 +6,11 @@ from collections import OrderedDict, defaultdict
 
 logger = logging.getLogger(__name__)
 
+
 class Config:
-    """A class to store system, model, and routine configuration"""
+    """
+    A class to store system, model, and routine configuration
+    """
 
     def __init__(self, name, dct=None, **kwargs) -> None:
         self._name = name
@@ -67,7 +70,6 @@ class Config:
                 logger.warning("Config field name %s for %s is invalid.", key, dest)
                 continue
             self.__dict__[dest][key] = value
-
 
     def _add(self, **kwargs):
         """
