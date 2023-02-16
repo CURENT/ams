@@ -15,6 +15,8 @@ from andes.system import (_config_numpy, load_config_rc)
 from ams.models.group import GroupBase
 from andes.variables import FileMan
 
+from andes.utils.misc import elapsed
+
 from ams.utils.paths import (ams_root, get_config_path)
 import ams.io
 from ams.models import file_classes
@@ -24,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 def disable_method(func):
     def wrapper(*args, **kwargs):
-        logger.warning(f"Method `{func.__name__}` is an ANDES System method but not supported in AMS System.")
+        logger.warning(f"Method `{func.__name__}` is bounded to ANDES System but not supported in AMS System.")
         return None
     return wrapper
 
@@ -64,6 +66,23 @@ class System(andes_System):
                  options: Optional[Dict] = None,
                  **kwargs
                  ):
+        # Disable methods not supported in AMS
+        # TODO: some of the methods might be used in the future
+        func_to_disable = [
+            # --- not sure ---
+            'set_config', 'set_dae_names', 'set_output_subidx', 'set_var_arrays',
+            # --- not used in AMS ---
+            '_check_group_common', '_clear_adder_setter', '_e_to_dae', '_expand_pycode', '_finalize_pycode',
+            '_find_stale_models', '_get_models', '_init_numba', '_load_calls', '_mp_prepare',
+            '_p_restore', '_store_calls', '_store_tf', '_to_orddct', '_update_config_object', '_v_to_dae',
+            'save_config', 'collect_config', 'collect_ref', 'e_clear', 'f_update',
+            'fg_to_dae', 'from_ipysheet', 'g_islands', 'g_update', 'get_z',
+            'import_routines', 'init', 'j_islands', 'j_update', 'l_update_eq',
+            'l_update_var', 'link_ext_param', 'precompile', 'prepare', 'reload', 'remove_pycapsule', 'reset',
+            's_update_post', 's_update_var', 'store_adder_setter', 'store_no_check_init',
+            'store_sparse_pattern', 'store_switch_times', 'supported_models', 'switch_action', 'to_ipysheet',
+            'undill']
+        disable_methods(func_to_disable)
         self.name = name
         self.options = {}
         if options is not None:
@@ -74,6 +93,8 @@ class System(andes_System):
         self.model_aliases = OrderedDict()   # alias: model instance
         self.groups = OrderedDict()          # group names and instances
         self.routines = OrderedDict()        # routine names and instances
+        # TODO: there should be an exit_code for each routine
+        self.exit_code = 0                   # command-line exit code, 0 - normal, others - error.
         # ams.io.parse(self)
 
         # get and load default config file
@@ -127,26 +148,11 @@ class System(andes_System):
 
         self.files = FileMan(case=case, **self.options)    # file path manager
 
+        # internal flags
+        self.is_setup = False        # if system has been setup
+
         # TODO: DEBUG now
         # self.import_models()
-
-        # Disable methods not supported in AMS
-        # TODO: some of the methods might be used in the future
-        func_to_disable = [
-            # --- not sure ---
-            'set_config', 'set_dae_names', 'set_output_subidx', 'set_var_arrays',
-            # --- not used in AMS ---
-            '_check_group_common', '_clear_adder_setter', '_e_to_dae', '_expand_pycode', '_finalize_pycode',
-            '_find_stale_models', '_get_models', '_init_numba', '_list2array', '_load_calls', '_mp_prepare',
-            '_p_restore', '_store_calls', '_store_tf', '_to_orddct', '_update_config_object', '_v_to_dae',
-            'call_models', 'save_config', 'collect_config', 'collect_ref', 'e_clear', 'f_update',
-            'fg_to_dae', 'find_devices', 'find_models', 'from_ipysheet', 'g_islands', 'g_update', 'get_z',
-            'import_routines', 'init', 'j_islands', 'j_update', 'l_update_eq',
-            'l_update_var', 'link_ext_param', 'precompile', 'prepare', 'reload', 'remove_pycapsule', 'reset',
-            's_update_post', 's_update_var', 'setup', 'store_adder_setter', 'store_existing', 'store_no_check_init',
-            'store_sparse_pattern', 'store_switch_times', 'supported_models', 'switch_action', 'to_ipysheet',
-            'undill']
-        disable_methods(func_to_disable)
 
         func_to_revise = ['set_address', 'vars_to_dae', 'vars_to_models']
         # TODO: ``set_address``: exclude state variables
@@ -208,3 +214,44 @@ class System(andes_System):
 
             self.__dict__[name] = cls()
             self.groups[name] = self.__dict__[name]
+
+    def setup(self):
+        """
+        Set up system for studies.
+
+        This function is to be called after adding all device data.
+        """
+        ret = True
+        t0, _ = elapsed()
+
+        if self.is_setup:
+            logger.warning('System has been setup. Calling setup twice is not allowed.')
+            ret = False
+            return ret
+
+        self._list2array()     # `list2array` must come before `link_ext_param`
+
+        self.find_devices()    # find or add required devices
+
+        # === no device addition or removal after this point ===
+        # TODO: double check calc_pu_coeff
+        self.calc_pu_coeff()   # calculate parameters in system per units
+        self.store_existing()  # store models with routine flags
+
+        # assign address at the end before adding devices and processing parameters
+        # TODO: enable these functions later on
+        # self.set_address(self.exist.pflow)
+        # self.set_dae_names(self.exist.pflow)        # needs perf. optimization
+        # self.store_sparse_pattern(self.exist.pflow)
+        # self.store_adder_setter(self.exist.pflow)
+
+        if ret is True:
+            self.is_setup = True  # set `is_setup` if no error occurred
+        else:
+            logger.error("System setup failed. Please resolve the reported issue(s).")
+            self.exit_code += 1
+
+        _, s = elapsed(t0)
+        logger.info('System internal structure set up in %s.', s)
+
+        return ret
