@@ -8,7 +8,9 @@ from typing import Dict, Optional, Tuple, Union
 
 from andes.core import Config
 from andes.system import ExistingModels as andes_ExistingModels
+from andes.system import System as andes_System
 from andes.system import (_config_numpy, load_config_rc)
+from andes.variables import FileMan
 
 from ams.utils.paths import (ams_root, get_config_path)
 import ams.io
@@ -32,7 +34,7 @@ class ExistingModels(andes_ExistingModels):
 # TODO: might need a method ``add`` to register a new routine
 
 
-class System:
+class System(andes_System):
     """
     System contains data, models, and routines for dispatch modeling and analysis.
 
@@ -97,48 +99,6 @@ class System:
                       invalid=self.config.np_invalid,
                       )
 
-    def _update_config_object(self):
-        """
-        Change config on the fly based on command-line options.
+        self.exist = ExistingModels()
 
-        Copy from ``andes.utils.paths._update_config_object``.
-        """
-
-        config_option = self.options.get('config_option', None)
-        if config_option is None:
-            return
-
-        if len(config_option) == 0:
-            return
-
-        newobj = False
-        if self._config_object is None:
-            self._config_object = configparser.ConfigParser()
-            newobj = True
-
-        for item in config_option:
-
-            # check the validity of the config field
-            # each field follows the format `SECTION.FIELD = VALUE`
-
-            if item.count('=') != 1:
-                raise ValueError('config_option "{}" must be an assignment expression'.format(item))
-
-            field, value = item.split("=")
-
-            if field.count('.') != 1:
-                raise ValueError('config_option left-hand side "{}" must use format SECTION.FIELD'.format(field))
-
-            section, key = field.split(".")
-
-            section = section.strip()
-            key = key.strip()
-            value = value.strip()
-
-            if not newobj:
-                self._config_object.set(section, key, value)
-                logger.debug("Existing config option set: %s.%s=%s", section, key, value)
-            else:
-                self._config_object.add_section(section)
-                self._config_object.set(section, key, value)
-                logger.debug("New config option added: %s.%s=%s", section, key, value)
+        self.files = FileMan(case=case, **self.options)    # file path manager
