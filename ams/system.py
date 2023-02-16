@@ -67,6 +67,36 @@ class System:
         self.config = Config(self.__class__.__name__, dct=config)
         self.config.load(self._config_object)
 
+        # custom configuration for system goes after this line
+        self.config.add(OrderedDict((('freq', 60),
+                                     ('mva', 100),
+                                     ('seed', 'None'),
+                                     ('np_divide', 'warn'),
+                                     ('np_invalid', 'warn'),
+                                     )))
+
+        self.config.add_extra("_help",
+                              freq='base frequency [Hz]',
+                              mva='system base MVA',
+                              seed='seed (or None) for random number generator',
+                              np_divide='treatment for division by zero',
+                              np_invalid='treatment for invalid floating-point ops.',
+                              )
+
+        self.config.add_extra("_alt",
+                              freq="float",
+                              mva="float",
+                              seed='int or None',
+                              np_divide={'ignore', 'warn', 'raise', 'call', 'print', 'log'},
+                              np_invalid={'ignore', 'warn', 'raise', 'call', 'print', 'log'},
+                              )
+
+        self.config.check()
+        _config_numpy(seed=self.config.seed,
+                      divide=self.config.np_divide,
+                      invalid=self.config.np_invalid,
+                      )
+
     def _update_config_object(self):
         """
         Change config on the fly based on command-line options.
