@@ -2,6 +2,7 @@
 System class for power system data, methods, and routines.
 """
 import configparser
+import importlib
 import logging
 from collections import OrderedDict
 from typing import Dict, Optional, Tuple, Union
@@ -14,6 +15,7 @@ from andes.variables import FileMan
 
 from ams.utils.paths import (ams_root, get_config_path)
 import ams.io
+from ams.models import file_classes
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +68,10 @@ class System(andes_System):
             self.options.update(options)
         if kwargs:
             self.options.update(kwargs)
+        self.models = OrderedDict()          # model names and instances
+        self.model_aliases = OrderedDict()   # alias: model instance
+        self.groups = OrderedDict()          # group names and instances
+        self.routines = OrderedDict()        # routine names and instances
         # ams.io.parse(self)
 
         # get and load default config file
@@ -119,6 +125,9 @@ class System(andes_System):
 
         self.files = FileMan(case=case, **self.options)    # file path manager
 
+        # TODO: DEBUG now
+        # self.import_models()
+
         # Disable methods not supported in AMS
         # TODO: some of the methods might be used in the future
         func_to_disable = [
@@ -128,12 +137,12 @@ class System(andes_System):
             '_check_group_common', '_clear_adder_setter', '_e_to_dae', '_expand_pycode', '_finalize_pycode',
             '_find_stale_models', '_get_models', '_init_numba', '_list2array', '_load_calls', '_mp_prepare',
             '_p_restore', '_store_calls', '_store_tf', '_to_orddct', '_update_config_object', '_v_to_dae',
-            'call_models', 'save_config', 'collect_config', 'collect_ref', 'connectivity', 'e_clear', 'f_update',
+            'call_models', 'save_config', 'collect_config', 'collect_ref', 'e_clear', 'f_update',
             'fg_to_dae', 'find_devices', 'find_models', 'from_ipysheet', 'g_islands', 'g_update', 'get_z',
-            'import_groups', 'import_models', 'import_routines', 'init', 'j_islands', 'j_update', 'l_update_eq',
+            'import_routines', 'init', 'j_islands', 'j_update', 'l_update_eq',
             'l_update_var', 'link_ext_param', 'precompile', 'prepare', 'reload', 'remove_pycapsule', 'reset',
             's_update_post', 's_update_var', 'setup', 'store_adder_setter', 'store_existing', 'store_no_check_init',
-            'store_sparse_pattern', 'store_switch_times', 'summary', 'supported_models', 'switch_action', 'to_ipysheet',
+            'store_sparse_pattern', 'store_switch_times', 'supported_models', 'switch_action', 'to_ipysheet',
             'undill']
         disable_methods(func_to_disable)
 
@@ -141,3 +150,69 @@ class System(andes_System):
         # TODO: ``set_address``: exclude state variables
         # TODO: ``vars_to_dae``: switch from dae to ie
         # TODO: ``vars_to_models``: switch from dae to ie
+
+    def summary(self):
+        """
+        Print out system summary.
+        """
+
+        island_sets = self.Bus.island_sets
+        nosw_island = self.Bus.nosw_island
+        msw_island = self.Bus.msw_island
+        n_islanded_buses = self.Bus.n_islanded_buses
+
+        logger.info("-> System connectivity check results:")
+        if n_islanded_buses == 0:
+            logger.info("  No islanded bus detected.")
+        else:
+            logger.info("  %d islanded bus detected.", n_islanded_buses)
+            logger.debug("  Islanded Bus indices (0-based): %s", self.Bus.islanded_buses)
+
+        if len(island_sets) == 0:
+            logger.info("  No island detected.")
+        elif len(island_sets) == 1:
+            logger.info("  System is interconnected.")
+            logger.debug("  Bus indices in interconnected system (0-based): %s", island_sets)
+        else:
+            logger.info("  System contains %d island(s).", len(island_sets))
+            logger.debug("  Bus indices in islanded areas (0-based): %s", island_sets)
+
+        if len(nosw_island) > 0:
+            logger.warning('  Slack generator is not defined/enabled for %d island(s).',
+                           len(nosw_island))
+            logger.debug("  Bus indices in no-Slack areas (0-based): %s",
+                         [island_sets[item] for item in nosw_island])
+
+        if len(msw_island) > 0:
+            logger.warning('  Multiple slack generators are defined/enabled for %d island(s).',
+                           len(msw_island))
+            logger.debug("  Bus indices in multiple-Slack areas (0-based): %s",
+                         [island_sets[item] for item in msw_island])
+
+        if len(self.Bus.nosw_island) == 0 and len(self.Bus.msw_island) == 0:
+            logger.info('  Each island has a slack bus correctly defined and enabled.')
+
+
+    def import_models(self):
+        """
+        Import and instantiate models as System member attributes.
+
+        Models defined in ``models/__init__.py`` will be instantiated `sequentially` as attributes with the same
+        name as the class name.
+        In addition, all models will be stored in dictionary ``System.models`` with model names as
+        keys and the corresponding instances as values.
+
+        Examples
+        --------
+        ``system.Bus`` stores the `Bus` object, and ``system.GENCLS`` stores the classical
+        generator object,
+
+        ``system.models['Bus']`` points the same instance as ``system.Bus``.
+        """
+        for fname, cls_list in file_classes:
+            for model_name in cls_list:
+                the_module = importlib.import_module('andes.models.' + fname)
+                the_class = getattr(the_module, model_name)
+                self.__dict__[model_name] = the_class(system=self, config=self._config_object)
+                self.models[model_name] = self.__dict__[model_name]
+                self.models[model_name].config.check()
