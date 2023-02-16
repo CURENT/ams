@@ -112,21 +112,32 @@ class System(andes_System):
 
         self.exist = ExistingModels()
 
+        # TODO: revise the following attributes
+        self._getters = dict(f=list(), g=list(), x=list(), y=list())
+        self._adders = dict(f=list(), g=list(), x=list(), y=list())
+        self._setters = dict(f=list(), g=list(), x=list(), y=list())
+
         self.files = FileMan(case=case, **self.options)    # file path manager
 
         # Disable methods not supported in AMS
         # TODO: some of the methods might be used in the future
-        func_not_sure = ['save_config', 'set_address', 'set_config', 'set_dae_names',
-                         'set_output_subidx', 'set_var_arrays',]
         func_to_disable = [
+            # --- not sure ---
+            'set_config', 'set_dae_names', 'set_output_subidx', 'set_var_arrays',
+            # --- not used in AMS ---
             '_check_group_common', '_clear_adder_setter', '_e_to_dae', '_expand_pycode', '_finalize_pycode',
             '_find_stale_models', '_get_models', '_init_numba', '_list2array', '_load_calls', '_mp_prepare',
             '_p_restore', '_store_calls', '_store_tf', '_to_orddct', '_update_config_object', '_v_to_dae',
-            'call_models', 'collect_config', 'collect_ref', 'connectivity', 'e_clear', 'f_update', 'fg_to_dae',
-            'find_devices', 'find_models', 'from_ipysheet', 'g_islands', 'g_update', 'get_z', 'import_groups',
-            'import_models', 'import_routines', 'init', 'j_islands', 'j_update', 'l_update_eq', 'l_update_var',
-            'link_ext_param', 'precompile', 'prepare', 'reload', 'remove_pycapsule', 'reset', 's_update_post',
-            's_update_var', 'setup', 'store_adder_setter', 'store_existing', 'store_no_check_init',
+            'call_models', 'save_config', 'collect_config', 'collect_ref', 'connectivity', 'e_clear', 'f_update',
+            'fg_to_dae', 'find_devices', 'find_models', 'from_ipysheet', 'g_islands', 'g_update', 'get_z',
+            'import_groups', 'import_models', 'import_routines', 'init', 'j_islands', 'j_update', 'l_update_eq',
+            'l_update_var', 'link_ext_param', 'precompile', 'prepare', 'reload', 'remove_pycapsule', 'reset',
+            's_update_post', 's_update_var', 'setup', 'store_adder_setter', 'store_existing', 'store_no_check_init',
             'store_sparse_pattern', 'store_switch_times', 'summary', 'supported_models', 'switch_action', 'to_ipysheet',
-            'undill', 'vars_to_dae', 'vars_to_models']
-        disable_methods(func_to_disable + func_not_sure)
+            'undill']
+        disable_methods(func_to_disable)
+
+        func_to_revise = ['set_address', 'vars_to_dae', 'vars_to_models']
+        # TODO: ``set_address``: exclude state variables
+        # TODO: ``vars_to_dae``: switch from dae to ie
+        # TODO: ``vars_to_models``: switch from dae to ie
