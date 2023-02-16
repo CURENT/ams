@@ -74,7 +74,7 @@ class System(andes_System):
             # --- not used in AMS ---
             '_check_group_common', '_clear_adder_setter', '_e_to_dae', '_expand_pycode', '_finalize_pycode',
             '_find_stale_models', '_get_models', '_init_numba', '_load_calls', '_mp_prepare',
-            '_p_restore', '_store_calls', '_store_tf', '_to_orddct', '_update_config_object', '_v_to_dae',
+            '_p_restore', '_store_calls', '_store_tf', '_to_orddct', '_v_to_dae',
             'save_config', 'collect_config', 'collect_ref', 'e_clear', 'f_update',
             'fg_to_dae', 'from_ipysheet', 'g_islands', 'g_update', 'get_z',
             'import_routines', 'init', 'j_islands', 'j_update', 'l_update_eq',

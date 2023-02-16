@@ -4,12 +4,15 @@ Main entry point for the AMS CLI and scripting interfaces.
 
 import logging
 import os
-from andes.main import set_logger_level
+from andes.main import set_logger_level, _find_cases
 from andes.shared import coloredlogs
 from andes.utils.misc import elapsed, is_interactive
 
+import ams
 from ams.system import System
 from ams.utils.paths import get_config_path, get_log_dir, tests_root
+
+logger = logging.getLogger(__name__)
 
 
 def config_logger(stream_level=logging.INFO, *,
@@ -87,9 +90,49 @@ def config_logger(stream_level=logging.INFO, *,
         coloredlogs.install(logger=lg, level=stream_level, fmt=sh_formatter_str)
 
 
-def load(case, **kwargs):
+# TODO: check ``load`` later on to see if some of them can be removed
+def load(case, setup=True,
+         use_input_path=True,
+         **kwargs):
     """
-    Load a case and return an AMS system.
+    Load a case and set up a system without running routine.
+    Return a system.
+
+    Takes other kwargs recognizable by ``System``,
+    such as ``addfile``, ``input_path``, and ``no_putput``.
+
+    Parameters
+    ----------
+    case: str
+        Path to the test case
+    setup : bool, optional
+        Call `System.setup` after loading
+    use_input_path : bool, optional
+        True to use the ``input_path`` argument to behave
+        the same as ``andes.main.run``.
+
+    Warnings
+    --------
+    If one need to add devices in addition to these from the case
+    file, do ``setup=False`` and call ``System.add()`` to add devices.
+    When done, manually invoke ``setup()`` to set up the system.
     """
+    if use_input_path:
+        input_path = kwargs.get('input_path', '')
+        case = _find_cases(case, input_path)
+        if len(case) > 1:
+            logger.error("`ams.load` does not support mulitple cases.")
+            return None
+        elif len(case) == 0:
+            logger.error("No valid case found.")
+            return None
+        case = case[0]
+
     system = System(case, **kwargs)
+
+    if not ams.io.parse(system):
+        return None
+
+    if setup:
+        system.setup()
     return system
