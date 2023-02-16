@@ -3,6 +3,7 @@ System class for power system data, methods, and routines.
 """
 import configparser
 import importlib
+import inspect
 import logging
 from collections import OrderedDict
 from typing import Dict, Optional, Tuple, Union
@@ -11,6 +12,7 @@ from andes.core import Config
 from andes.system import ExistingModels as andes_ExistingModels
 from andes.system import System as andes_System
 from andes.system import (_config_numpy, load_config_rc)
+from ams.models.group import GroupBase
 from andes.variables import FileMan
 
 from ams.utils.paths import (ams_root, get_config_path)
@@ -192,6 +194,20 @@ class System(andes_System):
         if len(self.Bus.nosw_island) == 0 and len(self.Bus.msw_island) == 0:
             logger.info('  Each island has a slack bus correctly defined and enabled.')
 
+    def import_groups(self):
+        module = importlib.import_module('ams.models.group')
+
+        for m in inspect.getmembers(module, inspect.isclass):
+
+            name, cls = m
+            if name == 'GroupBase':
+                continue
+            elif not issubclass(cls, GroupBase):
+                # skip other imported classes such as `OrderedDict`
+                continue
+
+            self.__dict__[name] = cls()
+            self.groups[name] = self.__dict__[name]
 
     def import_models(self):
         """
