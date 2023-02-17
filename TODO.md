@@ -43,13 +43,17 @@ Routines API design
 
 TBD: DC-AC conversion for dispatch-dynamic co-simulation
 
-### v0.6 (2023-02-24)
+### v0.6.5 (2023-03-03)
 
 Dispatch modeling components
 
 - Dispatch components
 - Leveraging ANDES model
 - Solver interface to PyPower
+
+### v0.6 (2023-02-24)
+
+Setup solver PyPower
 
 ### v0.5 (2023-02-17)
 
