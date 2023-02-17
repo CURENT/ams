@@ -81,7 +81,7 @@ setup(
     author="Hantao Cui",
     author_email='cuihantao@gmail.com',
     url='https://github.com/jinningwang/ams',
-    packages=find_packages(exclude=[]),
+    packages=find_packages(include=[pandapower.pypower], exclude=[]),
     entry_points={
         'console_scripts': [
             'ams = ams.cli:main',

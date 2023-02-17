@@ -10,6 +10,7 @@ This module is developed from PyPower maintained under pandapower.
 
 # TODO: add a comparasion function of this module with pandapower.pypower
 from numpy import array
+# from pandapower.pypower
 
 
 class pp_system():
