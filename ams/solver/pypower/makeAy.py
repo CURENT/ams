@@ -1,8 +1,5 @@
-# Copyright (c) 1996-2015 PSERC. All rights reserved.
-# Use of this source code is governed by a BSD-style
-# license that can be found in the LICENSE file.
-
-"""Make the A matrix and RHS for the CCV formulation.
+"""
+Make the A matrix and RHS for the CCV formulation.
 """
 
 from numpy import array, diff, any, zeros, r_, flatnonzero as find

@@ -1,15 +1,5 @@
-# -*- coding: utf-8 -*-
-
-# Copyright 1996-2015 PSERC. All rights reserved.
-# Use of this source code is governed by a BSD-style
-# license that can be found in the LICENSE file.
-
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
-# and Energy System Technology (IEE), Kassel. All rights reserved.
-
-
-
-"""Computes partial derivatives of power injection w.r.t. voltage.
+"""
+Computes partial derivatives of power injection w.r.t. voltage.
 """
 
 from numpy import conj, diag, asarray
