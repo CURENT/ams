@@ -153,7 +153,7 @@ class System(andes_System):
 
         # TODO: DEBUG now
         self.import_groups()
-        # self.import_models()
+        self.import_models()
 
         func_to_revise = ['set_address', 'vars_to_dae', 'vars_to_models']
         # TODO: ``set_address``: exclude state variables
