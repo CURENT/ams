@@ -77,12 +77,14 @@ class System(andes_System):
             '_p_restore', '_store_calls', '_store_tf', '_to_orddct', '_v_to_dae',
             'save_config', 'collect_config', 'collect_ref', 'e_clear', 'f_update',
             'fg_to_dae', 'from_ipysheet', 'g_islands', 'g_update', 'get_z',
-            'import_routines', 'init', 'j_islands', 'j_update', 'l_update_eq',
+            'import_routines', 'init', 'j_islands', 'j_update', 'l_update_eq', 'connectivity', 'summary',
             'l_update_var', 'link_ext_param', 'precompile', 'prepare', 'reload', 'remove_pycapsule', 'reset',
             's_update_post', 's_update_var', 'store_adder_setter', 'store_no_check_init',
             'store_sparse_pattern', 'store_switch_times', 'supported_models', 'switch_action', 'to_ipysheet',
             'undill']
         disable_methods(func_to_disable)
+        # TODO: it seems that ``connectivity`` and ``summary`` can be skipped in AMS
+
         self.name = name
         self.options = {}
         if options is not None:
@@ -159,47 +161,6 @@ class System(andes_System):
         # TODO: ``set_address``: exclude state variables
         # TODO: ``vars_to_dae``: switch from dae to ie
         # TODO: ``vars_to_models``: switch from dae to ie
-
-    def summary(self):
-        """
-        Print out system summary.
-        """
-
-        island_sets = self.Bus.island_sets
-        nosw_island = self.Bus.nosw_island
-        msw_island = self.Bus.msw_island
-        n_islanded_buses = self.Bus.n_islanded_buses
-
-        logger.info("-> System connectivity check results:")
-        if n_islanded_buses == 0:
-            logger.info("  No islanded bus detected.")
-        else:
-            logger.info("  %d islanded bus detected.", n_islanded_buses)
-            logger.debug("  Islanded Bus indices (0-based): %s", self.Bus.islanded_buses)
-
-        if len(island_sets) == 0:
-            logger.info("  No island detected.")
-        elif len(island_sets) == 1:
-            logger.info("  System is interconnected.")
-            logger.debug("  Bus indices in interconnected system (0-based): %s", island_sets)
-        else:
-            logger.info("  System contains %d island(s).", len(island_sets))
-            logger.debug("  Bus indices in islanded areas (0-based): %s", island_sets)
-
-        if len(nosw_island) > 0:
-            logger.warning('  Slack generator is not defined/enabled for %d island(s).',
-                           len(nosw_island))
-            logger.debug("  Bus indices in no-Slack areas (0-based): %s",
-                         [island_sets[item] for item in nosw_island])
-
-        if len(msw_island) > 0:
-            logger.warning('  Multiple slack generators are defined/enabled for %d island(s).',
-                           len(msw_island))
-            logger.debug("  Bus indices in multiple-Slack areas (0-based): %s",
-                         [island_sets[item] for item in msw_island])
-
-        if len(self.Bus.nosw_island) == 0 and len(self.Bus.msw_island) == 0:
-            logger.info('  Each island has a slack bus correctly defined and enabled.')
 
     def import_groups(self):
         module = importlib.import_module('ams.models.group')
