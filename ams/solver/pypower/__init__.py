@@ -14,26 +14,24 @@ from numpy import array
 
 class pp_system():
     """
-    PyPower system class, as the interface to PyPower
-    """
-
-    def __init__(self, case):
-        """
         PyPower system class, as the interface to PyPower.
 
-        Parameters
-        ----------
-        case: str
-            PyPower case file name, such as 'case14.py'
+        It has the following methods:
+        ``from_ppc``: set the PyPower case dict ``ppc``
 
         Examples
         --------
-        >>> import ams
-        >>> spp = pp_system(case=ams.get_case('pypower/case14.py'))
-        """
+        >>> spp = pp_system()
+        >>> spp.from_ppc(ams.get_case('pypower/case14.py'))
+    """
+
+    def __init__(self):
+        self.ppc = None
+
+    def from_ppc(self, case):
         exec(open(f"{case}").read())
         func_name = case.split('/')[-1].rstrip('.py')
-        self.ppc = eval(f"{func_name}()")  # the dict of PyPower case
+        self.ppc = eval(f"{func_name}()")
 
     def set_case(self, case):
         pass
