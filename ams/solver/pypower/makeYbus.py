@@ -1,14 +1,5 @@
-# -*- coding: utf-8 -*-
-
-# Copyright 1996-2015 PSERC. All rights reserved.
-# Use of this source code is governed by a BSD-style
-# license that can be found in the LICENSE file.
-
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
-# and Energy System Technology (IEE), Kassel. All rights reserved.
-
-
-"""Builds the bus admittance matrix and branch admittance matrices.
+"""
+Builds the bus admittance matrix and branch admittance matrices.
 """
 
 from numpy import ones, conj, nonzero, any, exp, pi, hstack, real
@@ -80,6 +71,7 @@ def makeYbus(baseMVA, bus, branch):
 def branch_vectors(branch, nl):
     stat = branch[:, BR_STATUS]  ## ones at in-service branches
     Ysf = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])  ## series admittance
+    print(branch.shape)
     if any(branch[:, BR_R_ASYM]) or any(branch[:, BR_X_ASYM]):
         Yst = stat / ((branch[:, BR_R] + branch[:, BR_R_ASYM]) + 1j * (
                     branch[:, BR_X] + branch[:, BR_X_ASYM]))  ## series admittance
