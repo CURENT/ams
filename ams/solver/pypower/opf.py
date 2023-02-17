@@ -13,13 +13,13 @@
 from time import perf_counter
 
 from numpy import zeros, c_, shape
-from pandapower.pypower.idx_brch import MU_ANGMAX
-from pandapower.pypower.idx_bus import MU_VMIN
-from pandapower.pypower.idx_gen import MU_QMIN
+from ams.solver.pypower.idx_brch import MU_ANGMAX
+from ams.solver.pypower.idx_bus import MU_VMIN
+from ams.solver.pypower.idx_gen import MU_QMIN
 
-from pandapower.pypower.opf_args import opf_args2
-from pandapower.pypower.opf_execute import opf_execute
-from pandapower.pypower.opf_setup import opf_setup
+from ams.solver.pypower.opf_args import opf_args2
+from ams.solver.pypower.opf_execute import opf_execute
+from ams.solver.pypower.opf_setup import opf_setup
 
 
 def opf(ppc, ppopt):

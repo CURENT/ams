@@ -14,19 +14,19 @@
 from sys import stdout, stderr
 
 from numpy import array, arange, pi, zeros, r_
-from pandapower.pypower.dcopf_solver import dcopf_solver
-from pandapower.pypower.idx_brch import MU_ANGMIN, MU_ANGMAX
-from pandapower.pypower.idx_bus import VM
-from pandapower.pypower.idx_gen import GEN_BUS, VG
-#from pandapower.pypower.ipoptopf_solver import ipoptopf_solver
-from pandapower.pypower.makeYbus import makeYbus
-from pandapower.pypower.opf_consfcn import opf_consfcn
-from pandapower.pypower.opf_costfcn import opf_costfcn
+from ams.solver.pypower.dcopf_solver import dcopf_solver
+from ams.solver.pypower.idx_brch import MU_ANGMIN, MU_ANGMAX
+from ams.solver.pypower.idx_bus import VM
+from ams.solver.pypower.idx_gen import GEN_BUS, VG
+#from ams.solver.pypower.ipoptopf_solver import ipoptopf_solver
+from ams.solver.pypower.makeYbus import makeYbus
+from ams.solver.pypower.opf_consfcn import opf_consfcn
+from ams.solver.pypower.opf_costfcn import opf_costfcn
 
-from pandapower.pypower.ppver import ppver
-from pandapower.pypower.update_mupq import update_mupq
+from ams.solver.pypower.ppver import ppver
+from ams.solver.pypower.update_mupq import update_mupq
 
-from pandapower.pypower.pipsopf_solver import pipsopf_solver #temporary changed import to match bugfix path
+from ams.solver.pypower.pipsopf_solver import pipsopf_solver #temporary changed import to match bugfix path
 
 
 def opf_execute(om, ppopt):

@@ -3,7 +3,7 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from pandapower.pypower.idx_brch import branch_cols as start
+from ams.solver.pypower.idx_brch import branch_cols as start
 
 # columns for TDPF
 

@@ -5,7 +5,7 @@
 
 
 # define the indices
-from pandapower.pypower.idx_bus import bus_cols as start
+from ams.solver.pypower.idx_bus import bus_cols as start
 
 R_EQUIV     = start + 0
 X_EQUIV     = start + 1

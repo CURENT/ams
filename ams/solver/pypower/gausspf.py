@@ -9,7 +9,7 @@ import sys
 
 from numpy import linalg, conj, r_, Inf
 
-from pandapower.pypower.ppoption import ppoption
+from ams.solver.pypower.ppoption import ppoption
 
 
 def gausspf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None):

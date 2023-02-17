@@ -10,7 +10,7 @@ import sys
 from numpy import array, angle, exp, linalg, conj, r_, Inf
 from scipy.sparse.linalg import splu
 
-from pandapower.pypower.ppoption import ppoption
+from ams.solver.pypower.ppoption import ppoption
 
 
 def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt=None):

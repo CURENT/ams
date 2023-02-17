@@ -10,9 +10,9 @@ from sys import stderr
 from numpy import array
 from scipy.sparse import issparse
 
-from pandapower.pypower._compat import PY2
-from pandapower.pypower.ppoption import ppoption
-#from pandapower.pypower.loadcase import loadcase
+from ams.solver.pypower._compat import PY2
+from ams.solver.pypower.ppoption import ppoption
+#from ams.solver.pypower.loadcase import loadcase
 
 
 if not PY2:

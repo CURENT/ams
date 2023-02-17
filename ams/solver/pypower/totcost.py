@@ -8,8 +8,8 @@
 from numpy import zeros, arange
 from numpy import flatnonzero as find
 
-from pandapower.pypower.polycost import polycost
-from pandapower.pypower.idx_cost import PW_LINEAR, POLYNOMIAL, COST, NCOST, MODEL
+from ams.solver.pypower.polycost import polycost
+from ams.solver.pypower.idx_cost import PW_LINEAR, POLYNOMIAL, COST, NCOST, MODEL
 
 
 def totcost(gencost, Pg):

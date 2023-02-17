@@ -9,7 +9,7 @@ from sys import stderr
 
 from numpy import any, zeros, nonzero
 
-from pandapower.pypower.idx_gen import QMAX, QMIN, PMAX, PC1, PC2, QC1MIN, QC1MAX, QC2MIN, QC2MAX
+from ams.solver.pypower.idx_gen import QMAX, QMIN, PMAX, PC1, PC2, QC1MIN, QC1MAX, QC2MIN, QC2MAX
 
 
 def hasPQcap(gen, hilo='B'):

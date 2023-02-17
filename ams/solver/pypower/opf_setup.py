@@ -15,19 +15,19 @@ from sys import stdout, stderr
 
 from numpy import array, any, delete, unique, arange, nonzero, pi, r_, ones, Inf, flatnonzero as find
 from scipy.sparse import hstack, csr_matrix as sparse
-from pandapower.pypower.idx_brch import RATE_A
-from pandapower.pypower.idx_bus import BUS_TYPE, REF, VA, VM, PD, GS, VMAX, VMIN
-from pandapower.pypower.idx_cost import MODEL, NCOST, PW_LINEAR, COST, POLYNOMIAL
-from pandapower.pypower.idx_gen import GEN_BUS, VG, PG, QG, PMAX, PMIN, QMAX, QMIN
-from pandapower.pypower.makeAang import makeAang
-from pandapower.pypower.makeApq import makeApq
-from pandapower.pypower.makeAvl import makeAvl
-from pandapower.pypower.makeAy import makeAy
-from pandapower.pypower.makeBdc import makeBdc
-from pandapower.pypower.opf_args import opf_args
-from pandapower.pypower.pqcost import pqcost
-from pandapower.pypower.run_userfcn import run_userfcn
-from pandapower.pypower.opf_model import opf_model
+from ams.solver.pypower.idx_brch import RATE_A
+from ams.solver.pypower.idx_bus import BUS_TYPE, REF, VA, VM, PD, GS, VMAX, VMIN
+from ams.solver.pypower.idx_cost import MODEL, NCOST, PW_LINEAR, COST, POLYNOMIAL
+from ams.solver.pypower.idx_gen import GEN_BUS, VG, PG, QG, PMAX, PMIN, QMAX, QMIN
+from ams.solver.pypower.makeAang import makeAang
+from ams.solver.pypower.makeApq import makeApq
+from ams.solver.pypower.makeAvl import makeAvl
+from ams.solver.pypower.makeAy import makeAy
+from ams.solver.pypower.makeBdc import makeBdc
+from ams.solver.pypower.opf_args import opf_args
+from ams.solver.pypower.pqcost import pqcost
+from ams.solver.pypower.run_userfcn import run_userfcn
+from ams.solver.pypower.opf_model import opf_model
 
 
 def opf_setup(ppc, ppopt):
