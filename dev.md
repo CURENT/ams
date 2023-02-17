@@ -1,4 +1,4 @@
-# Versioning schedule
+# Development plan
 
 ## v1.0
 
@@ -61,7 +61,17 @@ Base System setup
 
 Development preparation
 
-- Package structure setup
-- Documenter setup
-- Versioneer setup
-- Software test setup
+# Development log
+
+[WIP] Debug ``runpf``
+
+Import solver pypower (2023-02-17)
+
+Setup base system (2023-02-16)
+
+Setup file parser (2023-02-16)
+
+## Development preparation
+
+- Setup versioneer (2023-01-26)
+- Setup documentation (2023-01-26)
