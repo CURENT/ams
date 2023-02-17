@@ -10,6 +10,8 @@ from ams.main import config_logger, load  # NOQA
 from ams.system import System  # NOQA
 from ams.utils.paths import get_case  # NOQA
 
+from ams.solver import pypower  # NOQA
+
 
 __author__ = 'Jining Wang'
 
