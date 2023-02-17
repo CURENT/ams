@@ -5,3 +5,4 @@ matplotlib
 psutil
 openpyxl
 andes
+pandapower
