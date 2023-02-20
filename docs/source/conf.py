@@ -50,7 +50,7 @@ language = "en"
 project = 'AMS'
 copyright = '2023, Jinning Wang'
 author = 'Jinning Wang'
-release = '0.4'
+release = '0.5'
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
