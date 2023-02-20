@@ -249,3 +249,7 @@ class System(andes_System):
         logger.info('System internal structure set up in %s.', s)
 
         return ret
+
+    def __repr__(self) -> str:
+        # TODO: list out the models in the system
+        return ""
