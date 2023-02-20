@@ -43,7 +43,8 @@ def runuopf(casedata=None, ppopt=None, fname='', solvedcase=''):
                 fd.close()
 
     else:
-        printpf(r, stdout, ppopt=ppopt)
+        # printpf(r, stdout, ppopt=ppopt)
+        pass
 
     ## save solved case
     if solvedcase:
