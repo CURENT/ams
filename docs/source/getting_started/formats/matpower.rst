@@ -3,10 +3,8 @@
 MATPOWER
 --------
 
-AMS includes [PYPOWER cases](https://github.com/jinningwang/ams/tree/develop/ams/cases/pypower)
-in version 2 for dispatch modeling and analysis. PYPOWER cases follow the same format as MATPOWER.
 The data file format of MATPOWER is excerpted below for quick reference. For more information, see
-the [MATPOWER User’s Manual](https://matpower.org/docs/MATPOWER-manual.pdf).
+the `MATPOWER User’s Manual <https://matpower.org/docs/MATPOWER-manual.pdf>`_.
 
 Bus Data
 .........
