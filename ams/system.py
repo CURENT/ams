@@ -150,8 +150,6 @@ class System(andes_System):
 
         self.files = FileMan(case=case, **self.options)    # file path manager
 
-        # internal flags
-        self.is_setup = False        # if system has been setup
 
         # TODO: DEBUG now
         self.import_groups()

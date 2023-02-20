@@ -58,3 +58,18 @@ def set_ppc(case) -> dict:
     ppc = eval(f"{func_name}()")
     source_type = 'ppc'
     return ppc
+
+
+def to_ppc(sps):
+    """
+    Convert the AMS system to a PyPower case dict.
+
+    Parameters
+    ----------
+    sps : ams.system
+        The AMS system.
+    """
+    # TODO: convert the AMS system to a PyPower case dict
+    ppc = None
+
+    return ppc
