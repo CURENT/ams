@@ -11,15 +11,15 @@ from scipy.sparse import spdiags, hstack, vstack, csr_matrix as sparse
 from scipy.sparse import eye as speye
 
 from pypower import idx_dcline
-from pypower.add_userfcn import add_userfcn
-from pypower.remove_userfcn import remove_userfcn
-from pypower.isload import isload
+from ams.solver.pypower.add_userfcn import add_userfcn
+from ams.solver.pypower.remove_userfcn import remove_userfcn
+from ams.solver.pypower.isload import isload
 
-from pypower.idx_gen import MBASE, GEN_STATUS, PMIN, PMAX, GEN_BUS, PG, QG, \
+from ams.solver.pypower.idx_gen import MBASE, GEN_STATUS, PMIN, PMAX, GEN_BUS, PG, QG, \
     VG, QMIN, QMAX, MU_QMIN, MU_PMAX, MU_PMIN, MU_QMAX
 
-from pypower.idx_bus import BUS_TYPE, REF, PV
-from pypower.idx_cost import MODEL, POLYNOMIAL, NCOST
+from ams.solver.pypower.idx_bus import BUS_TYPE, REF, PV
+from ams.solver.pypower.idx_cost import MODEL, POLYNOMIAL, NCOST
 
 
 def toggle_dcline(ppc, on_off):

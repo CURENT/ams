@@ -9,8 +9,8 @@ from numpy import ones, flatnonzero as find
 from numpy import zeros
 from scipy.sparse import csr_matrix as sparse
 
-from pypower.idx_bus import BUS_TYPE, REF, PV, PQ
-from pypower.idx_gen import GEN_BUS, GEN_STATUS
+from ams.solver.pypower.idx_bus import BUS_TYPE, REF, PV, PQ
+from ams.solver.pypower.idx_gen import GEN_BUS, GEN_STATUS
 
 
 def bustypes(bus, gen):

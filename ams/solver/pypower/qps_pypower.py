@@ -7,13 +7,13 @@
 
 import sys
 
-from pypower.qps_pips import qps_pips
-from pypower.qps_ipopt import qps_ipopt
-from pypower.qps_cplex import qps_cplex
-from pypower.qps_mosek import qps_mosek
-from pypower.qps_gurobi import qps_gurobi
+from ams.solver.pypower.qps_pips import qps_pips
+from ams.solver.pypower.qps_ipopt import qps_ipopt
+from ams.solver.pypower.qps_cplex import qps_cplex
+from ams.solver.pypower.qps_mosek import qps_mosek
+from ams.solver.pypower.qps_gurobi import qps_gurobi
 
-from pypower.util import have_fcn
+from ams.solver.pypower.util import have_fcn
 
 
 def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None,

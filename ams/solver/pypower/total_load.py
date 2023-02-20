@@ -12,11 +12,11 @@ from numpy import flatnonzero as find
 
 from scipy.sparse import csr_matrix as sparse
 
-from pypower._compat import PY2
-from pypower.isload import isload
+from ams.solver.pypower._compat import PY2
+from ams.solver.pypower.isload import isload
 
-from pypower.idx_bus import PD, QD, BUS_AREA, BUS_I
-from pypower.idx_gen import QMAX, QMIN, GEN_BUS, GEN_STATUS, PMIN
+from ams.solver.pypower.idx_bus import PD, QD, BUS_AREA, BUS_I
+from ams.solver.pypower.idx_gen import QMAX, QMIN, GEN_BUS, GEN_STATUS, PMIN
 
 
 if not PY2:

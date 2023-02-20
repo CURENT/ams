@@ -11,15 +11,15 @@ from warnings import warn
 
 from copy import deepcopy
 
-from pypower.idx_bus import BUS_I
-from pypower.idx_gen import GEN_BUS
-from pypower.idx_brch import F_BUS, T_BUS
-from pypower.idx_area import PRICE_REF_BUS
+from ams.solver.pypower.idx_bus import BUS_I
+from ams.solver.pypower.idx_gen import GEN_BUS
+from ams.solver.pypower.idx_brch import F_BUS, T_BUS
+from ams.solver.pypower.idx_area import PRICE_REF_BUS
 
-from pypower.run_userfcn import run_userfcn
+from ams.solver.pypower.run_userfcn import run_userfcn
 
-from pypower.i2e_field import i2e_field
-from pypower.i2e_data import i2e_data
+from ams.solver.pypower.i2e_field import i2e_field
+from ams.solver.pypower.i2e_data import i2e_data
 
 
 def int2ext(ppc, val_or_field=None, oldval=None, ordering=None, dim=0):

@@ -1,9 +1,9 @@
 # Copyright (c) 1996-2015 PSERC. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
-from pypower.e2i_field import e2i_field
-from pypower.i2e_field import i2e_field
-from pypower.i2e_data import i2e_data
+from ams.solver.pypower.e2i_field import e2i_field
+from ams.solver.pypower.i2e_field import i2e_field
+from ams.solver.pypower.i2e_data import i2e_data
 
 """Enable or disable fixed reserve requirements.
 """
@@ -18,11 +18,11 @@ from scipy.sparse import eye as speye
 from scipy.sparse import csr_matrix as sparse
 from scipy.sparse import hstack
 
-from pypower.add_userfcn import add_userfcn
-from pypower.remove_userfcn import remove_userfcn
-from pypower.ext2int import ext2int
-from pypower.int2ext import int2ext
-from pypower.idx_gen import RAMP_10, PMAX, GEN_STATUS, GEN_BUS
+from ams.solver.pypower.add_userfcn import add_userfcn
+from ams.solver.pypower.remove_userfcn import remove_userfcn
+from ams.solver.pypower.ext2int import ext2int
+from ams.solver.pypower.int2ext import int2ext
+from ams.solver.pypower.idx_gen import RAMP_10, PMAX, GEN_STATUS, GEN_BUS
 
 
 def toggle_reserves(ppc, on_off):

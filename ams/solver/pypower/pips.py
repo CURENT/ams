@@ -13,7 +13,7 @@ from numpy.linalg import norm
 from scipy.sparse import vstack, hstack, eye, csr_matrix as sparse
 from scipy.sparse.linalg import spsolve
 
-from pypower.pipsver import pipsver
+from ams.solver.pypower.pipsver import pipsver
 
 
 EPS = finfo(float).eps

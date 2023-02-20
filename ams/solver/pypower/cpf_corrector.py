@@ -7,10 +7,10 @@ from numpy import r_, angle, conj, linalg, inf, array, exp
 from scipy.sparse import vstack, hstack
 from scipy.sparse.linalg import spsolve
 
-from pypower.ppoption import ppoption
-from pypower.cpf_p import cpf_p
-from pypower.dSbus_dV import dSbus_dV
-from pypower.cpf_p_jac import cpf_p_jac
+from ams.solver.pypower.ppoption import ppoption
+from ams.solver.pypower.cpf_p import cpf_p
+from ams.solver.pypower.dSbus_dV import dSbus_dV
+from ams.solver.pypower.cpf_p_jac import cpf_p_jac
 
 def cpf_corrector(Ybus, Sbus, V0, ref, pv, pq,
                   lam0, Sxfr, Vprv, lamprv, z, step, parameterization, ppopt):

@@ -11,7 +11,7 @@ from numpy import arange, concatenate
 
 from scipy.sparse import issparse, vstack, hstack
 
-from pypower.get_reorder import get_reorder
+from ams.solver.pypower.get_reorder import get_reorder
 
 
 def e2i_data(ppc, val, ordering, dim=0):

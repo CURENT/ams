@@ -6,8 +6,8 @@ from numpy import r_, array, angle, zeros, linalg, exp
 from scipy.sparse import hstack, vstack
 from scipy.sparse.linalg import spsolve
 
-from pypower.dSbus_dV import dSbus_dV
-from pypower.cpf_p_jac import cpf_p_jac
+from ams.solver.pypower.dSbus_dV import dSbus_dV
+from ams.solver.pypower.cpf_p_jac import cpf_p_jac
 
 
 def cpf_predictor(V, lam, Ybus, Sxfr, pv, pq,

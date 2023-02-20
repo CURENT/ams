@@ -3,8 +3,8 @@
 # license that can be found in the LICENSE file.
 
 from numpy import Inf
-from pypower._compat import PY2
-from pypower.util import feval
+from ams.solver.pypower._compat import PY2
+from ams.solver.pypower.util import feval
 
 
 if not PY2:

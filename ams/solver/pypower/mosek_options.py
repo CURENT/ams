@@ -11,8 +11,8 @@ except ImportError:
 #    print "MOSEK not available"
     pass
 
-from pypower._compat import PY2
-from pypower.util import feval
+from ams.solver.pypower._compat import PY2
+from ams.solver.pypower.util import feval
 
 
 if not PY2:

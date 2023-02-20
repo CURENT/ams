@@ -12,7 +12,7 @@ from numpy import flatnonzero as find
 
 from scipy.sparse import issparse, csr_matrix as sparse
 
-from pypower.gurobi_options import gurobi_options
+from ams.solver.pypower.gurobi_options import gurobi_options
 
 
 EPS = finfo(float).eps

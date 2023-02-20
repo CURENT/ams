@@ -14,27 +14,27 @@ from time import time
 from numpy import r_, c_, ix_, zeros, pi, ones, exp, argmax, union1d
 from numpy import flatnonzero as find
 
-from pypower.bustypes import bustypes
-from pypower.ext2int import ext2int
-from pypower.loadcase import loadcase
-from pypower.ppoption import ppoption
-from pypower.ppver import ppver
-from pypower.makeBdc import makeBdc
-from pypower.makeSbus import makeSbus
-from pypower.dcpf import dcpf
-from pypower.makeYbus import makeYbus
-from pypower.newtonpf import newtonpf
-from pypower.fdpf import fdpf
-from pypower.gausspf import gausspf
-from pypower.makeB import makeB
-from pypower.pfsoln import pfsoln
-from pypower.printpf import printpf
-from pypower.savecase import savecase
-from pypower.int2ext import int2ext
+from ams.solver.pypower.bustypes import bustypes
+from ams.solver.pypower.ext2int import ext2int
+from ams.solver.pypower.loadcase import loadcase
+from ams.solver.pypower.ppoption import ppoption
+from ams.solver.pypower.ppver import ppver
+from ams.solver.pypower.makeBdc import makeBdc
+from ams.solver.pypower.makeSbus import makeSbus
+from ams.solver.pypower.dcpf import dcpf
+from ams.solver.pypower.makeYbus import makeYbus
+from ams.solver.pypower.newtonpf import newtonpf
+from ams.solver.pypower.fdpf import fdpf
+from ams.solver.pypower.gausspf import gausspf
+from ams.solver.pypower.makeB import makeB
+from ams.solver.pypower.pfsoln import pfsoln
+from ams.solver.pypower.printpf import printpf
+from ams.solver.pypower.savecase import savecase
+from ams.solver.pypower.int2ext import int2ext
 
-from pypower.idx_bus import PD, QD, VM, VA, GS, BUS_TYPE, PV, PQ, REF
-from pypower.idx_brch import PF, PT, QF, QT
-from pypower.idx_gen import PG, QG, VG, QMAX, QMIN, GEN_BUS, GEN_STATUS
+from ams.solver.pypower.idx_bus import PD, QD, VM, VA, GS, BUS_TYPE, PV, PQ, REF
+from ams.solver.pypower.idx_brch import PF, PT, QF, QT
+from ams.solver.pypower.idx_gen import PG, QG, VG, QMAX, QMIN, GEN_BUS, GEN_STATUS
 
 
 def runpf(casedata=None, ppopt=None, fname='', solvedcase=''):

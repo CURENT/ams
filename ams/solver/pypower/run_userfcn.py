@@ -5,7 +5,7 @@
 """Runs the userfcn callbacks for a given stage.
 """
 
-from pypower.util import feval
+from ams.solver.pypower.util import feval
 
 
 def run_userfcn(userfcn, stage, *args2):

@@ -18,7 +18,7 @@ except ImportError:
 #    print 'IPOPT not available'
     pass
 
-from pypower.ipopt_options import ipopt_options
+from ams.solver.pypower.ipopt_options import ipopt_options
 
 
 def qps_ipopt(H, c, A, l, u, xmin, xmax, x0, opt):

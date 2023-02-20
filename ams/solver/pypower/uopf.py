@@ -11,15 +11,15 @@ from copy import deepcopy
 
 from numpy import flatnonzero as find
 
-from pypower.opf_args import opf_args2
-from pypower.ppoption import ppoption
-from pypower.isload import isload
-from pypower.totcost import totcost
-from pypower.fairmax import fairmax
-from pypower.opf import opf
+from ams.solver.pypower.opf_args import opf_args2
+from ams.solver.pypower.ppoption import ppoption
+from ams.solver.pypower.isload import isload
+from ams.solver.pypower.totcost import totcost
+from ams.solver.pypower.fairmax import fairmax
+from ams.solver.pypower.opf import opf
 
-from pypower.idx_bus import PD
-from pypower.idx_gen import GEN_STATUS, PG, QG, PMIN, MU_PMIN
+from ams.solver.pypower.idx_bus import PD
+from ams.solver.pypower.idx_gen import GEN_STATUS, PG, QG, PMIN, MU_PMIN
 
 
 def uopf(*args):

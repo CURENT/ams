@@ -16,17 +16,17 @@ from numpy import flatnonzero as find
 
 from scipy.sparse import vstack, hstack, csr_matrix as sparse
 
-from pypower.idx_bus import BUS_TYPE, REF, VA, LAM_P, LAM_Q, MU_VMAX, MU_VMIN
-from pypower.idx_gen import PG, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
-from pypower.idx_brch import PF, PT, QF, QT, RATE_A, MU_SF, MU_ST
-from pypower.idx_cost import MODEL, POLYNOMIAL, PW_LINEAR, NCOST, COST
+from ams.solver.pypower.idx_bus import BUS_TYPE, REF, VA, LAM_P, LAM_Q, MU_VMAX, MU_VMIN
+from ams.solver.pypower.idx_gen import PG, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
+from ams.solver.pypower.idx_brch import PF, PT, QF, QT, RATE_A, MU_SF, MU_ST
+from ams.solver.pypower.idx_cost import MODEL, POLYNOMIAL, PW_LINEAR, NCOST, COST
 
-from pypower.util import sub2ind, have_fcn
-from pypower.ipopt_options import ipopt_options
-from pypower.cplex_options import cplex_options
-from pypower.mosek_options import mosek_options
-from pypower.gurobi_options import gurobi_options
-from pypower.qps_pypower import qps_pypower
+from ams.solver.pypower.util import sub2ind, have_fcn
+from ams.solver.pypower.ipopt_options import ipopt_options
+from ams.solver.pypower.cplex_options import cplex_options
+from ams.solver.pypower.mosek_options import mosek_options
+from ams.solver.pypower.gurobi_options import gurobi_options
+from ams.solver.pypower.qps_pypower import qps_pypower
 
 
 def dcopf_solver(om, ppopt, out_opt=None):

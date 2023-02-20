@@ -7,9 +7,9 @@
 
 from numpy import ones, zeros, r_
 
-from pypower.idx_cost import MODEL, COST, NCOST, PW_LINEAR
+from ams.solver.pypower.idx_cost import MODEL, COST, NCOST, PW_LINEAR
 
-from pypower.totcost import totcost
+from ams.solver.pypower.totcost import totcost
 
 
 def poly2pwl(polycost, Pmin, Pmax, npts):

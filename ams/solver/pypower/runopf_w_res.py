@@ -5,9 +5,9 @@
 """Runs an optimal power flow with fixed zonal reserves.
 """
 
-from pypower.loadcase import loadcase
-from pypower.toggle_reserves import toggle_reserves
-from pypower.runopf import runopf
+from ams.solver.pypower.loadcase import loadcase
+from ams.solver.pypower.toggle_reserves import toggle_reserves
+from ams.solver.pypower.runopf import runopf
 
 
 def runopf_w_res(*args):

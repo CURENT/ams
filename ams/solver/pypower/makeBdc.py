@@ -10,8 +10,8 @@ from sys import stderr
 from numpy import ones, r_, pi, flatnonzero as find
 from scipy.sparse import csr_matrix as sparse
 
-from pypower.idx_bus import BUS_I
-from pypower.idx_brch import F_BUS, T_BUS, BR_X, TAP, SHIFT, BR_STATUS
+from ams.solver.pypower.idx_bus import BUS_I
+from ams.solver.pypower.idx_brch import F_BUS, T_BUS, BR_X, TAP, SHIFT, BR_STATUS
 
 
 def makeBdc(baseMVA, bus, branch):

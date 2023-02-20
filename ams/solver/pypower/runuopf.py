@@ -9,10 +9,10 @@ from sys import stderr
 
 from os.path import dirname, join
 
-from pypower.ppoption import ppoption
-from pypower.uopf import uopf
-from pypower.printpf import printpf
-from pypower.savecase import savecase
+from ams.solver.pypower.ppoption import ppoption
+from ams.solver.pypower.uopf import uopf
+from ams.solver.pypower.printpf import printpf
+from ams.solver.pypower.savecase import savecase
 
 
 def runuopf(casedata=None, ppopt=None, fname='', solvedcase=''):

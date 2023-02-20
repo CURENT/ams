@@ -20,7 +20,7 @@ except ImportError:
 #    print 'MOSEK not available'
     pass
 
-from pypower.mosek_options import mosek_options
+from ams.solver.pypower.mosek_options import mosek_options
 
 
 def qps_mosek(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None,

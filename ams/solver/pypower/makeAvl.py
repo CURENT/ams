@@ -11,9 +11,9 @@ from numpy import array, zeros, arange, sin, cos, arctan2, r_
 from numpy import flatnonzero as find
 from scipy.sparse import csr_matrix as sparse
 
-from pypower.idx_gen import PG, QG, PMIN, QMIN, QMAX
+from ams.solver.pypower.idx_gen import PG, QG, PMIN, QMIN, QMAX
 
-from pypower.isload import isload
+from ams.solver.pypower.isload import isload
 
 
 def makeAvl(baseMVA, gen):

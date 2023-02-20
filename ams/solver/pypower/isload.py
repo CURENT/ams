@@ -5,7 +5,7 @@
 """Checks for dispatchable loads.
 """
 
-from pypower.idx_gen import PMAX, PMIN
+from ams.solver.pypower.idx_gen import PMAX, PMIN
 
 
 def isload(gen):

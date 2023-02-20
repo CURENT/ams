@@ -13,10 +13,10 @@ from numpy import zeros, arange, unique, sign, delete, flatnonzero as find
 
 from scipy.sparse import lil_matrix, csr_matrix as sparse
 
-from pypower.add_userfcn import add_userfcn
-from pypower.remove_userfcn import remove_userfcn
-from pypower.makeBdc import makeBdc
-from pypower.idx_brch import PF
+from ams.solver.pypower.add_userfcn import add_userfcn
+from ams.solver.pypower.remove_userfcn import remove_userfcn
+from ams.solver.pypower.makeBdc import makeBdc
+from ams.solver.pypower.idx_brch import PF
 
 
 def toggle_iflims(ppc, on_off):

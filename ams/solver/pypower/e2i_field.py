@@ -4,8 +4,8 @@
 
 """Converts fields of ppc from external to internal indexing.
 """
-from pypower._compat import PY2
-from pypower.e2i_data import e2i_data  #@UnusedImport
+from ams.solver.pypower._compat import PY2
+from ams.solver.pypower.e2i_data import e2i_data  #@UnusedImport
 
 
 if not PY2:

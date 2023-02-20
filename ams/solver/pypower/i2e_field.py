@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-from pypower.i2e_data import i2e_data  #@UnusedImport
+from ams.solver.pypower.i2e_data import i2e_data  #@UnusedImport
 
 
 def i2e_field(ppc, field, ordering, dim=0):

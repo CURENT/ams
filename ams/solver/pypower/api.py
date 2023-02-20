@@ -7,7 +7,7 @@
 Use this module for importing PYPOWER function names into your namespace. For
 example::
 
-    from pypower.api import runpf
+    from ams.solver.pypower.api import runpf
 """
 
 from __future__ import absolute_import

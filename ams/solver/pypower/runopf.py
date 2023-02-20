@@ -9,10 +9,10 @@ from sys import stdout, stderr
 
 from os.path import dirname, join
 
-from pypower.ppoption import ppoption
-from pypower.opf import opf
-from pypower.printpf import printpf
-from pypower.savecase import savecase
+from ams.solver.pypower.ppoption import ppoption
+from ams.solver.pypower.opf import opf
+from ams.solver.pypower.printpf import printpf
+from ams.solver.pypower.savecase import savecase
 
 
 def runopf(casedata=None, ppopt=None, fname='', solvedcase=''):

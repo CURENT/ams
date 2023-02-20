@@ -10,17 +10,17 @@ from sys import stderr
 
 from optparse import OptionParser, OptionGroup, OptionValueError
 
-from pypower.api import \
+from ams.solver.pypower.api import \
     ppver, ppoption, runpf, runopf, runuopf, runopf_w_res
 
-from pypower.api import \
+from ams.solver.pypower.api import \
     case4gs, case6ww, case9, case9Q, case14, case24_ieee_rts, case30, \
     case30Q, case30pwl, case39, case57, case118, case300, t_case30_userfcns
 
-from pypower.ppoption import \
+from ams.solver.pypower.ppoption import \
     PF_OPTIONS, OPF_OPTIONS, OUTPUT_OPTIONS, PDIPM_OPTIONS
 
-from pypower.t.test_pypower import test_pf, test_opf
+from ams.solver.pypower.t.test_pypower import test_pf, test_opf
 
 
 TYPE_MAP = {bool: 'choice', float: 'float', int: 'int'}

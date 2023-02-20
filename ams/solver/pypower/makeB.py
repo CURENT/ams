@@ -7,10 +7,10 @@
 
 from numpy import ones, zeros, copy
 
-from pypower.idx_bus import BS
-from pypower.idx_brch import BR_B, BR_R, TAP, SHIFT
+from ams.solver.pypower.idx_bus import BS
+from ams.solver.pypower.idx_brch import BR_B, BR_R, TAP, SHIFT
 
-from pypower.makeYbus import makeYbus
+from ams.solver.pypower.makeYbus import makeYbus
 
 
 def makeB(baseMVA, bus, branch, alg):

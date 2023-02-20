@@ -8,7 +8,7 @@
 from numpy import ones, diag, eye, r_, arange
 from scipy.sparse import csr_matrix as sparse
 
-from pypower.idx_brch import F_BUS, T_BUS
+from ams.solver.pypower.idx_brch import F_BUS, T_BUS
 
 
 def makeLODF(branch, PTDF):

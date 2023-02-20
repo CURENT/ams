@@ -8,8 +8,8 @@
 from numpy import ones, flatnonzero as find
 from scipy.sparse import csr_matrix as sparse
 
-from pypower.idx_bus import PD, QD
-from pypower.idx_gen import GEN_BUS, PG, QG, GEN_STATUS
+from ams.solver.pypower.idx_bus import PD, QD
+from ams.solver.pypower.idx_gen import GEN_BUS, PG, QG, GEN_STATUS
 
 
 def makeSbus(baseMVA, bus, gen):

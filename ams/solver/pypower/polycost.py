@@ -9,7 +9,7 @@ import sys
 
 from numpy import zeros, arange, flatnonzero as find
 
-from pypower.idx_cost import MODEL, NCOST, PW_LINEAR, COST
+from ams.solver.pypower.idx_cost import MODEL, NCOST, PW_LINEAR, COST
 
 
 def polycost(gencost, Pg, der=0):

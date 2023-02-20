@@ -9,7 +9,7 @@ import sys
 
 from numpy import zeros, ones, arange, dot, cumsum, flatnonzero as find
 
-from pypower.idx_cost import MODEL, NCOST, PW_LINEAR, POLYNOMIAL, COST
+from ams.solver.pypower.idx_cost import MODEL, NCOST, PW_LINEAR, POLYNOMIAL, COST
 
 
 def modcost(gencost, alpha, modtype='SCALE_F'):

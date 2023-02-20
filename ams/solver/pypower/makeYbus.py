@@ -10,8 +10,8 @@ from sys import stderr
 from numpy import ones, conj, nonzero, any, exp, pi, r_
 from scipy.sparse import csr_matrix
 
-from pypower.idx_bus import BUS_I, GS, BS
-from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS, SHIFT, TAP
+from ams.solver.pypower.idx_bus import BUS_I, GS, BS
+from ams.solver.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS, SHIFT, TAP
 
 
 def makeYbus(baseMVA, bus, branch):

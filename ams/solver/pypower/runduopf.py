@@ -7,8 +7,8 @@
 
 from os.path import dirname, join
 
-from pypower.ppoption import ppoption
-from pypower.runuopf import runuopf
+from ams.solver.pypower.ppoption import ppoption
+from ams.solver.pypower.runuopf import runuopf
 
 
 def runduopf(casedata=None, ppopt=None, fname='', solvedcase=''):

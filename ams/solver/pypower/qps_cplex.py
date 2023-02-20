@@ -20,7 +20,7 @@ except ImportError:
 #    print 'CPLEX not available'
     pass
 
-from pypower.cplex_options import cplex_options
+from ams.solver.pypower.cplex_options import cplex_options
 
 
 EPS = finfo(float).eps

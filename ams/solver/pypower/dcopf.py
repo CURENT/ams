@@ -5,9 +5,9 @@
 """Solves a DC optimal power flow.
 """
 
-from pypower.opf_args import opf_args2
-from pypower.ppoption import ppoption
-from pypower.opf import opf
+from ams.solver.pypower.opf_args import opf_args2
+from ams.solver.pypower.ppoption import ppoption
+from ams.solver.pypower.opf import opf
 
 
 def dcopf(*args, **kw_args):

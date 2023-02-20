@@ -6,8 +6,8 @@ import sys
 
 from numpy import arange, concatenate
 
-from pypower.get_reorder import get_reorder
-from pypower.set_reorder import set_reorder
+from ams.solver.pypower.get_reorder import get_reorder
+from ams.solver.pypower.set_reorder import set_reorder
 
 
 def i2e_data(ppc, val, oldval, ordering, dim=0):
@@ -53,7 +53,7 @@ def i2e_data(ppc, val, oldval, ordering, dim=0):
 
     @see: L{e2i_data}, L{i2e_field}, L{int2ext}.
     """
-    from pypower.int2ext import int2ext
+    from ams.solver.pypower.int2ext import int2ext
 
     if 'order' not in ppc:
         sys.stderr.write('i2e_data: ppc does not have the \'order\' field '

@@ -9,15 +9,15 @@ from time import time
 
 from numpy import zeros, c_, shape, ix_
 
-from pypower.idx_bus import MU_VMIN
-from pypower.idx_gen import PG, QG, MU_QMIN, MU_PMAX, MU_PMIN
-from pypower.idx_brch import PF, QF, PT, QT, MU_SF, MU_ST, MU_ANGMIN, MU_ANGMAX
+from ams.solver.pypower.idx_bus import MU_VMIN
+from ams.solver.pypower.idx_gen import PG, QG, MU_QMIN, MU_PMAX, MU_PMIN
+from ams.solver.pypower.idx_brch import PF, QF, PT, QT, MU_SF, MU_ST, MU_ANGMIN, MU_ANGMAX
 
-from pypower.ext2int import ext2int
-from pypower.opf_args import opf_args2
-from pypower.opf_setup import opf_setup
-from pypower.opf_execute import opf_execute
-from pypower.int2ext import int2ext
+from ams.solver.pypower.ext2int import ext2int
+from ams.solver.pypower.opf_args import opf_args2
+from ams.solver.pypower.opf_setup import opf_setup
+from ams.solver.pypower.opf_execute import opf_execute
+from ams.solver.pypower.int2ext import int2ext
 
 
 def opf(*args):
