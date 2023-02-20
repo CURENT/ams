@@ -22,15 +22,15 @@ def runopf(casedata=None, ppopt=None, fname='', solvedcase=''):
 
     @author: Ray Zimmerman (PSERC Cornell)
     """
-    ## default arguments
+    # default arguments
     if casedata is None:
         casedata = join(dirname(__file__), 'case9')
     ppopt = ppoption(ppopt)
 
-    ##-----  run the optimal power flow  -----
+    # -----  run the optimal power flow  -----
     r = opf(casedata, ppopt)
 
-    ##-----  output results  -----
+    # -----  output results  -----
     if fname:
         fd = None
         try:
@@ -46,13 +46,23 @@ def runopf(casedata=None, ppopt=None, fname='', solvedcase=''):
         # printpf(r, stdout, ppopt)
         pass
 
-    ## save solved case
+    # save solved case
     if solvedcase:
         savecase(solvedcase, r)
 
     return r
 
 
-if __name__ == '__main__':
-    ppopt = ppoption(OPF_ALG=580)
-    runopf(None, ppopt)
+def rundcopf(casedata=None, ppopt=None, fname='', solvedcase=''):
+    """Runs a DC optimal power flow.
+
+    @see: L{runopf}, L{runduopf}
+
+    @author: Ray Zimmerman (PSERC Cornell)
+    """
+    # default arguments
+    if casedata is None:
+        casedata = join(dirname(__file__), 'case9')
+    ppopt = ppoption(ppopt, PF_DC=True)
+
+    return runopf(casedata, ppopt, fname, solvedcase)
