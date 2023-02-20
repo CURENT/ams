@@ -3,6 +3,7 @@ Runs a power flow.
 """
 
 from sys import stdout, stderr
+import logging
 
 from os.path import dirname, join
 
@@ -32,6 +33,9 @@ from ams.solver.pypower.int2ext import int2ext
 from ams.solver.pypower.idx_bus import PD, QD, VM, VA, GS, BUS_TYPE, PV, PQ, REF
 from ams.solver.pypower.idx_brch import PF, PT, QF, QT
 from ams.solver.pypower.idx_gen import PG, QG, VG, QMAX, QMIN, GEN_BUS, GEN_STATUS
+
+
+logger = logging.getLogger(__name__)
 
 
 def runpf(casedata=None, ppopt=None, fname='', solvedcase=''):
@@ -101,13 +105,12 @@ def runpf(casedata=None, ppopt=None, fname='', solvedcase=''):
 
     # -----  run the power flow  -----
     t0 = time()
-    if verbose > 0:
-        v = ppver('all')
-        stdout.write('PYPOWER Version %s, %s' % (v["Version"], v["Date"]))
+    v = ppver('all')
+    msg_pypower = 'PYPOWER Version %s, %s' % (v["Version"], v["Date"])
+    logger.debug(msg_pypower)
 
     if dc:                               # DC formulation
-        if verbose:
-            stdout.write(' -- DC Power Flow\n')
+        logger.warning("DC Power Flow")
 
         # initial state
         Va0 = bus[:, VA] * (pi / 180)
