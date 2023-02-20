@@ -1,4 +1,4 @@
-.. _input-pypower:
+.. _input-matpower:
 
 MATPOWER
 --------
