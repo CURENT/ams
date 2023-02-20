@@ -1,11 +1,14 @@
-"""
-Computes partial derivatives of power flows w.r.t. voltage.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+"""Computes partial derivatives of power flows w.r.t. voltage.
 """
 
-from numpy import conj, arange, diag, zeros, asmatrix, asarray
+from numpy import conj, arange, diag, zeros, asmatrix, asarray, asscalar
 from scipy.sparse import issparse, csr_matrix as sparse
 
-from ams.solver.pypower.idx_brch import F_BUS, T_BUS
+from pypower.idx_brch import F_BUS, T_BUS
 
 def dSbr_dV(branch, Yf, Yt, V):
     """Computes partial derivatives of power flows w.r.t. voltage.
@@ -59,8 +62,8 @@ def dSbr_dV(branch, Yf, Yt, V):
     @author: Ray Zimmerman (PSERC Cornell)
     """
     ## define
-    f = branch[:, F_BUS].real.astype(int)       ## list of "from" buses
-    t = branch[:, T_BUS].real.astype(int)       ## list of "to" buses
+    f = branch[:, F_BUS].astype(int)       ## list of "from" buses
+    t = branch[:, T_BUS].astype(int)       ## list of "to" buses
     nl = len(f)
     nb = len(V)
     il = arange(nl)
@@ -111,10 +114,10 @@ def dSbr_dV(branch, Yf, Yt, V):
         temp4       = asmatrix( zeros((nl, nb), complex) )
         for i in range(nl):
             fi, ti = f[i], t[i]
-            temp1[i, fi] = V[fi].item()
-            temp2[i, fi] = Vnorm[fi].item()
-            temp3[i, ti] = V[ti].item()
-            temp4[i, ti] = Vnorm[ti].item()
+            temp1[i, fi] = asscalar(V[fi])
+            temp2[i, fi] = asscalar(Vnorm[fi])
+            temp3[i, ti] = asscalar(V[ti])
+            temp4[i, ti] = asscalar(Vnorm[ti])
 
         dSf_dVa = 1j * (conj(diagIf) * temp1 - diagVf * conj(Yf * diagV))
         dSf_dVm = diagVf * conj(Yf * diagVnorm) + conj(diagIf) * temp2

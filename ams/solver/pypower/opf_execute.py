@@ -1,12 +1,6 @@
-# -*- coding: utf-8 -*-
-
-# Copyright 1996-2015 PSERC. All rights reserved.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
-
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
-# and Energy System Technology (IEE), Kassel. All rights reserved.
-
 
 """Executes the OPF specified by an OPF model object.
 """
@@ -14,19 +8,19 @@
 from sys import stdout, stderr
 
 from numpy import array, arange, pi, zeros, r_
-from ams.solver.pypower.dcopf_solver import dcopf_solver
-from ams.solver.pypower.idx_brch import MU_ANGMIN, MU_ANGMAX
-from ams.solver.pypower.idx_bus import VM
-from ams.solver.pypower.idx_gen import GEN_BUS, VG
-#from ams.solver.pypower.ipoptopf_solver import ipoptopf_solver
-from ams.solver.pypower.makeYbus import makeYbus
-from ams.solver.pypower.opf_consfcn import opf_consfcn
-from ams.solver.pypower.opf_costfcn import opf_costfcn
 
-from ams.solver.pypower.ppver import ppver
-from ams.solver.pypower.update_mupq import update_mupq
+from pypower.ppver import ppver
+from pypower.dcopf_solver import dcopf_solver
+from pypower.pipsopf_solver import pipsopf_solver
+from pypower.ipoptopf_solver import ipoptopf_solver
+from pypower.update_mupq import update_mupq
+from pypower.makeYbus import makeYbus
+from pypower.opf_consfcn import opf_consfcn
+from pypower.opf_costfcn import opf_costfcn
 
-from ams.solver.pypower.pipsopf_solver import pipsopf_solver #temporary changed import to match bugfix path
+from pypower.idx_bus import VM
+from pypower.idx_gen import GEN_BUS, VG
+from pypower.idx_brch import MU_ANGMIN, MU_ANGMAX
 
 
 def opf_execute(om, ppopt):
@@ -38,7 +32,6 @@ def opf_execute(om, ppopt):
     @see: L{opf}, L{opf_setup}
 
     @author: Ray Zimmerman (PSERC Cornell)
-    @author: Richard Lincoln
     """
     ##-----  setup  -----
     ## options
@@ -86,14 +79,14 @@ def opf_execute(om, ppopt):
         ## run specific AC OPF solver
         if alg == 560 or alg == 565:                   ## PIPS
             results, success, raw = pipsopf_solver(om, ppopt)
-#        elif alg == 580:                              ## IPOPT # pragma: no cover
-#            try:
-#                __import__('pyipopt')
-#                results, success, raw = ipoptopf_solver(om, ppopt)
-#            except ImportError:
-#                raise ImportError('OPF_ALG %d requires IPOPT '
-#                                  '(see https://projects.coin-or.org/Ipopt/)' %
-#                                  alg)
+        elif alg == 580:                              ## IPOPT
+            try:
+                __import__('pyipopt')
+                results, success, raw = ipoptopf_solver(om, ppopt)
+            except ImportError:
+                raise ImportError('OPF_ALG %d requires IPOPT '
+                                  '(see https://projects.coin-or.org/Ipopt/)' %
+                                  alg)
         else:
             stderr.write('opf_execute: OPF_ALG %d is not a valid algorithm code\n' % alg)
 
@@ -106,14 +99,14 @@ def opf_execute(om, ppopt):
             results['gen'][:, VG] = results['bus'][results['gen'][:, GEN_BUS].astype(int), VM]
 
             ## gen PQ capability curve multipliers
-            if (ll['N']['PQh'] > 0) | (ll['N']['PQl'] > 0): # pragma: no cover
+            if (ll['N']['PQh'] > 0) | (ll['N']['PQl'] > 0):
                 mu_PQh = results['mu']['lin']['l'][ll['i1']['PQh']:ll['iN']['PQh']] - results['mu']['lin']['u'][ll['i1']['PQh']:ll['iN']['PQh']]
                 mu_PQl = results['mu']['lin']['l'][ll['i1']['PQl']:ll['iN']['PQl']] - results['mu']['lin']['u'][ll['i1']['PQl']:ll['iN']['PQl']]
                 Apqdata = om.userdata('Apqdata')
                 results['gen'] = update_mupq(results['baseMVA'], results['gen'], mu_PQh, mu_PQl, Apqdata)
 
             ## compute g, dg, f, df, d2f if requested by RETURN_RAW_DER = 1
-            if ppopt['RETURN_RAW_DER']: # pragma: no cover
+            if ppopt['RETURN_RAW_DER']:
                 ## move from results to raw if using v4.0 of MINOPF or TSPOPF
                 if 'dg' in results:
                     raw = {}

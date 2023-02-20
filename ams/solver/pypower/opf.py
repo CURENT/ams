@@ -1,28 +1,26 @@
-# -*- coding: utf-8 -*-
-
-# Copyright 1996-2015 PSERC. All rights reserved.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
-
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
-# and Energy System Technology (IEE), Kassel. All rights reserved.
 
 """Solves an optimal power flow.
 """
 
-from time import perf_counter
+from time import time
 
-from numpy import zeros, c_, shape
-from ams.solver.pypower.idx_brch import MU_ANGMAX
-from ams.solver.pypower.idx_bus import MU_VMIN
-from ams.solver.pypower.idx_gen import MU_QMIN
+from numpy import zeros, c_, shape, ix_
 
-from ams.solver.pypower.opf_args import opf_args2
-from ams.solver.pypower.opf_execute import opf_execute
-from ams.solver.pypower.opf_setup import opf_setup
+from pypower.idx_bus import MU_VMIN
+from pypower.idx_gen import PG, QG, MU_QMIN, MU_PMAX, MU_PMIN
+from pypower.idx_brch import PF, QF, PT, QT, MU_SF, MU_ST, MU_ANGMIN, MU_ANGMAX
+
+from pypower.ext2int import ext2int
+from pypower.opf_args import opf_args2
+from pypower.opf_setup import opf_setup
+from pypower.opf_execute import opf_execute
+from pypower.int2ext import int2ext
 
 
-def opf(ppc, ppopt):
+def opf(*args):
     """Solves an optimal power flow.
 
     Returns a C{results} dict.
@@ -144,13 +142,12 @@ def opf(ppc, ppopt):
     @author: Ray Zimmerman (PSERC Cornell)
     @author: Carlos E. Murillo-Sanchez (PSERC Cornell & Universidad
     Autonoma de Manizales)
-    @author: Richard Lincoln
     """
     ##----- initialization -----
-    t0 = perf_counter()         ## start timer
+    t0 = time()         ## start timer
 
     ## process input arguments
-    ppc, ppopt = opf_args2(ppc, ppopt)
+    ppc, ppopt = opf_args2(*args)
 
     ## add zero columns to bus, gen, branch for multipliers, etc if needed
     nb   = shape(ppc['bus'])[0]    ## number of buses
@@ -166,7 +163,7 @@ def opf(ppc, ppopt):
         ppc['branch'] = c_[ppc['branch'], zeros((nl, MU_ANGMAX + 1 - shape(ppc['branch'])[1]))]
 
     ##-----  convert to internal numbering, remove out-of-service stuff  -----
-    # ppc = ext2int(ppc)
+    ppc = ext2int(ppc)
 
     ##-----  construct OPF model object  -----
     om = opf_setup(ppc, ppopt)
@@ -175,17 +172,17 @@ def opf(ppc, ppopt):
     results, success, raw = opf_execute(om, ppopt)
 
     ##-----  revert to original ordering, including out-of-service stuff  -----
-    # results = int2ext(results)
+    results = int2ext(results)
 
     ## zero out result fields of out-of-service gens & branches
-    # if len(results['order']['gen']['status']['off']) > 0:
-    #     results['gen'][ ix_(results['order']['gen']['status']['off'], [PG, QG, MU_PMAX, MU_PMIN]) ] = 0
-    #
-    # if len(results['order']['branch']['status']['off']) > 0:
-    #     results['branch'][ ix_(results['order']['branch']['status']['off'], [PF, QF, PT, QT, MU_SF, MU_ST, MU_ANGMIN, MU_ANGMAX]) ] = 0
+    if len(results['order']['gen']['status']['off']) > 0:
+        results['gen'][ ix_(results['order']['gen']['status']['off'], [PG, QG, MU_PMAX, MU_PMIN]) ] = 0
+
+    if len(results['order']['branch']['status']['off']) > 0:
+        results['branch'][ ix_(results['order']['branch']['status']['off'], [PF, QF, PT, QT, MU_SF, MU_ST, MU_ANGMIN, MU_ANGMAX]) ] = 0
 
     ##-----  finish preparing output  -----
-    et = perf_counter() - t0      ## compute elapsed time
+    et = time() - t0      ## compute elapsed time
 
     results['et'] = et
     results['success'] = success

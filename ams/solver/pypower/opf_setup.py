@@ -1,33 +1,32 @@
-# -*- coding: utf-8 -*-
-
-# Copyright 1996-2015 PSERC. All rights reserved.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
-
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
-# and Energy System Technology (IEE), Kassel. All rights reserved.
-
 
 """Constructs an OPF model object from a PYPOWER case dict.
 """
 
 from sys import stdout, stderr
 
-from numpy import array, any, delete, unique, arange, nonzero, pi, r_, ones, Inf, flatnonzero as find
+from numpy import array, any, delete, unique, arange, nonzero, pi, \
+    r_, ones, Inf
+from numpy import flatnonzero as find
+
 from scipy.sparse import hstack, csr_matrix as sparse
-from ams.solver.pypower.idx_brch import RATE_A
-from ams.solver.pypower.idx_bus import BUS_TYPE, REF, VA, VM, PD, GS, VMAX, VMIN
-from ams.solver.pypower.idx_cost import MODEL, NCOST, PW_LINEAR, COST, POLYNOMIAL
-from ams.solver.pypower.idx_gen import GEN_BUS, VG, PG, QG, PMAX, PMIN, QMAX, QMIN
-from ams.solver.pypower.makeAang import makeAang
-from ams.solver.pypower.makeApq import makeApq
-from ams.solver.pypower.makeAvl import makeAvl
-from ams.solver.pypower.makeAy import makeAy
-from ams.solver.pypower.makeBdc import makeBdc
-from ams.solver.pypower.opf_args import opf_args
-from ams.solver.pypower.pqcost import pqcost
-from ams.solver.pypower.run_userfcn import run_userfcn
-from ams.solver.pypower.opf_model import opf_model
+
+from pypower.pqcost import pqcost
+from pypower.opf_args import opf_args
+from pypower.makeBdc import makeBdc
+from pypower.makeAvl import makeAvl
+from pypower.makeApq import makeApq
+from pypower.makeAang import makeAang
+from pypower.makeAy import makeAy
+from pypower.opf_model import opf_model
+from pypower.run_userfcn import run_userfcn
+
+from pypower.idx_cost import MODEL, NCOST, PW_LINEAR, COST, POLYNOMIAL
+from pypower.idx_bus import BUS_TYPE, REF, VA, VM, PD, GS, VMAX, VMIN
+from pypower.idx_gen import GEN_BUS, VG, PG, QG, PMAX, PMIN, QMAX, QMIN
+from pypower.idx_brch import RATE_A
 
 
 def opf_setup(ppc, ppopt):
@@ -41,9 +40,6 @@ def opf_setup(ppc, ppopt):
     @author: Ray Zimmerman (PSERC Cornell)
     @author: Carlos E. Murillo-Sanchez (PSERC Cornell & Universidad
     Autonoma de Manizales)
-    @author: Richard Lincoln
-
-    Modified by University of Kassel (Friederike Meier): Bugfix in line 110
     """
     ## options
     dc  = ppopt['PF_DC']        ## 1 = DC OPF, 0 = AC OPF
@@ -69,7 +65,7 @@ def opf_setup(ppc, ppopt):
         ppc['gencost'], _ = pqcost(ppc['gencost'], ng)
 
         ## reduce A and/or N from AC dimensions to DC dimensions, if needed
-        if nusr or nw: # pragma: no cover
+        if nusr or nw:
             acc = r_[nb + arange(nb), 2 * nb + ng + arange(ng)]   ## Vm and Qg columns
 
             if nusr and (ppc['A'].shape[1] >= 2*nb + 2*ng):
@@ -94,7 +90,7 @@ def opf_setup(ppc, ppopt):
                 bcc = delete(arange(ppc['N'].shape[1]), acc)
                 ppc['N'] = ppc['N'].tolil()[:, bcc].tocsr()               ## delete Vm and Qg columns
 
-#    ## convert single-block piecewise-linear costs into linear polynomial cost
+    ## convert single-block piecewise-linear costs into linear polynomial cost
     pwl1 = find((ppc['gencost'][:, MODEL] == PW_LINEAR) & (ppc['gencost'][:, NCOST] == 2))
     # p1 = array([])
     if len(pwl1) > 0:
@@ -106,7 +102,7 @@ def opf_setup(ppc, ppopt):
         b = y0 - m * x0
         ppc['gencost'][pwl1, MODEL] = POLYNOMIAL
         ppc['gencost'][pwl1, NCOST] = 2
-        ppc['gencost'][pwl1, COST:COST + 2] = r_['1',m.reshape(len(m),1), b.reshape(len(b),1)] # changed from ppc['gencost'][pwl1, COST:COST + 2] = r_[m, b] because we need to make sure, that m and b have the same shape, resulted in a value error due to shape mismatch before
+        ppc['gencost'][pwl1, COST:COST + 2] = r_[m, b]
 
     ## create (read-only) copies of individual fields for convenience
     baseMVA, bus, gen, branch, gencost, _, lbu, ubu, ppopt, \
@@ -140,7 +136,7 @@ def opf_setup(ppc, ppopt):
         q1    = array([])    ## index of 1st Qg column in Ay
 
         ## power mismatch constraints
-        B, Bf, Pbusinj, Pfinj, _ = makeBdc(bus, branch)
+        B, Bf, Pbusinj, Pfinj = makeBdc(baseMVA, bus, branch)
         neg_Cg = sparse((-ones(ng), (gen[:, GEN_BUS], arange(ng))), (nb, ng))   ## Pbus w.r.t. Pg
         Amis = hstack([B, neg_Cg], 'csr')
         bmis = -(bus[:, PD] + bus[:, GS]) / baseMVA - Pbusinj
@@ -179,7 +175,7 @@ def opf_setup(ppc, ppopt):
     Aang, lang, uang, iang  = makeAang(baseMVA, branch, nb, ppopt)
 
     ## basin constraints for piece-wise linear gen cost variables
-    if alg == 545 or alg == 550:     ## SC-PDIPM or TRALM, no CCV cost vars # pragma: no cover
+    if alg == 545 or alg == 550:     ## SC-PDIPM or TRALM, no CCV cost vars
         ny = 0
         Ay = None
         by = array([])
@@ -192,8 +188,8 @@ def opf_setup(ppc, ppopt):
         stderr.write('opf_setup: some generator cost rows have invalid MODEL value\n')
 
     ## more problem dimensions
-    nx = nb+nv + ng+nq  ## number of standard OPF control variables
-    if nusr: # pragma: no cover
+    nx = nb+nv + ng+nq;  ## number of standard OPF control variables
+    if nusr:
         nz = ppc['A'].shape[1] - nx  ## number of user z variables
         if nz < 0:
             stderr.write('opf_setup: user supplied A matrix must have at least %d columns.\n' % nx)
@@ -238,6 +234,29 @@ def opf_setup(ppc, ppopt):
     if ny > 0:
         om.add_vars('y', ny)
         om.add_constraints('ycon', Ay, array([]), by, ycon_vars)          ## ncony
+
+    ## add user vars, constraints and costs (as specified via A, ..., N, ...)
+    if nz > 0:
+        om.add_vars('z', nz, z0, zl, zu)
+        user_vars.append('z')
+
+    if nusr:
+        om.add_constraints('usr', ppc['A'], lbu, ubu, user_vars)      ## nusr
+
+    if nw:
+        user_cost = {}
+        user_cost['N'] = ppc['N']
+        user_cost['Cw'] = Cw
+        if len(fparm) > 0:
+            user_cost['dd'] = fparm[:, 0]
+            user_cost['rh'] = fparm[:, 1]
+            user_cost['kk'] = fparm[:, 2]
+            user_cost['mm'] = fparm[:, 3]
+
+#        if len(H) > 0:
+        user_cost['H'] = H
+
+        om.add_costs('usr', user_cost, user_vars)
 
     ## execute userfcn callbacks for 'formulation' stage
     run_userfcn(userfcn, 'formulation', om)

@@ -1,12 +1,17 @@
-"""
-Builds the bus admittance matrix and branch admittance matrices.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+"""Builds the bus admittance matrix and branch admittance matrices.
 """
 
-from numpy import ones, conj, nonzero, any, exp, pi, hstack, real
+from sys import stderr
+
+from numpy import ones, conj, nonzero, any, exp, pi, r_
 from scipy.sparse import csr_matrix
 
-from ams.solver.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS, SHIFT, TAP, BR_R_ASYM, BR_X_ASYM
-from ams.solver.pypower.idx_bus import GS, BS
+from pypower.idx_bus import BUS_I, GS, BS
+from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_STATUS, SHIFT, TAP
 
 
 def makeYbus(baseMVA, bus, branch):
@@ -21,11 +26,14 @@ def makeYbus(baseMVA, bus, branch):
     @see: L{makeSbus}
 
     @author: Ray Zimmerman (PSERC Cornell)
-    @author: Richard Lincoln
     """
     ## constants
-    nb = bus.shape[0]  ## number of buses
-    nl = branch.shape[0]  ## number of lines
+    nb = bus.shape[0]          ## number of buses
+    nl = branch.shape[0]       ## number of lines
+
+    ## check that bus numbers are equal to indices to bus (one set of bus nums)
+    if any(bus[:, BUS_I] != list(range(nb))):
+        stderr.write('buses must appear in order by bus number\n')
 
     ## for each branch, compute the elements of the branch admittance matrix where
     ##
@@ -33,7 +41,19 @@ def makeYbus(baseMVA, bus, branch):
     ##      |    | = |          | * |    |
     ##      | It |   | Ytf  Ytt |   | Vt |
     ##
-    Ytt, Yff, Yft, Ytf = branch_vectors(branch, nl)
+    stat = branch[:, BR_STATUS]              ## ones at in-service branches
+    Ys = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])  ## series admittance
+    Bc = stat * branch[:, BR_B]              ## line charging susceptance
+    tap = ones(nl)                           ## default tap ratio = 1
+    i = nonzero(branch[:, TAP])              ## indices of non-zero tap ratios
+    tap[i] = branch[i, TAP]                  ## assign non-zero tap ratios
+    tap = tap * exp(1j * pi / 180 * branch[:, SHIFT]) ## add phase shifters
+
+    Ytt = Ys + 1j * Bc / 2
+    Yff = Ytt / (tap * conj(tap))
+    Yft = - Ys / conj(tap)
+    Ytf = - Ys / tap
+
     ## compute shunt admittance
     ## if Psh is the real power consumed by the shunt at V = 1.0 p.u.
     ## and Qsh is the reactive power injected by the shunt at V = 1.0 p.u.
@@ -43,8 +63,8 @@ def makeYbus(baseMVA, bus, branch):
     Ysh = (bus[:, GS] + 1j * bus[:, BS]) / baseMVA
 
     ## build connection matrices
-    f = real(branch[:, F_BUS]).astype(int)  ## list of "from" buses
-    t = real(branch[:, T_BUS]).astype(int)  ## list of "to" buses
+    f = branch[:, F_BUS]                           ## list of "from" buses
+    t = branch[:, T_BUS]                           ## list of "to" buses
     ## connection matrix for line & from buses
     Cf = csr_matrix((ones(nl), (range(nl), f)), (nl, nb))
     ## connection matrix for line & to buses
@@ -52,39 +72,15 @@ def makeYbus(baseMVA, bus, branch):
 
     ## build Yf and Yt such that Yf * V is the vector of complex branch currents injected
     ## at each branch's "from" bus, and Yt is the same for the "to" bus end
-    i = hstack([range(nl), range(nl)])  ## double set of row indices
+    i = r_[range(nl), range(nl)]                   ## double set of row indices
 
-    Yf = csr_matrix((hstack([Yff, Yft]), (i, hstack([f, t]))), (nl, nb))
-    Yt = csr_matrix((hstack([Ytf, Ytt]), (i, hstack([f, t]))), (nl, nb))
+    Yf = csr_matrix((r_[Yff, Yft], (i, r_[f, t])), (nl, nb))
+    Yt = csr_matrix((r_[Ytf, Ytt], (i, r_[f, t])), (nl, nb))
     # Yf = spdiags(Yff, 0, nl, nl) * Cf + spdiags(Yft, 0, nl, nl) * Ct
     # Yt = spdiags(Ytf, 0, nl, nl) * Cf + spdiags(Ytt, 0, nl, nl) * Ct
 
     ## build Ybus
     Ybus = Cf.T * Yf + Ct.T * Yt + \
-           csr_matrix((Ysh, (range(nb), range(nb))), (nb, nb))
-    Ybus.sort_indices()
-    Ybus.eliminate_zeros()
+        csr_matrix((Ysh, (range(nb), range(nb))), (nb, nb))
 
     return Ybus, Yf, Yt
-
-
-def branch_vectors(branch, nl):
-    stat = branch[:, BR_STATUS]  ## ones at in-service branches
-    Ysf = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])  ## series admittance
-    print(branch.shape)
-    if any(branch[:, BR_R_ASYM]) or any(branch[:, BR_X_ASYM]):
-        Yst = stat / ((branch[:, BR_R] + branch[:, BR_R_ASYM]) + 1j * (
-                    branch[:, BR_X] + branch[:, BR_X_ASYM]))  ## series admittance
-    else:
-        Yst = Ysf
-    Bc = stat * branch[:, BR_B]  ## line charging susceptance
-    tap = ones(nl)  ## default tap ratio = 1
-    i = nonzero(real(branch[:, TAP]))  ## indices of non-zero tap ratios
-    tap[i] = real(branch[i, TAP])  ## assign non-zero tap ratios
-    tap = tap * exp(1j * pi / 180 * branch[:, SHIFT])  ## add phase shifters
-
-    Ytt = Yst + 1j * Bc / 2
-    Yff = (Ysf + 1j * Bc / 2) / (tap * conj(tap))
-    Yft = - Ysf / conj(tap)
-    Ytf = - Yst / tap
-    return Ytt, Yff, Yft, Ytf

@@ -1,5 +1,8 @@
-"""
-Solves the power flow using a full Newton's method.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+"""Solves the power flow using a full Newton's method.
 """
 
 import sys
@@ -9,8 +12,8 @@ from numpy import array, angle, exp, linalg, conj, r_, Inf
 from scipy.sparse import hstack, vstack
 from scipy.sparse.linalg import spsolve
 
-from ams.solver.pypower.dSbus_dV import dSbus_dV
-from ams.solver.pypower.ppoption import ppoption
+from pypower.dSbus_dV import dSbus_dV
+from pypower.ppoption import ppoption
 
 
 def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None):

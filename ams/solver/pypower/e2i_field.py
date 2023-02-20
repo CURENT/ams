@@ -1,8 +1,11 @@
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+"""Converts fields of ppc from external to internal indexing.
 """
-Converts fields of ppc from external to internal indexing.
-"""
-from ams.solver.pypower._compat import PY2
-from ams.solver.pypower.e2i_data import e2i_data  #@UnusedImport
+from pypower._compat import PY2
+from pypower.e2i_data import e2i_data  #@UnusedImport
 
 
 if not PY2:

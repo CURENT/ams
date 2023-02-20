@@ -7,13 +7,13 @@
 
 import sys
 
-from ams.solver.pypower.qps_pips import qps_pips
-#from ams.solver.pypower.qps_ipopt import qps_ipopt
-#from ams.solver.pypower.qps_cplex import qps_cplex
-#from ams.solver.pypower.qps_mosek import qps_mosek
-#from ams.solver.pypower.qps_gurobi import qps_gurobi
+from pypower.qps_pips import qps_pips
+from pypower.qps_ipopt import qps_ipopt
+from pypower.qps_cplex import qps_cplex
+from pypower.qps_mosek import qps_mosek
+from pypower.qps_gurobi import qps_gurobi
 
-from ams.solver.pypower.util import have_fcn
+from pypower.util import have_fcn
 
 
 def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None,
@@ -115,6 +115,25 @@ def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None,
 
     @author: Ray Zimmerman (PSERC Cornell)
     """
+    ##----- input argument handling  -----
+    ## gather inputs
+    if isinstance(H, dict):       ## problem struct
+        p = H
+        if 'opt' in p: opt = p['opt']
+        if 'x0' in p: x0 = p['x0']
+        if 'xmax' in p: xmax = p['xmax']
+        if 'xmin' in p: xmin = p['xmin']
+        if 'u' in p: u = p['u']
+        if 'l' in p: l = p['l']
+        if 'A' in p: A = p['A']
+        if 'c' in p: c = p['c']
+        if 'H' in p: H = p['H']
+    else:                         ## individual args
+#        assert H is not None  zero dimensional sparse matrices not supported
+        assert c is not None
+#        assert A is not None  zero dimensional sparse matrices not supported
+#        assert l is not None  no lower bounds indicated by None
+
     if opt is None:
         opt = {}
 #    if x0 is None:
@@ -135,43 +154,58 @@ def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None,
     else:
         verbose = 0
 
+    if alg == 0:
+        if have_fcn('cplex'):        ## use CPLEX by default, if available
+            alg = 500
+        elif have_fcn('mosek'):      ## if not, then MOSEK, if available
+            alg = 600
+        elif have_fcn('gurobipy'):   ## if not, then Gurobi, if available
+            alg = 700
+        else:                        ## otherwise PIPS
+            alg = 200
+
     ##----- call the appropriate solver  -----
-    # if alg == 0 or alg == 200 or alg == 250:    ## use MIPS or sc-MIPS
-    ## set up options
-    if 'pips_opt' in opt:
-        pips_opt = opt['pips_opt']
+    if alg == 200 or alg == 250:    ## use MIPS or sc-MIPS
+        ## set up options
+        if 'pips_opt' in opt:
+            pips_opt = opt['pips_opt']
+        else:
+            pips_opt = {}
+
+        if 'max_it' in opt:
+            pips_opt['max_it'] = opt['max_it']
+
+        if alg == 200:
+            pips_opt['step_control'] = False
+        else:
+            pips_opt['step_control'] = True
+
+        pips_opt['verbose'] = verbose
+
+        ## call solver
+        x, f, eflag, output, lmbda = \
+            qps_pips(H, c, A, l, u, xmin, xmax, x0, pips_opt)
+    elif alg == 400:                    ## use IPOPT
+        x, f, eflag, output, lmbda = \
+            qps_ipopt(H, c, A, l, u, xmin, xmax, x0, opt)
+    elif alg == 500:                    ## use CPLEX
+        x, f, eflag, output, lmbda = \
+            qps_cplex(H, c, A, l, u, xmin, xmax, x0, opt)
+    elif alg == 600:                    ## use MOSEK
+        x, f, eflag, output, lmbda = \
+            qps_mosek(H, c, A, l, u, xmin, xmax, x0, opt)
+    elif 700:                           ## use Gurobi
+        x, f, eflag, output, lmbda = \
+            qps_gurobi(H, c, A, l, u, xmin, xmax, x0, opt)
     else:
-        pips_opt = {}
-
-    if 'max_it' in opt:
-        pips_opt['max_it'] = opt['max_it']
-
-    if alg == 200:
-        pips_opt['step_control'] = False
-    else:
-        pips_opt['step_control'] = True
-
-    pips_opt['verbose'] = verbose
-
-    ## call solver
-    x, f, eflag, output, lmbda = \
-        qps_pips(H, c, A, l, u, xmin, xmax, x0, pips_opt)
-#    elif alg == 400:                    ## use IPOPT
-#        x, f, eflag, output, lmbda = \
-#            qps_ipopt(H, c, A, l, u, xmin, xmax, x0, opt)
-#    elif alg == 500:                    ## use CPLEX
-#        x, f, eflag, output, lmbda = \
-#            qps_cplex(H, c, A, l, u, xmin, xmax, x0, opt)
-#    elif alg == 600:                    ## use MOSEK
-#        x, f, eflag, output, lmbda = \
-#            qps_mosek(H, c, A, l, u, xmin, xmax, x0, opt)
-#    elif 700:                           ## use Gurobi
-#        x, f, eflag, output, lmbda = \
-#            qps_gurobi(H, c, A, l, u, xmin, xmax, x0, opt)
-#     else:
-#         print('qps_pypower: {} is not a valid algorithm code\n'.format(alg))
+        sys.stderr.write('qps_pypower: %d is not a valid algorithm code\n', alg)
 
     if 'alg' not in output:
         output['alg'] = alg
 
     return x, f, eflag, output, lmbda
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

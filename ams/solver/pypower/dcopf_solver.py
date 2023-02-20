@@ -1,5 +1,8 @@
-"""
-Solves a DC optimal power flow.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+"""Solves a DC optimal power flow.
 """
 
 from sys import stderr
@@ -13,17 +16,17 @@ from numpy import flatnonzero as find
 
 from scipy.sparse import vstack, hstack, csr_matrix as sparse
 
-from ams.solver.pypower.idx_bus import BUS_TYPE, REF, VA, LAM_P, LAM_Q, MU_VMAX, MU_VMIN
-from ams.solver.pypower.idx_gen import PG, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
-from ams.solver.pypower.idx_brch import PF, PT, QF, QT, RATE_A, MU_SF, MU_ST
-from ams.solver.pypower.idx_cost import MODEL, POLYNOMIAL, PW_LINEAR, NCOST, COST
+from pypower.idx_bus import BUS_TYPE, REF, VA, LAM_P, LAM_Q, MU_VMAX, MU_VMIN
+from pypower.idx_gen import PG, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
+from pypower.idx_brch import PF, PT, QF, QT, RATE_A, MU_SF, MU_ST
+from pypower.idx_cost import MODEL, POLYNOMIAL, PW_LINEAR, NCOST, COST
 
-from ams.solver.pypower.util import sub2ind, have_fcn
-#from ams.solver.pypower.ipopt_options import ipopt_options
-#from ams.solver.pypower.cplex_options import cplex_options
-#from ams.solver.pypower.mosek_options import mosek_options
-#from ams.solver.pypower.gurobi_options import gurobi_options
-from ams.solver.pypower.qps_pypower import qps_pypower
+from pypower.util import sub2ind, have_fcn
+from pypower.ipopt_options import ipopt_options
+from pypower.cplex_options import cplex_options
+from pypower.mosek_options import mosek_options
+from pypower.gurobi_options import gurobi_options
+from pypower.qps_pypower import qps_pypower
 
 
 def dcopf_solver(om, ppopt, out_opt=None):
@@ -66,7 +69,6 @@ def dcopf_solver(om, ppopt, out_opt=None):
     @author: Ray Zimmerman (PSERC Cornell)
     @author: Carlos E. Murillo-Sanchez (PSERC Cornell & Universidad
     Autonoma de Manizales)
-    @author: Richard Lincoln
     """
     if out_opt is None:
         out_opt = {}
@@ -78,17 +80,10 @@ def dcopf_solver(om, ppopt, out_opt=None):
     if alg == 0:
         if have_fcn('cplex'):        ## use CPLEX by default, if available
             alg = 500
-        # MOSEK is currently not supported
-#        elif have_fcn('mosek'):      ## if not, then MOSEK, if available
-#            alg = 600
+        elif have_fcn('mosek'):      ## if not, then MOSEK, if available
+            alg = 600
         elif have_fcn('gurobi'):     ## if not, then Gurobi, if available
-            # Error in Gurobi pypower solver -> Issue with pypower 5.1.4. Gurobi won't work. Using alg 200 instead
-            # Reason for failure: In qps_gurobi of pypower len(H) raises Error:
-            # TypeError: sparse matrix length is ambiguous; use getnnz() or shape[0]
-            # Todo: Fix Gurobi and activate 700 again. ATM: Fallback on 200
-            # alg = 700
-            alg = 200
-            UserWarning("Gurobi not working with pypower 5.1.4")
+            alg = 700
         else:                        ## otherwise PIPS
             alg = 200
 
@@ -137,7 +132,7 @@ def dcopf_solver(om, ppopt, out_opt=None):
 
     ## quadratic costs
     npol = len(ipol)
-    if any(len(gencost[ipol, NCOST] > 3)) and sum(gencost[find(gencost[ipol, NCOST] > 3)][:][NCOST+1:]):
+    if any(find(gencost[ipol, NCOST] > 3)):
         stderr.write('DC opf cannot handle polynomial costs with higher '
                      'than quadratic order.\n')
     iqdr = find(gencost[ipol, NCOST] == 3)
@@ -220,20 +215,16 @@ def dcopf_solver(om, ppopt, out_opt=None):
                              'max_it':  max_it,
                              'max_red': max_red,
                              'cost_mult': 1  }
-#    elif alg == 400:
-#        opt['ipopt_opt'] = ipopt_options([], ppopt)
-#    elif alg == 500:
-#        opt['cplex_opt'] = cplex_options([], ppopt)
-#    elif alg == 600:
-#        opt['mosek_opt'] = mosek_options([], ppopt)
-#    elif alg == 700:
-#        ppopt['GRB_OPT'] = 0
-#        ppopt['GRB_METHOD'] = "automatic"
-#        ppopt['GRB_TIMELIMIT'] = Inf
-#        ppopt['GRB_THREADS'] = 0
-#        opt['GRB_OPT'] = gurobi_options(None, ppopt)
-#    else:
-#        raise ValueError("Unrecognised solver [%d]." % alg)
+    elif alg == 400:
+        opt['ipopt_opt'] = ipopt_options([], ppopt)
+    elif alg == 500:
+        opt['cplex_opt'] = cplex_options([], ppopt)
+    elif alg == 600:
+        opt['mosek_opt'] = mosek_options([], ppopt)
+    elif alg == 700:
+        opt['grb_opt'] = gurobi_options([], ppopt)
+    else:
+        raise ValueError("Unrecognised solver [%d]." % alg)
 
     ##-----  run opf  -----
     x, f, info, output, lmbda = \
@@ -276,7 +267,7 @@ def dcopf_solver(om, ppopt, out_opt=None):
 
     pimul = r_[
       mu_l - mu_u,
-     -ones((ny)), ## dummy entry corresponding to linear cost row in A
+     -ones(int(ny > 0)), ## dummy entry corresponding to linear cost row in A
       muLB - muUB
     ]
 

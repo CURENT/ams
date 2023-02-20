@@ -1,5 +1,8 @@
-"""
-Solves the power flow using a fast decoupled method.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+"""Solves the power flow using a fast decoupled method.
 """
 
 import sys
@@ -7,7 +10,7 @@ import sys
 from numpy import array, angle, exp, linalg, conj, r_, Inf
 from scipy.sparse.linalg import splu
 
-from ams.solver.pypower.ppoption import ppoption
+from pypower.ppoption import ppoption
 
 
 def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt=None):

@@ -1,5 +1,8 @@
-"""
-Computes 2nd derivatives of complex branch current w.r.t. voltage.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+"""Computes 2nd derivatives of complex branch current w.r.t. voltage.
 """
 
 from numpy import ones, arange

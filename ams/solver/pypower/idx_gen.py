@@ -1,4 +1,4 @@
-# Copyright 1996-2015 PSERC. All rights reserved.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
@@ -78,9 +78,6 @@ MU_PMAX     = 21   # Kuhn-Tucker multiplier on upper Pg limit (u/MW)
 MU_PMIN     = 22   # Kuhn-Tucker multiplier on lower Pg limit (u/MW)
 MU_QMAX     = 23   # Kuhn-Tucker multiplier on upper Qg limit (u/MVAr)
 MU_QMIN     = 24   # Kuhn-Tucker multiplier on lower Qg limit (u/MVAr)
-
-# Additional added by pandapower
-SL_FAC     = 25   # Slack contribution factor
 
 # Note: When a generator's PQ capability curve is not simply a box and the
 # upper Qg limit is binding, the multiplier on this constraint is split into

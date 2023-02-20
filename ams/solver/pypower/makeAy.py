@@ -1,12 +1,15 @@
-"""
-Make the A matrix and RHS for the CCV formulation.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+"""Make the A matrix and RHS for the CCV formulation.
 """
 
 from numpy import array, diff, any, zeros, r_, flatnonzero as find
 #from scipy.sparse import csr_matrix as sparse
 from scipy.sparse import lil_matrix as sparse
 
-from ams.solver.pypower.idx_cost import MODEL, PW_LINEAR, NCOST, COST
+from pypower.idx_cost import MODEL, PW_LINEAR, NCOST, COST
 
 
 def makeAy(baseMVA, ng, gencost, pgbas, qgbas, ybas):

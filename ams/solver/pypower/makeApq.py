@@ -1,14 +1,17 @@
-"""
-Construct linear constraints for generator capability curves.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+"""Construct linear constraints for generator capability curves.
 """
 
 from numpy import array, linalg, zeros, arange, r_, c_
 from numpy import flatnonzero as find
 from scipy.sparse import csr_matrix as sparse
 
-from ams.solver.pypower.idx_gen import PC1, PC2, QC1MIN, QC1MAX, QC2MIN, QC2MAX
+from pypower.idx_gen import PC1, PC2, QC1MIN, QC1MAX, QC2MIN, QC2MAX
 
-from ams.solver.pypower.hasPQcap import hasPQcap
+from pypower.hasPQcap import hasPQcap
 
 
 def makeApq(baseMVA, gen):

@@ -1,12 +1,15 @@
-"""
-Solves the power flow using a Gauss-Seidel method.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+"""Solves the power flow using a Gauss-Seidel method.
 """
 
 import sys
 
-from numpy import linalg, conj, r_, Inf
+from numpy import linalg, conj, r_, Inf, asscalar
 
-from ams.solver.pypower.ppoption import ppoption
+from pypower.ppoption import ppoption
 
 
 def gausspf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None):
@@ -77,15 +80,16 @@ def gausspf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None):
         ## at PQ buses
         for k in pq[list(range(npq))]:
             tmp = (conj(Sbus[k] / V[k]) - Ybus[k, :] * V) / Ybus[k, k]
-            V[k] = V[k] + tmp.item()
+            V[k] = V[k] + asscalar(tmp)
 
         ## at PV buses
         if npv:
             for k in pv[list(range(npv))]:
                 tmp = (V[k] * conj(Ybus[k,:] * V)).imag
-                Sbus[k] = Sbus[k].real + 1j * tmp.item()
+                Sbus[k] = Sbus[k].real + 1j * asscalar(tmp)
                 tmp = (conj(Sbus[k] / V[k]) - Ybus[k, :] * V) / Ybus[k, k]
-                V[k] = V[k] + tmp.item()
+                V[k] = V[k] + asscalar(tmp)
+#               V[k] = Vm[k] * V[k] / abs(V[k])
             V[pv] = Vm[pv] * V[pv] / abs(V[pv])
 
         ## evalute F(x)

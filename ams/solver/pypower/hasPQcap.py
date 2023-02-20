@@ -1,12 +1,15 @@
-"""
-Checks for P-Q capability curve constraints.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+"""Checks for P-Q capability curve constraints.
 """
 
 from sys import stderr
 
 from numpy import any, zeros, nonzero
 
-from ams.solver.pypower.idx_gen import QMAX, QMIN, PMAX, PC1, PC2, QC1MIN, QC1MAX, QC2MIN, QC2MAX
+from pypower.idx_gen import QMAX, QMIN, PMAX, PC1, PC2, QC1MIN, QC1MAX, QC2MIN, QC2MAX
 
 
 def hasPQcap(gen, hilo='B'):

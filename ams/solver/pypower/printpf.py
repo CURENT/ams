@@ -13,20 +13,20 @@ from numpy import \
 
 from numpy import flatnonzero as find
 
-from ams.solver.pypower.idx_bus import BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, \
+from pypower.idx_bus import BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, \
     VM, VA, VMAX, VMIN, LAM_P, LAM_Q, MU_VMAX, MU_VMIN, REF
-from ams.solver.pypower.idx_gen import GEN_BUS, PG, QG, QMAX, QMIN, GEN_STATUS, \
+from pypower.idx_gen import GEN_BUS, PG, QG, QMAX, QMIN, GEN_STATUS, \
     PMAX, PMIN, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
-from ams.solver.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, \
+from pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, \
     TAP, SHIFT, BR_STATUS, PF, QF, PT, QT, MU_SF, MU_ST
 
-from ams.solver.pypower.isload import isload
-from ams.solver.pypower.run_userfcn import run_userfcn
-from ams.solver.pypower.ppoption import ppoption
+from pypower.isload import isload
+from pypower.run_userfcn import run_userfcn
+from pypower.ppoption import ppoption
 
 
 def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
-            et=None, fd=None, ppopt=None): # pragma: no cover
+            et=None, fd=None, ppopt=None):
     """Prints power flow results.
 
     Prints power flow and optimal power flow results to C{fd} (a file
@@ -141,12 +141,12 @@ def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
         branch[:, r_[BR_R, BR_B]]   = zeros((nl, 2))
 
     ## parameters
-    ties = find(bus[e2i[branch[:, F_BUS].real.astype(int)], BUS_AREA] !=
-                   bus[e2i[branch[:, T_BUS].real.astype(int)], BUS_AREA])
+    ties = find(bus[e2i[branch[:, F_BUS].astype(int)], BUS_AREA] !=
+                   bus[e2i[branch[:, T_BUS].astype(int)], BUS_AREA])
                             ## area inter-ties
     tap = ones(nl)                           ## default tap ratio = 1 for lines
-    xfmr = find(branch[:, TAP]).real           ## indices of transformers
-    tap[xfmr] = branch[xfmr, TAP].real           ## include transformer tap ratios
+    xfmr = find(branch[:, TAP])           ## indices of transformers
+    tap[xfmr] = branch[xfmr, TAP]            ## include transformer tap ratios
     tap = tap * exp(-1j * pi / 180 * branch[:, SHIFT]) ## add phase shifters
     nzld = find((bus[:, PD] != 0.0) | (bus[:, QD] != 0.0))
     sorted_areas = sort(bus[:, BUS_AREA])
@@ -162,12 +162,12 @@ def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
     if isDC:
         loss = zeros(nl)
     else:
-        loss = baseMVA * abs(V[e2i[ branch[:, F_BUS].real.astype(int) ]] / tap -
-                             V[e2i[ branch[:, T_BUS].real.astype(int) ]])**2 / \
+        loss = baseMVA * abs(V[e2i[ branch[:, F_BUS].astype(int) ]] / tap -
+                             V[e2i[ branch[:, T_BUS].astype(int) ]])**2 / \
                     (branch[:, BR_R] - 1j * branch[:, BR_X])
 
-    fchg = abs(V[e2i[ branch[:, F_BUS].real.astype(int) ]] / tap)**2 * branch[:, BR_B].real * baseMVA / 2
-    tchg = abs(V[e2i[ branch[:, T_BUS].real.astype(int) ]]      )**2 * branch[:, BR_B].real * baseMVA / 2
+    fchg = abs(V[e2i[ branch[:, F_BUS].astype(int) ]] / tap)**2 * branch[:, BR_B] * baseMVA / 2
+    tchg = abs(V[e2i[ branch[:, T_BUS].astype(int) ]]      )**2 * branch[:, BR_B] * baseMVA / 2
     loss[out] = zeros(nout)
     fchg[out] = zeros(nout)
     tchg[out] = zeros(nout)
@@ -186,7 +186,7 @@ def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
 
     if OUT_SYS_SUM:
         fd.write('\n================================================================================')
-        fd.write('\n| PyPower (ppci) System Summary - these are not valid for pandapower DataFrames|')
+        fd.write('\n|     System Summary                                                           |')
         fd.write('\n================================================================================')
         fd.write('\n\nHow many?                How much?              P (MW)            Q (MVAr)')
         fd.write('\n---------------------    -------------------  -------------  -----------------')
@@ -218,10 +218,10 @@ def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
         if not isDC:
             maxv = max(loss.real)
             maxi = argmax(loss.real)
-            fd.write('\nP Losses (I^2*R)             -              %8.2f MW    @ line %d-%d' % (maxv, branch[maxi, F_BUS].real, branch[maxi, T_BUS].real))
+            fd.write('\nP Losses (I^2*R)             -              %8.2f MW    @ line %d-%d' % (maxv, branch[maxi, F_BUS], branch[maxi, T_BUS]))
             maxv = max(loss.imag)
             maxi = argmax(loss.imag)
-            fd.write('\nQ Losses (I^2*X)             -              %8.2f MVAr  @ line %d-%d' % (maxv, branch[maxi, F_BUS].real, branch[maxi, T_BUS].real))
+            fd.write('\nQ Losses (I^2*X)             -              %8.2f MVAr  @ line %d-%d' % (maxv, branch[maxi, F_BUS], branch[maxi, T_BUS]))
         if isOPF:
             minv = min(bus[:, LAM_P])
             mini = argmin(bus[:, LAM_P])
@@ -250,13 +250,13 @@ def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
             ildon = find((bus[e2i[gen[:, GEN_BUS].astype(int)], BUS_AREA] == a) & (gen[:, GEN_STATUS] > 0) & isload(gen))
             inzld = find((bus[:, BUS_AREA] == a) & logical_or(bus[:, PD], bus[:, QD]))
             inzsh = find((bus[:, BUS_AREA] == a) & logical_or(bus[:, GS], bus[:, BS]))
-            ibrch = find((bus[e2i[branch[:, F_BUS].real.astype(int)], BUS_AREA] == a) & (bus[e2i[branch[:, T_BUS].real.astype(int)], BUS_AREA] == a))
-            in_tie = find((bus[e2i[branch[:, F_BUS].real.astype(int)], BUS_AREA] == a) & (bus[e2i[branch[:, T_BUS].real.astype(int)], BUS_AREA] != a))
-            out_tie = find((bus[e2i[branch[:, F_BUS].real.astype(int)], BUS_AREA] != a) & (bus[e2i[branch[:, T_BUS].real.astype(int)], BUS_AREA] == a))
+            ibrch = find((bus[e2i[branch[:, F_BUS].astype(int)], BUS_AREA] == a) & (bus[e2i[branch[:, T_BUS].astype(int)], BUS_AREA] == a))
+            in_tie = find((bus[e2i[branch[:, F_BUS].astype(int)], BUS_AREA] == a) & (bus[e2i[branch[:, T_BUS].astype(int)], BUS_AREA] != a))
+            out_tie = find((bus[e2i[branch[:, F_BUS].astype(int)], BUS_AREA] != a) & (bus[e2i[branch[:, T_BUS].astype(int)], BUS_AREA] == a))
             if not any(xfmr + 1):
                 nxfmr = 0
             else:
-                nxfmr = len(find((bus[e2i[branch[xfmr, F_BUS].real.astype(int)], BUS_AREA] == a) & (bus[e2i[branch[xfmr, T_BUS].real.astype(int)], BUS_AREA] == a)))
+                nxfmr = len(find((bus[e2i[branch[xfmr, F_BUS].astype(int)], BUS_AREA] == a) & (bus[e2i[branch[xfmr, T_BUS].astype(int)], BUS_AREA] == a)))
             fd.write('\n%3d  %6d   %5d  %5d   %5d  %5d  %5d   %5d   %5d  %5d  %5d' %
                 (a, len(ib), len(ig), len(igon), \
                 len(inzld)+len(ildon), len(inzld), len(ildon), \
@@ -274,16 +274,16 @@ def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
             a = s_areas[i]
             ig = find((bus[e2i[gen[:, GEN_BUS].astype(int)], BUS_AREA] == a) & ~isload(gen))
             igon = find((bus[e2i[gen[:, GEN_BUS].astype(int)], BUS_AREA] == a) & (gen[:, GEN_STATUS] > 0) & ~isload(gen))
-            fd.write('\n%3d   %7.1f  %7.1f to %-.1f  %7.1f  %7.1f to %-7.1f   %7.1f %7.1f' %
+            fd.write('\n%3d   %7.1f  %7.1f to %-7.1f  %7.1f  %7.1f to %-7.1f   %7.1f %7.1f' %
                 (a, sum(gen[ig, PMAX]), sum(gen[ig, QMIN]), sum(gen[ig, QMAX]),
                 sum(gen[igon, PMAX]), sum(gen[igon, QMIN]), sum(gen[igon, QMAX]),
                 sum(gen[igon, PG]), sum(gen[igon, QG]) ))
 
         fd.write('\n----   ------  ------------------   ------  ------------------    ------  ------')
-#        fd.write('\nTot:  %7.1f  %7.1f to %-7.1f  %7.1f  %7.1f to %-7.1f   %7.1f %7.1f' %
-#                (sum(gen[allg, PMAX]), sum(gen[allg, QMIN]), sum(gen[allg, QMAX]),
-#                sum(gen[ong, PMAX]), sum(gen[ong, QMIN]), sum(gen[ong, QMAX]),
-#                sum(gen[ong, PG]), sum(gen[ong, QG]) ))
+        fd.write('\nTot:  %7.1f  %7.1f to %-7.1f  %7.1f  %7.1f to %-7.1f   %7.1f %7.1f' %
+                (sum(gen[allg, PMAX]), sum(gen[allg, QMIN]), sum(gen[allg, QMAX]),
+                sum(gen[ong, PMAX]), sum(gen[ong, QMIN]), sum(gen[ong, QMAX]),
+                sum(gen[ong, PG]), sum(gen[ong, QG]) ))
         fd.write('\n')
         fd.write('\nArea    Disp Load Cap       Disp Load         Fixed Load        Total Load')
         fd.write('\n Num      MW     MVAr       MW     MVAr       MW     MVAr       MW     MVAr')
@@ -316,9 +316,9 @@ def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
         for i in range(len(s_areas)):
             a = s_areas[i]
             inzsh   = find((bus[:, BUS_AREA] == a) & logical_or(bus[:, GS], bus[:, BS]))
-            ibrch   = find((bus[e2i[branch[:, F_BUS].real.astype(int)], BUS_AREA] == a) & (bus[e2i[branch[:, T_BUS].real.astype(int)], BUS_AREA] == a) & branch[:, BR_STATUS].astype(bool))
-            in_tie  = find((bus[e2i[branch[:, F_BUS].real.astype(int)], BUS_AREA] != a) & (bus[e2i[branch[:, T_BUS].real.astype(int)], BUS_AREA] == a) & branch[:, BR_STATUS].astype(bool))
-            out_tie = find((bus[e2i[branch[:, F_BUS].real.astype(int)], BUS_AREA] == a) & (bus[e2i[branch[:, T_BUS].real.astype(int)], BUS_AREA] != a) & branch[:, BR_STATUS].astype(bool))
+            ibrch   = find((bus[e2i[branch[:, F_BUS].astype(int)], BUS_AREA] == a) & (bus[e2i[branch[:, T_BUS].astype(int)], BUS_AREA] == a) & branch[:, BR_STATUS].astype(bool))
+            in_tie  = find((bus[e2i[branch[:, F_BUS].astype(int)], BUS_AREA] != a) & (bus[e2i[branch[:, T_BUS].astype(int)], BUS_AREA] == a) & branch[:, BR_STATUS].astype(bool))
+            out_tie = find((bus[e2i[branch[:, F_BUS].astype(int)], BUS_AREA] == a) & (bus[e2i[branch[:, T_BUS].astype(int)], BUS_AREA] != a) & branch[:, BR_STATUS].astype(bool))
             fd.write('\n%3d    %7.1f %7.1f    %7.1f    %7.2f %7.2f   %7.1f %7.1f' %
                 (a, -sum(bus[inzsh, VM]**2 * bus[inzsh, GS]),
                  sum(bus[inzsh, VM]**2 * bus[inzsh, BS]),
@@ -442,8 +442,8 @@ def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
         fd.write('\n-----  -----  -----  --------  --------  --------  --------  --------  --------')
         for i in range(nl):
             fd.write('\n%4d%7d%7d%10.2f%10.2f%10.2f%10.2f%10.3f%10.2f' %
-                (i, branch[i, F_BUS].real, branch[i, T_BUS].real,
-                     branch[i, PF].real, branch[i, QF].real, branch[i, PT].real, branch[i, QT].real,
+                (i, branch[i, F_BUS], branch[i, T_BUS],
+                     branch[i, PF], branch[i, QF], branch[i, PT], branch[i, QT],
                      loss[i].real, loss[i].imag))
         fd.write('\n                                                             --------  --------')
         fd.write('\n                                                    Total:%10.3f%10.2f' %
@@ -643,8 +643,8 @@ def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
             Ft = branch[:, PT]
             strg = '\n  #     Bus    Pf  mu     Pf      |Pmax|      Pt      Pt  mu   Bus'
         elif ppopt['OPF_FLOW_LIM'] == 2:   ## |I| limit
-            Ff = abs( (branch[:, PF] + 1j * branch[:, QF]) / V[e2i[branch[:, F_BUS].real.astype(int)]] )
-            Ft = abs( (branch[:, PT] + 1j * branch[:, QT]) / V[e2i[branch[:, T_BUS].real.astype(int)]] )
+            Ff = abs( (branch[:, PF] + 1j * branch[:, QF]) / V[e2i[branch[:, F_BUS].astype(int)]] )
+            Ft = abs( (branch[:, PT] + 1j * branch[:, QT]) / V[e2i[branch[:, T_BUS].astype(int)]] )
             strg = '\n  #     Bus   |If| mu    |If|     |Imax|     |It|    |It| mu   Bus'
         else:                ## |S| limit
             Ff = abs(branch[:, PF] + 1j * branch[:, QF])
@@ -667,18 +667,19 @@ def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
                        (((branch[i, RATE_A] != 0) & (abs(Ff[i]) > branch[i, RATE_A] - ctol)) |
                         ((branch[i, RATE_A] != 0) & (abs(Ft[i]) > branch[i, RATE_A] - ctol)) |
                         (branch[i, MU_SF] > ptol) | (branch[i, MU_ST] > ptol))):
-                    fd.write('\n%4d%7d' % (i, branch[i, F_BUS].real))
+                    fd.write('\n%4d%7d' % (i, branch[i, F_BUS]))
                     if (Ff[i] > branch[i, RATE_A] - ctol) | (branch[i, MU_SF] > ptol):
-                        fd.write('%10.3f' % branch[i, MU_SF].real)
+                        fd.write('%10.3f' % branch[i, MU_SF])
                     else:
                         fd.write('      -   ')
 
-                    fd.write('%9.2f%10.2f%10.2f' % (Ff[i], branch[i, RATE_A].real, Ft[i]))
+                    fd.write('%9.2f%10.2f%10.2f' %
+                        (Ff[i], branch[i, RATE_A], Ft[i]))
                     if (Ft[i] > branch[i, RATE_A] - ctol) | (branch[i, MU_ST] > ptol):
-                        fd.write('%10.3f' % branch[i, MU_ST].real)
+                        fd.write('%10.3f' % branch[i, MU_ST])
                     else:
                         fd.write('      -   ')
-                    fd.write('%6d' % branch[i, T_BUS].real)
+                    fd.write('%6d' % branch[i, T_BUS])
             fd.write('\n')
 
     ## execute userfcn callbacks for 'printpf' stage

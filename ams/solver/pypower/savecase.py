@@ -1,5 +1,8 @@
-"""
-Saves a PYPOWER case file.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+"""Saves a PYPOWER case file.
 """
 
 from sys import stderr
@@ -9,15 +12,15 @@ from os.path import basename
 from numpy import array, c_, r_, any
 from scipy.io import savemat
 
-from ams.solver.pypower._compat import PY2
-from ams.solver.pypower.run_userfcn import run_userfcn
+from pypower._compat import PY2
+from pypower.run_userfcn import run_userfcn
 
-from ams.solver.pypower.idx_bus import MU_VMIN, VMIN
-from ams.solver.pypower.idx_gen import PMIN, MU_PMAX, MU_PMIN, MU_QMIN, MU_QMAX, APF
-from ams.solver.pypower.idx_brch import \
+from pypower.idx_bus import MU_VMIN, VMIN
+from pypower.idx_gen import PMIN, MU_PMAX, MU_PMIN, MU_QMIN, MU_QMAX, APF
+from pypower.idx_brch import \
     MU_ST, MU_SF, BR_STATUS, PF, PT, QT, QF, ANGMAX, MU_ANGMAX
-from ams.solver.pypower.idx_area import PRICE_REF_BUS
-from ams.solver.pypower.idx_cost import MODEL, NCOST, PW_LINEAR, POLYNOMIAL
+from pypower.idx_area import PRICE_REF_BUS
+from pypower.idx_cost import MODEL, NCOST, PW_LINEAR, POLYNOMIAL
 
 
 if not PY2:

@@ -1,30 +1,24 @@
-# -*- coding: utf-8 -*-
-
-# Copyright 1996-2015 PSERC. All rights reserved.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
-
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
-# and Energy System Technology (IEE), Kassel. All rights reserved.
-
 
 """Solves AC optimal power flow using PIPS.
 """
 
-from numpy import flatnonzero as find, ones, zeros, Inf, pi, exp, conj, r_
-from ams.solver.pypower.idx_brch import F_BUS, T_BUS, RATE_A, PF, QF, PT, QT, MU_SF, MU_ST
-from ams.solver.pypower.idx_bus import BUS_TYPE, REF, VM, VA, MU_VMAX, MU_VMIN, LAM_P, LAM_Q
-from ams.solver.pypower.idx_cost import MODEL, PW_LINEAR, NCOST
-from ams.solver.pypower.idx_gen import GEN_BUS, PG, QG, VG, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
-from ams.solver.pypower.makeYbus import makeYbus
-from ams.solver.pypower.opf_consfcn import opf_consfcn
-from ams.solver.pypower.opf_costfcn import opf_costfcn
+from numpy import ones, zeros, Inf, pi, exp, conj, r_
+from numpy import flatnonzero as find
 
-from ams.solver.pypower.util import sub2ind
+from pypower.idx_bus import BUS_TYPE, REF, VM, VA, MU_VMAX, MU_VMIN, LAM_P, LAM_Q
+from pypower.idx_brch import F_BUS, T_BUS, RATE_A, PF, QF, PT, QT, MU_SF, MU_ST
+from pypower.idx_gen import GEN_BUS, PG, QG, VG, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
+from pypower.idx_cost import MODEL, PW_LINEAR, NCOST
 
-from ams.solver.pypower.opf_hessfcn import opf_hessfcn
-from ams.solver.pypower.pips import pips
-
+from pypower.makeYbus import makeYbus
+from pypower.opf_costfcn import opf_costfcn
+from pypower.opf_consfcn import opf_consfcn
+from pypower.opf_hessfcn import opf_hessfcn
+from pypower.pips import pips
+from pypower.util import sub2ind
 
 def pipsopf_solver(om, ppopt, out_opt=None):
     """Solves AC optimal power flow using PIPS.
@@ -65,7 +59,6 @@ def pipsopf_solver(om, ppopt, out_opt=None):
     @author: Ray Zimmerman (PSERC Cornell)
     @author: Carlos E. Murillo-Sanchez (PSERC Cornell & Universidad
     Autonoma de Manizales)
-    @author: Richard Lincoln
     """
     ##----- initialization -----
     ## optional output
@@ -80,7 +73,6 @@ def pipsopf_solver(om, ppopt, out_opt=None):
     costtol = ppopt['PDIPM_COSTTOL']
     max_it  = ppopt['PDIPM_MAX_IT']
     max_red = ppopt['SCPDIPM_RED_IT']
-    init = ppopt['INIT']
     step_control = (ppopt['OPF_ALG'] == 565)  ## OPF_ALG == 565, PIPS-sc
     if feastol == 0:
         feastol = ppopt['OPF_VIOLATION']
@@ -109,28 +101,26 @@ def pipsopf_solver(om, ppopt, out_opt=None):
     A, l, u = om.linear_constraints()
 
     ## bounds on optimization vars
-    x0, xmin, xmax = om.getv()
+    _, xmin, xmax = om.getv()
 
     ## build admittance matrices
     Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
 
-    ## try to select an interior initial point if init is not available from a previous powerflow
-    if init != "pf":
-        ll, uu = xmin.copy(), xmax.copy()
-        ll[xmin == -Inf] = -1e10   ## replace Inf with numerical proxies
-        uu[xmax ==  Inf] =  1e10
-        x0 = (ll + uu) / 2
-        Varefs = bus[bus[:, BUS_TYPE] == REF, VA] * (pi / 180)
-        ## angles set to first reference angle
-        x0[vv["i1"]["Va"]:vv["iN"]["Va"]] = Varefs[0]
-        if ny > 0:
-            ipwl = find(gencost[:, MODEL] == PW_LINEAR)
-    #         PQ = r_[gen[:, PMAX], gen[:, QMAX]]
-    #         c = totcost(gencost[ipwl, :], PQ[ipwl])
-            c = gencost.flatten('F')[sub2ind(gencost.shape, ipwl, NCOST+2*gencost[ipwl, NCOST])]    ## largest y-value in CCV data
-            x0[vv["i1"]["y"]:vv["iN"]["y"]] = max(c) + 0.1 * abs(max(c))
-    #        x0[vv["i1"]["y"]:vv["iN"]["y"]] = c + 0.1 * abs(c)
-
+    ## try to select an interior initial point
+    ll, uu = xmin.copy(), xmax.copy()
+    ll[xmin == -Inf] = -1e10   ## replace Inf with numerical proxies
+    uu[xmax ==  Inf] =  1e10
+    x0 = (ll + uu) / 2
+    Varefs = bus[bus[:, BUS_TYPE] == REF, VA] * (pi / 180)
+    ## angles set to first reference angle
+    x0[vv["i1"]["Va"]:vv["iN"]["Va"]] = Varefs[0]
+    if ny > 0:
+        ipwl = find(gencost[:, MODEL] == PW_LINEAR)
+#         PQ = r_[gen[:, PMAX], gen[:, QMAX]]
+#         c = totcost(gencost[ipwl, :], PQ[ipwl])
+        c = gencost.flatten('F')[sub2ind(gencost.shape, ipwl, NCOST+2*gencost[ipwl, NCOST])]    ## largest y-value in CCV data
+        x0[vv["i1"]["y"]:vv["iN"]["y"]] = max(c) + 0.1 * abs(max(c))
+#        x0[vv["i1"]["y"]:vv["iN"]["y"]] = c + 0.1 * abs(c)
 
     ## find branches with flow limits
     il = find((branch[:, RATE_A] != 0) & (branch[:, RATE_A] < 1e10))

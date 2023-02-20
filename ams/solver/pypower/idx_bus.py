@@ -1,12 +1,6 @@
-# -*- coding: utf-8 -*-
-
-# Copyright 1996-2015 PSERC. All rights reserved.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
-
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
-# and Energy System Technology (IEE), Kassel. All rights reserved.
-
 
 """Defines constants for named column indices to bus matrix.
 
@@ -54,36 +48,29 @@ additional constants, used to assign/compare values in the C{BUS_TYPE} column
 """
 
 # define bus types
-PQ = 1
-PV = 2
-REF = 3
-NONE = 4
+PQ      = 1
+PV      = 2
+REF     = 3
+NONE    = 4
 
 # define the indices
-BUS_I = 0    # bus number (1 to 29997)
-BUS_TYPE = 1    # bus type
-PD = 2    # Pd, real power demand (MW)
-QD = 3    # Qd, reactive power demand (MVAr)
-GS = 4    # Gs, shunt conductance (MW at V = 1.0 p.u.)
-BS = 5    # Bs, shunt susceptance (MVAr at V = 1.0 p.u.)
-BUS_AREA = 6    # area number, 1-100
-VM = 7    # Vm, voltage magnitude (p.u.)
-VA = 8    # Va, voltage angle (degrees)
-BASE_KV = 9    # baseKV, base voltage (kV)
-ZONE = 10   # zone, loss zone (1-999)
-VMAX = 11   # maxVm, maximum voltage magnitude (p.u.)
-VMIN = 12   # minVm, minimum voltage magnitude (p.u.)
+BUS_I       = 0    # bus number (1 to 29997)
+BUS_TYPE    = 1    # bus type
+PD          = 2    # Pd, real power demand (MW)
+QD          = 3    # Qd, reactive power demand (MVAr)
+GS          = 4    # Gs, shunt conductance (MW at V = 1.0 p.u.)
+BS          = 5    # Bs, shunt susceptance (MVAr at V = 1.0 p.u.)
+BUS_AREA    = 6    # area number, 1-100
+VM          = 7    # Vm, voltage magnitude (p.u.)
+VA          = 8    # Va, voltage angle (degrees)
+BASE_KV     = 9    # baseKV, base voltage (kV)
+ZONE        = 10   # zone, loss zone (1-999)
+VMAX        = 11   # maxVm, maximum voltage magnitude (p.u.)
+VMIN        = 12   # minVm, minimum voltage magnitude (p.u.)
 
 # included in opf solution, not necessarily in input
 # assume objective function has units, u
-LAM_P = 13   # Lagrange multiplier on real power mismatch (u/MW)
-LAM_Q = 14   # Lagrange multiplier on reactive power mismatch (u/MVAr)
-MU_VMAX = 15   # Kuhn-Tucker multiplier on upper voltage limit (u/p.u.)
-MU_VMIN = 16   # Kuhn-Tucker multiplier on lower voltage limit (u/p.u.)
-
-# Additional pandapower extensions to ppc
-CID = 13   # coefficient of constant current load at rated voltage in range [0,1]
-CZD = 14   # coefficient of constant impedance load at rated voltage in range [0,1]
-SL_FAC = 15
-
-bus_cols = 16
+LAM_P       = 13   # Lagrange multiplier on real power mismatch (u/MW)
+LAM_Q       = 14   # Lagrange multiplier on reactive power mismatch (u/MVAr)
+MU_VMAX     = 15   # Kuhn-Tucker multiplier on upper voltage limit (u/p.u.)
+MU_VMIN     = 16   # Kuhn-Tucker multiplier on lower voltage limit (u/p.u.)

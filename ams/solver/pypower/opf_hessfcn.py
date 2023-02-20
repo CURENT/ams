@@ -1,12 +1,6 @@
-# -*- coding: utf-8 -*-
-
-# Copyright 1996-2015 PSERC. All rights reserved.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
-
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
-# and Energy System Technology (IEE), Kassel. All rights reserved.
-
 
 """Evaluates Hessian of Lagrangian for AC OPF.
 """
@@ -14,17 +8,18 @@
 from numpy import array, zeros, ones, exp, arange, r_, flatnonzero as find
 from scipy.sparse import vstack, hstack, issparse, csr_matrix as sparse
 
-from ams.solver.pypower.d2AIbr_dV2 import d2AIbr_dV2
-from ams.solver.pypower.d2ASbr_dV2 import d2ASbr_dV2
-from ams.solver.pypower.d2Sbus_dV2 import d2Sbus_dV2
-from ams.solver.pypower.dIbr_dV import dIbr_dV
-from ams.solver.pypower.dSbr_dV import dSbr_dV
-from ams.solver.pypower.idx_brch import F_BUS, T_BUS
-from ams.solver.pypower.idx_cost import MODEL, POLYNOMIAL
-from ams.solver.pypower.idx_gen import PG, QG
-from ams.solver.pypower.opf_consfcn import opf_consfcn
-from ams.solver.pypower.opf_costfcn import opf_costfcn
-from ams.solver.pypower.polycost import polycost
+from pypower.idx_gen import PG, QG
+from pypower.idx_brch import F_BUS, T_BUS
+from pypower.idx_cost import MODEL, POLYNOMIAL
+
+from pypower.polycost import polycost
+from pypower.d2Sbus_dV2 import d2Sbus_dV2
+from pypower.dSbr_dV import dSbr_dV
+from pypower.dIbr_dV import dIbr_dV
+from pypower.d2AIbr_dV2 import d2AIbr_dV2
+from pypower.d2ASbr_dV2 import d2ASbr_dV2
+from pypower.opf_costfcn import opf_costfcn
+from pypower.opf_consfcn import opf_consfcn
 
 
 def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
@@ -61,9 +56,6 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
     @author: Ray Zimmerman (PSERC Cornell)
     @author: Carlos E. Murillo-Sanchez (PSERC Cornell & Universidad
     Autonoma de Manizales)
-    @author: Richard Lincoln
-
-    Modified by University of Kassel (Friederike Meier): Bugfix in line 173
     """
     ##----- initialize -----
     ## unpack data
@@ -109,10 +101,9 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
     d2f_dPg2 = zeros(ng)#sparse((ng, 1))               ## w.r.t. p.u. Pg
     d2f_dQg2 = zeros(ng)#sparse((ng, 1))               ## w.r.t. p.u. Qg
     ipolp = find(pcost[:, MODEL] == POLYNOMIAL)
-    if len(ipolp):
-        d2f_dPg2[ipolp] = \
+    d2f_dPg2[ipolp] = \
             baseMVA**2 * polycost(pcost[ipolp, :], Pg[ipolp] * baseMVA, 2)
-    if qcost.any():          ## Qg is not free
+    if any(qcost):          ## Qg is not free
         ipolq = find(qcost[:, MODEL] == POLYNOMIAL)
         d2f_dQg2[ipolq] = \
                 baseMVA**2 * polycost(qcost[ipolq, :], Qg[ipolq] * baseMVA, 2)
@@ -123,7 +114,7 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
     d2f = sparse((r_[d2f_dPg2, d2f_dQg2], (i, i)), (nxyz, nxyz))
 
     ## generalized cost
-    if issparse(N) and N.nnz > 0: # pragma: no cover
+    if issparse(N) and N.nnz > 0:
         nw = N.shape[0]
         r = N * x - rh                    ## Nx - rhat
         iLT = find(r < -kk)               ## below dead zone
@@ -150,7 +141,7 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
     d2f = d2f * cost_mult
 
     ##----- evaluate Hessian of power balance constraints -----
-    nlam = len(lmbda["eqnonlin"]) // 2
+    nlam = int(len(lmbda["eqnonlin"]) / 2)
     lamP = lmbda["eqnonlin"][:nlam]
     lamQ = lmbda["eqnonlin"][nlam:nlam + nlam]
     Gpaa, Gpav, Gpva, Gpvv = d2Sbus_dV2(Ybus, V, lamP)
@@ -170,17 +161,14 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
         ], "csr")
 
     ##----- evaluate Hessian of flow constraints -----
-    nmu = len(lmbda["ineqnonlin"]) // 2
+    nmu = int(len(lmbda["ineqnonlin"]) / 2)
     muF = lmbda["ineqnonlin"][:nmu]
     muT = lmbda["ineqnonlin"][nmu:nmu + nmu]
     if ppopt['OPF_FLOW_LIM'] == 2:       ## current
-        if Yf.size:
-            dIf_dVa, dIf_dVm, dIt_dVa, dIt_dVm, If, It = dIbr_dV(branch, Yf, Yt, V)
-            Hfaa, Hfav, Hfva, Hfvv = d2AIbr_dV2(dIf_dVa, dIf_dVm, If, Yf, V, muF)
-            Htaa, Htav, Htva, Htvv = d2AIbr_dV2(dIt_dVa, dIt_dVm, It, Yt, V, muT)
-        else:
-            Hfaa= Hfav= Hfva= Hfvv= Htaa= Htav= Htva= Htvv = sparse(zeros((nb,nb)))
-    else: # pragma: no cover
+        dIf_dVa, dIf_dVm, dIt_dVa, dIt_dVm, If, It = dIbr_dV(branch, Yf, Yt, V)
+        Hfaa, Hfav, Hfva, Hfvv = d2AIbr_dV2(dIf_dVa, dIf_dVm, If, Yf, V, muF)
+        Htaa, Htav, Htva, Htvv = d2AIbr_dV2(dIt_dVa, dIt_dVm, It, Yt, V, muT)
+    else:
         f = branch[il, F_BUS].astype(int)    ## list of "from" buses
         t = branch[il, T_BUS].astype(int)    ## list of "to" buses
         ## connection matrix for line & from buses
@@ -203,8 +191,8 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
     d2H = vstack([
             hstack([
                 vstack([hstack([Hfaa, Hfav]),
-				hstack([Hfva, Hfvv])]) +
-				vstack([hstack([Htaa, Htav]),
+                        hstack([Hfva, Hfvv])]) +
+                vstack([hstack([Htaa, Htav]),
                         hstack([Htva, Htvv])]),
                 sparse((2 * nb, nxtra))
             ]),

@@ -1,10 +1,13 @@
-"""
-Computes 2nd derivatives of |complex power flow|**2 w.r.t. V.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+"""Computes 2nd derivatives of |complex power flow|**2 w.r.t. V.
 """
 
 from scipy.sparse import csr_matrix
 
-from ams.solver.pypower.d2Sbr_dV2 import d2Sbr_dV2
+from pypower.d2Sbr_dV2 import d2Sbr_dV2
 
 
 def d2ASbr_dV2(dSbr_dVa, dSbr_dVm, Sbr, Cbr, Ybr, V, lam):

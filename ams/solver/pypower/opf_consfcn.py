@@ -9,14 +9,14 @@ from numpy import zeros, ones, conj, exp, r_, Inf, arange
 
 from scipy.sparse import lil_matrix, vstack, hstack, csr_matrix as sparse
 
-from ams.solver.pypower.idx_gen import GEN_BUS, PG, QG
-from ams.solver.pypower.idx_brch import F_BUS, T_BUS, RATE_A
+from pypower.idx_gen import GEN_BUS, PG, QG
+from pypower.idx_brch import F_BUS, T_BUS, RATE_A
 
-from ams.solver.pypower.makeSbus import makeSbus
-from ams.solver.pypower.dSbus_dV import dSbus_dV
-from ams.solver.pypower.dIbr_dV import dIbr_dV
-from ams.solver.pypower.dSbr_dV import dSbr_dV
-from ams.solver.pypower.dAbr_dV import dAbr_dV
+from pypower.makeSbus import makeSbus
+from pypower.dSbus_dV import dSbus_dV
+from pypower.dIbr_dV import dIbr_dV
+from pypower.dSbr_dV import dSbr_dV
+from pypower.dAbr_dV import dAbr_dV
 
 
 def opf_consfcn(x, om, Ybus, Yf, Yt, ppopt, il=None, *args):

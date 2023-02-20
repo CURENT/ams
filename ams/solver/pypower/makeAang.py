@@ -1,12 +1,15 @@
-"""
-Construct constraints for branch angle difference limits.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+"""Construct constraints for branch angle difference limits.
 """
 
 from numpy import array, ones, zeros, r_, Inf, pi, arange
 from numpy import flatnonzero as find
 from scipy.sparse import csr_matrix as sparse
 
-from ams.solver.pypower.idx_brch import F_BUS, T_BUS, ANGMIN, ANGMAX
+from pypower.idx_brch import F_BUS, T_BUS, ANGMIN, ANGMAX
 
 
 def makeAang(baseMVA, branch, nb, ppopt):

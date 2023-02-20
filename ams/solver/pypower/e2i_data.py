@@ -1,5 +1,8 @@
-"""
-Converts data from external to internal indexing.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+"""Converts data from external to internal indexing.
 """
 
 import sys
@@ -8,7 +11,7 @@ from numpy import arange, concatenate
 
 from scipy.sparse import issparse, vstack, hstack
 
-from ams.solver.pypower.get_reorder import get_reorder
+from pypower.get_reorder import get_reorder
 
 
 def e2i_data(ppc, val, ordering, dim=0):

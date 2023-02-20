@@ -1,12 +1,6 @@
-# -*- coding: utf-8 -*-
-
-# Copyright 1996-2015 PSERC. All rights reserved.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
-
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
-# and Energy System Technology (IEE), Kassel. All rights reserved.
-
 
 """Defines constants for named column indices to branch matrix.
 
@@ -86,8 +80,3 @@ MU_SF       = 17   # Kuhn-Tucker multiplier on MVA limit at "from" bus (u/MVA)
 MU_ST       = 18   # Kuhn-Tucker multiplier on MVA limit at "to" bus (u/MVA)
 MU_ANGMIN   = 19   # Kuhn-Tucker multiplier lower angle difference limit
 MU_ANGMAX   = 20   # Kuhn-Tucker multiplier upper angle difference limit
-
-BR_R_ASYM = 21
-BR_X_ASYM = 22
-
-branch_cols = 23

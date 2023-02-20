@@ -1,5 +1,8 @@
-"""
-Construct linear constraints for constant power factor var loads.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+"""Construct linear constraints for constant power factor var loads.
 """
 
 from sys import stderr
@@ -8,9 +11,9 @@ from numpy import array, zeros, arange, sin, cos, arctan2, r_
 from numpy import flatnonzero as find
 from scipy.sparse import csr_matrix as sparse
 
-from ams.solver.pypower.idx_gen import PG, QG, PMIN, QMIN, QMAX
+from pypower.idx_gen import PG, QG, PMIN, QMIN, QMAX
 
-from ams.solver.pypower.isload import isload
+from pypower.isload import isload
 
 
 def makeAvl(baseMVA, gen):

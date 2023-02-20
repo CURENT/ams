@@ -1,5 +1,8 @@
-"""
-Assigns B to A with one of the dimensions of A indexed.
+# Copyright (c) 1996-2015 PSERC. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+"""Assigns B to A with one of the dimensions of A indexed.
 """
 
 from numpy import ndim
