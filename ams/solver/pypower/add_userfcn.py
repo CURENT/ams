@@ -2,10 +2,14 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Appends a userfcn to the list to be called for a case.
+"""
+Appends a userfcn to the list to be called for a case.
 """
 
-from sys import stderr
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def add_userfcn(ppc, stage, fcn, args=None, allow_multiple=False):
     """Appends a userfcn to the list to be called for a case.
@@ -96,7 +100,7 @@ def add_userfcn(ppc, stage, fcn, args=None, allow_multiple=False):
     n = 0
     if 'userfcn' in ppc:
         if stage in ppc['userfcn']:
-            n = len(ppc['userfcn'][stage]) #+ 1
+            n = len(ppc['userfcn'][stage])  # + 1
             if not allow_multiple:
                 for k in range(n):
                     if ppc['userfcn'][stage][k]['fcn'] == fcn:
