@@ -63,7 +63,7 @@ Development preparation
 
 # Development log
 
-[WIP] Debug ``runpf``
+Fix pypower functionality (2023-2-20)
 
 Import solver pypower (2023-02-17)
 
@@ -75,3 +75,7 @@ Setup file parser (2023-02-16)
 
 - Setup versioneer (2023-01-26)
 - Setup documentation (2023-01-26)
+
+### TODO
+
+Remove redundant codes in solver pypower
