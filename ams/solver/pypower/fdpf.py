@@ -5,12 +5,14 @@
 """Solves the power flow using a fast decoupled method.
 """
 
-import sys
+import logging
 
 from numpy import array, angle, exp, linalg, conj, r_, Inf
 from scipy.sparse.linalg import splu
 
 from ams.solver.pypower.ppoption import ppoption
+
+logger = logging.getLogger(__name__)
 
 
 def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt=None):
@@ -37,106 +39,106 @@ def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt=None):
     if ppopt is None:
         ppopt = ppoption()
 
-    ## options
-    tol     = ppopt['PF_TOL']
-    max_it  = ppopt['PF_MAX_IT_FD']
+    # options
+    tol = ppopt['PF_TOL']
+    max_it = ppopt['PF_MAX_IT_FD']
     verbose = ppopt['VERBOSE']
 
-    ## initialize
+    # initialize
     converged = 0
     i = 0
     V = V0
     Va = angle(V)
     Vm = abs(V)
 
-    ## set up indexing for updating V
-    #npv = len(pv)
-    #npq = len(pq)
+    # set up indexing for updating V
+    # npv = len(pv)
+    # npq = len(pq)
     pvpq = r_[pv, pq]
 
-    ## evaluate initial mismatch
+    # evaluate initial mismatch
     mis = (V * conj(Ybus * V) - Sbus) / Vm
     P = mis[pvpq].real
     Q = mis[pq].imag
 
-    ## check tolerance
+    # check tolerance
     normP = linalg.norm(P, Inf)
     normQ = linalg.norm(Q, Inf)
     if verbose > 1:
-        sys.stdout.write('\niteration     max mismatch (p.u.)  ')
-        sys.stdout.write('\ntype   #        P            Q     ')
-        sys.stdout.write('\n---- ----  -----------  -----------')
-        sys.stdout.write('\n  -  %3d   %10.3e   %10.3e' % (i, normP, normQ))
+        logger.info('\niteration     max mismatch (p.u.)  ')
+        logger.info('\ntype   #        P            Q     ')
+        logger.info('\n---- ----  -----------  -----------')
+        logger.info('\n  -  %3d   %10.3e   %10.3e' % (i, normP, normQ))
     if normP < tol and normQ < tol:
         converged = 1
         if verbose > 1:
-            sys.stdout.write('\nConverged!\n')
+            logger.info('\nConverged!\n')
 
-    ## reduce B matrices
-    Bp = Bp[array([pvpq]).T, pvpq].tocsc() # splu requires a CSC matrix
+    # reduce B matrices
+    Bp = Bp[array([pvpq]).T, pvpq].tocsc()  # splu requires a CSC matrix
     Bpp = Bpp[array([pq]).T, pq].tocsc()
 
-    ## factor B matrices
+    # factor B matrices
     Bp_solver = splu(Bp)
     Bpp_solver = splu(Bpp)
 
-    ## do P and Q iterations
+    # do P and Q iterations
     while (not converged and i < max_it):
-        ## update iteration counter
+        # update iteration counter
         i = i + 1
 
-        ##-----  do P iteration, update Va  -----
+        # -----  do P iteration, update Va  -----
         dVa = -Bp_solver.solve(P)
 
-        ## update voltage
+        # update voltage
         Va[pvpq] = Va[pvpq] + dVa
         V = Vm * exp(1j * Va)
 
-        ## evalute mismatch
+        # evalute mismatch
         mis = (V * conj(Ybus * V) - Sbus) / Vm
         P = mis[pvpq].real
         Q = mis[pq].imag
 
-        ## check tolerance
+        # check tolerance
         normP = linalg.norm(P, Inf)
         normQ = linalg.norm(Q, Inf)
         if verbose > 1:
-            sys.stdout.write("\n  %s  %3d   %10.3e   %10.3e" %
-                             (type,i, normP, normQ))
+            logger.info("\n  %s  %3d   %10.3e   %10.3e" %
+                        (type, i, normP, normQ))
         if normP < tol and normQ < tol:
             converged = 1
             if verbose:
-                sys.stdout.write('\nFast-decoupled power flow converged in %d '
-                    'P-iterations and %d Q-iterations.\n' % (i, i - 1))
+                logger.info('\nFast-decoupled power flow converged in %d '
+                            'P-iterations and %d Q-iterations.\n' % (i, i - 1))
             break
 
-        ##-----  do Q iteration, update Vm  -----
+        # -----  do Q iteration, update Vm  -----
         dVm = -Bpp_solver.solve(Q)
 
-        ## update voltage
+        # update voltage
         Vm[pq] = Vm[pq] + dVm
         V = Vm * exp(1j * Va)
 
-        ## evalute mismatch
+        # evalute mismatch
         mis = (V * conj(Ybus * V) - Sbus) / Vm
         P = mis[pvpq].real
         Q = mis[pq].imag
 
-        ## check tolerance
+        # check tolerance
         normP = linalg.norm(P, Inf)
         normQ = linalg.norm(Q, Inf)
         if verbose > 1:
-            sys.stdout.write('\n  Q  %3d   %10.3e   %10.3e' % (i, normP, normQ))
+            logger.info('\n  Q  %3d   %10.3e   %10.3e' % (i, normP, normQ))
         if normP < tol and normQ < tol:
             converged = 1
             if verbose:
-                sys.stdout.write('\nFast-decoupled power flow converged in %d '
-                    'P-iterations and %d Q-iterations.\n' % (i, i))
+                logger.info('\nFast-decoupled power flow converged in %d '
+                            'P-iterations and %d Q-iterations.\n' % (i, i))
             break
 
     if verbose:
         if not converged:
-            sys.stdout.write('\nFast-decoupled power flow did not converge in '
-                             '%d iterations.' % i)
+            logger.info('\nFast-decoupled power flow did not converge in '
+                        '%d iterations.' % i)
 
     return V, converged, i

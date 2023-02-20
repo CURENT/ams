@@ -32,6 +32,6 @@ def pqcost(gencost, ng, on=None):
         pcost = gencost[on, :]
         qcost = gencost[on + ng, :]
     else:
-        stderr.write('pqcost: gencost has wrong number of rows\n')
+        logger.debug('pqcost: gencost has wrong number of rows\n')
 
     return pcost, qcost

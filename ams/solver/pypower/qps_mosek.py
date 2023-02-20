@@ -7,7 +7,7 @@
 
 import re
 
-from sys import stdout, stderr
+import logging
 
 from numpy import array, Inf, zeros, shape, tril, any
 from numpy import flatnonzero as find
@@ -100,7 +100,7 @@ def qps_mosek(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None,
         if ('A' not in p) | len(p['A']) == 0 & \
                 ('xmin' not in p) | len(p['xmin']) == 0 & \
                 ('xmax' not in p) | len(p['xmax']) == 0:
-            stderr.write('qps_mosek: LP problem must include constraints or variable bounds\n')
+            logger.debug('qps_mosek: LP problem must include constraints or variable bounds\n')
         else:
             if 'A' in p & len(p['A']) > 0:
                 nx = shape(p['A'])[1]
@@ -260,7 +260,7 @@ def qps_mosek(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None,
 
     ## always alert user if license is expired
     if (verbose or r == 1001) and len(msg) < 0:
-        stdout.write('%s\n' % msg)
+        logger.info('%s\n' % msg)
 
     ##-----  repackage results  -----
     if r == 0:

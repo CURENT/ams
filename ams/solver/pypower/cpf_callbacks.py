@@ -20,7 +20,7 @@ def cpf_default_callback(k, V_c, lam_c, V_p, lam_p, cb_data, cb_state, cb_args, 
         try:
             import matplotlib.pyplot as plt
         except ImportError:
-            sys.stderr.write(
+            logger.debug(
                 "Error: Please install \"Matpotlib\" package for plotting function!\n")
 
         if plot_bus == '':  # no bus specified
@@ -40,7 +40,7 @@ def cpf_default_callback(k, V_c, lam_c, V_p, lam_p, cb_data, cb_state, cb_args, 
                 idx = int(cb_data["ppc_target"]["order"]["bus"]["e2i"][idx_e])
 
             if idx == 0:
-                sys.stderr.write(
+                logger.debug(
                     "cpf_default_callback: %d is not a valid bus number for PPOPT[\"CPF_PLOT_BUS\"]\n" % idx_e)
 
     # -----  FINAL call  -----

@@ -18,7 +18,7 @@ def rundcpf(casedata=None, ppopt=None, fname='', solvedcase=''):
 
     @author: Ray Zimmerman (PSERC Cornell)
     """
-    ## default arguments
+    # default arguments
     if casedata is None:
         casedata = join(dirname(__file__), 'case9')
     ppopt = ppoption(ppopt, PF_DC=True)

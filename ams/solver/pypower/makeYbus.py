@@ -33,7 +33,7 @@ def makeYbus(baseMVA, bus, branch):
 
     ## check that bus numbers are equal to indices to bus (one set of bus nums)
     if any(bus[:, BUS_I] != list(range(nb))):
-        stderr.write('buses must appear in order by bus number\n')
+        logger.debug('buses must appear in order by bus number\n')
 
     ## for each branch, compute the elements of the branch admittance matrix where
     ##

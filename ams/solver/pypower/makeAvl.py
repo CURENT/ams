@@ -51,7 +51,7 @@ def makeAvl(baseMVA, gen):
 
     ## at least one of the Q limits must be zero (corresponding to Pmax == 0)
     if any( (Qmin[ivl] != 0) & (Qmax[ivl] != 0) ):
-        stderr.write('makeAvl: either Qmin or Qmax must be equal to zero for '
+        logger.debug('makeAvl: either Qmin or Qmax must be equal to zero for '
                      'each dispatchable load.\n')
 
     # Initial values of PG and QG must be consistent with specified power
@@ -60,7 +60,7 @@ def makeAvl(baseMVA, gen):
     # version which used PG and QG to define the power factor.
     Qlim = (Qmin[ivl] == 0) * Qmax[ivl] + (Qmax[ivl] == 0) * Qmin[ivl]
     if any( abs( Qg[ivl] - Pg[ivl] * Qlim / Pmin[ivl] ) > 1e-6 ):
-        stderr.write('makeAvl: For a dispatchable load, PG and QG must be '
+        logger.debug('makeAvl: For a dispatchable load, PG and QG must be '
                      'consistent with the power factor defined by PMIN and '
                      'the Q limits.\n')
 

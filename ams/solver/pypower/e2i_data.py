@@ -53,13 +53,13 @@ def e2i_data(ppc, val, ordering, dim=0):
         costs (in rows 1--ng and ng+1--2*ng, respectively).
     """
     if 'order' not in ppc:
-        sys.stderr.write('e2i_data: ppc does not have the \'order\' field '
+        logger.debug('e2i_data: ppc does not have the \'order\' field '
                 'required to convert from external to internal numbering.\n')
         return
 
     o = ppc['order']
     if o['state'] != 'i':
-        sys.stderr.write('e2i_data: ppc does not have internal ordering '
+        logger.debug('e2i_data: ppc does not have internal ordering '
                 'data available, call ext2int first\n')
         return
 

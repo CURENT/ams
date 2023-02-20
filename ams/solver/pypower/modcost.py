@@ -59,7 +59,7 @@ def modcost(gencost, alpha, modtype='SCALE_F'):
                         polyshift(c[k, :n].T, alpha).T
             gencost[ipwl, COST:m - 1:2]   = alpha + gencost[ipwl, COST:m - 1:2]
         else:
-            sys.stderr.write('modcost: "%s" is not a valid modtype\n' % modtype)
+            logger.debug('modcost: "%s" is not a valid modtype\n' % modtype)
 
     return gencost
 

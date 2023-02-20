@@ -33,7 +33,7 @@ def polycost(gencost, Pg, der=0):
         return []
 
     if any(gencost[:, MODEL] == PW_LINEAR):
-        sys.stderr.write('polycost: all costs must be polynomial\n')
+        logger.debug('polycost: all costs must be polynomial\n')
 
     ng = len(Pg)
     maxN = max( gencost[:, NCOST].astype(int) )

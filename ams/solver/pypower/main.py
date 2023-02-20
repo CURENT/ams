@@ -145,7 +145,7 @@ heuristic""")
 
     nargs = len(args)
     if nargs > 1:
-        stderr.write('Too many arguments')
+        logger.debug('Too many arguments')
         parser.print_help()
         sys.exit(2)
     elif nargs == 1:
@@ -154,7 +154,7 @@ heuristic""")
         try:
             casedata = CASES[options.testcase]()
         except KeyError:
-            stderr.write("Invalid case choice: %r (choose from %s)\n" % \
+            logger.debug("Invalid case choice: %r (choose from %s)\n" % \
                 (options.testcase, list(CASES.keys())))
             sys.exit(2)
 
@@ -185,7 +185,7 @@ def opf(args=sys.argv[1:]):
 
     if options.uopf:
         if options.w_res:
-            stderr.write('uopf and opf_w_res are mutex\n')
+            logger.debug('uopf and opf_w_res are mutex\n')
         r = runuopf(casedata, ppopt, fname, solvedcase)
     elif options.w_res:
         r = runopf_w_res(casedata, ppopt, fname, solvedcase)

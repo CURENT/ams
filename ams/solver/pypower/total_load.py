@@ -68,7 +68,7 @@ def total_load(bus, gen=None, load_zone=None, which_type=None):
         which_type = 'BOTH'     ## 'FIXED', 'DISPATCHABLE' or 'BOTH'
 
     if (which_type[0] != 'F') and (which_type[0] != 'D') and (which_type[0] != 'B'):
-        stderr.write("total_load: which_type should be 'FIXED, 'DISPATCHABLE or 'BOTH'\n")
+        logger.debug("total_load: which_type should be 'FIXED, 'DISPATCHABLE or 'BOTH'\n")
 
     want_Q      = True
     want_fixed  = (which_type[0] == 'B') | (which_type[0] == 'F')

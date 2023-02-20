@@ -63,13 +63,13 @@ def gausspf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None):
     ## check tolerance
     normF = linalg.norm(F, Inf)
     if verbose > 1:
-        sys.stdout.write('\n it    max P & Q mismatch (p.u.)')
-        sys.stdout.write('\n----  ---------------------------')
-        sys.stdout.write('\n%3d        %10.3e' % (i, normF))
+        logger.info('\n it    max P & Q mismatch (p.u.)')
+        logger.info('\n----  ---------------------------')
+        logger.info('\n%3d        %10.3e' % (i, normF))
     if normF < tol:
         converged = 1
         if verbose > 1:
-            sys.stdout.write('\nConverged!\n')
+            logger.info('\nConverged!\n')
 
     ## do Gauss-Seidel iterations
     while (not converged and i < max_it):
@@ -101,16 +101,16 @@ def gausspf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None):
         ## check for convergence
         normF = linalg.norm(F, Inf)
         if verbose > 1:
-            sys.stdout.write('\n%3d        %10.3e' % (i, normF))
+            logger.info('\n%3d        %10.3e' % (i, normF))
         if normF < tol:
             converged = 1
             if verbose:
-                sys.stdout.write('\nGauss-Seidel power flow converged in '
+                logger.info('\nGauss-Seidel power flow converged in '
                                  '%d iterations.\n' % i)
 
     if verbose:
         if not converged:
-            sys.stdout.write('Gauss-Seidel power did not converge in %d '
+            logger.info('Gauss-Seidel power did not converge in %d '
                              'iterations.' % i)
 
     return V, converged, i

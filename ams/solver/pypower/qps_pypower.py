@@ -198,7 +198,7 @@ def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None,
         x, f, eflag, output, lmbda = \
             qps_gurobi(H, c, A, l, u, xmin, xmax, x0, opt)
     else:
-        sys.stderr.write('qps_pypower: %d is not a valid algorithm code\n', alg)
+        logger.debug('qps_pypower: %d is not a valid algorithm code\n', alg)
 
     if 'alg' not in output:
         output['alg'] = alg

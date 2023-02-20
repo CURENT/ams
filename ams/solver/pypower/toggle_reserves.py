@@ -69,7 +69,7 @@ def toggle_reserves(ppc, on_off):
                 ('zones' not in ppc['reserves']) | \
                 ('req' not in ppc['reserves']) | \
                 ('cost' not in ppc['reserves']):
-            stderr.write('toggle_reserves: case must contain a \'reserves\' field, a struct defining \'zones\', \'req\' and \'cost\'\n')
+            logger.debug('toggle_reserves: case must contain a \'reserves\' field, a struct defining \'zones\', \'req\' and \'cost\'\n')
 
         ## add callback functions
         ## note: assumes all necessary data included in 1st arg (ppc, om, results)
@@ -86,7 +86,7 @@ def toggle_reserves(ppc, on_off):
         ppc = remove_userfcn(ppc, 'formulation', userfcn_reserves_formulation)
         ppc = remove_userfcn(ppc, 'ext2int', userfcn_reserves_ext2int)
     else:
-        stderr.write('toggle_reserves: 2nd argument must be either ''on'' or ''off''')
+        logger.debug('toggle_reserves: 2nd argument must be either ''on'' or ''off''')
 
     return ppc
 
@@ -111,14 +111,14 @@ def userfcn_reserves_ext2int(ppc, *args):
 
     ## check data for consistent dimensions
     if r['zones'].shape[0] != nrz:
-        stderr.write('userfcn_reserves_ext2int: the number of rows in ppc[\'reserves\'][\'req\'] (%d) and ppc[\'reserves\'][\'zones\'] (%d) must match\n' % (nrz, r['zones'].shape[0]))
+        logger.debug('userfcn_reserves_ext2int: the number of rows in ppc[\'reserves\'][\'req\'] (%d) and ppc[\'reserves\'][\'zones\'] (%d) must match\n' % (nrz, r['zones'].shape[0]))
 
     if (r['cost'].shape[0] != ng0) & (r['cost'].shape[0] != ngr):
-        stderr.write('userfcn_reserves_ext2int: the number of rows in ppc[\'reserves\'][\'cost\'] (%d) must equal the total number of generators (%d) or the number of generators able to provide reserves (%d)\n' % (r['cost'].shape[0], ng0, ngr))
+        logger.debug('userfcn_reserves_ext2int: the number of rows in ppc[\'reserves\'][\'cost\'] (%d) must equal the total number of generators (%d) or the number of generators able to provide reserves (%d)\n' % (r['cost'].shape[0], ng0, ngr))
 
     if 'qty' in r:
         if r['qty'].shape[0] != r['cost'].shape[0]:
-            stderr.write('userfcn_reserves_ext2int: ppc[\'reserves\'][\'cost\'] (%d x 1) and ppc[\'reserves\'][\'qty\'] (%d x 1) must be the same dimension\n' % (r['cost'].shape[0], r['qty'].shape[0]))
+            logger.debug('userfcn_reserves_ext2int: ppc[\'reserves\'][\'cost\'] (%d x 1) and ppc[\'reserves\'][\'qty\'] (%d x 1) must be the same dimension\n' % (r['cost'].shape[0], r['qty'].shape[0]))
 
 
     ## convert both cost and qty from ngr x 1 to full ng x 1 vectors if necessary

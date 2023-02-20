@@ -145,7 +145,7 @@ def savecase(fname, ppc, comment=None, version='2'):
         try:
             fd = open(fname, writemode)
         except Exception as detail:
-            stderr.write("savecase: %s.\n" % detail)
+            logger.debug("savecase: %s.\n" % detail)
             return fname
 
         ## function header, etc.
@@ -277,7 +277,7 @@ def savecase(fname, ppc, comment=None, version='2'):
                     n2 = 0
                 n = int( max([n1, n2]) )
                 if gencost.shape[1] < n + 4:
-                    stderr.write('savecase: gencost data claims it has more columns than it does\n')
+                    logger.debug('savecase: gencost data claims it has more columns than it does\n')
                 template = '%s[%d, %.9g, %.9g, %d'
                 for i in range(n):
                     template = template + ', %.9g'

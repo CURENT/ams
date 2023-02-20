@@ -90,13 +90,13 @@ def scale_load(load, bus, gen=None, load_zone=None, opt=None):
     if 'scale' not in opt:
         opt["scale"] = 'FACTOR'   ## 'FACTOR' or 'QUANTITY'
     if (opt["pq"] != 'P') and (opt["pq"] != 'PQ'):
-        stderr.write("scale_load: opt['pq'] must equal 'PQ' or 'P'\n")
+        logger.debug("scale_load: opt['pq'] must equal 'PQ' or 'P'\n")
     if (opt["which"][0] != 'F') and (opt["which"][0] != 'D') and (opt["which"][0] != 'B'):
-        stderr.write("scale_load: opt.which should be 'FIXED, 'DISPATCHABLE or 'BOTH'\n")
+        logger.debug("scale_load: opt.which should be 'FIXED, 'DISPATCHABLE or 'BOTH'\n")
     if (opt["scale"][0] != 'F') and (opt["scale"][0] != 'Q'):
-        stderr.write("scale_load: opt.scale should be 'FACTOR or 'QUANTITY'\n")
+        logger.debug("scale_load: opt.scale should be 'FACTOR or 'QUANTITY'\n")
     if (len(gen) == 0) and (opt["which"][0] != 'F'):
-        stderr.write('scale_load: need gen matrix to scale dispatchable loads\n')
+        logger.debug('scale_load: need gen matrix to scale dispatchable loads\n')
 
     ## create dispatchable load connection matrix
     if len(gen) > 0:
@@ -127,7 +127,7 @@ def scale_load(load, bus, gen=None, load_zone=None, opt=None):
 
     ## check load_zone to make sure it's consistent with size of load vector
     if max(load_zone) > len(load):
-        stderr.write('scale_load: load vector must have a value for each load zone specified\n')
+        logger.debug('scale_load: load vector must have a value for each load zone specified\n')
 
     ##-----  compute scale factors for each zone  -----
     scale = load.copy()

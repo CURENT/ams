@@ -51,7 +51,7 @@ def makePTDF(baseMVA, bus, branch, slack=None):
 
     ## check that bus numbers are equal to indices to bus (one set of bus numbers)
     if any(bus[:, BUS_I] != arange(nb)):
-        stderr.write('makePTDF: buses must be numbered consecutively')
+        logger.debug('makePTDF: buses must be numbered consecutively')
 
     ## compute PTDF for single slack_bus
     Bbus, Bf, _, _ = makeBdc(baseMVA, bus, branch)

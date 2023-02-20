@@ -56,13 +56,13 @@ def i2e_data(ppc, val, oldval, ordering, dim=0):
     from ams.solver.pypower.int2ext import int2ext
 
     if 'order' not in ppc:
-        sys.stderr.write('i2e_data: ppc does not have the \'order\' field '
+        logger.debug('i2e_data: ppc does not have the \'order\' field '
                 'required for conversion back to external numbering.\n')
         return
 
     o = ppc["order"]
     if o['state'] != 'i':
-        sys.stderr.write('i2e_data: ppc does not appear to be in internal '
+        logger.debug('i2e_data: ppc does not appear to be in internal '
                 'order\n')
         return
 

@@ -146,7 +146,7 @@ def qps_ipopt(H, c, A, l, u, xmin, xmax, x0, opt):
     ## define nx, set default values for missing optional inputs
     if len(H) == 0 or not any(any(H)):
         if len(A) == 0 and len(xmin) == 0 and len(xmax) == 0:
-            stderr.write('qps_ipopt: LP problem must include constraints or variable bounds\n')
+            logger.debug('qps_ipopt: LP problem must include constraints or variable bounds\n')
         else:
             if len(A) > 0:
                 nx = shape(A)[1]

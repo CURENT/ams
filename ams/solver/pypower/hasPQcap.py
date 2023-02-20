@@ -40,11 +40,11 @@ def hasPQcap(gen, hilo='B'):
     """
     ## check for errors capability curve data
     if any( gen[:, PC1] > gen[:, PC2] ):
-        stderr.write('hasPQcap: Pc1 > Pc2\n')
+        logger.debug('hasPQcap: Pc1 > Pc2\n')
     if any( gen[:, QC2MAX] > gen[:, QC1MAX] ):
-        stderr.write('hasPQcap: Qc2max > Qc1max\n')
+        logger.debug('hasPQcap: Qc2max > Qc1max\n')
     if any( gen[:, QC2MIN] < gen[:, QC1MIN] ):
-        stderr.write('hasPQcap: Qc2min < Qc1min\n')
+        logger.debug('hasPQcap: Qc2min < Qc1min\n')
 
     L = zeros(gen.shape[0], bool)
     U = zeros(gen.shape[0], bool)

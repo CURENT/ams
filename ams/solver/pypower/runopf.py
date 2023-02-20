@@ -5,7 +5,7 @@
 """Runs an optimal power flow.
 """
 
-from sys import stdout, stderr
+import logging
 
 from os.path import dirname, join
 
@@ -36,14 +36,15 @@ def runopf(casedata=None, ppopt=None, fname='', solvedcase=''):
         try:
             fd = open(fname, "a")
         except IOError as detail:
-            stderr.write("Error opening %s: %s.\n" % (fname, detail))
+            logger.debug("Error opening %s: %s.\n" % (fname, detail))
         finally:
             if fd is not None:
                 printpf(r, fd, ppopt)
                 fd.close()
 
     else:
-        printpf(r, stdout, ppopt)
+        # printpf(r, stdout, ppopt)
+        pass
 
     ## save solved case
     if solvedcase:

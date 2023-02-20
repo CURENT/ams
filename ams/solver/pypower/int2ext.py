@@ -43,7 +43,7 @@ def int2ext(ppc, val_or_field=None, oldval=None, ordering=None, dim=0):
     ppc = deepcopy(ppc)
     if val_or_field is None: # nargin == 1
         if 'order' not in ppc:
-            sys.stderr.write('int2ext: ppc does not have the "order" field '
+            logger.debug('int2ext: ppc does not have the "order" field '
                 'required for conversion back to external numbering.\n')
         o = ppc["order"]
 
@@ -106,7 +106,7 @@ def int2ext(ppc, val_or_field=None, oldval=None, ordering=None, dim=0):
             o["state"] = 'e'
             ppc["order"] = o
         else:
-            sys.stderr.write('int2ext: ppc claims it is already using '
+            logger.debug('int2ext: ppc claims it is already using '
                          'external numbering.\n')
     else:                    ## convert extra data
         if isinstance(val_or_field, str) or isinstance(val_or_field, list):

@@ -38,7 +38,7 @@ def makeBdc(baseMVA, bus, branch):
 
     ## check that bus numbers are equal to indices to bus (one set of bus nums)
     if any(bus[:, BUS_I] != list(range(nb))):
-        stderr.write('makeBdc: buses must be numbered consecutively in '
+        logger.debug('makeBdc: buses must be numbered consecutively in '
                      'bus matrix\n')
 
     ## for each branch, compute the elements of the branch B matrix and the phase

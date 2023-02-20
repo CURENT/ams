@@ -36,7 +36,7 @@ def runuopf(casedata=None, ppopt=None, fname='', solvedcase=''):
         try:
             fd = open(fname, "a")
         except Exception as detail:
-            stderr.write("Error opening %s: %s.\n" % (fname, detail))
+            logger.debug("Error opening %s: %s.\n" % (fname, detail))
         finally:
             if fd is not None:
                 printpf(r, fd, ppopt)

@@ -7,7 +7,7 @@
 
 import re
 
-from sys import stdout, stderr
+import logging
 
 from numpy import array, NaN, Inf, ones, zeros, shape, finfo, arange, r_
 from numpy import flatnonzero as find
@@ -108,7 +108,7 @@ def qps_cplex(H, c, A, l, u, xmin, xmax, x0, opt):
     ## define nx, set default values for missing optional inputs
     if len(H) == 0 or not any(any(H)):
         if len(A) == 0 and len(xmin) == 0 and len(xmax) == 0:
-            stderr.write('qps_cplex: LP problem must include constraints or variable bounds\n')
+            logger.debug('qps_cplex: LP problem must include constraints or variable bounds\n')
         else:
             if len(A) > 0:
                 nx = shape(A)[1]
@@ -212,14 +212,14 @@ def qps_cplex(H, c, A, l, u, xmin, xmax, x0, opt):
 
     if len(H) == 0 or not any(any(H)):
         if verbose:
-            stdout.write('CPLEX Version %s -- %s LP solver\n' %
+            logger.info('CPLEX Version %s -- %s LP solver\n' %
                 (vstr, methods[cplex_opt['lpmethod'] + 1]))
 
         x, f, eflag, output, lam = \
             cplexlp(c, Ai, bi, Ae, be, xmin, xmax, x0, cplex_opt)
     else:
         if verbose:
-            stdout.write('CPLEX Version %s --  %s QP solver\n' %
+            logger.info('CPLEX Version %s --  %s QP solver\n' %
                 (vstr, methods[cplex_opt['qpmethod'] + 1]))
         ## ensure H is numerically symmetric
         if H != H.T:

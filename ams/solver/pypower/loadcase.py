@@ -204,21 +204,21 @@ def loadcase(casefile,
             return result
     else:  # error encountered
         if info == 1:
-            sys.stderr.write('Input arg should be a case or a string '
+            logger.debug('Input arg should be a case or a string '
                              'containing a filename\n')
         elif info == 2:
-            sys.stderr.write('Specified case not a valid file\n')
+            logger.debug('Specified case not a valid file\n')
         elif info == 3:
-            sys.stderr.write('Specified MAT file does not exist\n')
+            logger.debug('Specified MAT file does not exist\n')
         elif info == 4:
-            sys.stderr.write('Specified Python file does not exist\n')
+            logger.debug('Specified Python file does not exist\n')
         elif info == 5:
-            sys.stderr.write('Syntax error or undefined data '
+            logger.debug('Syntax error or undefined data '
                              'matrix(ices) in the file\n')
         else:
-            sys.stderr.write('Unknown error encountered loading case.\n')
+            logger.debug('Unknown error encountered loading case.\n')
 
-        sys.stderr.write(lasterr + '\n')
+        logger.debug(lasterr + '\n')
 
         return info
 
@@ -227,7 +227,7 @@ def ppc_1to2(gen, branch):
     ##-----  gen  -----
     ## use the version 1 values for column names
     if gen.shape[1] >= APF:
-        sys.stderr.write('ppc_1to2: gen matrix appears to already be in '
+        logger.debug('ppc_1to2: gen matrix appears to already be in '
                          'version 2 format\n')
         return gen, branch
 

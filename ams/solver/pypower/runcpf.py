@@ -1,7 +1,7 @@
 """Runs a full AC continuation power flow.
 """
 
-from sys import stdout, stderr
+import logging
 
 from os.path import dirname, join
 
@@ -107,8 +107,8 @@ def runcpf(basecasedata=None, targetcasedata=None, ppopt=None, fname='', solvedc
     t0 = time()
     if verbose > 0:
         v = ppver('all')
-        stdout.write('PYPOWER Version %s, %s' % (v["Version"], v["Date"]))
-        stdout.write(' -- AC Continuation Power Flow\n')
+        logger.info('PYPOWER Version %s, %s' % (v["Version"], v["Date"]))
+        logger.info(' -- AC Continuation Power Flow\n')
 
     # initial state
     # V0    = ones(bus.shape[0])            ## flat start
@@ -311,7 +311,7 @@ def runcpf(basecasedata=None, targetcasedata=None, ppopt=None, fname='', solvedc
         try:
             fd = open(fname, "a")
         except Exception as detail:
-            stderr.write("Error opening %s: %s.\n" % (fname, detail))
+            logger.debug("Error opening %s: %s.\n" % (fname, detail))
         finally:
             if fd is not None:
                 printpf(results, fd, ppopt)
@@ -327,7 +327,7 @@ def runcpf(basecasedata=None, targetcasedata=None, ppopt=None, fname='', solvedc
         try:
             import matplotlib.pyplot as plt
         except ImportError:
-            stderr.write(
+            logger.debug(
                 "Error: Please install \"Matpotlib\" package for plotting function!\n")
         
         plt.show()

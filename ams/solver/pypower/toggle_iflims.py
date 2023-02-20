@@ -56,7 +56,7 @@ def toggle_iflims(ppc, on_off):
         if ('if' not in ppc) | (not isinstance(ppc['if'], dict)) | \
                 ('map' not in ppc['if']) | \
                 ('lims' not in ppc['if']):
-            stderr.write('toggle_iflims: case must contain an \'if\' field, a struct defining \'map\' and \'lims\'')
+            logger.debug('toggle_iflims: case must contain an \'if\' field, a struct defining \'map\' and \'lims\'')
 
         ## add callback functions
         ## note: assumes all necessary data included in 1st arg (ppc, om, results)
@@ -73,7 +73,7 @@ def toggle_iflims(ppc, on_off):
         ppc = remove_userfcn(ppc, 'formulation', userfcn_iflims_formulation)
         ppc = remove_userfcn(ppc, 'ext2int', userfcn_iflims_ext2int)
     else:
-        stderr.write('toggle_iflims: 2nd argument must be either \'on\' or \'off\'')
+        logger.debug('toggle_iflims: 2nd argument must be either \'on\' or \'off\'')
 
     return ppc
 
@@ -132,7 +132,7 @@ def userfcn_iflims_formulation(om, *args):
         ## extract branch indices
         br = ifmap[ifmap[:, 0] == ifidx[k], 1]
         if len(br) == 0:
-            stderr.write('userfcn_iflims_formulation: interface %d has no in-service branches\n' % k)
+            logger.debug('userfcn_iflims_formulation: interface %d has no in-service branches\n' % k)
 
         d = sign(br)
         br = abs(br)

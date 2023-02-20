@@ -193,7 +193,7 @@ class opf_model(object):
         if u is None:  ## nonlinear
             ## prevent duplicate named constraint sets
             if name in self.nln["idx"]["N"]:
-                stderr.write("opf_model.add_constraints: nonlinear constraint set named '%s' already exists\n" % name)
+                logger.debug("opf_model.add_constraints: nonlinear constraint set named '%s' already exists\n" % name)
 
             ## add info about this nonlinear constraint set
             self.nln["idx"]["i1"][name] = self.nln["N"] #+ 1    ## starting index
@@ -210,7 +210,7 @@ class opf_model(object):
         else:                ## linear
             ## prevent duplicate named constraint sets
             if name in self.lin["idx"]["N"]:
-                stderr.write('opf_model.add_constraints: linear constraint set named ''%s'' already exists\n' % name)
+                logger.debug('opf_model.add_constraints: linear constraint set named ''%s'' already exists\n' % name)
 
             if varsets is None:
                 varsets = []
@@ -227,14 +227,14 @@ class opf_model(object):
 
             ## check sizes
             if (l.shape[0] != N) or (u.shape[0] != N):
-                stderr.write('opf_model.add_constraints: sizes of A, l and u must match\n')
+                logger.debug('opf_model.add_constraints: sizes of A, l and u must match\n')
 
             nv = 0
             for k in range(len(varsets)):
                 nv = nv + self.var["idx"]["N"][varsets[k]]
 
             if M != nv:
-                stderr.write('opf_model.add_constraints: number of columns of A does not match\nnumber of variables, A is %d x %d, nv = %d\n' % (N, M, nv))
+                logger.debug('opf_model.add_constraints: number of columns of A does not match\nnumber of variables, A is %d x %d, nv = %d\n' % (N, M, nv))
 
             ## add info about this linear constraint set
             self.lin["idx"]["i1"][name]  = self.lin["N"] #+ 1   ## starting index
@@ -301,7 +301,7 @@ class opf_model(object):
         """
         ## prevent duplicate named cost sets
         if name in self.cost["idx"]["N"]:
-            stderr.write('opf_model.add_costs: cost set named \'%s\' already exists\n' % name)
+            logger.debug('opf_model.add_costs: cost set named \'%s\' already exists\n' % name)
 
         if varsets is None:
             varsets = []
@@ -320,30 +320,30 @@ class opf_model(object):
             if nw == 0:
                 cp["N"] = sparse(nw, nx)
             else:
-                stderr.write('opf_model.add_costs: number of columns in N (%d x %d) does not match\nnumber of variables (%d)\n' % (nw, nx, nv))
+                logger.debug('opf_model.add_costs: number of columns in N (%d x %d) does not match\nnumber of variables (%d)\n' % (nw, nx, nv))
 
         if cp["Cw"].shape[0] != nw:
-            stderr.write('opf_model.add_costs: number of rows of Cw (%d x %d) and N (%d x %d) must match\n' % (cp["Cw"].shape[0], nw, nx))
+            logger.debug('opf_model.add_costs: number of rows of Cw (%d x %d) and N (%d x %d) must match\n' % (cp["Cw"].shape[0], nw, nx))
 
         if 'H' in cp:
             if (cp["H"].shape[0] != nw) | (cp["H"].shape[1] != nw):
-                stderr.write('opf_model.add_costs: both dimensions of H (%d x %d) must match the number of rows in N (%d x %d)\n' % (cp["H"].shape, nw, nx))
+                logger.debug('opf_model.add_costs: both dimensions of H (%d x %d) must match the number of rows in N (%d x %d)\n' % (cp["H"].shape, nw, nx))
 
         if 'dd' in cp:
             if cp["dd"].shape[0] != nw:
-                stderr.write('opf_model.add_costs: number of rows of dd (%d x %d) and N (%d x %d) must match\n' % (cp["dd"].shape, nw, nx))
+                logger.debug('opf_model.add_costs: number of rows of dd (%d x %d) and N (%d x %d) must match\n' % (cp["dd"].shape, nw, nx))
 
         if 'rh' in cp:
             if cp["rh"].shape[0] != nw:
-                stderr.write('opf_model.add_costs: number of rows of rh (%d x %d) and N (%d x %d) must match\n' % (cp["rh"].shape, nw, nx))
+                logger.debug('opf_model.add_costs: number of rows of rh (%d x %d) and N (%d x %d) must match\n' % (cp["rh"].shape, nw, nx))
 
         if 'kk' in cp:
             if cp["kk"].shape[0] != nw:
-                stderr.write('opf_model.add_costs: number of rows of kk (%d x %d) and N (%d x %d) must match\n' % (cp["kk"].shape, nw, nx))
+                logger.debug('opf_model.add_costs: number of rows of kk (%d x %d) and N (%d x %d) must match\n' % (cp["kk"].shape, nw, nx))
 
         if 'mm' in cp:
             if cp["mm"].shape[0] != nw:
-                stderr.write('opf_model.add_costs: number of rows of mm (%d x %d) and N (%d x %d) must match\n' % (cp["mm"].shape, nw, nx))
+                logger.debug('opf_model.add_costs: number of rows of mm (%d x %d) and N (%d x %d) must match\n' % (cp["mm"].shape, nw, nx))
 
         ## add info about this user cost set
         self.cost["idx"]["i1"][name]  = self.cost["N"] #+ 1     ## starting index
@@ -387,7 +387,7 @@ class opf_model(object):
         """
         ## prevent duplicate named var sets
         if name in self.var["idx"]["N"]:
-            stderr.write('opf_model.add_vars: variable set named ''%s'' already exists\n' % name)
+            logger.debug('opf_model.add_vars: variable set named ''%s'' already exists\n' % name)
 
         if v0 is None or len(v0) == 0:
             v0 = zeros(N)           ## init to zero by default
@@ -580,7 +580,7 @@ class opf_model(object):
             rh, kk - nw x 1 vectors (optional, all zeros by default)
         """
         if not 'params' in self.cost:
-            stderr.write('opf_model.get_cost_params: must call build_cost_params first\n')
+            logger.debug('opf_model.get_cost_params: must call build_cost_params first\n')
 
         cp = self.cost["params"]
 
