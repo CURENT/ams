@@ -2,7 +2,8 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Runs a power flow.
+"""
+Solve power flow.
 """
 
 import logging
@@ -41,7 +42,8 @@ logger = logging.getLogger(__name__)
 
 
 def runpf(casedata=None, ppopt=None, fname='', solvedcase=''):
-    """Runs a power flow.
+    """
+    Runs a power flow.
 
     Runs a power flow [full AC Newton's method by default] and optionally
     returns the solved values in the data matrices, a flag which is C{True} if
@@ -326,5 +328,13 @@ def runpf(casedata=None, ppopt=None, fname='', solvedcase=''):
     return results, success
 
 
-if __name__ == '__main__':
-    runpf()
+def rundcpf(casedata=None, ppopt=None, fname='', solvedcase=''):
+    """
+    Solve DC power flow.
+    """
+    # default arguments
+    if casedata is None:
+        casedata = join(dirname(__file__), 'case9')
+    ppopt = ppoption(ppopt, PF_DC=True)
+
+    return runpf(casedata, ppopt, fname, solvedcase)
