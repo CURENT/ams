@@ -22,15 +22,15 @@ def runuopf(casedata=None, ppopt=None, fname='', solvedcase=''):
 
     @author: Ray Zimmerman (PSERC Cornell)
     """
-    ## default arguments
+    # default arguments
     if casedata is None:
         casedata = join(dirname(__file__), 'case9')
     ppopt = ppoption(ppopt)
 
-    ##-----  run the unit de-commitment / optimal power flow  -----
+    # -----  run the unit de-commitment / optimal power flow  -----
     r = uopf(casedata, ppopt)
 
-    ##-----  output results  -----
+    # -----  output results  -----
     if fname:
         fd = None
         try:
@@ -46,8 +46,23 @@ def runuopf(casedata=None, ppopt=None, fname='', solvedcase=''):
         # printpf(r, stdout, ppopt=ppopt)
         pass
 
-    ## save solved case
+    # save solved case
     if solvedcase:
         savecase(solvedcase, r)
 
     return r
+
+
+def runduopf(casedata=None, ppopt=None, fname='', solvedcase=''):
+    """Runs a DC optimal power flow with unit-decommitment heuristic.
+
+    @see: L{rundcopf}, L{runuopf}
+
+    @author: Ray Zimmerman (PSERC Cornell)
+    """
+    # default arguments
+    if casedata is None:
+        casedata = join(dirname(__file__), 'case9')
+    ppopt = ppoption(ppopt, PF_DC=True)
+
+    return runuopf(casedata, ppopt, fname, solvedcase)
