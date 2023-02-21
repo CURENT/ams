@@ -183,4 +183,4 @@ Generator Cost Data
 +----------+--------+---------------------------------------------------------------------------------------------------------------------------+
 
 #. Not currently used by any Matpower functions.
-#. MODEL = 1, :math:`f(p)` is defined by the coordinates :math:`(p_1, f_1), (p_2, f_2), . . . , (p_N , f_N)`; Model = 2, :math:`f(p) = c_{n}p^{n} + ... + c_{1}p^{1} + c_{0}`.
+#. MODEL = 1, :math:`f(p)` is defined by the coordinates :math:`(p_1, f_1), (p_2, f_2), . . . , (p_N , f_N)`; MODEL = 2, :math:`f(p) = c_{n}p^{n} + ... + c_{1}p^{1} + c_{0}`.
