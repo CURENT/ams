@@ -9,8 +9,9 @@
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-import ams
-import shutil
+# TODO: fix the importing error later on
+# import ams
+# import shutil
 
 extensions = [
     'sphinx.ext.autodoc',
@@ -54,10 +55,11 @@ project = 'AMS'
 copyright = '2023, Jinning Wang'
 author = 'Jinning Wang'
 
+# TODO: fix the version later on
 # The short X.Y version.
-version = ams.__version__
+version = "0.5.0"
 # The full version, including alpha/beta/rc tags.
-release = ams.__version__
+release = "0.5.0"
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -129,21 +131,21 @@ htmlhelp_basename = 'ams'
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'ams', 'AMS Manual',
-     [author], 1)
-]
+# man_pages = [
+#     (master_doc, 'ams', 'AMS Manual',
+#      [author], 1)
+# ]
 
 # -- Options for Texinfo output -------------------------------------------
 
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
-texinfo_documents = [
-    (master_doc, 'ams', 'AMS Manual',
-     author, 'ams', 'Python Software for Dispatch Modeling and Co-Simulation with Dynanic',
-     'Miscellaneous'),
-]
+# texinfo_documents = [
+#     (master_doc, 'ams', 'AMS Manual',
+#      author, 'ams', 'Python Software for Dispatch Modeling and Co-Simulation with Dynanic',
+#      'Miscellaneous'),
+# ]
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
