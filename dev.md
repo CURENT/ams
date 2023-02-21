@@ -53,19 +53,21 @@ Dispatch modeling components
 
 ### v0.6 (2023-02-24)
 
-Setup solver PyPower
+Setup solver PYPOWER
 
 ### v0.5 (2023-02-17)
 
-Base System setup
+Setup base system
 
-Development preparation
+Setup development environment
 
 # Development log
 
-Fix pypower functionality (2023-2-20)
+Include MATPOWER data file format in documentation (2023-02-21)
 
-Import solver pypower (2023-02-17)
+Fix PYPOWER functionality (2023-2-20)
+
+Import PYPOWER (2023-02-17)
 
 Setup base system (2023-02-16)
 
@@ -78,4 +80,6 @@ Setup file parser (2023-02-16)
 
 ### TODO
 
-Remove redundant codes in solver pypower
+- Remove redundant codes in PYPOWER
+- Revise docstring of PYPOWER
+- Revise docstring of inherited code from ANDES
