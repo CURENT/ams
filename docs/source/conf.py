@@ -78,6 +78,7 @@ html_theme = 'pydata_sphinx_theme'
 #
 html_theme_options = {
     "use_edit_page_button": True,
+    "footer_items": ["copyright", "sphinx-version", "theme-version"],
 }
 
 html_context = {
@@ -154,6 +155,12 @@ intersphinx_mapping = {
     'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable', None),
     'matplotlib': ('https://matplotlib.org', None),
+}
+
+# --- Options for primary sidebar ------------------------------------------
+# REF: https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/layout.html#layout-sidebar-primary
+html_sidebars = {
+    # "<page_pattern>": ["list", "of", "templates"]
 }
 
 # Favorite icon
