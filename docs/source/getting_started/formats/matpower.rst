@@ -2,49 +2,50 @@
 
 MATPOWER
 --------
-
 The data file format of MATPOWER is excerpted below for quick reference. For more information, see
 the `MATPOWER User’s Manual <https://matpower.org/docs/MATPOWER-manual.pdf>`_.
 
 Bus Data
 .........
-+----------+--------+----------------------------------------------------------+
-|   name   | column |                        description                       |
-+----------+--------+----------------------------------------------------------+
-|   BUS_I  |    1   |               bus number (positive integer)              |
-+----------+--------+----------------------------------------------------------+
-| BUS_TYPE |    2   |     bus type (1 = PQ, 2 = PV, 3 = ref, 4 = isolated)     |
-+----------+--------+----------------------------------------------------------+
-|    PD    |    3   |                  real power demand (MW)                  |
-+----------+--------+----------------------------------------------------------+
-|    QD    |    4   |               reactive power demand (MVAr)               |
-+----------+--------+----------------------------------------------------------+
-|    GS    |    5   |      shunt conductance (MW demanded at V = 1.0 p.u.)     |
-+----------+--------+----------------------------------------------------------+
-|    BS    |    6   |     shunt susceptance (MVAr injected at V = 1.0 p.u.)    |
-+----------+--------+----------------------------------------------------------+
-| BUS AREA |    7   |              area number (positive integer)              |
-+----------+--------+----------------------------------------------------------+
-|    VM    |    8   |                 voltage magnitude (p.u.)                 |
-+----------+--------+----------------------------------------------------------+
-|    VA    |    9   |                  voltage angle (degrees)                 |
-+----------+--------+----------------------------------------------------------+
-|  BASE_KV |   10   |                     base voltage (kV)                    |
-+----------+--------+----------------------------------------------------------+
-|   ZONE   |   11   |               loss zone (positive integer)               |
-+----------+--------+----------------------------------------------------------+
-|   VMAX   |   12   |             maximum voltage magnitude (p.u.)             |
-+----------+--------+----------------------------------------------------------+
-|   VMIN   |   13   |             minimum voltage magnitude (p.u.)             |
-+----------+--------+----------------------------------------------------------+
-|   LAM_P  |   14   |    Lagrange multiplier on real power mismatch (\$/MW)    |
-+----------+--------+----------------------------------------------------------+
-|   LAM_Q  |   15   | Lagrange multiplier on reactive power mismatch (\$/MVAr) |
-+----------+--------+----------------------------------------------------------+
-|  MU_VMAX |   16   |  Kuhn-Tucker multiplier on upper voltage limit (\$/p.u.) |
-+----------+--------+----------------------------------------------------------+
-|  MU_VMIN |   17   |  Kuhn-Tucker multiplier on lower voltage limit (\$/p.u.) |
-+----------+--------+----------------------------------------------------------+
++--------------+--------+-----------------------------------------------------------------+
+| name         | column | description                                                     |
++--------------+--------+-----------------------------------------------------------------+
+| BUS_I        | 1      | bus number (positive integer)                                   |
++--------------+--------+-----------------------------------------------------------------+
+| BUS_TYPE     | 2      | bus type (1 = PQ, 2 = PV, 3 = ref, 4 = isolated)                |
++--------------+--------+-----------------------------------------------------------------+
+| PD           | 3      | real power demand (MW)                                          |
++--------------+--------+-----------------------------------------------------------------+
+| QD           | 4      | reactive power demand (MVAr)                                    |
++--------------+--------+-----------------------------------------------------------------+
+| GS           | 5      | shunt conductance (MW demanded at V = 1.0 p.u.)                 |
++--------------+--------+-----------------------------------------------------------------+
+| BS           | 6      | shunt susceptance (MVAr injected at V = 1.0 p.u.)               |
++--------------+--------+-----------------------------------------------------------------+
+| BUS AREA     | 7      | area number (positive integer)                                  |
++--------------+--------+-----------------------------------------------------------------+
+| VM           | 8      | voltage magnitude (p.u.)                                        |
++--------------+--------+-----------------------------------------------------------------+
+| VA           | 9      | voltage angle (degrees)                                         |
++--------------+--------+-----------------------------------------------------------------+
+| BASE_KV      | 10     | base voltage (kV)                                               |
++--------------+--------+-----------------------------------------------------------------+
+| ZONE         | 11     | loss zone (positive integer)                                    |
++--------------+--------+-----------------------------------------------------------------+
+| VMAX         | 12     | maximum voltage magnitude (p.u.)                                |
++--------------+--------+-----------------------------------------------------------------+
+| VMIN         | 13     | minimum voltage magnitude (p.u.)                                |
++--------------+--------+-----------------------------------------------------------------+
+| LAM_P [1]_   | 14     | Lagrange multiplier on real power mismatch (:math:`u`/MW)       |
++--------------+--------+-----------------------------------------------------------------+
+| LAM_Q [1]_   | 15     | Lagrange multiplier on reactive power mismatch (:math:`u`/MVar) |
++--------------+--------+-----------------------------------------------------------------+
+| MU_VMAX [1]_ | 16     | Kuhn-Tucker multiplier on upper voltage limit (:math:`u`/p.u.)  |
++--------------+--------+-----------------------------------------------------------------+
+| MU_VMIN [1]_ | 17     | Kuhn-Tucker multiplier on lower voltage limit (:math:`u`/p.u.)  |
++--------------+--------+-----------------------------------------------------------------+
+
+.. [1] Included in OPF output, typically not included (or ignored) in input matrix. Here we assume the objective function has units u.
 
 Generator Data
 ...............
@@ -93,14 +94,23 @@ Generator Data
 +------------+--------+-----------------------------------------------------------------------+
 | APF        | 21     | area participation factor                                             |
 +------------+--------+-----------------------------------------------------------------------+
-| MU_PMAX    | 22     | Kuhn-Tucker multiplier on upper Pg limit (u/MW)                       |
+| MU_PMAX    | 22     | Kuhn-Tucker multiplier on upper Pg limit (:math:`u`/MW)               |
 +------------+--------+-----------------------------------------------------------------------+
-| MU_PMIN    | 23     | Kuhn-Tucker multiplier on lower Pg limit (u/MW)                       |
+| MU_PMIN    | 23     | Kuhn-Tucker multiplier on lower Pg limit (:math:`u`/MW)               |
 +------------+--------+-----------------------------------------------------------------------+
-| MU_QMAX    | 24     | Kuhn-Tucker multiplier on upper Qg limit (u/MVAr)                     |
+| MU_QMAX    | 24     | Kuhn-Tucker multiplier on upper Qg limit (:math:`u`/MVar)             |
 +------------+--------+-----------------------------------------------------------------------+
-| MU_QMIN    | 25     | Kuhn-Tucker multiplier on lower Q9 limit (u/MVAr)                     |
+| MU_QMIN    | 25     | Kuhn-Tucker multiplier on lower Q9 limit (:math:`u`/MVar)             |
 +------------+--------+-----------------------------------------------------------------------+
+
+``QC1MIN``, ``QC1MAX``, ``QC2MIN``, ``QC2MAX``, ``RAMP_AGC``, ``RAMP_10``, ``RAMP_30``,
+``RAMP_Q``, ``APF``: Not included in version 1 case format.
+
+``MU_PMAX``, ``MU_PMIN``, ``MU_QMAX``, ``MU_QMIN``: Included in OPF output, typically not
+included (or ignored) in input matrix. Here we assume the objective function has units u.
+
+``VG``: Used to determine voltage setpoint for optimal power flow only if ``opf.use_vg`` option is non-zero (0
+by default). Otherwise generator voltage range is determined by limits set for corresponding bus in bus matrix.
 
 Branch Data
 ............
@@ -149,6 +159,20 @@ Branch Data
 +------------+--------+----------------------------------------------------------------+
 | MU_ANGMAX  | 21     | Kuhn-Tucker multiplier upper angle difference limit (u/degree) |
 +------------+--------+----------------------------------------------------------------+
+
+``RATE_A``, ``RATE_B``, ``RATE_C``: Used to specify branch flow limits. By default these are limits
+on apparent power with units in MVA. However, the 'opf.flow lim' option can be used to specify that the
+limits are active power or current, in which case the ratings are specified in MW or :math:`kA·V_{basekV}`,
+respectively. For current this is equivalent to an MVA value at a 1 p.u. voltage.
+
+``ANGMIN``, ``ANGMAX``: Not included in version 1 case format. The voltage angle difference is taken
+to be unbounded below if ``ANGMIN ≤ −360`` and unbounded above if ``ANGMAX ≥ 360``. If both parameters
+are zero, the voltage angle difference is unconstrained.
+
+ ``PF``,
+``QF``, ``PT``, ``QT``, ``MU_SF``, ``MU_ST``, ``MU_ANGMINS``, ``MU_ANGMAX``: Not included in version 1 case format.
+
+``MU_SF``, ``MU_ST``, ``MU_ANGMINS``, ``MU_ANGMAX``: Included in OPF output, typically not
 
 Generator Cost Data
 ....................
