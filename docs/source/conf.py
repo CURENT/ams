@@ -9,6 +9,9 @@
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
+import ams
+import shutil
+
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
@@ -50,7 +53,11 @@ language = "en"
 project = 'AMS'
 copyright = '2023, Jinning Wang'
 author = 'Jinning Wang'
-release = '0.5'
+
+# The short X.Y version.
+version = ams.__version__
+# The full version, including alpha/beta/rc tags.
+release = ams.__version__
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -89,17 +96,54 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'ams'
 
+# -- Options for LaTeX output ---------------------------------------------
+
+# latex_elements = {
+#     # The paper size ('letterpaper' or 'a4paper').
+#     #
+#     'preamble': r'\DeclareUnicodeCharacter{2588}{-}',
+#     'papersize': 'letterpaper',
+
+#     # The font size ('10pt', '11pt' or '12pt').
+#     #
+#     'pointsize': '11pt',
+
+#     # Additional stuff for the LaTeX preamble.
+#     #
+#     # 'preamble': '',
+
+#     # Latex figure (float) alignment
+#     #
+#     # 'figure_align': 'htbp',
+# }
+
+# # Grouping the document tree into LaTeX files. List of tuples
+# # (source start file, target name, title,
+# #  author, documentclass [howto, manual, or own class]).
+# latex_documents = [
+#     (master_doc, 'ams.tex', 'AMS Manual',
+#      'Jinning Wang', 'manual'),
+# ]
+
+# -- Options for manual page output ---------------------------------------
+
+# One entry per manual page. List of tuples
+# (source start file, name, description, authors, manual section).
+man_pages = [
+    (master_doc, 'ams', 'AMS Manual',
+     [author], 1)
+]
+
 # -- Options for Texinfo output -------------------------------------------
 
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
-# texinfo_documents = [
-#     (master_doc, 'andes', 'ANDES Manual',
-#      author, 'andes', 'Python Software for Symbolic Power System Modeling and Numerical Analysis',
-#      'Miscellaneous'),
-# ]
-
+texinfo_documents = [
+    (master_doc, 'ams', 'AMS Manual',
+     author, 'ams', 'Python Software for Dispatch Modeling and Co-Simulation with Dynanic',
+     'Miscellaneous'),
+]
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
@@ -116,8 +160,11 @@ html_favicon = 'images/curent.ico'
 # Disable smartquotes to display double dashes correctly
 smartquotes = False
 
+jupyter_execute_notebooks = "off"
+
 # import and execute model reference generation script
-exec(open("genroutineref.py").read())
+# TODO: use this for routines doumentation later on
+# exec(open("genroutineref.py").read())
 
 # sphinx-panels shouldn't add bootstrap css since the pydata-sphinx-theme
 # already loads it
