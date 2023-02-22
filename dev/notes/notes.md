@@ -8,17 +8,9 @@
 
 Note: With packages ``graphviz`` and ``pydeps``, we can have visualize the module dependency.
 
-Structure of ``runopf``
+![alt text](./fig/runopf.svg "Structure of ``runopf``")
 
-```
-![Alt text](./runopf.svg)
-```
-
-Structure of ``opf``
-
-```
-![Alt text](./opf.svg)
-```
+![alt text](./fig/opf.svg "Structure of ``opf``")
 
 Visualize ``runopf``:
 
