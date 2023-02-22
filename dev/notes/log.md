@@ -4,6 +4,8 @@ Convert system from ``AMS`` to ``ppc``
 
 Fix ``setup()``
 
+Analyze the PYPOWER structure
+
 Include MATPOWER data file format in documentation (2023-02-21)
 
 Fix PYPOWER functionality (2023-2-20)
