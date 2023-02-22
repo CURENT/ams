@@ -12,16 +12,8 @@ Note: With packages ``graphviz`` and ``pydeps``, we can have visualize the modul
 
 ![alt text](./fig/opf.svg "Structure of ``opf``")
 
-Visualize ``runopf``:
+Visualize PYPOWER:
 
 ```
-pydeps /Users/jinningwang/Documents/work/ams/ams/solver/pypower/runopf.py -o runopf.svg --rankdir LR --exclude-exact ams ams.main ams.system ams.core ams.utils
+python /Users/jinningwang/Documents/work/ams/dev/notes/fig/plot_deps.py
 ```
-
-Visualize ``opf``:
-
-```
-pydeps /Users/jinningwang/Documents/work/ams/ams/solver/pypower/opf.py -o opf.svg --rankdir LR --exclude-exact ams ams.main ams.system ams.core ams.utils numpy
-```
-
-/home/jwang175/ams/ams/solver/pypower/opf.py
