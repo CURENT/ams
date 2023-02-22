@@ -21,5 +21,7 @@ pydeps /Users/jinningwang/Documents/work/ams/ams/solver/pypower/runopf.py -o run
 Visualize ``opf``:
 
 ```
-pydeps /Users/jinningwang/Documents/work/ams/ams/solver/pypower/opf.py -o opf.svg --rankdir LR --exclude-exact ams ams.main ams.system ams.core ams.utils
+pydeps /Users/jinningwang/Documents/work/ams/ams/solver/pypower/opf.py -o opf.svg --rankdir LR --exclude-exact ams ams.main ams.system ams.core ams.utils numpy
 ```
+
+/home/jwang175/ams/ams/solver/pypower/opf.py
