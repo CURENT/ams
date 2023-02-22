@@ -20,6 +20,14 @@ Module ``opf_setup``
 
 ![alt text](./fig/opf_setup.svg "Structure of ``opf``")
 
+Module of ``opf_execute``
+
+![alt text](./fig/opf_execute.svg "Structure of ``opf_execute``")
+
+Module of ``pipsopf_solver``
+
+![alt text](./fig/pipsopf_solver.svg "Structure of ``pipsopf_solver``")
+
 Visualize PYPOWER:
 
 ```
