@@ -12,7 +12,7 @@ ams_root = ams.utils.paths.ams_root()
 pypower_path = os.path.join(ams_root, 'solver/pypower')
 figfolder_path = os.path.normpath(os.path.join(ams_root, '../dev/notes/fig'))
 
-module_to_dps = ["opf", "runopf"]
+module_to_dps = ["opf", "runopf", "opf_setup"]
 
 for module_name in module_to_dps:
     logger.warning(f"Plotting dependencies of {module_name}...")
