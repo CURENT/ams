@@ -54,14 +54,11 @@ def to_ppc(ssp) -> dict:
     # --- output ppc ---
     ppc = {"version": '2'}
 
-    ## system MVA base
+    # system MVA base
     ppc["baseMVA"] = ssp.config.mva
 
-    ## bus data
-    ssp_bus = ssp.Bus.as_df()
-    ssp_pq = ssp.PQ.as_df()
-    ssp_pq[['p0', 'q0']] = ssp_pq[['p0', 'q0']] * ssp.config.mva
-    ssp_pq['type'] = 1
+    # bus data
+    ssp_bus = ssp.Bus.as_df().rename(columns={'idx': 'bus'})
 
     # NOTE: bus data: bus_i type Pd Qd Gs Bs area Vm Va baseKV zone Vmax Vmin
     # NOTE: bus type, 1 = PQ, 2 = PV, 3 = ref, 4 = isolated
@@ -69,17 +66,30 @@ def to_ppc(ssp) -> dict:
                 'baseKV', 'zone', 'Vmax', 'Vmin']
     ppc_bus = pd.DataFrame(columns=bus_cols)
 
-    ppc_bus['bus_i'] = ssp_bus['idx']  # TODO: will run into error if idx type is string
+    ppc_bus['bus_i'] = ssp_bus['bus']  # TODO: will run into error if idx type is string
     ppc_bus['type'] = 4
 
-    ppc_load = pd.merge(ssp_bus[['idx']].rename(columns={'idx': 'bus'}), 
-            ssp_pq[['bus', 'p0', 'q0', 'type']].rename(columns={'p0': 'Pd', 'q0': 'Qd'}), 
-            on='bus', how='left').fillna(0)
+    # load data
+    ssp_pq = ssp.PQ.as_df()
+    ssp_pq[['p0', 'q0']] = ssp_pq[['p0', 'q0']] * ssp.config.mva
+    ssp_pq['type'] = 1
+    ppc_load = pd.merge(ssp_bus,
+                        ssp_pq[['bus', 'p0', 'q0', 'type']].rename(columns={'p0': 'Pd', 'q0': 'Qd'}),
+                        on='bus', how='left').fillna(0)
     ppc_bus['Pd'] = ppc_load['Pd']
     ppc_bus['Qd'] = ppc_load['Qd']
 
-    ppc_bus['Gs'] = 0
-    ppc_bus['Bs'] = 0
+    # shunt data
+    ssp_shunt = ssp.Shunt.as_df()
+    ssp_shunt['g'] = ssp_shunt['g'] * ssp_shunt['u']
+    ssp_shunt['b'] = ssp_shunt['b'] * ssp_shunt['u']
+    ssp_shunt[['g', 'b']] = ssp_shunt[['g', 'b']] * ssp.config.mva
+    ppc_y = pd.merge(ssp_bus,
+                     ssp_shunt[['bus', 'g', 'b']].rename(columns={'g': 'Gs', 'b': 'Bs'}),
+                     on='bus', how='left').fillna(0)
+    ppc_bus['Gs'] = ppc_y['Gs']
+    ppc_bus['Bs'] = ppc_y['Bs']
+
     ppc_bus['area'] = 1
     ppc_bus['Vm'] = ssp_bus['v0']
     ppc_bus['Va'] = ssp_bus['a0']
@@ -88,7 +98,5 @@ def to_ppc(ssp) -> dict:
     ppc_bus['Vmax'] = ssp_bus['vmax']
     ppc_bus['Vmin'] = ssp_bus['vmin']
     ppc["bus"] = ppc_bus.values
-
-
 
     return ppc
