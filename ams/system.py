@@ -9,7 +9,6 @@ from collections import OrderedDict
 from typing import Dict, Optional, Tuple, Union
 
 from andes.core import Config
-from andes.system import ExistingModels as andes_ExistingModels
 from andes.system import System as andes_System
 from andes.system import (_config_numpy, load_config_rc)
 from ams.models.group import GroupBase
@@ -36,21 +35,29 @@ def disable_methods(methods):
         setattr(System, method, disable_method(getattr(System, method)))
 
 
-class ExistingModels(andes_ExistingModels):
+class ExistingModels():
     """
     Storage class for existing models used in dispatch routines.
 
-    The class is revised from ``andes.system.ExistingModels``.
+    New developed routines should register their models here.
+
+    TODO: a method ``add`` should be developed to register a new routine.
+    There should be a progressive relationship of the routines that higher routines
+    will include all the models of lower routines.
+
+    Examples
+    --------
+    Example for registering a new routine ``rted``, one should include the
+    code below::
+    ```
+    self.exist.rted = OrderedDict()
+    ```
     """
 
     def __init__(self):
-        self.dcpflow = OrderedDict()
-        self.dcopf = OrderedDict()
-        self.pflow = OrderedDict()
-        self.opf = OrderedDict()
-
-# TODO: might need a method ``add`` to register a new routine
-
+        self._rtn = ["dcpflow", "dcopf", "pflow", "opf"]
+        for rt in self._rtn:
+            setattr(self, rt, OrderedDict())
 
 class System(andes_System):
     """
@@ -142,9 +149,9 @@ class System(andes_System):
                       invalid=self.config.np_invalid,
                       )
 
-        self.exist = ExistingModels()
+        # self.exist = ExistingModels()
 
-        # TODO: revise the following attributes
+        # TODO: revise the following attributes, it seems that these are not used in AMS
         self._getters = dict(f=list(), g=list(), x=list(), y=list())
         self._adders = dict(f=list(), g=list(), x=list(), y=list())
         self._setters = dict(f=list(), g=list(), x=list(), y=list())
@@ -231,7 +238,7 @@ class System(andes_System):
         # === no device addition or removal after this point ===
         # TODO: double check calc_pu_coeff
         self.calc_pu_coeff()   # calculate parameters in system per units
-        self.store_existing()  # store models with routine flags
+        # self.store_existing()  # store models with routine flags
 
         # assign address at the end before adding devices and processing parameters
         # TODO: enable these functions later on
@@ -250,6 +257,13 @@ class System(andes_System):
         logger.info('System internal structure set up in %s.', s)
 
         return ret
+
+    # def store_existing(self):
+        # """
+        # Store existing models in `System.existing`.
+        # """
+        # for rt in self.exist._rtn:
+        #     setattr(self.exist, rt, self.find_models(rt))
 
     def __repr__(self) -> str:
         # TODO: list out the models in the system
