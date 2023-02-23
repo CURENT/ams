@@ -233,8 +233,6 @@ class System(andes_System):
 
         self._list2array()     # `list2array` must come before `link_ext_param`
 
-        self.find_devices()    # find or add required devices
-
         # === no device addition or removal after this point ===
         # TODO: double check calc_pu_coeff
         self.calc_pu_coeff()   # calculate parameters in system per units
