@@ -1,6 +1,6 @@
-from andes.models.line import LineData  # NOQA
+from andes.models.line.line import LineData  # NOQA
 
-from ams.core.model import Model
+from ams.core.model import Model  # NOQA
 
 
 class Line(LineData, Model):

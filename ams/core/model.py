@@ -5,24 +5,18 @@ Module for Model class.
 import logging
 from collections import OrderedDict
 
-from andes.core.modeldata import ModelData as andes_ModelData
-from andes.core.model import Model as andes_Model
-from andes.core.config import Config
+from andes.core.model.model import Model as andes_Model
+from andes.core.common import Config
 
 logger = logging.getLogger(__name__)
 
 
-class Model(andes_ModelData):
+class Model(andes_Model):
     """
     Base class for power system dispatch models.
     """
 
-    def __init__(self, *args, three_params=True, 
-                 system=None, config=None,
-                 **kwargs) -> None:
-
-        # --- ModelData ---
-        super().__init__(*args, three_params=three_params, **kwargs,)
+    def __init__(self, system=None, config=None):
 
         # --- Model ---
         self.system = system

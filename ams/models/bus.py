@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 import numpy as np
 
-from andes.models.Bus import BusData  # NOQA
+from andes.models.bus import BusData  # NOQA
 
 from ams.core.model import Model
 

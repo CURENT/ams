@@ -1,6 +1,8 @@
-from collections import OrderedDict
+from collections import OrderedDict  # NOQA
 
-from andes.models.static import PQData, PVData, SlackData  # NOQA
+from andes.models.static.pq import PQData  # NOQA
+from andes.models.static.pv import PVData  # NOQA
+from andes.models.static.slack import SlackData  # NOQA
 
 from ams.core.model import Model
 
