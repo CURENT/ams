@@ -4,9 +4,9 @@ Cost model.
 
 from collections import OrderedDict
 
-from andes.core import (ModelData, IdxParam, NumParam, Model,
-                        ExtAlgeb, ExtService, ConstService, Limiter)
+from andes.core import (ModelData, IdxParam, NumParam)
 
+from ams.core.model import Model
 
 class GCostData(ModelData):
     def __init__(self):
