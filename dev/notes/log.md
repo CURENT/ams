@@ -1,10 +1,12 @@
 # Development log
 
-Convert system from ``AMS`` to ``ppc``
+[WIP] Convert system from ``AMS`` to ``ppc``(2023-02-23)
 
-Fix ``setup()``
+Refactor ``ams.model``and models in AMS (2023-02-23)
 
-Analyze the PYPOWER structure
+Fix ``ams.System.setup()``(2023-02-23)
+
+Analyze the PYPOWER structure (2023-02-22)
 
 Include MATPOWER data file format in documentation (2023-02-21)
 
