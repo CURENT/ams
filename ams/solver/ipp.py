@@ -58,37 +58,26 @@ def to_ppc(ssp) -> dict:
     ppc["baseMVA"] = ssp.config.mva
 
     ## bus data
-    ppc["bus"] = _to_ppc_bus(ssp).values
+    ssp_bus = ssp.Bus.as_df()
+    ssp_pq = ssp.PQ.as_df()
+    ssp_pq[['p0', 'q0']] = ssp_pq[['p0', 'q0']] * ssp.config.mva
+    ssp_pq['type'] = 1
+
     # NOTE: bus data: bus_i type Pd Qd Gs Bs area Vm Va baseKV zone Vmax Vmin
     # NOTE: bus type, 1 = PQ, 2 = PV, 3 = ref, 4 = isolated
-    
-
-    return ppc
-
-def _to_ppc_bus(ssp) -> pd.DataFrame:
-    """
-    Convert the AMS system Bus to a DataFrame.
-
-    Parameters
-    ----------
-    ssp : ams.system
-        The AMS system.
-
-    Returns
-    -------
-    ppc_bus : pd.DataFrame
-        The bus DataFrame for conversion to PYPOWER.
-    """
-    ssp_bus = ssp.Bus.as_df()
-
     bus_cols = ['bus_i', 'type', 'Pd', 'Qd', 'Gs', 'Bs', 'area', 'Vm', 'Va',
                 'baseKV', 'zone', 'Vmax', 'Vmin']
     ppc_bus = pd.DataFrame(columns=bus_cols)
 
     ppc_bus['bus_i'] = ssp_bus['idx']  # TODO: will run into error if idx type is string
     ppc_bus['type'] = 4
-    ppc_bus['Pd'] = -1
-    ppc_bus['Qd'] = -1
+
+    ppc_load = pd.merge(ssp_bus[['idx']].rename(columns={'idx': 'bus'}), 
+            ssp_pq[['bus', 'p0', 'q0', 'type']].rename(columns={'p0': 'Pd', 'q0': 'Qd'}), 
+            on='bus', how='left').fillna(0)
+    ppc_bus['Pd'] = ppc_load['Pd']
+    ppc_bus['Qd'] = ppc_load['Qd']
+
     ppc_bus['Gs'] = 0
     ppc_bus['Bs'] = 0
     ppc_bus['area'] = 1
@@ -98,5 +87,8 @@ def _to_ppc_bus(ssp) -> pd.DataFrame:
     ppc_bus['zone'] = ssp_bus['owner']
     ppc_bus['Vmax'] = ssp_bus['vmax']
     ppc_bus['Vmin'] = ssp_bus['vmin']
-    return ppc_bus
+    ppc["bus"] = ppc_bus.values
 
+
+
+    return ppc
