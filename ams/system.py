@@ -115,6 +115,7 @@ class System(andes_System):
         self.config.add(OrderedDict((('freq', 60),
                                      ('mva', 100),
                                      ('seed', 'None'),
+                                     ('save_stats', 0),  # TODO: not sure what this is for
                                      ('np_divide', 'warn'),
                                      ('np_invalid', 'warn'),
                                      )))
