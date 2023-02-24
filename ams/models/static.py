@@ -160,6 +160,7 @@ class Slack(SlackData, GENADD, Model):
         SlackData.__init__(self)
         GENADD.__init__(self)
         Model.__init__(self, system, config)
+        self.group = 'StaticGen'
 
         self.config.add(OrderedDict((('av2pv', 0),
                                      )))

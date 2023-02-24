@@ -21,10 +21,10 @@ class Line(LineData, Model):
         self.amin = NumParam(default=- 360 * deg2rad,
                            info="minimum angle difference, from bus - to bus",
                            unit='rad',
-                           tex_name=r'\a_{min}',
+                           tex_name=r'a_{min}',
                            )
         self.amax = NumParam(default=360 * deg2rad,
                             info="maximum angle difference, from bus - to bus",
                             unit='rad',
-                            tex_name=r'\a_{max}',
+                            tex_name=r'a_{max}',
                             )
