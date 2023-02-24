@@ -118,9 +118,23 @@ def to_ppc(ssp) -> dict:
                 'ramp_agc', 'ramp_10', 'ramp_30', 'ramp_q', 'apf']
     ppc_gen = pd.DataFrame(columns=gen_cols)
 
-    # bus idx in ppc
+    # idx of bus in ppc
     gen_bus_ppc = [key_dict['Bus'][bus_idx] for bus_idx in gen_df['bus'].tolist()]
     ppc_gen['bus'] = gen_bus_ppc
+    # bus type
+    bus_type = pd.DataFrame(columns=['bus', 'type'])
+    bus_type['bus'] = key_dict['PV'].keys()
+    bus_type['type'] = 2
+    bus_type = pd.concat([bus_type,
+                        pd.DataFrame({'bus': key_dict['Slack'].keys(), 'type': 3})],
+                        axis=0, ignore_index=True)
+    # define bus type
+    ppc_bus = pd.merge(ppc_bus, bus_type.rename(columns={'bus': 'bus_i'}),
+                on='bus_i', how='left', suffixes=('_x', '_y'))
+    ppc_bus['type'] = ppc_bus['type_y'].fillna(1).astype(int)
+    ppc_bus.drop(columns=['type_x', 'type_y'], inplace=True)
+    ppc_bus = ppc_bus.reindex(columns=bus_cols)
+
     # data that needs to be converted
     dcols = OrderedDict([
         ('Pg', 'p0'), ('Qg', 'q0'), ('Qmax', 'qmax'), ('Qmin', 'qmin'),
@@ -145,4 +159,4 @@ def to_ppc(ssp) -> dict:
     ppc["bus"] = ppc_bus.values
     ppc["gen"] = ppc_gen.values
 
-    return ppc, key_dict, ppc_bus, ppc_gen
+    return ppc, key_dict, bus_type, ppc_bus, ppc_gen
