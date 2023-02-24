@@ -1,5 +1,5 @@
 """
-Interface to PyPower
+Interface to PYPOWER
 """
 import logging
 
@@ -13,17 +13,17 @@ logger = logging.getLogger(__name__)
 
 def load_ppc(case) -> dict:
     """
-    Load PyPower case file into a dict.
+    Load PYPOWER case file into a dict.
 
     Parameters
     ----------
     case : str
-        The path to the PyPower case file.
+        The path to the PYPOWER case file.
 
     Returns
     -------
     ppc : dict
-        The PyPower case dict.
+        The PYPOWER case dict.
     """
     exec(open(f"{case}").read())
     # NOTE: the following line is not robust
@@ -35,7 +35,7 @@ def load_ppc(case) -> dict:
 
 def to_ppc(ssp) -> dict:
     """
-    Convert the AMS system to a PyPower case dict.
+    Convert the AMS system to a PYPOWER case dict.
 
     Parameters
     ----------
@@ -45,15 +45,17 @@ def to_ppc(ssp) -> dict:
     Returns
     -------
     ppc : dict
-        The PyPower case dict.
+        The PYPOWER case dict.
+    key_dict : OrderedDict
+        Mapping dict between AMS system and PYPOWER.
     """
-    # TODO: convert the AMS system to a PyPower case dict
+    # TODO: convert the AMS system to a PYPOWER case dict
 
     if not ssp.is_setup:
         logger.warning('System has not been setup. Conversion aborted.')
         return None
 
-    idx = OrderedDict()
+    key_dict = OrderedDict()
 
     # --- initialize ppc ---
     ppc = {"version": '2'}
@@ -62,7 +64,8 @@ def to_ppc(ssp) -> dict:
 
     # --- bus data ---
     ssp_bus = ssp.Bus.as_df().rename(columns={'idx': 'bus'}).reset_index(drop=True)
-    idx['bus'] = {ssp: ppc for ssp, ppc in enumerate(ssp_bus['bus'].tolist())}
+    key_dict['Bus'] = OrderedDict(
+        {ssp: ppc for ssp, ppc in enumerate(ssp_bus['bus'].tolist(), start=1)})
 
     # NOTE: bus data: bus_i type Pd Qd Gs Bs area Vm Va baseKV zone Vmax Vmin
     # NOTE: bus type, 1 = PQ, 2 = PV, 3 = ref, 4 = isolated
@@ -70,17 +73,17 @@ def to_ppc(ssp) -> dict:
                 'baseKV', 'zone', 'Vmax', 'Vmin']
     ppc_bus = pd.DataFrame(columns=bus_cols)
 
-    ppc_bus['bus_i'] = idx['bus'].values()
-    ppc_bus['type'] = 4
+    ppc_bus['bus_i'] = key_dict['Bus'].values()
+    ppc_bus['type'] = 1  # default to PQ bus
+    # TODO: add check for isolated buses
 
     # load data
     ssp_pq = ssp.PQ.as_df()
     ssp_pq[['p0', 'q0']] = ssp_pq[['p0', 'q0']].mul(mva)
-    ssp_pq['type'] = 1
     ppc_load = pd.merge(ssp_bus,
-                        ssp_pq[['bus', 'p0', 'q0', 'type']].rename(columns={'p0': 'Pd', 'q0': 'Qd'}),
+                        ssp_pq[['bus', 'p0', 'q0']].rename(columns={'p0': 'Pd', 'q0': 'Qd'}),
                         on='bus', how='left').fillna(0)
-    ppc_bus[['type', 'Pd', 'Qd']] = ppc_load[['type', 'Pd', 'Qd']]
+    ppc_bus[['Pd', 'Qd']] = ppc_load[['Pd', 'Qd']]
 
     # shunt data
     ssp_shunt = ssp.Shunt.as_df()
@@ -101,7 +104,10 @@ def to_ppc(ssp) -> dict:
     pv_df = ssp.PV.as_df()
     slack_df = ssp.Slack.as_df()
     gen_df = pd.concat([pv_df, slack_df], ignore_index=True)
-    idx['gen'] = {ssp: ppc for ssp, ppc in enumerate(gen_df['idx'].tolist())}
+    key_dict['Slack'] = OrderedDict(
+        {ssp: ppc for ssp, ppc in enumerate(slack_df['idx'].tolist(), start=1)})
+    key_dict['PV'] = OrderedDict(
+        {ssp: ppc for ssp, ppc in enumerate(pv_df['idx'].tolist(), start=1)})
 
     # NOTE: gen data:
     # bus, Pg, Qg, Qmax, Qmin, Vg, mBase, status, Pmax, Pmin, Pc1, Pc2,
@@ -113,9 +119,9 @@ def to_ppc(ssp) -> dict:
     ppc_gen = pd.DataFrame(columns=gen_cols)
 
     # bus idx in ppc
-    gen_bus_ppc = [idx['bus'][bus_idx] for bus_idx in gen_df['bus'].tolist()]
+    gen_bus_ppc = [key_dict['Bus'][bus_idx] for bus_idx in gen_df['bus'].tolist()]
     ppc_gen['bus'] = gen_bus_ppc
-    ## data that needs to be converted
+    # data that needs to be converted
     dcols = OrderedDict([
         ('Pg', 'p0'), ('Qg', 'q0'), ('Qmax', 'qmax'), ('Qmin', 'qmin'),
         ('Pmax', 'pmax'), ('Pmin', 'pmin'), ('ramp_agc', 'Ragc'),
@@ -136,7 +142,7 @@ def to_ppc(ssp) -> dict:
     # gencost
 
     # --- output ---
-    ppc["gen"] = ppc_gen.values
     ppc["bus"] = ppc_bus.values
+    ppc["gen"] = ppc_gen.values
 
-    return ppc, ppc_gen, idx
+    return ppc, key_dict, ppc_bus, ppc_gen
