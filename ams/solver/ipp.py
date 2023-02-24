@@ -3,8 +3,10 @@ Interface to PyPower
 """
 import logging
 
+from collections import OrderedDict  # NOQA
+
 from numpy import array  # NOQA
-import pandas as pd
+import pandas as pd  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -51,14 +53,16 @@ def to_ppc(ssp) -> dict:
         logger.warning('System has not been setup. Conversion aborted.')
         return None
 
-    # --- output ppc ---
+    idx = OrderedDict()
+
+    # --- initialize ppc ---
     ppc = {"version": '2'}
+    mva = ssp.config.mva  # system MVA base
+    ppc["baseMVA"] = mva
 
-    # system MVA base
-    ppc["baseMVA"] = ssp.config.mva
-
-    ## initialize bus data
-    ssp_bus = ssp.Bus.as_df().rename(columns={'idx': 'bus'})
+    # --- bus data ---
+    ssp_bus = ssp.Bus.as_df().rename(columns={'idx': 'bus'}).reset_index(drop=True)
+    idx['bus'] = {ssp: ppc for ssp, ppc in enumerate(ssp_bus['bus'].tolist())}
 
     # NOTE: bus data: bus_i type Pd Qd Gs Bs area Vm Va baseKV zone Vmax Vmin
     # NOTE: bus type, 1 = PQ, 2 = PV, 3 = ref, 4 = isolated
@@ -66,48 +70,62 @@ def to_ppc(ssp) -> dict:
                 'baseKV', 'zone', 'Vmax', 'Vmin']
     ppc_bus = pd.DataFrame(columns=bus_cols)
 
-    ppc_bus['bus_i'] = ssp_bus['bus']  # TODO: will run into error if idx type is string
+    ppc_bus['bus_i'] = idx['bus'].values()
     ppc_bus['type'] = 4
 
-    ## load data
+    # load data
     ssp_pq = ssp.PQ.as_df()
-    ssp_pq[['p0', 'q0']] = ssp_pq[['p0', 'q0']] * ssp.config.mva
+    ssp_pq[['p0', 'q0']] = ssp_pq[['p0', 'q0']] * mva
     ssp_pq['type'] = 1
     ppc_load = pd.merge(ssp_bus,
                         ssp_pq[['bus', 'p0', 'q0', 'type']].rename(columns={'p0': 'Pd', 'q0': 'Qd'}),
                         on='bus', how='left').fillna(0)
-    ppc_bus['Pd'] = ppc_load['Pd']
-    ppc_bus['Qd'] = ppc_load['Qd']
+    ppc_bus[['type', 'Pd', 'Qd']] = ppc_load[['type', 'Pd', 'Qd']]
 
-    ## shunt data
+    # shunt data
     ssp_shunt = ssp.Shunt.as_df()
     ssp_shunt['g'] = ssp_shunt['g'] * ssp_shunt['u']
     ssp_shunt['b'] = ssp_shunt['b'] * ssp_shunt['u']
-    ssp_shunt[['g', 'b']] = ssp_shunt[['g', 'b']] * ssp.config.mva
+    ssp_shunt[['g', 'b']] = ssp_shunt[['g', 'b']] * mva
     ppc_y = pd.merge(ssp_bus,
                      ssp_shunt[['bus', 'g', 'b']].rename(columns={'g': 'Gs', 'b': 'Bs'}),
                      on='bus', how='left').fillna(0)
-    ppc_bus['Gs'] = ppc_y['Gs']
-    ppc_bus['Bs'] = ppc_y['Bs']
+    ppc_bus[['Gs', 'Bs']] = ppc_y[['Gs', 'Bs']]
 
-    ## rest of the bus data
-    ppc_bus['area'] = ssp_bus['area']
-    ppc_bus['Vm'] = ssp_bus['v0']
-    ppc_bus['Va'] = ssp_bus['a0']
-    ppc_bus['baseKV'] = ssp_bus['Vn']
-    ppc_bus['zone'] = ssp_bus['owner']
-    ppc_bus['Vmax'] = ssp_bus['vmax']
-    ppc_bus['Vmin'] = ssp_bus['vmin']
+    # rest of the bus data
+    ppc_bus_cols = ['area', 'Vm', 'Va', 'baseKV', 'zone', 'Vmax', 'Vmin']
+    ssp_bus_cols = ['area', 'v0', 'a0', 'Vn', 'owner', 'vmax', 'vmin']
+    ppc_bus[ppc_bus_cols] = ssp_bus[ssp_bus_cols]
 
-    ## generator
+    # --- generator data ---
+    pv_df = ssp.PV.as_df()
+    slack_df = ssp.Slack.as_df()
+    gen_df = pd.concat([pv_df, slack_df], ignore_index=True)
+    idx['gen'] = {ssp: ppc for ssp, ppc in enumerate(gen_df['idx'].tolist())}
 
-    ## branch
+    # NOTE: gen data: 
+    # bus, Pg, Qg, Qmax, Qmin, Vg, mBase, status, Pmax, Pmin, Pc1, Pc2,
+    # Qc1min, Qc1max, Qc2min, Qc2max, ramp_agc, ramp_10, ramp_30, ramp_q, apf
+    gen_cols = ['bus', 'Pg', 'Qg', 'Qmax', 'Qmin', 'Vg', 'mBase', 'status', 'Pmax', 'Pmin', 'Pc1', 'Pc2',
+                'Qc1min', 'Qc1max', 'Qc2min', 'Qc2max', 'ramp_agc', 'ramp_10', 'ramp_30', 'ramp_q', 'apf']
+    ppc_gen = pd.DataFrame(columns=gen_cols)
 
-    ## areas
+    # bus idx in ppc
+    gen_bus_ppc = [idx['bus'][bus_idx] for bus_idx in gen_df['bus'].tolist()]
+    ppc_gen['bus'] = gen_bus_ppc
+    ppc_gen['Pg'] = gen_df['p0'] * mva
+    ppc_gen['Qg'] = gen_df['q0'] * mva
+    ppc_gen['Qmax'] = gen_df['qmax'] * mva
+    ppc_gen['Qmin'] = gen_df['qmin'] * mva
+    ppc_gen['Vg'] = gen_df['v0']
 
-    ## gencost
+    # branch
 
-    ## output bus data
+    # areas
+
+    # gencost
+
+    # output bus data
     ppc["bus"] = ppc_bus.values
 
-    return ppc
+    return ppc, ppc_bus, idx
