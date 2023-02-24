@@ -115,20 +115,19 @@ def to_ppc(ssp) -> dict:
     # bus idx in ppc
     gen_bus_ppc = [idx['bus'][bus_idx] for bus_idx in gen_df['bus'].tolist()]
     ppc_gen['bus'] = gen_bus_ppc
-    # gen_mva_cols = OrderedDict([
-    #     ('Pg', 'p0'), ('Qg', 'q0'),
-    #     ('Qmax', 'qmax'), ('Qmin', 'qmin'),
-    #     ('Pmax', 'pmax'), ('Pmin', 'pmin'),
-    # ])
-    # gen_mva_cols = ['Pg', 'Qg', 'Qmax', 'Qmin', 'Pmax', 'Pmin', 'Pc1', 'Pc2',
-    #                 'Qc1min', 'Qc1max', 'Qc2min', 'Qc2max',
-    #                 'ramp_agc', 'ramp_10', 'ramp_30', 'ramp_q']
+    ## data that needs to be converted
+    dcols = OrderedDict([
+        ('Pg', 'p0'), ('Qg', 'q0'), ('Qmax', 'qmax'), ('Qmin', 'qmin'),
+        ('Pmax', 'pmax'), ('Pmin', 'pmin'), ('ramp_agc', 'Ragc'),
+        ('ramp_10', 'R10'), ('ramp_30', 'R30'), ('ramp_q', 'Rq')
+    ])
+    scols = ['Pc1', 'Pc2', 'Qc1min', 'Qc1max', 'Qc2min', 'Qc2max', 'apf']
+    ppc_gen[list(dcols.keys())] = gen_df[list(dcols.values())].mul(mva)
+    ppc_gen[scols] = gen_df[scols].mul(mva)
+    ppc_gen['Vg'] = gen_df['v0']
 
-    # ppc_gen['Pg'] = gen_df['p0'] * mva
-    # ppc_gen['Qg'] = gen_df['q0'] * mva
-    # ppc_gen['Qmax'] = gen_df['qmax'] * mva
-    # ppc_gen['Qmin'] = gen_df['qmin'] * mva
-    # ppc_gen['Vg'] = gen_df['v0']
+    # rest of the gen data
+    ppc_gen[['mBase', 'status', 'Vg']] = gen_df[['Sn', 'u', 'v0']]
 
     # branch
 
@@ -136,7 +135,8 @@ def to_ppc(ssp) -> dict:
 
     # gencost
 
-    # output bus data
+    # --- output ---
+    ppc["gen"] = ppc_gen.values
     ppc["bus"] = ppc_bus.values
 
-    return ppc, ppc_bus, idx
+    return ppc, ppc_gen, idx
