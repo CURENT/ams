@@ -8,6 +8,8 @@ from collections import OrderedDict  # NOQA
 from numpy import array  # NOQA
 import pandas as pd  # NOQA
 
+from andes.shared import rad2deg  # NOQA
+
 logger = logging.getLogger(__name__)
 
 
@@ -146,17 +148,27 @@ def to_ppc(ssp) -> dict:
     ppc_gen[scols] = gen_df[scols].mul(mva)
     ppc_gen['Vg'] = gen_df['v0']
 
+    ppc["bus"] = ppc_bus.values
+    ppc["gen"] = ppc_gen.values
+
     # rest of the gen data
     ppc_gen[['mBase', 'status', 'Vg']] = gen_df[['Sn', 'u', 'v0']]
 
-    # branch
+    # --- branch data ---
+    line_df = ssp.Line.as_df()
+    line_cols = ['fbus', 'tbus', 'r', 'x', 'b', 'rateA', 'rateB', 'rateC',
+                    'ratio', 'angle', 'status', 'angmin', 'angmax']
+    ppc_line = pd.DataFrame(columns=line_cols)
+    ppc_line_col = ['fbus', 'tbus', 'r', 'x', 'b',  'rateA', 'rateB', 'rateC', 'ratio', 'angle', 'status']
+    ssp_line_col = ['bus1', 'bus2', 'r', 'x', 'b', 'rate_a', 'rate_b', 'rate_c', 'tap', 'phi', 'u',  'angmin', 'angmax']
+    ppc_line[['fbus', 'tbus', 'r', 'x', 'b', 'ratio']] = line_df[['bus1', 'bus2', 'r', 'x', 'b', 'tap']]
+    ppc_line[['angmin', 'angmax']] = line_df[['amin', 'amax']] * rad2deg
+    ppc_line[['fbus', 'tbus']] = ppc_line[['fbus', 'tbus']].replace(key_dict['Bus'])
 
     # areas
 
     # gencost
 
     # --- output ---
-    ppc["bus"] = ppc_bus.values
-    ppc["gen"] = ppc_gen.values
 
-    return ppc, key_dict, bus_type, ppc_bus, ppc_gen
+    return ppc, key_dict, bus_type, ppc_bus, ppc_gen, ppc_line
