@@ -11,7 +11,7 @@
 
 # TODO: fix the importing error later on
 import ams
-import shutil
+# import shutil
 
 extensions = [
     'sphinx.ext.autodoc',
