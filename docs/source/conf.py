@@ -169,6 +169,9 @@ html_favicon = 'images/curent.ico'
 # Disable smartquotes to display double dashes correctly
 smartquotes = False
 
+# import and execute model reference generation script
+exec(open("genmodelref.py").read())
+
 jupyter_execute_notebooks = "off"
 
 # import and execute model reference generation script

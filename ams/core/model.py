@@ -10,6 +10,8 @@ import numpy as np
 from andes.core.common import Config
 from andes.utils.func import list_flatten
 
+from ams.core.documenter import Documenter
+
 logger = logging.getLogger(__name__)
 
 
@@ -32,6 +34,8 @@ class Model:
                                     ('adjust_lower', 0),
                                     ('adjust_upper', 1),
                                      )))
+# symbolic processor instance
+        self.docum = Documenter(self)
 
         # TODO: duplicate from ANDES, disable for now
         # self.syms = SymProcessor(self)  # symbolic processor instance
@@ -119,7 +123,6 @@ class Model:
         else:
             raise NotImplementedError(f'Unknown idx type {type(idx)}')
 
-
     def _one_idx2uid(self, idx):
         """
         Helper function for checking if an idx exists and
@@ -131,3 +134,9 @@ class Model:
                            (self.class_name, idx))
 
         return self.uid[idx]
+
+    def doc(self, max_width=78, export='plain'):
+        """
+        Retrieve model documentation as a string.
+        """
+        return self.docum.get(max_width=max_width, export=export)

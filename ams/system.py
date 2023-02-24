@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 def disable_method(func):
     def wrapper(*args, **kwargs):
-        logger.warning(f"Method `{func.__name__}` is bounded to ANDES System but not supported in AMS System.")
+        logger.warning(f"Method `{func.__name__}` is included in ANDES System but not supported in AMS System.")
         return None
     return wrapper
 
@@ -87,7 +87,7 @@ class System(andes_System):
             'import_routines', 'init', 'j_islands', 'j_update', 'l_update_eq', 'connectivity', 'summary',
             'l_update_var', 'link_ext_param', 'precompile', 'prepare', 'reload', 'remove_pycapsule', 'reset',
             's_update_post', 's_update_var', 'store_adder_setter', 'store_no_check_init',
-            'store_sparse_pattern', 'store_switch_times', 'supported_models', 'switch_action', 'to_ipysheet',
+            'store_sparse_pattern', 'store_switch_times', 'switch_action', 'to_ipysheet',
             'undill']
         disable_methods(func_to_disable)
         # TODO: it seems that ``connectivity`` and ``summary`` can be skipped in AMS
