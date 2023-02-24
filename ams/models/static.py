@@ -1,5 +1,6 @@
 from collections import OrderedDict  # NOQA
 
+from andes.core.param import NumParam
 from andes.models.static.pq import PQData  # NOQA
 from andes.models.static.pv import PVData  # NOQA
 from andes.models.static.slack import SlackData  # NOQA
@@ -55,7 +56,60 @@ class PQ(PQData, Model):
                               )
 
 
-class PV(PVData, Model):
+class GENADD:
+    """
+    Additional parameters for static generators.
+
+    # TODO: check default values
+    """
+
+    def __init__(self) -> None:
+        self.Pc1 = NumParam(default=0.0,
+                            info="lower real power output of PQ capability curve",
+                            tex_name=r'P_{c1}',
+                            unit='p.u.')
+        self.Pc2 = NumParam(default=0.0,
+                            info="upper real power output of PQ capability curve",
+                            tex_name=r'P_{c2}',
+                            unit='p.u.')
+        self.Qc1min = NumParam(default=0.0,
+                               info="minimum reactive power output at Pc1",
+                               tex_name=r'Q_{c1min}',
+                               unit='p.u.')
+        self.Qc1max = NumParam(default=0.0,
+                               info="maximum reactive power output at Pc1",
+                               tex_name=r'Q_{c1max}',
+                               unit='p.u.')
+        self.Qc2min = NumParam(default=0.0,
+                               info="minimum reactive power output at Pc2",
+                               tex_name=r'Q_{c2min}',
+                               unit='p.u.')
+        self.Qc2max = NumParam(default=0.0,
+                               info="maximum reactive power output at Pc2",
+                               tex_name=r'Q_{c2max}',
+                               unit='p.u.')
+        self.Ragc = NumParam(default=999.0,
+                             info="ramp rate for load following/AGC",
+                             tex_name=r'R_{agc}',
+                             unit='p.u./min')
+        self.R10 = NumParam(default=999.0,
+                            info="ramp rate for 10 minute reserves",
+                            tex_name=r'R_{10}',
+                            unit='p.u./min')
+        self.R30 = NumParam(default=999.0,
+                            info="30 minute ramp rate",
+                            tex_name=r'R_{30}',
+                            unit='p.u./min')
+        self.Rq = NumParam(default=999.0,
+                           info="ramp rate for reactive power (2 sec timescale)",
+                           tex_name=r'R_{q}',
+                           unit='p.u./min')
+        self.apf = NumParam(default=0.0,
+                            info="area participation factor",
+                            tex_name=r'apf')
+
+
+class PV(PVData, GENADD, Model):
     """
     PV generator model.
 
@@ -64,6 +118,7 @@ class PV(PVData, Model):
 
     def __init__(self, system, config):
         PVData.__init__(self)
+        GENADD.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'StaticGen'
 
@@ -96,13 +151,14 @@ class PV(PVData, Model):
                               )
 
 
-class Slack(SlackData, Model):
+class Slack(SlackData, GENADD, Model):
     """
     Slack generator.
     """
 
     def __init__(self, system=None, config=None):
         SlackData.__init__(self)
+        GENADD.__init__(self)
         Model.__init__(self, system, config)
 
         self.config.add(OrderedDict((('av2pv', 0),
