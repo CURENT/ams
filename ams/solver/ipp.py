@@ -75,7 +75,7 @@ def to_ppc(ssp) -> dict:
 
     # load data
     ssp_pq = ssp.PQ.as_df()
-    ssp_pq[['p0', 'q0']] = ssp_pq[['p0', 'q0']] * mva
+    ssp_pq[['p0', 'q0']] = ssp_pq[['p0', 'q0']].mul(mva)
     ssp_pq['type'] = 1
     ppc_load = pd.merge(ssp_bus,
                         ssp_pq[['bus', 'p0', 'q0', 'type']].rename(columns={'p0': 'Pd', 'q0': 'Qd'}),
@@ -103,21 +103,32 @@ def to_ppc(ssp) -> dict:
     gen_df = pd.concat([pv_df, slack_df], ignore_index=True)
     idx['gen'] = {ssp: ppc for ssp, ppc in enumerate(gen_df['idx'].tolist())}
 
-    # NOTE: gen data: 
+    # NOTE: gen data:
     # bus, Pg, Qg, Qmax, Qmin, Vg, mBase, status, Pmax, Pmin, Pc1, Pc2,
     # Qc1min, Qc1max, Qc2min, Qc2max, ramp_agc, ramp_10, ramp_30, ramp_q, apf
-    gen_cols = ['bus', 'Pg', 'Qg', 'Qmax', 'Qmin', 'Vg', 'mBase', 'status', 'Pmax', 'Pmin', 'Pc1', 'Pc2',
-                'Qc1min', 'Qc1max', 'Qc2min', 'Qc2max', 'ramp_agc', 'ramp_10', 'ramp_30', 'ramp_q', 'apf']
+    gen_cols = ['bus', 'Pg', 'Qg', 'Qmax', 'Qmin', 'Vg', 'mBase', 'status',
+                'Pmax', 'Pmin', 'Pc1', 'Pc2',
+                'Qc1min', 'Qc1max', 'Qc2min', 'Qc2max',
+                'ramp_agc', 'ramp_10', 'ramp_30', 'ramp_q', 'apf']
     ppc_gen = pd.DataFrame(columns=gen_cols)
 
     # bus idx in ppc
     gen_bus_ppc = [idx['bus'][bus_idx] for bus_idx in gen_df['bus'].tolist()]
     ppc_gen['bus'] = gen_bus_ppc
-    ppc_gen['Pg'] = gen_df['p0'] * mva
-    ppc_gen['Qg'] = gen_df['q0'] * mva
-    ppc_gen['Qmax'] = gen_df['qmax'] * mva
-    ppc_gen['Qmin'] = gen_df['qmin'] * mva
-    ppc_gen['Vg'] = gen_df['v0']
+    # gen_mva_cols = OrderedDict([
+    #     ('Pg', 'p0'), ('Qg', 'q0'),
+    #     ('Qmax', 'qmax'), ('Qmin', 'qmin'),
+    #     ('Pmax', 'pmax'), ('Pmin', 'pmin'),
+    # ])
+    # gen_mva_cols = ['Pg', 'Qg', 'Qmax', 'Qmin', 'Pmax', 'Pmin', 'Pc1', 'Pc2',
+    #                 'Qc1min', 'Qc1max', 'Qc2min', 'Qc2max',
+    #                 'ramp_agc', 'ramp_10', 'ramp_30', 'ramp_q']
+
+    # ppc_gen['Pg'] = gen_df['p0'] * mva
+    # ppc_gen['Qg'] = gen_df['q0'] * mva
+    # ppc_gen['Qmax'] = gen_df['qmax'] * mva
+    # ppc_gen['Qmin'] = gen_df['qmin'] * mva
+    # ppc_gen['Vg'] = gen_df['v0']
 
     # branch
 
