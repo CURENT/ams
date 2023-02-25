@@ -18,13 +18,16 @@ class Line(LineData, Model):
         Model.__init__(self, system, config)
         self.group = 'ACLine'
 
-        self.amin = NumParam(default=- 360 * deg2rad,
+        self.amin = NumParam(default= -360 * deg2rad,
                            info="minimum angle difference, from bus - to bus",
                            unit='rad',
                            tex_name=r'a_{min}',
                            )
-        self.amax = NumParam(default=360 * deg2rad,
+        self.amax = NumParam(default= 360 * deg2rad,
                             info="maximum angle difference, from bus - to bus",
                             unit='rad',
                             tex_name=r'a_{max}',
                             )
+        self.rate_a.default = 999.0
+        self.rate_b.default = 999.0
+        self.rate_c.default = 999.0
