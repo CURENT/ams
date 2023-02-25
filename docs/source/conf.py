@@ -57,9 +57,9 @@ author = 'Jinning Wang'
 
 # TODO: fix the version later on
 # The short X.Y version.
-version = "0.5.0"
+version = ams.__version__
 # The full version, including alpha/beta/rc tags.
-release = "0.5.0"
+release = ams.__version__
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -78,7 +78,7 @@ html_theme = 'pydata_sphinx_theme'
 #
 html_theme_options = {
     "use_edit_page_button": True,
-    "footer_items": ["copyright", "sphinx-version", "theme-version"],
+    # "footer_items": ["copyright", "sphinx-version", "theme-version"],
 }
 
 html_context = {
