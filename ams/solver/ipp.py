@@ -161,7 +161,7 @@ def to_ppc(ssp) -> dict:
     ppc_line = pd.DataFrame(columns=line_cols)
     ppc_line_col = ['fbus', 'tbus', 'r', 'x', 'b',  'rateA', 'rateB', 'rateC', 'ratio', 'angle', 'status']
     ssp_line_col = ['bus1', 'bus2', 'r', 'x', 'b', 'rate_a', 'rate_b', 'rate_c', 'tap', 'phi', 'u',  'angmin', 'angmax']
-    ppc_line[['fbus', 'tbus', 'r', 'x', 'b', 'ratio']] = line_df[['bus1', 'bus2', 'r', 'x', 'b', 'tap']]
+    ppc_line[['fbus', 'tbus', 'r', 'x', 'b', 'ratio', 'status']] = line_df[['bus1', 'bus2', 'r', 'x', 'b', 'tap', 'u']]
     ppc_line[['angmin', 'angmax']] = line_df[['amin', 'amax']] * rad2deg
     ppc_line[['fbus', 'tbus']] = ppc_line[['fbus', 'tbus']].replace(key_dict['Bus'])
 
