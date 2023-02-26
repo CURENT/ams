@@ -173,14 +173,25 @@ def to_ppc(ssp) -> dict:
     ppc_line[['fbus', 'tbus']] = ppc_line[['fbus', 'tbus']].replace(key_dict['Bus'])
     ppc["branch"] = ppc_line.values
 
-    # -- area data --
+    # --- area data ---
     area_df = ssp.Area.as_df()
     key_dict['Area'] = OrderedDict(
         {ssp: ppc for ssp, ppc in enumerate(area_df['idx'].tolist(), start=1)})
     ppc['areas'] = array(list(key_dict['Area'].values()))
 
-    # gencost
+    # --- gencost data ---
+    gc_df = ssp.GCost.as_df()
+    key_dict['GCost'] = OrderedDict(
+        {ssp: ppc for ssp, ppc in enumerate(gc_df['idx'].tolist(), start=1)})
 
-    # --- output ---
+    # TODO: Add Model 1
+    gcost_cols = ['model', 'startup', 'shutdown', 'n', 'c2', 'c1', 'c0']
+    ppc_gcost = pd.DataFrame(columns=gcost_cols)
+    gc_df = pd.merge(left=gen_df[['idx']].rename(columns={'idx': 'gen'}),
+                        right=gc_df, on='gen', how='left')
+    ppc_gcost[['startup', 'shutdown', 'c2', 'c1', 'c0']] = gc_df[['startup', 'shutdown', 'c2', 'c1', 'c0']]
+    ppc_gcost['model'] = 2
+    ppc_gcost['n'] = 3
+    ppc["gencost"] = ppc_gcost.values
 
-    return ppc, key_dict, bus_type, ppc_bus, ppc_gen, ppc_line
+    return ppc, key_dict
