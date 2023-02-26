@@ -156,6 +156,9 @@ def to_ppc(ssp) -> dict:
 
     # --- branch data ---
     line_df = ssp.Line.as_df()
+    key_dict['Line'] = OrderedDict(
+        {ssp: ppc for ssp, ppc in enumerate(line_df['idx'].tolist(), start=1)})
+
     line_cols = ['fbus', 'tbus', 'r', 'x', 'b', 'rateA', 'rateB', 'rateC',
                     'ratio', 'angle', 'status', 'angmin', 'angmax']
     ppc_line = pd.DataFrame(columns=line_cols)
@@ -169,9 +172,11 @@ def to_ppc(ssp) -> dict:
     ppc_line[['angmin', 'angmax', 'angle']] = line_df[['amin', 'amax', 'phi']] * rad2deg
     ppc_line[['fbus', 'tbus']] = ppc_line[['fbus', 'tbus']].replace(key_dict['Bus'])
 
-    # areas
+    # -- area data --
     area_df = ssp.Area.as_df()
-    
+    key_dict['Area'] = OrderedDict(
+        {ssp: ppc for ssp, ppc in enumerate(area_df['idx'].tolist(), start=1)})
+
 
     # gencost
 
