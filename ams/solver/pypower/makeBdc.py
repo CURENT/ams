@@ -7,11 +7,15 @@
 
 from sys import stderr
 
+import logging
+
 from numpy import ones, r_, pi, flatnonzero as find
 from scipy.sparse import csr_matrix as sparse
 
 from ams.solver.pypower.idx_bus import BUS_I
 from ams.solver.pypower.idx_brch import F_BUS, T_BUS, BR_X, TAP, SHIFT, BR_STATUS
+
+logger = logging.getLogger(__name__)
 
 
 def makeBdc(baseMVA, bus, branch):

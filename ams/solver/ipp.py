@@ -65,9 +65,9 @@ def to_ppc(ssp) -> dict:
     ppc["baseMVA"] = mva
 
     # --- bus data ---
-    ssp_bus = ssp.Bus.as_df().rename(columns={'idx': 'bus'}).reset_index(drop=True)
+    bus_df = ssp.Bus.as_df().rename(columns={'idx': 'bus'}).reset_index(drop=True)
     key_dict['Bus'] = OrderedDict(
-        {ssp: ppc for ssp, ppc in enumerate(ssp_bus['bus'].tolist(), start=1)})
+        {ssp: ppc for ssp, ppc in enumerate(bus_df['bus'].tolist(), start=1)})
 
     # NOTE: bus data: bus_i type Pd Qd Gs Bs area Vm Va baseKV zone Vmax Vmin
     # NOTE: bus type, 1 = PQ, 2 = PV, 3 = ref, 4 = isolated
@@ -82,7 +82,7 @@ def to_ppc(ssp) -> dict:
     # load data
     ssp_pq = ssp.PQ.as_df()
     ssp_pq[['p0', 'q0']] = ssp_pq[['p0', 'q0']].mul(mva)
-    ppc_load = pd.merge(ssp_bus,
+    ppc_load = pd.merge(bus_df,
                         ssp_pq[['bus', 'p0', 'q0']].rename(columns={'p0': 'Pd', 'q0': 'Qd'}),
                         on='bus', how='left').fillna(0)
     ppc_bus[['Pd', 'Qd']] = ppc_load[['Pd', 'Qd']]
@@ -92,20 +92,22 @@ def to_ppc(ssp) -> dict:
     ssp_shunt['g'] = ssp_shunt['g'] * ssp_shunt['u']
     ssp_shunt['b'] = ssp_shunt['b'] * ssp_shunt['u']
     ssp_shunt[['g', 'b']] = ssp_shunt[['g', 'b']] * mva
-    ppc_y = pd.merge(ssp_bus,
+    ppc_y = pd.merge(bus_df,
                      ssp_shunt[['bus', 'g', 'b']].rename(columns={'g': 'Gs', 'b': 'Bs'}),
                      on='bus', how='left').fillna(0)
     ppc_bus[['Gs', 'Bs']] = ppc_y[['Gs', 'Bs']]
 
     # rest of the bus data
     ppc_bus_cols = ['area', 'Vm', 'Va', 'baseKV', 'zone', 'Vmax', 'Vmin']
-    ssp_bus_cols = ['area', 'v0', 'a0', 'Vn', 'owner', 'vmax', 'vmin']
-    ppc_bus[ppc_bus_cols] = ssp_bus[ssp_bus_cols]
+    bus_df_cols = ['area', 'v0', 'a0', 'Vn', 'owner', 'vmax', 'vmin']
+    ppc_bus[ppc_bus_cols] = bus_df[bus_df_cols]
 
     # --- generator data ---
     pv_df = ssp.PV.as_df()
     slack_df = ssp.Slack.as_df()
     gen_df = pd.concat([pv_df, slack_df], ignore_index=True)
+    gen_df = pd.merge(left=gen_df, right=bus_df[['bus', 'area']],
+                      on='bus', how='left',)
     key_dict['Slack'] = OrderedDict(
         {ssp: ppc for ssp, ppc in enumerate(slack_df['idx'].tolist(), start=1)})
     key_dict['PV'] = OrderedDict(
@@ -148,11 +150,11 @@ def to_ppc(ssp) -> dict:
     ppc_gen[scols_gen] = gen_df[scols_gen].mul(mva)
     ppc_gen['Vg'] = gen_df['v0']
 
-    ppc["bus"] = ppc_bus.values
-    ppc["gen"] = ppc_gen.values
-
     # rest of the gen data
     ppc_gen[['mBase', 'status', 'Vg']] = gen_df[['Sn', 'u', 'v0']]
+
+    ppc["bus"] = ppc_bus.values
+    ppc["gen"] = ppc_gen.values
 
     # --- branch data ---
     line_df = ssp.Line.as_df()
@@ -177,7 +179,7 @@ def to_ppc(ssp) -> dict:
     area_df = ssp.Area.as_df()
     key_dict['Area'] = OrderedDict(
         {ssp: ppc for ssp, ppc in enumerate(area_df['idx'].tolist(), start=1)})
-    ppc['areas'] = array(list(key_dict['Area'].values()))
+    ppc['areas'] = array([list(key_dict['Area'].values())])
 
     # --- gencost data ---
     gc_df = ssp.GCost.as_df()
@@ -194,4 +196,4 @@ def to_ppc(ssp) -> dict:
     ppc_gcost['n'] = 3
     ppc["gencost"] = ppc_gcost.values
 
-    return ppc, key_dict
+    return ppc, key_dict, ppc_gen, gen_df
