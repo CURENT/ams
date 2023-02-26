@@ -138,14 +138,14 @@ def to_ppc(ssp) -> dict:
     ppc_bus = ppc_bus.reindex(columns=bus_cols)
 
     # data that needs to be converted
-    dcols = OrderedDict([
+    dcols_gen = OrderedDict([
         ('Pg', 'p0'), ('Qg', 'q0'), ('Qmax', 'qmax'), ('Qmin', 'qmin'),
         ('Pmax', 'pmax'), ('Pmin', 'pmin'), ('ramp_agc', 'Ragc'),
         ('ramp_10', 'R10'), ('ramp_30', 'R30'), ('ramp_q', 'Rq')
     ])
-    scols = ['Pc1', 'Pc2', 'Qc1min', 'Qc1max', 'Qc2min', 'Qc2max', 'apf']
-    ppc_gen[list(dcols.keys())] = gen_df[list(dcols.values())].mul(mva)
-    ppc_gen[scols] = gen_df[scols].mul(mva)
+    scols_gen = ['Pc1', 'Pc2', 'Qc1min', 'Qc1max', 'Qc2min', 'Qc2max', 'apf']
+    ppc_gen[list(dcols_gen.keys())] = gen_df[list(dcols_gen.values())].mul(mva)
+    ppc_gen[scols_gen] = gen_df[scols_gen].mul(mva)
     ppc_gen['Vg'] = gen_df['v0']
 
     ppc["bus"] = ppc_bus.values
@@ -159,13 +159,19 @@ def to_ppc(ssp) -> dict:
     line_cols = ['fbus', 'tbus', 'r', 'x', 'b', 'rateA', 'rateB', 'rateC',
                     'ratio', 'angle', 'status', 'angmin', 'angmax']
     ppc_line = pd.DataFrame(columns=line_cols)
-    ppc_line_col = ['fbus', 'tbus', 'r', 'x', 'b',  'rateA', 'rateB', 'rateC', 'ratio', 'angle', 'status']
-    ssp_line_col = ['bus1', 'bus2', 'r', 'x', 'b', 'rate_a', 'rate_b', 'rate_c', 'tap', 'phi', 'u',  'angmin', 'angmax']
-    ppc_line[['fbus', 'tbus', 'r', 'x', 'b', 'ratio', 'status']] = line_df[['bus1', 'bus2', 'r', 'x', 'b', 'tap', 'u']]
-    ppc_line[['angmin', 'angmax']] = line_df[['amin', 'amax']] * rad2deg
+    dcols_line = OrderedDict([
+        ('fbus', 'bus1'), ('tbus', 'bus2'),
+        ('r', 'r'), ('x', 'x'), ('b', 'b'), ('ratio', 'tap'),
+        ('status', 'u'), ('rateA', 'rate_a'),
+        ('rateB', 'rate_b'), ('rateC', 'rate_c'),
+    ])
+    ppc_line[list(dcols_line.keys())] = line_df[list(dcols_line.values())]
+    ppc_line[['angmin', 'angmax', 'angle']] = line_df[['amin', 'amax', 'phi']] * rad2deg
     ppc_line[['fbus', 'tbus']] = ppc_line[['fbus', 'tbus']].replace(key_dict['Bus'])
 
     # areas
+    area_df = ssp.Area.as_df()
+    
 
     # gencost
 
