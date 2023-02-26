@@ -36,7 +36,7 @@ gen = OrderedDict([
     ('MU_QMIN', 24),       # Kuhn-Tucker multiplier on lower Qg limit (u/MVAr)
 ])
 
-c = OrderedDict([
+dcline = OrderedDict([
     ('F_BUS', 0),     # f, "from" bus number
     ('T_BUS', 1),     # t,  "to"  bus number
     ('BR_STATUS', 2), # initial branch status, 1 - in service, 0 - out of service
