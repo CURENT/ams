@@ -25,9 +25,9 @@ class Collection(GroupBase):
     pass
 
 
-class StaticGen(GroupBase):
+class Gen(GroupBase):
     """
-    Static generator group.
+    Generator group.
 
     Notes
     -----

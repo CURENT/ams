@@ -6,6 +6,7 @@ from andes.models.static.pv import PVData  # NOQA
 from andes.models.static.slack import SlackData  # NOQA
 
 from ams.core.model import Model
+from ams.core.var import Algeb  # NOQA
 
 
 class PQ(PQData, Model):
@@ -120,7 +121,7 @@ class PV(PVData, GENADD, Model):
         PVData.__init__(self)
         GENADD.__init__(self)
         Model.__init__(self, system, config)
-        self.group = 'StaticGen'
+        self.group = 'Gen'
 
         self.config.add(OrderedDict((('pv2pq', 0),
                                      ('npv2pq', 0),
@@ -150,6 +151,10 @@ class PV(PVData, GENADD, Model):
                               err_tol=r"\epsilon_{tol}"
                               )
 
+        self.q = Algeb(info='actual reactive power generation',
+                       unit='p.u.',
+                       tex_name='q',
+                       )
 
 class Slack(SlackData, GENADD, Model):
     """
@@ -160,7 +165,16 @@ class Slack(SlackData, GENADD, Model):
         SlackData.__init__(self)
         GENADD.__init__(self)
         Model.__init__(self, system, config)
-        self.group = 'StaticGen'
+        self.group = 'Gen'
+
+        self.p = Algeb(info='actual active power generation',
+                       unit='p.u.',
+                       tex_name=r'p',
+                       )
+        self.q = Algeb(info='actual reactive power generation',
+                       unit='p.u.',
+                       tex_name='q',
+                       )
 
         self.config.add(OrderedDict((('av2pv', 0),
                                      )))
