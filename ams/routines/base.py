@@ -4,24 +4,10 @@ Base module for routines.
 
 import logging # NOQA
 from collections import OrderedDict  # NOQA
-from andes.routines.base import BaseRoutine as andes_BaseRoutine  # NOQA
+
+from andes.core import Config
 
 logger = logging.getLogger(__name__)
-
-
-class BaseTable:
-    """
-    Base class for holding dispatch results of a device.
-    """
-    def __init__(self, columns=None):
-        self.columns = columns
-        self.data = OrderedDict()
-    
-    def as_df(self):
-        """
-        Convert the data to a pandas DataFrame.
-        """
-        pass
 
 
 class BaseResults:
@@ -38,19 +24,89 @@ class BaseResults:
         pass
 
 
-class BaseRoutine(andes_BaseRoutine):
+class BaseRoutine:
     """
     Base routine class.
     """
     def __init__(self, system=None, config=None):
-        # TODO: may need revision on the __init__()
-        super().__init__()
-        self.name = 'BaseRoutine'
-        # TODO: how to organize the results?
-        self.res = BaseResults()
+        self.system = system
+        self.config = Config(self.class_name)
+
+        if config is not None:
+            self.config.load(config)
+        # TODO: these default configs might to be revised
+        self.config.add(OrderedDict((('sparselib', 'klu'),
+                                     ('linsolve', 0),
+                                     )))
+        self.config.add_extra("_help",
+                              sparselib="linear sparse solver name",
+                              linsolve="solve symbolic factorization each step (enable when KLU segfaults)",
+                              )
+        self.config.add_extra("_alt",
+                              sparselib=("klu", "umfpack", "spsolve", "cupy"),
+                              linsolve=(0, 1),
+                              )
+
+        self.exec_time = 0.0  # recorded time to execute the routine in seconds
+        # TODO: check exit_code of gurobipy or any other similiar solvers
+        self.exit_code = 0  # exit code of the routine; 0 for successs
+
+    @property
+    def class_name(self):
+        return self.__class__.__name__
+
+    def doc(self, max_width=78, export='plain'):
+        """
+        Routine documentation interface.
+        """
+        return self.config.doc(max_width, export)
+
+    def init(self):
+        """
+        Routine initialization interface.
+        """
+        pass
 
     def run(self, **kwargs):
         """
-        Run the routine.
+        Routine main entry point.
+        """
+        raise NotImplementedError
+
+    def summary(self, **kwargs):
+        """
+        Summary interface
+        """
+        raise NotImplementedError
+
+    def report(self, **kwargs):
+        """
+        Report interface.
+        """
+        raise NotImplementedError
+
+
+class pf(BaseRoutine):
+    """
+    Power flow routine.
+    """
+    def __init__(self, system=None, config=None):
+        super().__init__(system, config)
+
+    def run(self, **kwargs):
+        """
+        Run power flow.
+        """
+        pass
+
+    def summary(self, **kwargs):
+        """
+        Print power flow summary.
+        """
+        pass
+
+    def report(self, **kwargs):
+        """
+        Print power flow report.
         """
         pass

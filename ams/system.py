@@ -19,6 +19,7 @@ from andes.utils.misc import elapsed
 from ams.utils.paths import (ams_root, get_config_path)
 import ams.io
 from ams.models import file_classes
+from ams.routines import all_routines
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +56,11 @@ class ExistingModels():
     """
 
     def __init__(self):
-        self._rtn = ["dcpflow", "dcopf", "pflow", "opf"]
-        for rt in self._rtn:
+        # TODO: add other implemented routines
+        self.all_rtn = ["dcpf", "pf"]
+        for rt in self.all_rtn:
             setattr(self, rt, OrderedDict())
+
 
 class System(andes_System):
     """
@@ -84,7 +87,7 @@ class System(andes_System):
             '_p_restore', '_store_calls', '_store_tf', '_to_orddct', '_v_to_dae',
             'save_config', 'collect_config', 'collect_ref', 'e_clear', 'f_update',
             'fg_to_dae', 'from_ipysheet', 'g_islands', 'g_update', 'get_z',
-            'import_routines', 'init', 'j_islands', 'j_update', 'l_update_eq', 'connectivity', 'summary',
+            'init', 'j_islands', 'j_update', 'l_update_eq', 'connectivity', 'summary',
             'l_update_var', 'link_ext_param', 'precompile', 'prepare', 'reload', 'remove_pycapsule', 'reset',
             's_update_post', 's_update_var', 'store_adder_setter', 'store_no_check_init',
             'store_sparse_pattern', 'store_switch_times', 'switch_action', 'to_ipysheet',
@@ -149,7 +152,7 @@ class System(andes_System):
                       invalid=self.config.np_invalid,
                       )
 
-        # self.exist = ExistingModels()
+        self.rtn = ExistingModels()
 
         # TODO: revise the following attributes, it seems that these are not used in AMS
         self._getters = dict(f=list(), g=list(), x=list(), y=list())
@@ -164,13 +167,40 @@ class System(andes_System):
         # TODO: DEBUG now
         self.import_groups()
         self.import_models()
+        self.import_routines()
 
         func_to_revise = ['set_address', 'vars_to_dae', 'vars_to_models']
         # TODO: ``set_address``: exclude state variables
         # TODO: ``vars_to_dae``: switch from dae to ie
         # TODO: ``vars_to_models``: switch from dae to ie
 
+    def import_routines(self):
+        """
+        Import routines as defined in ``routines/__init__.py``.
+
+        Routines will be stored as instances with the name as class names.
+        All routines will be stored to dictionary ``System.routines``.
+
+        Examples
+        --------
+        ``System.PF`` is the power flow routine instance.
+        """
+        for file, cls_list in all_routines.items():
+            for cls_name in cls_list:
+                routine = importlib.import_module('ams.routines.' + file)
+                the_class = getattr(routine, cls_name)
+                attr_name = cls_name
+                self.__dict__[attr_name] = the_class(system=self, config=self._config_object)
+                self.routines[attr_name] = self.__dict__[attr_name]
+                self.routines[attr_name].config.check()
+
     def import_groups(self):
+        """
+        Import all groups classes defined in ``models/group.py``.
+
+        Groups will be stored as instances with the name as class names.
+        All groups will be stored to dictionary ``System.groups``.
+        """
         module = importlib.import_module('ams.models.group')
 
         for m in inspect.getmembers(module, inspect.isclass):
@@ -196,8 +226,7 @@ class System(andes_System):
 
         Examples
         --------
-        ``system.Bus`` stores the `Bus` object, and ``system.GENCLS`` stores the classical
-        generator object,
+        ``system.Bus`` stores the `Bus` object, and ``system.PV`` stores the PV generator object.
 
         ``system.models['Bus']`` points the same instance as ``system.Bus``.
         """
