@@ -174,6 +174,31 @@ class System(andes_System):
         # TODO: ``vars_to_dae``: switch from dae to ie
         # TODO: ``vars_to_models``: switch from dae to ie
 
+    def set_address(self, models):
+        """
+        Set addresses for algebraic variables.
+        """
+
+        # --- Phase 1: set internal variable addresses ---
+        for mdl in models.values():
+            # NOTE: mdl.flags is not used in AMS, all models will be checked
+            if mdl.n == 0:
+                continue
+
+            logger.debug('Setting internal address for %s', mdl.class_name)
+
+            collate = False
+            ndevice = mdl.n
+
+            # get and set internal variable addresses
+            yaddr = self.request_address(ndevice=ndevice,
+                                             nvar=len(mdl.algebs),
+                                             collate=False,
+                                             )
+
+            for idx, item in enumerate(mdl.algebs.values()):
+                item.set_address(yaddr[idx], contiguous=not collate)
+
     def import_routines(self):
         """
         Import routines as defined in ``routines/__init__.py``.
@@ -269,6 +294,8 @@ class System(andes_System):
 
         # assign address at the end before adding devices and processing parameters
         # TODO: enable these functions later on
+        # assign address at the end before adding devices and processing parameters
+        self.set_address(self.exist.pflow)
         # self.set_address(self.exist.pflow)
         # self.set_dae_names(self.exist.pflow)        # needs perf. optimization
         # self.store_sparse_pattern(self.exist.pflow)
