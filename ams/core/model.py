@@ -11,6 +11,7 @@ from andes.core.common import Config
 from andes.utils.func import list_flatten
 
 from ams.core.documenter import Documenter
+from ams.core.var import Algeb  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,10 @@ class Model:
         # --- Model ---
         self.system = system
         self.group = 'Undefined'
+
+        self.algebs = OrderedDict()  # internal algebraic variables
+        self.vars_decl_order = OrderedDict()  # variable in the order of declaration
+
         self.config = Config(name=self.class_name)  # `config` that can be exported
         if config is not None:
             self.config.load(config)
@@ -34,12 +39,49 @@ class Model:
                                     ('adjust_lower', 0),
                                     ('adjust_upper', 1),
                                      )))
-# symbolic processor instance
         self.docum = Documenter(self)
 
         # TODO: duplicate from ANDES, disable for now
         # self.syms = SymProcessor(self)  # symbolic processor instance
         # self.docum = Documenter(self)
+
+    def _all_vars(self):
+        """
+        An OrderedDict of States, ExtStates, Algebs, ExtAlgebs
+        """
+        return OrderedDict(list(self.algebs.items()))
+
+    def __setattr__(self, key, value):
+        """
+        Overload the setattr function to register attributes.
+
+        Parameters
+        ----------
+        key : str
+            name of the attribute
+        value : [Algeb]
+            value of the attribute
+        """
+
+        # store the variable declaration order
+        if isinstance(value, Algeb):
+            value.id = len(self._all_vars())  # NOT in use yet
+            self.vars_decl_order[key] = value
+
+        self._register_attribute(key, value)
+
+        super(Model, self).__setattr__(key, value)
+
+    def _register_attribute(self, key, value):
+        """
+        Register a pair of attributes to the model instance.
+
+        Called within ``__setattr__``, this is where the magic happens.
+        Subclass attributes are automatically registered based on the variable type.
+        Block attributes will be exported and registered recursively.
+        """
+        if isinstance(value, Algeb):
+            self.algebs[key] = value
 
     @property
     def class_name(self):
