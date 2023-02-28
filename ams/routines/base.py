@@ -35,6 +35,7 @@ class BaseRoutine:
     def __init__(self, system=None, config=None):
         self.system = system
         self.config = Config(self.class_name)
+        self.algebs = OrderedDict()  # collect algebraic variables from all involved devices
 
         if config is not None:
             self.config.load(config)
@@ -54,6 +55,7 @@ class BaseRoutine:
         self.exec_time = 0.0  # recorded time to execute the routine in seconds
         # TODO: check exit_code of gurobipy or any other similiar solvers
         self.exit_code = 0  # exit code of the routine; 0 for successs
+        self.algebs = OrderedDict()  # internal algebraic variables
 
     def request_address(self, ndevice, nvar, collate=False):
         """

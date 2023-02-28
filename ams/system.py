@@ -19,7 +19,7 @@ from andes.utils.misc import elapsed
 from ams.utils.paths import (ams_root, get_config_path)
 import ams.io
 from ams.models import file_classes
-from ams.routines import all_routines
+from ams.routines import all_routines, all_models
 
 logger = logging.getLogger(__name__)
 
@@ -218,6 +218,14 @@ class System(andes_System):
                 self.__dict__[attr_name] = the_class(system=self, config=self._config_object)
                 self.routines[attr_name] = self.__dict__[attr_name]
                 self.routines[attr_name].config.check()
+        for rtn_name in self.routines.keys():
+            all_mdl = all_models[rtn_name]
+            rtn = getattr(self, rtn_name)
+            for mdl_name in all_mdl:
+                mdl = getattr(self, mdl_name)
+                for algeb in mdl.algebs.values():
+                    rtn.algebs[algeb.name] = algeb
+                # self.routines[rtn].algebs[mdl] = self.models[mdl]
 
     def import_groups(self):
         """
@@ -295,7 +303,7 @@ class System(andes_System):
         # assign address at the end before adding devices and processing parameters
         # TODO: enable these functions later on
         # assign address at the end before adding devices and processing parameters
-        self.set_address(self.exist.pflow)
+        # self.set_address(self.exist.pflow)
         # self.set_address(self.exist.pflow)
         # self.set_dae_names(self.exist.pflow)        # needs perf. optimization
         # self.store_sparse_pattern(self.exist.pflow)
