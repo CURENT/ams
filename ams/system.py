@@ -114,7 +114,6 @@ class System(andes_System):
         self.routines = OrderedDict()        # routine names and instances
         # TODO: there should be an exit_code for each routine
         self.exit_code = 0                   # command-line exit code, 0 - normal, others - error.
-        # ams.io.parse(self)
 
         # NOTE: the following attributes are populated by ``ipp`` in each subclass
         self._ppc = dict()  # PYPOWER case dict
