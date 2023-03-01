@@ -11,6 +11,7 @@ from andes.utils.misc import elapsed, is_interactive
 import ams
 from ams.system import System
 from ams.utils.paths import get_config_path, get_log_dir, tests_root
+from ams.solver.ipp import to_ppc
 
 logger = logging.getLogger(__name__)
 
@@ -135,4 +136,5 @@ def load(case, setup=True,
 
     if setup:
         system.setup()
+        system._ppc, system._key, system._col = to_ppc(system)
     return system

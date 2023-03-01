@@ -50,6 +50,8 @@ def to_ppc(ssp) -> dict:
         The PYPOWER case dict.
     key_dict : OrderedDict
         Mapping dict between AMS system and PYPOWER.
+    col_dict : OrderedDict
+        Dict of columns of PYPOWER case.
     """
     # TODO: convert the AMS system to a PYPOWER case dict
 
@@ -58,6 +60,7 @@ def to_ppc(ssp) -> dict:
         return None
 
     key_dict = OrderedDict()
+    col_dict = OrderedDict()
 
     # --- initialize ppc ---
     ppc = {"version": '2'}
@@ -161,9 +164,9 @@ def to_ppc(ssp) -> dict:
     key_dict['Line'] = OrderedDict(
         {ssp: ppc for ssp, ppc in enumerate(line_df['idx'].tolist(), start=1)})
 
-    line_cols = ['fbus', 'tbus', 'r', 'x', 'b', 'rateA', 'rateB', 'rateC',
+    branch_cols = ['fbus', 'tbus', 'r', 'x', 'b', 'rateA', 'rateB', 'rateC',
                     'ratio', 'angle', 'status', 'angmin', 'angmax']
-    ppc_line = pd.DataFrame(columns=line_cols)
+    ppc_line = pd.DataFrame(columns=branch_cols)
     dcols_line = OrderedDict([
         ('fbus', 'bus1'), ('tbus', 'bus2'),
         ('r', 'r'), ('x', 'x'), ('b', 'b'), ('ratio', 'tap'),
@@ -196,4 +199,8 @@ def to_ppc(ssp) -> dict:
     ppc_gcost['n'] = 3
     ppc["gencost"] = ppc_gcost.values
 
-    return ppc, key_dict, ppc_gen, gen_df
+    col_dict['bus'] = bus_cols
+    col_dict['gen'] = gen_cols
+    col_dict['branch'] = branch_cols
+
+    return ppc, key_dict, col_dict

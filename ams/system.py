@@ -95,6 +95,10 @@ class System(andes_System):
             'store_sparse_pattern', 'store_switch_times', 'switch_action', 'to_ipysheet',
             'undill']
         disable_methods(func_to_disable)
+        # FIXME: the following code does not work
+        # for func in func_to_disable:
+        #     func_name = f'self.{func}'
+        #     del func_name
         # TODO: it seems that ``connectivity`` and ``summary`` can be skipped in AMS
 
         self.name = name
@@ -110,6 +114,11 @@ class System(andes_System):
         # TODO: there should be an exit_code for each routine
         self.exit_code = 0                   # command-line exit code, 0 - normal, others - error.
         # ams.io.parse(self)
+
+        # NOTE: the following attributes are populated by ``ipp`` in each subclass
+        self._ppc = dict()  # PYPOWER case dict
+        self._key = OrderedDict()  # mapping dict between AMS system and PYPOWER
+        self._col = OrderedDict()  # dict of columns of PYPOWER case
 
         # get and load default config file
         self._config_path = get_config_path()
@@ -172,11 +181,6 @@ class System(andes_System):
         self.import_routines()
         self.init_algebs()
 
-        func_to_revise = ['set_address', 'vars_to_dae', 'vars_to_models']
-        # TODO: ``set_address``: exclude state variables
-        # TODO: ``vars_to_dae``: switch from dae to ie
-        # TODO: ``vars_to_models``: switch from dae to ie
-
     def init_algebs(self):
         """
         Initialize algebraic variables of all routines.
@@ -236,7 +240,6 @@ class System(andes_System):
         All groups will be stored to dictionary ``System.groups``.
         """
         module = importlib.import_module('ams.models.group')
-
         for m in inspect.getmembers(module, inspect.isclass):
 
             name, cls = m
@@ -320,14 +323,3 @@ class System(andes_System):
         logger.info('System internal structure set up in %s.', s)
 
         return ret
-
-    # def store_existing(self):
-        # """
-        # Store existing models in `System.existing`.
-        # """
-        # for rt in self.exist._rtn:
-        #     setattr(self.exist, rt, self.find_models(rt))
-
-    def __repr__(self) -> str:
-        # TODO: list out the models in the system
-        return ""
