@@ -1,27 +1,49 @@
 # Development log
 
-[WIP] Convert system from ``AMS`` to ``ppc``(2023-02-23)
+### 2023-03-01
 
-Refactor ``ams.model``and models in AMS (2023-02-23)
+* Add routines to system
+* Add ``Algeb`` to routines
 
-Fix ``ams.System.setup()``(2023-02-23)
+* Fix ``ipp``
+* Add parser of MATPOWER and PSSE
 
-Analyze the PYPOWER structure (2023-02-22)
+### 2023-02-25
 
-Include MATPOWER data file format in documentation (2023-02-21)
+* Convert system from ``AMS`` to ``ppc``
+* [WIP] Refactor PYPOWER
 
-Fix PYPOWER functionality (2023-2-20)
+### 2023-02-23
 
-Import PYPOWER (2023-02-17)
+* Fix ``ams.System.setup()``
+* Refactor ``ams.model``and models in AMS
+* [WIP] Convert system from ``AMS`` to ``ppc``
 
-Setup base system (2023-02-16)
+### 2023-02-22
 
-Setup file parser (2023-02-16)
+* Analyze the PYPOWER structure
 
-## Development preparation
+### 2023-02-21
 
-- Setup versioneer (2023-01-26)
-- Setup documentation (2023-01-26)
+* Include PYPOWER data file format in documentation
+
+### 2023-2-20
+
+* Fix PYPOWER function
+
+### 2023-02-17
+
+* Import PYPOWER
+
+### 2023-02-16
+
+* Setup base system
+* Setup file parser
+
+### 2023-01-26
+
+* Setup versioneer
+* Setup documentation
 
 ### TODO
 
