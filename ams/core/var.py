@@ -3,8 +3,6 @@ Base class for variables.
 """
 
 from typing import Optional
-from andes.shared import np
-
 
 class Algeb:
     """

@@ -182,3 +182,8 @@ class Model:
         Retrieve model documentation as a string.
         """
         return self.docum.get(max_width=max_width, export=export)
+
+    def __repr__(self):
+        dev_text = 'device' if self.n == 1 else 'devices'
+
+        return f'{self.class_name} ({self.n} {dev_text}) at {hex(id(self))}'

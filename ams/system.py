@@ -229,8 +229,10 @@ class System(andes_System):
                 # NOTE: collecte all involved models into routines
                 rtn.models[mdl_name] = mdl
                 # NOTE: collecte all algebraic variables from all involved models into routines
-                for name, value in mdl.algebs.items():
-                    rtn.algebs[f'{name}_{mdl_name}'] = value
+                for name, algeb in mdl.algebs.items():
+                    algeb.owner = mdl  # set owner of algebraic variables
+                    # TODO: this name can be improved with removing the model name
+                    rtn.algebs[f'{name}_{mdl_name}'] = algeb
 
     def import_groups(self):
         """
