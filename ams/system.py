@@ -179,7 +179,6 @@ class System(andes_System):
         self.import_groups()
         self.import_models()
         self.import_routines()
-        self.init_algebs()
 
     def init_algebs(self):
         """
@@ -197,6 +196,7 @@ class System(andes_System):
                 raise ValueError(f'Routine {rtn_name} not found')
             rtn = self.routines[rtn_name]
             rtn.count = rtn.count_algeb()
+            print(f'Algebraic variables of {rtn_name}: {rtn.count}')
             n_total = np.sum(list(rtn.count.values()))
             rtn.v = np.empty(n_total)
 
@@ -306,14 +306,8 @@ class System(andes_System):
         self.calc_pu_coeff()   # calculate parameters in system per units
         # self.store_existing()  # store models with routine flags
 
-        # assign address at the end before adding devices and processing parameters
-        # TODO: enable these functions later on
-        # assign address at the end before adding devices and processing parameters
-        # self.set_address(self.exist.pflow)
-        # self.set_address(self.exist.pflow)
-        # self.set_dae_names(self.exist.pflow)        # needs perf. optimization
-        # self.store_sparse_pattern(self.exist.pflow)
-        # self.store_adder_setter(self.exist.pflow)
+        # initialize algebraic variables in all routines
+        self.init_algebs()
 
         if ret is True:
             self.is_setup = True  # set `is_setup` if no error occurred

@@ -25,7 +25,7 @@ class PFlow(BaseRoutine):
         # TODO: organize the results
         # bus, gen, line
 
-        return self.converged
+        return self.converged, res
 
     def summary(self, **kwargs):
         """
