@@ -102,8 +102,11 @@ def to_ppc(ssp) -> dict:
 
     # rest of the bus data
     ppc_bus_cols = ['area', 'Vm', 'Va', 'baseKV', 'zone', 'Vmax', 'Vmin']
-    bus_df_cols = ['area', 'v0', 'a0', 'Vn', 'owner', 'vmax', 'vmin']
+    bus_df_cols = ['area', 'v0', 'a0', 'Vn', 'zone', 'vmax', 'vmin']
     ppc_bus[ppc_bus_cols] = bus_df[bus_df_cols]
+    if (ppc_bus['baseKV'] == 0).any():
+        logger.warning('PPC Bus baseKV contains 0. Replaced with system mva.')
+        ppc_bus['baseKV'].replace(0, mva, inplace=True)
 
     # --- generator data ---
     pv_df = ssp.PV.as_df()
@@ -128,19 +131,10 @@ def to_ppc(ssp) -> dict:
     # idx of bus in ppc
     gen_bus_ppc = [key_dict['Bus'][bus_idx] for bus_idx in gen_df['bus'].tolist()]
     ppc_gen['bus'] = gen_bus_ppc
-    # bus type
-    bus_type = pd.DataFrame(columns=['bus', 'type'])
-    bus_type['bus'] = key_dict['PV'].keys()
-    bus_type['type'] = 2
-    bus_type = pd.concat([bus_type,
-                        pd.DataFrame({'bus': key_dict['Slack'].keys(), 'type': 3})],
-                        axis=0, ignore_index=True)
     # define bus type
-    ppc_bus = pd.merge(ppc_bus, bus_type.rename(columns={'bus': 'bus_i'}),
-                on='bus_i', how='left', suffixes=('_x', '_y'))
-    ppc_bus['type'] = ppc_bus['type_y'].fillna(1).astype(int)
-    ppc_bus.drop(columns=['type_x', 'type_y'], inplace=True)
-    ppc_bus = ppc_bus.reindex(columns=bus_cols)
+    type_pv = ppc_bus['bus_i'].isin(pv_df['bus']).astype(int)
+    type_slack = ppc_bus['bus_i'].isin(slack_df['bus']).astype(int) * 2
+    ppc_bus['type'] = ppc_bus['type'] + type_pv + type_slack
 
     # data that needs to be converted
     dcols_gen = OrderedDict([
@@ -179,10 +173,10 @@ def to_ppc(ssp) -> dict:
     ppc["branch"] = ppc_line.values
 
     # --- area data ---
-    area_df = ssp.Area.as_df()
-    key_dict['Area'] = OrderedDict(
-        {ssp: ppc for ssp, ppc in enumerate(area_df['idx'].tolist(), start=1)})
-    ppc['areas'] = array([list(key_dict['Area'].values())])
+    # area_df = ssp.Area.as_df()
+    # key_dict['Area'] = OrderedDict(
+    #     {ssp: ppc for ssp, ppc in enumerate(area_df['idx'].tolist(), start=1)})
+    # ppc['areas'] = array([list(key_dict['Area'].values())])
 
     # --- gencost data ---
     gc_df = ssp.GCost.as_df()
