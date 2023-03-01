@@ -142,13 +142,12 @@ def to_ppc(ssp) -> dict:
         ('Pmax', 'pmax'), ('Pmin', 'pmin'), ('ramp_agc', 'Ragc'),
         ('ramp_10', 'R10'), ('ramp_30', 'R30'), ('ramp_q', 'Rq')
     ])
-    scols_gen = ['Pc1', 'Pc2', 'Qc1min', 'Qc1max', 'Qc2min', 'Qc2max', 'apf']
+    scols_gen = ['Pc1', 'Pc2', 'Qc1min', 'Qc1max', 'Qc2min', 'Qc2max']
     ppc_gen[list(dcols_gen.keys())] = gen_df[list(dcols_gen.values())].mul(mva)
     ppc_gen[scols_gen] = gen_df[scols_gen].mul(mva)
-    ppc_gen['Vg'] = gen_df['v0']
 
     # rest of the gen data
-    ppc_gen[['mBase', 'status', 'Vg']] = gen_df[['Sn', 'u', 'v0']]
+    ppc_gen[['mBase', 'status', 'Vg', 'apf']] = gen_df[['Sn', 'u', 'v0', 'apf']]
 
     ppc["bus"] = ppc_bus.values
     ppc["gen"] = ppc_gen.values
@@ -184,12 +183,13 @@ def to_ppc(ssp) -> dict:
         {ssp: ppc for ssp, ppc in enumerate(gc_df['idx'].tolist(), start=1)})
 
     # TODO: Add Model 1
-    gcost_cols = ['model', 'startup', 'shutdown', 'n', 'c2', 'c1', 'c0']
+    gcost_cols = ['type', 'startup', 'shutdown', 'n', 'c2', 'c1', 'c0']
     ppc_gcost = pd.DataFrame(columns=gcost_cols)
-    gc_df = pd.merge(left=gen_df[['idx']].rename(columns={'idx': 'gen'}),
+    gc_df = pd.merge(left=gen_df[['idx']].astype(str).rename(columns={'idx': 'gen'}),
                         right=gc_df, on='gen', how='left')
-    ppc_gcost[['startup', 'shutdown', 'c2', 'c1', 'c0']] = gc_df[['startup', 'shutdown', 'c2', 'c1', 'c0']]
-    ppc_gcost['model'] = 2
+    dcols_cost = gcost_cols.copy()
+    dcols_cost.remove('n')
+    ppc_gcost[dcols_cost] = gc_df[dcols_cost]
     ppc_gcost['n'] = 3
     ppc["gencost"] = ppc_gcost.values
 
