@@ -6,7 +6,7 @@ from ams.routines.base import BaseRoutine
 from ams.solver.pypower.runpf import runpf, rundcpf
 
 
-class PF(BaseRoutine):
+class PFlow(BaseRoutine):
     """
     Power flow routine.
     """
@@ -25,8 +25,7 @@ class PF(BaseRoutine):
         # TODO: organize the results
         # bus, gen, line
 
-        ppc = self.system._ppc
-        return self.converged, ppc
+        return self.converged
 
     def summary(self, **kwargs):
         """
