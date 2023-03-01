@@ -13,12 +13,20 @@ class PF(BaseRoutine):
 
     def __init__(self, system=None, config=None):
         super().__init__(system, config)
+        self.converged = False
 
     def run(self, **kwargs):
         """
         Run power flow.
         """
-        pass
+        res, exit_code = runpf(self.system._ppc, **kwargs)
+        self.converged = bool(exit_code)
+
+        # TODO: organize the results
+        # bus, gen, line
+
+        ppc = self.system._ppc
+        return self.converged, ppc
 
     def summary(self, **kwargs):
         """
