@@ -5,6 +5,8 @@
 """Loads a PYPOWER case dictionary.
 """
 
+import logging
+
 import sys
 
 from os.path import basename, splitext, exists
@@ -19,6 +21,7 @@ from ams.solver.pypower._compat import PY2
 from ams.solver.pypower.idx_gen import PMIN, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN, APF
 from ams.solver.pypower.idx_brch import PF, QF, PT, QT, MU_SF, MU_ST, BR_STATUS
 
+logger = logging.getLogger(__name__)
 
 if not PY2:
     basestring = str
@@ -61,6 +64,7 @@ def loadcase(casefile,
 
     # read data into case object
     if isinstance(casefile, basestring):
+        lasterr = ''
         # check for explicit extension
         if casefile.endswith(('.py', '.mat')):
             rootname, extension = splitext(casefile)
@@ -75,8 +79,6 @@ def loadcase(casefile,
             else:
                 info = 2
             fname = basename(rootname)
-
-        lasterr = ''
 
         ## attempt to read file
         if info == 0:
@@ -217,8 +219,6 @@ def loadcase(casefile,
                              'matrix(ices) in the file\n')
         else:
             logger.debug('Unknown error encountered loading case.\n')
-
-        logger.debug(lasterr + '\n')
 
         return info
 
