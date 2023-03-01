@@ -1,11 +1,22 @@
 """
 MATPOWER parser revised from ANDES matpower parser.
 """
-
+import logging
 import numpy as np
 
-from andes.io.matpower import (testlines, read, m2mpc)  # NOQA
+from andes.io.matpower import m2mpc
 from andes.shared import deg2rad, rad2deg
+
+logger = logging.getLogger(__name__)
+
+
+def read(system, file):
+    """
+    Read a MATPOWER data file into mpc, and build andes device elements.
+    """
+
+    mpc = m2mpc(file)
+    return mpc2system(mpc, system)
 
 
 def mpc2system(mpc: dict, system) -> bool:
@@ -165,28 +176,27 @@ def mpc2system(mpc: dict, system) -> bool:
         system.Bus.name.v[:] = mpc['bus_name']
 
     gcost_idx = 0
-    for data in mpc['gencost']:
+    gen_idx = system.Gen.find_idx(keys='bus', values=mpc['gen'][:, 0])
+    for data, gen in zip(mpc['gencost'], gen_idx):
         # NOTE: only type 2 costs are supported for now
         # type  startup shutdown	n	c2  c1  c0
         # 0     1           2               3   4   5   6
-
         if data[0] != 2:
             raise ValueError('Only MODEL 2 costs are supported')
-        status = 1
+        # TODO: Add Model 1
         type = int(data[0])
         startup = data[1]
         shutdown = data[2]
-        n = int(data[3])
         c2 = data[4]
         c1 = data[5]
         c0 = data[6]
 
-        system.add('GCost', u=status, name=f'GCost_{gcost_idx}',
+        system.add('GCost', gen=str(gen),
+                   u=1, name=f'GCost_{gcost_idx}',
                    type=type,
                    startup=startup, shutdown=shutdown,
-                   n=n, c2=c2, c1=c1, c0=c0
+                   c2=c2, c1=c1, c0=c0
                    )
-
         gcost_idx += 1
 
     return True
