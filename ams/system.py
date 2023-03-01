@@ -218,14 +218,15 @@ class System(andes_System):
                 self.__dict__[attr_name] = the_class(system=self, config=self._config_object)
                 self.routines[attr_name] = self.__dict__[attr_name]
                 self.routines[attr_name].config.check()
+        # NOTE: the following code is not used in ANDES
+        # NOTE: collecte all algebraic variables from all models into routines
         for rtn_name in self.routines.keys():
             all_mdl = all_models[rtn_name]
             rtn = getattr(self, rtn_name)
             for mdl_name in all_mdl:
                 mdl = getattr(self, mdl_name)
-                for algeb in mdl.algebs.values():
-                    rtn.algebs[algeb.name] = algeb
-                # self.routines[rtn].algebs[mdl] = self.models[mdl]
+                for name, value in mdl.algebs.items():
+                    rtn.algebs[f'{name}_{mdl_name}'] = value
 
     def import_groups(self):
         """
