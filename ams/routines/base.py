@@ -58,44 +58,6 @@ class BaseRoutine:
         self.exit_code = 0  # exit code of the routine; 0 for successs
         self.algebs = OrderedDict()  # internal algebraic variables
 
-    def request_address(self, ndevice, nvar, collate=False):
-        """
-        Interface for requesting addresses for a model.
-
-        Parameters
-        ----------
-        ndevice : int
-            number of devices
-        nvar : int
-            number of variables
-        collate : bool, optional
-            False if the same variable for different devices are contiguous.
-            True if variables for the same devices should collate. Note: setting
-            ``collate`` to True will degrade the performance.
-
-        Returns
-        -------
-        list
-            A list of arrays for each variable.
-        """
-
-        out = []
-        counter_name = 'm'
-
-        idx_begin = self.__dict__[counter_name]
-        idx_end = idx_begin + ndevice * nvar
-
-        if not collate:
-            for idx in range(nvar):
-                out.append(np.arange(idx_begin + idx * ndevice, idx_begin + (idx + 1) * ndevice))
-        else:
-            for idx in range(nvar):
-                out.append(np.arange(idx_begin + idx, idx_end, nvar))
-
-        self.__dict__[counter_name] = idx_end
-
-        return out
-
     @property
     def class_name(self):
         return self.__class__.__name__
@@ -106,11 +68,28 @@ class BaseRoutine:
         """
         return self.config.doc(max_width, export)
 
-    def init(self):
+    def init_algeb(self):
         """
-        Routine initialization interface.
+        Initialize algebraic variables and set address.
+        This method is called in ``System`` after all routiens are imported.
+
+        Parameters
+        ----------
+        ndevice : int
+            number of devices
+
+        Returns
+        -------
+        out: OrderedDict
+            an OrderedDict of algebraic variables and their length
         """
-        pass
+        out = OrderedDict()
+        for mdl_name in self.models:
+            mdl = self.models[mdl_name]  # instance of model
+            n = mdl.n  # number of devices
+            for var_name in mdl.algebs:
+                out[f'{var_name}_{mdl_name}'] = n
+        return out
 
     def run(self, **kwargs):
         """
