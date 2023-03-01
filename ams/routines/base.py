@@ -35,8 +35,11 @@ class BaseRoutine:
     def __init__(self, system=None, config=None):
         self.system = system
         self.config = Config(self.class_name)
+        # NOTE: the following attributes are populated in ``System`` class
         self.algebs = OrderedDict()  # collect algebraic variables from all involved devices
         self.models = OrderedDict()  # collect all involved devices
+        self.count = OrderedDict()  # count of all involved devices
+        self.v = np.empty(0)  # values of algebraic variables
 
         if config is not None:
             self.config.load(config)
@@ -68,7 +71,7 @@ class BaseRoutine:
         """
         return self.config.doc(max_width, export)
 
-    def init_algeb(self):
+    def count_algeb(self):
         """
         Initialize algebraic variables and set address.
         This method is called in ``System`` after all routiens are imported.
@@ -108,30 +111,3 @@ class BaseRoutine:
         Report interface.
         """
         raise NotImplementedError
-
-
-class pf(BaseRoutine):
-    """
-    Power flow routine.
-    """
-
-    def __init__(self, system=None, config=None):
-        super().__init__(system, config)
-
-    def run(self, **kwargs):
-        """
-        Run power flow.
-        """
-        pass
-
-    def summary(self, **kwargs):
-        """
-        Print power flow summary.
-        """
-        pass
-
-    def report(self, **kwargs):
-        """
-        Print power flow report.
-        """
-        pass

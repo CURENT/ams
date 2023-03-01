@@ -8,6 +8,8 @@ import logging
 from collections import OrderedDict
 from typing import Dict, Optional, Tuple, Union
 
+import numpy as np
+
 from andes.core import Config
 from andes.system import System as andes_System
 from andes.system import (_config_numpy, load_config_rc)
@@ -168,38 +170,31 @@ class System(andes_System):
         self.import_groups()
         self.import_models()
         self.import_routines()
+        self.init_algebs()
 
         func_to_revise = ['set_address', 'vars_to_dae', 'vars_to_models']
         # TODO: ``set_address``: exclude state variables
         # TODO: ``vars_to_dae``: switch from dae to ie
         # TODO: ``vars_to_models``: switch from dae to ie
 
-    def set_address(self, models):
+    def init_algebs(self):
         """
-        Set addresses for algebraic variables.
+        Initialize algebraic variables of all routines.
 
-        # TODO: revise this method
+        Parameters
+        ----------
+        routines : list
+            List of routine names to be set. If ``None``, all routines will be set.
         """
 
-        # --- Phase 1: set internal variable addresses ---
-        for mdl in models.values():
-            # NOTE: mdl.flags is not used in AMS, all models will be checked
-            if mdl.n == 0:
-                continue
-
-            logger.debug('Setting internal address for %s', mdl.class_name)
-
-            collate = False
-            ndevice = mdl.n
-
-            # get and set internal variable addresses
-            yaddr = self.request_address(ndevice=ndevice,
-                                             nvar=len(mdl.algebs),
-                                             collate=False,
-                                             )
-
-            for idx, item in enumerate(mdl.algebs.values()):
-                item.set_address(yaddr[idx], contiguous=not collate)
+        # TODO: this can be memory consuming when there are many routines
+        for rtn_name in self.routines:
+            if rtn_name not in self.routines:
+                raise ValueError(f'Routine {rtn_name} not found')
+            rtn = self.routines[rtn_name]
+            rtn.count = rtn.count_algeb()
+            n_total = np.sum(list(rtn.count.values()))
+            rtn.v = np.empty(n_total)
 
     def import_routines(self):
         """
