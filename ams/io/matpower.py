@@ -4,7 +4,7 @@ MATPOWER parser revised from ANDES matpower parser.
 import logging
 import numpy as np
 
-from andes.io.matpower import m2mpc
+from andes.io.matpower import m2mpc, _get_bus_id_caller
 from andes.shared import deg2rad, rad2deg
 
 logger = logging.getLogger(__name__)
@@ -200,3 +200,109 @@ def mpc2system(mpc: dict, system) -> bool:
         gcost_idx += 1
 
     return True
+
+
+def system2mpc(system) -> dict:
+    """
+    Convert data from an AMS system to an mpc dict.
+
+    In the ``gen`` section, slack generators preceeds PV generators.
+    """
+
+    mpc = dict(version='2',
+               baseMVA=system.config.mva,
+               bus=np.zeros((system.Bus.n, 13), dtype=np.float64),
+               gen=np.zeros((system.PV.n + system.Slack.n, 21), dtype=np.float64),
+               branch=np.zeros((system.Line.n, 17), dtype=np.float64),
+               gencost=np.zeros((system.GCost.n, 7), dtype=np.float64),
+               bus_name=np.zeros((system.Bus.n, ), dtype=object),
+               )
+
+    base_mva = system.config.mva
+
+    to_busid = _get_bus_id_caller(system.Bus)
+
+    # --- bus ---
+    bus = mpc['bus']
+    gen = mpc['gen']
+
+    bus[:, 0] = to_busid(system.Bus.idx.v)
+    bus[:, 1] = 1
+    bus[:, 7] = system.Bus.v0.v
+    bus[:, 8] = system.Bus.a0.v * rad2deg
+    bus[:, 9] = system.Bus.Vn.v
+    bus[:, 11] = system.Bus.vmax.v
+    bus[:, 12] = system.Bus.vmin.v
+
+    # area and zone not supported
+
+    # --- PQ ---
+    if system.PQ.n > 0:
+        pq_pos = system.Bus.idx2uid(system.PQ.bus.v)
+        bus[pq_pos, 2] = system.PQ.p0.v * base_mva
+        bus[pq_pos, 3] = system.PQ.q0.v * base_mva
+
+    # --- Shunt ---
+    if system.Shunt.n > 0:
+        shunt_pos = system.Bus.idx2uid(system.Shunt.bus.v)
+        bus[shunt_pos, 4] = system.Shunt.g.v * base_mva
+        bus[shunt_pos, 5] = system.Shunt.b.v * base_mva
+
+    # --- PV ---
+    if system.PV.n > 0:
+        pv_pos = system.Bus.idx2uid(system.PV.bus.v)
+        bus[pv_pos, 1] = 2
+        gen[system.Slack.n:, 0] = to_busid(system.PV.bus.v)
+        gen[system.Slack.n:, 1] = system.PV.p0.v * base_mva
+        gen[system.Slack.n:, 2] = system.PV.q0.v * base_mva
+        gen[system.Slack.n:, 3] = system.PV.qmax.v * base_mva
+        gen[system.Slack.n:, 4] = system.PV.qmin.v * base_mva
+        gen[system.Slack.n:, 5] = system.PV.v0.v
+        gen[system.Slack.n:, 6] = base_mva
+        gen[system.Slack.n:, 7] = system.PV.u.v
+        gen[system.Slack.n:, 8] = system.PV.pmax.v * base_mva
+        gen[system.Slack.n:, 9] = system.PV.pmin.v * base_mva
+
+    # --- Slack ---
+    if system.Slack.n > 0:
+        slack_pos = system.Bus.idx2uid(system.Slack.bus.v)
+        bus[slack_pos, 1] = 3
+        bus[slack_pos, 8] = system.Slack.a0.v * rad2deg
+
+        gen[:system.Slack.n, 0] = to_busid(system.Slack.bus.v)
+        gen[:system.Slack.n, 1] = system.Slack.p0.v * base_mva
+        gen[:system.Slack.n, 2] = system.Slack.q0.v * base_mva
+        gen[:system.Slack.n, 3] = system.Slack.qmax.v * base_mva
+        gen[:system.Slack.n, 4] = system.Slack.qmin.v * base_mva
+        gen[:system.Slack.n, 5] = system.Slack.v0.v
+        gen[:system.Slack.n, 6] = base_mva
+        gen[:system.Slack.n, 7] = system.Slack.u.v
+        gen[:system.Slack.n, 8] = system.Slack.pmax.v * base_mva
+        gen[:system.Slack.n, 9] = system.Slack.pmin.v * base_mva
+
+    if system.Line.n > 0:
+        branch = mpc['branch']
+        branch[:, 0] = to_busid(system.Line.bus1.v)
+        branch[:, 1] = to_busid(system.Line.bus2.v)
+        branch[:, 2] = system.Line.r.v
+        branch[:, 3] = system.Line.x.v
+        branch[:, 4] = system.Line.b.v
+        branch[:, 5] = system.Line.rate_a.v
+        branch[:, 6] = system.Line.rate_b.v
+        branch[:, 7] = system.Line.rate_c.v
+        branch[:, 8] = system.Line.tap.v
+        branch[:, 9] = system.Line.phi.v * rad2deg
+        branch[:, 10] = system.Line.u.v
+
+    # --- gencost ---
+    gencost = mpc['gencost']
+    if system.GCost.n > 0:
+        gencost[:, 0] = system.GCost.type.v
+        gencost[:, 1] = system.GCost.startup.v
+        gencost[:, 2] = system.GCost.shutdown.v
+        gencost[:, 3] = 3
+        gencost[:, 4] = system.GCost.c2.v
+        gencost[:, 5] = system.GCost.c1.v
+        gencost[:, 6] = system.GCost.c0.v
+
+    return mpc
