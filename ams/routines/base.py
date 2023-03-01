@@ -36,6 +36,7 @@ class BaseRoutine:
         self.system = system
         self.config = Config(self.class_name)
         self.algebs = OrderedDict()  # collect algebraic variables from all involved devices
+        self.models = OrderedDict()  # collect all involved devices
 
         if config is not None:
             self.config.load(config)

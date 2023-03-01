@@ -177,6 +177,8 @@ class System(andes_System):
     def set_address(self, models):
         """
         Set addresses for algebraic variables.
+
+        # TODO: revise this method
         """
 
         # --- Phase 1: set internal variable addresses ---
@@ -219,12 +221,15 @@ class System(andes_System):
                 self.routines[attr_name] = self.__dict__[attr_name]
                 self.routines[attr_name].config.check()
         # NOTE: the following code is not used in ANDES
-        # NOTE: collecte all algebraic variables from all models into routines
+        # NOTE: only models that includ algebs will be collected
         for rtn_name in self.routines.keys():
             all_mdl = all_models[rtn_name]
             rtn = getattr(self, rtn_name)
             for mdl_name in all_mdl:
                 mdl = getattr(self, mdl_name)
+                # NOTE: collecte all involved models into routines
+                rtn.models[mdl_name] = mdl
+                # NOTE: collecte all algebraic variables from all involved models into routines
                 for name, value in mdl.algebs.items():
                     rtn.algebs[f'{name}_{mdl_name}'] = value
 
