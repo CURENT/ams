@@ -1,10 +1,15 @@
 # Development log
 
+### 2023-03-03
+
+* Add ``v`` to ``Algeb``
+* Fix ``ipp``
+* Mapping results from ``runpf()`` to ``PFlow.run()``
+
 ### 2023-03-01
 
 * Add routines to system
 * Add ``Algeb`` to routines
-
 * Fix ``ipp``
 * Add parser of MATPOWER and PSSE
 
