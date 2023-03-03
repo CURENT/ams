@@ -154,7 +154,9 @@ class PV(PVData, GENADD, Model):
         self.q = Algeb(info='actual reactive power generation',
                        unit='p.u.',
                        tex_name='q',
+                       name='q',
                        )
+
 
 class Slack(SlackData, GENADD, Model):
     """
@@ -169,11 +171,13 @@ class Slack(SlackData, GENADD, Model):
 
         self.p = Algeb(info='actual active power generation',
                        unit='p.u.',
-                       tex_name=r'p',
+                       tex_name='p',
+                       name='p',
                        )
         self.q = Algeb(info='actual reactive power generation',
                        unit='p.u.',
                        tex_name='q',
+                       name='q',
                        )
 
         self.config.add(OrderedDict((('av2pv', 0),
