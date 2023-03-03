@@ -4,6 +4,9 @@ Base class for variables.
 
 from typing import Optional
 
+import numpy as np
+
+
 class Algeb:
     """
     Algebraic variable class.
@@ -22,6 +25,7 @@ class Algeb:
         self.tex_name = tex_name if tex_name else name
         self.owner = None  # instance of the owner Model
         self.id = None     # variable internal index inside a model (assigned in run time)
+        self.v = np.empty(0)  # variable value
 
     def __repr__(self):
         n = self.owner.n
