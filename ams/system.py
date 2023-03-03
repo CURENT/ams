@@ -22,7 +22,7 @@ from ams.utils.paths import (ams_root, get_config_path)
 import ams.io
 from ams.models import file_classes
 from ams.routines import all_routines, all_models
-from ams.solver.ipp import to_ppc
+from ams.solver.ipp import system2ppc
 
 logger = logging.getLogger(__name__)
 
@@ -270,7 +270,7 @@ class System(andes_System):
         self.init_algebs()
 
         # store ppc case
-        self._ppc, self._key, self._col = to_ppc(self)
+        self._ppc, self._key, self._col = system2ppc(self)
 
         _, s = elapsed(t0)
         logger.info('System set up  and initialize in %s.', s)

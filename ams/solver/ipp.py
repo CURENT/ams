@@ -36,7 +36,7 @@ def load_ppc(case) -> dict:
     return ppc
 
 
-def to_ppc(ssp) -> dict:
+def system2ppc(ssp) -> dict:
     """
     Convert the AMS system to a PYPOWER case dict.
 
@@ -197,7 +197,7 @@ def to_ppc(ssp) -> dict:
 
     return ppc, key, col
 
-def ppc2ams(ssp, res):
+def res2system(ssp, res):
     """
     Convert ppc results to ams results
     
