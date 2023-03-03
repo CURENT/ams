@@ -6,7 +6,7 @@ import numpy as np
 
 from ams.routines.base import BaseRoutine
 from ams.solver.pypower.runpf import runpf, rundcpf
-from ams.solver.ipp import ppc2ams
+from ams.solver.ipp import res2system
 
 
 class PFlow(BaseRoutine):
@@ -27,7 +27,7 @@ class PFlow(BaseRoutine):
         self.converged = bool(exit_code)
 
         # --- Update variables ---
-        a_Bus, v_Bus, q_PV, p_Slack, q_Slack = ppc2ams(self.system, res)
+        a_Bus, v_Bus, q_PV, p_Slack, q_Slack = res2system(self.system, res)
         for aname in self.algebs.keys():
             a = self.algebs[aname]['a']  # array index
             if len(a) > 1:
@@ -37,7 +37,7 @@ class PFlow(BaseRoutine):
                 self.v[a] = locals()[aname]
                 self.algebs[aname]['algeb'].v = locals()[aname]
 
-        return self.converged, res
+        return self.converged
 
     def summary(self, **kwargs):
         """
