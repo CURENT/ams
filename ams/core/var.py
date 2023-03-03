@@ -22,3 +22,8 @@ class Algeb:
         self.tex_name = tex_name if tex_name else name
         self.owner = None  # instance of the owner Model
         self.id = None     # variable internal index inside a model (assigned in run time)
+
+    def __repr__(self):
+        n = self.owner.n
+        dev_text = 'Algeb' if n == 1 else 'Algebs'
+        return f'{self.owner.__class__.__name__}.{self.name} ({n} {dev_text}) at {hex(id(self))}'
