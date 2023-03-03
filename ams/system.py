@@ -175,7 +175,6 @@ class System(andes_System):
         # internal flags
         self.is_setup = False        # if system has been setup
 
-        # TODO: DEBUG now
         self.import_groups()
         self.import_models()
         self.import_routines()
@@ -213,10 +212,6 @@ class System(andes_System):
                             algeb.owner = mdl  # set owner of algebraic variables
                             # TODO: this name can be improved with removing the model name
                             rtn.algebs[f'{name}_{mdl_name}'] = algeb
-
-                    # NOTE: update routine algebraic variables
-                    rtn = getattr(self, rtn_name)
-                    rtn.algeb = rtn.count_algeb()
 
     def import_groups(self):
         """
@@ -299,7 +294,18 @@ class System(andes_System):
         _, s = elapsed(t0)
         logger.info('System internal structure set up in %s.', s)
 
+        self.init_algebs()
+
         # store ppc case
         self._ppc, self._key, self._col = to_ppc(self)
 
         return ret
+
+    def init_algebs(self):
+        """
+        Initialize algebraic variables for all routines.
+        """
+        for rtn_name in self.routines:
+            rtn = getattr(self, f'{rtn_name}')
+            rtn.n = rtn._count()
+            rtn.v = np.zeros(rtn.n)

@@ -37,7 +37,7 @@ class BaseRoutine:
         The AMS system.
     config : dict
         Configuration dict.
-    
+
     Attributes
     ----------
     system : ams.system
@@ -63,6 +63,7 @@ class BaseRoutine:
         # NOTE: the following attributes are populated in ``System`` class
         self.models = OrderedDict()  # collect all involved devices
         self.algebs = OrderedDict()  # info of algebraic variables from all involved devices
+        self.n = 0  # number of algebraic variables
         self.v = np.empty(0)  # values of algebraic variables
 
         if config is not None:
@@ -94,7 +95,7 @@ class BaseRoutine:
         """
         return self.config.doc(max_width, export)
 
-    def count_algeb(self):
+    def _count(self):
         """
         Initialize algebraic variables and set address.
         This method is called in ``System`` after all routiens are imported.
@@ -108,15 +109,16 @@ class BaseRoutine:
         -------
         out: OrderedDict
             an OrderedDict of algebraic variables and their length
+        n_algeb: int
+            number of devices
         """
         out = OrderedDict()
+        n_algeb = 0
         for mdl_name in self.models:
-            mdl = self.models[mdl_name]  # instance of model
-            n = mdl.n  # number of devices
+            mdl = getattr(self.system, f'{mdl_name}')  # instance of model
             for var_name in mdl.algebs:
-                var = mdl.algebs[var_name]  # instance of Algeb
-                out[f'{var.owner.__class__.__name__}.{var_name}'] = n
-        return out
+                n_algeb += mdl.n  # number of algebs
+        return n_algeb
 
     def run(self, **kwargs):
         """
@@ -135,6 +137,6 @@ class BaseRoutine:
         Report interface.
         """
         raise NotImplementedError
-    
+
     def __repr__(self) -> str:
         return f"Routine {self.__class__.__name__} at {hex(id(self))}"
