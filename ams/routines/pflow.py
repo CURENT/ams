@@ -2,8 +2,11 @@
 Module for power flow calculation.
 """
 
+import numpy as np
+
 from ams.routines.base import BaseRoutine
 from ams.solver.pypower.runpf import runpf, rundcpf
+from ams.solver.ipp import ppc2ams
 
 
 class PFlow(BaseRoutine):
@@ -23,8 +26,16 @@ class PFlow(BaseRoutine):
         res, exit_code = runpf(self.system._ppc, **kwargs)
         self.converged = bool(exit_code)
 
-        # TODO: organize the results
-        # bus, gen, line
+        # --- Update variables ---
+        a_Bus, v_Bus, q_PV, p_Slack, q_Slack = ppc2ams(self.system, res)
+        for aname in self.algebs.keys():
+            a = self.algebs[aname]['a']  # array index
+            if len(a) > 1:
+                self.v[a[0]:a[-1]+1] = locals()[aname]
+                self.algebs[aname]['algeb'].v = locals()[aname]
+            else:
+                self.v[a] = locals()[aname]
+                self.algebs[aname]['algeb'].v = locals()[aname]
 
         return self.converged, res
 

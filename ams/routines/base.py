@@ -8,6 +8,7 @@ from collections import OrderedDict  # NOQA
 import numpy as np
 
 from andes.core import Config
+from andes.shared import deg2rad
 
 logger = logging.getLogger(__name__)
 
@@ -115,8 +116,8 @@ class BaseRoutine:
         out = OrderedDict()
         n_algeb = 0
         mdl_all = []
-        for mdl_name in self.models:
-            mdl = getattr(self.system, f'{mdl_name}')  # instance of model
+        for mname in self.models:
+            mdl = getattr(self.system, f'{mname}')  # instance of model
             for var_name in mdl.algebs:
                 n_algeb += mdl.n  # number of algebs
                 mdl_all.append(mdl.__class__.__name__)
@@ -142,3 +143,9 @@ class BaseRoutine:
 
     def __repr__(self) -> str:
         return f"Routine {self.__class__.__name__} at {hex(id(self))}"
+
+    def _ppc2ams(self):
+        """
+        Convert PYPOWER results to AMS.
+        """
+        raise NotImplementedError

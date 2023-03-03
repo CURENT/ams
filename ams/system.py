@@ -39,32 +39,6 @@ def disable_methods(methods):
         setattr(System, method, disable_method(getattr(System, method)))
 
 
-class ExistingModels():
-    """
-    Storage class for existing models used in dispatch routines.
-
-    New developed routines should register their models here.
-
-    TODO: a method ``add`` should be developed to register a new routine.
-    There should be a progressive relationship of the routines that higher routines
-    will include all the models of lower routines.
-
-    Examples
-    --------
-    Example for registering a new routine ``rted``, one should include the
-    code below::
-    ```
-    self.exist.rted = OrderedDict()
-    ```
-    """
-
-    def __init__(self):
-        # TODO: add other implemented routines
-        self.all_rtn = ["dcpf", "pf"]
-        for rt in self.all_rtn:
-            setattr(self, rt, OrderedDict())
-
-
 class System(andes_System):
     """
     System contains data, models, and routines for dispatch modeling and analysis.
@@ -163,8 +137,6 @@ class System(andes_System):
                       invalid=self.config.np_invalid,
                       )
 
-        self.rtn = ExistingModels()
-
         # TODO: revise the following attributes, it seems that these are not used in AMS
         self._getters = dict(f=list(), g=list(), x=list(), y=list())
         self._adders = dict(f=list(), g=list(), x=list(), y=list())
@@ -203,17 +175,17 @@ class System(andes_System):
                 for rtn_name in self.routines.keys():
                     all_mdl = all_models[rtn_name]
                     rtn = getattr(self, rtn_name)
-                    for mdl_name in all_mdl:
-                        mdl = getattr(self, mdl_name)
+                    for mname in all_mdl:
+                        mdl = getattr(self, mname)
                         # NOTE: collecte all involved models into routines
-                        rtn.models[mdl_name] = mdl
+                        rtn.models[mname] = mdl
                         # NOTE: collecte all algebraic variables from all involved models into routines
                         for name, algeb in mdl.algebs.items():
                             algeb.owner = mdl  # set owner of algebraic variables
                             # TODO: this name can be improved with removing the model name
-                            rtn.algebs[f'{name}_{mdl_name}'] = OrderedDict([
+                            rtn.algebs[f'{name}_{mname}'] = OrderedDict([
                                 ('algeb', algeb),
-                                ('aidx', [-1]),  # start and end index in the algebraic vector
+                                ('a', [-1]),  # start and end index in the algebraic vector
                             ])
 
     def import_groups(self):
@@ -314,11 +286,11 @@ class System(andes_System):
             rtn = getattr(self, f'{rtn_name}')
             rtn.n, mdl_all = rtn._count()
             rtn.v = np.zeros(rtn.n)
-            for algeb_name in rtn.algebs.keys():
-                n_device = rtn.algebs[algeb_name]['algeb'].owner.n
+            for aname in rtn.algebs.keys():
+                n_device = rtn.algebs[aname]['algeb'].owner.n
                 if n_device > 1:
-                    rtn.algebs[algeb_name]['aidx'] = [aidx, aidx + n_device - 1]
+                    rtn.algebs[aname]['a'] = [aidx, aidx + n_device - 1]
                     aidx += n_device
                 else:
-                    rtn.algebs[algeb_name]['aidx'] = [aidx]
+                    rtn.algebs[aname]['a'] = [aidx]
                     aidx += 1
