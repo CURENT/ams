@@ -6,9 +6,10 @@ import logging
 from collections import OrderedDict  # NOQA
 
 from numpy import array  # NOQA
+import numpy as np  # NOQA
 import pandas as pd  # NOQA
 
-from andes.shared import rad2deg  # NOQA
+from andes.shared import rad2deg, deg2rad  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +49,10 @@ def to_ppc(ssp) -> dict:
     -------
     ppc : dict
         The PYPOWER case dict.
-    key_dict : OrderedDict
-        Mapping dict from AMS system to PYPOWER case.
-    col_dict : OrderedDict
+    key : OrderedDict
+        Mapping dict from PYPOWER case to AMS system.
+        For example: ``key['Line'] = {1 : 'Line_1'}``.
+    col : OrderedDict
         Dict of columns of PYPOWER case.
     """
     # TODO: convert the AMS system to a PYPOWER case dict
@@ -59,8 +61,8 @@ def to_ppc(ssp) -> dict:
         logger.warning('System has not been setup. Conversion aborted.')
         return None
 
-    key_dict = OrderedDict()
-    col_dict = OrderedDict()
+    key = OrderedDict()
+    col = OrderedDict()
 
     # --- initialize ppc ---
     ppc = {"version": '2'}
@@ -69,7 +71,7 @@ def to_ppc(ssp) -> dict:
 
     # --- bus data ---
     bus_df = ssp.Bus.as_df().rename(columns={'idx': 'bus'}).reset_index(drop=True)
-    key_dict['Bus'] = OrderedDict(
+    key['Bus'] = OrderedDict(
         {ssp: ppc for ssp, ppc in enumerate(bus_df['bus'].tolist(), start=1)})
 
     # NOTE: bus data: bus_i type Pd Qd Gs Bs area Vm Va baseKV zone Vmax Vmin
@@ -78,7 +80,7 @@ def to_ppc(ssp) -> dict:
                 'baseKV', 'zone', 'Vmax', 'Vmin']
     ppc_bus = pd.DataFrame(columns=bus_cols)
 
-    ppc_bus['bus_i'] = key_dict['Bus'].values()
+    ppc_bus['bus_i'] = key['Bus'].values()
     ppc_bus['type'] = 1  # default to PQ bus
     # TODO: add check for isolated buses
 
@@ -114,10 +116,10 @@ def to_ppc(ssp) -> dict:
     gen_df = pd.concat([pv_df, slack_df], ignore_index=True)
     gen_df = pd.merge(left=gen_df, right=bus_df[['bus', 'area']],
                       on='bus', how='left',)
-    key_dict['Slack'] = OrderedDict(
-        {ssp: ppc for ssp, ppc in enumerate(slack_df['idx'].tolist(), start=1)})
-    key_dict['PV'] = OrderedDict(
-        {ssp: ppc for ssp, ppc in enumerate(pv_df['idx'].tolist(), start=1)})
+    key['PV'] = OrderedDict(
+        {ppc : ssp for ppc, ssp in enumerate(pv_df['idx'].tolist(), start=1)})
+    key['Slack'] = OrderedDict(
+        {ppc : ssp for ppc, ssp in enumerate(slack_df['idx'].tolist(), start=gen_df.shape[0])})
 
     # NOTE: gen data:
     # bus, Pg, Qg, Qmax, Qmin, Vg, mBase, status, Pmax, Pmin, Pc1, Pc2,
@@ -129,7 +131,7 @@ def to_ppc(ssp) -> dict:
     ppc_gen = pd.DataFrame(columns=gen_cols)
 
     # idx of bus in ppc
-    gen_bus_ppc = [key_dict['Bus'][bus_idx] for bus_idx in gen_df['bus'].tolist()]
+    gen_bus_ppc = [key['Bus'][bus_idx] for bus_idx in gen_df['bus'].tolist()]
     ppc_gen['bus'] = gen_bus_ppc
     # define bus type
     type_pv = ppc_bus['bus_i'].isin(pv_df['bus']).astype(int)
@@ -156,8 +158,8 @@ def to_ppc(ssp) -> dict:
 
     # --- branch data ---
     line_df = ssp.Line.as_df()
-    key_dict['Line'] = OrderedDict(
-        {ssp: ppc for ssp, ppc in enumerate(line_df['idx'].tolist(), start=1)})
+    key['Line'] = OrderedDict(
+        {ppc : ssp for ppc, ssp in enumerate(line_df['idx'].tolist(), start=1)})
 
     branch_cols = ['fbus', 'tbus', 'r', 'x', 'b', 'rateA', 'rateB', 'rateC',
                    'ratio', 'angle', 'status', 'angmin', 'angmax']
@@ -170,19 +172,13 @@ def to_ppc(ssp) -> dict:
     ])
     ppc_line[list(dcols_line.keys())] = line_df[list(dcols_line.values())]
     ppc_line[['angmin', 'angmax', 'angle']] = line_df[['amin', 'amax', 'phi']] * rad2deg
-    ppc_line[['fbus', 'tbus']] = ppc_line[['fbus', 'tbus']].replace(key_dict['Bus'])
+    ppc_line[['fbus', 'tbus']] = ppc_line[['fbus', 'tbus']].replace(key['Bus'])
     ppc["branch"] = ppc_line.values
-
-    # --- area data ---
-    # area_df = ssp.Area.as_df()
-    # key_dict['Area'] = OrderedDict(
-    #     {ssp: ppc for ssp, ppc in enumerate(area_df['idx'].tolist(), start=1)})
-    # ppc['areas'] = array([list(key_dict['Area'].values())])
 
     # --- gencost data ---
     gc_df = ssp.GCost.as_df()
-    key_dict['GCost'] = OrderedDict(
-        {ssp: ppc for ssp, ppc in enumerate(gc_df['idx'].tolist(), start=1)})
+    key['GCost'] = OrderedDict(
+        {ppc : ssp for ppc, ssp in enumerate(gc_df['idx'].tolist(), start=1)})
 
     # TODO: Add Model 1
     gcost_cols = ['type', 'startup', 'shutdown', 'n', 'c2', 'c1', 'c0']
@@ -195,8 +191,43 @@ def to_ppc(ssp) -> dict:
     ppc_gcost['n'] = 3
     ppc["gencost"] = ppc_gcost.values
 
-    col_dict['bus'] = bus_cols
-    col_dict['gen'] = gen_cols
-    col_dict['branch'] = branch_cols
+    col['bus'] = bus_cols
+    col['gen'] = gen_cols
+    col['branch'] = branch_cols
 
-    return ppc, key_dict, col_dict
+    return ppc, key, col
+
+def ppc2ams(ssp, res):
+    """
+    Convert ppc results to ams results
+    
+    Parameters
+    ----------
+    ssp : ams.system.System
+        AMS system.
+    res : dict
+        PYPOWER results.
+    """
+    key = ssp._key
+    col = ssp._col
+
+    # --- Bus ---
+    bus_i = res['bus'][:, col['bus'].index('bus_i')]
+    Va = res['bus'][:, col['bus'].index('Va')] * deg2rad
+    Vm = res['bus'][:, col['bus'].index('Vm')]
+    a_Bus = np.array([Va[ssp.Bus.idx2uid(key['Bus'][i])] for i in bus_i])
+    v_Bus = np.array([Vm[ssp.Bus.idx2uid(key['Bus'][i])] for i in bus_i])
+
+    # --- Gen ---
+    pv_i_ppc = [i - 1 for i in list(key['PV'].keys())]
+    slack_i_ppc = [i - 1 for i in list(key['Slack'].keys())]
+    q_pv_ppc = res['gen'][pv_i_ppc, col['gen'].index('Qg')]
+    p_slack_ppc = res['gen'][slack_i_ppc, col['gen'].index('Pg')]
+    q_slack_ppc = res['gen'][slack_i_ppc, col['gen'].index('Qg')]
+    uid_PV = [ssp.PV.idx2uid(key['PV'][i]) for i in key['PV'].keys()]
+    q_PV = q_pv_ppc[uid_PV]
+    uid_Slack = [ssp.Slack.idx2uid(key['Slack'][i]) for i in key['Slack'].keys()]
+    p_Slack = p_slack_ppc[uid_Slack]
+    q_Slack = q_slack_ppc[uid_Slack]
+
+    return a_Bus, v_Bus, q_PV, p_Slack, q_Slack
