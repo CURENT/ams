@@ -49,7 +49,7 @@ def to_ppc(ssp) -> dict:
     ppc : dict
         The PYPOWER case dict.
     key_dict : OrderedDict
-        Mapping dict between AMS system and PYPOWER.
+        Mapping dict from AMS system to PYPOWER case.
     col_dict : OrderedDict
         Dict of columns of PYPOWER case.
     """
@@ -136,19 +136,21 @@ def to_ppc(ssp) -> dict:
     type_slack = ppc_bus['bus_i'].isin(slack_df['bus']).astype(int) * 2
     ppc_bus['type'] = ppc_bus['type'] + type_pv + type_slack
 
-    # data that needs to be converted
     dcols_gen = OrderedDict([
         ('Pg', 'p0'), ('Qg', 'q0'), ('Qmax', 'qmax'), ('Qmin', 'qmin'),
         ('Pmax', 'pmax'), ('Pmin', 'pmin'), ('ramp_agc', 'Ragc'),
-        ('ramp_10', 'R10'), ('ramp_30', 'R30'), ('ramp_q', 'Rq')
+        ('ramp_10', 'R10'), ('ramp_30', 'R30'), ('ramp_q', 'Rq'),
+        ('Pc1', 'Pc1'), ('Pc2', 'Pc2'), ('Qc1min', 'Qc1min'), ('Qc1max', 'Qc1max'),
+        ('Qc2min', 'Qc2min'), ('Qc2max', 'Qc2max'),
     ])
-    scols_gen = ['Pc1', 'Pc2', 'Qc1min', 'Qc1max', 'Qc2min', 'Qc2max']
-    ppc_gen[list(dcols_gen.keys())] = gen_df[list(dcols_gen.values())].mul(mva)
-    ppc_gen[scols_gen] = gen_df[scols_gen].mul(mva)
+    ppc_gen[list(dcols_gen.keys())] = gen_df[list(dcols_gen.values())]
 
     # rest of the gen data
     ppc_gen[['mBase', 'status', 'Vg', 'apf']] = gen_df[['Sn', 'u', 'v0', 'apf']]
 
+    # data type
+    ppc_bus[['bus_i', 'type', 'zone']] = ppc_bus[['bus_i', 'type', 'zone']].astype(int)
+    ppc_gen[['bus', 'status']] = ppc_gen[['bus', 'status']].astype(int)
     ppc["bus"] = ppc_bus.values
     ppc["gen"] = ppc_gen.values
 
@@ -158,7 +160,7 @@ def to_ppc(ssp) -> dict:
         {ssp: ppc for ssp, ppc in enumerate(line_df['idx'].tolist(), start=1)})
 
     branch_cols = ['fbus', 'tbus', 'r', 'x', 'b', 'rateA', 'rateB', 'rateC',
-                    'ratio', 'angle', 'status', 'angmin', 'angmax']
+                   'ratio', 'angle', 'status', 'angmin', 'angmax']
     ppc_line = pd.DataFrame(columns=branch_cols)
     dcols_line = OrderedDict([
         ('fbus', 'bus1'), ('tbus', 'bus2'),
@@ -186,7 +188,7 @@ def to_ppc(ssp) -> dict:
     gcost_cols = ['type', 'startup', 'shutdown', 'n', 'c2', 'c1', 'c0']
     ppc_gcost = pd.DataFrame(columns=gcost_cols)
     gc_df = pd.merge(left=gen_df[['idx']].astype(str).rename(columns={'idx': 'gen'}),
-                        right=gc_df, on='gen', how='left')
+                     right=gc_df, on='gen', how='left')
     dcols_cost = gcost_cols.copy()
     dcols_cost.remove('n')
     ppc_gcost[dcols_cost] = gc_df[dcols_cost]
