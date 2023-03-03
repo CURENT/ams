@@ -211,7 +211,10 @@ class System(andes_System):
                         for name, algeb in mdl.algebs.items():
                             algeb.owner = mdl  # set owner of algebraic variables
                             # TODO: this name can be improved with removing the model name
-                            rtn.algebs[f'{name}_{mdl_name}'] = algeb
+                            rtn.algebs[f'{name}_{mdl_name}'] = OrderedDict([
+                                ('algeb', algeb),
+                                ('aidx', [-1]),  # start and end index in the algebraic vector
+                            ])
 
     def import_groups(self):
         """
@@ -291,13 +294,14 @@ class System(andes_System):
             logger.error("System setup failed. Please resolve the reported issue(s).")
             self.exit_code += 1
 
-        _, s = elapsed(t0)
-        logger.info('System internal structure set up in %s.', s)
-
+        # initialize algebraic variables for all routines
         self.init_algebs()
 
         # store ppc case
         self._ppc, self._key, self._col = to_ppc(self)
+
+        _, s = elapsed(t0)
+        logger.info('System set up  and initialize in %s.', s)
 
         return ret
 
@@ -306,6 +310,15 @@ class System(andes_System):
         Initialize algebraic variables for all routines.
         """
         for rtn_name in self.routines:
+            aidx = 0
             rtn = getattr(self, f'{rtn_name}')
-            rtn.n = rtn._count()
+            rtn.n, mdl_all = rtn._count()
             rtn.v = np.zeros(rtn.n)
+            for algeb_name in rtn.algebs.keys():
+                n_device = rtn.algebs[algeb_name]['algeb'].owner.n
+                if n_device > 1:
+                    rtn.algebs[algeb_name]['aidx'] = [aidx, aidx + n_device - 1]
+                    aidx += n_device
+                else:
+                    rtn.algebs[algeb_name]['aidx'] = [aidx]
+                    aidx += 1

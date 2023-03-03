@@ -107,18 +107,20 @@ class BaseRoutine:
 
         Returns
         -------
-        out: OrderedDict
-            an OrderedDict of algebraic variables and their length
         n_algeb: int
             number of devices
+        mdl_all: list of ams.core.model.Model
+            list of all involved devices
         """
         out = OrderedDict()
         n_algeb = 0
+        mdl_all = []
         for mdl_name in self.models:
             mdl = getattr(self.system, f'{mdl_name}')  # instance of model
             for var_name in mdl.algebs:
                 n_algeb += mdl.n  # number of algebs
-        return n_algeb
+                mdl_all.append(mdl.__class__.__name__)
+        return n_algeb, mdl_all
 
     def run(self, **kwargs):
         """
