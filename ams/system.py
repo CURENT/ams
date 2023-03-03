@@ -180,26 +180,6 @@ class System(andes_System):
         self.import_models()
         self.import_routines()
 
-    def init_algebs(self):
-        """
-        Initialize algebraic variables of all routines.
-
-        Parameters
-        ----------
-        routines : list
-            List of routine names to be set. If ``None``, all routines will be set.
-        """
-
-        # TODO: this can be memory consuming when there are many routines
-        for rtn_name in self.routines:
-            if rtn_name not in self.routines:
-                raise ValueError(f'Routine {rtn_name} not found')
-            rtn = self.routines[rtn_name]
-            rtn.count = rtn.count_algeb()
-            print(f'Algebraic variables of {rtn_name}: {rtn.count}')
-            n_total = np.sum(list(rtn.count.values()))
-            rtn.v = np.empty(n_total)
-
     def import_routines(self):
         """
         Import routines as defined in ``routines/__init__.py``.
@@ -209,7 +189,7 @@ class System(andes_System):
 
         Examples
         --------
-        ``System.PF`` is the power flow routine instance.
+        ``System.PFlow`` is the power flow routine instance.
         """
         for file, cls_list in all_routines.items():
             for cls_name in cls_list:
@@ -221,18 +201,22 @@ class System(andes_System):
                 self.routines[attr_name].config.check()
         # NOTE: the following code is not used in ANDES
         # NOTE: only models that includ algebs will be collected
-        for rtn_name in self.routines.keys():
-            all_mdl = all_models[rtn_name]
-            rtn = getattr(self, rtn_name)
-            for mdl_name in all_mdl:
-                mdl = getattr(self, mdl_name)
-                # NOTE: collecte all involved models into routines
-                rtn.models[mdl_name] = mdl
-                # NOTE: collecte all algebraic variables from all involved models into routines
-                for name, algeb in mdl.algebs.items():
-                    algeb.owner = mdl  # set owner of algebraic variables
-                    # TODO: this name can be improved with removing the model name
-                    rtn.algebs[f'{name}_{mdl_name}'] = algeb
+                for rtn_name in self.routines.keys():
+                    all_mdl = all_models[rtn_name]
+                    rtn = getattr(self, rtn_name)
+                    for mdl_name in all_mdl:
+                        mdl = getattr(self, mdl_name)
+                        # NOTE: collecte all involved models into routines
+                        rtn.models[mdl_name] = mdl
+                        # NOTE: collecte all algebraic variables from all involved models into routines
+                        for name, algeb in mdl.algebs.items():
+                            algeb.owner = mdl  # set owner of algebraic variables
+                            # TODO: this name can be improved with removing the model name
+                            rtn.algebs[f'{name}_{mdl_name}'] = algeb
+
+                    # NOTE: update routine algebraic variables
+                    rtn = getattr(self, rtn_name)
+                    rtn.algeb = rtn.count_algeb()
 
     def import_groups(self):
         """
@@ -305,9 +289,6 @@ class System(andes_System):
         # TODO: double check calc_pu_coeff
         self.calc_pu_coeff()   # calculate parameters in system per units
         # self.store_existing()  # store models with routine flags
-
-        # initialize algebraic variables in all routines
-        self.init_algebs()
 
         if ret is True:
             self.is_setup = True  # set `is_setup` if no error occurred

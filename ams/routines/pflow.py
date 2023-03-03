@@ -13,6 +13,7 @@ class PFlow(BaseRoutine):
 
     def __init__(self, system=None, config=None):
         super().__init__(system, config)
+        self.info = "AC Power flow"
         self.converged = False
 
     def run(self, **kwargs):
