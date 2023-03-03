@@ -65,8 +65,8 @@ copyright = '2023, Jinning Wang'
 author = 'Jinning Wang'
 
 # TODO: fix the version later on
-version = "0.5.0"
-release = "0.5.0"
+version = "0.6.0"
+release = "0.6.0"
 # # The short X.Y version.
 # version = ams.__version__
 # # The full version, including alpha/beta/rc tags.
