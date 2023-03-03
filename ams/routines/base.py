@@ -30,15 +30,39 @@ class BaseResults:
 class BaseRoutine:
     """
     Base routine class.
+
+    Parameters
+    ----------
+    system : ams.system
+        The AMS system.
+    config : dict
+        Configuration dict.
+    
+    Attributes
+    ----------
+    system : ams.system
+        The AMS system.
+    config : andes.core.Config
+        Configuration object.
+    name : str
+        Routine information.
+    models : OrderedDict
+        Dict that stores all involved devices.
+    count : OrderedDict
+        Dict that stores the count of all involved devices.
+    algebs : OrderedDict
+        OrderedDict of list that stores ``name`` and ``idx`` of Algebs from all involved devices.
+    v : numpy.ndarray
+        Array that stores the values of algebraic variables.
     """
 
     def __init__(self, system=None, config=None):
         self.system = system
         self.config = Config(self.class_name)
+        self.info = None
         # NOTE: the following attributes are populated in ``System`` class
-        self.algebs = OrderedDict()  # collect algebraic variables from all involved devices
         self.models = OrderedDict()  # collect all involved devices
-        self.count = OrderedDict()  # count of all involved devices
+        self.algebs = OrderedDict()  # info of algebraic variables from all involved devices
         self.v = np.empty(0)  # values of algebraic variables
 
         if config is not None:
@@ -58,8 +82,7 @@ class BaseRoutine:
 
         self.exec_time = 0.0  # recorded time to execute the routine in seconds
         # TODO: check exit_code of gurobipy or any other similiar solvers
-        self.exit_code = 0  # exit code of the routine; 0 for successs
-        self.algebs = OrderedDict()  # internal algebraic variables
+        self.exit_code = 0  # exit code of the routine; 1 for successs
 
     @property
     def class_name(self):
@@ -91,7 +114,8 @@ class BaseRoutine:
             mdl = self.models[mdl_name]  # instance of model
             n = mdl.n  # number of devices
             for var_name in mdl.algebs:
-                out[f'{var_name}_{mdl_name}'] = n
+                var = mdl.algebs[var_name]  # instance of Algeb
+                out[f'{var.owner.__class__.__name__}.{var_name}'] = n
         return out
 
     def run(self, **kwargs):
@@ -111,3 +135,6 @@ class BaseRoutine:
         Report interface.
         """
         raise NotImplementedError
+    
+    def __repr__(self) -> str:
+        return f"Routine {self.__class__.__name__} at {hex(id(self))}"
