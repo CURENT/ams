@@ -137,3 +137,13 @@ def load(case, setup=True,
     if setup:
         system.setup()
     return system
+
+def find_log_path(lg):
+    """
+    Find the file paths of the FileHandlers.
+    """
+    out = []
+    for h in lg.handlers:
+        if isinstance(h, logging.FileHandler):
+            out.append(h.baseFilename)
+    return out
