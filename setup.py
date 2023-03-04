@@ -81,7 +81,7 @@ setup(
     author="Jinning Wang",
     author_email='jinninggm@gmail.com',
     url='https://github.com/jinningwang/ams',
-    packages=['ams'],
+    packages=find_packages(exclude=[]),
     entry_points={
         'console_scripts': [
             'ams = ams.cli:main',
