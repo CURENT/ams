@@ -17,6 +17,7 @@ v0.6 (2023-03-04)
 - Debug module ``ams.system.System``, ``ams.core.var``, ``ams.core.model`` for routine analysis
 - Set up routine ``PFlow`` for power flow calculation
 - Add file parser for MATPOWER case file and RAW file
+- Documentation of APIs
 
 v0.5 (2023-02-17)
 -------------------

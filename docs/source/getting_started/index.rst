@@ -41,7 +41,7 @@ Quick install
 
     .. code-block:: bash
 
-        conda install -c conda-forge andes
+        conda install -c conda-forge ams
 
     ---
 

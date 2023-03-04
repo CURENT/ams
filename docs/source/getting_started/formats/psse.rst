@@ -15,12 +15,12 @@ RAW Compatibility
 .................
 AMS supports PSS/E RAW in versions 32 and 33. Newer versions of
 ``raw`` files can store PSS/E settings along with the system data, but such
-feature is not yet supported in ANDES. Also, manually edited ``raw`` files can
-confuse the parser in ANDES. Following manual edits, it is strongly recommended
+feature is not yet supported in AMS. Also, manually edited ``raw`` files can
+confuse the parser in AMS. Following manual edits, it is strongly recommended
 to load the data into PSS/E and save the case as a v33 RAW file.
 
 AMS supports most power flow models in PSS/E. It needs to be recognized that
-the power flow models in PSS/E is is a larger set compared with those in ANDES.
+the power flow models in PSS/E is is a larger set compared with those in AMS.
 For example, switched shunts in PSS/E are converted to fixed ones, not all
 three-winding transformer flags are supported, and HVDC devices are not yet
 converted. This is not an exhaustive list, but all of them are advanced models.
@@ -35,13 +35,9 @@ In the command line, PSS/E files can be loaded with
 
 .. code-block:: bash
 
-    ams run kundur.raw --addfile kundur.dyr
+    ams run kundur.raw
 
-where ``--addfile`` or ``-a`` is used to specify the optional DYR file. For
-now, DYR files can only be added to a RAW file. We will allow different formats
-to be mixed in the future.
-
-Likewise, one can convert PSS/E files to ANDES xlsx:
+Likewise, one can convert PSS/E files to AMS xlsx:
 
 .. code-block:: bash
 
