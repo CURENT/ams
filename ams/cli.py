@@ -56,10 +56,10 @@ def preamble():
     system_name = platform.system()
     date_time = strftime('%m/%d/%Y %I:%M:%S %p')
     logger.info("\n"
-                rf"     _             | Version {version}" + '\n'
-                rf"    /_\  _ __  ___ | Python {py_version} on {system_name}, {date_time}" + '\n'
-                r"   / _ \| '  \(_-< | " + "\n"
-                r'  /_/ \_\_|_|_/__/ | This program comes with ABSOLUTELY NO WARRANTY.' + '\n')
+                rf"    _             | Version {version}" + '\n'
+                rf"   /_\  _ __  ___ | Python {py_version} on {system_name}, {date_time}" + '\n'
+                r"  / _ \| '  \(_-< | " + "\n"
+                r' /_/ \_\_|_|_/__/ | This program comes with ABSOLUTELY NO WARRANTY.' + '\n')
 
 def main():
     """
