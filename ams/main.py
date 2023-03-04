@@ -8,8 +8,8 @@ from andes.main import set_logger_level, _find_cases
 from andes.shared import coloredlogs
 from andes.utils.misc import elapsed, is_interactive
 
+import ams
 from ams.system import System
-
 from ams.utils.paths import get_config_path, get_log_dir, tests_root
 from ams.solver.ipp import system2ppc
 
