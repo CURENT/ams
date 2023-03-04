@@ -8,6 +8,8 @@ import logging
 from andes.utils.misc import elapsed
 from andes.io import guess
 
+from ams.io import xlsx, psse, matpower, pypower   # NOQA
+
 
 logger = logging.getLogger(__name__)
 
