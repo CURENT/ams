@@ -52,8 +52,7 @@ class System(andes_System):
                  options: Optional[Dict] = None,
                  **kwargs
                  ):
-        # Disable methods not supported in AMS
-        # TODO: some of the methods might be used in the future
+
         func_to_disable = [
             # --- not sure ---
             'set_config', 'set_dae_names', 'set_output_subidx', 'set_var_arrays',
@@ -69,11 +68,6 @@ class System(andes_System):
             'store_sparse_pattern', 'store_switch_times', 'switch_action', 'to_ipysheet',
             'undill']
         disable_methods(func_to_disable)
-        # FIXME: the following code does not work
-        # for func in func_to_disable:
-        #     func_name = f'self.{func}'
-        #     del func_name
-        # TODO: it seems that ``connectivity`` and ``summary`` can be skipped in AMS
 
         self.name = name
         self.options = {}
@@ -293,3 +287,13 @@ class System(andes_System):
                 else:
                     rtn.algebs[aname]['a'] = [aidx]
                     aidx += 1
+
+    # FIXME: remove unused methods
+    # # Disable methods not supported in AMS
+    # func_to_include = [
+    #     'import_models', 'import_groups', 'import_routines',
+    #     'setup', 'init_algebs',
+    #     '_update_config_object',
+    #     ]
+    # # disable_methods(func_to_disable)
+    # __dict__ = {method: lambda self: self.x for method in func_to_include}
