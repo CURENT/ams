@@ -17,11 +17,11 @@ from andes.variables import FileMan
 
 from andes.utils.misc import elapsed
 
-from ams.utils.paths import (ams_root, get_config_path)
 from ams.models.group import GroupBase
 from ams.models import file_classes
 from ams.routines import all_routines, all_models
 from ams.solver.ipp import system2ppc
+from ams.utils.paths import get_config_path
 
 logger = logging.getLogger(__name__)
 
