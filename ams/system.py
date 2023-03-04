@@ -13,13 +13,12 @@ import numpy as np
 from andes.core import Config
 from andes.system import System as andes_System
 from andes.system import (_config_numpy, load_config_rc)
-from ams.models.group import GroupBase
 from andes.variables import FileMan
 
 from andes.utils.misc import elapsed
 
 from ams.utils.paths import (ams_root, get_config_path)
-import ams.io
+from ams.models.group import GroupBase
 from ams.models import file_classes
 from ams.routines import all_routines, all_models
 from ams.solver.ipp import system2ppc
