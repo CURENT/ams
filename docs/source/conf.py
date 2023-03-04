@@ -8,9 +8,10 @@
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
-
+import sys
+print(sys.executable)
 # TODO: fix the importing error later on
-import ams
+# import ams
 # import shutil
 
 extensions = [
