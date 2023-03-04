@@ -9,7 +9,7 @@
 
 pytest==7.0.1 #                 dev
 flake8 #                             dev
-sphinx==4.5.0 #                dev, doc
+sphinx #                dev, doc
 pydata-sphinx-theme #       dev, doc
 numpydoc #                       dev, doc
 sphinx-copybutton #           dev, doc

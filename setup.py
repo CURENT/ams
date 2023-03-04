@@ -78,8 +78,8 @@ setup(
     description="Python software for dispatch modeling and co-simulation with dynanic.",
     long_description=readme,
     long_description_content_type='text/markdown',
-    author="Hantao Cui",
-    author_email='cuihantao@gmail.com',
+    author="Jinning Wang",
+    author_email='jinninggm@gmail.com',
     url='https://github.com/jinningwang/ams',
     packages=find_packages(include=[], exclude=[]),
     entry_points={
