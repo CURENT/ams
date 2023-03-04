@@ -5,7 +5,8 @@ from ams.main import config_logger, load  # NOQA
 from ams.utils.paths import get_case  # NOQA
 from ams import io  # NOQA
 from ams import utils  # NOQA
+from ams import models     # NOQA
 
 __author__ = 'Jining Wang'
 
-__all__ = ['io', 'utils']
+__all__ = ['io', 'utils', 'models']
