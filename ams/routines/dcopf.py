@@ -1,15 +1,9 @@
 """Standard DCOPF"""
-from ams.routines.base import BaseRT
-from ams.core.param import NumParam, IdxParam
-from ams.core.optz import Var, Obj, Constr
+from ams.routines.base import BaseRoutine
 
 
-class dcopf(BaseRT):
+class DCOPF(BaseRoutine):
     """DCOPF model"""
 
     def __init__(self) -> None:
-        self.pg = Var()
-        self.pb = Constr(expr='sum(pg) == sum(pd)',
-                         tex_name='PowerBalance',
-                         info='Power balance')
-        self.obj = Obj(expr='pg * cost', sense='min')
+        pass

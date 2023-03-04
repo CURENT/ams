@@ -28,3 +28,9 @@ _generated
 
 # VSCodeCounter
 .VSCodeCounter/
+
+# testfile
+icebar
+
+# example excel files cache
+~$*.xlsx

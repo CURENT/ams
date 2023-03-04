@@ -9,6 +9,10 @@
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
+# TODO: fix the importing error later on
+import ams
+# import shutil
+
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
@@ -26,6 +30,15 @@ extensions = [
     'sphinx_copybutton',
     'myst_nb',
 ]
+
+# Configuration options for plot_directive. See:
+# https://github.com/matplotlib/matplotlib/blob/f3ed922d935751e08494e5fb5311d3050a3b637b/lib/matplotlib/sphinxext/plot_directive.py#L81
+plot_html_show_source_link = False
+plot_html_show_formats = False
+
+# Generate the API documentation when building
+autosummary_generate = True
+numpydoc_show_class_members = False
 
 templates_path = ['_templates']
 # The suffix(es) of source filenames.
@@ -50,7 +63,14 @@ language = "en"
 project = 'AMS'
 copyright = '2023, Jinning Wang'
 author = 'Jinning Wang'
-release = '0.4'
+
+# TODO: fix the version later on
+version = ams.__version__
+release = ams.__version__
+# # The short X.Y version.
+# version = ams.__version__
+# # The full version, including alpha/beta/rc tags.
+# release = ams.__version__
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -69,6 +89,7 @@ html_theme = 'pydata_sphinx_theme'
 #
 html_theme_options = {
     "use_edit_page_button": True,
+    # "footer_items": ["copyright", "sphinx-version", "theme-version"],
 }
 
 html_context = {
@@ -89,17 +110,54 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'ams'
 
+# -- Options for LaTeX output ---------------------------------------------
+
+# latex_elements = {
+#     # The paper size ('letterpaper' or 'a4paper').
+#     #
+#     'preamble': r'\DeclareUnicodeCharacter{2588}{-}',
+#     'papersize': 'letterpaper',
+
+#     # The font size ('10pt', '11pt' or '12pt').
+#     #
+#     'pointsize': '11pt',
+
+#     # Additional stuff for the LaTeX preamble.
+#     #
+#     # 'preamble': '',
+
+#     # Latex figure (float) alignment
+#     #
+#     # 'figure_align': 'htbp',
+# }
+
+# # Grouping the document tree into LaTeX files. List of tuples
+# # (source start file, target name, title,
+# #  author, documentclass [howto, manual, or own class]).
+# latex_documents = [
+#     (master_doc, 'ams.tex', 'AMS Manual',
+#      'Jinning Wang', 'manual'),
+# ]
+
+# -- Options for manual page output ---------------------------------------
+
+# One entry per manual page. List of tuples
+# (source start file, name, description, authors, manual section).
+# man_pages = [
+#     (master_doc, 'ams', 'AMS Manual',
+#      [author], 1)
+# ]
+
 # -- Options for Texinfo output -------------------------------------------
 
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 # texinfo_documents = [
-#     (master_doc, 'andes', 'ANDES Manual',
-#      author, 'andes', 'Python Software for Symbolic Power System Modeling and Numerical Analysis',
+#     (master_doc, 'ams', 'AMS Manual',
+#      author, 'ams', 'Python Software for Dispatch Modeling and Co-Simulation with Dynanic',
 #      'Miscellaneous'),
 # ]
-
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
@@ -110,6 +168,12 @@ intersphinx_mapping = {
     'matplotlib': ('https://matplotlib.org', None),
 }
 
+# --- Options for primary sidebar ------------------------------------------
+# REF: https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/layout.html#layout-sidebar-primary
+html_sidebars = {
+    # "<page_pattern>": ["list", "of", "templates"]
+}
+
 # Favorite icon
 html_favicon = 'images/curent.ico'
 
@@ -117,7 +181,13 @@ html_favicon = 'images/curent.ico'
 smartquotes = False
 
 # import and execute model reference generation script
-exec(open("genroutineref.py").read())
+# exec(open("genmodelref.py").read())
+
+jupyter_execute_notebooks = "off"
+
+# import and execute model reference generation script
+# TODO: use this for routines doumentation later on
+# exec(open("genroutineref.py").read())
 
 # sphinx-panels shouldn't add bootstrap css since the pydata-sphinx-theme
 # already loads it

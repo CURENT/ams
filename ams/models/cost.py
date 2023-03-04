@@ -2,10 +2,9 @@
 Cost model.
 """
 
-from collections import OrderedDict
+from andes.core import (ModelData, IdxParam, NumParam)
 
-from andes.core import (ModelData, IdxParam, NumParam, Model,
-                        ExtAlgeb, ExtService, ConstService, Limiter)
+from ams.core.model import Model
 
 
 class GCostData(ModelData):

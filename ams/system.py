@@ -8,25 +8,27 @@ import logging
 from collections import OrderedDict
 from typing import Dict, Optional, Tuple, Union
 
+import numpy as np
+
 from andes.core import Config
-from andes.system import ExistingModels as andes_ExistingModels
 from andes.system import System as andes_System
 from andes.system import (_config_numpy, load_config_rc)
-from ams.models.group import GroupBase
 from andes.variables import FileMan
 
 from andes.utils.misc import elapsed
 
-from ams.utils.paths import (ams_root, get_config_path)
-import ams.io
+from ams.models.group import GroupBase
 from ams.models import file_classes
+from ams.routines import all_routines, all_models
+from ams.solver.ipp import system2ppc
+from ams.utils.paths import get_config_path
 
 logger = logging.getLogger(__name__)
 
 
 def disable_method(func):
     def wrapper(*args, **kwargs):
-        logger.warning(f"Method `{func.__name__}` is bounded to ANDES System but not supported in AMS System.")
+        logger.warning(f"Method `{func.__name__}` is included in ANDES System but not supported in AMS System.")
         return None
     return wrapper
 
@@ -34,22 +36,6 @@ def disable_method(func):
 def disable_methods(methods):
     for method in methods:
         setattr(System, method, disable_method(getattr(System, method)))
-
-
-class ExistingModels(andes_ExistingModels):
-    """
-    Storage class for existing models used in dispatch routines.
-
-    The class is revised from ``andes.system.ExistingModels``.
-    """
-
-    def __init__(self):
-        self.dcpflow = OrderedDict()
-        self.dcopf = OrderedDict()
-        self.pflow = OrderedDict()
-        self.opf = OrderedDict()
-
-# TODO: might need a method ``add`` to register a new routine
 
 
 class System(andes_System):
@@ -66,8 +52,7 @@ class System(andes_System):
                  options: Optional[Dict] = None,
                  **kwargs
                  ):
-        # Disable methods not supported in AMS
-        # TODO: some of the methods might be used in the future
+
         func_to_disable = [
             # --- not sure ---
             'set_config', 'set_dae_names', 'set_output_subidx', 'set_var_arrays',
@@ -77,13 +62,12 @@ class System(andes_System):
             '_p_restore', '_store_calls', '_store_tf', '_to_orddct', '_v_to_dae',
             'save_config', 'collect_config', 'collect_ref', 'e_clear', 'f_update',
             'fg_to_dae', 'from_ipysheet', 'g_islands', 'g_update', 'get_z',
-            'import_routines', 'init', 'j_islands', 'j_update', 'l_update_eq', 'connectivity', 'summary',
+            'init', 'j_islands', 'j_update', 'l_update_eq', 'connectivity', 'summary',
             'l_update_var', 'link_ext_param', 'precompile', 'prepare', 'reload', 'remove_pycapsule', 'reset',
             's_update_post', 's_update_var', 'store_adder_setter', 'store_no_check_init',
-            'store_sparse_pattern', 'store_switch_times', 'supported_models', 'switch_action', 'to_ipysheet',
+            'store_sparse_pattern', 'store_switch_times', 'switch_action', 'to_ipysheet',
             'undill']
         disable_methods(func_to_disable)
-        # TODO: it seems that ``connectivity`` and ``summary`` can be skipped in AMS
 
         self.name = name
         self.options = {}
@@ -97,7 +81,11 @@ class System(andes_System):
         self.routines = OrderedDict()        # routine names and instances
         # TODO: there should be an exit_code for each routine
         self.exit_code = 0                   # command-line exit code, 0 - normal, others - error.
-        # ams.io.parse(self)
+
+        # NOTE: the following attributes are populated by ``ipp`` in each subclass
+        self._ppc = dict()  # PYPOWER case dict
+        self._key = OrderedDict()  # mapping dict between AMS system and PYPOWER
+        self._col = OrderedDict()  # dict of columns of PYPOWER case
 
         # get and load default config file
         self._config_path = get_config_path()
@@ -115,6 +103,7 @@ class System(andes_System):
         self.config.add(OrderedDict((('freq', 60),
                                      ('mva', 100),
                                      ('seed', 'None'),
+                                     ('save_stats', 0),  # TODO: not sure what this is for
                                      ('np_divide', 'warn'),
                                      ('np_invalid', 'warn'),
                                      )))
@@ -141,9 +130,7 @@ class System(andes_System):
                       invalid=self.config.np_invalid,
                       )
 
-        self.exist = ExistingModels()
-
-        # TODO: revise the following attributes
+        # TODO: revise the following attributes, it seems that these are not used in AMS
         self._getters = dict(f=list(), g=list(), x=list(), y=list())
         self._adders = dict(f=list(), g=list(), x=list(), y=list())
         self._setters = dict(f=list(), g=list(), x=list(), y=list())
@@ -153,18 +140,55 @@ class System(andes_System):
         # internal flags
         self.is_setup = False        # if system has been setup
 
-        # TODO: DEBUG now
         self.import_groups()
         self.import_models()
+        self.import_routines()
 
-        func_to_revise = ['set_address', 'vars_to_dae', 'vars_to_models']
-        # TODO: ``set_address``: exclude state variables
-        # TODO: ``vars_to_dae``: switch from dae to ie
-        # TODO: ``vars_to_models``: switch from dae to ie
+    def import_routines(self):
+        """
+        Import routines as defined in ``routines/__init__.py``.
+
+        Routines will be stored as instances with the name as class names.
+        All routines will be stored to dictionary ``System.routines``.
+
+        Examples
+        --------
+        ``System.PFlow`` is the power flow routine instance.
+        """
+        for file, cls_list in all_routines.items():
+            for cls_name in cls_list:
+                routine = importlib.import_module('ams.routines.' + file)
+                the_class = getattr(routine, cls_name)
+                attr_name = cls_name
+                self.__dict__[attr_name] = the_class(system=self, config=self._config_object)
+                self.routines[attr_name] = self.__dict__[attr_name]
+                self.routines[attr_name].config.check()
+        # NOTE: the following code is not used in ANDES
+        # NOTE: only models that includ algebs will be collected
+                for rtn_name in self.routines.keys():
+                    all_mdl = all_models[rtn_name]
+                    rtn = getattr(self, rtn_name)
+                    for mname in all_mdl:
+                        mdl = getattr(self, mname)
+                        # NOTE: collecte all involved models into routines
+                        rtn.models[mname] = mdl
+                        # NOTE: collecte all algebraic variables from all involved models into routines
+                        for name, algeb in mdl.algebs.items():
+                            algeb.owner = mdl  # set owner of algebraic variables
+                            # TODO: this name can be improved with removing the model name
+                            rtn.algebs[f'{name}_{mname}'] = OrderedDict([
+                                ('algeb', algeb),
+                                ('a', [-1]),  # start and end index in the algebraic vector
+                            ])
 
     def import_groups(self):
-        module = importlib.import_module('ams.models.group')
+        """
+        Import all groups classes defined in ``models/group.py``.
 
+        Groups will be stored as instances with the name as class names.
+        All groups will be stored to dictionary ``System.groups``.
+        """
+        module = importlib.import_module('ams.models.group')
         for m in inspect.getmembers(module, inspect.isclass):
 
             name, cls = m
@@ -188,8 +212,7 @@ class System(andes_System):
 
         Examples
         --------
-        ``system.Bus`` stores the `Bus` object, and ``system.GENCLS`` stores the classical
-        generator object,
+        ``system.Bus`` stores the `Bus` object, and ``system.PV`` stores the PV generator object.
 
         ``system.models['Bus']`` points the same instance as ``system.Bus``.
         """
@@ -225,19 +248,10 @@ class System(andes_System):
 
         self._list2array()     # `list2array` must come before `link_ext_param`
 
-        self.find_devices()    # find or add required devices
-
         # === no device addition or removal after this point ===
         # TODO: double check calc_pu_coeff
         self.calc_pu_coeff()   # calculate parameters in system per units
-        self.store_existing()  # store models with routine flags
-
-        # assign address at the end before adding devices and processing parameters
-        # TODO: enable these functions later on
-        # self.set_address(self.exist.pflow)
-        # self.set_dae_names(self.exist.pflow)        # needs perf. optimization
-        # self.store_sparse_pattern(self.exist.pflow)
-        # self.store_adder_setter(self.exist.pflow)
+        # self.store_existing()  # store models with routine flags
 
         if ret is True:
             self.is_setup = True  # set `is_setup` if no error occurred
@@ -245,7 +259,41 @@ class System(andes_System):
             logger.error("System setup failed. Please resolve the reported issue(s).")
             self.exit_code += 1
 
+        # initialize algebraic variables for all routines
+        self.init_algebs()
+
+        # store ppc case
+        self._ppc, self._key, self._col = system2ppc(self)
+
         _, s = elapsed(t0)
-        logger.info('System internal structure set up in %s.', s)
+        logger.info('System set up  and initialize in %s.', s)
 
         return ret
+
+    def init_algebs(self):
+        """
+        Initialize algebraic variables for all routines.
+        """
+        for rtn_name in self.routines:
+            aidx = 0
+            rtn = getattr(self, f'{rtn_name}')
+            rtn.n, mdl_all = rtn._count()
+            rtn.v = np.zeros(rtn.n)
+            for aname in rtn.algebs.keys():
+                n_device = rtn.algebs[aname]['algeb'].owner.n
+                if n_device > 1:
+                    rtn.algebs[aname]['a'] = [aidx, aidx + n_device - 1]
+                    aidx += n_device
+                else:
+                    rtn.algebs[aname]['a'] = [aidx]
+                    aidx += 1
+
+    # FIXME: remove unused methods
+    # # Disable methods not supported in AMS
+    # func_to_include = [
+    #     'import_models', 'import_groups', 'import_routines',
+    #     'setup', 'init_algebs',
+    #     '_update_config_object',
+    #     ]
+    # # disable_methods(func_to_disable)
+    # __dict__ = {method: lambda self: self.x for method in func_to_include}
