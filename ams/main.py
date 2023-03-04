@@ -138,6 +138,7 @@ def load(case, setup=True,
         system.setup()
     return system
 
+
 def find_log_path(lg):
     """
     Find the file paths of the FileHandlers.

@@ -18,13 +18,42 @@ System
    ams.system
 
 
-Solver
-======
+Routines
+========
 
 .. autosummary::
    :maxdepth:4
    :recursive:
    :toctree: _generated
-   :caption: Solver
+   :caption: Routines
    :template: autosummary/module_toctree.rst
 
+   ams.routines
+
+
+I/O
+===
+
+.. autosummary::
+   :maxdepth:4
+   :toctree: _generated
+   :recursive:
+   :caption: I/O
+   :template: autosummary/module_toctree.rst
+
+   ams.io
+
+
+Others
+======
+
+.. autosummary::
+   :maxdepth:4
+   :toctree: _generated
+   :recursive:
+   :caption: Others
+   :template: autosummary/module_toctree.rst
+
+   ams.cli
+   ams.main
+   ams.utils.paths

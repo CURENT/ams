@@ -18,7 +18,7 @@ class Line(LineData, Model):
         Model.__init__(self, system, config)
         self.group = 'ACLine'
 
-        self.amin = NumParam(default= -360 * deg2rad,
+        self.amin = NumParam(default=-360 * deg2rad,
                            info="minimum angle difference, from bus - to bus",
                            unit='rad',
                            tex_name=r'a_{min}',

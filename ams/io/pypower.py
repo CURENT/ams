@@ -5,6 +5,7 @@ PYPOWER reader for AMS.
 
 from ams.solver.ipp import load_ppc
 
+
 def testlines(infile):
     """
     Test if this file is in the PYPOWER format.
@@ -12,6 +13,7 @@ def testlines(infile):
     NOT YET IMPLEMENTED.
     """
     return True
+
 
 def read(system, file):
     """
@@ -33,7 +35,7 @@ def ppc2system(ppc: dict, system) -> bool:
         The PYPOWER case dict.
     system : ams.system
         Empty AMS system to load data into.
-    
+
     Returns
     -------
     bool

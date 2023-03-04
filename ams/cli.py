@@ -22,6 +22,7 @@ command_aliases = {
 def create_parser():
     """
     Create a parser for the command-line interface.
+
     Returns
     -------
     argparse.ArgumentParser
@@ -60,6 +61,7 @@ def preamble():
                 rf"   /_\  _ __  ___ | Python {py_version} on {system_name}, {date_time}" + '\n'
                 r"  / _ \| '  \(_-< | " + "\n"
                 r' /_/ \_\_|_|_/__/ | This program comes with ABSOLUTELY NO WARRANTY.' + '\n')
+
 
 def main():
     """

@@ -1,12 +1,11 @@
 import logging
 
-from collections import OrderedDict
-
 from andes.models.area import AreaData  # NOQA
 from andes.utils.tab import Tab
 from ams.core.model import Model
 
 logger = logging.getLogger(__name__)
+
 
 class Area(AreaData, Model):
     """
@@ -15,7 +14,7 @@ class Area(AreaData, Model):
     def __init__(self, system, config):
         AreaData.__init__(self)
         Model.__init__(self, system, config)
-        
+
         self.group = 'Collection'
 
     def bus_table(self):

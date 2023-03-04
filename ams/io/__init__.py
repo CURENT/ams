@@ -13,6 +13,7 @@ from ams.io import xlsx, psse, matpower, pypower   # NOQA
 
 logger = logging.getLogger(__name__)
 
+
 def parse(system):
     """
     Parse input file with the given format in `system.files.input_format`.

@@ -11,7 +11,8 @@ logger = logging.getLogger(__name__)
 
 def disable_method(func):
     def wrapper(*args, **kwargs):
-        logger.warning(f"Method `{func.__name__}` is included in ANDES Documenter but not supported in AMS Documenter.")
+        msg = f"Method `{func.__name__}` is included in ANDES Documenter but not supported in AMS Documenter."
+        logger.warning(msg)
         return None
     return wrapper
 

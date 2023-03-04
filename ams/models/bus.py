@@ -1,5 +1,4 @@
 import logging
-from collections import OrderedDict
 
 import numpy as np
 
@@ -9,6 +8,7 @@ from ams.core.var import Algeb
 from ams.core.model import Model
 
 logger = logging.getLogger(__name__)
+
 
 class Bus(BusData, Model):
     """

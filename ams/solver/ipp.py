@@ -32,7 +32,6 @@ def load_ppc(case) -> dict:
     # NOTE: the following line is not robust
     func_name = case.split('/')[-1].rstrip('.py')
     ppc = eval(f"{func_name}()")
-    source_type = 'ppc'
     return ppc
 
 
@@ -117,9 +116,9 @@ def system2ppc(ssp) -> dict:
     gen_df = pd.merge(left=gen_df, right=bus_df[['bus', 'area']],
                       on='bus', how='left',)
     key['PV'] = OrderedDict(
-        {ppc : ssp for ppc, ssp in enumerate(pv_df['idx'].tolist(), start=1)})
+        {ppc: ssp for ppc, ssp in enumerate(pv_df['idx'].tolist(), start=1)})
     key['Slack'] = OrderedDict(
-        {ppc : ssp for ppc, ssp in enumerate(slack_df['idx'].tolist(), start=gen_df.shape[0])})
+        {ppc: ssp for ppc, ssp in enumerate(slack_df['idx'].tolist(), start=gen_df.shape[0])})
 
     # NOTE: gen data:
     # bus, Pg, Qg, Qmax, Qmin, Vg, mBase, status, Pmax, Pmin, Pc1, Pc2,
@@ -159,7 +158,7 @@ def system2ppc(ssp) -> dict:
     # --- branch data ---
     line_df = ssp.Line.as_df()
     key['Line'] = OrderedDict(
-        {ppc : ssp for ppc, ssp in enumerate(line_df['idx'].tolist(), start=1)})
+        {ppc: ssp for ppc, ssp in enumerate(line_df['idx'].tolist(), start=1)})
 
     branch_cols = ['fbus', 'tbus', 'r', 'x', 'b', 'rateA', 'rateB', 'rateC',
                    'ratio', 'angle', 'status', 'angmin', 'angmax']
@@ -178,7 +177,7 @@ def system2ppc(ssp) -> dict:
     # --- gencost data ---
     gc_df = ssp.GCost.as_df()
     key['GCost'] = OrderedDict(
-        {ppc : ssp for ppc, ssp in enumerate(gc_df['idx'].tolist(), start=1)})
+        {ppc: ssp for ppc, ssp in enumerate(gc_df['idx'].tolist(), start=1)})
 
     # TODO: Add Model 1
     gcost_cols = ['type', 'startup', 'shutdown', 'n', 'c2', 'c1', 'c0']
