@@ -16,5 +16,5 @@ from ams.solver import pypower  # NOQA
 __author__ = 'Jining Wang'
 
 __all__ = ['main', 'system',
-           'core', 'models', 'io', 'routines',
+           'core', 'models', 'io', 'routines', 'solver',
            '__version__']

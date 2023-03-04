@@ -28,4 +28,3 @@ Solver
    :caption: Solver
    :template: autosummary/module_toctree.rst
 
-   ams.solver
