@@ -1,3 +1,3 @@
 """
-Interface to PyPower
+Interface to solvers.
 """
