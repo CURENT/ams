@@ -10,6 +10,16 @@ from andes.shared import deg2rad, rad2deg
 logger = logging.getLogger(__name__)
 
 
+def testlines(infile):
+    """
+    Test if this file is in the MATPOWER format.
+
+    NOT YET IMPLEMENTED.
+    """
+
+    return True  # hard coded
+
+
 def read(system, file):
     """
     Read a MATPOWER data file into mpc, and build andes device elements.
