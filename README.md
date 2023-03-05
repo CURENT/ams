@@ -4,9 +4,9 @@ Python Software for Power System Dispatch Modeling and Co-Simulation with Dynani
 
 AMS is under DEVELOPMENT, stay tuned!
 
-|               | Latest                                                                            |
-| ------------- | --------------------------------------------------------------------------------- |
-| Documentation | ![Documentation Status](https://readthedocs.org/projects/ams/badge/?version=latest) |
+|               | Latest                                                                                                                               |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Documentation | [![Documentation Status](https://readthedocs.org/projects/ams/badge/?version=latest)](https://ams.readthedocs.io/en/latest/?badge=latest) |
 
 ## Why AMS
 
