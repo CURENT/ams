@@ -266,7 +266,7 @@ class System(andes_System):
         self._ppc, self._key, self._col = system2ppc(self)
 
         _, s = elapsed(t0)
-        logger.info('System set up  and initialize in %s.', s)
+        logger.info('System set up in %s.', s)
 
         return ret
 
