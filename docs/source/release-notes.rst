@@ -8,6 +8,12 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 
 Pre-v1.0.0
 ==========
+v0.6.1 (2023-03-05)
+-------------------
+- Fix incompatiability of NumPy attribute ``object`` in  ``ams.io.matpower._get_bus_id_caller``
+- Add file parser for PYPOWER case file
+- Deprecate PYPOWER interface ``ams.solvers.ipp``
+
 v0.6 (2023-03-04)
 -------------------
 
