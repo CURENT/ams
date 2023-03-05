@@ -61,7 +61,7 @@ class GENADD:
     """
     Additional parameters for static generators.
 
-    # TODO: check default values
+    TODO: check default values
     """
 
     def __init__(self) -> None:
@@ -160,7 +160,7 @@ class PV(PVData, GENADD, Model):
 
 class Slack(SlackData, GENADD, Model):
     """
-    Slack generator.
+    Slack generator model.
     """
 
     def __init__(self, system=None, config=None):

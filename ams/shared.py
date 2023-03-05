@@ -15,7 +15,7 @@ import math
 import numpy as np  # NOQA
 import psutil
 
-from ams.utils.lazyimport import LazyImport
+from andes.utils.lazyimport import LazyImport
 
 # --- SYSTEM INFO ---
 NCPUS_PHYSICAL = psutil.cpu_count(logical=False)

@@ -1,4 +1,6 @@
-"""Standard DCOPF"""
+"""
+DCOPF routine.
+"""
 from ams.routines.base import BaseRoutine
 
 

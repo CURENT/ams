@@ -1,5 +1,5 @@
 """
-Base module for routines.
+Module for base routine.
 """
 
 import logging  # NOQA

@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 class Model:
     """
     Base class for power system dispatch models.
+
+    This class is revised from ``andes.core.model.Model``.
     """
 
     def __init__(self, system=None, config=None):

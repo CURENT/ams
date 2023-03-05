@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class Bus(BusData, Model):
     """
-    AC Bus model data.
+    AC Bus model.
     """
     def __init__(self, system, config):
         BusData.__init__(self)

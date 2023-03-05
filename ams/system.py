@@ -1,5 +1,5 @@
 """
-System class for power system data, methods, and routines.
+Module for system.
 """
 import configparser
 import importlib
@@ -40,6 +40,9 @@ def disable_methods(methods):
 class System(andes_System):
     """
     System contains data, models, and routines for dispatch modeling and analysis.
+
+    This class is a subclass of ``andes.system.System``.
+    Some methods inherited from ``andes.system.System`` are disabled but remain in the class for now.
     """
 
     def __init__(self,

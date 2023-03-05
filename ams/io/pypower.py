@@ -21,9 +21,19 @@ def testlines(infile):
 
 def read(system, file):
     """
-    Read a PYPOWER data file into ppc, and build andes device elements.
+    Read a PYPOWER case file into ppc and return an AMS system by calling ``ppc2system``.
 
-    TODO: add support for PYPOWER file in future versions.
+    Parameters
+    ----------
+    system : ams.system
+        Empty AMS system to load data into.
+    file : str
+        The path to the PYPOWER file.
+
+    Returns
+    -------
+    system : ams.system.System
+        The AMS system that loaded the data.
     """
     ppc = py2ppc(file)
     return ppc2system(ppc, system)
@@ -53,7 +63,7 @@ def py2ppc(infile: str) -> dict:
 
 def ppc2system(ppc: dict, system) -> bool:
     """
-    Alias for ``mpc2system``.
+    Alias for ``mpc2system``. Refer to :py:mod:`ams.io.matpower.mpc2system` for more details.
 
     Load an PYPOWER case dict into an empth AMS system.
 
@@ -75,7 +85,7 @@ def ppc2system(ppc: dict, system) -> bool:
 
 def system2ppc(system) -> dict:
     """
-    Alias for ``system2mpc``.
+    Alias for ``system2mpc``. Refer to :py:mod:`ams.io.matpower.system2mpc` for more details.
 
     Convert data from an AMS system to an mpc dict.
 

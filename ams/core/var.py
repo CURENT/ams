@@ -10,6 +10,8 @@ import numpy as np
 class Algeb:
     """
     Algebraic variable class.
+
+    This class is revised from ``andes.core.var.Algeb``.
     """
 
     def __init__(self,

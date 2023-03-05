@@ -1,7 +1,7 @@
 """
-The package for models in AMS.
+The package for models used in dispatch modeling.
 
-The file_classes excludes some of the dynamic models in andes.models.file_classes.
+The file_classes includes the list of file classes and their corresponding classes.
 """
 
 

@@ -1,5 +1,5 @@
 """
-Module for power flow calculation.
+Power flow routines.
 """
 
 import numpy as np
@@ -14,7 +14,7 @@ from ams.io.pypower import system2ppc
 
 class PFlow(BaseRoutine):
     """
-    Power flow routine.
+    AC Power flow routine.
     """
 
     def __init__(self, system=None, config=None):
@@ -71,7 +71,7 @@ class PFlow(BaseRoutine):
 
 class DCPF(BaseRoutine):
     """
-    Power flow routine.
+    DC Power flow routine.
     """
     def __init__(self, system=None, config=None):
         super().__init__(system, config)

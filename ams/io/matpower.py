@@ -1,5 +1,6 @@
 """
-MATPOWER parser revised from ANDES matpower parser.
+MATPOWER parser.
+This module is revised from the existing module ``andes.io.matpower``.
 """
 import logging
 import numpy as np
@@ -32,6 +33,10 @@ def read(system, file):
 def mpc2system(mpc: dict, system) -> bool:
     """
     Load an mpc dict into an empty AMS system.
+
+    This function is revised from ``andes.io.matpower.mpc2system``.
+
+    Compared to the original one, this function includes the generator cost data.
 
     Parameters
     ----------
@@ -217,6 +222,11 @@ def _get_bus_id_caller(bus):
     Helper function to get the bus id. If any of bus ``idx`` is a string, use
     ``uid`` + 1. Otherwise, use ``idx``.
 
+    This function is revised from ``andes.io.matpower._get_bus_id_caller``.
+
+    Compared to the original one, this function fixed the NumPy compatibility
+    issue by replacing ``np.object`` with ``object``.
+
     Parameters
     ----------
     bus : andes.models.bus.Bus
@@ -225,7 +235,6 @@ def _get_bus_id_caller(bus):
     Returns
     -------
     lambda function to that takes bus idx and returns bus id for matpower case
-
     """
 
     if np.array(bus.idx.v).dtype == object:
@@ -239,6 +248,16 @@ def system2mpc(system) -> dict:
     Convert data from an AMS system to an mpc dict.
 
     In the ``gen`` section, slack generators preceeds PV generators.
+
+    This function is revised from ``andes.io.matpower.system2mpc``.
+
+    Compared to the original one, this function includes the
+    generator cost data in the ``gencost`` section.
+
+    Parameters
+    ----------
+    system : ams.core.system.System
+        AMS system
     """
 
     mpc = dict(version='2',
@@ -326,7 +345,7 @@ def system2mpc(system) -> dict:
         branch[:, 9] = system.Line.phi.v * rad2deg
         branch[:, 10] = system.Line.u.v
 
-    # --- gencost ---
+    # --- GCost ---
     if system.GCost.n > 0:
         gencost = mpc['gencost']
         gencost[:, 0] = system.GCost.type.v

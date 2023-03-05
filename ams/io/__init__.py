@@ -5,6 +5,8 @@ AMS input parsers and output formatters.
 import importlib
 import logging
 
+import os
+
 from andes.utils.misc import elapsed
 
 from ams.io import xlsx, psse, matpower, pypower   # NOQA
