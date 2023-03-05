@@ -6,7 +6,6 @@ import logging
 from numpy import array  # NOQA
 
 from ams.io.matpower import mpc2system, system2mpc
-from ams.solver.ipp import load_ppc
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,7 @@ def read(system, file):
 
     TODO: add support for PYPOWER file in future versions.
     """
-    ppc = load_ppc(file)
+    ppc = py2ppc(file)
     return ppc2system(ppc, system)
 
 

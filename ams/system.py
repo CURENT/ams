@@ -20,7 +20,6 @@ from andes.utils.misc import elapsed
 from ams.models.group import GroupBase
 from ams.models import file_classes
 from ams.routines import all_routines, all_models
-from ams.solver.ipp import system2ppc
 from ams.utils.paths import get_config_path
 
 logger = logging.getLogger(__name__)
@@ -81,11 +80,6 @@ class System(andes_System):
         self.routines = OrderedDict()        # routine names and instances
         # TODO: there should be an exit_code for each routine
         self.exit_code = 0                   # command-line exit code, 0 - normal, others - error.
-
-        # NOTE: the following attributes are populated by ``ipp`` in each subclass
-        self._ppc = dict()  # PYPOWER case dict
-        self._key = OrderedDict()  # mapping dict between AMS system and PYPOWER
-        self._col = OrderedDict()  # dict of columns of PYPOWER case
 
         # get and load default config file
         self._config_path = get_config_path()
@@ -261,9 +255,6 @@ class System(andes_System):
 
         # initialize algebraic variables for all routines
         self.init_algebs()
-
-        # store ppc case
-        self._ppc, self._key, self._col = system2ppc(self)
 
         _, s = elapsed(t0)
         logger.info('System set up in %s.', s)

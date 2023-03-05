@@ -6,7 +6,8 @@ import numpy as np
 
 from ams.routines.base import BaseRoutine
 from ams.solver.pypower.runpf import runpf, rundcpf
-from ams.solver.ipp import res2system
+
+from ams.io.pypower import system2ppc, ppc2system
 
 
 class PFlow(BaseRoutine):
@@ -23,21 +24,22 @@ class PFlow(BaseRoutine):
         """
         Run power flow.
         """
-        res, exit_code = runpf(self.system._ppc, **kwargs)
+        ppc = system2ppc(self.system)
+        res, exit_code = runpf(ppc, **kwargs)
         self.converged = bool(exit_code)
 
-        # --- Update variables ---
-        a_Bus, v_Bus, q_PV, p_Slack, q_Slack = res2system(self.system, res)
-        for aname in self.algebs.keys():
-            a = self.algebs[aname]['a']  # array index
-            if len(a) > 1:
-                self.v[a[0]:a[-1]+1] = locals()[aname]
-                self.algebs[aname]['algeb'].v = locals()[aname]
-            else:
-                self.v[a] = locals()[aname]
-                self.algebs[aname]['algeb'].v = locals()[aname]
+        # # --- Update variables ---
+        # a_Bus, v_Bus, q_PV, p_Slack, q_Slack = res2system(self.system, res)
+        # for aname in self.algebs.keys():
+        #     a = self.algebs[aname]['a']  # array index
+        #     if len(a) > 1:
+        #         self.v[a[0]:a[-1]+1] = locals()[aname]
+        #         self.algebs[aname]['algeb'].v = locals()[aname]
+        #     else:
+        #         self.v[a] = locals()[aname]
+        #         self.algebs[aname]['algeb'].v = locals()[aname]
 
-        return self.converged
+        return res, self.converged
 
     def summary(self, **kwargs):
         """
