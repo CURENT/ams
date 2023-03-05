@@ -3,6 +3,8 @@ PYPOWER reader for AMS.
 """
 import logging
 
+from numpy import array  # NOQA
+
 from ams.io.matpower import mpc2system, system2mpc
 from ams.solver.ipp import load_ppc
 
@@ -26,6 +28,28 @@ def read(system, file):
     """
     ppc = load_ppc(file)
     return ppc2system(ppc, system)
+
+
+def py2ppc(infile: str) -> dict:
+    """
+    Parse PYPOWER file and return a dictionary with the data.
+
+    Parameters
+    ----------
+    infile : str
+        The path to the PYPOWER file.
+
+    Returns
+    -------
+    ppc : dict
+        The PYPOWER case dict.
+    """
+    exec(open(f"{infile}").read())
+    for name, value in locals().items():
+        # Check if the variable name starts with "case"
+        if name.startswith("case"):
+            ppc = value()
+    return ppc
 
 
 def ppc2system(ppc: dict, system) -> bool:
