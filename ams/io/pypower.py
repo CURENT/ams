@@ -1,9 +1,13 @@
 """
 PYPOWER reader for AMS.
 """
+import logging
 
+from numpy import array  # NOQA
 
-from ams.solver.ipp import load_ppc
+from ams.io.matpower import mpc2system, system2mpc
+
+logger = logging.getLogger(__name__)
 
 
 def testlines(infile):
@@ -21,12 +25,36 @@ def read(system, file):
 
     TODO: add support for PYPOWER file in future versions.
     """
-    ppc = load_ppc(file)
+    ppc = py2ppc(file)
     return ppc2system(ppc, system)
+
+
+def py2ppc(infile: str) -> dict:
+    """
+    Parse PYPOWER file and return a dictionary with the data.
+
+    Parameters
+    ----------
+    infile : str
+        The path to the PYPOWER file.
+
+    Returns
+    -------
+    ppc : dict
+        The PYPOWER case dict.
+    """
+    exec(open(f"{infile}").read())
+    for name, value in locals().items():
+        # Check if the variable name starts with "case"
+        if name.startswith("case"):
+            ppc = value()
+    return ppc
 
 
 def ppc2system(ppc: dict, system) -> bool:
     """
+    Alias for ``mpc2system``.
+
     Load an PYPOWER case dict into an empth AMS system.
 
     Parameters
@@ -41,5 +69,16 @@ def ppc2system(ppc: dict, system) -> bool:
     bool
         True if successful; False otherwise.
     """
-    raise NotImplementedError('PYPOWER reader is not yet implemented.')
+    mpc2system(ppc, system)
     return True
+
+
+def system2ppc(system) -> dict:
+    """
+    Alias for ``system2mpc``.
+
+    Convert data from an AMS system to an mpc dict.
+
+    In the ``gen`` section, slack generators preceeds PV generators.
+    """
+    return system2mpc(system)

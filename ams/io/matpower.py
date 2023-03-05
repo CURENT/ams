@@ -4,10 +4,20 @@ MATPOWER parser revised from ANDES matpower parser.
 import logging
 import numpy as np
 
-from andes.io.matpower import m2mpc, _get_bus_id_caller
+from andes.io.matpower import m2mpc
 from andes.shared import deg2rad, rad2deg
 
 logger = logging.getLogger(__name__)
+
+
+def testlines(infile):
+    """
+    Test if this file is in the MATPOWER format.
+
+    NOT YET IMPLEMENTED.
+    """
+
+    return True  # hard coded
 
 
 def read(system, file):
@@ -202,6 +212,28 @@ def mpc2system(mpc: dict, system) -> bool:
     return True
 
 
+def _get_bus_id_caller(bus):
+    """
+    Helper function to get the bus id. If any of bus ``idx`` is a string, use
+    ``uid`` + 1. Otherwise, use ``idx``.
+
+    Parameters
+    ----------
+    bus : andes.models.bus.Bus
+        Bus object
+
+    Returns
+    -------
+    lambda function to that takes bus idx and returns bus id for matpower case
+
+    """
+
+    if np.array(bus.idx.v).dtype == object:
+        return lambda x: bus.idx2uid(x) + 1
+    else:
+        return lambda x: x
+
+
 def system2mpc(system) -> dict:
     """
     Convert data from an AMS system to an mpc dict.
@@ -295,8 +327,8 @@ def system2mpc(system) -> dict:
         branch[:, 10] = system.Line.u.v
 
     # --- gencost ---
-    gencost = mpc['gencost']
     if system.GCost.n > 0:
+        gencost = mpc['gencost']
         gencost[:, 0] = system.GCost.type.v
         gencost[:, 1] = system.GCost.startup.v
         gencost[:, 2] = system.GCost.shutdown.v
@@ -304,5 +336,7 @@ def system2mpc(system) -> dict:
         gencost[:, 4] = system.GCost.c2.v
         gencost[:, 5] = system.GCost.c1.v
         gencost[:, 6] = system.GCost.c0.v
+
+    mpc['bus_name'] = np.array(system.Bus.name.v)
 
     return mpc
