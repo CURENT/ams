@@ -13,6 +13,7 @@ v0.6.2
 
 - Enhance docstring
 - Remove unused module ``utils.LazyImport``
+- Remove unused module ``shared``
 
 v0.6.1 (2023-03-05)
 -------------------
@@ -35,8 +36,8 @@ v0.6 (2023-03-04)
 v0.5 (2023-02-17)
 -------------------
 
-- Base System setup
-- Development preparation
+- Develop module ``system``, ``main``, ``cli``
+- Development preparation: versioneer, documentation, etc.
 
 v0.4 (2023-01)
 -------------------
