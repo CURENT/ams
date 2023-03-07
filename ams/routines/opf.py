@@ -1,21 +1,29 @@
 """
 OPF routines.
 """
-import logging
-from ams.routines.base import BaseRoutine, timer
-
-logger = logging.getLogger(__name__)
+from ams.routines.base import BaseRoutine, timer, BaseFormulation
 
 
-class OPF(BaseRoutine):
+class OPFFormulation(BaseFormulation):
+    """
+    Optimal Power Flow formulation.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+
+class OPF(BaseRoutine, OPFFormulation):
     """
     AC Optimal Power Flow routine.
     """
 
     def __init__(self, system=None, config=None):
-        super().__init__(system, config)
+        BaseRoutine.__init__(self, system, config)
         self.info = "AC Optimal Power Flow"
         self._algeb_models = ['Bus', 'PV', 'Slack']
+        OPFFormulation.__init__(self)
+
 
     @timer
     def _solve(self, **kwargs):

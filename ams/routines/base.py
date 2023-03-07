@@ -23,9 +23,9 @@ def timer(func):
     return wrapper
 
 
-class Formulation:
+class BaseFormulation:
     """
-    Base class for dispatch formulations.
+    Base class for problem formulations.
     """
 
     def __init__(self):
