@@ -28,23 +28,6 @@ class BaseResults:
         pass
 
 
-class Var:
-    """
-    Class for holding variables of a routine.
-    """
-
-    def __init__(self, routine):
-        self.routine = routine
-        self.system = routine.system
-        self.dv = []  # list of Algebs (decision variables)
-        self.n = []  # number of Algebs
-        self.v = []  # values of Algebs
-        # TODO: types, ub, lb, etc.
-        self.types = []  # types of Algebs
-        self.lb = []  # lower bounds of Algebs
-        self.ub = []  # upper bounds of Algebs
-
-
 class BaseRoutine:
     """
     Base routine class.
@@ -83,8 +66,6 @@ class BaseRoutine:
         self.ralgebs = OrderedDict()  # all routine algebraic variables
         self.n = 0  # number of algebraic variables
         self.v = np.empty(0)  # values of algebraic variables
-        self.var = Var(self)  # variables of the routine
-
 
         if config is not None:
             self.config.load(config)

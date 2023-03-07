@@ -36,10 +36,11 @@ class Algeb:
 
 
 class RAlgeb:
-    """
+    """ 
     Class for algebraic variable in a routine.
 
-    This class is an extension of ``Algeb`` that revise the tex name and 
+    This class is an extension of ``Algeb`` that revise the ``tex_name`` and keep a copy of the value
+    so the value can be accessed if other routiens are called.
     """
     def __init__(self,
                  Algeb: Algeb,
@@ -54,4 +55,3 @@ class RAlgeb:
         self.tex_name = f'{Algeb.tex_name}_' + '{' + f'{mname}' + '}' if tex_name else self.name
         self.owner = Algeb.owner  # instance of the owner Model
         self.v = np.empty(0)  # variable value
-
