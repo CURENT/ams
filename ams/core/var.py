@@ -33,3 +33,25 @@ class Algeb:
         n = self.owner.n
         dev_text = 'Algeb' if n == 1 else 'Algebs'
         return f'{self.owner.__class__.__name__}.{self.name} ({n} {dev_text}) at {hex(id(self))}'
+
+
+class RAlgeb:
+    """
+    Class for algebraic variable in a routine.
+
+    This class is an extension of ``Algeb`` that revise the tex name and 
+    """
+    def __init__(self,
+                 Algeb: Algeb,
+                 ):
+        self.Algeb = Algeb
+        self.name = Algeb.name
+        self.info = Algeb.info
+        self.unit = Algeb.unit
+
+        tex_name = Algeb.tex_name
+        mname = Algeb.owner.__class__.__name__
+        self.tex_name = f'{Algeb.tex_name}_' + '{' + f'{mname}' + '}' if tex_name else self.name
+        self.owner = Algeb.owner  # instance of the owner Model
+        self.v = np.empty(0)  # variable value
+

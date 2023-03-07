@@ -21,6 +21,7 @@ from ams.models.group import GroupBase
 from ams.models import file_classes
 from ams.routines import all_routines, all_models
 from ams.utils.paths import get_config_path
+from ams.core.var import RAlgeb
 
 logger = logging.getLogger(__name__)
 
@@ -160,8 +161,8 @@ class System(andes_System):
                 self.__dict__[attr_name] = the_class(system=self, config=self._config_object)
                 self.routines[attr_name] = self.__dict__[attr_name]
                 self.routines[attr_name].config.check()
-        # NOTE: the following code is not used in ANDES
-        # NOTE: only models that includ algebs will be collected
+            # NOTE: the following code is not used in ANDES
+            # NOTE: only models that includ algebs will be collected
                 for rtn_name in self.routines.keys():
                     all_mdl = all_models[rtn_name]
                     rtn = getattr(self, rtn_name)
@@ -172,11 +173,6 @@ class System(andes_System):
                         # NOTE: collecte all algebraic variables from all involved models into routines
                         for name, algeb in mdl.algebs.items():
                             algeb.owner = mdl  # set owner of algebraic variables
-                            # TODO: this name can be improved with removing the model name
-                            rtn.algebs[f'{name}_{mname}'] = OrderedDict([
-                                ('algeb', algeb),
-                                ('a', [-1]),  # start and end index in the algebraic vector
-                            ])
 
     def import_groups(self):
         """
@@ -271,16 +267,14 @@ class System(andes_System):
         for rtn_name in self.routines:
             aidx = 0
             rtn = getattr(self, f'{rtn_name}')
-            rtn.n, mdl_all = rtn._count()
-            rtn.v = np.zeros(rtn.n)
-            for aname in rtn.algebs.keys():
-                n_device = rtn.algebs[aname]['algeb'].owner.n
-                if n_device > 1:
-                    rtn.algebs[aname]['a'] = [aidx, aidx + n_device - 1]
-                    aidx += n_device
-                else:
-                    rtn.algebs[aname]['a'] = [aidx]
-                    aidx += 1
+            models = all_models[rtn_name]
+            for mname in models:
+                mdl = getattr(self, mname)
+                for aname, algeb in mdl.algebs.items():
+                    ralgeb = RAlgeb(Algeb=algeb)
+                    ralgebs = getattr(rtn, 'ralgebs')
+                    ralgebs[f'{aname}{mname}'] = ralgeb  # register to OrderedDict ``ralgebs`` of routine
+                    setattr(rtn, f'{aname}{mname}', ralgeb)  # register as attribute to routine
 
     # FIXME: remove unused methods
     # # Disable methods not supported in AMS

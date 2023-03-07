@@ -44,15 +44,9 @@ class PFlow(BaseRoutine):
         system.Slack.p.v = p_Slack = ppc['gen'][:system.Slack.n, 1]  # active power
         system.Slack.q.v = q_Slack = ppc['gen'][:system.Slack.n, 2]  # reactive power
 
-        # --- routine ---
-        for aname in self.algebs.keys():
-            a = self.algebs[aname]['a']  # array index
-            if len(a) > 1:
-                self.v[a[0]:a[-1]+1] = locals()[aname]
-                self.algebs[aname]['algeb'].v = locals()[aname]
-            else:
-                self.v[a] = locals()[aname]
-                self.algebs[aname]['algeb'].v = locals()[aname]
+        # --- store results into routine algeb ---
+        for raname, ralgeb in self.ralgebs.items():
+            ralgeb.v = ralgeb.Algeb.v.copy()
 
         return self.converged
 
