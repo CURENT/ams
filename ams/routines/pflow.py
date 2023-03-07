@@ -6,7 +6,7 @@ import numpy as np
 
 from andes.shared import deg2rad
 
-from ams.routines.base import BaseRoutine
+from ams.routines.base import BaseRoutine, timer
 from ams.solver.pypower.runpf import runpf, rundcpf
 
 from ams.io.pypower import system2ppc
@@ -22,6 +22,7 @@ class PFlow(BaseRoutine):
         self.info = "AC Power flow"
         self._algeb_models = ['Bus', 'PV', 'Slack']
 
+    @timer
     def run(self, **kwargs):
         """
         Run power flow.

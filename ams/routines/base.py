@@ -9,8 +9,18 @@ import numpy as np
 
 from andes.core import Config
 from andes.shared import deg2rad
+from andes.utils.misc import elapsed
 
 logger = logging.getLogger(__name__)
+
+
+def timer(func):
+    def wrapper(*args, **kwargs):
+        t0, _ = elapsed()
+        result = func(*args, **kwargs)
+        _, s = elapsed(t0)
+        logger.info(f'Solved in {s}.')
+    return wrapper
 
 
 class BaseResults:
