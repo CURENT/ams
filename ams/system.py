@@ -19,7 +19,7 @@ from andes.utils.misc import elapsed
 
 from ams.models.group import GroupBase
 from ams.models import file_classes
-from ams.routines import all_routines, all_models
+from ams.routines import all_routines, algeb_models
 from ams.utils.paths import get_config_path
 from ams.core.var import RAlgeb
 
@@ -164,9 +164,9 @@ class System(andes_System):
             # NOTE: the following code is not used in ANDES
             # NOTE: only models that includ algebs will be collected
                 for rtn_name in self.routines.keys():
-                    all_mdl = all_models[rtn_name]
+                    all_amdl = algeb_models[rtn_name]
                     rtn = getattr(self, rtn_name)
-                    for mname in all_mdl:
+                    for mname in all_amdl:
                         mdl = getattr(self, mname)
                         # NOTE: collecte all involved models into routines
                         rtn.models[mname] = mdl
@@ -265,8 +265,8 @@ class System(andes_System):
         """
         for rtn_name in self.routines:
             rtn = getattr(self, f'{rtn_name}')
-            models = all_models[rtn_name]
-            for mname in models:
+            all_amdl = algeb_models[rtn_name]
+            for mname in all_amdl:
                 mdl = getattr(self, mname)
                 for aname, algeb in mdl.algebs.items():
                     ralgeb = RAlgeb(Algeb=algeb)
