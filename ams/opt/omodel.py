@@ -30,7 +30,7 @@ class OModel:
 
     def add_vars(self, name='var', type=None, n=1, lb=None, ub=None):
         var = OVar(name=name, type=type, n=n, lb=lb, ub=ub)
-        setattr(self, name, var)
+        self.vars[name] = var
         return var
 
     def add_constraints(self, *args, **kwargs):
