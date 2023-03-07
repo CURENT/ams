@@ -60,3 +60,8 @@ class RAlgeb:
         self.tex_name = f'{Algeb.tex_name}_' + '{' + f'{mname}' + '}' if tex_name else self.name
         self.owner = Algeb.owner  # instance of the owner Model
         self.v = np.empty(0)  # variable value
+    
+    def __repr__(self):
+        n = self.owner.n
+        dev_text = 'RAlgeb' if n == 1 else 'RAlgebs'
+        return f'{self.owner.class_name}.{self.name} ({n} {dev_text}) at {hex(id(self))}'
