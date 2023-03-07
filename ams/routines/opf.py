@@ -31,10 +31,7 @@ class OPF(BaseRoutine):
         """
         Run OPF.
         """
-        _, elapsed_time = self._solve(**kwargs)
-        self._unpack()
-        info = f'{self.class_name} completed in {elapsed_time} seconds with exit code {self.exit_code}.'
-        logger.info(info)
+        super().run(**kwargs)
 
 
 class DCOPF(OPF):

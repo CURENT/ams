@@ -23,6 +23,15 @@ def timer(func):
     return wrapper
 
 
+class Formulation:
+    """
+    Base class for dispatch formulations.
+    """
+
+    def __init__(self):
+        pass
+
+
 class BaseResults:
     """
     Base class for holding dispatch results.
@@ -109,19 +118,23 @@ class BaseRoutine:
         """
         Solve the routine.
         """
-        raise NotImplementedError
+        return None
 
     def _unpack(self, **kwargs):
         """
         Unpack the results.
         """
-        raise NotImplementedError
+        return None
 
     def run(self, **kwargs):
         """
         Routine main entry point.
         """
-        raise NotImplementedError
+        _, elapsed_time = self._solve(**kwargs)
+        self._unpack(**kwargs)
+        info = f"{self.class_name} completed in {elapsed_time} with exit code {self.exit_code}."
+        logger.info(info)
+        return self.exit_code
 
     def summary(self, **kwargs):
         """
