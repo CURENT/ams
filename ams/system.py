@@ -252,7 +252,6 @@ class System(andes_System):
             logger.error("System setup failed. Please resolve the reported issue(s).")
             self.exit_code += 1
 
-        # initialize algebraic variables for all routines
         self.init_algebs()
 
         _, s = elapsed(t0)
@@ -262,17 +261,16 @@ class System(andes_System):
 
     def init_algebs(self):
         """
-        Initialize algebraic variables for all routines.
+        Register algebraic variables from models as ``RAlgeb`` into routines and its ``ralgebs`` attribute.
         """
         for rtn_name in self.routines:
-            aidx = 0
             rtn = getattr(self, f'{rtn_name}')
             models = all_models[rtn_name]
             for mname in models:
                 mdl = getattr(self, mname)
                 for aname, algeb in mdl.algebs.items():
                     ralgeb = RAlgeb(Algeb=algeb)
-                    ralgebs = getattr(rtn, 'ralgebs')
+                    ralgebs = getattr(rtn, 'ralgebs')  # the OrderedDict of RAgleb records in routine
                     ralgebs[f'{aname}{mname}'] = ralgeb  # register to OrderedDict ``ralgebs`` of routine
                     setattr(rtn, f'{aname}{mname}', ralgeb)  # register as attribute to routine
 

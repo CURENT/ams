@@ -96,33 +96,6 @@ class BaseRoutine:
         """
         return self.config.doc(max_width, export)
 
-    def _count(self):
-        """
-        Initialize algebraic variables and set address.
-        This method is called in ``System`` after all routiens are imported.
-
-        Parameters
-        ----------
-        ndevice : int
-            number of devices
-
-        Returns
-        -------
-        n_algeb: int
-            number of devices
-        mdl_all: list of ams.core.model.Model
-            list of all involved devices
-        """
-        out = OrderedDict()
-        n_algeb = 0
-        mdl_all = []
-        for mname in self.models:
-            mdl = getattr(self.system, f'{mname}')  # instance of model
-            for var_name in mdl.algebs:
-                n_algeb += mdl.n  # number of algebs
-                mdl_all.append(mdl.class_name())
-        return n_algeb, mdl_all
-
     def run(self, **kwargs):
         """
         Routine main entry point.

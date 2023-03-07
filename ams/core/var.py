@@ -41,6 +41,11 @@ class RAlgeb:
 
     This class is an extension of ``Algeb`` that revise the ``tex_name`` and keep a copy of the value
     so the value can be accessed if other routiens are called.
+
+    In ``ams.system.System.init_algebs()``, all the ``Algeb`` from models are registered
+    as an ``RAlgeb`` in the routiens.
+    The ``RAlgeb`` is then used in the ``Routine`` to formulate optimization problems and store the
+    solved values from the ``Algeb`` before they are overwritted by orther routines.
     """
     def __init__(self,
                  Algeb: Algeb,
