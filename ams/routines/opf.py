@@ -11,7 +11,7 @@ class OPF(BaseRoutine):
     def __init__(self, system=None, config=None):
         super().__init__(system, config)
         self.info = "AC Optimal Power Flow"
-        self.converged = False
+        self._algeb_models = ['Bus', 'PV', 'Slack']
 
 class DCOPF(OPF):
     """
@@ -21,4 +21,3 @@ class DCOPF(OPF):
     def __init__(self, system=None, config=None):
         super().__init__(system, config)
         self.info = "DC Optimal Power Flow"
-        self.converged = False

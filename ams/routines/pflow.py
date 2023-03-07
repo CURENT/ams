@@ -14,13 +14,13 @@ from ams.io.pypower import system2ppc
 
 class PFlow(BaseRoutine):
     """
-    AC Power flow routine.
+    AC Power Flow routine.
     """
 
     def __init__(self, system=None, config=None):
         super().__init__(system, config)
         self.info = "AC Power flow"
-        self.converged = False
+        self._algeb_models = ['Bus', 'PV', 'Slack']
 
     def run(self, **kwargs):
         """
@@ -28,7 +28,7 @@ class PFlow(BaseRoutine):
         """
         ppc = system2ppc(self.system)
         res, exit_code = runpf(ppc, **kwargs)
-        self.converged = bool(exit_code)
+        self.exit_code = int(exit_code)
 
         # --- Update variables ---
         system = self.system
@@ -48,7 +48,7 @@ class PFlow(BaseRoutine):
         for raname, ralgeb in self.ralgebs.items():
             ralgeb.v = ralgeb.Algeb.v.copy()
 
-        return self.converged
+        return bool(exit_code)
 
     def summary(self, **kwargs):
         """
@@ -63,12 +63,13 @@ class PFlow(BaseRoutine):
         pass
 
 
-class DCPF(BaseRoutine):
+class DCPF(PFlow):
     """
-    DC Power flow routine.
+    DC Power Flow routine.
     """
     def __init__(self, system=None, config=None):
         super().__init__(system, config)
+        self.info = "DC Power Flow"
 
     def run(self, **kwargs):
         """

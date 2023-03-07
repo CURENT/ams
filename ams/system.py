@@ -163,9 +163,8 @@ class System(andes_System):
                 self.routines[attr_name].config.check()
             # NOTE: the following code is not used in ANDES
             # NOTE: only models that includ algebs will be collected
-                for rtn_name in self.routines.keys():
-                    all_amdl = algeb_models[rtn_name]
-                    rtn = getattr(self, rtn_name)
+                for rname, rtn in self.routines.items():
+                    all_amdl = getattr(rtn, '_algeb_models')
                     for mname in all_amdl:
                         mdl = getattr(self, mname)
                         # NOTE: collecte all involved models into routines
@@ -263,9 +262,8 @@ class System(andes_System):
         """
         Register algebraic variables from models as ``RAlgeb`` into routines and its ``ralgebs`` attribute.
         """
-        for rtn_name in self.routines:
-            rtn = getattr(self, f'{rtn_name}')
-            all_amdl = algeb_models[rtn_name]
+        for rname, rtn in self.routines.items():
+            all_amdl = getattr(rtn, '_algeb_models')
             for mname in all_amdl:
                 mdl = getattr(self, mname)
                 for aname, algeb in mdl.algebs.items():

@@ -45,27 +45,26 @@ class BaseRoutine:
         The AMS system.
     config : andes.core.Config
         Configuration object.
-    name : str
+    info : str
         Routine information.
     models : OrderedDict
         Dict that stores all involved devices.
-    count : OrderedDict
-        Dict that stores the count of all involved devices.
-    algebs : OrderedDict
-        OrderedDict of list that stores ``name`` and ``idx`` of Algebs from all involved devices.
-    v : numpy.ndarray
-        Array that stores the values of algebraic variables.
+    ralgebs : OrderedDict
+        Dict that stores all routine algebraic variables.
+    exec_time : float
+        Recorded time to execute the routine in seconds.
+    exit_code : int
+        Exit code of the routine; 1 for successs.
     """
 
     def __init__(self, system=None, config=None):
         self.system = system
         self.config = Config(self.class_name)
         self.info = None
+        self._algeb_models = []  # list out involved models that include ``Algeb``
         # NOTE: the following attributes are populated in ``System`` class
         self.models = OrderedDict()  # collect all involved devices
         self.ralgebs = OrderedDict()  # all routine algebraic variables
-        self.n = 0  # number of algebraic variables
-        self.v = np.empty(0)  # values of algebraic variables
 
         if config is not None:
             self.config.load(config)
