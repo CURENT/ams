@@ -120,7 +120,7 @@ class BaseRoutine:
             mdl = getattr(self.system, f'{mname}')  # instance of model
             for var_name in mdl.algebs:
                 n_algeb += mdl.n  # number of algebs
-                mdl_all.append(mdl.__class__.__name__)
+                mdl_all.append(mdl.class_name())
         return n_algeb, mdl_all
 
     def run(self, **kwargs):

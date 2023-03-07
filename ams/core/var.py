@@ -32,7 +32,7 @@ class Algeb:
     def __repr__(self):
         n = self.owner.n
         dev_text = 'Algeb' if n == 1 else 'Algebs'
-        return f'{self.owner.__class__.__name__}.{self.name} ({n} {dev_text}) at {hex(id(self))}'
+        return f'{self.owner.class_name}.{self.name} ({n} {dev_text}) at {hex(id(self))}'
 
 
 class RAlgeb:
@@ -51,7 +51,7 @@ class RAlgeb:
         self.unit = Algeb.unit
 
         tex_name = Algeb.tex_name
-        mname = Algeb.owner.__class__.__name__
+        mname = Algeb.owner.class_name
         self.tex_name = f'{Algeb.tex_name}_' + '{' + f'{mname}' + '}' if tex_name else self.name
         self.owner = Algeb.owner  # instance of the owner Model
         self.v = np.empty(0)  # variable value
