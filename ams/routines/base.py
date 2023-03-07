@@ -10,6 +10,9 @@ import numpy as np
 from andes.core import Config
 from andes.shared import deg2rad
 from andes.utils.misc import elapsed
+from ams.opt.ovar import OVar
+from ams.opt.constraint import Constraint
+from ams.opt.objective import Objective
 
 logger = logging.getLogger(__name__)
 
@@ -21,15 +24,6 @@ def timer(func):
         _, s = elapsed(t0)
         return result, s
     return wrapper
-
-
-class BaseFormulation:
-    """
-    Base class for problem formulations.
-    """
-
-    def __init__(self):
-        pass
 
 
 class BaseResults:
@@ -47,7 +41,7 @@ class BaseResults:
         pass
 
 
-class BaseRoutine:
+class BaseRoutineModel:
     """
     Base routine class.
 
@@ -114,6 +108,7 @@ class BaseRoutine:
         """
         return self.config.doc(max_width, export)
 
+    @timer
     def _solve(self, **kwargs):
         """
         Solve the routine.
@@ -128,7 +123,7 @@ class BaseRoutine:
 
     def run(self, **kwargs):
         """
-        Routine main entry point.
+        Routine the routine.
         """
         _, elapsed_time = self._solve(**kwargs)
         self._unpack(**kwargs)
@@ -156,3 +151,29 @@ class BaseRoutine:
         Convert PYPOWER results to AMS.
         """
         raise NotImplementedError
+
+
+class BaseFormulation:
+    """
+    Base class for problem formulations.
+    """
+
+    def __init__(self, routine=None):
+        self.vars = OVar()
+        self.constraints = Constraint()
+        self.objective = Objective()
+    
+    def add_vars(self, RAlgeb=None, type=None, lb=None, ub=None, value=None):
+        """
+        Add variables.
+        """
+        self.vars.add(RAlgeb=RAlgeb , type=type, lb=lb, ub=ub, value=value)
+
+
+class BaseRoutine(BaseRoutineModel, BaseFormulation):
+    """
+    Class for base routine.
+    """
+    def __init__(self, system=None, config=None):
+        BaseRoutineModel.__init__(self, system=system, config=config)
+        BaseFormulation.__init__(self, routine=self)

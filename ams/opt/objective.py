@@ -7,6 +7,11 @@ class Objective:
     """
     Base class for objective functions.
     """
-    def __init__(self, name, sense):
-        self.name = name
-        self.sense = sense
+    def __init__(self):
+        pass
+
+    def add(self):
+        """
+        Add objective functions.
+        """
+        pass

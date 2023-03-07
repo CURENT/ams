@@ -7,6 +7,11 @@ class Constraint:
     """
     Base class for constraints.
     """
-    def __init__(self, name, sense):
-        self.name = name
-        self.sense = sense
+    def __init__(self):
+        pass
+
+    def add(self):
+        """
+        Add constraints.
+        """
+        pass
