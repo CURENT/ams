@@ -19,7 +19,7 @@ def timer(func):
         t0, _ = elapsed()
         result = func(*args, **kwargs)
         _, s = elapsed(t0)
-        logger.info(f'Solved in {s}.')
+        return result, s
     return wrapper
 
 
@@ -104,6 +104,18 @@ class BaseRoutine:
         Routine documentation interface.
         """
         return self.config.doc(max_width, export)
+
+    def _solve(self, **kwargs):
+        """
+        Solve the routine.
+        """
+        raise NotImplementedError
+
+    def _unpack(self, **kwargs):
+        """
+        Unpack the results.
+        """
+        raise NotImplementedError
 
     def run(self, **kwargs):
         """

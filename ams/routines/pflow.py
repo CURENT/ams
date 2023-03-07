@@ -1,6 +1,7 @@
 """
 Power flow routines.
 """
+import logging
 
 import numpy as np
 
@@ -10,6 +11,8 @@ from ams.routines.base import BaseRoutine, timer
 from ams.solver.pypower.runpf import runpf, rundcpf
 
 from ams.io.pypower import system2ppc
+
+logger = logging.getLogger(__name__)
 
 
 class PFlow(BaseRoutine):
@@ -23,20 +26,20 @@ class PFlow(BaseRoutine):
         self._algeb_models = ['Bus', 'PV', 'Slack']
 
     @timer
-    def run(self, **kwargs):
-        """
-        Run power flow.
-        """
+    def _solve(self, **kwargs):
         ppc = system2ppc(self.system)
-        res, exit_code = runpf(ppc, **kwargs)
-        self.exit_code = int(exit_code)
-
-        # --- Update variables ---
+        res, success = runpf(ppc, **kwargs)
+        return ppc, success
+    
+    def _unpack(self, ppc):
+        """
+        Unpack results from ppc to system.
+        """
         system = self.system
 
         # --- Bus ---
         system.Bus.v.v = a_Bus = ppc['bus'][:, 7]  # voltage magnitude
-        system.Bus.a.v = v_Bus = ppc['bus'][:, 8] * deg2rad # voltage angle
+        system.Bus.a.v = v_Bus = ppc['bus'][:, 8] * deg2rad  # voltage angle
 
         # --- PV ---
         system.PV.q.v = q_PV = ppc['gen'][system.Slack.n:, 2]  # reactive power
@@ -49,7 +52,20 @@ class PFlow(BaseRoutine):
         for raname, ralgeb in self.ralgebs.items():
             ralgeb.v = ralgeb.Algeb.v.copy()
 
-        return bool(exit_code)
+    def run(self, **kwargs):
+        """
+        Run power flow.
+        """
+        (ppc, success), elapsed_time = self._solve(**kwargs)
+        self.exit_code = int(not success)
+        if success:
+            info = f'{self.class_name} completed in {elapsed_time} seconds with exit code {self.exit_code}.'
+        else:
+            info = f'{self.class_name} failed in {elapsed_time} seconds with exit code {self.exit_code}.'
+        logger.info(info)
+        self.exec_time = float(elapsed_time.split(' ')[0])
+        self._unpack(ppc)
+        return self.exit_code
 
     def summary(self, **kwargs):
         """
@@ -68,6 +84,7 @@ class DCPF(PFlow):
     """
     DC Power Flow routine.
     """
+
     def __init__(self, system=None, config=None):
         super().__init__(system, config)
         self.info = "DC Power Flow"
