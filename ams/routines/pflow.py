@@ -38,15 +38,15 @@ class PFlow(BaseRoutine):
         system = self.system
 
         # --- Bus ---
-        system.Bus.v.v = a_Bus = ppc['bus'][:, 7]  # voltage magnitude
-        system.Bus.a.v = v_Bus = ppc['bus'][:, 8] * deg2rad  # voltage angle
+        system.Bus.v.v = ppc['bus'][:, 7]  # voltage magnitude
+        system.Bus.a.v = ppc['bus'][:, 8] * deg2rad  # voltage angle
 
         # --- PV ---
-        system.PV.q.v = q_PV = ppc['gen'][system.Slack.n:, 2]  # reactive power
+        system.PV.q.v = ppc['gen'][system.Slack.n:, 2]  # reactive power
 
         # --- Slack ---
-        system.Slack.p.v = p_Slack = ppc['gen'][:system.Slack.n, 1]  # active power
-        system.Slack.q.v = q_Slack = ppc['gen'][:system.Slack.n, 2]  # reactive power
+        system.Slack.p.v = ppc['gen'][:system.Slack.n, 1]  # active power
+        system.Slack.q.v = ppc['gen'][:system.Slack.n, 2]  # reactive power
 
         # --- store results into routine algeb ---
         for raname, ralgeb in self.ralgebs.items():
