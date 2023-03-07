@@ -20,16 +20,21 @@ class OModel:
     Base class for optimization models.
     """
 
-    def __init__(self, system=None, config=None):
+    def __init__(self):
+        self.vars = OrderedDict()
+        self.constraints = OrderedDict()
+        self.objective = None
 
-        # --- Model ---
-        self.system = system
-        # TODO: check config
-        self.config = Config(name=self.class_name)  # `config` that can be exported
+    def init(self):
+        pass
 
-        self.vars = OVar()
-        self.constraints = Constraint()
-        self.objectives = Objective()
+    def add_vars(self, name='var', type=None, n=1, lb=None, ub=None):
+        var = OVar(name=name, type=type, n=n, lb=lb, ub=ub)
+        setattr(self, name, var)
+        return var
 
     def add_constraints(self, *args, **kwargs):
         self.constraints.add(*args, **kwargs)
+
+    def add_objective(self, *args, **kwargs):
+        self.objectives.add(*args, **kwargs)

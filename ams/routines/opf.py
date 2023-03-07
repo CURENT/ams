@@ -1,46 +1,30 @@
 """
 OPF routines.
 """
-from ams.routines.base import BaseRoutineModel, timer, BaseFormulation
+from ams.routines.base import BaseRoutine
+import numpy as np
 
 
-class OPFFormulation(BaseFormulation):
-    """
-    OPF Formulation.
-    """
-
-    def __init__(self, routine=None):
-        super().__init__(routine)
-    
-    def add_vars(self, type=None, lb=None, ub=None, value=None):
-        """
-        Add variables.
-        """
-        self.vars.add(type=type, lb=lb, ub=ub, value=value)
-    
-    def add_constraints(self, type=None, lb=None, ub=None, value=None):
-        """
-        Add constraints.
-        """
-        self.constraints.add(type=type, lb=lb, ub=ub, value=value)
-    
-    def add_objective(self, type=None, lb=None, ub=None, value=None):
-        """
-        Add objective.
-        """
-        self.objective.add(type=type, lb=lb, ub=ub, value=value)
-
-
-class OPF(BaseRoutineModel, OPFFormulation):
+class OPF(BaseRoutine):
     """
     AC Optimal Power Flow routine.
     """
 
     def __init__(self, system=None, config=None):
-        BaseRoutineModel.__init__(self, system=system, config=config)
-        OPFFormulation.__init__(self, routine=self)
+        super().__init__(system=system, config=config)
         self.info = "AC Optimal Power Flow"
         self._algeb_models = ['Bus', 'PV', 'Slack']
+
+    def setup_om(self):
+        # --- optimization modeling ---
+        self.om.add_vars(name='aBus',
+                         type=np.float64,
+                         n=self.system.Bus.n,
+                         lb=np.full(self.system.Bus.n, -np.inf),
+                         ub=np.full(self.system.Bus.n, np.inf),
+                         )
+        # self.om.add_constraints()
+        # self.om.add_objective()
 
 
 class DCOPF(OPF):

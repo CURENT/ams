@@ -2,18 +2,33 @@
 Module for optimization variables.
 """
 
+import logging
+
+from typing import Optional
+
 from ams.core.var import RAlgeb
+import numpy as np
+
+logger = logging.getLogger(__name__)
+
 
 class OVar:
     """
-    Base class for optimization variables.
+    Decision variables in optimization.
     """
-    def __init__(self):
-        pass
 
-    def add(self, RAlgeb=None, type=None, lb=None, ub=None, value=None):
-        """
-        Add variables.
-        """
-        # setattr(self, name, value)
-        pass
+    def __init__(self,
+                 name: str,
+                 type: Optional[type] = np.float64,
+                 n: Optional[int] = 1,
+                 lb: Optional[np.ndarray] = - np.inf,
+                 ub: Optional[np.ndarray] = np.inf,
+                 ):
+        self.type = type
+        self.n = n
+        # TODO: add sanity check for lb and ub
+        type_ndarray = isinstance(lb, np.ndarray) and isinstance(ub, np.ndarray)
+        type_float = isinstance(lb, float) and isinstance(ub, float)
+        self.lb = lb
+        self.ub = ub
+        self.v = np.empty(n)

@@ -13,6 +13,7 @@ from andes.utils.misc import elapsed
 from ams.opt.ovar import OVar
 from ams.opt.constraint import Constraint
 from ams.opt.objective import Objective
+from ams.opt.omodel import OModel
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,7 @@ class BaseResults:
         pass
 
 
-class BaseRoutineModel:
+class BaseRoutine:
     """
     Base routine class.
 
@@ -79,6 +80,9 @@ class BaseRoutineModel:
         self.models = OrderedDict()  # collect all involved devices
         self.ralgebs = OrderedDict()  # all routine algebraic variables
 
+        # --- optimization modeling ---
+        self.om = OModel()
+
         if config is not None:
             self.config.load(config)
         # TODO: these default configs might to be revised
@@ -107,6 +111,12 @@ class BaseRoutineModel:
         Routine documentation interface.
         """
         return self.config.doc(max_width, export)
+
+    def setup_om(self):
+        """
+        Setup optimization model.
+        """
+        pass
 
     @timer
     def _solve(self, **kwargs):
@@ -151,29 +161,3 @@ class BaseRoutineModel:
         Convert PYPOWER results to AMS.
         """
         raise NotImplementedError
-
-
-class BaseFormulation:
-    """
-    Base class for problem formulations.
-    """
-
-    def __init__(self, routine=None):
-        self.vars = OVar()
-        self.constraints = Constraint()
-        self.objective = Objective()
-    
-    def add_vars(self, RAlgeb=None, type=None, lb=None, ub=None, value=None):
-        """
-        Add variables.
-        """
-        self.vars.add(RAlgeb=RAlgeb , type=type, lb=lb, ub=ub, value=value)
-
-
-class BaseRoutine(BaseRoutineModel, BaseFormulation):
-    """
-    Class for base routine.
-    """
-    def __init__(self, system=None, config=None):
-        BaseRoutineModel.__init__(self, system=system, config=config)
-        BaseFormulation.__init__(self, routine=self)

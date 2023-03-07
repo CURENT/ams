@@ -251,17 +251,7 @@ class System(andes_System):
             logger.error("System setup failed. Please resolve the reported issue(s).")
             self.exit_code += 1
 
-        self.init_algebs()
-
-        _, s = elapsed(t0)
-        logger.info('System set up in %s.', s)
-
-        return ret
-
-    def init_algebs(self):
-        """
-        Register algebraic variables from models as ``RAlgeb`` into routines and its ``ralgebs`` attribute.
-        """
+        # NOTE: Register algebraic variables from models as ``RAlgeb`` into routines and its ``ralgebs`` attribute.
         for rname, rtn in self.routines.items():
             all_amdl = getattr(rtn, '_algeb_models')
             for mname in all_amdl:
@@ -271,6 +261,15 @@ class System(andes_System):
                     ralgebs = getattr(rtn, 'ralgebs')  # the OrderedDict of RAgleb records in routine
                     ralgebs[f'{aname}{mname}'] = ralgeb  # register to OrderedDict ``ralgebs`` of routine
                     setattr(rtn, f'{aname}{mname}', ralgeb)  # register as attribute to routine
+        
+        # NOTE: Set up om for all routines
+        for rname, rtn in self.routines.items():
+            rtn.setup_om()
+
+        _, s = elapsed(t0)
+        logger.info('System set up in %s.', s)
+
+        return ret
 
     # FIXME: remove unused methods
     # # Disable methods not supported in AMS
