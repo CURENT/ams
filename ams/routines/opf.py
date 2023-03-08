@@ -34,8 +34,27 @@ class OPF(BaseRoutine):
         self.om.add_Rvars(RAlgeb=self.qSlack,
                           lb=self.system.Slack.qmin,
                           ub=self.system.Slack.qmax,)
+        # TODO: translate var bounds into constraints
 
         # --- constraints ---
+        self.om.add_constraints(name='pb',
+                                n=self.system.Bus.n,
+                                expr='Sum(pPV) + pSlack - Sum(q0)',
+                                )
+        self.om.add_constraints(name='qb',
+                                n=self.system.Bus.n,
+                                expr='Sum(q0) = Sum(qPV) + qSlack',
+                                )
+        self.om.add_constraints(name='v',
+                                n=self.system.Bus.n,
+                                expr='vBus**2 = v0**2 + 2 * v0 * q0 / x0',
+                                )
+        self.om.add_constraints(name='p',
+                                n=self.system.Line.n,
+                                expr='p0 = p1 + p2',
+                                )
+        
+
         # self.om.add_constraints()
         # self.om.add_objective()
 

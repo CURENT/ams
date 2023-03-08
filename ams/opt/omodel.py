@@ -63,8 +63,21 @@ class OModel:
         setattr(self, name, var)
         return var
 
+    def add_Rconstraints(self,
+                        expr: Optional[str] = None,):
+        """
+        Add constraints.
+        """
+        name = 'Constr'
+        n = 1
+        ub = np.array([np.inf] * n)
+        constraint = Constraint(name=name, n=n, expr=expr, ub=ub)
+        self.constraints[name] = constraint
+        setattr(self, name, constraint)
+        return constraint
+
     def add_constraints(self, *args, **kwargs):
-        self.constraints.add(*args, **kwargs)
+        pass
 
     def add_objective(self, *args, **kwargs):
         self.objectives.add(*args, **kwargs)
