@@ -44,16 +44,17 @@ class RAlgeb:
 
     In ``ams.system.System.init_algebs()``, all the ``Algeb`` from models are registered
     as an ``RAlgeb`` in the routiens.
-    The ``RAlgeb`` is then used in the ``Routine`` to formulate optimization problems and store the
+    The ``RAlgeb`` can be used in the ``Routine`` to formulate optimization problems and store the
     solved values from the ``Algeb`` before they are overwritted by orther routines.
     """
     def __init__(self,
                  Algeb: Algeb,
                  ):
         self.Algeb = Algeb
-        self.name = Algeb.name
+        self.name = Algeb.name + Algeb.owner.class_name
         self.info = Algeb.info
         self.unit = Algeb.unit
+        self.type = np.float64 if self.unit == 'bool' else np.int64
 
         tex_name = Algeb.tex_name
         mname = Algeb.owner.class_name
