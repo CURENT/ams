@@ -15,6 +15,8 @@ from ams.opt.constraint import Constraint
 from ams.opt.objective import Objective
 from ams.opt.omodel import OModel
 
+from ams.core.symprocessor import SymProcessor
+
 logger = logging.getLogger(__name__)
 
 
@@ -79,6 +81,7 @@ class BaseRoutine:
         # NOTE: the following attributes are populated in ``System`` class
         self.models = OrderedDict()  # collect all involved devices
         self.ralgebs = OrderedDict()  # all routine algebraic variables
+        self.syms = SymProcessor(self)  # symbolic processor
 
         # --- optimization modeling ---
         self.om = OModel()
@@ -101,6 +104,13 @@ class BaseRoutine:
         self.exec_time = 0.0  # recorded time to execute the routine in seconds
         # TODO: check exit_code of gurobipy or any other similiar solvers
         self.exit_code = 0  # exit code of the routine; 1 for successs
+
+    def prepare(self):
+        """
+        Prepare the routine.
+        """
+        logger.debug("Generating code for %s", self.class_name)
+        self.syms.generate_symbols()
 
     @property
     def class_name(self):
