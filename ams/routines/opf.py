@@ -17,18 +17,25 @@ class OPF(BaseRoutine):
 
     def setup_om(self):
         # --- optimization modeling ---
-        self.om.add_vars(name='aBus',
-                         type=np.float64,
-                         n=self.system.Bus.n,
-                         lb=np.full(self.system.Bus.n, -np.inf),
-                         ub=np.full(self.system.Bus.n, np.inf),
-                         )
-        self.om.add_vars(name='vBus',
-                         type=np.float64,
-                         n=self.system.Bus.n,
-                         lb=self.system.Bus.vmin.v,
-                         ub=self.system.Bus.vmin.v,
-                         )
+
+        # --- decision variables ---
+        self.om.add_Rvars(RAlgeb=self.aBus,
+                          lb=None,
+                          ub=None,)
+        self.om.add_Rvars(RAlgeb=self.vBus,
+                          lb=self.system.Bus.vmax,
+                          ub=self.system.Bus.vmin,)
+        self.om.add_Rvars(RAlgeb=self.qPV,
+                          lb=self.system.PV.qmin,
+                          ub=self.system.PV.qmax,)
+        self.om.add_Rvars(RAlgeb=self.pSlack,
+                          lb=self.system.Slack.pmin,
+                          ub=self.system.Slack.pmax,)
+        self.om.add_Rvars(RAlgeb=self.qSlack,
+                          lb=self.system.Slack.qmin,
+                          ub=self.system.Slack.qmax,)
+
+        # --- constraints ---
         # self.om.add_constraints()
         # self.om.add_objective()
 

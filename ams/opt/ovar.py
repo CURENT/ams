@@ -24,6 +24,7 @@ class OVar:
                  lb: Optional[np.ndarray] = - np.inf,
                  ub: Optional[np.ndarray] = np.inf,
                  ):
+        self.name = name
         self.type = type
         self.n = n
         # TODO: add sanity check for lb and ub
@@ -32,3 +33,11 @@ class OVar:
         self.lb = lb
         self.ub = ub
         self.v = np.empty(n)
+
+    @property
+    def class_name(self):
+        return self.__class__.__name__
+
+    def __repr__(self):
+        dev_text = 'OVar' if self.n == 1 else 'OVars'
+        return f'{self.name} ({self.n} {dev_text}) at {hex(id(self))}'

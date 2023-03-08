@@ -44,10 +44,11 @@ class OModel:
         name = RAlgeb.name
         type = RAlgeb.type
         n = RAlgeb.owner.n
-        lb = - np.inf if lb is None else lb.v
-        ub = np.inf if ub is None else ub.v
+        lb = np.array([- np.inf] * n) if lb is None else lb.v
+        ub = np.array([np.inf] * n) if ub is None else ub.v
         var = OVar(name=name, type=type, n=n, lb=lb, ub=ub)
         self.vars[name] = var
+        setattr(self, name, var)
         return var
 
     def add_vars(self,
