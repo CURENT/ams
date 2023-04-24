@@ -9,8 +9,24 @@ import numpy as np
 
 from andes.core import Config
 from andes.shared import deg2rad
+from andes.utils.misc import elapsed
+from ams.opt.ovar import OVar
+from ams.opt.constraint import Constraint
+from ams.opt.objective import Objective
+from ams.opt.omodel import OModel
+
+from ams.core.symprocessor import SymProcessor
 
 logger = logging.getLogger(__name__)
+
+
+def timer(func):
+    def wrapper(*args, **kwargs):
+        t0, _ = elapsed()
+        result = func(*args, **kwargs)
+        _, s = elapsed(t0)
+        return result, s
+    return wrapper
 
 
 class BaseResults:
@@ -45,27 +61,30 @@ class BaseRoutine:
         The AMS system.
     config : andes.core.Config
         Configuration object.
-    name : str
+    info : str
         Routine information.
     models : OrderedDict
         Dict that stores all involved devices.
-    count : OrderedDict
-        Dict that stores the count of all involved devices.
-    algebs : OrderedDict
-        OrderedDict of list that stores ``name`` and ``idx`` of Algebs from all involved devices.
-    v : numpy.ndarray
-        Array that stores the values of algebraic variables.
+    ralgebs : OrderedDict
+        Dict that stores all routine algebraic variables.
+    exec_time : float
+        Recorded time to execute the routine in seconds.
+    exit_code : int
+        Exit code of the routine; 1 for successs.
     """
 
     def __init__(self, system=None, config=None):
         self.system = system
         self.config = Config(self.class_name)
         self.info = None
+        self._algeb_models = []  # list out involved models that include ``Algeb``
         # NOTE: the following attributes are populated in ``System`` class
         self.models = OrderedDict()  # collect all involved devices
-        self.algebs = OrderedDict()  # info of algebraic variables from all involved devices
-        self.n = 0  # number of algebraic variables
-        self.v = np.empty(0)  # values of algebraic variables
+        self.ralgebs = OrderedDict()  # all routine algebraic variables
+        self.syms = SymProcessor(self)  # symbolic processor
+
+        # --- optimization modeling ---
+        self.om = OModel()
 
         if config is not None:
             self.config.load(config)
@@ -86,6 +105,13 @@ class BaseRoutine:
         # TODO: check exit_code of gurobipy or any other similiar solvers
         self.exit_code = 0  # exit code of the routine; 1 for successs
 
+    def prepare(self):
+        """
+        Prepare the routine.
+        """
+        logger.debug("Generating code for %s", self.class_name)
+        self.syms.generate_symbols()
+
     @property
     def class_name(self):
         return self.__class__.__name__
@@ -96,38 +122,34 @@ class BaseRoutine:
         """
         return self.config.doc(max_width, export)
 
-    def _count(self):
+    def setup_om(self):
         """
-        Initialize algebraic variables and set address.
-        This method is called in ``System`` after all routiens are imported.
-
-        Parameters
-        ----------
-        ndevice : int
-            number of devices
-
-        Returns
-        -------
-        n_algeb: int
-            number of devices
-        mdl_all: list of ams.core.model.Model
-            list of all involved devices
+        Setup optimization model.
         """
-        out = OrderedDict()
-        n_algeb = 0
-        mdl_all = []
-        for mname in self.models:
-            mdl = getattr(self.system, f'{mname}')  # instance of model
-            for var_name in mdl.algebs:
-                n_algeb += mdl.n  # number of algebs
-                mdl_all.append(mdl.__class__.__name__)
-        return n_algeb, mdl_all
+        pass
+
+    @timer
+    def _solve(self, **kwargs):
+        """
+        Solve the routine.
+        """
+        return None
+
+    def _unpack(self, **kwargs):
+        """
+        Unpack the results.
+        """
+        return None
 
     def run(self, **kwargs):
         """
-        Routine main entry point.
+        Routine the routine.
         """
-        raise NotImplementedError
+        _, elapsed_time = self._solve(**kwargs)
+        self._unpack(**kwargs)
+        info = f"{self.class_name} completed in {elapsed_time} with exit code {self.exit_code}."
+        logger.info(info)
+        return self.exit_code
 
     def summary(self, **kwargs):
         """

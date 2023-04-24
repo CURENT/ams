@@ -1,60 +1,71 @@
 """
 Power flow routines.
 """
+import logging
 
 import numpy as np
 
 from andes.shared import deg2rad
 
-from ams.routines.base import BaseRoutine
+from ams.routines.base import BaseRoutine, timer
 from ams.solver.pypower.runpf import runpf, rundcpf
 
 from ams.io.pypower import system2ppc
 
+logger = logging.getLogger(__name__)
+
 
 class PFlow(BaseRoutine):
     """
-    AC Power flow routine.
+    AC Power Flow routine.
     """
 
     def __init__(self, system=None, config=None):
         super().__init__(system, config)
         self.info = "AC Power flow"
-        self.converged = False
+        self._algeb_models = ['Bus', 'PV', 'Slack']
+
+    @timer
+    def _solve(self, **kwargs):
+        ppc = system2ppc(self.system)
+        res, success = runpf(ppc, **kwargs)
+        return ppc, success
+    
+    def _unpack(self, ppc):
+        """
+        Unpack results from ppc to system.
+        """
+        system = self.system
+
+        # --- Bus ---
+        system.Bus.v.v = ppc['bus'][:, 7]  # voltage magnitude
+        system.Bus.a.v = ppc['bus'][:, 8] * deg2rad  # voltage angle
+
+        # --- PV ---
+        system.PV.q.v = ppc['gen'][system.Slack.n:, 2]  # reactive power
+
+        # --- Slack ---
+        system.Slack.p.v = ppc['gen'][:system.Slack.n, 1]  # active power
+        system.Slack.q.v = ppc['gen'][:system.Slack.n, 2]  # reactive power
+
+        # --- store results into routine algeb ---
+        for raname, ralgeb in self.ralgebs.items():
+            ralgeb.v = ralgeb.Algeb.v.copy()
 
     def run(self, **kwargs):
         """
         Run power flow.
         """
-        ppc = system2ppc(self.system)
-        res, exit_code = runpf(ppc, **kwargs)
-        self.converged = bool(exit_code)
-
-        # --- Update variables ---
-        system = self.system
-
-        # --- Bus ---
-        system.Bus.v.v = a_Bus = ppc['bus'][:, 7]  # voltage magnitude
-        system.Bus.a.v = v_Bus = ppc['bus'][:, 8] * deg2rad # voltage angle
-
-        # --- PV ---
-        system.PV.q.v = q_PV = ppc['gen'][system.Slack.n:, 2]  # reactive power
-
-        # --- Slack ---
-        system.Slack.p.v = p_Slack = ppc['gen'][:system.Slack.n, 1]  # active power
-        system.Slack.q.v = q_Slack = ppc['gen'][:system.Slack.n, 2]  # reactive power
-
-        # --- routine ---
-        for aname in self.algebs.keys():
-            a = self.algebs[aname]['a']  # array index
-            if len(a) > 1:
-                self.v[a[0]:a[-1]+1] = locals()[aname]
-                self.algebs[aname]['algeb'].v = locals()[aname]
-            else:
-                self.v[a] = locals()[aname]
-                self.algebs[aname]['algeb'].v = locals()[aname]
-
-        return self.converged
+        (ppc, success), elapsed_time = self._solve(**kwargs)
+        self.exit_code = int(not success)
+        if success:
+            info = f'{self.class_name} completed in {elapsed_time} seconds with exit code {self.exit_code}.'
+        else:
+            info = f'{self.class_name} failed in {elapsed_time} seconds with exit code {self.exit_code}.'
+        logger.info(info)
+        self.exec_time = float(elapsed_time.split(' ')[0])
+        self._unpack(ppc)
+        return self.exit_code
 
     def summary(self, **kwargs):
         """
@@ -69,12 +80,14 @@ class PFlow(BaseRoutine):
         pass
 
 
-class DCPF(BaseRoutine):
+class DCPF(PFlow):
     """
-    DC Power flow routine.
+    DC Power Flow routine.
     """
+
     def __init__(self, system=None, config=None):
         super().__init__(system, config)
+        self.info = "DC Power Flow"
 
     def run(self, **kwargs):
         """
