@@ -151,6 +151,11 @@ class PV(PVData, GENADD, Model):
                               err_tol=r"\epsilon_{tol}"
                               )
 
+        self.p = Algeb(info='actual active power generation',
+                       unit='p.u.',
+                       tex_name='p',
+                       name='p',
+                       )
         self.q = Algeb(info='actual reactive power generation',
                        unit='p.u.',
                        tex_name='q',

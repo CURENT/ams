@@ -27,19 +27,19 @@ class OModel:
 
     def __init__(self):
         self.vars = OrderedDict()
-        self.constraints = OrderedDict()
-        self.objective = None
+        self.constrs = OrderedDict()
+        self.obj = None
 
     def init(self):
         pass
 
-    def add_OVars(self,
-                  OAlgeb: Union[OAlgeb, str],
-                  lb: Optional[Union[NumParam, str]] = None,
-                  ub: Optional[Union[NumParam, str]] = None,
-                  ):
+    def AddOVars(self,
+                 OAlgeb: Union[OAlgeb, str],
+                 lb: Optional[Union[NumParam, str]] = None,
+                 ub: Optional[Union[NumParam, str]] = None,
+                 ):
         """
-        Add OAlgeb as variables.
+        Add variables to optimization model from OAlgeb.
         """
         name = OAlgeb.name
         type = OAlgeb.type
@@ -48,36 +48,44 @@ class OModel:
         ub = np.array([np.inf] * n) if ub is None else ub.v
         var = OVar(name=name, type=type, n=n, lb=lb, ub=ub)
         self.vars[name] = var
+        # TODO: translate var bounds into constraints
         setattr(self, name, var)
         return var
 
-    def add_vars(self,
-                 name='var',
-                 type: Optional[type] = np.float64,
-                 n: Optional[int] = 1,
-                 lb: Optional[np.ndarray] = - np.inf,
-                 ub: Optional[np.ndarray] = np.inf,
-                 ):
+    def AddVar(self,
+               name='var',
+               type: Optional[type] = np.float64,
+               n: Optional[int] = 1,
+               lb: Optional[np.ndarray] = - np.inf,
+               ub: Optional[np.ndarray] = np.inf,
+               ):
+        """
+        Add variable to optimization model.
+        """
         var = OVar(name=name, type=type, n=n, lb=lb, ub=ub)
         self.vars[name] = var
         setattr(self, name, var)
         return var
 
-    def add_Rconstraints(self,
-                        expr: Optional[str] = None,):
+    def AddOConstrs(self,
+                    name: Optional[str] = None,
+                    n: Optional[int] = 1,
+                    expr: Optional[str] = None,
+                    ):
         """
-        Add constraints.
+        Add constraints to optimization model from OAlgeb.
         """
-        name = 'Constr'
-        n = 1
         ub = np.array([np.inf] * n)
-        constraint = Constraint(name=name, n=n, expr=expr, ub=ub)
-        self.constraints[name] = constraint
-        setattr(self, name, constraint)
-        return constraint
+        constr = Constraint(name=name, n=n, expr=expr)
+        self.constrs[name] = constr
+        setattr(self, name, constr)
+        return constr
 
-    def add_constraints(self, *args, **kwargs):
+    def AddConstr(self, *args, **kwargs):
+        """
+        Add constraint to optimization model.
+        """
         pass
 
-    def add_objective(self, *args, **kwargs):
+    def setObjective(self, *args, **kwargs):
         self.objectives.add(*args, **kwargs)

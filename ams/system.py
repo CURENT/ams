@@ -82,6 +82,7 @@ class System(andes_System):
         self.model_aliases = OrderedDict()   # alias: model instance
         self.groups = OrderedDict()          # group names and instances
         self.routines = OrderedDict()        # routine names and instances
+        self.nparams = OrderedDict()        # NumParam names and instances
         # TODO: there should be an exit_code for each routine
         self.exit_code = 0                   # command-line exit code, 0 - normal, others - error.
 
@@ -261,7 +262,13 @@ class System(andes_System):
                     oalgebs = getattr(rtn, 'oalgebs')  # the OrderedDict of RAgleb records in routine
                     oalgebs[f'{aname}{mname}'] = oalgeb  # register to OrderedDict ``oalgebs`` of routine
                     setattr(rtn, f'{aname}{mname}', oalgeb)  # register as attribute to routine
-        
+
+        # NOTE: Register NumParam from models into system
+        for mname, mdl in self.models.items():
+            nparams = getattr(mdl, 'num_params')
+            for npname, np in nparams.items():
+                self.nparams[f'{npname}{mname}'] = np
+
         # NOTE: Set up om for all routines
         for rname, rtn in self.routines.items():
             rtn.setup_om()

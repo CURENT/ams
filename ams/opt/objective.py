@@ -10,8 +10,8 @@ class Objective:
     def __init__(self):
         pass
 
-    def add(self):
+    def set(self):
         """
-        Add objective functions.
+        Set objective functions.
         """
         pass
