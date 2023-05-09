@@ -12,7 +12,7 @@ import numpy as np
 from andes.core.common import Config
 from andes.core import NumParam
 
-from ams.core.var import RAlgeb
+from ams.core.var import OAlgeb
 from ams.opt.ovar import OVar
 from ams.opt.constraint import Constraint
 from ams.opt.objective import Objective
@@ -33,17 +33,17 @@ class OModel:
     def init(self):
         pass
 
-    def add_Rvars(self,
-                  RAlgeb: Union[RAlgeb, str],
+    def add_OVars(self,
+                  OAlgeb: Union[OAlgeb, str],
                   lb: Optional[Union[NumParam, str]] = None,
                   ub: Optional[Union[NumParam, str]] = None,
                   ):
         """
-        Add RAlgeb as variables.
+        Add OAlgeb as variables.
         """
-        name = RAlgeb.name
-        type = RAlgeb.type
-        n = RAlgeb.owner.n
+        name = OAlgeb.name
+        type = OAlgeb.type
+        n = OAlgeb.owner.n
         lb = np.array([- np.inf] * n) if lb is None else lb.v
         ub = np.array([np.inf] * n) if ub is None else ub.v
         var = OVar(name=name, type=type, n=n, lb=lb, ub=ub)

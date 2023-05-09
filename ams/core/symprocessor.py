@@ -26,5 +26,5 @@ class SymProcessor:
         """
         logger.debug(f'Generating symbols for {self.parent.class_name}')
         
-        for ralgeb in self.parent.ralgebs.keys():
-            self.inputs_dict[ralgeb] = sp.Symbol(ralgeb)
+        for oalgeb in self.parent.oalgebs.keys():
+            self.inputs_dict[oalgeb] = sp.Symbol(oalgeb)

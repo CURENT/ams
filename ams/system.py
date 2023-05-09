@@ -21,7 +21,7 @@ from ams.models.group import GroupBase
 from ams.models import file_classes
 from ams.routines import all_routines, algeb_models
 from ams.utils.paths import get_config_path
-from ams.core.var import RAlgeb
+from ams.core.var import OAlgeb
 
 logger = logging.getLogger(__name__)
 
@@ -251,16 +251,16 @@ class System(andes_System):
             logger.error("System setup failed. Please resolve the reported issue(s).")
             self.exit_code += 1
 
-        # NOTE: Register algebraic variables from models as ``RAlgeb`` into routines and its ``ralgebs`` attribute.
+        # NOTE: Register algebraic variables from models as ``OAlgeb`` into routines and its ``oalgebs`` attribute.
         for rname, rtn in self.routines.items():
             all_amdl = getattr(rtn, '_algeb_models')
             for mname in all_amdl:
                 mdl = getattr(self, mname)
                 for aname, algeb in mdl.algebs.items():
-                    ralgeb = RAlgeb(Algeb=algeb)
-                    ralgebs = getattr(rtn, 'ralgebs')  # the OrderedDict of RAgleb records in routine
-                    ralgebs[f'{aname}{mname}'] = ralgeb  # register to OrderedDict ``ralgebs`` of routine
-                    setattr(rtn, f'{aname}{mname}', ralgeb)  # register as attribute to routine
+                    oalgeb = OAlgeb(Algeb=algeb)
+                    oalgebs = getattr(rtn, 'oalgebs')  # the OrderedDict of RAgleb records in routine
+                    oalgebs[f'{aname}{mname}'] = oalgeb  # register to OrderedDict ``oalgebs`` of routine
+                    setattr(rtn, f'{aname}{mname}', oalgeb)  # register as attribute to routine
         
         # NOTE: Set up om for all routines
         for rname, rtn in self.routines.items():

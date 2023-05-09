@@ -35,7 +35,7 @@ class Algeb:
         return f'{self.owner.class_name}.{self.name} ({n} {dev_text}) at {hex(id(self))}'
 
 
-class RAlgeb:
+class OAlgeb:
     """ 
     Class for algebraic variable in a routine.
 
@@ -43,8 +43,8 @@ class RAlgeb:
     so the value can be accessed if other routiens are called.
 
     In ``ams.system.System.init_algebs()``, all the ``Algeb`` from models are registered
-    as an ``RAlgeb`` in the routiens.
-    The ``RAlgeb`` can be used in the ``Routine`` to formulate optimization problems and store the
+    as an ``OAlgeb`` in the routiens.
+    The ``OAlgeb`` can be used in the ``Routine`` to formulate optimization problems and store the
     solved values from the ``Algeb`` before they are overwritted by orther routines.
     """
     def __init__(self,
@@ -64,5 +64,5 @@ class RAlgeb:
     
     def __repr__(self):
         n = self.owner.n
-        dev_text = 'RAlgeb' if n == 1 else 'RAlgebs'
+        dev_text = 'OAlgeb' if n == 1 else 'OAlgebs'
         return f'{self.owner.class_name}.{self.name} ({n} {dev_text}) at {hex(id(self))}'

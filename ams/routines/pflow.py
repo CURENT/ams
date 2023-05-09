@@ -49,8 +49,8 @@ class PFlow(BaseRoutine):
         system.Slack.q.v = ppc['gen'][:system.Slack.n, 2]  # reactive power
 
         # --- store results into routine algeb ---
-        for raname, ralgeb in self.ralgebs.items():
-            ralgeb.v = ralgeb.Algeb.v.copy()
+        for raname, oalgeb in self.oalgebs.items():
+            oalgeb.v = oalgeb.Algeb.v.copy()
 
     def run(self, **kwargs):
         """

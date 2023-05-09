@@ -65,7 +65,7 @@ class BaseRoutine:
         Routine information.
     models : OrderedDict
         Dict that stores all involved devices.
-    ralgebs : OrderedDict
+    oalgebs : OrderedDict
         Dict that stores all routine algebraic variables.
     exec_time : float
         Recorded time to execute the routine in seconds.
@@ -80,7 +80,7 @@ class BaseRoutine:
         self._algeb_models = []  # list out involved models that include ``Algeb``
         # NOTE: the following attributes are populated in ``System`` class
         self.models = OrderedDict()  # collect all involved devices
-        self.ralgebs = OrderedDict()  # all routine algebraic variables
+        self.oalgebs = OrderedDict()  # all routine algebraic variables
         self.syms = SymProcessor(self)  # symbolic processor
 
         # --- optimization modeling ---

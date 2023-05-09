@@ -6,7 +6,7 @@ import logging
 
 from typing import Optional
 
-from ams.core.var import RAlgeb
+from ams.core.var import OAlgeb
 import numpy as np
 
 logger = logging.getLogger(__name__)

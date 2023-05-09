@@ -19,19 +19,19 @@ class OPF(BaseRoutine):
         # --- optimization modeling ---
 
         # --- decision variables ---
-        self.om.add_Rvars(RAlgeb=self.aBus,
+        self.om.add_OVars(OAlgeb=self.aBus,
                           lb=None,
                           ub=None,)
-        self.om.add_Rvars(RAlgeb=self.vBus,
+        self.om.add_OVars(OAlgeb=self.vBus,
                           lb=self.system.Bus.vmax,
                           ub=self.system.Bus.vmin,)
-        self.om.add_Rvars(RAlgeb=self.qPV,
+        self.om.add_OVars(OAlgeb=self.qPV,
                           lb=self.system.PV.qmin,
                           ub=self.system.PV.qmax,)
-        self.om.add_Rvars(RAlgeb=self.pSlack,
+        self.om.add_OVars(OAlgeb=self.pSlack,
                           lb=self.system.Slack.pmin,
                           ub=self.system.Slack.pmax,)
-        self.om.add_Rvars(RAlgeb=self.qSlack,
+        self.om.add_OVars(OAlgeb=self.qSlack,
                           lb=self.system.Slack.qmin,
                           ub=self.system.Slack.qmax,)
         # TODO: translate var bounds into constraints
