@@ -9,6 +9,7 @@ from collections import OrderedDict
 from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
+import sympy as sp
 
 from andes.core import Config
 from andes.system import System as andes_System
@@ -21,7 +22,7 @@ from ams.models.group import GroupBase
 from ams.models import file_classes
 from ams.routines import all_routines, algeb_models
 from ams.utils.paths import get_config_path
-from ams.core.var import OAlgeb
+from ams.opt.omodel import OAlgeb
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,7 @@ class System(andes_System):
         self.groups = OrderedDict()          # group names and instances
         self.routines = OrderedDict()        # routine names and instances
         self.nparams = OrderedDict()        # NumParam names and instances
+        self.npdict = OrderedDict()
         # TODO: there should be an exit_code for each routine
         self.exit_code = 0                   # command-line exit code, 0 - normal, others - error.
 
@@ -263,11 +265,18 @@ class System(andes_System):
                     oalgebs[f'{aname}{mname}'] = oalgeb  # register to OrderedDict ``oalgebs`` of routine
                     setattr(rtn, f'{aname}{mname}', oalgeb)  # register as attribute to routine
 
+        # NOTE: define a special model named ``G`` that combines PV and Slack 
+        # FIXME: seems hard coded
+        # TODO: seems to be a bad design
+        gen_cols = self.Slack.as_df().columns
+
         # NOTE: Register NumParam from models into system
         for mname, mdl in self.models.items():
             nparams = getattr(mdl, 'num_params')
             for npname, np in nparams.items():
-                self.nparams[f'{npname}{mname}'] = np
+                symbol_str = f'{npname}{mname}'
+                self.nparams[symbol_str] = np
+                self.npdict[symbol_str] = sp.Symbol(symbol_str)
 
         # NOTE: Set up om for all routines
         for rname, rtn in self.routines.items():

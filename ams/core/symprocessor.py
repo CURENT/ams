@@ -19,6 +19,7 @@ class SymProcessor:
     def __init__(self, parent):
         self.parent = parent
         self.inputs_dict = OrderedDict()
+        # self.tex_names = OrderedDict()
 
     def generate_symbols(self):
         """
@@ -26,5 +27,5 @@ class SymProcessor:
         """
         logger.debug(f'Generating symbols for {self.parent.class_name}')
         
-        for oalgeb in self.parent.oalgebs.keys():
-            self.inputs_dict[oalgeb] = sp.Symbol(oalgeb)
+        for oname, oalgeb in self.parent.oalgebs.items():
+            self.inputs_dict[oname] = sp.MatrixSymbol(oname, oalgeb.v.shape[0], 1)
