@@ -121,7 +121,7 @@ class PV(PVData, GENADD, Model):
         PVData.__init__(self)
         GENADD.__init__(self)
         Model.__init__(self, system, config)
-        self.group = 'Gen'
+        self.group = 'StaticGen'
 
         self.config.add(OrderedDict((('pv2pq', 0),
                                      ('npv2pq', 0),
@@ -172,7 +172,7 @@ class Slack(SlackData, GENADD, Model):
         SlackData.__init__(self)
         GENADD.__init__(self)
         Model.__init__(self, system, config)
-        self.group = 'Gen'
+        self.group = 'StaticGen'
 
         self.p = Algeb(info='actual active power generation',
                        unit='p.u.',
