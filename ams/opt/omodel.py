@@ -13,7 +13,6 @@ from andes.core.common import Config
 from andes.core import NumParam
 from andes.models.group import GroupBase
 
-from ams.system import System
 from ams.core.var import Algeb
 from ams.opt.ovar import OVar
 
@@ -67,7 +66,7 @@ class OAlgebs:
                  info: Optional[str] = None,
                  unit: Optional[str] = None,
                  tex_name: Optional[str] = None,
-                 system: Optional[System] = None,
+                 system: Optional = None,
                  ):
         self.AName = AName
         self.Group = Group
@@ -205,7 +204,7 @@ class OModel:
             Description of the constraint, by default None
         """
         ub = np.array([np.inf] * n)
-        constr = Constraint(name=name, n=n, expr=expr, type='uq', info=info)
+        constr = Constraint(name=name, n=n, expr=expr, type=type, info=info)
         self.constrs[name] = constr
         setattr(self, name, constr)
         return constr

@@ -73,6 +73,11 @@ class DCOPF(BaseRoutine):
     def setup_om(self):
         # --- optimization modeling ---
 
+        # --- debug ---
+        # self.om.AddOVars(OAlgeb=self.pGen,
+        #                  lb=self.system.Gen.pmin,
+        #                  ub=self.system.Gen.pmax,)
+
         # --- decision variables ---
         self.om.AddOVars(OAlgeb=self.pPV,
                          lb=self.system.PV.pmin,

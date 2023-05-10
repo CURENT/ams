@@ -145,6 +145,14 @@ class System(andes_System):
         self.import_models()
         self.import_routines()
 
+    def summarize_groups(self):
+        """
+        Summarize groups and their models.
+        """
+        pass
+        for gname, grp in self.groups.items():
+            grp.summarize()
+
     def import_routines(self):
         """
         Import routines as defined in ``routines/__init__.py``.
@@ -227,6 +235,11 @@ class System(andes_System):
         #     self.model_aliases[key] = self.models[val]
         #     self.__dict__[key] = self.models[val]
 
+        # NOTE: define a special model named ``G`` that combines PV and Slack
+        # FIXME: seems hard coded
+        # TODO: seems to be a bad design
+        gen_cols = self.Slack.as_df().columns
+
     def setup(self):
         """
         Set up system for studies.
@@ -265,11 +278,6 @@ class System(andes_System):
                     oalgebs[f'{aname}{mname}'] = oalgeb  # register to OrderedDict ``oalgebs`` of routine
                     setattr(rtn, f'{aname}{mname}', oalgeb)  # register as attribute to routine
 
-        # NOTE: define a special model named ``G`` that combines PV and Slack 
-        # FIXME: seems hard coded
-        # TODO: seems to be a bad design
-        gen_cols = self.Slack.as_df().columns
-
         # NOTE: Register NumParam from models into system
         for mname, mdl in self.models.items():
             nparams = getattr(mdl, 'num_params')
@@ -277,6 +285,12 @@ class System(andes_System):
                 symbol_str = f'{npname}{mname}'
                 self.nparams[symbol_str] = np
                 self.npdict[symbol_str] = sp.Symbol(symbol_str)
+
+        # NOTE: Special deal with StaticGen p, q
+        _combined_group = ['StaticGen']
+        # logger.debug(self.groups)
+        for gname in _combined_group:
+            self.groups[gname].combine()
 
         # NOTE: Set up om for all routines
         for rname, rtn in self.routines.items():
