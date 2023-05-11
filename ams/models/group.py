@@ -1,6 +1,7 @@
 import logging
 import importlib
 import inspect
+import copy
 from collections import OrderedDict
 
 import numpy as np
@@ -33,38 +34,6 @@ class GroupBase(andes_GroupBase):
         Summarize the group.
         """
         pass
-        logger.debug('Pseudo function GroupBase.combine() is called.')
-
-        # msg = f'Group {self.class_name} has models: {self.models.keys()}, common vars: {self.common_vars}, common params: {self.common_params}'
-        # logger.debug(msg)
-        # # --- debug: summarize a group ---
-        # n_mdls = len(self.models)
-        # mname_list = list(self.models.keys())
-        # logger.debug(mname_list)
-        # for mname, mdl in self.models.items():
-        #     # --- common_params ---
-        #     n_cparams = len(self.common_params)
-        #     if n_cparams > 0:
-        #         attrs = {}
-        #         # gongjiaoche here to collect all
-        #         # v_list
-        #         # vin_list
-        #         for key in self.common_params:
-        #             value = getattr(mdl, key)
-        #             if isinstance(value, BaseParam):
-        #                 self.params[key] = value
-        #                 attr_list = [attr for attr in dir(value) if not attr.startswith('_') and not callable(getattr(value, attr))]
-        #                 attrs[mname] = {key: getattr(value, key) for key in attr_list}
-        #             # set gongjiaoche to group
-        #             # setattr(self, key, value)
-        #         logger.debug(f'attr_dict: {attrs}')
-        #     # --- common_vars ---
-        #     n_cvars = len(self.common_vars)
-        #     if n_cvars > 0:
-        #         for key in self.common_vars:
-        #             value = getattr(mdl, key)
-        #             if isinstance(value, Algeb):
-        #                 self.algebs[key] = value
 
 
 class Undefined(GroupBase):
@@ -122,19 +91,22 @@ class StaticGen(GroupBase):
             if not type_identical:
                 logger.warning(f'Parameter {pname} has different types in the group.')
             # NOTE: get the first model in the group
-            for mdl in self.models.values():
-                mdl0 = list(self.models.values())[0]
-                param = getattr(mdl0, pname)
+            for mname, mdl in self.models.items():
+                param = getattr(mdl, pname)
                 pattrs = [attr for attr in dir(param) if not attr.startswith('_') and not callable(getattr(param, attr))]
+                type_list = [type(getattr(param, attr)) for attr in pattrs]
                 pattr_kvs = {attr: getattr(param, attr) for attr in pattrs}
                 param_class = getattr(module, param.__class__.__name__)
                 # param_class = getattr(module, str())
                 signature = inspect.signature(param_class)
                 in_list = list(signature.parameters.keys())
                 in_dict = {k: getattr(param, k) for k in in_list if k in pattrs}
-            # TODO: for value-type: modify v, vin, pu_coeff, n
-            # logger.debug(f'define an {param_class} named {pname}')
-            # logger.debug(f'input dict: {in_dict}')
+                # TODO: for value-type: modify v, vin, pu_coeff, n
+            # logger.debug(f'param: {pname}')
+            # logger.debug(f'pattrs: {pattrs}')
+            # logger.debug(f'type_list: {type_list}')
+            logger.debug(f'define an {param_class} named {pname}')
+            logger.debug(f'input dict: {in_dict}')
             cparam = param_class(**in_dict)
             setattr(self, pname, cparam)
             self.params[pname] = cparam
