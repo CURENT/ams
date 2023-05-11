@@ -114,20 +114,27 @@ class StaticGen(GroupBase):
         out = {}
         module = importlib.import_module('andes.core.param')
         for pname in self.common_params:
-            # NOTE: get the first model in the group
-            mdl0 = list(self.models.values())[0]
-            param = getattr(mdl0, pname)
-            pattrs = [attr for attr in dir(param) if not attr.startswith('_') and not callable(getattr(param, attr))]
-            pattr_kvs = {attr: getattr(param, attr) for attr in pattrs}
-            param_class = getattr(module, param.__class__.__name__)
-            # param_class = getattr(module, str())
-            signature = inspect.signature(param_class)
-            in_list = list(signature.parameters.keys())
-            in_dict = {k: getattr(param, k) for k in in_list if k in pattrs}
             # FIXME: for non-value type: NOT check if input value consistentency, this might cause error
+            mdl_list = list(self.models.values())
+            type_list = [type(getattr(mdl, pname)) for mdl in mdl_list]
+            # type identical check
+            type_identical = all(x == type_list[0] for x in type_list)
+            if not type_identical:
+                logger.warning(f'Parameter {pname} has different types in the group.')
+            # NOTE: get the first model in the group
+            for mdl in self.models.values():
+                mdl0 = list(self.models.values())[0]
+                param = getattr(mdl0, pname)
+                pattrs = [attr for attr in dir(param) if not attr.startswith('_') and not callable(getattr(param, attr))]
+                pattr_kvs = {attr: getattr(param, attr) for attr in pattrs}
+                param_class = getattr(module, param.__class__.__name__)
+                # param_class = getattr(module, str())
+                signature = inspect.signature(param_class)
+                in_list = list(signature.parameters.keys())
+                in_dict = {k: getattr(param, k) for k in in_list if k in pattrs}
             # TODO: for value-type: modify v, vin, pu_coeff, n
-            logger.debug(f'define an {param_class} named {pname}')
-            logger.debug(f'input dict: {in_dict}')
+            # logger.debug(f'define an {param_class} named {pname}')
+            # logger.debug(f'input dict: {in_dict}')
             cparam = param_class(**in_dict)
             setattr(self, pname, cparam)
             self.params[pname] = cparam
