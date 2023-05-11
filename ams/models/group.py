@@ -28,6 +28,7 @@ class GroupBase(andes_GroupBase):
         super().__init__()
         self.params = OrderedDict()
         self.algebs = OrderedDict()
+        self.common_params.extend(('idx',))
 
     def combine(self):
         """
@@ -77,39 +78,51 @@ class StaticGen(GroupBase):
 
     def combine(self):
         """
-        Overwrite the combine function of the base class.
+        Overwrites the combine function of the base class.
+
+        Combines the common parameters and variables from the models within a group
+        and sets them as attributes of the group.
         """
-        pass
-        out = {}
-        module = importlib.import_module('andes.core.param')
-        for pname in self.common_params:
-            # FIXME: for non-value type: NOT check if input value consistentency, this might cause error
-            mdl_list = list(self.models.values())
-            type_list = [type(getattr(mdl, pname)) for mdl in mdl_list]
-            # type identical check
-            type_identical = all(x == type_list[0] for x in type_list)
-            if not type_identical:
-                logger.warning(f'Parameter {pname} has different types in the group.')
-            # NOTE: get the first model in the group
-            for mname, mdl in self.models.items():
-                param = getattr(mdl, pname)
-                pattrs = [attr for attr in dir(param) if not attr.startswith('_') and not callable(getattr(param, attr))]
-                type_list = [type(getattr(param, attr)) for attr in pattrs]
-                pattr_kvs = {attr: getattr(param, attr) for attr in pattrs}
-                param_class = getattr(module, param.__class__.__name__)
-                # param_class = getattr(module, str())
-                signature = inspect.signature(param_class)
-                in_list = list(signature.parameters.keys())
-                in_dict = {k: getattr(param, k) for k in in_list if k in pattrs}
-                # TODO: for value-type: modify v, vin, pu_coeff, n
-            # logger.debug(f'param: {pname}')
-            # logger.debug(f'pattrs: {pattrs}')
-            # logger.debug(f'type_list: {type_list}')
-            logger.debug(f'define an {param_class} named {pname}')
-            logger.debug(f'input dict: {in_dict}')
-            cparam = param_class(**in_dict)
-            setattr(self, pname, cparam)
-            self.params[pname] = cparam
+        # FIXME: this list is kind of hard-coded, improve it later on
+        varray_list = ['v', 'vin', 'pu_coeff']  # a list of attributes of an array that are np.ndarray
+        logger.debug(f'Combining {self.n} models {list(self.models.keys())} in group {self.class_name}')
+
+        mdl_list = list(self.models.values())
+
+        for param_name in self.common_params:
+            logger.debug(f'Combining Param {param_name}')
+
+            varray_dict = {}
+            for attr_name in varray_list:
+                varray_dict[attr_name] = {mdl.class_name: getattr(
+                    mdl, param_name).__dict__.get(attr_name) for mdl in mdl_list}
+
+            # --- Type Consistency Check ---
+            types = [type(getattr(model, param_name)) for model in mdl_list]
+            is_identical = all(x == types[0] for x in types)
+            if not is_identical:
+                logger.warning(f'Parameter {param_name} has different types within the group.')
+            # --- Type Consistency Check end ---
+
+            # loop through the models and collect the array attributes of the param
+            for mdl in mdl_list:
+                param = getattr(mdl, param_name)
+                for attr_name in varray_list:
+                    if hasattr(param, attr_name):
+                        varray_dict[attr_name][mdl.class_name] = getattr(param, attr_name)
+
+            # Filter out attributes that are not in the param
+            varray_dict_valid = OrderedDict((key, val)
+                                            for key, val in varray_dict.items() if key in param.__dict__)
+            out_dict = OrderedDict((key, np.hstack(list(val.values()))) for key, val in varray_dict_valid.items())
+            out_param = copy.copy(param)
+            for attr_name, attr_val in out_dict.items():
+                setattr(out_param, attr_name, attr_val)
+
+            # set the combined param as the group's attribute
+            setattr(self, param_name, out_param)
+            self.params[param_name] = out_param
+
 
 class ACLine(GroupBase):
     def __init__(self):
