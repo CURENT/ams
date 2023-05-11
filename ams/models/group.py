@@ -84,47 +84,49 @@ class StaticGen(GroupBase):
         Combines the common parameters and variables from the models within a group
         and sets them as attributes of the group.
         """
-        mdl_list = list(self.models.values())
+        
 
-        # FIXME: there is an issue that the alteration on group params will not be reflected on the model params
-        # --- combine the common parameters ---
-        # FIXME: this list is kind of hard-coded, improve it later on
-        param_attr_array_list = ['v', 'vin', 'pu_coeff']  # a list of attributes of an param that are np.ndarray
+        # mdl_list = list(self.models.values())
 
-        for param_name in self.common_params:
-            # logger.debug(f'Combining Param {param_name}')
+        # # FIXME: there is an issue that the alteration on group params will not be reflected on the model params
+        # # --- combine the common parameters ---
+        # # FIXME: this list is kind of hard-coded, improve it later on
+        # param_attr_array_list = ['v', 'vin', 'pu_coeff']  # a list of attributes of an param that are np.ndarray
 
-            varray_dict = {}
-            for attr_name in param_attr_array_list:
-                varray_dict[attr_name] = {mdl.class_name: getattr(
-                    mdl, param_name).__dict__.get(attr_name) for mdl in mdl_list}
+        # for param_name in self.common_params:
+        #     # logger.debug(f'Combining Param {param_name}')
 
-            # --- Type Consistency Check ---
-            types = [type(getattr(model, param_name)) for model in mdl_list]
-            is_identical = all(x == types[0] for x in types)
-            if not is_identical:
-                logger.warning(f'Parameter {param_name} has different types within the group.')
-            # --- Type Consistency Check end ---
+        #     varray_dict = {}
+        #     for attr_name in param_attr_array_list:
+        #         varray_dict[attr_name] = {mdl.class_name: getattr(
+        #             mdl, param_name).__dict__.get(attr_name) for mdl in mdl_list}
 
-            # loop through the models and collect the array attributes of the param
-            for mdl in mdl_list:
-                param = getattr(mdl, param_name)
-                for attr_name in param_attr_array_list:
-                    if hasattr(param, attr_name):
-                        varray_dict[attr_name][mdl.class_name] = getattr(param, attr_name)
+        #     # --- Type Consistency Check ---
+        #     types = [type(getattr(model, param_name)) for model in mdl_list]
+        #     is_identical = all(x == types[0] for x in types)
+        #     if not is_identical:
+        #         logger.warning(f'Parameter {param_name} has different types within the group.')
+        #     # --- Type Consistency Check end ---
 
-            # Filter out attributes that are not in the param
-            varray_dict_valid = OrderedDict((key, val)
-                                            for key, val in varray_dict.items() if key in param.__dict__)
-            out_dict = OrderedDict((key, np.concatenate(list(val.values()))) for key, val in varray_dict_valid.items())
-            logger.debug(f'out_dict {out_dict}')
-            out_param = copy.copy(param)
-            for attr_name, attr_val in out_dict.items():
-                setattr(out_param, attr_name, attr_val)
+        #     # loop through the models and collect the array attributes of the param
+        #     for mdl in mdl_list:
+        #         param = getattr(mdl, param_name)
+        #         for attr_name in param_attr_array_list:
+        #             if hasattr(param, attr_name):
+        #                 varray_dict[attr_name][mdl.class_name] = getattr(param, attr_name)
 
-            # set the combined param as the group's attribute
-            setattr(self, param_name, out_param)
-            self.params[param_name] = out_param
+        #     # Filter out attributes that are not in the param
+        #     varray_dict_valid = OrderedDict((key, val)
+        #                                     for key, val in varray_dict.items() if key in param.__dict__)
+        #     out_dict = OrderedDict((key, np.concatenate(list(val.values()))) for key, val in varray_dict_valid.items())
+        #     logger.debug(f'out_dict {out_dict}')
+        #     out_param = copy.copy(param)
+        #     for attr_name, attr_val in out_dict.items():
+        #         setattr(out_param, attr_name, attr_val)
+
+        #     # set the combined param as the group's attribute
+        #     setattr(self, param_name, out_param)
+        #     self.params[param_name] = out_param
 
         # --- combine the common variables ---
         # var_attr_array_list = ['v']  # a list of attributes of an var that are np.ndarray
