@@ -83,7 +83,7 @@ class BaseRoutine:
         self.syms = SymProcessor(self)  # symbolic processor
 
         # --- optimization modeling ---
-        self.om = OModel()
+        self.om = OModel(routine=self)
 
         if config is not None:
             self.config.load(config)

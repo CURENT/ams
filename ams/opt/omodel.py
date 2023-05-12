@@ -185,10 +185,26 @@ class OModel:
     Base class for optimization models.
     """
 
-    def __init__(self):
+    @property
+    def class_name(self):
+        """
+        Return the class name
+        """
+        return self.__class__.__name__
+
+    def __init__(self, routine=None):
         self.vars = OrderedDict()
         self.constrs = OrderedDict()
         self.obj = Objective()
+        self.routine = routine
+
+    def __repr__(self):
+        n_vars = len(self.vars)
+        n_constrs = len(self.constrs)
+        class_name = self.__class__.__name__
+        rtn_name = self.routine.__class__.__name__
+        repr_msg = f"Routine {rtn_name} {class_name}: {n_vars} vars, {n_constrs} constrs."
+        return repr_msg
 
     def init(self):
         pass
