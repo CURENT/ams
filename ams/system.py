@@ -24,7 +24,7 @@ from ams.models import file_classes
 from ams.routines import all_routines, algeb_models
 from ams.utils.paths import get_config_path
 from ams.core import Algeb
-from ams.opt.omodel import OAlgeb
+from ams.opt.omodel import OParam, OAlgeb
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +177,7 @@ class System(andes_System):
             # NOTE: the following code is not used in ANDES
             # NOTE: only models that includ algebs will be collected
                 for rname, rtn in self.routines.items():
-                    all_amdl = getattr(rtn, '_algeb_models')
+                    all_amdl = getattr(rtn, 'rtn_models')
                     for mdl_name in all_amdl:
                         mdl = getattr(self, mdl_name)
                         # NOTE: collecte all involved models into routines
@@ -271,15 +271,18 @@ class System(andes_System):
 
         # NOTE: Register algebraic variables from models as ``OAlgeb`` into routines and its ``oalgebs`` attribute.
         for rname, rtn in self.routines.items():
-            all_amdl = getattr(rtn, '_algeb_models')
-            for mdl_name in all_amdl:
+            mdl_dict = getattr(rtn, 'rtn_models')
+            for mdl_name in list(mdl_dict.keys()):
                 mdl = getattr(self, mdl_name)
+                # param_list = param_dict[mdl_name]
                 for aname, algeb in mdl.algebs.items():
                     oalgeb = OAlgeb(Algeb=algeb)
-                    oalgebs = getattr(rtn, 'oalgebs')  # the OrderedDict of RAgleb records in routine
-                    oalgebs[f'{aname}{mdl_name}'] = oalgeb  # register to OrderedDict ``oalgebs`` of routine
+                    rtn.oalgebs[f'{aname}{mdl_name}'] = oalgeb  # register to routine oalgebs dict
                     setattr(rtn, f'{aname}{mdl_name}', oalgeb)  # register as attribute to routine
-
+                for pname in mdl_dict[mdl_name]:
+                    oparam = OParam(Param=mdl.params[pname])
+                    rtn.oparams[f'{pname}{mdl_name}'] = oparam  # register to routine params dict
+                    # setattr(rtn, f'{pname}{mdl_name}', oparam)  # register as attribute to routine
         # NOTE: Register NumParam from models into system
         for mdl_name, mdl in self.models.items():
             nparams = getattr(mdl, 'num_params')

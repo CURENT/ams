@@ -10,7 +10,7 @@ from collections import OrderedDict
 import numpy as np
 
 from andes.core.common import Config
-from andes.core import NumParam
+from andes.core import BaseParam, DataParam, IdxParam, NumParam
 from andes.models.group import GroupBase
 
 from ams.core.var import Algeb
@@ -69,6 +69,43 @@ class OVar:
         return f'{self.name} ({self.n} {dev_text}) at {hex(id(self))}'
 
 
+class OParam:
+    """
+    Class for parameters in a routine.
+
+    This class is used to store the ``tex_name`` only.
+
+    Parameters:
+    -----------
+    Param : Union[BaseParam, DataParam, IdxParam, NumParam]
+        The parameter object associated with this OParam instance.
+
+    Attributes:
+    ------------
+    Param : Union[BaseParam, DataParam, IdxParam, NumParam]
+        The parameter object associated with this OParam instance.
+    name : str
+        The name of the parameter.
+    tex_name : str
+        The LaTeX representation of the parameter name, possibly including
+        additional information based on the owner.
+    """
+
+    def __init__(self,
+                 Param: Union[BaseParam, DataParam, IdxParam, NumParam],
+                 ) -> None:
+        self.Param = Param
+        self.name = Param.name
+
+        mname = Param.owner.class_name
+        if "_" in Param.tex_name:
+            tex_name_parts = Param.tex_name.split("_")
+            tex_name = tex_name_parts[0] + "_{" + f"{tex_name_parts[1]}, {mname}" + "}"
+        else:
+            tex_name = f'{Param.tex_name}_{{{mname}}}' if Param.tex_name else self.name
+        self.tex_name = tex_name
+
+
 class OAlgeb:
     """ 
     Class for algebraic variable in a routine.
@@ -91,9 +128,14 @@ class OAlgeb:
         self.unit = Algeb.unit
         self.type = np.float64 if self.unit == 'bool' else np.int64
 
-        tex_name = Algeb.tex_name
         mname = Algeb.owner.class_name
-        self.tex_name = f'{Algeb.tex_name}_{{{mname}}}' if tex_name else self.name
+        if "_" in Algeb.tex_name:
+            tex_name_parts = Algeb.tex_name.split("_")
+            tex_name = tex_name_parts[0] + "_{" + f"{tex_name_parts[1]}, {mname}" + "}"
+        else:
+            tex_name = f'{Algeb.tex_name}_{{{mname}}}' if Algeb.tex_name else self.name
+        self.tex_name = tex_name
+
         self.owner = Algeb.owner  # instance of the owner Model
         self.v = np.empty(self.owner.n)  # variable value
 
@@ -108,6 +150,8 @@ class OAlgebs:
     Class for algebraic variable in a routine.
 
     This class is an extension of ``OAlgeb`` that combines same ``Algeb`` from one group together.
+    
+    TODO: deprecate this class for now.
     """
 
     def __init__(self,
@@ -116,7 +160,7 @@ class OAlgebs:
                  info: Optional[str] = None,
                  unit: Optional[str] = None,
                  tex_name: Optional[str] = None,
-                 system: Optional = None,
+                 system = None,
                  ):
         self.AName = AName
         self.Group = Group
@@ -181,8 +225,20 @@ class Objective:
 
 
 class OModel:
-    """
+    r"""
     Base class for optimization models.
+
+    The optimziation problem is formulated as:
+
+    .. math::
+        \min_x \ & c^T x \\
+        \mbox{such that} \ & A_{ub} x \leq b_{ub},\\
+        & A_{eq} x = b_{eq},\\
+        & l \leq x \leq u ,
+
+    where :math:`x` is a vector of decision variables; :math:`c`,
+    :math:`b_{ub}`, :math:`b_{eq}`, :math:`l`, and :math:`u` are vectors; and
+    :math:`A_{ub}` and :math:`A_{eq}` are matrices.
     """
 
     @property

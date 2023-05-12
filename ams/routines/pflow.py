@@ -2,6 +2,7 @@
 Power flow routines.
 """
 import logging
+from collections import OrderedDict
 
 import numpy as np
 
@@ -23,7 +24,11 @@ class PFlow(BaseRoutine):
     def __init__(self, system=None, config=None):
         super().__init__(system, config)
         self.info = "AC Power flow"
-        self._algeb_models = ['Bus', 'PV', 'Slack']
+        self.rtn_models = OrderedDict([
+            ('Bus', ['vmax', 'vmin']),
+            ('Slack', ['pmax', 'pmin', 'qmax', 'qmin']),
+            ('PV', ['pmax', 'pmin', 'qmax', 'qmin']),
+        ])
 
     @timer
     def _solve(self, **kwargs):

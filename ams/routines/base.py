@@ -10,8 +10,6 @@ import numpy as np
 from andes.core import Config
 from andes.shared import deg2rad
 from andes.utils.misc import elapsed
-from ams.opt.constraint import Constraint
-from ams.opt.objective import Objective
 from ams.opt.omodel import OModel
 
 from ams.core.symprocessor import SymProcessor
@@ -76,10 +74,14 @@ class BaseRoutine:
         self.system = system
         self.config = Config(self.class_name)
         self.info = None
-        self._algeb_models = []  # list out involved models that include ``Algeb``
+        self.rtn_models = OrderedDict()  # list out involved models and parameters in a routine
         # NOTE: the following attributes are populated in ``System`` class
         self.models = OrderedDict()  # collect all involved devices
         self.oalgebs = OrderedDict()  # all routine algebraic variables
+        self.oparams = OrderedDict()  # all routine parameters
+        self.tex_names = OrderedDict((('sys_f', 'f_{sys}'),
+                                      ('sys_mva', 'S_{b,sys}'),
+                                      ))
         self.syms = SymProcessor(self)  # symbolic processor
 
         # --- optimization modeling ---
