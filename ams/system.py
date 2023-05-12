@@ -2,6 +2,7 @@
 Module for system.
 """
 import configparser
+import copy
 import importlib
 import inspect
 import logging
@@ -22,6 +23,7 @@ from ams.models.group import GroupBase
 from ams.models import file_classes
 from ams.routines import all_routines, algeb_models
 from ams.utils.paths import get_config_path
+from ams.core import Algeb
 from ams.opt.omodel import OAlgeb
 
 logger = logging.getLogger(__name__)
@@ -176,10 +178,10 @@ class System(andes_System):
             # NOTE: only models that includ algebs will be collected
                 for rname, rtn in self.routines.items():
                     all_amdl = getattr(rtn, '_algeb_models')
-                    for mname in all_amdl:
-                        mdl = getattr(self, mname)
+                    for mdl_name in all_amdl:
+                        mdl = getattr(self, mdl_name)
                         # NOTE: collecte all involved models into routines
-                        rtn.models[mname] = mdl
+                        rtn.models[mdl_name] = mdl
                         # NOTE: collecte all algebraic variables from all involved models into routines
                         for name, algeb in mdl.algebs.items():
                             algeb.owner = mdl  # set owner of algebraic variables
@@ -270,19 +272,19 @@ class System(andes_System):
         # NOTE: Register algebraic variables from models as ``OAlgeb`` into routines and its ``oalgebs`` attribute.
         for rname, rtn in self.routines.items():
             all_amdl = getattr(rtn, '_algeb_models')
-            for mname in all_amdl:
-                mdl = getattr(self, mname)
+            for mdl_name in all_amdl:
+                mdl = getattr(self, mdl_name)
                 for aname, algeb in mdl.algebs.items():
                     oalgeb = OAlgeb(Algeb=algeb)
                     oalgebs = getattr(rtn, 'oalgebs')  # the OrderedDict of RAgleb records in routine
-                    oalgebs[f'{aname}{mname}'] = oalgeb  # register to OrderedDict ``oalgebs`` of routine
-                    setattr(rtn, f'{aname}{mname}', oalgeb)  # register as attribute to routine
+                    oalgebs[f'{aname}{mdl_name}'] = oalgeb  # register to OrderedDict ``oalgebs`` of routine
+                    setattr(rtn, f'{aname}{mdl_name}', oalgeb)  # register as attribute to routine
 
         # NOTE: Register NumParam from models into system
-        for mname, mdl in self.models.items():
+        for mdl_name, mdl in self.models.items():
             nparams = getattr(mdl, 'num_params')
-            for npname, np in nparams.items():
-                symbol_str = f'{npname}{mname}'
+            for nparam_name, np in nparams.items():
+                symbol_str = f'{nparam_name}{mdl_name}'
                 self.nparams[symbol_str] = np
                 self.npdict[symbol_str] = sp.Symbol(symbol_str)
 

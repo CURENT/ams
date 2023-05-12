@@ -10,7 +10,6 @@ import numpy as np
 from andes.core import Config
 from andes.shared import deg2rad
 from andes.utils.misc import elapsed
-from ams.opt.ovar import OVar
 from ams.opt.constraint import Constraint
 from ams.opt.objective import Objective
 from ams.opt.omodel import OModel
