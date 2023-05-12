@@ -27,13 +27,29 @@ class Algeb:
         self.tex_name = tex_name if tex_name else name
         self.owner = None  # instance of the owner Model
         self.id = None     # variable internal index inside a model (assigned in run time)
-        self.v = np.empty(0)  # variable value
+
+        # TODO: set a
+        # address into the variable and equation arrays (dae.f/dae.g and dae.x/dae.y)
+        self.a: np.ndarray = np.array([], dtype=int)
+
+        self.v: np.ndarray = np.array([], dtype=float)  # variable value array
 
     def __repr__(self):
-        n = self.owner.n
-        dev_text = 'Algeb' if n == 1 else 'Algebs'
-        return f'{self.owner.class_name}.{self.name} ({n} {dev_text}) at {hex(id(self))}'
+        if self.owner.n == 0:
+            span = []
 
+        elif 1 <= self.owner.n <= 20:
+            span = f'a={self.a}, v={self.v}'
+
+        else:
+            span = []
+            span.append(self.a[0])
+            span.append(self.a[-1])
+            span.append(self.a[1] - self.a[0])
+            span = ':'.join([str(i) for i in span])
+            span = 'a=[' + span + ']'
+
+        return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}, {span}'
 
 class GAlgeb(Algeb):
     """

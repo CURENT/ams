@@ -147,10 +147,10 @@ class PVModel(Model):
                               err_tol=r"\epsilon_{tol}"
                               )
 
-        self.ud = Algeb(name='ud',
-                        tex_name=r'u_d',
-                        info='connection status decision',
+        self.ud = Algeb(info='connection status decision',
                         unit='bool',
+                        tex_name=r'u_d',
+                        name='ud',
                         )
         self.p = Algeb(info='actual active power generation',
                        unit='p.u.',
