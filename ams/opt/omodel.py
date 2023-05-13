@@ -227,7 +227,6 @@ class Objective:
 class OModel:
     r"""
     Base class for optimization models.
-
     The optimziation problem is formulated as:
 
     .. math::
@@ -239,6 +238,8 @@ class OModel:
     where :math:`x` is a vector of decision variables; :math:`c`,
     :math:`b_{ub}`, :math:`b_{eq}`, :math:`l`, and :math:`u` are vectors; and
     :math:`A_{ub}` and :math:`A_{eq}` are matrices.
+
+    # TODO: include integrality parameters.
     """
 
     @property
