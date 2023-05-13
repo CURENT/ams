@@ -1,5 +1,10 @@
 # Development log
 
+### 2023-05-12
+
+* Draft ``Development`` chapter in documentation
+* Collect part of parameters into routiens
+
 ### 2023-03-03
 
 * Add ``v`` to ``Algeb``
