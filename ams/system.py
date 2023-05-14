@@ -300,6 +300,7 @@ class System(andes_System):
         # NOTE: Set up om for all routines
         for rname, rtn in self.routines.items():
             rtn.setup_om()
+            # TODO: maybe setup numrical arrays here? [rtn.c, Aub, Aeq ...]
 
         _, s = elapsed(t0)
         logger.info('System set up in %s.', s)

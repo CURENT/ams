@@ -240,6 +240,27 @@ class OModel:
     :math:`A_{ub}` and :math:`A_{eq}` are matrices.
 
     # TODO: include integrality parameters.
+
+    The defined arrays and descriptions are as follows:
+
+    +-----------+---------------------------------------------+
+    |   Array   |                 Description                 |
+    +===========+=============================================+
+    |     c     | Array for decision variable coefficients    |
+    +-----------+---------------------------------------------+
+    |    Aub    | Array for inequality coefficients           |
+    +-----------+---------------------------------------------+
+    |    Aeq    | Array for equality coefficients             |
+    +-----------+---------------------------------------------+
+    |    bub    | Array for inequality upper bounds           |
+    +-----------+---------------------------------------------+
+    |    beq    | Array for equality bounds                   |
+    +-----------+---------------------------------------------+
+    |     lb    | Array for decision variable lower bounds    |
+    +-----------+---------------------------------------------+
+    |     ub    | Array for decision variable upper bounds    |
+    +-----------+---------------------------------------------+
+
     """
 
     @property
@@ -254,6 +275,11 @@ class OModel:
         self.constrs = OrderedDict()
         self.obj = Objective()
         self.routine = routine
+
+        self.c = np.array([])
+        self.Aub, self.Aeq = np.array([]), np.array([])
+        self.bub, self.beq = np.array([]), np.array([])
+        self.lb, self.ub = np.array([]), np.array([])
 
     def __repr__(self):
         n_vars = len(self.vars)
