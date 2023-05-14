@@ -31,12 +31,12 @@ class PFlow(BaseRoutine):
         ])
 
     @timer
-    def _solve(self, **kwargs):
+    def solve(self, **kwargs):
         ppc = system2ppc(self.system)
         res, success = runpf(ppc, **kwargs)
         return ppc, success
     
-    def _unpack(self, ppc):
+    def unpack(self, ppc):
         """
         Unpack results from ppc to system.
         """
@@ -61,7 +61,7 @@ class PFlow(BaseRoutine):
         """
         Run power flow.
         """
-        (ppc, success), elapsed_time = self._solve(**kwargs)
+        (ppc, success), elapsed_time = self.solve(**kwargs)
         self.exit_code = int(not success)
         if success:
             info = f'{self.class_name} completed in {elapsed_time} seconds with exit code {self.exit_code}.'
@@ -69,7 +69,7 @@ class PFlow(BaseRoutine):
             info = f'{self.class_name} failed in {elapsed_time} seconds with exit code {self.exit_code}.'
         logger.info(info)
         self.exec_time = float(elapsed_time.split(' ')[0])
-        self._unpack(ppc)
+        self.unpack(ppc)
         return self.exit_code
 
     def summary(self, **kwargs):

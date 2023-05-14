@@ -130,13 +130,13 @@ class BaseRoutine:
         pass
 
     @timer
-    def _solve(self, **kwargs):
+    def solve(self, **kwargs):
         """
         Solve the routine.
         """
         return None
 
-    def _unpack(self, **kwargs):
+    def unpack(self, **kwargs):
         """
         Unpack the results.
         """
@@ -146,8 +146,8 @@ class BaseRoutine:
         """
         Routine the routine.
         """
-        _, elapsed_time = self._solve(**kwargs)
-        self._unpack(**kwargs)
+        _, elapsed_time = self.solve(**kwargs)
+        self.unpack(**kwargs)
         info = f"{self.class_name} completed in {elapsed_time} with exit code {self.exit_code}."
         logger.info(info)
         return self.exit_code
