@@ -95,7 +95,7 @@ class OParam:
                  Param: Union[BaseParam, DataParam, IdxParam, NumParam],
                  ) -> None:
         self.Param = Param
-        self.name = Param.name
+        self.name = Param.name + Param.owner.class_name
 
         mname = Param.owner.class_name
         if "_" in Param.tex_name:
