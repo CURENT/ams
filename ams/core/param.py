@@ -5,7 +5,7 @@ Base class for parameters.
 
 import logging
 
-from typing import Optional, Union
+from typing import Callable, Iterable, List, Optional, Tuple, Type, Union
 from collections import OrderedDict
 
 import numpy as np
@@ -29,12 +29,20 @@ class RParam:
     """
 
     def __init__(self,
-                 group: Optional[GroupBase] = None,
-                 **kwargs):
-        # Initialize the parent classes dynamically based on their type
-        for parent_class in RParam.__bases__:
-            if issubclass(RParam, parent_class):
-                parent_class.__init__(self, **kwargs)
+                 name: Optional[str] = None,
+                 tex_name: Optional[str] = None,
+                 info: Optional[str] = None,
+                 unit: Optional[str] = None,
+                 is_group: Optional[bool] = False,
+                 group_name: Optional[str] = None,
+                 ):
 
-        # Set the group attribute
-        self.group = group
+        self.name = name
+        self.tex_name = tex_name if (tex_name is not None) else name
+        self.info = info
+        self.unit = unit
+        self.is_group = is_group
+        if is_group and not group_name:
+            raise ValueError('A group name is required if is_group is True.')
+        self.group_name = group_name  # indicate if this variable is a group variable
+        self.group = None  # instance of the owner group

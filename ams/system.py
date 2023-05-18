@@ -155,6 +155,24 @@ class System(andes_System):
         for gname, grp in self.groups.items():
             grp.summarize()
 
+    def _collect_group_data(self, items, common_vars_name):
+        for item_name, item in items.items():
+            if not item.is_group:
+                continue
+
+            group_name = item.group_name
+            if group_name not in self.groups.keys():
+                msg = f'{item.__class__.__name__} {item.name} in routine {item_name} is not in group {group_name}. Likely a modeling error.'
+                logger.warning(msg)
+                continue
+
+            group = self.groups[group_name]
+            if item.name not in getattr(group, common_vars_name):
+                msg = f'{item.__class__.__name__} {item.name} is not a common in group {group_name}. Likely a modeling error.'
+                logger.warning(msg)
+
+            item.group = group
+
     def import_routines(self):
         """
         Import routines as defined in ``routines/__init__.py``.
@@ -177,25 +195,15 @@ class System(andes_System):
             # NOTE: the following code is not used in ANDES
             # NOTE: only models that includ algebs will be collected
                 for rname, rtn in self.routines.items():
-                    # --- collect part ---
+                    # Collect ralgebs
                     ralgebs = getattr(rtn, 'ralgebs')
-                    for raname, ralgeb in ralgebs.items():
-                        if not ralgeb.is_group:
-                            continue
+                    self._collect_group_data(ralgebs, 'common_vars')
 
-                        grp_name = ralgeb.group_name
-                        if grp_name not in self.groups.keys():
-                            msg = f'Variable {raname} in routine {rname} is not in group {grp_name}. Likely a modeling error.'
-                            logger.warning(msg)
-                            continue
+                    # Collect rparams
+                    rparams = getattr(rtn, 'rparams')
+                    self._collect_group_data(rparams, 'common_params')
 
-                        group = self.groups[grp_name]
-                        if ralgeb.name not in group.common_vars:
-                            msg = f'Variable {ralgeb.name} is not in group {grp_name} common vars. Likely a modeling error.'
-                            logger.warning(msg)
-                        
-                        ralgeb.group = self.groups[ralgeb.group_name]
-                    # --- tobe deleted part ---
+                    # --- to be deleted part ---
                     # FIXME: temp solution, adapt to new routine later on
                     all_amdl = getattr(rtn, 'rtn_models')
                     for mdl_name in all_amdl:
