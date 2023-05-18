@@ -144,8 +144,18 @@ class OModel:
         """
         return self.__class__.__name__
 
-    def __init__(self, routine=None):
+    def __init__(self, routine):
         self.routine = routine
+
+        # self._array_and_counter = {
+        #     'c': 'n',  # decision variables
+        #     'Aub': 'n',  # inequality LHS
+        #     'Aeq': 'm',  # equality LHS
+        #     'bub': 'm',  # inequality RHS
+        #     'beq': 'o',  # equality RHS
+        #     'lb': 'n',  # decision variables lower bounds
+        #     'ub': 'n',  # decision variables upper bounds
+        # }
 
         self.c = np.array([])
         self.Aub, self.Aeq = np.array([]), np.array([])
@@ -157,6 +167,5 @@ class OModel:
         Setup the numerical optimziation formulation from symbolic disaptch model.
         """
         pass
-        # loop self.vars
         # loop self.constrs
         # build self.objective

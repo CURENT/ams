@@ -190,6 +190,7 @@ class System(andes_System):
                     ralgebs = getattr(rtn, 'ralgebs')
                     self._collect_group_data(ralgebs)
                     # setup numerical optimziation model
+                    # TODO: substitute symbolic expressions with numerical ones
 
     def import_groups(self):
         """

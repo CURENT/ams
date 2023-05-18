@@ -74,21 +74,24 @@ class SymProcessor:
         # process tex_names defined in routines
         # -----------------------------------------------------------
         for key in self.parent.tex_names.keys():
-            self.tex_names[key] = sp.Symbol(self.parent.tex_names[key])
+            self.tex_names[key] = sp.symbols(self.parent.tex_names[key])
 
         # RParams
         for rname, rparam in self.parent.rparams.items():
-            self.inputs_dict[rname] = sp.Symbol(rparam.name)
+            tmp = sp.symbols(f'{rparam.name}:{rparam.owner.n}')
+            self.inputs_dict[rname] = tmp
+            logger.debug(f"Var {rname}'s size {rparam.owner.n}")
 
         # RAlgebs
         for rname, ralgeb in self.parent.ralgebs.items():
-            tmp = sp.Symbol(ralgeb.name)
+            tmp = sp.symbols(f'{ralgeb.name}:{ralgeb.owner.n}')
+            # tmp = sp.symbols(ralgeb.name)
             self.vars_dict[rname] = tmp
             self.inputs_dict[rname] = tmp
 
         # store tex names defined in `self.config`
         for key in self.config.as_dict():
-            tmp = sp.Symbol(key)
+            tmp = sp.symbols(key)
             self.inputs_dict[key] = tmp
             if key in self.config.tex_names:
                 self.tex_names[tmp] = sp.Symbol(self.config.tex_names[key])
@@ -96,11 +99,11 @@ class SymProcessor:
         # store tex names for pretty printing replacement later
         for var in self.inputs_dict:
             if var in self.parent.__dict__ and self.parent.__dict__[var].tex_name is not None:
-                self.tex_names[sp.Symbol(var)] = sp.Symbol(self.parent.__dict__[var].tex_name)
+                self.tex_names[sp.symbols(var)] = sp.symbols(self.parent.__dict__[var].tex_name)
 
         # additional variables by conventions that are defined in ``BaseRoutine``
-        self.inputs_dict['sys_f'] = sp.Symbol('sys_f')
-        self.inputs_dict['sys_mva'] = sp.Symbol('sys_mva')
+        self.inputs_dict['sys_f'] = sp.symbols('sys_f')
+        self.inputs_dict['sys_mva'] = sp.symbols('sys_mva')
 
         self.vars_list = list(self.vars_dict.values())  # useful for ``.jacobian()``
 
