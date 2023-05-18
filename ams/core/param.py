@@ -33,16 +33,13 @@ class RParam:
                  tex_name: Optional[str] = None,
                  info: Optional[str] = None,
                  unit: Optional[str] = None,
-                 is_group: Optional[bool] = False,
-                 group_name: Optional[str] = None,
+                 owner_name: Optional[str] = None,
                  ):
 
         self.name = name
         self.tex_name = tex_name if (tex_name is not None) else name
         self.info = info
         self.unit = unit
-        self.is_group = is_group
-        if is_group and not group_name:
-            raise ValueError('A group name is required if is_group is True.')
-        self.group_name = group_name  # indicate if this variable is a group variable
-        self.group = None  # instance of the owner group
+        self.is_group = False
+        self.owner_name = owner_name  # indicate if this variable is a group variable
+        self.owner = None  # instance of the owner model or group

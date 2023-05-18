@@ -93,15 +93,16 @@ class RAlgeb(Algeb):
                  tex_name: Optional[str] = None,
                  info: Optional[str] = None,
                  unit: Optional[str] = None,
-                 is_group: Optional[bool] = False,
-                 group_name: Optional[str] = None,
+                 owner_name: Optional[str] = None,
+                 lb: Optional[str] = None,
+                 ub: Optional[str] = None,
                  ):
         super().__init__(name=name, tex_name=tex_name, info=info, unit=unit)
-        self.is_group = is_group
-        if is_group and not group_name:
-            raise ValueError('A group name is required if is_group is True.')
-        self.group_name = group_name  # indicate if this variable is a group variable
-        self.group = None  # instance of the owner group
+        self.is_group = False
+        self.owner_name = owner_name  # indicate if this variable is a group variable
+        self.owner = None  # instance of the owner model or group
+        self.lb = lb
+        self.ub = ub
         self.id = None     # variable internal index inside a model (assigned in run time)
 
         # TODO: set a
@@ -111,10 +112,10 @@ class RAlgeb(Algeb):
         self.v: np.ndarray = np.array([], dtype=float)  # variable value array
 
     def __repr__(self):
-        if self.group.n == 0:
+        if self.owner.n == 0:
             span = []
 
-        elif 1 <= self.group.n <= 20:
+        elif 1 <= self.owner.n <= 20:
             span = f'a={self.a}, v={self.v}'
 
         else:
@@ -125,4 +126,4 @@ class RAlgeb(Algeb):
             span = ':'.join([str(i) for i in span])
             span = 'a=[' + span + ']'
 
-        return f'{self.__class__.__name__}: {self.group.__class__.__name__}.{self.name}, {span}'
+        return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}, {span}'

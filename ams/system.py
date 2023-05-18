@@ -24,7 +24,7 @@ from ams.models import file_classes
 from ams.routines import all_routines, algeb_models
 from ams.utils.paths import get_config_path
 from ams.core import Algeb
-from ams.opt.omodel import OParam, OAlgeb
+from ams.opt.omodel import Var
 
 logger = logging.getLogger(__name__)
 
@@ -85,8 +85,6 @@ class System(andes_System):
         self.model_aliases = OrderedDict()   # alias: model instance
         self.groups = OrderedDict()          # group names and instances
         self.routines = OrderedDict()        # routine names and instances
-        self.nparams = OrderedDict()        # NumParam names and instances
-        self.npdict = OrderedDict()
         # TODO: there should be an exit_code for each routine
         self.exit_code = 0                   # command-line exit code, 0 - normal, others - error.
 
@@ -155,23 +153,14 @@ class System(andes_System):
         for gname, grp in self.groups.items():
             grp.summarize()
 
-    def _collect_group_data(self, items, common_vars_name):
+    def _collect_group_data(self, items):
         for item_name, item in items.items():
-            if not item.is_group:
-                continue
-
-            group_name = item.group_name
-            if group_name not in self.groups.keys():
-                msg = f'{item.__class__.__name__} {item.name} in routine {item_name} is not in group {group_name}. Likely a modeling error.'
-                logger.warning(msg)
-                continue
-
-            group = self.groups[group_name]
-            if item.name not in getattr(group, common_vars_name):
-                msg = f'{item.__class__.__name__} {item.name} is not a common in group {group_name}. Likely a modeling error.'
-                logger.warning(msg)
-
-            item.group = group
+            # logger.debug(f'RVar {item_name} has owner {item.owner_name} in size {item.owner.n}')
+            if item.owner_name in self.groups.keys():
+                item.is_group = True
+                item.owner = self.groups[item.owner_name]
+            elif item.owner_name in self.models.keys():
+                item.owner = self.models[item.owner_name]
 
     def import_routines(self):
         """
@@ -192,27 +181,15 @@ class System(andes_System):
                 self.__dict__[attr_name] = the_class(system=self, config=self._config_object)
                 self.routines[attr_name] = self.__dict__[attr_name]
                 self.routines[attr_name].config.check()
-            # NOTE: the following code is not used in ANDES
-            # NOTE: only models that includ algebs will be collected
+                # NOTE: the following code is not used in ANDES
                 for rname, rtn in self.routines.items():
-                    # Collect ralgebs
-                    ralgebs = getattr(rtn, 'ralgebs')
-                    self._collect_group_data(ralgebs, 'common_vars')
-
                     # Collect rparams
                     rparams = getattr(rtn, 'rparams')
-                    self._collect_group_data(rparams, 'common_params')
-
-                    # --- to be deleted part ---
-                    # FIXME: temp solution, adapt to new routine later on
-                    all_amdl = getattr(rtn, 'rtn_models')
-                    for mdl_name in all_amdl:
-                        mdl = getattr(self, mdl_name)
-                        # NOTE: collecte all involved models into routines
-                        rtn.models[mdl_name] = mdl
-                        # NOTE: collecte all algebraic variables from all involved models into routines
-                        for name, algeb in mdl.algebs.items():
-                            algeb.owner = mdl  # set owner of algebraic variables
+                    self._collect_group_data(rparams)
+                    # Collect ralgebs
+                    ralgebs = getattr(rtn, 'ralgebs')
+                    self._collect_group_data(ralgebs)
+                    # setup numerical optimziation model
 
     def import_groups(self):
         """
@@ -296,28 +273,6 @@ class System(andes_System):
         else:
             logger.error("System setup failed. Please resolve the reported issue(s).")
             self.exit_code += 1
-
-        # NOTE: Register algebraic variables from models as ``OAlgeb`` into routines and its ``oalgebs`` attribute.
-        for rname, rtn in self.routines.items():
-            mdl_dict = getattr(rtn, 'rtn_models')
-            for mdl_name in list(mdl_dict.keys()):
-                mdl = getattr(self, mdl_name)
-                # param_list = param_dict[mdl_name]
-                for aname, algeb in mdl.algebs.items():
-                    oalgeb = OAlgeb(Algeb=algeb)
-                    rtn.oalgebs[f'{aname}{mdl_name}'] = oalgeb  # register to routine oalgebs dict
-                    setattr(rtn, f'{aname}{mdl_name}', oalgeb)  # register as attribute to routine
-                for pname in mdl_dict[mdl_name]:
-                    oparam = OParam(Param=mdl.params[pname])
-                    rtn.oparams[f'{pname}{mdl_name}'] = oparam  # register to routine params dict
-                    # setattr(rtn, f'{pname}{mdl_name}', oparam)  # register as attribute to routine
-        # NOTE: Register NumParam from models into system
-        for mdl_name, mdl in self.models.items():
-            nparams = getattr(mdl, 'num_params')
-            for nparam_name, np in nparams.items():
-                symbol_str = f'{nparam_name}{mdl_name}'
-                self.nparams[symbol_str] = np
-                self.npdict[symbol_str] = sp.Symbol(symbol_str)
 
         # NOTE: Special deal with StaticGen p, q
         _combined_group = ['StaticGen']
