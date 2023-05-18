@@ -177,6 +177,26 @@ class System(andes_System):
             # NOTE: the following code is not used in ANDES
             # NOTE: only models that includ algebs will be collected
                 for rname, rtn in self.routines.items():
+                    # --- collect part ---
+                    ralgebs = getattr(rtn, 'ralgebs')
+                    for raname, ralgeb in ralgebs.items():
+                        if not ralgeb.is_group:
+                            continue
+
+                        grp_name = ralgeb.group_name
+                        if grp_name not in self.groups.keys():
+                            msg = f'Variable {raname} in routine {rname} is not in group {grp_name}. Likely a modeling error.'
+                            logger.warning(msg)
+                            continue
+
+                        group = self.groups[grp_name]
+                        if ralgeb.name not in group.common_vars:
+                            msg = f'Variable {ralgeb.name} is not in group {grp_name} common vars. Likely a modeling error.'
+                            logger.warning(msg)
+                        
+                        ralgeb.group = self.groups[ralgeb.group_name]
+                    # --- tobe deleted part ---
+                    # FIXME: temp solution, adapt to new routine later on
                     all_amdl = getattr(rtn, 'rtn_models')
                     for mdl_name in all_amdl:
                         mdl = getattr(self, mdl_name)

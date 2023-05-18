@@ -51,11 +51,41 @@ class Algeb:
 
         return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}, {span}'
 
-class GAlgeb(Algeb):
+class RAlgeb(Algeb):
     """
-    Group Algebraic variable class.
+    Class for algebraic variables used in a routine.
 
     Extends ``Algeb`` to adapt to group algebraic variables.
+
+    Parameters
+    ----------
+    info : str, optional
+        Descriptive information
+    unit : str, optional
+        Unit
+    tex_name : str
+        LaTeX-formatted variable symbol. If is None, the value of `name` will be
+        used.
+    discrete : Discrete
+        Discrete component on which this variable depends. ANDES will call
+        `check_var()` of the discrete component before initializing this
+        variable.
+    name : str, optional
+        Variable name. One should typically assigning the name directly because
+        it will be automatically assigned by the model. The value of ``name``
+        will be the symbol name to be used in expressions.
+    is_group : bool, optional
+        Indicate if this variable is a group variable. If True, `group_name`
+        must be provided.
+    group_name : str, optional
+        Name of the group. Must be provided if `is_group` is True.
+    
+    Attributes
+    ----------
+    a : array-like
+        variable address
+    v : array-like
+        local-storage of the variable value
     """
 
     def __init__(self,
@@ -63,13 +93,36 @@ class GAlgeb(Algeb):
                  tex_name: Optional[str] = None,
                  info: Optional[str] = None,
                  unit: Optional[str] = None,
+                 is_group: Optional[bool] = False,
+                 group_name: Optional[str] = None,
                  ):
         super().__init__(name=name, tex_name=tex_name, info=info, unit=unit)
+        self.is_group = is_group
+        if is_group and not group_name:
+            raise ValueError('A group name is required if is_group is True.')
+        self.group_name = group_name  # indicate if this variable is a group variable
+        self.group = None  # instance of the owner group
+        self.id = None     # variable internal index inside a model (assigned in run time)
 
-        self.tex_name = tex_name if tex_name else name
-        self.owner = None  # instance of the owner group
+        # TODO: set a
+        # address into the variable and equation arrays (dae.f/dae.g and dae.x/dae.y)
+        self.a: np.ndarray = np.array([], dtype=int)
+
+        self.v: np.ndarray = np.array([], dtype=float)  # variable value array
 
     def __repr__(self):
-        n = self.owner.n
-        dev_text = 'Algeb' if n == 1 else 'Algebs'
-        return f'{self.owner.class_name}.{self.name} ({n} {dev_text}) at {hex(id(self))}'
+        if self.group.n == 0:
+            span = []
+
+        elif 1 <= self.group.n <= 20:
+            span = f'a={self.a}, v={self.v}'
+
+        else:
+            span = []
+            span.append(self.a[0])
+            span.append(self.a[-1])
+            span.append(self.a[1] - self.a[0])
+            span = ':'.join([str(i) for i in span])
+            span = 'a=[' + span + ']'
+
+        return f'{self.__class__.__name__}: {self.group.__class__.__name__}.{self.name}, {span}'

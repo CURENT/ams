@@ -23,6 +23,7 @@ class PFlow(BaseRoutine):
 
     def __init__(self, system=None, config=None):
         super().__init__(system, config)
+        self.ralgebs = OrderedDict()  # FIXME: temp solution, adapt to new routine later on
         self.info = "AC Power flow"
         self.rtn_models = OrderedDict([
             ('Bus', ['vmax', 'vmin']),

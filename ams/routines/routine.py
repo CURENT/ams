@@ -8,6 +8,7 @@ from collections import OrderedDict  # NOQA
 import numpy as np
 
 from andes.core import Config
+from ams.core.var import RAlgeb
 from andes.shared import deg2rad
 from andes.utils.misc import elapsed
 from ams.opt.omodel import OModel
@@ -34,6 +35,37 @@ class Routine:
         self.system = system 
         self.config = Config(self.class_name)
         self.rtn_models = OrderedDict()  # list out involved models and parameters in a routine
+        self.ralgebs = OrderedDict()  # list out RAlgebs in a routine
+
+    def __setattr__(self, key, value):
+        """
+        Overload the setattr function to register attributes.
+
+        Parameters
+        ----------
+        key : str
+            name of the attribute
+        value : [Algeb]
+            value of the attribute
+        """
+
+        # store the variable declaration order
+        if isinstance(value, RAlgeb):
+            value.id = len(self.ralgebs)  # NOT in use yet
+        self._register_attribute(key, value)
+
+        super(Routine, self).__setattr__(key, value)
+
+    def _register_attribute(self, key, value):
+        """
+        Register a pair of attributes to the model instance.
+
+        Called within ``__setattr__``, this is where the magic happens.
+        Subclass attributes are automatically registered based on the variable type.
+        Block attributes will be exported and registered recursively.
+        """
+        if isinstance(value, RAlgeb):
+            self.ralgebs[key] = value
 
     @property
     def class_name(self):

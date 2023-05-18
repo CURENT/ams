@@ -8,7 +8,7 @@ import numpy as np
 
 from andes.models.group import GroupBase as andes_GroupBase
 
-from ams.core.var import Algeb, GAlgeb
+from ams.core.var import Algeb
 
 logger = logging.getLogger(__name__)
 
