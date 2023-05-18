@@ -20,13 +20,23 @@ class DCOPFData(RoutineData):
 
     def __init__(self):
         RoutineData.__init__(self)
-        self.p0 = RParam(info="active power set point in system base",
-                         tex_name=r'p_0',
-                         name='p0',
-                         unit='p.u.',
-                         is_group=True,
-                         group_name='StaticGen',
+        # --- generator cost ---
+        self.c2 = RParam(info='Gen cost coefficient 2',
+                         tex_name=r'c_{2}',
+                         unit=r'$/MW (MVar)',
+                         is_group=False,
                          )
+        self.c1 = RParam(info='Gen cost coefficient 1',
+                         tex_name=r'c_{1}',
+                         unit=r'$/MW (MVar)',
+                         is_group=False,
+                         )
+        self.c0 = RParam(info='Gen cost coefficient 0',
+                         tex_name=r'c_{0}',
+                         unit=r'$/MW (MVar)',
+                         is_group=False,
+                         )
+        # --- generator output ---
         self.p = RAlgeb(info='actual active power generation',
                         unit='p.u.',
                         tex_name=r'p_{g}',
@@ -34,13 +44,15 @@ class DCOPFData(RoutineData):
                         is_group=True,
                         group_name='StaticGen',
                         )
-        self.q = RAlgeb(info='actual reactive power generation',
-                        unit='p.u.',
-                        tex_name=r'q_{g}',
-                        name='q',
-                        is_group=True,
-                        group_name='StaticGen',
-                        )
+        # --- load ---
+        self.pd = RParam(info='active power load in system base',
+                         tex_name=r'p_{d}',
+                         unit='p.u.',
+                         )
+        # --- line ---
+        self.rate_a = RParam(info='long-term flow limit flow limit',
+                          tex_name=r'R_{ATEA}',
+                          unit='MVA')
 
 
 class DCOPFModel(Routine):

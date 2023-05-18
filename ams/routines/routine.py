@@ -36,6 +36,33 @@ class Routine:
         self.config = Config(self.class_name)
         self.rtn_models = OrderedDict()  # list out involved models and parameters in a routine
 
+        self.tex_names = OrderedDict((('sys_f', 'f_{sys}'),
+                                      ('sys_mva', 'S_{b,sys}'),
+                                      ))
+        self.syms = SymProcessor(self)  # symbolic processor
+
+        # --- optimization modeling ---
+        self.om = OModel(routine=self)
+
+        if config is not None:
+            self.config.load(config)
+        # TODO: these default configs might to be revised
+        self.config.add(OrderedDict((('sparselib', 'klu'),
+                                     ('linsolve', 0),
+                                     )))
+        self.config.add_extra("_help",
+                              sparselib="linear sparse solver name",
+                              linsolve="solve symbolic factorization each step (enable when KLU segfaults)",
+                              )
+        self.config.add_extra("_alt",
+                              sparselib=("klu", "umfpack", "spsolve", "cupy"),
+                              linsolve=(0, 1),
+                              )
+
+        self.exec_time = 0.0  # recorded time to execute the routine in seconds
+        # TODO: check exit_code of gurobipy or any other similiar solvers
+        self.exit_code = 0  # exit code of the routine; 1 for successs
+
     @property
     def class_name(self):
         return self.__class__.__name__
