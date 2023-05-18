@@ -76,15 +76,15 @@ class SymProcessor:
         for key in self.parent.tex_names.keys():
             self.tex_names[key] = sp.Symbol(self.parent.tex_names[key])
 
-        # OAlgebs
-        for oname, ovar in self.parent.oalgebs.items():
-            self.inputs_dict[oname] = sp.Symbol(ovar.name)
+        # RParams
+        for rname, rparam in self.parent.rparams.items():
+            self.inputs_dict[rname] = sp.Symbol(rparam.name)
 
-        # OParams
-        for oname, oparam in self.parent.oalgebs.items():
-            tmp = sp.Symbol(oparam.name)
-            self.vars_dict[oname] = tmp
-            self.inputs_dict[oname] = tmp
+        # RAlgebs
+        for rname, ralgeb in self.parent.ralgebs.items():
+            tmp = sp.Symbol(ralgeb.name)
+            self.vars_dict[rname] = tmp
+            self.inputs_dict[rname] = tmp
 
         # store tex names defined in `self.config`
         for key in self.config.as_dict():
