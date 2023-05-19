@@ -43,3 +43,13 @@ class RParam:
         self.is_group = False
         self.owner_name = owner_name  # indicate if this variable is a group variable
         self.owner = None  # instance of the owner model or group
+
+    @property
+    def v(self):
+        """
+        Return the value of the parameter.
+
+        This property is a wrapper of the `get` method.
+        """
+        src_param = getattr(self.owner, self.name)
+        return getattr(src_param, 'v')
