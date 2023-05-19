@@ -51,5 +51,8 @@ class RParam:
 
         This property is a wrapper of the `get` method.
         """
-        src_param = getattr(self.owner, self.name)
-        return getattr(src_param, 'v')
+        if self.is_group:
+            return self.owner.get(src=self.name, idx=self.owner.idx, attr='v')
+        else:
+            src_param = getattr(self.owner, self.name)
+            return getattr(src_param, 'v')

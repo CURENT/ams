@@ -111,6 +111,10 @@ class RAlgeb(Algeb):
 
         self.v: np.ndarray = np.array([], dtype=float)  # variable value array
 
+    @property
+    def n(self):
+        return self.owner.n
+
     def __repr__(self):
         if self.owner.n == 0:
             span = []

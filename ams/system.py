@@ -282,6 +282,7 @@ class System(andes_System):
             self.groups[gname].combine()
 
         # NOTE: Set up om for all routines
+        # This might be time consuming, consider to disable this in system setup stage
         for rname, rtn in self.routines.items():
             rtn.setup_om()
             # TODO: maybe setup numrical arrays here? [rtn.c, Aub, Aeq ...]

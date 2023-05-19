@@ -16,6 +16,8 @@ from andes.models.group import GroupBase
 from ams.core.param import RParam
 from ams.core.var import Algeb, RAlgeb
 
+import cvxpy as cp
+
 logger = logging.getLogger(__name__)
 
 
@@ -104,7 +106,7 @@ class OModel:
     The optimziation problem is formulated as:
 
     .. math::
-        \min_x \ & c^T x \\
+        \min_x \ & x^_{t} c_{2}^T x + c_{1} x \\
         \mbox{such that} \ & A_{ub} x \leq b_{ub},\\
         & A_{eq} x = b_{eq},\\
         & l \leq x \leq u ,
@@ -120,32 +122,32 @@ class OModel:
     +-----------+---------------------------------------------+
     |   Array   |                 Description                 |
     +===========+=============================================+
-    |     c     | Array for decision variable coefficients    |
+    |    c2     | quadratic objective coefficients            |
     +-----------+---------------------------------------------+
-    |    Aub    | Array for inequality coefficients           |
+    |    c1     | linear objective coefficients               |
     +-----------+---------------------------------------------+
-    |    Aeq    | Array for equality coefficients             |
+    |    Aub    | inequality coefficients                     |
     +-----------+---------------------------------------------+
-    |    bub    | Array for inequality upper bounds           |
+    |    Aeq    | equality coefficients                       |
     +-----------+---------------------------------------------+
-    |    beq    | Array for equality bounds                   |
+    |    bub    | inequality upper bounds                     |
     +-----------+---------------------------------------------+
-    |     lb    | Array for decision variable lower bounds    |
+    |    beq    | equality bounds                             |
     +-----------+---------------------------------------------+
-    |     ub    | Array for decision variable upper bounds    |
+    |    lb     | decision variable lower bounds              |
     +-----------+---------------------------------------------+
-
+    |    ub     | decision variable upper bounds              |
+    +-----------+---------------------------------------------+
     """
-
-    @property
-    def class_name(self):
-        """
-        Return the class name
-        """
-        return self.__class__.__name__
 
     def __init__(self, routine):
         self.routine = routine
+        # --- colloect optimziation model ---
+        self.mdl = None
+        self.vars = OrderedDict()
+        self.constrs = OrderedDict()
+        self.obj = None
+        self.n = 0  # number of decision variables
 
         # self._array_and_counter = {
         #     'c': 'n',  # decision variables
@@ -165,7 +167,36 @@ class OModel:
     def setup(self):
         """
         Setup the numerical optimziation formulation from symbolic disaptch model.
+
+        Decision variables are the ``RAlgeb`` of a routine.
+        For example, the power outputs ``pg`` of routine ``DCOPF``.
+
         """
-        pass
-        # loop self.constrs
-        # build self.objective
+        # --- add decision variables ---
+        for rname, ralgeb in self.routine.ralgebs.items():
+            self.vars[rname] = cp.Variable(ralgeb.n,
+                                           boolean=(ralgeb.unit == 'bool'))
+            self.n += ralgeb.n
+            if ralgeb.lb:
+                self.constrs[ralgeb.lb.name] = self.vars[rname] >= ralgeb.lb.v
+            if ralgeb.ub:
+                self.constrs[ralgeb.ub.name] = self.vars[rname] <= ralgeb.ub.v
+        # --- add constraints ---
+        for cname, constr in self.routine.constrs.items():
+                pass# TODO: might need to parse the constraint into CVXPY format
+                # self.constrs[cname] =  >= ralgeb.lb.v
+
+        # --- parse objective functions ---
+        # TODO: might need to parse the objective into CVXPY format
+        # self.obj = cp.Minimize(self.routine.obj.e)
+
+        # --- finalize the optimziation formulation ---
+        # mdl = cp.Problem(self.obj, constraints)
+        return True
+
+    @property
+    def class_name(self):
+        """
+        Return the class name
+        """
+        return self.__class__.__name__
