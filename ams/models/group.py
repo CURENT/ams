@@ -38,6 +38,21 @@ class GroupBase(andes_GroupBase):
     # TODO: revise ``set`` method to make sure Group.params are
     # also updated if model.params are updated
 
+    @property
+    def idx(self):
+        """
+        Value of the group idx.
+        """
+        return self.get_idx()
+
+    def get_idx(self):
+        """
+        Return the value of group idx.
+        """
+        all = [mdl.idx.v for _, mdl in self.models.items()]
+        flat_list = sorted([val for sublist in all for val in sublist])
+        return flat_list
+
 class Undefined(GroupBase):
     """
     The undefined group. Holds models with no ``group``.
