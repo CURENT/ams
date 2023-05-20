@@ -283,9 +283,8 @@ class System(andes_System):
                 a0 += algeb.owner.n
 
         # NOTE: Set up om for all routines
-        # This might be time consuming, consider to disable this in system setup stage
         for rname, rtn in self.routines.items():
-            rtn.setup_om()
+            # rtn.setup()  # not setup optimization model in system setup stage
             a0 = 0
             for raname, ralgeb in rtn.ralgebs.items():
                 ralgeb.v = np.zeros(ralgeb.owner.n)

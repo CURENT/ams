@@ -70,11 +70,18 @@ class Routine:
         """
         return self.config.doc(max_width, export)
 
-    def setup_om(self):
+    def setup(self):
         """
         Setup optimization model.
         """
-        self.om.setup()
+        results, elapsed_time = self.om.setup()
+        common_info = f"{self.class_name} model set up "
+        if results:
+            info = f"in {elapsed_time}."
+        else:
+            info = "failed!"
+        logger.info(common_info + info)
+        return results
 
     def prepare(self):
         """
