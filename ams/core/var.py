@@ -112,6 +112,10 @@ class RAlgeb(Algeb):
         self.v: np.ndarray = np.array([], dtype=float)  # variable value array
 
     @property
+    def idx(self):
+        return self.owner.idx
+
+    @property
     def n(self):
         return self.owner.n
 

@@ -286,6 +286,11 @@ class System(andes_System):
         # This might be time consuming, consider to disable this in system setup stage
         for rname, rtn in self.routines.items():
             rtn.setup_om()
+            a0 = 0
+            for raname, ralgeb in rtn.ralgebs.items():
+                ralgeb.v = np.zeros(ralgeb.owner.n)
+                ralgeb.a = np.arange(a0, a0 + ralgeb.owner.n)
+                a0 += ralgeb.owner.n
             # TODO: maybe setup numrical arrays here? [rtn.c, Aub, Aeq ...]
 
         _, s = elapsed(t0)
