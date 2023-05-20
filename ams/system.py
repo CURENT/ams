@@ -275,12 +275,6 @@ class System(andes_System):
             logger.error("System setup failed. Please resolve the reported issue(s).")
             self.exit_code += 1
 
-        # NOTE: Special deal with StaticGen p, q
-        _combined_group = ['StaticGen']
-        # logger.debug(self.groups)
-        for gname in _combined_group:
-            self.groups[gname].combine()
-
         a0 = 0
         for mname, mdl in self.models.items():
             for aname, algeb in mdl.algebs.items():
