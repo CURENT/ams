@@ -30,13 +30,6 @@ class GroupBase(andes_GroupBase):
     # TODO: revise ``set`` method to make sure Group.params are
     # also updated if model.params are updated
 
-    @property
-    def idx(self):
-        """
-        Value of the group idx.
-        """
-        return self.get_idx()
-
     def get_idx(self):
         """
         Return the value of group idx.

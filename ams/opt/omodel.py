@@ -182,12 +182,12 @@ class OModel:
             setattr(self, rname, var)
             self.vars[rname] = var
             if ralgeb.lb:
-                bv = ralgeb.lb.owner.get(src=ralgeb.lb.name, idx=ralgeb.idx, attr='v')
+                bv = ralgeb.lb.owner.get(src=ralgeb.lb.name, idx=ralgeb.get_idx(), attr='v')
                 constr = var >= bv
                 setattr(self, ralgeb.lb.name, constr)
                 self.constrs[ralgeb.lb.name] = constr
             if ralgeb.ub:
-                bv = ralgeb.ub.owner.get(src=ralgeb.ub.name, idx=ralgeb.idx, attr='v')
+                bv = ralgeb.ub.owner.get(src=ralgeb.ub.name, idx=ralgeb.get_idx(), attr='v')
                 constr = var <= bv
                 setattr(self, ralgeb.ub.name, constr)
                 self.constrs[ralgeb.ub.name] = constr

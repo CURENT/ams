@@ -56,3 +56,22 @@ class RParam:
         else:
             src_param = getattr(self.owner, self.name)
             return getattr(src_param, 'v')
+
+    @property
+    def n(self):
+        return self.owner.n
+
+    def __repr__(self):
+        span = ''
+        if 1 <= self.n <= 20:
+            span = f', v={self.v}'
+            if hasattr(self, 'vin') and (self.vin is not None):
+                span += f', vin={self.vin}'
+
+        return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}{span}'
+
+    def get_idx(self):
+        if self.is_group:
+            return self.owner.get_idx()
+        else:
+            return self.owner.idx.v
