@@ -281,6 +281,13 @@ class System(andes_System):
         for gname in _combined_group:
             self.groups[gname].combine()
 
+        a0 = 0
+        for mname, mdl in self.models.items():
+            for aname, algeb in mdl.algebs.items():
+                algeb.v = np.zeros(algeb.owner.n)
+                algeb.a = np.arange(a0, a0 + algeb.owner.n)
+                a0 += algeb.owner.n
+
         # NOTE: Set up om for all routines
         # This might be time consuming, consider to disable this in system setup stage
         for rname, rtn in self.routines.items():
