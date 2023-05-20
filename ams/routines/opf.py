@@ -2,7 +2,8 @@
 OPF routines.
 """
 from collections import OrderedDict
-from ams.routines.base import BaseRoutine, timer
+from ams.routines.base import BaseRoutine
+from ams.utils import timer
 import numpy as np
 from scipy.optimize import linprog
 

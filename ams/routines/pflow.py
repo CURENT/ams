@@ -8,10 +8,12 @@ import numpy as np
 
 from andes.shared import deg2rad
 
-from ams.routines.base import BaseRoutine, timer
+from ams.routines.base import BaseRoutine
 from ams.solver.pypower.runpf import runpf, rundcpf
 
 from ams.io.pypower import system2ppc
+
+from ams.utils import timer
 
 logger = logging.getLogger(__name__)
 

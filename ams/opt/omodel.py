@@ -16,6 +16,8 @@ from andes.models.group import GroupBase
 from ams.core.param import RParam
 from ams.core.var import Algeb, RAlgeb
 
+from ams.utils import timer
+
 import cvxpy as cp
 
 logger = logging.getLogger(__name__)
@@ -164,6 +166,7 @@ class OModel:
         self.bub, self.beq = np.array([]), np.array([])
         self.lb, self.ub = np.array([]), np.array([])
 
+    @timer
     def setup(self):
         """
         Setup the numerical optimziation formulation from symbolic disaptch model.
@@ -174,13 +177,20 @@ class OModel:
         """
         # --- add decision variables ---
         for rname, ralgeb in self.routine.ralgebs.items():
-            self.vars[rname] = cp.Variable(ralgeb.n,
-                                           boolean=(ralgeb.unit == 'bool'))
+            var = cp.Variable(ralgeb.n, boolean=(ralgeb.unit == 'bool'))
             self.n += ralgeb.n
+            setattr(self, rname, var)
+            self.vars[rname] = var
             if ralgeb.lb:
-                self.constrs[ralgeb.lb.name] = self.vars[rname] >= ralgeb.lb.v
+                bv = ralgeb.lb.owner.get(src=ralgeb.lb.name, idx=ralgeb.idx, attr='v')
+                constr = var >= bv
+                setattr(self, ralgeb.lb.name, constr)
+                self.constrs[ralgeb.lb.name] = constr
             if ralgeb.ub:
-                self.constrs[ralgeb.ub.name] = self.vars[rname] <= ralgeb.ub.v
+                bv = ralgeb.ub.owner.get(src=ralgeb.ub.name, idx=ralgeb.idx, attr='v')
+                constr = var <= bv
+                setattr(self, ralgeb.ub.name, constr)
+                self.constrs[ralgeb.ub.name] = constr
         # --- add constraints ---
         for cname, constr in self.routine.constrs.items():
                 pass# TODO: might need to parse the constraint into CVXPY format
@@ -189,6 +199,7 @@ class OModel:
         # --- parse objective functions ---
         # TODO: might need to parse the objective into CVXPY format
         # self.obj = cp.Minimize(self.routine.obj.e)
+        # logger.debug(f'Eval obj: {eval(self.routine.obj.e_str)}')
 
         # --- finalize the optimziation formulation ---
         # mdl = cp.Problem(self.obj, constraints)

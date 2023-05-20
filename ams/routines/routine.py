@@ -11,21 +11,13 @@ from andes.core import Config
 from ams.core.var import RAlgeb
 from andes.shared import deg2rad
 from andes.utils.misc import elapsed
+from ams.utils import timer
 from ams.core.param import RParam
 from ams.opt.omodel import OModel, Var, Constraint
 
 from ams.core.symprocessor import SymProcessor
 
 logger = logging.getLogger(__name__)
-
-
-def timer(func):
-    def wrapper(*args, **kwargs):
-        t0, _ = elapsed()
-        result = func(*args, **kwargs)
-        _, s = elapsed(t0)
-        return result, s
-    return wrapper
 
 class Routine:
     """

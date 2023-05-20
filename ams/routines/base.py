@@ -10,6 +10,7 @@ import numpy as np
 from andes.core import Config
 from andes.shared import deg2rad
 from andes.utils.misc import elapsed
+from ams.utils import timer
 from ams.opt.omodel import OModel
 
 from ams.core.symprocessor import SymProcessor

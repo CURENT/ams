@@ -80,7 +80,7 @@ class DCOPFModel(Routine):
         Routine.__init__(self, system, config)
         self.pg = RAlgeb(info='actual active power generation',
                          unit='p.u.',
-                         name='p',
+                         name='pg',
                          tex_name=r'p_{g}',
                          owner_name='StaticGen',
                          lb=self.pmin,
@@ -105,7 +105,7 @@ class DCOPFModel(Routine):
         #                       )
 
         # --- objective ---
-        self.obj = Objective(e_str='c2 * pg^2 + c1 * pg + c0',
+        self.obj = Objective(e_str='c2 * pg**2 + c1 * pg + c0',
                              sense='min',)
 
 
