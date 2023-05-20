@@ -53,6 +53,22 @@ class Model:
         """
         return OrderedDict(list(self.algebs.items()))
 
+    def _check_attribute(self, key, value):
+        """
+        Check the attribute pair for valid names while instantiating the class.
+
+        This function assigns `owner` to the model itself, assigns the name and tex_name.
+        """
+        if isinstance(value, (Algeb,)):
+            if not value.owner:
+                value.owner = self
+            if not value.name:
+                value.name = key
+            if not value.tex_name:
+                value.tex_name = key
+            if key in self.__dict__:
+                logger.warning(f"{self.class_name}: redefinition of member <{key}>. Likely a modeling error.")
+
     def __setattr__(self, key, value):
         """
         Overload the setattr function to register attributes.
@@ -64,12 +80,7 @@ class Model:
         value : [Algeb]
             value of the attribute
         """
-
-        # store the variable declaration order
-        if isinstance(value, Algeb):
-            value.id = len(self._all_vars())  # NOT in use yet
-            self.vars_decl_order[key] = value
-
+        self._check_attribute(key, value)
         self._register_attribute(key, value)
 
         super(Model, self).__setattr__(key, value)
