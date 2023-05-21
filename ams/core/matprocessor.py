@@ -8,6 +8,8 @@ import numpy as np
 from scipy.sparse import lil_matrix, csr_matrix, eye, linalg
 
 from andes.shared import rad2deg
+from ams.solver.pypower.makeBdc import makeBdc
+from ams.io.pypower import system2ppc
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +21,11 @@ class MatProcessor:
 
     def __init__(self, system):
         self.system = system
+
+    def mBdc(self):
+        # self.system.PFlow.run()
+        ppc = system2ppc(self.system)
+        return makeBdc(ppc['baseMVA'], ppc['bus'], ppc['branch'])
 
     @property
     def b(self):
