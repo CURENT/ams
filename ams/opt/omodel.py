@@ -106,46 +106,30 @@ class Objective:
 class OModel:
     r"""
     Base class for optimization models.
-    The optimziation problem is formulated as:
 
-    .. math::
-        \min_x \ & x^_{t} c_{2}^T x + c_{1} x \\
-        \mbox{such that} \ & A_{ub} x \leq b_{ub},\\
-        & A_{eq} x = b_{eq},\\
-        & l \leq x \leq u ,
+    Parameters
+    ----------
+    routine: Routine
+        Routine that to be modeled.
 
-    where :math:`x` is a vector of decision variables; :math:`c`,
-    :math:`b_{ub}`, :math:`b_{eq}`, :math:`l`, and :math:`u` are vectors; and
-    :math:`A_{ub}` and :math:`A_{eq}` are matrices.
-
-    # TODO: include integrality parameters.
-
-    The defined arrays and descriptions are as follows:
-
-    +-----------+---------------------------------------------+
-    |   Array   |                 Description                 |
-    +===========+=============================================+
-    |    c2     | quadratic objective coefficients            |
-    +-----------+---------------------------------------------+
-    |    c1     | linear objective coefficients               |
-    +-----------+---------------------------------------------+
-    |    Aub    | inequality coefficients                     |
-    +-----------+---------------------------------------------+
-    |    Aeq    | equality coefficients                       |
-    +-----------+---------------------------------------------+
-    |    bub    | inequality upper bounds                     |
-    +-----------+---------------------------------------------+
-    |    beq    | equality bounds                             |
-    +-----------+---------------------------------------------+
-    |    lb     | decision variable lower bounds              |
-    +-----------+---------------------------------------------+
-    |    ub     | decision variable upper bounds              |
-    +-----------+---------------------------------------------+
+    Attributes
+    ----------
+    mdl: cvxpy.Problem
+        Optimization model.
+    vars: OrderedDict
+        Decision variables.
+    constrs: OrderedDict
+        Constraints.
+    obj: Objective
+        Objective function.
+    n: int
+        Number of decision variables.
+    m: int
+        Number of constraints.
     """
 
     def __init__(self, routine):
         self.routine = routine
-        # --- colloect optimziation model ---
         self.mdl = None
         self.vars = OrderedDict()
         self.constrs = OrderedDict()
