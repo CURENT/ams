@@ -91,4 +91,12 @@ def system2ppc(system) -> dict:
 
     In the ``gen`` section, slack generators preceeds PV generators.
     """
-    return system2mpc(system)
+    mpc = system2mpc(system)
+    # adjust the bus index to start from 0
+    mpc['bus'][:, 0] -= 1   # BUS_I
+    mpc['gen'][:, 0] -= 1   # GEN_BUS
+    mpc['branch'][:, 0] -= 1    # F_BUS
+    mpc['branch'][:, 1] -= 1    # T_BUS
+    if mpc['bus'][0, 0] > 0:
+        logger.warning('The first bus index is not 0. Please check the data.')
+    return mpc
