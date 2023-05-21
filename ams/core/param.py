@@ -32,6 +32,7 @@ class RParam:
                  name: Optional[str] = None,
                  tex_name: Optional[str] = None,
                  info: Optional[str] = None,
+                 src: Optional[str] = None,
                  unit: Optional[str] = None,
                  owner_name: Optional[str] = None,
                  ):
@@ -39,6 +40,7 @@ class RParam:
         self.name = name
         self.tex_name = tex_name if (tex_name is not None) else name
         self.info = info
+        self.src = name if (src is None) else src
         self.unit = unit
         self.is_group = False
         self.owner_name = owner_name  # indicate if this variable is a group variable
@@ -52,9 +54,10 @@ class RParam:
         This property is a wrapper of the `get` method.
         """
         if self.is_group:
-            return self.owner.get(src=self.name, idx=self.owner.idx, attr='v')
+            return self.owner.get(src=self.src, attr='v',
+                                  idx=self.owner.get_idx())
         else:
-            src_param = getattr(self.owner, self.name)
+            src_param = getattr(self.owner, self.src)
             return getattr(src_param, 'v')
 
     @property
