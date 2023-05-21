@@ -25,7 +25,7 @@ class Routine:
     """
 
     def __init__(self, system=None, config=None):
-        self.system = system 
+        self.system = system
         self.config = Config(self.class_name)
 
         self.tex_names = OrderedDict((('sys_f', 'f_{sys}'),
@@ -62,7 +62,6 @@ class Routine:
     @property
     def class_name(self):
         return self.__class__.__name__
-
 
     def doc(self, max_width=78, export='plain'):
         """
@@ -133,8 +132,6 @@ class Routine:
         Convert PYPOWER results to AMS.
         """
         raise NotImplementedError
-
-
 
     def __setattr__(self, key, value):
         """

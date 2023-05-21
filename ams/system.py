@@ -24,6 +24,7 @@ from ams.models import file_classes
 from ams.routines import all_routines, algeb_models
 from ams.utils.paths import get_config_path
 from ams.core import Algeb
+from ams.core.matprocessor import MatProcessor
 from ams.opt.omodel import Var
 
 logger = logging.getLogger(__name__)
@@ -85,6 +86,7 @@ class System(andes_System):
         self.model_aliases = OrderedDict()   # alias: model instance
         self.groups = OrderedDict()          # group names and instances
         self.routines = OrderedDict()        # routine names and instances
+        self.mats = None                     # matrix processor
         # TODO: there should be an exit_code for each routine
         self.exit_code = 0                   # command-line exit code, 0 - normal, others - error.
 
@@ -291,6 +293,8 @@ class System(andes_System):
                 ralgeb.a = np.arange(a0, a0 + ralgeb.owner.n)
                 a0 += ralgeb.owner.n
             # TODO: maybe setup numrical arrays here? [rtn.c, Aub, Aeq ...]
+
+        self.mats = MatProcessor(self)       # matrix processor
 
         _, s = elapsed(t0)
         logger.info('System set up in %s.', s)
