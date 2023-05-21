@@ -58,6 +58,7 @@ class DCOPFData(RoutineData):
         # --- load ---
         self.pd = RParam(info='active power load in system base',
                          name='pd',
+                         src='p0',
                          tex_name=r'p_{d}',
                          unit='p.u.',
                          owner_name='PQ',
@@ -105,7 +106,7 @@ class DCOPFModel(Routine):
         #                       )
 
         # --- objective ---
-        self.obj = Objective(e_str='c2 * pg**2 + c1 * pg + c0',
+        self.obj = Objective(e_str='sum(c2 * pg**2 + c1 * pg + c0)',
                              sense='min',)
 
 

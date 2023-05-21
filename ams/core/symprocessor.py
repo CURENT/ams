@@ -54,40 +54,40 @@ class SymProcessor:
         self.class_name = parent.class_name
         self.tex_names = OrderedDict()
 
-        # pretty print of variables
-        self.x = list()  # variables
-        self.c = list()  # variables coefficients
-        self.Aub, self.Aeq = None, None
-        self.bub, self.beq = list(), list()
-        self.lb, self.ub = list(), list()
+        lang = "cp"  # TODO: might need to be generalized to other solvers
+        self.sub_map = OrderedDict([
+            (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 @ \2'),
+            (r'\bsum\b', f'{lang}.sum'),  # only used for CVXPY
+            # (r'\bmin\b', f'{solver}.Minimize'),
+            # ('pg', 'self.pg'),
+            # ('c2', 'self.routine.c2.v'),
+            # ('c1', 'self.routine.c1.v'),
+            # ('c0', 'self.routine.c0.v'),
+            ])
 
     def generate_symbols(self):
         """
         Generate symbols for all variables.
         """
         logger.debug(f'- Generating symbols for {self.parent.class_name}')
-
-        # clear symbols storage
-        self.Aub_list, self.Aeq_list = list(), list()
-        self.Aub_matrix, self.Aeq_matrix = sp.Matrix([]), sp.Matrix([])
-
         # process tex_names defined in routines
         # -----------------------------------------------------------
         for key in self.parent.tex_names.keys():
             self.tex_names[key] = sp.symbols(self.parent.tex_names[key])
 
-        # RParams
-        for rname, rparam in self.parent.rparams.items():
-            tmp = sp.symbols(f'{rparam.name}:{rparam.owner.n}')
-            self.inputs_dict[rname] = tmp
-            logger.debug(f"Var {rname}'s size {rparam.owner.n}")
-
         # RAlgebs
-        for rname, ralgeb in self.parent.ralgebs.items():
-            tmp = sp.symbols(f'{ralgeb.name}:{ralgeb.owner.n}')
+        for raname, ralgeb in self.parent.ralgebs.items():
+            tmp = sp.symbols(f'{ralgeb.name}')
             # tmp = sp.symbols(ralgeb.name)
-            self.vars_dict[rname] = tmp
-            self.inputs_dict[rname] = tmp
+            self.vars_dict[raname] = tmp
+            self.inputs_dict[raname] = tmp
+            self.sub_map[raname] = f'self.{raname}'
+
+        # RParams
+        for rpname, rparam in self.parent.rparams.items():
+            tmp = sp.symbols(f'{rparam.name}')
+            self.inputs_dict[rpname] = tmp
+            self.sub_map[rpname] = f'self.routine.{rpname}.v'
 
         # store tex names defined in `self.config`
         for key in self.config.as_dict():
