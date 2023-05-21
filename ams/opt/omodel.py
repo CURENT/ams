@@ -180,7 +180,11 @@ class OModel:
                        sub_map=self.routine.syms.sub_map)
 
         # --- finalize the optimziation formulation ---
-        self.mdl = cp.Problem(self.obj, [constr for constr in self.constrs.values()])
+        code_mdl = "problem(self.obj, [constr for constr in self.constrs.values()])"
+        for pattern, replacement, in self.routine.syms.sub_map.items():
+            code_mdl = re.sub(pattern, replacement, code_mdl)
+        code_mdl = "self.mdl=" + code_mdl
+        exec(code_mdl)
         return True
 
     @property

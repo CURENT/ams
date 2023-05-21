@@ -59,11 +59,7 @@ class SymProcessor:
             (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 @ \2'),
             (r'\bsum\b', f'{lang}.sum'),  # only used for CVXPY
             (r'\bvar\b', f'{lang}.Variable'),  # only used for CVXPY
-            # (r'\bmin\b', f'{solver}.Minimize'),
-            # ('pg', 'self.pg'),
-            # ('c2', 'self.routine.c2.v'),
-            # ('c1', 'self.routine.c1.v'),
-            # ('c0', 'self.routine.c0.v'),
+            (r'\bproblem\b', f'{lang}.Problem'),  # only used for CVXPY
             ])
 
     def generate_symbols(self):
