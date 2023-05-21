@@ -9,8 +9,8 @@ from sys import stderr
 
 import logging
 
-from numpy import ones, r_, pi, flatnonzero as find
-from scipy.sparse import csr_matrix as sparse
+from numpy import ones, r_, pi, flatnonzero as find, real, int64
+from scipy.sparse import csr_matrix, csc_matrix
 
 from ams.solver.pypower.idx_bus import BUS_I
 from ams.solver.pypower.idx_brch import F_BUS, T_BUS, BR_X, TAP, SHIFT, BR_STATUS
@@ -18,7 +18,7 @@ from ams.solver.pypower.idx_brch import F_BUS, T_BUS, BR_X, TAP, SHIFT, BR_STATU
 logger = logging.getLogger(__name__)
 
 
-def makeBdc(baseMVA, bus, branch):
+def makeBdc(bus, branch, return_csr=True):
     """Builds the B matrices and phase shift injections for DC power flow.
 
     Returns the B matrices and phase shift injection vectors needed for a
@@ -35,14 +35,18 @@ def makeBdc(baseMVA, bus, branch):
     @author: Carlos E. Murillo-Sanchez (PSERC Cornell & Universidad
     Autonoma de Manizales)
     @author: Ray Zimmerman (PSERC Cornell)
+    @author: Richard Lincoln
     """
+    ## Select csc/csr B matrix
+    sparse = csr_matrix if return_csr else csc_matrix
+
     ## constants
     nb = bus.shape[0]          ## number of buses
     nl = branch.shape[0]       ## number of lines
 
     ## check that bus numbers are equal to indices to bus (one set of bus nums)
     if any(bus[:, BUS_I] != list(range(nb))):
-        logger.debug('makeBdc: buses must be numbered consecutively in '
+        logger.error('makeBdc: buses must be numbered consecutively in '
                      'bus matrix\n')
 
     ## for each branch, compute the elements of the branch B matrix and the phase
@@ -52,30 +56,41 @@ def makeBdc(baseMVA, bus, branch):
     ##      |    | = |          | * |     | + |       |
     ##      | Pt |   | Btf  Btt |   | Vat |   | Ptinj |
     ##
-    stat = branch[:, BR_STATUS]               ## ones at in-service branches
-    b = stat / branch[:, BR_X]                ## series susceptance
-    tap = ones(nl)                            ## default tap ratio = 1
-    i = find(branch[:, TAP])               ## indices of non-zero tap ratios
-    tap[i] = branch[i, TAP]                   ## assign non-zero tap ratios
-    b = b / tap
+    b = calc_b_from_branch(branch, nl)
 
     ## build connection matrix Cft = Cf - Ct for line and from - to buses
-    f = branch[:, F_BUS]                           ## list of "from" buses
-    t = branch[:, T_BUS]                           ## list of "to" buses
+    f = real(branch[:, F_BUS]).astype(int64)                           ## list of "from" buses
+    t = real(branch[:, T_BUS]).astype(int64)                           ## list of "to" buses
     i = r_[range(nl), range(nl)]                   ## double set of row indices
     ## connection matrix
     Cft = sparse((r_[ones(nl), -ones(nl)], (i, r_[f, t])), (nl, nb))
 
     ## build Bf such that Bf * Va is the vector of real branch powers injected
     ## at each branch's "from" bus
-    Bf = sparse((r_[b, -b], (i, r_[f, t])), shape = (nl, nb))## = spdiags(b, 0, nl, nl) * Cft
+    Bf = sparse((r_[b, -b], (i, r_[f, t])), (nl, nb))## = spdiags(b, 0, nl, nl) * Cft
 
     ## build Bbus
     Bbus = Cft.T * Bf
 
     ## build phase shift injection vectors
-    Pfinj = b * (-branch[:, SHIFT] * pi / 180)  ## injected at the from bus ...
-    # Ptinj = -Pfinj                            ## and extracted at the to bus
-    Pbusinj = Cft.T * Pfinj                ## Pbusinj = Cf * Pfinj + Ct * Ptinj
+    Pfinj, Pbusinj = phase_shift_injection(b, branch[:, SHIFT], Cft)
 
-    return Bbus, Bf, Pbusinj, Pfinj
+    return Bbus, Bf, Pbusinj, Pfinj, Cft
+
+
+def phase_shift_injection(b, shift, Cft):
+    ## build phase shift injection vectors
+    Pfinj = b * (-shift * pi / 180.)  ## injected at the from bus ...
+    # Ptinj = -Pfinj                            ## and extracted at the to bus
+    Pbusinj = Cft.T * Pfinj  ## Pbusinj = Cf * Pfinj + Ct * Ptinj
+    return Pfinj, Pbusinj
+
+
+def calc_b_from_branch(branch, nl):
+    stat = branch[:, BR_STATUS]  ## ones at in-service branches
+    b = stat / branch[:, BR_X]  ## series susceptance
+    tap = ones(nl)  ## default tap ratio = 1
+    i = find(real(branch[:, TAP]))  ## indices of non-zero tap ratios
+    tap[i] = real(branch[i, TAP])  ## assign non-zero tap ratios
+    b = b / tap
+    return b

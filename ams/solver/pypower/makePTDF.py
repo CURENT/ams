@@ -6,33 +6,39 @@
 """
 
 from sys import stderr
+import logging
 
 from numpy import zeros, arange, isscalar, dot, ix_, flatnonzero as find
 
 from numpy.linalg import solve
+from scipy.sparse.linalg import spsolve, factorized
 
 from ams.solver.pypower.idx_bus import BUS_TYPE, REF, BUS_I
 from ams.solver.pypower.makeBdc import makeBdc
 
+logger = logging.getLogger(__name__)
 
-def makePTDF(baseMVA, bus, branch, slack=None):
+
+def makePTDF(baseMVA, bus, branch, slack=None,
+             result_side=0, using_sparse_solver=False, branch_id=None, reduced=False):
     """Builds the DC PTDF matrix for a given choice of slack.
-
     Returns the DC PTDF matrix for a given choice of slack. The matrix is
     C{nbr x nb}, where C{nbr} is the number of branches and C{nb} is the
     number of buses. The C{slack} can be a scalar (single slack bus) or an
     C{nb x 1} column vector of weights specifying the proportion of the
     slack taken up at each bus. If the C{slack} is not specified the
     reference bus is used by default.
-
     For convenience, C{slack} can also be an C{nb x nb} matrix, where each
     column specifies how the slack should be handled for injections
     at that bus.
-
+    To restrict the PTDF computation to a subset of branches, supply a list of ppci branch indices in C{branch_id}.
+    If C{reduced==True}, the output is reduced to the branches given in C{branch_id}, otherwise the complement rows are set to NaN.
     @see: L{makeLODF}
-
     @author: Ray Zimmerman (PSERC Cornell)
     """
+    if reduced and branch_id is None:
+        raise ValueError("'reduced=True' is only valid if branch_id is not None")
+
     ## use reference bus for slack by default
     if slack is None:
         slack = find(bus[:, BUS_TYPE] == REF)
@@ -51,14 +57,45 @@ def makePTDF(baseMVA, bus, branch, slack=None):
 
     ## check that bus numbers are equal to indices to bus (one set of bus numbers)
     if any(bus[:, BUS_I] != arange(nb)):
-        logger.debug('makePTDF: buses must be numbered consecutively')
+        stderr.write('makePTDF: buses must be numbered consecutively')
 
-    ## compute PTDF for single slack_bus
-    Bbus, Bf, _, _ = makeBdc(baseMVA, bus, branch)
-    Bbus, Bf = Bbus.todense(), Bf.todense()
-    H = zeros((nbr, nb))
-    H[:, noslack] = solve( Bbus[ix_(noslack, noref)].T, Bf[:, noref].T ).T
-    #             = Bf[:, noref] * inv(Bbus[ix_(noslack, noref)])
+    if reduced:
+        H = zeros((len(branch_id), nb))
+    else:
+        H = zeros((nbr, nb))
+    # compute PTDF for single slack_bus
+    if using_sparse_solver:
+        Bbus, Bf, *_ = makeBdc(bus, branch, return_csr=False)
+
+        Bbus = Bbus.real
+        if result_side == 1:
+            Bf *= -1
+        if branch_id is not None:
+            Bf = Bf.real.toarray()
+            if reduced:
+                H[:, noslack] = spsolve(Bbus[ix_(noslack, noref)].T, Bf[ix_(branch_id, noref)].T).T
+            else:
+                H[ix_(branch_id, noslack)] = spsolve(Bbus[ix_(noslack, noref)].T, Bf[ix_(branch_id, noref)].T).T
+        elif Bf.shape[0] < 2000:
+            Bf = Bf.real.toarray()
+            H[:, noslack] = spsolve(Bbus[ix_(noslack, noref)].T, Bf[:, noref].T).T
+        else:
+            # Use memory saving modus
+            Bbus_fact = factorized(Bbus[ix_(noslack, noref)].T)
+            for i in range(0, Bf.shape[0], 32):
+                H[i:i+32, noslack] = Bbus_fact(Bf[i:i+32, noref].real.toarray().T).T
+    else:
+        Bbus, Bf, *_ = makeBdc(bus, branch)
+        Bbus, Bf = np.real(Bbus.toarray()), np.real(Bf.toarray())
+        if result_side == 1:
+            Bf *= -1
+        if branch_id is not None:
+            if reduced:
+                H[:, noslack] = solve(Bbus[ix_(noslack, noref)].T, Bf[ix_(branch_id, noref)].T).T
+            else:
+                H[ix_(branch_id, noslack)] = solve(Bbus[ix_(noslack, noref)].T, Bf[ix_(branch_id, noref)].T).T
+        else:
+            H[:, noslack] = solve(Bbus[ix_(noslack, noref)].T, Bf[:, noref].T).T
 
     ## distribute slack, if requested
     if not isscalar(slack):
