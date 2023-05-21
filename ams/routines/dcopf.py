@@ -94,11 +94,11 @@ class DCOPFModel(Routine):
                              e_str='sum(pd) - sum(pg)',
                              type='eq',
                              )
-        self.lub = Constraint(name='lub',
-                              info='line limits upper bound',
-                              e_str='GSF * (G - D) - rate_aLine',
-                              type='uq',
-                              )
+        # self.lub = Constraint(name='lub',
+        #                       info='line limits upper bound',
+        #                       e_str='GSF * (G - D) - rate_aLine',
+        #                       type='uq',
+        #                       )
         # self.llb = Constraint(name='llb',
         #                       info='line limits lower bound',
         #                       e_str='- GSF * (G - D) - rate_aLine',
