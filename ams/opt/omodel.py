@@ -151,21 +151,7 @@ class OModel:
         self.constrs = OrderedDict()
         self.obj = None
         self.n = 0  # number of decision variables
-
-        # self._array_and_counter = {
-        #     'c': 'n',  # decision variables
-        #     'Aub': 'n',  # inequality LHS
-        #     'Aeq': 'm',  # equality LHS
-        #     'bub': 'm',  # inequality RHS
-        #     'beq': 'o',  # equality RHS
-        #     'lb': 'n',  # decision variables lower bounds
-        #     'ub': 'n',  # decision variables upper bounds
-        # }
-
-        self.c = np.array([])
-        self.Aub, self.Aeq = np.array([]), np.array([])
-        self.bub, self.beq = np.array([]), np.array([])
-        self.lb, self.ub = np.array([]), np.array([])
+        self.m = 0  # number of constraints
 
     @timer
     def setup(self):
@@ -199,6 +185,7 @@ class OModel:
         for cname, constr in self.routine.constrs.items():
             self.parse_constr(constr=constr,
                               sub_map=self.routine.syms.sub_map)
+            self.m += self.constrs[cname].size
 
         # --- parse objective functions ---
         self.parse_obj(obj=self.routine.obj,
