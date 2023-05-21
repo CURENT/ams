@@ -58,6 +58,7 @@ class SymProcessor:
         self.sub_map = OrderedDict([
             (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 @ \2'),
             (r'\bsum\b', f'{lang}.sum'),  # only used for CVXPY
+            (r'\bvar\b', f'{lang}.Variable'),  # only used for CVXPY
             # (r'\bmin\b', f'{solver}.Minimize'),
             # ('pg', 'self.pg'),
             # ('c2', 'self.routine.c2.v'),
