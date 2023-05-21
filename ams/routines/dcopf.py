@@ -54,7 +54,6 @@ class DCOPFData(RoutineData):
                            unit='p.u.',
                            owner_name='StaticGen',
                            )
-
         # --- load ---
         self.pd = RParam(info='active power load in system base',
                          name='pd',
@@ -69,6 +68,11 @@ class DCOPFData(RoutineData):
                              tex_name=r'R_{ATEA}',
                              unit='MVA',
                              owner_name='Line',
+                             )
+        self.GSFa = RParam(info='GSF submatrix [0, 0]',
+                             name='GSF_a',
+                             tex_name=r'G_{SFA}',
+                             v=np.ones((5, 5))
                              )
 
 
@@ -87,7 +91,6 @@ class DCOPFModel(Routine):
                          lb=self.pmin,
                          ub=self.pmax,
                          )
-
         # --- constraints ---
         self.pb = Constraint(name='pb',
                              info='power balance',
@@ -96,12 +99,12 @@ class DCOPFModel(Routine):
                              )
         # self.lub = Constraint(name='lub',
         #                       info='line limits upper bound',
-        #                       e_str='GSF * (G - D) - rate_aLine',
+        #                       e_str='GSF * (G - D) - rate_a',
         #                       type='uq',
         #                       )
         # self.llb = Constraint(name='llb',
         #                       info='line limits lower bound',
-        #                       e_str='- GSF * (G - D) - rate_aLine',
+        #                       e_str='- GSF * (G - D) - rate_a',
         #                       type='uq',
         #                       )
 
