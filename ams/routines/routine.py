@@ -1,5 +1,5 @@
 """
-Module for base routine.
+Module for routine data.
 """
 
 import logging  # NOQA
@@ -8,82 +8,34 @@ from collections import OrderedDict  # NOQA
 import numpy as np
 
 from andes.core import Config
+from ams.core.var import RAlgeb
 from andes.shared import deg2rad
 from andes.utils.misc import elapsed
 from ams.utils import timer
-from ams.opt.omodel import OModel
+from ams.core.param import RParam
+from ams.opt.omodel import OModel, Constraint
 
 from ams.core.symprocessor import SymProcessor
 
 logger = logging.getLogger(__name__)
 
-
-def timer(func):
-    def wrapper(*args, **kwargs):
-        t0, _ = elapsed()
-        result = func(*args, **kwargs)
-        _, s = elapsed(t0)
-        return result, s
-    return wrapper
-
-
-class BaseResults:
+class Routine:
     """
-    Base class for holding dispatch results.
-    """
-
-    def __init__(self):
-        pass
-
-    def as_df(self):
-        """
-        Convert the data to a pandas DataFrame.
-        """
-        pass
-
-
-class BaseRoutine:
-    """
-    Base routine class.
-
-    Parameters
-    ----------
-    system : ams.system
-        The AMS system.
-    config : dict
-        Configuration dict.
-
-    Attributes
-    ----------
-    system : ams.system
-        The AMS system.
-    config : andes.core.Config
-        Configuration object.
-    info : str
-        Routine information.
-    models : OrderedDict
-        Dict that stores all involved devices.
-    oalgebs : OrderedDict
-        Dict that stores all routine algebraic variables.
-    exec_time : float
-        Recorded time to execute the routine in seconds.
-    exit_code : int
-        Exit code of the routine; 1 for successs.
+    CLass to hold routine parameters and variables.
     """
 
     def __init__(self, system=None, config=None):
         self.system = system
         self.config = Config(self.class_name)
-        self.info = None
-        self.rtn_models = OrderedDict()  # list out involved models and parameters in a routine
-        # NOTE: the following attributes are populated in ``System`` class
-        self.models = OrderedDict()  # collect all involved devices
-        self.oalgebs = OrderedDict()  # all routine algebraic variables
-        self.oparams = OrderedDict()  # all routine parameters
+
         self.tex_names = OrderedDict((('sys_f', 'f_{sys}'),
                                       ('sys_mva', 'S_{b,sys}'),
                                       ))
         self.syms = SymProcessor(self)  # symbolic processor
+
+        self.ralgebs = OrderedDict()  # list out RAlgebs in a routine
+        self.constrs = OrderedDict()
+        self.obj = None
 
         # --- optimization modeling ---
         self.om = OModel(routine=self)
@@ -107,13 +59,6 @@ class BaseRoutine:
         # TODO: check exit_code of gurobipy or any other similiar solvers
         self.exit_code = 0  # exit code of the routine; 1 for successs
 
-    def prepare(self):
-        """
-        Prepare the routine.
-        """
-        logger.debug("Generating code for %s", self.class_name)
-        self.syms.generate_symbols()
-
     @property
     def class_name(self):
         return self.__class__.__name__
@@ -124,11 +69,25 @@ class BaseRoutine:
         """
         return self.config.doc(max_width, export)
 
-    def setup_om(self):
+    def setup(self):
         """
         Setup optimization model.
         """
-        pass
+        results, elapsed_time = self.om.setup()
+        common_info = f"{self.class_name} model set up "
+        if results:
+            info = f"in {elapsed_time}."
+        else:
+            info = "failed!"
+        logger.info(common_info + info)
+        return results
+
+    def prepare(self):
+        """
+        Prepare the routine.
+        """
+        logger.debug("Generating code for %s", self.class_name)
+        self.syms.generate_symbols()
 
     @timer
     def solve(self, **kwargs):
@@ -173,3 +132,39 @@ class BaseRoutine:
         Convert PYPOWER results to AMS.
         """
         raise NotImplementedError
+
+    def __setattr__(self, key, value):
+        """
+        Overload the setattr function to register attributes.
+
+        Parameters
+        ----------
+        key : str
+            name of the attribute
+        value : [Algeb]
+            value of the attribute
+        """
+
+        # NOTE: value.id is not in use yet
+        if isinstance(value, RAlgeb):
+            value.id = len(self.ralgebs)
+        elif isinstance(value, RParam):
+            value.id = len(self.rparams)
+        self._register_attribute(key, value)
+
+        super(Routine, self).__setattr__(key, value)
+
+    def _register_attribute(self, key, value):
+        """
+        Register a pair of attributes to the model instance.
+
+        Called within ``__setattr__``, this is where the magic happens.
+        Subclass attributes are automatically registered based on the variable type.
+        Block attributes will be exported and registered recursively.
+        """
+        if isinstance(value, RAlgeb):
+            self.ralgebs[key] = value
+        elif isinstance(value, RParam):
+            self.rparams[key] = value
+        elif isinstance(value, Constraint):
+            self.constrs[key] = value

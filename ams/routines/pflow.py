@@ -2,15 +2,18 @@
 Power flow routines.
 """
 import logging
+from collections import OrderedDict
 
 import numpy as np
 
 from andes.shared import deg2rad
 
-from ams.routines.base import BaseRoutine, timer
+from ams.routines.base import BaseRoutine
 from ams.solver.pypower.runpf import runpf, rundcpf
 
 from ams.io.pypower import system2ppc
+
+from ams.utils import timer
 
 logger = logging.getLogger(__name__)
 
@@ -22,16 +25,24 @@ class PFlow(BaseRoutine):
 
     def __init__(self, system=None, config=None):
         super().__init__(system, config)
+        # FIXME: temp solution, adapt to new routine later on
+        self.rparams = OrderedDict()
+        self.ralgebs = OrderedDict()
+        # --- remove above two arrtributes later on ---
         self.info = "AC Power flow"
-        self._algeb_models = ['Bus', 'PV', 'Slack']
+        self.rtn_models = OrderedDict([
+            ('Bus', ['vmax', 'vmin']),
+            ('Slack', ['pmax', 'pmin', 'qmax', 'qmin']),
+            ('PV', ['pmax', 'pmin', 'qmax', 'qmin']),
+        ])
 
     @timer
-    def _solve(self, **kwargs):
+    def solve(self, **kwargs):
         ppc = system2ppc(self.system)
         res, success = runpf(ppc, **kwargs)
         return ppc, success
     
-    def _unpack(self, ppc):
+    def unpack(self, ppc):
         """
         Unpack results from ppc to system.
         """
@@ -49,14 +60,14 @@ class PFlow(BaseRoutine):
         system.Slack.q.v = ppc['gen'][:system.Slack.n, 2]  # reactive power
 
         # --- store results into routine algeb ---
-        for raname, ralgeb in self.ralgebs.items():
-            ralgeb.v = ralgeb.Algeb.v.copy()
+        for raname, oalgeb in self.oalgebs.items():
+            oalgeb.v = oalgeb.Algeb.v.copy()
 
     def run(self, **kwargs):
         """
         Run power flow.
         """
-        (ppc, success), elapsed_time = self._solve(**kwargs)
+        (ppc, success), elapsed_time = self.solve(**kwargs)
         self.exit_code = int(not success)
         if success:
             info = f'{self.class_name} completed in {elapsed_time} seconds with exit code {self.exit_code}.'
@@ -64,7 +75,7 @@ class PFlow(BaseRoutine):
             info = f'{self.class_name} failed in {elapsed_time} seconds with exit code {self.exit_code}.'
         logger.info(info)
         self.exec_time = float(elapsed_time.split(' ')[0])
-        self._unpack(ppc)
+        self.unpack(ppc)
         return self.exit_code
 
     def summary(self, **kwargs):

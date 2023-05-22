@@ -13,9 +13,7 @@ AMS documentation
 .. _`Q&A`: https://github.com/jinningwang/ams/discussions
 .. _`LTB Repository`: https://github.com/CURENT/ltb2
 
-AMS is still under DEVELOPMENT, stay tuned!
-
-AMS is an open-source packages for dispatch modeling and co-simulation with dynanic.
+AMS is an open-source packages for **flexible** dispatch modeling and co-simulation with **dynanic**.
 
 AMS is the dispatch simulation engine for the CURENT Largescale Testbed (LTB).
 More information about CURENT LTB can be found at the `LTB Repository`_.
@@ -103,5 +101,4 @@ More information about CURENT LTB can be found at the `LTB Repository`_.
    examples/index
    modeling/index
    release-notes
-   modelref
    api
