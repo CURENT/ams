@@ -62,6 +62,19 @@ class SymProcessor:
             (r'\bproblem\b', f'{lang}.Problem'),  # only used for CVXPY
             ])
 
+        self.status = {
+            0: 'optimal',
+            1: 'infeasible',
+            2: 'unbounded',
+            3: 'infeasible_inaccurate',
+            4: 'unbounded_inaccurate',
+            5: 'optimal_inaccurate',
+            6: 'solver_error',
+            7: 'time_limit',
+            8: 'interrupted',
+            9: 'unknown'
+        }
+
     def generate_symbols(self):
         """
         Generate symbols for all variables.

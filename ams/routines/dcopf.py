@@ -10,7 +10,7 @@ from ams.core.param import RParam
 from ams.core.var import RAlgeb
 
 from ams.routines.routinedata import RoutineData
-from ams.routines.routine import Routine
+from ams.routines.routine import Routine, DCOPFBase
 
 from ams.opt.omodel import Constraint, Objective
 
@@ -94,13 +94,13 @@ class DCOPFData(RoutineData):
                             )
 
 
-class DCOPFModel(Routine):
+class DCOPFModel(DCOPFBase):
     """
     DCOPF dispatch model.
     """
 
     def __init__(self, system, config):
-        Routine.__init__(self, system, config)
+        DCOPFBase.__init__(self, system, config)
         self.pg = RAlgeb(info='actual active power generation',
                          unit='p.u.',
                          name='pg',
@@ -139,3 +139,7 @@ class DCOPF(DCOPFData, DCOPFModel):
     def __init__(self, system, config):
         DCOPFData.__init__(self)
         DCOPFModel.__init__(self, system, config)
+
+
+
+

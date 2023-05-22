@@ -36,6 +36,7 @@ class Routine:
         self.ralgebs = OrderedDict()  # list out RAlgebs in a routine
         self.constrs = OrderedDict()
         self.obj = None
+        self.is_setup = False
 
         # --- optimization modeling ---
         self.om = OModel(routine=self)
@@ -77,6 +78,7 @@ class Routine:
         common_info = f"{self.class_name} model set up "
         if results:
             info = f"in {elapsed_time}."
+            self.is_setup = True
         else:
             info = "failed!"
         logger.info(common_info + info)
@@ -89,12 +91,12 @@ class Routine:
         logger.debug("Generating code for %s", self.class_name)
         self.syms.generate_symbols()
 
-    @timer
     def solve(self, **kwargs):
         """
         Solve the routine.
         """
-        return None
+        pass
+        return True
 
     def unpack(self, **kwargs):
         """
@@ -106,9 +108,15 @@ class Routine:
         """
         Routine the routine.
         """
-        _, elapsed_time = self.solve(**kwargs)
+        if not self.is_setup:
+            logger.info(f"Setup model for {self.class_name}")
+            self.setup()
+        t0, _ = elapsed()
+        result = self.solve(**kwargs)
+        _, s = elapsed(t0)
+        self.exec_time = float(s.split(' ')[0])
         self.unpack(**kwargs)
-        info = f"{self.class_name} completed in {elapsed_time} with exit code {self.exit_code}."
+        info = f"{self.class_name} completed in {s} with exit code {self.exit_code}."
         logger.info(info)
         return self.exit_code
 
@@ -125,7 +133,8 @@ class Routine:
         raise NotImplementedError
 
     def __repr__(self) -> str:
-        return f"Routine {self.__class__.__name__} at {hex(id(self))}"
+        info = f"Routine {self.class_name}: Is Setup: {self.is_setup}; Exit Code: {self.exit_code}"
+        return info
 
     def _ppc2ams(self):
         """
@@ -168,3 +177,34 @@ class Routine:
             self.rparams[key] = value
         elif isinstance(value, Constraint):
             self.constrs[key] = value
+
+
+class DCOPFBase(Routine):
+    """
+    Base class for DCOPF dispatch model.
+
+    Overload the ``solve``, ``unpack``, ``run``, and ``__repr__`` methods.
+    """
+
+    def __init__(self, system, config):
+        Routine.__init__(self, system, config)
+
+    def __repr__(self) -> str:
+        info = f"Routine {self.class_name}: Is Setup: {self.is_setup}; Exit Code: {self.exit_code}"
+        return info
+
+    def solve(self, **kwargs):
+        """
+        Solve the routine.
+        """
+        res = self.om.mdl.solve(**kwargs)
+        return res
+
+    def unpack(self, **kwargs):
+        """
+        Unpack the results.
+        """
+        for raname, ralgeb in self.ralgebs.items():
+            ovar = getattr(self.om, raname)
+            ralgeb.v = getattr(ovar, 'value')
+        return None
