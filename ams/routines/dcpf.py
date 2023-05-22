@@ -155,6 +155,7 @@ class DCPFlowBase(Routine):
             self.setup()
         t0, _ = elapsed()
         res, success = self.solve(**kwargs)
+        self.exit_code = 0 if success else 1
         _, s = elapsed(t0)
         self.exec_time = float(s.split(' ')[0])
         self.unpack(res)

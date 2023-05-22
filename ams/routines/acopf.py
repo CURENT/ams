@@ -43,6 +43,7 @@ class ACOPFData(PFlowData):
             self.setup()
         t0, _ = elapsed()
         res = self.solve(**kwargs)
+        # TODO: check exit_code
         _, s = elapsed(t0)
         self.exec_time = float(s.split(' ')[0])
         self.unpack(res)
