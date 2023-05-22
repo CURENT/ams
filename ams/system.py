@@ -267,6 +267,9 @@ class System(andes_System):
 
         self._list2array()     # `list2array` must come before `link_ext_param`
 
+        if self.Line.rate_a.v.max() == 0:
+            logger.warning("Line rate_a is corrected to large value automatically.")
+            self.Line.rate_a.v = 99
         # === no device addition or removal after this point ===
         # TODO: double check calc_pu_coeff
         self.calc_pu_coeff()   # calculate parameters in system per units
