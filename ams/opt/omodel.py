@@ -39,6 +39,7 @@ class Constraint:
         self.e_str = e_str
         self.info = info
         self.type = type  # TODO: determine constraint type
+        # TODO: add constraint info from solver
 
     @property
     def class_name(self):
@@ -55,6 +56,7 @@ class Objective:
                  sense: Optional[str] = 'min'):
         self.e_str = e_str
         self.sense = sense
+        # TODO: add obj info from solver
 
 
 class OModel:
