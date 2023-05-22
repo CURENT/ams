@@ -38,6 +38,18 @@ class GroupBase(andes_GroupBase):
         flat_list = sorted([val for sublist in all for val in sublist])
         return flat_list
 
+    def _check_src(self, src: str):
+        """
+        Helper function for checking if ``src`` is a shared field.
+
+        The requirement is not strictly enforced and is only for debugging purposed.
+
+        Disable debug logging in dispath modeling.
+        """
+        if src not in self.common_vars + self.common_params:
+            pass
+            # logger.debug(f'Group <{self.class_name}> does not share property <{src}>.')
+
 class Undefined(GroupBase):
     """
     The undefined group. Holds models with no ``group``.
