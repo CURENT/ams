@@ -2,7 +2,6 @@
 OPF routines.
 """
 from collections import OrderedDict
-from ams.routines.base import BaseRoutine, timer
 import numpy as np
 from scipy.optimize import linprog
 
@@ -10,7 +9,7 @@ from ams.core.param import RParam
 from ams.core.var import RAlgeb
 
 from ams.routines.routinedata import RoutineData
-from ams.routines.routine import Routine, DCOPFBase
+from ams.routines.routine import RoutineData, Routine
 
 from ams.opt.omodel import Constraint, Objective
 
@@ -94,6 +93,37 @@ class DCOPFData(RoutineData):
                             )
 
 
+class DCOPFBase(Routine):
+    """
+    Base class for DCOPF dispatch model.
+
+    Overload the ``solve``, ``unpack``, ``run``, and ``__repr__`` methods.
+    """
+
+    def __init__(self, system, config):
+        Routine.__init__(self, system, config)
+
+    def __repr__(self) -> str:
+        info = f"Routine {self.class_name}: Is Setup: {self.is_setup}; Exit Code: {self.exit_code}"
+        return info
+
+    def solve(self, **kwargs):
+        """
+        Solve the routine.
+        """
+        res = self.om.mdl.solve(**kwargs)
+        return res
+
+    def unpack(self, **kwargs):
+        """
+        Unpack the results.
+        """
+        for raname, ralgeb in self.ralgebs.items():
+            ovar = getattr(self.om, raname)
+            ralgeb.v = getattr(ovar, 'value')
+        return None
+
+
 class DCOPFModel(DCOPFBase):
     """
     DCOPF dispatch model.
@@ -101,6 +131,7 @@ class DCOPFModel(DCOPFBase):
 
     def __init__(self, system, config):
         DCOPFBase.__init__(self, system, config)
+        self.info = 'DCOPF'
         self.pg = RAlgeb(info='actual active power generation',
                          unit='p.u.',
                          name='pg',
@@ -139,7 +170,3 @@ class DCOPF(DCOPFData, DCOPFModel):
     def __init__(self, system, config):
         DCOPFData.__init__(self)
         DCOPFModel.__init__(self, system, config)
-
-
-
-
