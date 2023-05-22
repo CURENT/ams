@@ -122,7 +122,7 @@ class DCOPFModel(Routine):
                               )
         self.llb = Constraint(name='llb',
                               info='line limits lower bound',
-                              e_str='- ( PTDF1 @ (pg - pd1) - PTDF2 * pd2 - rate_a )',
+                              e_str='- PTDF1 @ (pg - pd1) + PTDF2 * pd2 - rate_a',
                               type='uq',
                               )
 
