@@ -79,7 +79,7 @@ class PFlowBase(DCPFlowBase):
                              e_str='sum(pd) - sum(pg)',
                              type='eq',
                              )
-        # TODO: ACOPF formulation
+        # TODO: AC power flow formulation
 
 
 class PFlow(PFlowData, PFlowBase):
