@@ -94,11 +94,10 @@ class OModel:
     @timer
     def setup(self):
         """
-        Setup the numerical optimziation formulation from symbolic disaptch model.
+        Setup the optimziation model from symbolic description.
 
         Decision variables are the ``RAlgeb`` of a routine.
         For example, the power outputs ``pg`` of routine ``DCOPF``.
-
         """
         self.routine.syms.generate_symbols()
         # --- add decision variables ---
@@ -127,9 +126,6 @@ class OModel:
 
     @property
     def class_name(self):
-        """
-        Return the class name
-        """
         return self.__class__.__name__
 
     def parse_var(self,

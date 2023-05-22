@@ -13,3 +13,6 @@ in-depth explanation of flexible dispatch mdoeling framework of AMS.
     :maxdepth: 2
 
     system
+    param
+    var
+    routine
