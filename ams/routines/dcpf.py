@@ -114,18 +114,20 @@ class DCPFlowBase(Routine):
         Unpack results from ppc to system.
         """
         system = self.system
+        mva = ppc['baseMVA']
 
         # --- copy results from routine algeb into system algeb ---
         # --- Bus ---
-        system.Bus.v.v = ppc['bus'][:, 7]  # voltage magnitude
-        system.Bus.a.v = ppc['bus'][:, 8] * deg2rad  # voltage angle
+        system.Bus.v.v = ppc['bus'][:, 7]               # voltage magnitude
+        system.Bus.a.v = ppc['bus'][:, 8] * deg2rad     # voltage angle
 
         # --- PV ---
-        system.PV.q.v = ppc['gen'][system.Slack.n:, 2]  # reactive power
+        system.PV.p.v = ppc['gen'][system.Slack.n:, 1] / mva        # active power
+        system.PV.q.v = ppc['gen'][system.Slack.n:, 2] / mva        # reactive power
 
         # --- Slack ---
-        system.Slack.p.v = ppc['gen'][:system.Slack.n, 1]  # active power
-        system.Slack.q.v = ppc['gen'][:system.Slack.n, 2]  # reactive power
+        system.Slack.p.v = ppc['gen'][:system.Slack.n, 1] / mva     # active power
+        system.Slack.q.v = ppc['gen'][:system.Slack.n, 2] / mva     # reactive power
 
         # --- copy results from system algeb into routine algeb ---
         for raname, ralgeb in self.ralgebs.items():
