@@ -9,6 +9,7 @@ from ams.routines.routine import RoutineData, Routine
 all_routines = OrderedDict([
     # ('pflow', ['PFlow', 'DCPF']),
     # ('opf', ['OPF', 'DCOPF']),
+    ('dcpf', ['DCPF']),
     ('dcopf', ['DCOPF']),
 ])
 

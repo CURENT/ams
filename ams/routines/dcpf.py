@@ -9,6 +9,7 @@ import numpy as np
 from andes.shared import deg2rad
 
 from ams.routines.routine import RoutineData, Routine
+from ams.opt.omodel import Constraint, Objective
 from ams.solver.pypower.runpf import runpf, rundcpf
 
 from ams.io.pypower import system2ppc
@@ -25,6 +26,29 @@ class DCPFlowData(RoutineData):
 
     def __init__(self):
         RoutineData.__init__(self)
+        # --- line ---
+        self.x = RParam(info="line reactance",
+                        name='x',
+                        tex_name='x',
+                        src='x',
+                        unit='p.u.',
+                        owner_name='Line',
+                        )
+        self.tap = RParam(info="transformer branch tap ratio",
+                          name='tap',
+                          src='tap',
+                          tex_name='t_{ap}',
+                          unit='float',
+                          owner_name='Line',
+                          )
+        self.phi = RParam(info="transformer branch phase shift in rad",
+                          name='phi',
+                          src='phi',
+                          tex_name=r'\phi',
+                          unit='radian',
+                          owner_name='Line',
+                          )
+
         # --- load ---
         self.pd = RParam(info='active power load in system base',
                          name='pd',
@@ -33,19 +57,10 @@ class DCPFlowData(RoutineData):
                          unit='p.u.',
                          owner_name='PQ',
                          )
-        # --- load ---
-        self.pd = RParam(info='active power load in system base',
-                         name='pd',
-                         src='p0',
-                         tex_name=r'p_{d}',
-                         unit='p.u.',
-                         owner_name='PQ',
-                         )
-        # --- load ---
         self.qd = RParam(info='active power load in system base',
-                         name='pd',
-                         src='p0',
-                         tex_name=r'p_{d}',
+                         name='qd',
+                         src='q0',
+                         tex_name=r'q_{d}',
                          unit='p.u.',
                          owner_name='PQ',
                          )
@@ -55,24 +70,33 @@ class DCPFlowBase(Routine):
     """
     Base class for Power Flow model.
 
-    Overload the ``solve``, ``unpack``, ``run``, and ``__repr__`` methods.
+    Overload the ``solve``, ``unpack``, and ``run`` methods.
     """
 
     def __init__(self, system, config):
         Routine.__init__(self, system, config)
+        self.info = 'DC Power Flow'
 
-    def __repr__(self) -> str:
-        info = f"Routine {self.class_name}: Is Setup: {self.is_setup}; Exit Code: {self.exit_code}"
-        return info
-
-
-class DCPF(DCPFlowBase):
-    """
-    DC Power Flow routine.
-    """
-
-    def __init__(self, system=None, config=None):
-        DCPFlowBase.__init__(self, system, config)
+        # --- bus ---
+        self.aBus = RAlgeb(info='bus voltage angle',
+                           unit='rad',
+                           name='aBus',
+                           tex_name=r'a_{Bus}',
+                           owner_name='Bus',
+                           )
+        # --- gen ---
+        self.pg = RAlgeb(info='actual active power generation',
+                         unit='p.u.',
+                         name='pg',
+                         tex_name=r'p_{g}',
+                         owner_name='StaticGen',
+                         )
+        # --- constraints ---
+        self.pb = Constraint(name='pb',
+                             info='power balance',
+                             e_str='sum(pd) - sum(pg)',
+                             type='eq',
+                             )
 
     def run(self, **kwargs):
         """
@@ -91,3 +115,13 @@ class DCPF(DCPFlowBase):
         Print power flow report.
         """
         pass
+
+
+class DCPF(DCPFlowData, DCPFlowBase):
+    """
+    DC Power Flow routine.
+    """
+
+    def __init__(self, system=None, config=None):
+        DCPFlowData.__init__(self)
+        DCPFlowBase.__init__(self, system, config)

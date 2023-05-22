@@ -132,6 +132,7 @@ class DCOPFModel(DCOPFBase):
     def __init__(self, system, config):
         DCOPFBase.__init__(self, system, config)
         self.info = 'DCOPF'
+        # --- vars ---
         self.pg = RAlgeb(info='actual active power generation',
                          unit='p.u.',
                          name='pg',
@@ -156,7 +157,6 @@ class DCOPFModel(DCOPFBase):
                               e_str='- PTDF1 @ (pg - pd1) + PTDF2 * pd2 - rate_a',
                               type='uq',
                               )
-
         # --- objective ---
         self.obj = Objective(e_str='sum(c2 * pg**2 + c1 * pg + c0)',
                              sense='min',)
