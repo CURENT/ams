@@ -13,7 +13,7 @@ from andes.shared import deg2rad
 from andes.utils.misc import elapsed
 from ams.utils import timer
 from ams.core.param import RParam
-from ams.opt.omodel import OModel, Var, Constraint
+from ams.opt.omodel import OModel, Constraint
 
 from ams.core.symprocessor import SymProcessor
 

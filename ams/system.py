@@ -25,7 +25,6 @@ from ams.routines import all_routines, algeb_models
 from ams.utils.paths import get_config_path
 from ams.core import Algeb
 from ams.core.matprocessor import MatProcessor
-from ams.opt.omodel import Var
 
 logger = logging.getLogger(__name__)
 
