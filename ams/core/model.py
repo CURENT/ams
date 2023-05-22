@@ -148,7 +148,11 @@ class Model:
                                    '`allow_none` and provide a `default` if needed.')
                 return [self.__dict__[src].__dict__[attr][i] if i is not None else default
                         for i in uid]
-
+        # FIXME: this seems to be an unexpected case originted from ANDES
+        if isinstance(uid, Iterable):
+            if None in uid:
+                return [self.__dict__[src].__dict__[attr][i] if i is not None else default
+                        for i in uid]
         return self.__dict__[src].__dict__[attr][uid]
 
     def idx2uid(self, idx):
