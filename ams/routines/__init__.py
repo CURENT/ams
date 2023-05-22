@@ -7,9 +7,8 @@ from andes.utils.func import list_flatten
 from ams.routines.routine import RoutineData, Routine
 
 all_routines = OrderedDict([
-    # ('pflow', ['PFlow', 'DCPF']),
-    # ('opf', ['OPF', 'DCOPF']),
     ('dcpf', ['DCPF']),
+    ('pflow', ['PFlow']),
     ('dcopf', ['DCOPF']),
 ])
 

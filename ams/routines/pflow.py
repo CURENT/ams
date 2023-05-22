@@ -24,8 +24,8 @@ class PFlowData(DCPFlowData):
     AC Power Flow routine.
     """
 
-    def __init__(self, system=None, config=None):
-        DCPFlowData.__init__(self, system, config)
+    def __init__(self):
+        DCPFlowData.__init__(self)
 
     def solve(self, **kwargs):
         ppc = system2ppc(self.system)
@@ -41,50 +41,11 @@ class PFlowBase(DCPFlowBase):
         DCPFlowBase.__init__(self, system, config)
 
 
-    def unpack(self, ppc):
-        """
-        Unpack results from ppc to system.
-        """
-        system = self.system
+class PFlow(PFlowData, PFlowBase):
+    """
+    AC Power Flow routine.
+    """
 
-        # --- Bus ---
-        system.Bus.v.v = ppc['bus'][:, 7]  # voltage magnitude
-        system.Bus.a.v = ppc['bus'][:, 8] * deg2rad  # voltage angle
-
-        # --- PV ---
-        system.PV.q.v = ppc['gen'][system.Slack.n:, 2]  # reactive power
-
-        # --- Slack ---
-        system.Slack.p.v = ppc['gen'][:system.Slack.n, 1]  # active power
-        system.Slack.q.v = ppc['gen'][:system.Slack.n, 2]  # reactive power
-
-        # --- store results into routine algeb ---
-        for raname, ralgeb in self.ralgebs.items():
-            ralgeb.v = ralgeb.Algeb.v.copy()
-
-    def run(self, **kwargs):
-        """
-        Run power flow.
-        """
-        (ppc, success), elapsed_time = self.solve(**kwargs)
-        self.exit_code = int(not success)
-        if success:
-            info = f'{self.class_name} completed in {elapsed_time} seconds with exit code {self.exit_code}.'
-        else:
-            info = f'{self.class_name} failed in {elapsed_time} seconds with exit code {self.exit_code}.'
-        logger.info(info)
-        self.exec_time = float(elapsed_time.split(' ')[0])
-        self.unpack(ppc)
-        return self.exit_code
-
-    def summary(self, **kwargs):
-        """
-        Print power flow summary.
-        """
-        pass
-
-    def report(self, **kwargs):
-        """
-        Print power flow report.
-        """
-        pass
+    def __init__(self, system=None, config=None):
+        PFlowData.__init__(self)
+        PFlowBase.__init__(self, system, config)

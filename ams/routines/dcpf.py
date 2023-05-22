@@ -107,27 +107,28 @@ class DCPFlowBase(Routine):
         """
         ppc = system2ppc(self.system)
         res, success = rundcpf(ppc, **kwargs)
-        return ppc
+        return res, success
 
-    def unpack(self, ppc):
+    def unpack(self, res):
         """
         Unpack results from ppc to system.
         """
         system = self.system
-        mva = ppc['baseMVA']
+        mva = res['baseMVA']
+        # mva = self.system.config.mva
 
         # --- copy results from routine algeb into system algeb ---
         # --- Bus ---
-        system.Bus.v.v = ppc['bus'][:, 7]               # voltage magnitude
-        system.Bus.a.v = ppc['bus'][:, 8] * deg2rad     # voltage angle
+        system.Bus.v.v = res['bus'][:, 7]               # voltage magnitude
+        system.Bus.a.v = res['bus'][:, 8] * deg2rad     # voltage angle
 
         # --- PV ---
-        system.PV.p.v = ppc['gen'][system.Slack.n:, 1] / mva        # active power
-        system.PV.q.v = ppc['gen'][system.Slack.n:, 2] / mva        # reactive power
+        system.PV.p.v = res['gen'][system.Slack.n:, 1] / mva        # active power
+        system.PV.q.v = res['gen'][system.Slack.n:, 2] / mva        # reactive power
 
         # --- Slack ---
-        system.Slack.p.v = ppc['gen'][:system.Slack.n, 1] / mva     # active power
-        system.Slack.q.v = ppc['gen'][:system.Slack.n, 2] / mva     # reactive power
+        system.Slack.p.v = res['gen'][:system.Slack.n, 1] / mva     # active power
+        system.Slack.q.v = res['gen'][:system.Slack.n, 2] / mva     # reactive power
 
         # --- copy results from system algeb into routine algeb ---
         for raname, ralgeb in self.ralgebs.items():
@@ -153,10 +154,10 @@ class DCPFlowBase(Routine):
             logger.info(f"Setup model for {self.class_name}")
             self.setup()
         t0, _ = elapsed()
-        ppc = self.solve(**kwargs)
+        res, success = self.solve(**kwargs)
         _, s = elapsed(t0)
         self.exec_time = float(s.split(' ')[0])
-        self.unpack(ppc)
+        self.unpack(res)
         info = f"{self.class_name} completed in {s} with exit code {self.exit_code}."
         logger.info(info)
         return self.exit_code
