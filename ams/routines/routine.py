@@ -179,6 +179,21 @@ class Routine:
             self.constrs[key] = value
 
 
+class PFlowBase(Routine):
+    """
+    Base class for Power Flow model.
+
+    Overload the ``solve``, ``unpack``, ``run``, and ``__repr__`` methods.
+    """
+
+    def __init__(self, system, config):
+        Routine.__init__(self, system, config)
+
+    def __repr__(self) -> str:
+        info = f"Routine {self.class_name}: Is Setup: {self.is_setup}; Exit Code: {self.exit_code}"
+        return info
+
+
 class DCOPFBase(Routine):
     """
     Base class for DCOPF dispatch model.

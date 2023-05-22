@@ -8,35 +8,22 @@ import numpy as np
 
 from andes.shared import deg2rad
 
-from ams.routines.base import BaseRoutine
+from ams.routines.routine import PFlowBase
 from ams.solver.pypower.runpf import runpf, rundcpf
 
 from ams.io.pypower import system2ppc
 
-from ams.utils import timer
-
 logger = logging.getLogger(__name__)
 
 
-class PFlow(BaseRoutine):
+class PFlow(PFlowBase):
     """
     AC Power Flow routine.
     """
 
     def __init__(self, system=None, config=None):
-        super().__init__(system, config)
-        # FIXME: temp solution, adapt to new routine later on
-        self.rparams = OrderedDict()
-        self.ralgebs = OrderedDict()
-        # --- remove above two arrtributes later on ---
-        self.info = "AC Power flow"
-        self.rtn_models = OrderedDict([
-            ('Bus', ['vmax', 'vmin']),
-            ('Slack', ['pmax', 'pmin', 'qmax', 'qmin']),
-            ('PV', ['pmax', 'pmin', 'qmax', 'qmin']),
-        ])
+        PFlowBase.__init__(system, config)
 
-    @timer
     def solve(self, **kwargs):
         ppc = system2ppc(self.system)
         res, success = runpf(ppc, **kwargs)
@@ -60,8 +47,8 @@ class PFlow(BaseRoutine):
         system.Slack.q.v = ppc['gen'][:system.Slack.n, 2]  # reactive power
 
         # --- store results into routine algeb ---
-        for raname, oalgeb in self.oalgebs.items():
-            oalgeb.v = oalgeb.Algeb.v.copy()
+        for raname, ralgeb in self.ralgebs.items():
+            ralgeb.v = ralgeb.Algeb.v.copy()
 
     def run(self, **kwargs):
         """
