@@ -191,7 +191,7 @@ def mpc2system(mpc: dict, system) -> bool:
         system.Bus.name.v[:] = mpc['bus_name']
 
     gcost_idx = 0
-    gen_idx = system.Gen.find_idx(keys='bus', values=mpc['gen'][:, 0])
+    gen_idx = system.StaticGen.find_idx(keys='bus', values=mpc['gen'][:, 0])
     for data, gen in zip(mpc['gencost'], gen_idx):
         # NOTE: only type 2 costs are supported for now
         # type  startup shutdown	n	c2  c1  c0

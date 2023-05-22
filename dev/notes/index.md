@@ -2,6 +2,6 @@
 
 Table of contents:
 
-1. [Development plan](./plan.md)
-2. [Development log](./log.md)
-3. [Development notes](./notes.md)
+1. [Roadmap](./plan.md)
+2. [Log](./log.md)
+3. [Notes](./notes.md)

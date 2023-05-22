@@ -19,3 +19,6 @@ myst-parser==0.15.2 #      dev, doc
 myst-nb #           dev, doc
 graphviz #                         doc
 pydeps #                           doc
+scip #                             opt
+pyscipopt #                      opt
+gurobipy #                        opt

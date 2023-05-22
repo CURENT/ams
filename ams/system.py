@@ -2,6 +2,7 @@
 Module for system.
 """
 import configparser
+import copy
 import importlib
 import inspect
 import logging
@@ -9,6 +10,7 @@ from collections import OrderedDict
 from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
+import sympy as sp
 
 from andes.core import Config
 from andes.system import System as andes_System
@@ -19,8 +21,10 @@ from andes.utils.misc import elapsed
 
 from ams.models.group import GroupBase
 from ams.models import file_classes
-from ams.routines import all_routines, all_models
+from ams.routines import all_routines, algeb_models
 from ams.utils.paths import get_config_path
+from ams.core import Algeb
+from ams.core.matprocessor import MatProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +85,8 @@ class System(andes_System):
         self.model_aliases = OrderedDict()   # alias: model instance
         self.groups = OrderedDict()          # group names and instances
         self.routines = OrderedDict()        # routine names and instances
+        self.mats = None                     # matrix processor
+        self.mat = OrderedDict()             # common matrices
         # TODO: there should be an exit_code for each routine
         self.exit_code = 0                   # command-line exit code, 0 - normal, others - error.
 
@@ -141,6 +147,23 @@ class System(andes_System):
         self.import_models()
         self.import_routines()
 
+    def summarize_groups(self):
+        """
+        Summarize groups and their models.
+        """
+        pass
+        for gname, grp in self.groups.items():
+            grp.summarize()
+
+    def _collect_group_data(self, items):
+        for item_name, item in items.items():
+            # logger.debug(f'RVar {item_name} has owner {item.owner_name} in size {item.owner.n}')
+            if item.owner_name in self.groups.keys():
+                item.is_group = True
+                item.owner = self.groups[item.owner_name]
+            elif item.owner_name in self.models.keys():
+                item.owner = self.models[item.owner_name]
+
     def import_routines(self):
         """
         Import routines as defined in ``routines/__init__.py``.
@@ -160,23 +183,16 @@ class System(andes_System):
                 self.__dict__[attr_name] = the_class(system=self, config=self._config_object)
                 self.routines[attr_name] = self.__dict__[attr_name]
                 self.routines[attr_name].config.check()
-        # NOTE: the following code is not used in ANDES
-        # NOTE: only models that includ algebs will be collected
-                for rtn_name in self.routines.keys():
-                    all_mdl = all_models[rtn_name]
-                    rtn = getattr(self, rtn_name)
-                    for mname in all_mdl:
-                        mdl = getattr(self, mname)
-                        # NOTE: collecte all involved models into routines
-                        rtn.models[mname] = mdl
-                        # NOTE: collecte all algebraic variables from all involved models into routines
-                        for name, algeb in mdl.algebs.items():
-                            algeb.owner = mdl  # set owner of algebraic variables
-                            # TODO: this name can be improved with removing the model name
-                            rtn.algebs[f'{name}_{mname}'] = OrderedDict([
-                                ('algeb', algeb),
-                                ('a', [-1]),  # start and end index in the algebraic vector
-                            ])
+                # NOTE: the following code is not used in ANDES
+                for rname, rtn in self.routines.items():
+                    # Collect rparams
+                    rparams = getattr(rtn, 'rparams')
+                    self._collect_group_data(rparams)
+                    # Collect ralgebs
+                    ralgebs = getattr(rtn, 'ralgebs')
+                    self._collect_group_data(ralgebs)
+                    # setup numerical optimziation model
+                    # TODO: substitute symbolic expressions with numerical ones
 
     def import_groups(self):
         """
@@ -229,6 +245,11 @@ class System(andes_System):
         #     self.model_aliases[key] = self.models[val]
         #     self.__dict__[key] = self.models[val]
 
+        # NOTE: define a special model named ``G`` that combines PV and Slack
+        # FIXME: seems hard coded
+        # TODO: seems to be a bad design
+        gen_cols = self.Slack.as_df().columns
+
     def setup(self):
         """
         Set up system for studies.
@@ -245,6 +266,9 @@ class System(andes_System):
 
         self._list2array()     # `list2array` must come before `link_ext_param`
 
+        if self.Line.rate_a.v.max() == 0:
+            logger.warning("Line rate_a is corrected to large value automatically.")
+            self.Line.rate_a.v = 99
         # === no device addition or removal after this point ===
         # TODO: double check calc_pu_coeff
         self.calc_pu_coeff()   # calculate parameters in system per units
@@ -256,31 +280,54 @@ class System(andes_System):
             logger.error("System setup failed. Please resolve the reported issue(s).")
             self.exit_code += 1
 
-        # initialize algebraic variables for all routines
-        self.init_algebs()
+        a0 = 0
+        for mname, mdl in self.models.items():
+            for aname, algeb in mdl.algebs.items():
+                algeb.v = np.zeros(algeb.owner.n)
+                algeb.a = np.arange(a0, a0 + algeb.owner.n)
+                a0 += algeb.owner.n
+
+        # set up common matrix
+        self.mats = MatProcessor(self)       # matrix processor
+
+        # FIXME: hard coded here
+        # Set nuemerical values for special params
+        gen_bus = self.StaticGen.get(src='bus', attr='v',
+                                     idx=self.StaticGen.get_idx())
+        all_bus = self.Bus.idx.v
+        regBus = [int(bus) if isinstance(bus, (int, float)) else bus for bus in gen_bus]
+        redBus = [int(bus) if isinstance(bus, (int, float)) else bus for bus in all_bus if bus not in gen_bus]
+
+        # Restrucrue PQ load value to match gen bus pattern
+        idx_PD1 = self.PQ.find_idx(keys="bus", values=regBus, allow_none=True, default=None)
+        idx_PD2 = self.PQ.find_idx(keys="bus", values=redBus, allow_none=True, default=None)
+        PD1 = self.PQ.get(src='p0', attr='v', idx=idx_PD1)
+        PD2 = self.PQ.get(src='p0', attr='v', idx=idx_PD2)
+        PTDF1, PTDF2 = self.mats.rePTDF()
+
+        self.mat = OrderedDict([
+            ('pd1', PD1), ('pd2', PD2),
+            ('PTDF1', PTDF1), ('PTDF2', PTDF2),
+        ])
+
+        # NOTE: Set up om for all routines
+        for rname, rtn in self.routines.items():
+            # rtn.setup()  # not setup optimization model in system setup stage
+            a0 = 0
+            for raname, ralgeb in rtn.ralgebs.items():
+                ralgeb.v = np.zeros(ralgeb.owner.n)
+                ralgeb.a = np.arange(a0, a0 + ralgeb.owner.n)
+                a0 += ralgeb.owner.n
+            for rpname, rparam in rtn.rparams.items():
+                if rpname in self.mat.keys():
+                    rparam.is_set = True
+                    rparam._v = self.mat[rpname]
+            # TODO: maybe setup numrical arrays here? [rtn.c, Aub, Aeq ...]
 
         _, s = elapsed(t0)
         logger.info('System set up in %s.', s)
 
         return ret
-
-    def init_algebs(self):
-        """
-        Initialize algebraic variables for all routines.
-        """
-        for rtn_name in self.routines:
-            aidx = 0
-            rtn = getattr(self, f'{rtn_name}')
-            rtn.n, mdl_all = rtn._count()
-            rtn.v = np.zeros(rtn.n)
-            for aname in rtn.algebs.keys():
-                n_device = rtn.algebs[aname]['algeb'].owner.n
-                if n_device > 1:
-                    rtn.algebs[aname]['a'] = [aidx, aidx + n_device - 1]
-                    aidx += n_device
-                else:
-                    rtn.algebs[aname]['a'] = [aidx]
-                    aidx += 1
 
     # FIXME: remove unused methods
     # # Disable methods not supported in AMS

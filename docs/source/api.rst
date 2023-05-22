@@ -31,6 +31,19 @@ Routines
    ams.routines
 
 
+Optimization
+=============
+
+.. autosummary::
+   :maxdepth:4
+   :recursive:
+   :toctree: _generated
+   :caption: Optimization
+   :template: autosummary/module_toctree.rst
+
+   ams.opt
+
+
 I/O
 ===
 
