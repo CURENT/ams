@@ -7,6 +7,7 @@ from collections import OrderedDict
 import numpy as np
 
 from andes.shared import deg2rad
+from andes.utils.misc import elapsed
 
 from ams.routines.routine import RoutineData, Routine
 from ams.opt.omodel import Constraint, Objective
@@ -81,6 +82,7 @@ class DCPFlowBase(Routine):
         self.aBus = RAlgeb(info='bus voltage angle',
                            unit='rad',
                            name='aBus',
+                           src='a',
                            tex_name=r'a_{Bus}',
                            owner_name='Bus',
                            )
@@ -88,6 +90,7 @@ class DCPFlowBase(Routine):
         self.pg = RAlgeb(info='actual active power generation',
                          unit='p.u.',
                          name='pg',
+                         src='p',
                          tex_name=r'p_{g}',
                          owner_name='StaticGen',
                          )
@@ -98,15 +101,67 @@ class DCPFlowBase(Routine):
                              type='eq',
                              )
 
+    def solve(self, **kwargs):
+        """
+        Solve the DC Power Flow with PYPOWER.
+        """
+        ppc = system2ppc(self.system)
+        res, success = rundcpf(ppc, **kwargs)
+        return ppc
+
+    def unpack(self, ppc):
+        """
+        Unpack results from ppc to system.
+        """
+        system = self.system
+
+        # --- copy results from routine algeb into system algeb ---
+        # --- Bus ---
+        system.Bus.v.v = ppc['bus'][:, 7]  # voltage magnitude
+        system.Bus.a.v = ppc['bus'][:, 8] * deg2rad  # voltage angle
+
+        # --- PV ---
+        system.PV.q.v = ppc['gen'][system.Slack.n:, 2]  # reactive power
+
+        # --- Slack ---
+        system.Slack.p.v = ppc['gen'][:system.Slack.n, 1]  # active power
+        system.Slack.q.v = ppc['gen'][:system.Slack.n, 2]  # reactive power
+
+        # --- copy results from system algeb into routine algeb ---
+        for raname, ralgeb in self.ralgebs.items():
+            owner = getattr(system, ralgeb.owner_name)  # instance of owner, Model or Group
+            if hasattr(owner, 'group'):
+                grp = getattr(system, owner.group)
+                idx=grp.get_idx()
+            elif hasattr(owner, 'get_idx'):
+                idx=owner.get_idx()
+            else:
+                msg = f"Failed to find valid source variable `{owner.class_name}.{ralgeb.src}` for "
+                msg += f"{self.class_name}.{raname}, skip unpacking."
+                logger.warning(msg)
+                continue
+            ralgeb.v = owner.get(src=ralgeb.src, attr='v', idx=idx)
+        return True
+
     def run(self, **kwargs):
         """
-        Run power flow.
+        Routine the routine.
         """
-        pass
+        if not self.is_setup:
+            logger.info(f"Setup model for {self.class_name}")
+            self.setup()
+        t0, _ = elapsed()
+        ppc = self.solve(**kwargs)
+        _, s = elapsed(t0)
+        self.exec_time = float(s.split(' ')[0])
+        self.unpack(ppc)
+        info = f"{self.class_name} completed in {s} with exit code {self.exit_code}."
+        logger.info(info)
+        return self.exit_code
 
     def summary(self, **kwargs):
         """
-        Print power flow summary.
+        # TODO: Print power flow summary.
         """
         pass
 

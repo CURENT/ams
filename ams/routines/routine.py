@@ -119,7 +119,7 @@ class Routine:
         Routine the routine.
         """
         if not self.is_setup:
-            logger.info(f"Setup model for {self.class_name}")
+            logger.info(f"Setup model of {self.class_name}")
             self.setup()
         t0, _ = elapsed()
         result = self.solve(**kwargs)

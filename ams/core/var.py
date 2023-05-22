@@ -92,12 +92,14 @@ class RAlgeb(Algeb):
                  name: Optional[str] = None,
                  tex_name: Optional[str] = None,
                  info: Optional[str] = None,
+                 src: Optional[str] = None,
                  unit: Optional[str] = None,
                  owner_name: Optional[str] = None,
                  lb: Optional[str] = None,
                  ub: Optional[str] = None,
                  ):
         super().__init__(name=name, tex_name=tex_name, info=info, unit=unit)
+        self.src = name if (src is None) else src
         self.is_group = False
         self.owner_name = owner_name  # indicate if this variable is a group variable
         self.owner = None  # instance of the owner model or group

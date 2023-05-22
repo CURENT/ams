@@ -118,9 +118,14 @@ class DCOPFBase(Routine):
         """
         Unpack the results.
         """
+        # --- copy results from solver into routine algeb ---
         for raname, ralgeb in self.ralgebs.items():
             ovar = getattr(self.om, raname)
             ralgeb.v = getattr(ovar, 'value')
+            # --- copy results from routine algeb into system algeb ---
+            owner = getattr(self.system, ralgeb.owner_name)
+            idx = owner.get_idx()
+            owner.set(src=ralgeb.src, attr='v', idx=idx, value=ralgeb.v)
         return None
 
 
@@ -136,6 +141,7 @@ class DCOPFModel(DCOPFBase):
         self.pg = RAlgeb(info='actual active power generation',
                          unit='p.u.',
                          name='pg',
+                         src='p',
                          tex_name=r'p_{g}',
                          owner_name='StaticGen',
                          lb=self.pmin,
