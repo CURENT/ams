@@ -62,6 +62,19 @@ class DCOPFData(RoutineData):
                          unit='p.u.',
                          owner_name='PQ',
                          )
+        # NOTE: following two parameters are temporary solution
+        self.pd1 = RParam(info='active power load in system base in gen bus',
+                          name='pd1',
+                          tex_name=r'p_{d1}',
+                          unit='p.u.',
+                          v_str='pd1',
+                          )
+        self.pd2 = RParam(info='active power load in system base in non-gen bus',
+                          name='pd2',
+                          tex_name=r'p_{d2}',
+                          unit='p.u.',
+                          v_str='pd2',
+                          )
         # --- line ---
         self.rate_a = RParam(info='long-term flow limit flow limit',
                              name='rate_a',
@@ -69,11 +82,16 @@ class DCOPFData(RoutineData):
                              unit='MVA',
                              owner_name='Line',
                              )
-        self.GSFa = RParam(info='GSF submatrix [0, 0]',
-                             name='GSF_a',
-                             tex_name=r'G_{SFA}',
-                             v=np.ones((5, 5))
-                             )
+        self.PTDF1 = RParam(info='PTDF matrix 1',
+                            name='PTDF1',
+                            tex_name=r'P_{TDF1}',
+                            v_str='PTDF1',
+                            )
+        self.PTDF2 = RParam(info='PTDF matrix 2',
+                            name='PTDF2',
+                            tex_name=r'P_{TDF2}',
+                            v_str='PTDF2',
+                            )
 
 
 class DCOPFModel(Routine):
@@ -97,16 +115,16 @@ class DCOPFModel(Routine):
                              e_str='sum(pd) - sum(pg)',
                              type='eq',
                              )
-        # self.lub = Constraint(name='lub',
-        #                       info='line limits upper bound',
-        #                       e_str='GSF * (G - D) - rate_a',
-        #                       type='uq',
-        #                       )
-        # self.llb = Constraint(name='llb',
-        #                       info='line limits lower bound',
-        #                       e_str='- GSF * (G - D) - rate_a',
-        #                       type='uq',
-        #                       )
+        self.lub = Constraint(name='lub',
+                              info='line limits upper bound',
+                              e_str='PTDF1 @ (pg - pd1) - PTDF2 * pd2 - rate_a',
+                              type='uq',
+                              )
+        self.llb = Constraint(name='llb',
+                              info='line limits lower bound',
+                              e_str='- ( PTDF1 @ (pg - pd1) - PTDF2 * pd2 - rate_a )',
+                              type='uq',
+                              )
 
         # --- objective ---
         self.obj = Objective(e_str='sum(c2 * pg**2 + c1 * pg + c0)',

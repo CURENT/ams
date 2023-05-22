@@ -36,6 +36,7 @@ class RParam:
                  unit: Optional[str] = None,
                  owner_name: Optional[str] = None,
                  v: Optional[np.ndarray] = None,
+                 v_str: Optional[str] = None,
                  ):
 
         self.name = name
@@ -47,9 +48,8 @@ class RParam:
         self.owner_name = owner_name  # indicate if this variable is a group variable
         self.owner = None  # instance of the owner model or group
         self.is_set = False
-        if v is not None:
-            self.is_set = True
-            self._v = v
+        self.v_str = v_str
+        self._v = None
 
     @property
     def v(self):
@@ -69,7 +69,10 @@ class RParam:
 
     @property
     def n(self):
-        return self.owner.n
+        if self.is_set:
+            return self._v.shape[0]
+        else:
+            return self.owner.n
 
     def __repr__(self):
         if self.is_set:

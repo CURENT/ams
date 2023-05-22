@@ -196,7 +196,6 @@ class OModel:
         code_var = "tmp=var(ralgeb.n, boolean=(ralgeb.unit == 'bool'))"
         for pattern, replacement, in sub_map.items():
             code_var = re.sub(pattern, replacement, code_var)
-        logger.debug(f"var code: {code_var}")
         exec(code_var)
         exec("setattr(self, ralgeb.name, tmp)")
         exec("self.vars[ralgeb.name] = tmp")

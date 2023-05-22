@@ -85,7 +85,7 @@ def makePTDF(baseMVA, bus, branch,
 
     # check that bus numbers are equal to indices to bus (one set of bus numbers)
     if any(bus[:, BUS_I] != np.arange(nb)):
-        stderr.write('makePTDF: buses must be numbered consecutively')
+        logger.debug('buses must be numbered consecutively')
 
     if reduced:
         H = np.zeros((len(branch_id), nb))

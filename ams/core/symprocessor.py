@@ -78,13 +78,13 @@ class SymProcessor:
             # tmp = sp.symbols(ralgeb.name)
             self.vars_dict[raname] = tmp
             self.inputs_dict[raname] = tmp
-            self.sub_map[raname] = f'self.{raname}'
+            self.sub_map[rf"\b{raname}\b"] = f"self.{raname}"
 
         # RParams
         for rpname, rparam in self.parent.rparams.items():
             tmp = sp.symbols(f'{rparam.name}')
             self.inputs_dict[rpname] = tmp
-            self.sub_map[rpname] = f'self.routine.{rpname}.v'
+            self.sub_map[rf"\b{rpname}\b"] = f'self.routine.{rpname}.v'
 
         # store tex names defined in `self.config`
         for key in self.config.as_dict():

@@ -87,6 +87,7 @@ class System(andes_System):
         self.groups = OrderedDict()          # group names and instances
         self.routines = OrderedDict()        # routine names and instances
         self.mats = None                     # matrix processor
+        self.mat = OrderedDict()             # common matrices
         # TODO: there should be an exit_code for each routine
         self.exit_code = 0                   # command-line exit code, 0 - normal, others - error.
 
@@ -284,6 +285,29 @@ class System(andes_System):
                 algeb.a = np.arange(a0, a0 + algeb.owner.n)
                 a0 += algeb.owner.n
 
+        # set up common matrix
+        self.mats = MatProcessor(self)       # matrix processor
+
+        # FIXME: hard coded here
+        # Set nuemerical values for special params
+        gen_bus = self.StaticGen.get(src='bus', attr='v',
+                                     idx=self.StaticGen.get_idx())
+        all_bus = self.Bus.idx.v
+        regBus = [int(bus) if isinstance(bus, (int, float)) else bus for bus in gen_bus]
+        redBus = [int(bus) if isinstance(bus, (int, float)) else bus for bus in all_bus if bus not in gen_bus]
+
+        # Restrucrue PQ load value to match gen bus pattern
+        idx_PD1 = self.PQ.find_idx(keys="bus", values=regBus, allow_none=True, default=None)
+        idx_PD2 = self.PQ.find_idx(keys="bus", values=redBus, allow_none=True, default=None)
+        PD1 = self.PQ.get(src='p0', attr='v', idx=idx_PD1)
+        PD2 = self.PQ.get(src='p0', attr='v', idx=idx_PD2)
+        PTDF1, PTDF2 = self.mats.rePTDF()
+
+        self.mat = OrderedDict([
+            ('pd1', PD1), ('pd2', PD2),
+            ('PTDF1', PTDF1), ('PTDF2', PTDF2),
+        ])
+
         # NOTE: Set up om for all routines
         for rname, rtn in self.routines.items():
             # rtn.setup()  # not setup optimization model in system setup stage
@@ -292,9 +316,11 @@ class System(andes_System):
                 ralgeb.v = np.zeros(ralgeb.owner.n)
                 ralgeb.a = np.arange(a0, a0 + ralgeb.owner.n)
                 a0 += ralgeb.owner.n
+            for rpname, rparam in rtn.rparams.items():
+                if rpname in self.mat.keys():
+                    rparam.is_set = True
+                    rparam._v = self.mat[rpname]
             # TODO: maybe setup numrical arrays here? [rtn.c, Aub, Aeq ...]
-
-        self.mats = MatProcessor(self)       # matrix processor
 
         _, s = elapsed(t0)
         logger.info('System set up in %s.', s)
