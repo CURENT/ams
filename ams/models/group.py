@@ -110,13 +110,6 @@ class StaticShunt(GroupBase):
     pass
 
 
-class DynLoad(GroupBase):
-    """
-    Dynamic load group.
-    """
-    pass
-
-
 class Information(GroupBase):
     """
     Group for information container models.
