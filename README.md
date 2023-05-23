@@ -6,7 +6,7 @@ Python Software for Power System Dispatch Modeling and Co-Simulation with Dynani
 
 |               | Latest                                                                                                                                        | Stable                                                                                                                                        |
 |---------------|-----------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| Documentation | [![Latest Documentation](https://readthedocs.org/projects/ams/badge/?version=latest)](https://andes.readthedocs.io/en/latest/?badge=latest) | [![Documentation Status](https://readthedocs.org/projects/ams/badge/?version=stable)](https://andes.readthedocs.io/en/stable/?badge=stable) |
+| Documentation | [![Latest Documentation](https://readthedocs.org/projects/ams/badge/?version=latest)](https://ams.readthedocs.io/en/latest/?badge=latest) | [![Documentation Status](https://readthedocs.org/projects/ams/badge/?version=stable)](https://ams.readthedocs.io/en/stable/?badge=stable) |
 
 # Why AMS
 
