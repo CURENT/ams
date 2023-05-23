@@ -17,7 +17,7 @@ from ams.core.var import RAlgeb
 
 from ams.routines.pflow import PFlowData, PFlowModel
 from ams.routines.dcopf import DCOPFData
-from ams.routines.routinebase import RoutineModel
+from ams.routines.routine import RoutineModel
 from ams.opt.omodel import Constraint, Objective
 
 logger = logging.getLogger(__name__)
@@ -58,8 +58,6 @@ class ACOPFBase(RoutineModel):
         """
         system = self.system
         mva = res['baseMVA']
-        
-        self.obj.v = res['f'] # TODO: check unit
 
         # --- copy results from routine algeb into system algeb ---
         # --- Bus ---
@@ -90,11 +88,16 @@ class ACOPFBase(RoutineModel):
                 logger.warning(msg)
                 continue
             ralgeb.v = owner.get(src=ralgeb.src, attr='v', idx=idx)
+        
+        # --- Objective ---        
+        self.obj.v = res['f'] # TODO: check unit
+                
+
         return True
 
     def run(self, **kwargs):
         """
-        Routine the routine.
+        Run the routine.
         """
         if not self.is_setup:
             logger.info(f"Setup model for {self.class_name}")

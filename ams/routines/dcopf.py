@@ -8,7 +8,7 @@ from scipy.optimize import linprog
 from ams.core.param import RParam
 from ams.core.var import RAlgeb
 
-from ams.routines.routinebase import RoutineData, RoutineModel
+from ams.routines.routine import RoutineData, RoutineModel
 
 from ams.opt.omodel import Constraint, Objective
 

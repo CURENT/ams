@@ -9,7 +9,7 @@ import numpy as np
 from andes.shared import deg2rad
 from andes.utils.misc import elapsed
 
-from ams.routines.routinebase import RoutineData, RoutineModel
+from ams.routines.routine import RoutineData, RoutineModel
 from ams.opt.omodel import Constraint, Objective
 from ams.solver.pypower.runpf import runpf, rundcpf
 
@@ -143,7 +143,7 @@ class DCPFlowBase(RoutineModel):
 
     def run(self, **kwargs):
         """
-        Routine the DC power flow.
+        Run the DC Power Flow.
 
         Examples
         --------
