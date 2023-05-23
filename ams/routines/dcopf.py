@@ -156,6 +156,7 @@ class DCOPFBase(Routine):
                 owner = getattr(self.system, ralgeb.owner_name)
                 idx = owner.get_idx()
                 owner.set(src=ralgeb.src, attr='v', idx=idx, value=ralgeb.v)
+        self.obj.v = self.om.obj.value
         return True
 
 
@@ -194,7 +195,9 @@ class DCOPFModel(DCOPFBase):
                               type='uq',
                               )
         # --- objective ---
-        self.obj = Objective(e_str='sum(c2 * pg**2 + c1 * pg + c0)',
+        self.obj = Objective(name='tc',
+                             info='total generation cost',
+                             e_str='sum(c2 * pg**2 + c1 * pg + c0)',
                              sense='min',)
 
 

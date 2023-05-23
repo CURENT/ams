@@ -45,6 +45,10 @@ class Constraint:
     def class_name(self):
         return self.__class__.__name__
 
+    def __repr__(self):
+        name = self.name if self.name is not None else 'Unnamed constr'
+        return f"{name}: {self.e_str}"
+
 
 class Objective:
     """
@@ -52,11 +56,26 @@ class Objective:
     """
 
     def __init__(self,
+                 name: Optional[str] = None,
                  e_str: Optional[str] = None,
+                 info: Optional[str] = None,
                  sense: Optional[str] = 'min'):
+        self.name = name
         self.e_str = e_str
+        self.info = info
         self.sense = sense
-        # TODO: add obj info from solver
+        self.v = None  # objective value
+
+    @property
+    def class_name(self):
+        return self.__class__.__name__
+
+    def __repr__(self):
+        name = self.name if self.name is not None else 'Unnamed obj'
+        objv = ''
+        if self.v is not None:
+            objv = f", objective value = {self.v:.4f}"
+        return f"{name}: {self.e_str}{objv}"
 
 
 class OModel:
@@ -119,12 +138,13 @@ class OModel:
             self.parse_obj(obj=self.routine.obj,
                            sub_map=self.routine.syms.sub_map)
             # --- finalize the optimziation formulation ---
-            code_mdl = "problem(self.obj, [constr for constr in self.constrs.values()])"
+            code_mdl = f"problem(self.obj, [constr for constr in self.constrs.values()])"
             for pattern, replacement, in self.routine.syms.sub_map.items():
                 code_mdl = re.sub(pattern, replacement, code_mdl)
             code_mdl = "self.mdl=" + code_mdl
-            logger.debug(f"{self.routine.class_name} set obj: {code_mdl}")
             exec(code_mdl)
+        else:
+            logger.warning(f"{self.routine.class_name} has no objective function.")
         return True
 
     @property
