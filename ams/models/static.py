@@ -107,7 +107,7 @@ class GenParam:
                            unit='p.u./min')
         self.apf = NumParam(default=0.0,
                             info="area participation factor",
-                            tex_name=r'apf')
+                            tex_name=r'a_{pf}')
 
 
 class PVModel(Model):
