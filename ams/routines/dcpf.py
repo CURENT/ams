@@ -111,7 +111,7 @@ class DCPFlowBase(Routine):
 
     def unpack(self, res):
         """
-        Unpack results from ppc to system.
+        Unpack results from PYPOWER.
         """
         system = self.system
         mva = res['baseMVA']
@@ -150,7 +150,24 @@ class DCPFlowBase(Routine):
 
     def run(self, **kwargs):
         """
-        Routine the routine.
+        Routine the DC power flow.
+
+        Examples
+        --------
+        >>> ss = ams.load(ams.get_case('matpower/case14.m'))
+        >>> ss.DCOPF.run()
+
+        Other Parameters
+        ----------------
+        ppopt : dict
+            PYPOWER options.
+        
+        Returns
+        -------
+        exit_code : int
+            Exit code of the routine.
+
+        # TODO: fix the **kwargs input.
         """
         if not self.is_setup:
             logger.info(f"Setup model for {self.class_name}")

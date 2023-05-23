@@ -190,24 +190,42 @@ GUROBI_OPTIONS = [
 ]
 
 
-def ppoption(ppopt=None, **kw_args):
-    """Used to set and retrieve a PYPOWER options vector.
+def ppoption(ppopt=None, **kwargs):
+    """
+    Set and retrieve a PYPOWER options vector.
 
-    C{opt = ppoption()} returns the default options vector
+    Parameters
+    ----------
+    ppopt: dict, optional
+        The base options vector. If not provided, the default options vector is used.
+    **kwargs: keyword arguments, optional
+        New values for the specified options. Each keyword argument represents an option name,
+        and its value represents the new value for that option.
 
-    C{opt = ppoption(NAME1=VALUE1, NAME2=VALUE2, ...)} returns the default
-    options vector with new values for the specified options, NAME# is the
-    name of an option, and VALUE# is the new value.
+    Returns
+    -------
+    ppopt: dict
+        The options vector with the updated values.
 
-    C{opt = ppoption(OPT, NAME1=VALUE1, NAME2=VALUE2, ...)} same as above
-    except it uses the options vector OPT as a base instead of the default
-    options vector.
+    Examples
+    --------
+    >>> opt = ppoption(PF_ALG=2, PF_TOL=1e-4)
+    >>> opt = ppoption(opt, OPF_ALG=565, VERBOSE=2)
 
-    Examples::
-        opt = ppoption(PF_ALG=2, PF_TOL=1e-4);
-        opt = ppoption(opt, OPF_ALG=565, VERBOSE=2)
+    Notes
+    -----
+    This function is used to set and retrieve PYPOWER options vector.
+    The options vector contains various settings and configurations that affect the behavior
+    of the PYPOWER routines.
 
-    @author: Ray Zimmerman (PSERC Cornell)
+    The `ppopt` parameter, if provided, serves as the base options vector.
+    If not provided, the function uses the default options vector.
+
+    Additional options can be specified using keyword arguments, where each keyword
+    represents an option name, and its corresponding value represents the new value
+    for that option.
+
+    The function returns the options vector with the updated values.
     """
 
     default_ppopt = {}
@@ -219,6 +237,6 @@ def ppoption(ppopt=None, **kw_args):
 
     ppopt = default_ppopt if ppopt == None else ppopt.copy()
 
-    ppopt.update(kw_args)
+    ppopt.update(kwargs)
 
     return ppopt
