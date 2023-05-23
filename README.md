@@ -1,6 +1,6 @@
 # LTB AMS
 
-Python Software for Power System Dispatch Modeling and Co-Simulation with Dynanic.
+Python Software for Power System Dispatch Modeling and Co-Simulation with Dynanic, serving as the market simulator for the [CURENT Largescale Testbed][LTB Repository].
 
 <img src="docs/source/images/sponsors/CURENT_Logo_NameOnTrans.png" alt="CURENT ERC Logo" width="300" height="auto">
 
@@ -8,19 +8,22 @@ Python Software for Power System Dispatch Modeling and Co-Simulation with Dynani
 |---------------|-----------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
 | Documentation | [![Latest Documentation](https://readthedocs.org/projects/ams/badge/?version=latest)](https://andes.readthedocs.io/en/latest/?badge=latest) | [![Documentation Status](https://readthedocs.org/projects/ams/badge/?version=stable)](https://andes.readthedocs.io/en/stable/?badge=stable) |
 
-## Why AMS
-
-### Dispatch-dynamic co-simulation
+# Why AMS
 
 With the built-in interface with dynamic simulation engine, LTB ANDES, AMS enables Dynamics Interfaced Stability Constrained Production Cost and Market Operation Modeling.
 
-### Rapid prototyping
+AMS is currently under active development.
+Use the following resources to get involved.
 
-New device and new formulation.
-
-### Unified design with ANDES
-
-The APIs are designed to be universal with ANDES, reduce the learning cost for the researchers who are interested in cross-domains.
++ Start from the [documentation][readthedocs] for installation and tutorial.
++ Check out examples in the [examples folder][examples]
++ Report bugs or issues by submitting a [GitHub issue][GitHub issues]
++ Submit contributions using [pull requests][GitHub pull requests]
++ Read release notes highlighted [here][release notes]
+<!-- + Read the model verification results in the [examples/verification folder][verification] -->
+<!-- + Try in Jupyter Notebook on [Binder][Binder] -->
+<!-- + Ask a question in the [GitHub Discussions][Github Discussions] -->
+<!-- + Check out and and cite our [paper][arxiv paper] -->
 
 # Sponsors and Contributors
 
@@ -40,4 +43,12 @@ AMS is licensed under the [GPL v3 License](./LICENSE).
 
 * * *
 
+[GitHub releases]:       https://github.com/CURENT/ams/releases
+[GitHub issues]:         https://github.com/CURENT/ams/issues
+[Github Discussions]:    https://github.com/CURENT/ams/discussions
+[GitHub insights]:       https://github.com/CURENT/ams/pulse
+[GitHub pull requests]:  https://github.com/CURENT/ams/pulls
 [GitHub contributors]:   https://github.com/CURENT/ams/graphs/contributors
+[readthedocs]:           https://ams.readthedocs.io
+[examples]:              https://github.com/CURENT/ams/tree/master/examples
+[LTB Repository]:       https://github.com/CURENT
