@@ -8,8 +8,7 @@ from scipy.optimize import linprog
 from ams.core.param import RParam
 from ams.core.var import RAlgeb
 
-from ams.routines.routinedata import RoutineData
-from ams.routines.routine import RoutineData, Routine
+from ams.routines.routinebase import RoutineData, RoutineModel
 
 from ams.opt.omodel import Constraint, Objective
 
@@ -93,7 +92,7 @@ class DCOPFData(RoutineData):
                             )
 
 
-class DCOPFBase(Routine):
+class DCOPFBase(RoutineModel):
     """
     Base class for DCOPF dispatch model.
 
@@ -101,7 +100,7 @@ class DCOPFBase(Routine):
     """
 
     def __init__(self, system, config):
-        Routine.__init__(self, system, config)
+        RoutineModel.__init__(self, system, config)
 
     def solve(self, **kwargs):
         """
@@ -139,7 +138,7 @@ class DCOPFBase(Routine):
         kwargs : keywords, optional
             Additional solver specific arguments. See CVXPY documentation for details.
         """
-        Routine.run(self, **kwargs)
+        RoutineModel.run(self, **kwargs)
 
     def unpack(self, **kwargs):
         """

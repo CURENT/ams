@@ -4,7 +4,7 @@ Dispatch routines.
 
 from collections import OrderedDict
 from andes.utils.func import list_flatten
-from ams.routines.routine import RoutineData, Routine
+from ams.routines.routinebase import RoutineData, RoutineModel
 
 all_routines = OrderedDict([
     ('dcpf', ['DCPF']),

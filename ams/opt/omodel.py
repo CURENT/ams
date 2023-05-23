@@ -71,11 +71,16 @@ class Objective:
         return self.__class__.__name__
 
     def __repr__(self):
-        name = self.name if self.name is not None else 'Unnamed obj'
-        objv = ''
-        if self.v is not None:
-            objv = f", objective value = {self.v:.4f}"
-        return f"{name}: {self.e_str}{objv}"
+        if self.name is not None:
+            if self.v is not None:
+                return f"{self.name}: {self.e_str}, {self.name}={self.v:.4f}"
+            else:
+                return f"{self.name}: {self.e_str}"
+        else:
+            if self.v is not None:
+                return f"{self.e_str}={self.v:.4f}"
+            else:
+                return f"Unnamed obj: {self.e_str}"
 
 
 class OModel:

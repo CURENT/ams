@@ -27,16 +27,18 @@ class PFlowData(DCPFlowData):
 
     def __init__(self):
         DCPFlowData.__init__(self)
+        self.qd = RParam(info='reactive power load in system base',
+                         name='qd',
+                         src='q0',
+                         tex_name=r'q_{d}',
+                         unit='p.u.',
+                         owner_name='PQ',
+                         )
 
-    def solve(self, **kwargs):
-        ppc = system2ppc(self.system)
-        res, success = runpf(ppc, **kwargs)
-        return ppc, success
 
-
-class PFlowBase(DCPFlowBase):
+class PFlowModel(DCPFlowBase):
     """
-    Base class for AC Power Flow model.
+    AC Power Flow model.
     """
 
     def __init__(self, system, config):
@@ -82,11 +84,11 @@ class PFlowBase(DCPFlowBase):
         # TODO: AC power flow formulation
 
 
-class PFlow(PFlowData, PFlowBase):
+class PFlow(PFlowData, PFlowModel):
     """
     AC Power Flow routine.
     """
 
     def __init__(self, system=None, config=None):
         PFlowData.__init__(self)
-        PFlowBase.__init__(self, system, config)
+        PFlowModel.__init__(self, system, config)

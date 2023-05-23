@@ -29,7 +29,7 @@ class RoutineData:
         self.rparams = OrderedDict()  # list out RParam in a routine
 
 
-class Routine:
+class RoutineModel:
     """
     CLass to hold routine parameters and variables.
     """
@@ -171,7 +171,7 @@ class Routine:
             value.id = len(self.rparams)
         self._register_attribute(key, value)
 
-        super(Routine, self).__setattr__(key, value)
+        super(RoutineModel, self).__setattr__(key, value)
 
     def _register_attribute(self, key, value):
         """

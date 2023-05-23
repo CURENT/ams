@@ -9,7 +9,7 @@ import numpy as np
 from andes.shared import deg2rad
 from andes.utils.misc import elapsed
 
-from ams.routines.routine import RoutineData, Routine
+from ams.routines.routinebase import RoutineData, RoutineModel
 from ams.opt.omodel import Constraint, Objective
 from ams.solver.pypower.runpf import runpf, rundcpf
 
@@ -58,16 +58,9 @@ class DCPFlowData(RoutineData):
                          unit='p.u.',
                          owner_name='PQ',
                          )
-        self.qd = RParam(info='active power load in system base',
-                         name='qd',
-                         src='q0',
-                         tex_name=r'q_{d}',
-                         unit='p.u.',
-                         owner_name='PQ',
-                         )
 
 
-class DCPFlowBase(Routine):
+class DCPFlowBase(RoutineModel):
     """
     Base class for Power Flow model.
 
@@ -75,7 +68,7 @@ class DCPFlowBase(Routine):
     """
 
     def __init__(self, system, config):
-        Routine.__init__(self, system, config)
+        RoutineModel.__init__(self, system, config)
         self.info = 'DC Power Flow'
 
         # --- bus ---
