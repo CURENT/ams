@@ -181,7 +181,7 @@ html_favicon = 'images/curent.ico'
 smartquotes = False
 
 # import and execute model reference generation script
-# exec(open("genmodelref.py").read())
+exec(open("genmodelref.py").read())
 
 jupyter_execute_notebooks = "off"
 

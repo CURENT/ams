@@ -161,13 +161,13 @@ class DCPFlowBase(Routine):
         ----------------
         ppopt : dict
             PYPOWER options.
-        
+
         Returns
         -------
         exit_code : int
             Exit code of the routine.
 
-        # TODO: fix the **kwargs input.
+        # TODO: fix the kwargs input.
         """
         if not self.is_setup:
             logger.info(f"Setup model for {self.class_name}")

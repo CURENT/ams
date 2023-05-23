@@ -5,7 +5,7 @@ This file is used to generate reStructuredText tables for Model and Routine refe
 import os
 import ams
 
-if not (os.path.isfile('modelref.rst') and os.path.isfile('rtnref.rst')):
+if not (os.path.isfile('modelref.rst') and os.path.isfile('configref.rst')):
 
     ss = ams.load(ams.get_case('ieee14/ieee14.xlsx'))
 

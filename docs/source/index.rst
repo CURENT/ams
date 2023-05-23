@@ -101,4 +101,5 @@ More information about CURENT LTB can be found at the `LTB Repository`_.
    examples/index
    modeling/index
    release-notes
+   modelref
    api
