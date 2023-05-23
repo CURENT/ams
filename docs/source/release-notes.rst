@@ -9,7 +9,7 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v0.6.4 (2023-05-xx)
+v0.6.4 (2023-05-23)
 -------------------
 
 - Setup PFlow and DCPF using PYPOWER
