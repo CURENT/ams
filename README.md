@@ -50,5 +50,6 @@ AMS is licensed under the [GPL v3 License](./LICENSE).
 [GitHub pull requests]:  https://github.com/CURENT/ams/pulls
 [GitHub contributors]:   https://github.com/CURENT/ams/graphs/contributors
 [readthedocs]:           https://ams.readthedocs.io
+[release notes]:         https://ams.readthedocs.io/en/latest/release-notes.html
 [examples]:              https://github.com/CURENT/ams/tree/master/examples
 [LTB Repository]:       https://github.com/CURENT
