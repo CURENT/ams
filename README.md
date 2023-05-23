@@ -1,12 +1,12 @@
-# AMS
+# LTB AMS
 
 Python Software for Power System Dispatch Modeling and Co-Simulation with Dynanic.
 
-AMS is under DEVELOPMENT, stay tuned!
+<img src="docs/source/images/sponsors/CURENT_Logo_NameOnTrans.png" alt="CURENT ERC Logo" width="300" height="auto">
 
-|               | Latest                                                                                                                               |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Documentation | [![Documentation Status](https://readthedocs.org/projects/ams/badge/?version=latest)](https://ams.readthedocs.io/en/latest/?badge=latest) |
+|               | Latest                                                                                                                                        | Stable                                                                                                                                        |
+|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| Documentation | [![Latest Documentation](https://readthedocs.org/projects/ams/badge/?version=latest)](https://andes.readthedocs.io/en/latest/?badge=latest) | [![Documentation Status](https://readthedocs.org/projects/ams/badge/?version=stable)](https://andes.readthedocs.io/en/stable/?badge=stable) |
 
 ## Why AMS
 
@@ -37,3 +37,7 @@ See [GitHub contributors][GitHub contributors] for the contributor list.
 # License
 
 AMS is licensed under the [GPL v3 License](./LICENSE).
+
+* * *
+
+[GitHub contributors]:   https://github.com/CURENT/ams/graphs/contributors
