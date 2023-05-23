@@ -123,10 +123,13 @@ class DCOPFBase(Routine):
             ovar = getattr(self.om, raname)
             ralgeb.v = getattr(ovar, 'value')
             # --- copy results from routine algeb into system algeb ---
-            owner = getattr(self.system, ralgeb.owner_name)
-            idx = owner.get_idx()
-            owner.set(src=ralgeb.src, attr='v', idx=idx, value=ralgeb.v)
-        return None
+            if ralgeb.owner_name is None:   # if no owner
+                continue
+            else:                           # if owner is a system algeb
+                owner = getattr(self.system, ralgeb.owner_name)
+                idx = owner.get_idx()
+                owner.set(src=ralgeb.src, attr='v', idx=idx, value=ralgeb.v)
+        return True
 
 
 class DCOPFModel(DCOPFBase):

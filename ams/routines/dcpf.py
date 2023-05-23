@@ -133,10 +133,12 @@ class DCPFlowBase(Routine):
         # --- copy results from system algeb into routine algeb ---
         for raname, ralgeb in self.ralgebs.items():
             owner = getattr(system, ralgeb.owner_name)  # instance of owner, Model or Group
-            if hasattr(owner, 'group'):
+            if ralgeb.src is None:          # skip if no source variable is specified
+                continue
+            elif hasattr(owner, 'group'):   # if owner is a Model instance
                 grp = getattr(system, owner.group)
                 idx=grp.get_idx()
-            elif hasattr(owner, 'get_idx'):
+            elif hasattr(owner, 'get_idx'): # if owner is a Group instance
                 idx=owner.get_idx()
             else:
                 msg = f"Failed to find valid source variable `{owner.class_name}.{ralgeb.src}` for "
