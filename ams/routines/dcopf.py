@@ -97,26 +97,53 @@ class DCOPFBase(Routine):
     """
     Base class for DCOPF dispatch model.
 
-    Overload the ``solve``, ``unpack``, ``run``, and ``__repr__`` methods.
+    Overload the ``solve``, ``unpack``, and ``run`` methods.
     """
 
     def __init__(self, system, config):
         Routine.__init__(self, system, config)
 
-    def __repr__(self) -> str:
-        info = f"Routine {self.class_name}: Is Setup: {self.is_setup}; Exit Code: {self.exit_code}"
-        return info
-
     def solve(self, **kwargs):
         """
-        Solve the routine.
+        Solve the routine optimization model.
         """
         res = self.om.mdl.solve(**kwargs)
         return res
 
+    def run(self, **kwargs):
+        """
+        Run the routine.
+
+        Other Parameters
+        ----------------
+        solver: str, optional
+            The solver to use. For example, 'GUROBI', 'ECOS', 'SCS', or 'OSQP'.
+        verbose : bool, optional
+            Overrides the default of hiding solver output and prints logging information describing CVXPY's compilation process.
+        gp : bool, optional
+            If True, parses the problem as a disciplined geometric program instead of a disciplined convex program.
+        qcp : bool, optional
+            If True, parses the problem as a disciplined quasiconvex program instead of a disciplined convex program.
+        requires_grad : bool, optional
+            Makes it possible to compute gradients of a solution with respect to Parameters by calling problem.backward()
+            after solving, or to compute perturbations to the variables given perturbations to Parameters by calling problem.derivative().
+            Gradients are only supported for DCP and DGP problems, not quasiconvex problems. When computing gradients
+            (i.e., when this argument is True), the problem must satisfy the DPP rules.
+        enforce_dpp : bool, optional
+            When True, a DPPError will be thrown when trying to solve a non-DPP problem (instead of just a warning).
+            Only relevant for problems involving Parameters. Defaults to False.
+        ignore_dpp : bool, optional
+            When True, DPP problems will be treated as non-DPP, which may speed up compilation. Defaults to False.
+        method : function, optional
+            A custom solve method to use.
+        kwargs : keywords, optional
+            Additional solver specific arguments. See CVXPY documentation for details.
+        """
+        Routine.run(self, **kwargs)
+
     def unpack(self, **kwargs):
         """
-        Unpack the results.
+        Unpack the results from CVXPY model.
         """
         # --- copy results from solver into routine algeb ---
         for raname, ralgeb in self.ralgebs.items():

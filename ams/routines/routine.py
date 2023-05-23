@@ -103,7 +103,7 @@ class Routine:
 
     def solve(self, **kwargs):
         """
-        Solve the routine.
+        Solve the routine optimization model.
         """
         pass
         return True
@@ -116,7 +116,7 @@ class Routine:
 
     def run(self, **kwargs):
         """
-        Routine the routine.
+        Run the routine.
         """
         if not self.is_setup:
             logger.info(f"Setup model of {self.class_name}")
