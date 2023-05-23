@@ -8,99 +8,85 @@ import numpy as np
 
 from andes.shared import deg2rad
 
-from ams.routines.routine import PFlowBase
 from ams.solver.pypower.runpf import runpf, rundcpf
 
 from ams.io.pypower import system2ppc
+from ams.core.param import RParam
+from ams.core.var import RAlgeb
+
+from ams.routines.dcpf import DCPFlowData, DCPFlowBase
+from ams.opt.omodel import Constraint, Objective
 
 logger = logging.getLogger(__name__)
 
 
-class PFlow(PFlowBase):
+class PFlowData(DCPFlowData):
     """
     AC Power Flow routine.
     """
 
-    def __init__(self, system=None, config=None):
-        PFlowBase.__init__(system, config)
+    def __init__(self):
+        DCPFlowData.__init__(self)
 
     def solve(self, **kwargs):
         ppc = system2ppc(self.system)
         res, success = runpf(ppc, **kwargs)
         return ppc, success
-    
-    def unpack(self, ppc):
-        """
-        Unpack results from ppc to system.
-        """
-        system = self.system
-
-        # --- Bus ---
-        system.Bus.v.v = ppc['bus'][:, 7]  # voltage magnitude
-        system.Bus.a.v = ppc['bus'][:, 8] * deg2rad  # voltage angle
-
-        # --- PV ---
-        system.PV.q.v = ppc['gen'][system.Slack.n:, 2]  # reactive power
-
-        # --- Slack ---
-        system.Slack.p.v = ppc['gen'][:system.Slack.n, 1]  # active power
-        system.Slack.q.v = ppc['gen'][:system.Slack.n, 2]  # reactive power
-
-        # --- store results into routine algeb ---
-        for raname, ralgeb in self.ralgebs.items():
-            ralgeb.v = ralgeb.Algeb.v.copy()
-
-    def run(self, **kwargs):
-        """
-        Run power flow.
-        """
-        (ppc, success), elapsed_time = self.solve(**kwargs)
-        self.exit_code = int(not success)
-        if success:
-            info = f'{self.class_name} completed in {elapsed_time} seconds with exit code {self.exit_code}.'
-        else:
-            info = f'{self.class_name} failed in {elapsed_time} seconds with exit code {self.exit_code}.'
-        logger.info(info)
-        self.exec_time = float(elapsed_time.split(' ')[0])
-        self.unpack(ppc)
-        return self.exit_code
-
-    def summary(self, **kwargs):
-        """
-        Print power flow summary.
-        """
-        pass
-
-    def report(self, **kwargs):
-        """
-        Print power flow report.
-        """
-        pass
 
 
-class DCPF(PFlow):
+class PFlowBase(DCPFlowBase):
     """
-    DC Power Flow routine.
+    Base class for AC Power Flow model.
+    """
+
+    def __init__(self, system, config):
+        DCPFlowBase.__init__(self, system, config)
+        self.info = 'AC Power Flow'
+
+        # --- bus ---
+        self.aBus = RAlgeb(info='bus voltage angle',
+                           unit='rad',
+                           name='aBus',
+                           src='a',
+                           tex_name=r'a_{Bus}',
+                           owner_name='Bus',
+                           )
+        self.vBus = RAlgeb(info='bus voltage magnitude',
+                           unit='p.u.',
+                           name='vBus',
+                           src='v',
+                           tex_name=r'v_{Bus}',
+                           owner_name='Bus',
+                           )
+        # --- gen ---
+        self.pg = RAlgeb(info='active power generation',
+                         unit='p.u.',
+                         name='pg',
+                         src='p',
+                         tex_name=r'p_{g}',
+                         owner_name='StaticGen',
+                         )
+        self.qg = RAlgeb(info='reactive power generation',
+                         unit='p.u.',
+                         name='qg',
+                         src='q',
+                         tex_name=r'q_{g}',
+                         owner_name='StaticGen',
+                         )
+        # --- constraints ---
+        self.pb = Constraint(name='pb',
+                             info='power balance',
+                             e_str='sum(pd) - sum(pg)',
+                             type='eq',
+                             )
+        # TODO: AC power flow formulation
+
+
+class PFlow(PFlowData, PFlowBase):
+    """
+    AC Power Flow routine.
     """
 
     def __init__(self, system=None, config=None):
-        super().__init__(system, config)
-        self.info = "DC Power Flow"
-
-    def run(self, **kwargs):
-        """
-        Run power flow.
-        """
-        pass
-
-    def summary(self, **kwargs):
-        """
-        Print power flow summary.
-        """
-        pass
-
-    def report(self, **kwargs):
-        """
-        Print power flow report.
-        """
-        pass
+        PFlowData.__init__(self)
+        PFlowBase.__init__(self, system, config)

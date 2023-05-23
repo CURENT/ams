@@ -21,7 +21,7 @@ from andes.utils.misc import elapsed
 
 from ams.models.group import GroupBase
 from ams.models import file_classes
-from ams.routines import all_routines, algeb_models
+from ams.routines import all_routines
 from ams.utils.paths import get_config_path
 from ams.core import Algeb
 from ams.core.matprocessor import MatProcessor

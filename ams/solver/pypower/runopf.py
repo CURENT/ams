@@ -15,6 +15,9 @@ from ams.solver.pypower.printpf import printpf
 from ams.solver.pypower.savecase import savecase
 
 
+logger = logging.getLogger(__name__)
+
+
 def runopf(casedata=None, ppopt=None, fname='', solvedcase=''):
     """Runs an optimal power flow.
 

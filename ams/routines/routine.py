@@ -19,6 +19,16 @@ from ams.core.symprocessor import SymProcessor
 
 logger = logging.getLogger(__name__)
 
+
+class RoutineData:
+    """
+    CLass to hold routine parameters and variables for a dispatch model.
+    """
+
+    def __init__(self):
+        self.rparams = OrderedDict()  # list out RParam in a routine
+
+
 class Routine:
     """
     CLass to hold routine parameters and variables.
@@ -27,7 +37,7 @@ class Routine:
     def __init__(self, system=None, config=None):
         self.system = system
         self.config = Config(self.class_name)
-
+        self.info = None
         self.tex_names = OrderedDict((('sys_f', 'f_{sys}'),
                                       ('sys_mva', 'S_{b,sys}'),
                                       ))
@@ -93,7 +103,7 @@ class Routine:
 
     def solve(self, **kwargs):
         """
-        Solve the routine.
+        Solve the routine optimization model.
         """
         pass
         return True
@@ -106,10 +116,10 @@ class Routine:
 
     def run(self, **kwargs):
         """
-        Routine the routine.
+        Run the routine.
         """
         if not self.is_setup:
-            logger.info(f"Setup model for {self.class_name}")
+            logger.info(f"Setup model of {self.class_name}")
             self.setup()
         t0, _ = elapsed()
         result = self.solve(**kwargs)
@@ -133,7 +143,7 @@ class Routine:
         raise NotImplementedError
 
     def __repr__(self) -> str:
-        info = f"Routine {self.class_name}: Is Setup: {self.is_setup}; Exit Code: {self.exit_code}"
+        info = f"Routine {self.info}: Is Setup: {self.is_setup}; Exit Code: {self.exit_code}"
         return info
 
     def _ppc2ams(self):
@@ -177,49 +187,3 @@ class Routine:
             self.rparams[key] = value
         elif isinstance(value, Constraint):
             self.constrs[key] = value
-
-
-class PFlowBase(Routine):
-    """
-    Base class for Power Flow model.
-
-    Overload the ``solve``, ``unpack``, ``run``, and ``__repr__`` methods.
-    """
-
-    def __init__(self, system, config):
-        Routine.__init__(self, system, config)
-
-    def __repr__(self) -> str:
-        info = f"Routine {self.class_name}: Is Setup: {self.is_setup}; Exit Code: {self.exit_code}"
-        return info
-
-
-class DCOPFBase(Routine):
-    """
-    Base class for DCOPF dispatch model.
-
-    Overload the ``solve``, ``unpack``, ``run``, and ``__repr__`` methods.
-    """
-
-    def __init__(self, system, config):
-        Routine.__init__(self, system, config)
-
-    def __repr__(self) -> str:
-        info = f"Routine {self.class_name}: Is Setup: {self.is_setup}; Exit Code: {self.exit_code}"
-        return info
-
-    def solve(self, **kwargs):
-        """
-        Solve the routine.
-        """
-        res = self.om.mdl.solve(**kwargs)
-        return res
-
-    def unpack(self, **kwargs):
-        """
-        Unpack the results.
-        """
-        for raname, ralgeb in self.ralgebs.items():
-            ovar = getattr(self.om, raname)
-            ralgeb.v = getattr(ovar, 'value')
-        return None

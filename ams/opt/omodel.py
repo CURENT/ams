@@ -39,6 +39,7 @@ class Constraint:
         self.e_str = e_str
         self.info = info
         self.type = type  # TODO: determine constraint type
+        # TODO: add constraint info from solver
 
     @property
     def class_name(self):
@@ -55,6 +56,7 @@ class Objective:
                  sense: Optional[str] = 'min'):
         self.e_str = e_str
         self.sense = sense
+        # TODO: add obj info from solver
 
 
 class OModel:
@@ -113,15 +115,16 @@ class OModel:
             self.m += self.constrs[cname].size
 
         # --- parse objective functions ---
-        self.parse_obj(obj=self.routine.obj,
-                       sub_map=self.routine.syms.sub_map)
-
-        # --- finalize the optimziation formulation ---
-        code_mdl = "problem(self.obj, [constr for constr in self.constrs.values()])"
-        for pattern, replacement, in self.routine.syms.sub_map.items():
-            code_mdl = re.sub(pattern, replacement, code_mdl)
-        code_mdl = "self.mdl=" + code_mdl
-        exec(code_mdl)
+        if self.routine.obj is not None:
+            self.parse_obj(obj=self.routine.obj,
+                           sub_map=self.routine.syms.sub_map)
+            # --- finalize the optimziation formulation ---
+            code_mdl = "problem(self.obj, [constr for constr in self.constrs.values()])"
+            for pattern, replacement, in self.routine.syms.sub_map.items():
+                code_mdl = re.sub(pattern, replacement, code_mdl)
+            code_mdl = "self.mdl=" + code_mdl
+            logger.debug(f"{self.routine.class_name} set obj: {code_mdl}")
+            exec(code_mdl)
         return True
 
     @property
@@ -191,7 +194,7 @@ class OModel:
                      ):
         """
         Parse the constraint from symbolic dispatch model.
-        
+
         Parameters
         ----------
         constr : Constraint
@@ -209,4 +212,5 @@ class OModel:
         else:
             raise ValueError(f'Objective sense {self.routine.obj.sense} is not supported.')
         code_constr = f'self.constrs["{constr.name}"]=' + code_constr
+        logger.debug(f"Set constrs {constr.info}: {code_constr}")
         exec(code_constr)

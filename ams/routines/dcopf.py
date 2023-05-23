@@ -2,7 +2,6 @@
 OPF routines.
 """
 from collections import OrderedDict
-from ams.routines.base import BaseRoutine, timer
 import numpy as np
 from scipy.optimize import linprog
 
@@ -10,7 +9,7 @@ from ams.core.param import RParam
 from ams.core.var import RAlgeb
 
 from ams.routines.routinedata import RoutineData
-from ams.routines.routine import Routine, DCOPFBase
+from ams.routines.routine import RoutineData, Routine
 
 from ams.opt.omodel import Constraint, Objective
 
@@ -94,6 +93,72 @@ class DCOPFData(RoutineData):
                             )
 
 
+class DCOPFBase(Routine):
+    """
+    Base class for DCOPF dispatch model.
+
+    Overload the ``solve``, ``unpack``, and ``run`` methods.
+    """
+
+    def __init__(self, system, config):
+        Routine.__init__(self, system, config)
+
+    def solve(self, **kwargs):
+        """
+        Solve the routine optimization model.
+        """
+        res = self.om.mdl.solve(**kwargs)
+        return res
+
+    def run(self, **kwargs):
+        """
+        Run the routine.
+
+        Other Parameters
+        ----------------
+        solver: str, optional
+            The solver to use. For example, 'GUROBI', 'ECOS', 'SCS', or 'OSQP'.
+        verbose : bool, optional
+            Overrides the default of hiding solver output and prints logging information describing CVXPY's compilation process.
+        gp : bool, optional
+            If True, parses the problem as a disciplined geometric program instead of a disciplined convex program.
+        qcp : bool, optional
+            If True, parses the problem as a disciplined quasiconvex program instead of a disciplined convex program.
+        requires_grad : bool, optional
+            Makes it possible to compute gradients of a solution with respect to Parameters by calling problem.backward()
+            after solving, or to compute perturbations to the variables given perturbations to Parameters by calling problem.derivative().
+            Gradients are only supported for DCP and DGP problems, not quasiconvex problems. When computing gradients
+            (i.e., when this argument is True), the problem must satisfy the DPP rules.
+        enforce_dpp : bool, optional
+            When True, a DPPError will be thrown when trying to solve a non-DPP problem (instead of just a warning).
+            Only relevant for problems involving Parameters. Defaults to False.
+        ignore_dpp : bool, optional
+            When True, DPP problems will be treated as non-DPP, which may speed up compilation. Defaults to False.
+        method : function, optional
+            A custom solve method to use.
+        kwargs : keywords, optional
+            Additional solver specific arguments. See CVXPY documentation for details.
+        """
+        Routine.run(self, **kwargs)
+
+    def unpack(self, **kwargs):
+        """
+        Unpack the results from CVXPY model.
+        """
+        # --- copy results from solver into routine algeb ---
+        for raname, ralgeb in self.ralgebs.items():
+            ovar = getattr(self.om, raname)
+            ralgeb.v = getattr(ovar, 'value')
+            # --- copy results from routine algeb into system algeb ---
+            if ralgeb.owner_name is None:   # if no owner
+                continue
+            else:                           # if owner is a system algeb
+                owner = getattr(self.system, ralgeb.owner_name)
+                idx = owner.get_idx()
+                owner.set(src=ralgeb.src, attr='v', idx=idx, value=ralgeb.v)
+        return True
+
+
 class DCOPFModel(DCOPFBase):
     """
     DCOPF dispatch model.
@@ -101,9 +166,12 @@ class DCOPFModel(DCOPFBase):
 
     def __init__(self, system, config):
         DCOPFBase.__init__(self, system, config)
+        self.info = 'DCOPF'
+        # --- vars ---
         self.pg = RAlgeb(info='actual active power generation',
                          unit='p.u.',
                          name='pg',
+                         src='p',
                          tex_name=r'p_{g}',
                          owner_name='StaticGen',
                          lb=self.pmin,
@@ -125,7 +193,6 @@ class DCOPFModel(DCOPFBase):
                               e_str='- PTDF1 @ (pg - pd1) + PTDF2 * pd2 - rate_a',
                               type='uq',
                               )
-
         # --- objective ---
         self.obj = Objective(e_str='sum(c2 * pg**2 + c1 * pg + c0)',
                              sense='min',)
@@ -139,7 +206,3 @@ class DCOPF(DCOPFData, DCOPFModel):
     def __init__(self, system, config):
         DCOPFData.__init__(self)
         DCOPFModel.__init__(self, system, config)
-
-
-
-
