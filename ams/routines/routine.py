@@ -13,7 +13,7 @@ from andes.shared import deg2rad
 from andes.utils.misc import elapsed
 from ams.utils import timer
 from ams.core.param import RParam
-from ams.opt.omodel import OModel, Constraint
+from ams.opt.omodel import OModel, Constraint, Objective
 
 from ams.core.symprocessor import SymProcessor
 
@@ -158,9 +158,9 @@ class Routine:
 
         Parameters
         ----------
-        key : str
+        key: str
             name of the attribute
-        value : [Algeb]
+        value:
             value of the attribute
         """
 
@@ -175,11 +175,10 @@ class Routine:
 
     def _register_attribute(self, key, value):
         """
-        Register a pair of attributes to the model instance.
+        Register a pair of attributes to the routine instance.
 
         Called within ``__setattr__``, this is where the magic happens.
         Subclass attributes are automatically registered based on the variable type.
-        Block attributes will be exported and registered recursively.
         """
         if isinstance(value, RAlgeb):
             self.ralgebs[key] = value
