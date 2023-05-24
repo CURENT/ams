@@ -70,7 +70,9 @@ class Cost(GroupBase):
 
 
 class Collection(GroupBase):
-    """Collection of topology models"""
+    """
+    Collection of topology models
+    """
     pass
 
 
