@@ -44,6 +44,7 @@ class PFlowModel(DCPFlowBase):
     def __init__(self, system, config):
         DCPFlowBase.__init__(self, system, config)
         self.info = 'AC Power Flow'
+        self.type = 'PF'
 
         # --- bus ---
         self.aBus = RAlgeb(info='bus voltage angle',

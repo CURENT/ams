@@ -30,6 +30,17 @@ class TypeBase:
     def class_name(self):
         return self.__class__.__name__
 
+    @property
+    def n(self):
+        """
+        Total number of devices.
+        """
+        return len(self.routines)
+
+    def __repr__(self):
+        dev_text = 'routine' if self.n == 1 else 'routines'
+        return f'{self.class_name} ({self.n} {dev_text}) at {hex(id(self))}'
+
 
 class Undefined(TypeBase):
     """
@@ -38,7 +49,7 @@ class Undefined(TypeBase):
     pass
 
 
-class PowerFlow(TypeBase):
+class PF(TypeBase):
     """
     Type for power flow routines.
     """
@@ -67,7 +78,7 @@ class AC(DC):
     """
 
     def __init__(self):
-        DC.__init__()
+        DC.__init__(self)
         self.common_rparams.extend(('qd',))
         self.common_ralgebs.extend(('aBus', 'vBus', 'qg',))
 

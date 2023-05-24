@@ -47,6 +47,7 @@ class RoutineModel:
         self.constrs = OrderedDict()
         self.obj = None
         self.is_setup = False
+        self.type = None
 
         # --- optimization modeling ---
         self.om = OModel(routine=self)
@@ -143,7 +144,7 @@ class RoutineModel:
         raise NotImplementedError
 
     def __repr__(self) -> str:
-        info = f"Routine {self.info}: Is Setup: {self.is_setup}; Exit Code: {self.exit_code}"
+        info = self.info if self.info is not None else self.class_name
         return info
 
     def _ppc2ams(self):

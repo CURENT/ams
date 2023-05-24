@@ -20,6 +20,7 @@ from andes.variables import FileMan
 from andes.utils.misc import elapsed
 
 from ams.models.group import GroupBase
+from ams.routines.type import TypeBase
 from ams.models import file_classes
 from ams.routines import all_routines
 from ams.utils.paths import get_config_path
@@ -59,6 +60,7 @@ class System(andes_System):
                  **kwargs
                  ):
 
+        # TODO: might need _check_group_common
         func_to_disable = [
             # --- not sure ---
             'set_config', 'set_dae_names', 'set_output_subidx', 'set_var_arrays',
@@ -85,6 +87,7 @@ class System(andes_System):
         self.model_aliases = OrderedDict()   # alias: model instance
         self.groups = OrderedDict()          # group names and instances
         self.routines = OrderedDict()        # routine names and instances
+        self.types = OrderedDict()           # type names and instances
         self.mats = None                     # matrix processor
         self.mat = OrderedDict()             # common matrices
         # TODO: there should be an exit_code for each routine
@@ -143,17 +146,29 @@ class System(andes_System):
         # internal flags
         self.is_setup = False        # if system has been setup
 
+        self.import_types()
         self.import_groups()
         self.import_models()
         self.import_routines()
 
-    def summarize_groups(self):
+    def import_types(self):
         """
-        Summarize groups and their models.
+        Import all types classes defined in ``routines/type.py``.
+
+        Types will be stored as instances with the name as class names.
+        All types will be stored to dictionary ``System.types``.
         """
-        pass
-        for gname, grp in self.groups.items():
-            grp.summarize()
+        module = importlib.import_module('ams.routines.type')
+        for m in inspect.getmembers(module, inspect.isclass):
+            name, cls = m
+            if name == 'TypeBase':
+                continue
+            elif not issubclass(cls, TypeBase):
+                # skip other imported classes such as `OrderedDict`
+                continue
+
+            self.__dict__[name] = cls()
+            self.types[name] = self.__dict__[name]
 
     def _collect_group_data(self, items):
         for item_name, item in items.items():
@@ -185,6 +200,8 @@ class System(andes_System):
                 self.routines[attr_name].config.check()
                 # NOTE: the following code is not used in ANDES
                 for rname, rtn in self.routines.items():
+                    # TODO: collect routiens into types
+                    # self.types[rtn.type].routines[rname] = rtn
                     # Collect rparams
                     rparams = getattr(rtn, 'rparams')
                     self._collect_group_data(rparams)
@@ -244,11 +261,6 @@ class System(andes_System):
         # for key, val in ams.models.model_aliases.items():
         #     self.model_aliases[key] = self.models[val]
         #     self.__dict__[key] = self.models[val]
-
-        # NOTE: define a special model named ``G`` that combines PV and Slack
-        # FIXME: seems hard coded
-        # TODO: seems to be a bad design
-        gen_cols = self.Slack.as_df().columns
 
     def setup(self):
         """

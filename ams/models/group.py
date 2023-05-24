@@ -50,6 +50,10 @@ class GroupBase(andes_GroupBase):
             pass
             # logger.debug(f'Group <{self.class_name}> does not share property <{src}>.')
 
+    def __repr__(self):
+        dev_text = 'device' if self.n == 1 else 'devices'
+        return f'{self.class_name} ({self.n} {dev_text}) at {hex(id(self))}'
+
 
 class Undefined(GroupBase):
     """

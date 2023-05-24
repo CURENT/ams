@@ -166,7 +166,7 @@ class DCOPFModel(DCOPFBase):
 
     def __init__(self, system, config):
         DCOPFBase.__init__(self, system, config)
-        self.info = 'DCOPF'
+        self.info = 'DC Optimal Power Flow'
         # --- vars ---
         self.pg = RAlgeb(info='actual active power generation',
                          unit='p.u.',

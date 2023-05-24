@@ -70,29 +70,7 @@ class DCPFlowBase(RoutineModel):
     def __init__(self, system, config):
         RoutineModel.__init__(self, system, config)
         self.info = 'DC Power Flow'
-
-        # --- bus ---
-        self.aBus = RAlgeb(info='bus voltage angle',
-                           unit='rad',
-                           name='aBus',
-                           src='a',
-                           tex_name=r'a_{Bus}',
-                           owner_name='Bus',
-                           )
-        # --- gen ---
-        self.pg = RAlgeb(info='actual active power generation',
-                         unit='p.u.',
-                         name='pg',
-                         src='p',
-                         tex_name=r'p_{g}',
-                         owner_name='StaticGen',
-                         )
-        # --- constraints ---
-        self.pb = Constraint(name='pb',
-                             info='power balance',
-                             e_str='sum(pd) - sum(pg)',
-                             type='eq',
-                             )
+        self.type = 'PF'
 
     def solve(self, **kwargs):
         """
@@ -188,11 +166,46 @@ class DCPFlowBase(RoutineModel):
         pass
 
 
-class DCPF(DCPFlowData, DCPFlowBase):
+class DCPFlowModel(DCPFlowBase):
+    """
+    Base class for Power Flow model.
+
+    Overload the ``solve``, ``unpack``, and ``run`` methods.
+    """
+
+    def __init__(self, system, config):
+        DCPFlowBase.__init__(self, system, config)
+        self.info = 'DC Power Flow'
+
+        # --- bus ---
+        self.aBus = RAlgeb(info='bus voltage angle',
+                           unit='rad',
+                           name='aBus',
+                           src='a',
+                           tex_name=r'a_{Bus}',
+                           owner_name='Bus',
+                           )
+        # --- gen ---
+        self.pg = RAlgeb(info='actual active power generation',
+                         unit='p.u.',
+                         name='pg',
+                         src='p',
+                         tex_name=r'p_{g}',
+                         owner_name='StaticGen',
+                         )
+        # --- constraints ---
+        self.pb = Constraint(name='pb',
+                             info='power balance',
+                             e_str='sum(pd) - sum(pg)',
+                             type='eq',
+                             )
+
+
+class DCPF(DCPFlowData, DCPFlowModel):
     """
     DC Power Flow routine.
     """
 
     def __init__(self, system=None, config=None):
         DCPFlowData.__init__(self)
-        DCPFlowBase.__init__(self, system, config)
+        DCPFlowModel.__init__(self, system, config)
