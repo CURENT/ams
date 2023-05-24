@@ -20,8 +20,9 @@ class TypeBase:
 
     def __init__(self):
 
-        self.common_rparams = ['u', 'name']
+        self.common_rparams = []
         self.common_ralgebs = []
+        self.common_constrs = []
 
         self.routines = OrderedDict()
 
@@ -29,17 +30,63 @@ class TypeBase:
     def class_name(self):
         return self.__class__.__name__
 
+
 class Undefined(TypeBase):
     """
-    The undefined type. Holds routines with no ``type``.
+    The undefined type.
     """
     pass
 
 
 class PowerFlow(TypeBase):
     """
-    Power flow type. Holds routines with ``type`` of ``pflow``.
+    Type for power flow routines.
     """
 
     def __init__(self):
         super().__init__()
+        self.common_rparams.extend(('pd',))
+        self.common_ralgebs.extend(('pg',))
+
+
+class DC(TypeBase):
+    """
+    Type for DCOPF routines.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.common_rparams.extend(('c2', 'c1', 'c0', 'pmax', 'pmin', 'pd', 'rate_a',))
+        self.common_ralgebs.extend(('pg',))
+        self.common_constrs.extend(('pb', 'lub', 'llb'))
+
+
+class AC(DC):
+    """
+    Type for ACOPF routines.
+    """
+
+    def __init__(self):
+        DC.__init__()
+        self.common_rparams.extend(('qd',))
+        self.common_ralgebs.extend(('aBus', 'vBus', 'qg',))
+
+
+class ED(TypeBase):
+    """
+    Type for economic dispatch routines.
+    """
+
+    def __init__(self):
+        super().__init__()
+        # TODO: add common parameters and variables
+
+
+class UC(TypeBase):
+    """
+    Type for unit commitment routines.
+    """
+
+    def __init__(self):
+        super().__init__()
+        # TODO: add common parameters and variables
