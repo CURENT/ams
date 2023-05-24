@@ -50,6 +50,7 @@ class GroupBase(andes_GroupBase):
             pass
             # logger.debug(f'Group <{self.class_name}> does not share property <{src}>.')
 
+
 class Undefined(GroupBase):
     """
     The undefined group. Holds models with no ``group``.
