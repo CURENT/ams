@@ -33,7 +33,7 @@ class TypeBase:
     @property
     def n(self):
         """
-        Total number of devices.
+        Total number of routines.
         """
         return len(self.routines)
 
@@ -60,9 +60,9 @@ class PF(TypeBase):
         self.common_ralgebs.extend(('pg',))
 
 
-class DC(TypeBase):
+class DCED(TypeBase):
     """
-    Type for DCOPF routines.
+    Type for DCOPF-based routines.
     """
 
     def __init__(self):
@@ -72,30 +72,20 @@ class DC(TypeBase):
         self.common_constrs.extend(('pb', 'lub', 'llb'))
 
 
-class AC(DC):
+class ACED(DCED):
     """
-    Type for ACOPF routines.
+    Type for ACOPF-based routines.
     """
 
     def __init__(self):
-        DC.__init__(self)
+        DCED.__init__(self)
         self.common_rparams.extend(('qd',))
         self.common_ralgebs.extend(('aBus', 'vBus', 'qg',))
 
 
-class ED(TypeBase):
+class DCUC(TypeBase):
     """
-    Type for economic dispatch routines.
-    """
-
-    def __init__(self):
-        super().__init__()
-        # TODO: add common parameters and variables
-
-
-class UC(TypeBase):
-    """
-    Type for unit commitment routines.
+    Type for DC-based unit commitment routines.
     """
 
     def __init__(self):

@@ -47,7 +47,7 @@ class RoutineModel:
         self.constrs = OrderedDict()
         self.obj = None
         self.is_setup = False
-        self.type = None
+        self.type = 'Undefined'
 
         # --- optimization modeling ---
         self.om = OModel(routine=self)
@@ -143,9 +143,8 @@ class RoutineModel:
         """
         raise NotImplementedError
 
-    def __repr__(self) -> str:
-        info = self.info if self.info is not None else self.class_name
-        return info
+    def __repr__(self):
+        return f'{self.class_name} at {hex(id(self))}'
 
     def _ppc2ams(self):
         """

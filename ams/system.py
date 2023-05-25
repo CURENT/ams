@@ -201,6 +201,9 @@ class System(andes_System):
                 # NOTE: the following code is not used in ANDES
                 for rname, rtn in self.routines.items():
                     # TODO: collect routiens into types
+                    type_name = getattr(rtn, 'type')
+                    type_instance = self.types[type_name]
+                    type_instance.routines[rname] = rtn
                     # self.types[rtn.type].routines[rname] = rtn
                     # Collect rparams
                     rparams = getattr(rtn, 'rparams')
@@ -322,7 +325,7 @@ class System(andes_System):
             ('PTDF1', PTDF1), ('PTDF2', PTDF2),
         ])
 
-        # NOTE: Set up om for all routines
+        # NOTE: initialize om for all routines
         for rname, rtn in self.routines.items():
             # rtn.setup()  # not setup optimization model in system setup stage
             a0 = 0
@@ -334,7 +337,6 @@ class System(andes_System):
                 if rpname in self.mat.keys():
                     rparam.is_set = True
                     rparam._v = self.mat[rpname]
-            # TODO: maybe setup numrical arrays here? [rtn.c, Aub, Aeq ...]
 
         _, s = elapsed(t0)
         logger.info('System set up in %s.', s)

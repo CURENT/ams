@@ -121,7 +121,7 @@ class ACOPFModel(ACOPFBase):
     def __init__(self, system, config):
         ACOPFBase.__init__(self, system, config)
         self.info = 'AC Optimal Power Flow'
-
+        self.type = 'ACED'
         # --- bus ---
         self.aBus = RAlgeb(info='bus voltage angle',
                            unit='rad',
