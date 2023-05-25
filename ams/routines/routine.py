@@ -16,6 +16,7 @@ from ams.core.param import RParam
 from ams.opt.omodel import OModel, Constraint, Objective
 
 from ams.core.symprocessor import SymProcessor
+from ams.core.documenter import RDocumenter
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,8 @@ class RoutineModel:
         self.constrs = OrderedDict()
         self.obj = None
         self.is_setup = False
-        self.type = 'Undefined'
+        self.type = 'UndefinedType'
+        self.docum = RDocumenter(self)
 
         # --- optimization modeling ---
         self.om = OModel(routine=self)
@@ -77,9 +79,9 @@ class RoutineModel:
 
     def doc(self, max_width=78, export='plain'):
         """
-        Routine documentation interface.
+        Retrieve routine documentation as a string.
         """
-        return self.config.doc(max_width, export)
+        return self.docum.get(max_width=max_width, export=export)
 
     def setup(self):
         """

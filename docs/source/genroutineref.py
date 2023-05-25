@@ -13,16 +13,16 @@ if not (os.path.isfile('routineref.rst') and os.path.isfile('configref.rst')):
 
     out = """.. _routineref:
 
-***************
+*******************
 Routine reference
-***************
+*******************
 
 Use the left navigation pane to locate the group and model
 and view details.
 
 """
 
-    out += ss.supported_models(export='rest')
+    out += ss.supported_routines(export='rest')
 
     out += '\n'
     out += '.. toctree ::\n'
@@ -30,18 +30,18 @@ and view details.
     out += '    :hidden:\n'
     out += '\n'
 
-    file_tpl = '    groupdoc/{}\n'
+    file_tpl = '    typedoc/{}\n'
 
-    for group in ss.groups.values():
-        out += file_tpl.format(group.class_name)
+    for type in ss.types.values():
+        out += file_tpl.format(type.class_name)
 
     with open('routineref.rst', 'w') as f:
         f.write(out)
 
     # write individual files
 
-    os.makedirs('catdoc', exist_ok=True)
+    os.makedirs('typedoc', exist_ok=True)
 
-    for group in ss.groups.values():
-        with open(f'catdoc/{group.class_name}.rst', 'w') as f:
-            f.write(group.doc_all(export='rest'))
+    for type in ss.types.values():
+        with open(f'typedoc/{type.class_name}.rst', 'w') as f:
+            f.write(type.doc_all(export='rest'))

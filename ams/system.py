@@ -18,6 +18,7 @@ from andes.system import (_config_numpy, load_config_rc)
 from andes.variables import FileMan
 
 from andes.utils.misc import elapsed
+from andes.utils.tab import Tab
 
 from ams.models.group import GroupBase
 from ams.routines.type import TypeBase
@@ -352,3 +353,40 @@ class System(andes_System):
     #     ]
     # # disable_methods(func_to_disable)
     # __dict__ = {method: lambda self: self.x for method in func_to_include}
+
+    def supported_routines(self, export='plain'):
+        """
+        Return the support type names and routine names in a table.
+
+        Returns
+        -------
+        str
+            A table-formatted string for the types and routines
+        """
+
+        def rst_ref(name, export):
+            """
+            Refer to the model in restructuredText mode so that
+            it renders as a hyperlink.
+            """
+
+            if export == 'rest':
+                return ":ref:`" + name + '`'
+            else:
+                return name
+
+        pairs = list()
+        for g in self.types:
+            routines = list()
+            for m in self.types[g].routines:
+                routines.append(rst_ref(m, export))
+            if len(routines) > 0:
+                pairs.append((rst_ref(g, export), ', '.join(routines)))
+
+        tab = Tab(title='Supported Types and Routines',
+                  header=['Type', 'Routines'],
+                  data=pairs,
+                  export=export,
+                  )
+
+        return tab.draw()

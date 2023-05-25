@@ -41,8 +41,72 @@ class TypeBase:
         dev_text = 'routine' if self.n == 1 else 'routines'
         return f'{self.class_name} ({self.n} {dev_text}) at {hex(id(self))}'
 
+    def doc(self, export='plain'):
+        """
+        Return the documentation of the type in a string.
+        """
+        out = ''
+        if export == 'rest':
+            out += f'.. _{self.class_name}:\n\n'
+            group_header = '=' * 80 + '\n'
+        else:
+            group_header = ''
 
-class Undefined(TypeBase):
+        if export == 'rest':
+            out += group_header + f'{self.class_name}\n' + group_header
+        else:
+            out += group_header + f'Type <{self.class_name}>\n' + group_header
+
+        if self.__doc__ is not None:
+            out += inspect.cleandoc(self.__doc__) + '\n\n'
+
+        if len(self.common_rparams):
+            out += 'Common Routine Parameters: ' + ', '.join(self.common_rparams)
+            out += '\n\n'
+        if len(self.common_ralgebs):
+            out += 'Common Routine Algebs: ' + ', '.join(self.common_ralgebs)
+            out += '\n\n'
+        if len(self.common_constrs):
+            out += 'Common Constraints: ' + ', '.join(self.common_constrs)
+            out += '\n\n'
+        if len(self.routines):
+            out += 'Available routines:\n'
+            rtn_name_list = list(self.routines.keys())
+
+            if export == 'rest':
+                def add_reference(name_list):
+                    return [f'{item}_' for item in name_list]
+
+                rtn_name_list = add_reference(rtn_name_list)
+
+            out += ',\n'.join(rtn_name_list) + '\n'
+
+        return out
+
+
+    def doc_all(self, export='plain'):
+        """
+        Return documentation of the type and its routines.
+
+        Parameters
+        ----------
+        export : 'plain' or 'rest'
+            Export format, plain-text or RestructuredText
+
+        Returns
+        -------
+        str
+
+        """
+        out = self.doc(export=export)
+        out += '\n'
+        for instance in self.routines.values():
+            out += instance.doc(export=export)
+            out += '\n'
+        return out
+
+
+class UndefinedType(TypeBase):
     """
     The undefined type.
     """
@@ -55,7 +119,7 @@ class PF(TypeBase):
     """
 
     def __init__(self):
-        super().__init__()
+        TypeBase.__init__(self)
         self.common_rparams.extend(('pd',))
         self.common_ralgebs.extend(('pg',))
 
@@ -66,7 +130,7 @@ class DCED(TypeBase):
     """
 
     def __init__(self):
-        super().__init__()
+        TypeBase.__init__(self)
         self.common_rparams.extend(('c2', 'c1', 'c0', 'pmax', 'pmin', 'pd', 'rate_a',))
         self.common_ralgebs.extend(('pg',))
         self.common_constrs.extend(('pb', 'lub', 'llb'))
@@ -89,5 +153,5 @@ class DCUC(TypeBase):
     """
 
     def __init__(self):
-        super().__init__()
+        TypeBase.__init__(self)
         # TODO: add common parameters and variables
