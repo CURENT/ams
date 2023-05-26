@@ -140,11 +140,141 @@ class RDocumenter:
         out += '\n\n'  # this fixes the indentation for the next line
 
         # add tables
+        # TODO: fix obj and constr doc
+        # out += self._obj_doc(max_width=max_width, export=export)
+        # out += self._constr_doc(max_width=max_width, export=export)
+        out += self._var_doc(max_width=max_width, export=export)
         out += self._param_doc(max_width=max_width, export=export)
-        # TODO: add the optz model doc, var, constrs, and obj
-        # out += self._var_doc(max_width=max_width, export=export)
 
         return out
+
+    def _constr_doc(self, max_width=78, export='plain'):
+        # constraint documentation
+        if len(self.constrs) == 0:
+            return ''
+
+        # prepare temporary lists
+        names, class_names, info = list(), list(), list()
+
+        for p in self.constrs.values():
+            names.append(p.name)
+            class_names.append(p.class_name)
+            info.append(p.info if p.info else '')
+
+        # symbols based on output format
+        if export == 'rest':
+            symbols = [item.tex_name for item in self.constrs.values()]
+            symbols = math_wrap(symbols, export=export)
+            title = 'Constraints\n----------------------------------'
+        else:
+            symbols = [item.name for item in self.constrs.values()]
+            title = 'Constraints'
+
+        plain_dict = OrderedDict([('Name', names),
+                                  ('Description', info),
+                                  ])
+
+        rest_dict = OrderedDict([('Name', names),
+                                 ('Symbol', symbols),
+                                 ('Description', info),
+                                 ])
+
+        # convert to rows and export as table
+        return make_doc_table(title=title,
+                              max_width=max_width,
+                              export=export,
+                              plain_dict=plain_dict,
+                              rest_dict=rest_dict)
+
+    def _obj_doc(self, max_width=78, export='plain'):
+        # variable documentation
+        if self.parent.obj is None:
+            return ''
+
+        # prepare temporary lists
+        names, class_names, info = list(), list(), list()
+
+        p = self.parent.obj
+        names.append(p.name)
+        class_names.append(p.class_name)
+        info.append(p.info if p.info else '')
+
+        # symbols based on output format
+        if export == 'rest':
+            symbols = [item.tex_name for item in self.ralgebs.values()]
+            symbols = math_wrap(symbols, export=export)
+            title = 'Objective\n----------------------------------'
+        else:
+            symbols = [item.name for item in self.ralgebs.values()]
+            title = 'Objective'
+        
+        plain_dict = OrderedDict([('Name', names),
+                                  ('Description', info),
+                                  ])
+
+        rest_dict = OrderedDict([('Name', names),
+                                 ('Symbol', symbols),
+                                 ('Description', info),
+                                 ])
+
+        # convert to rows and export as table
+        return make_doc_table(title=title,
+                              max_width=max_width,
+                              export=export,
+                              plain_dict=plain_dict,
+                              rest_dict=rest_dict)
+
+
+    def _var_doc(self, max_width=78, export='plain'):
+        # variable documentation
+        if len(self.ralgebs) == 0:
+            return ''
+
+        # prepare temporary lists
+        names, units, class_names = list(), list(), list()
+        info = list()
+        units_rest = list()
+
+        for p in self.ralgebs.values():
+            names.append(p.name)
+            class_names.append(p.class_name)
+            info.append(p.info if p.info else '')
+            # defaults.append(p.default if p.default is not None else '')
+            units.append(f'{p.unit}' if p.unit else '')
+            units_rest.append(f'*{p.unit}*' if p.unit else '')
+
+            # plist = []
+            # for key, val in p.property.items():
+            #     if val is True:
+            #         plist.append(key)
+            # properties.append(','.join(plist))
+
+        # symbols based on output format
+        if export == 'rest':
+            symbols = [item.tex_name for item in self.ralgebs.values()]
+            symbols = math_wrap(symbols, export=export)
+            title = 'Routine Algebs\n----------------------------------'
+        else:
+            symbols = [item.name for item in self.ralgebs.values()]
+            title = 'Routine Algebs'
+
+        plain_dict = OrderedDict([('Name', names),
+                                  ('Description', info),
+                                  ('Unit', units),
+                                  ])
+
+        rest_dict = OrderedDict([('Name', names),
+                                 ('Symbol', symbols),
+                                 ('Description', info),
+                                 ('Unit', units_rest),
+                                 ])
+
+        # convert to rows and export as table
+        return make_doc_table(title=title,
+                              max_width=max_width,
+                              export=export,
+                              plain_dict=plain_dict,
+                              rest_dict=rest_dict)
 
     def _param_doc(self, max_width=78, export='plain'):
         """
@@ -189,10 +319,10 @@ class RDocumenter:
         if export == 'rest':
             symbols = [item.tex_name for item in self.rparams.values()]
             symbols = math_wrap(symbols, export=export)
-            title = 'Parameters\n----------'
+            title = 'Routine Parameters\n----------------------------------'
         else:
             symbols = [item.name for item in self.rparams.values()]
-            title = 'Parameters'
+            title = 'Routine Parameters'
 
         plain_dict = OrderedDict([('Name', names),
                                   ('Description', info),
@@ -206,57 +336,6 @@ class RDocumenter:
                                  ])
 
         # convert to rows and export as table
-        return make_doc_table(title=title,
-                              max_width=max_width,
-                              export=export,
-                              plain_dict=plain_dict,
-                              rest_dict=rest_dict)
-
-    def _var_doc(self, max_width=78, export='plain'):
-        # variable documentation
-        if len(self.cache.all_vars) == 0:
-            return ''
-
-        names, symbols, units = list(), list(), list()
-        properties, info = list(), list()
-        units_rest, ty = list(), list()
-
-        for p in self.cache.all_vars.values():
-            names.append(p.name)
-            ty.append(p.class_name)
-            info.append(p.info if p.info else '')
-            units.append(p.unit if p.unit else '')
-            units_rest.append(f'*{p.unit}*' if p.unit else '')
-
-            # collect properties
-            all_properties = ['v_str', 'v_setter', 'e_setter', 'v_iter']
-            plist = []
-            for item in all_properties:
-                if (p.__dict__[item] is not None) and (p.__dict__[item] is not False):
-                    plist.append(item)
-            properties.append(','.join(plist))
-
-        title = 'Variables'
-
-        # replace with latex math expressions if export is ``rest``
-        if export == 'rest':
-            call_store = self.system.calls[self.class_name]
-            symbols = math_wrap(call_store.x_latex + call_store.y_latex, export=export)
-            title = 'Variables\n---------'
-
-        plain_dict = OrderedDict([('Name', names),
-                                  ('Type', ty),
-                                  ('Description', info),
-                                  ('Unit', units),
-                                  ('Properties', properties)])
-
-        rest_dict = OrderedDict([('Name', names),
-                                 ('Symbol', symbols),
-                                 ('Type', ty),
-                                 ('Description', info),
-                                 ('Unit', units_rest),
-                                 ('Properties', properties)])
-
         return make_doc_table(title=title,
                               max_width=max_width,
                               export=export,

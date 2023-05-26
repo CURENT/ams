@@ -139,3 +139,10 @@ class RAlgeb(Algeb):
             span = 'a=[' + span + ']'
 
         return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}, {span}'
+
+    @property
+    def class_name(self):
+        """
+        Return the class name
+        """
+        return self.__class__.__name__
