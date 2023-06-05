@@ -19,6 +19,7 @@ from andes.variables import FileMan
 
 from andes.utils.misc import elapsed
 from andes.utils.tab import Tab
+from andes.shared import pd
 
 from ams.models.group import GroupBase
 from ams.routines.type import TypeBase
@@ -390,3 +391,24 @@ class System(andes_System):
                   )
 
         return tab.draw()
+
+    def to_andes(self):
+        """
+        Convert an AMS system to an ANDES system.
+        """
+        from andes.models import file_classes
+        from andes import load as andes_load
+        from ams.io.json import write as json_write
+        import json
+
+        andes_models = [value for sublist in [t[1] for t in file_classes] for value in sublist]
+        
+        temep_file = 'test.json'
+        json_write(self, temep_file)
+
+        f = open(temep_file, 'r')
+        json_in = json.load(f)
+
+        sa = andes_load(json_in, setup=True,)
+
+        return sa

@@ -9,7 +9,7 @@ import os
 
 from andes.utils.misc import elapsed
 
-from ams.io import xlsx, psse, matpower, pypower   # NOQA
+from ams.io import xlsx, psse, matpower, pypower, json   # NOQA
 
 
 logger = logging.getLogger(__name__)
