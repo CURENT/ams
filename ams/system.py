@@ -18,8 +18,10 @@ from andes.system import (_config_numpy, load_config_rc)
 from andes.variables import FileMan
 
 from andes.utils.misc import elapsed
+from andes.utils.tab import Tab
 
 from ams.models.group import GroupBase
+from ams.routines.type import TypeBase
 from ams.models import file_classes
 from ams.routines import all_routines
 from ams.utils.paths import get_config_path
@@ -59,6 +61,7 @@ class System(andes_System):
                  **kwargs
                  ):
 
+        # TODO: might need _check_group_common
         func_to_disable = [
             # --- not sure ---
             'set_config', 'set_dae_names', 'set_output_subidx', 'set_var_arrays',
@@ -85,6 +88,7 @@ class System(andes_System):
         self.model_aliases = OrderedDict()   # alias: model instance
         self.groups = OrderedDict()          # group names and instances
         self.routines = OrderedDict()        # routine names and instances
+        self.types = OrderedDict()           # type names and instances
         self.mats = None                     # matrix processor
         self.mat = OrderedDict()             # common matrices
         # TODO: there should be an exit_code for each routine
@@ -143,17 +147,29 @@ class System(andes_System):
         # internal flags
         self.is_setup = False        # if system has been setup
 
+        self.import_types()
         self.import_groups()
         self.import_models()
         self.import_routines()
 
-    def summarize_groups(self):
+    def import_types(self):
         """
-        Summarize groups and their models.
+        Import all types classes defined in ``routines/type.py``.
+
+        Types will be stored as instances with the name as class names.
+        All types will be stored to dictionary ``System.types``.
         """
-        pass
-        for gname, grp in self.groups.items():
-            grp.summarize()
+        module = importlib.import_module('ams.routines.type')
+        for m in inspect.getmembers(module, inspect.isclass):
+            name, cls = m
+            if name == 'TypeBase':
+                continue
+            elif not issubclass(cls, TypeBase):
+                # skip other imported classes such as `OrderedDict`
+                continue
+
+            self.__dict__[name] = cls()
+            self.types[name] = self.__dict__[name]
 
     def _collect_group_data(self, items):
         for item_name, item in items.items():
@@ -185,6 +201,11 @@ class System(andes_System):
                 self.routines[attr_name].config.check()
                 # NOTE: the following code is not used in ANDES
                 for rname, rtn in self.routines.items():
+                    # TODO: collect routiens into types
+                    type_name = getattr(rtn, 'type')
+                    type_instance = self.types[type_name]
+                    type_instance.routines[rname] = rtn
+                    # self.types[rtn.type].routines[rname] = rtn
                     # Collect rparams
                     rparams = getattr(rtn, 'rparams')
                     self._collect_group_data(rparams)
@@ -244,11 +265,6 @@ class System(andes_System):
         # for key, val in ams.models.model_aliases.items():
         #     self.model_aliases[key] = self.models[val]
         #     self.__dict__[key] = self.models[val]
-
-        # NOTE: define a special model named ``G`` that combines PV and Slack
-        # FIXME: seems hard coded
-        # TODO: seems to be a bad design
-        gen_cols = self.Slack.as_df().columns
 
     def setup(self):
         """
@@ -310,7 +326,7 @@ class System(andes_System):
             ('PTDF1', PTDF1), ('PTDF2', PTDF2),
         ])
 
-        # NOTE: Set up om for all routines
+        # NOTE: initialize om for all routines
         for rname, rtn in self.routines.items():
             # rtn.setup()  # not setup optimization model in system setup stage
             a0 = 0
@@ -322,7 +338,6 @@ class System(andes_System):
                 if rpname in self.mat.keys():
                     rparam.is_set = True
                     rparam._v = self.mat[rpname]
-            # TODO: maybe setup numrical arrays here? [rtn.c, Aub, Aeq ...]
 
         _, s = elapsed(t0)
         logger.info('System set up in %s.', s)
@@ -338,3 +353,40 @@ class System(andes_System):
     #     ]
     # # disable_methods(func_to_disable)
     # __dict__ = {method: lambda self: self.x for method in func_to_include}
+
+    def supported_routines(self, export='plain'):
+        """
+        Return the support type names and routine names in a table.
+
+        Returns
+        -------
+        str
+            A table-formatted string for the types and routines
+        """
+
+        def rst_ref(name, export):
+            """
+            Refer to the model in restructuredText mode so that
+            it renders as a hyperlink.
+            """
+
+            if export == 'rest':
+                return ":ref:`" + name + '`'
+            else:
+                return name
+
+        pairs = list()
+        for g in self.types:
+            routines = list()
+            for m in self.types[g].routines:
+                routines.append(rst_ref(m, export))
+            if len(routines) > 0:
+                pairs.append((rst_ref(g, export), ', '.join(routines)))
+
+        tab = Tab(title='Supported Types and Routines',
+                  header=['Type', 'Routines'],
+                  data=pairs,
+                  export=export,
+                  )
+
+        return tab.draw()

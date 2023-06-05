@@ -8,8 +8,7 @@ from scipy.optimize import linprog
 from ams.core.param import RParam
 from ams.core.var import RAlgeb
 
-from ams.routines.routinedata import RoutineData
-from ams.routines.routine import RoutineData, Routine
+from ams.routines.routine import RoutineData, RoutineModel
 
 from ams.opt.omodel import Constraint, Objective
 
@@ -25,19 +24,19 @@ class DCOPFData(RoutineData):
         self.c2 = RParam(info='Gen cost coefficient 2',
                          name='c2',
                          tex_name=r'c_{2}',
-                         unit=r'$/MW (MVar)',
+                         unit=r'$/(p.u.^2)',
                          owner_name='GCost',
                          )
         self.c1 = RParam(info='Gen cost coefficient 1',
                          name='c1',
                          tex_name=r'c_{1}',
-                         unit=r'$/MW (MVar)',
+                         unit=r'$/(p.u.^2)',
                          owner_name='GCost',
                          )
         self.c0 = RParam(info='Gen cost coefficient 0',
                          name='c0',
                          tex_name=r'c_{0}',
-                         unit=r'$/MW (MVar)',
+                         unit=r'$/(p.u.^2)',
                          owner_name='GCost',
                          )
         # --- generator output ---
@@ -93,7 +92,7 @@ class DCOPFData(RoutineData):
                             )
 
 
-class DCOPFBase(Routine):
+class DCOPFBase(RoutineModel):
     """
     Base class for DCOPF dispatch model.
 
@@ -101,7 +100,7 @@ class DCOPFBase(Routine):
     """
 
     def __init__(self, system, config):
-        Routine.__init__(self, system, config)
+        RoutineModel.__init__(self, system, config)
 
     def solve(self, **kwargs):
         """
@@ -139,7 +138,7 @@ class DCOPFBase(Routine):
         kwargs : keywords, optional
             Additional solver specific arguments. See CVXPY documentation for details.
         """
-        Routine.run(self, **kwargs)
+        RoutineModel.run(self, **kwargs)
 
     def unpack(self, **kwargs):
         """
@@ -156,6 +155,7 @@ class DCOPFBase(Routine):
                 owner = getattr(self.system, ralgeb.owner_name)
                 idx = owner.get_idx()
                 owner.set(src=ralgeb.src, attr='v', idx=idx, value=ralgeb.v)
+        self.obj.v = self.om.obj.value
         return True
 
 
@@ -166,7 +166,8 @@ class DCOPFModel(DCOPFBase):
 
     def __init__(self, system, config):
         DCOPFBase.__init__(self, system, config)
-        self.info = 'DCOPF'
+        self.info = 'DC Optimal Power Flow'
+        self.type = 'DCED'
         # --- vars ---
         self.pg = RAlgeb(info='actual active power generation',
                          unit='p.u.',
@@ -194,7 +195,9 @@ class DCOPFModel(DCOPFBase):
                               type='uq',
                               )
         # --- objective ---
-        self.obj = Objective(e_str='sum(c2 * pg**2 + c1 * pg + c0)',
+        self.obj = Objective(name='tc',
+                             info='total generation cost',
+                             e_str='sum(c2 * pg**2 + c1 * pg + c0)',
                              sense='min',)
 
 

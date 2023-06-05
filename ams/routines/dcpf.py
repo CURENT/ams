@@ -9,7 +9,7 @@ import numpy as np
 from andes.shared import deg2rad
 from andes.utils.misc import elapsed
 
-from ams.routines.routine import RoutineData, Routine
+from ams.routines.routine import RoutineData, RoutineModel
 from ams.opt.omodel import Constraint, Objective
 from ams.solver.pypower.runpf import runpf, rundcpf
 
@@ -58,16 +58,9 @@ class DCPFlowData(RoutineData):
                          unit='p.u.',
                          owner_name='PQ',
                          )
-        self.qd = RParam(info='active power load in system base',
-                         name='qd',
-                         src='q0',
-                         tex_name=r'q_{d}',
-                         unit='p.u.',
-                         owner_name='PQ',
-                         )
 
 
-class DCPFlowBase(Routine):
+class DCPFlowBase(RoutineModel):
     """
     Base class for Power Flow model.
 
@@ -75,31 +68,9 @@ class DCPFlowBase(Routine):
     """
 
     def __init__(self, system, config):
-        Routine.__init__(self, system, config)
+        RoutineModel.__init__(self, system, config)
         self.info = 'DC Power Flow'
-
-        # --- bus ---
-        self.aBus = RAlgeb(info='bus voltage angle',
-                           unit='rad',
-                           name='aBus',
-                           src='a',
-                           tex_name=r'a_{Bus}',
-                           owner_name='Bus',
-                           )
-        # --- gen ---
-        self.pg = RAlgeb(info='actual active power generation',
-                         unit='p.u.',
-                         name='pg',
-                         src='p',
-                         tex_name=r'p_{g}',
-                         owner_name='StaticGen',
-                         )
-        # --- constraints ---
-        self.pb = Constraint(name='pb',
-                             info='power balance',
-                             e_str='sum(pd) - sum(pg)',
-                             type='eq',
-                             )
+        self.type = 'PF'
 
     def solve(self, **kwargs):
         """
@@ -150,7 +121,7 @@ class DCPFlowBase(Routine):
 
     def run(self, **kwargs):
         """
-        Routine the DC power flow.
+        Run the DC Power Flow.
 
         Examples
         --------
@@ -161,13 +132,13 @@ class DCPFlowBase(Routine):
         ----------------
         ppopt : dict
             PYPOWER options.
-        
+
         Returns
         -------
         exit_code : int
             Exit code of the routine.
 
-        # TODO: fix the **kwargs input.
+        # TODO: fix the kwargs input.
         """
         if not self.is_setup:
             logger.info(f"Setup model for {self.class_name}")
@@ -195,11 +166,46 @@ class DCPFlowBase(Routine):
         pass
 
 
-class DCPF(DCPFlowData, DCPFlowBase):
+class DCPFlowModel(DCPFlowBase):
+    """
+    Base class for Power Flow model.
+
+    Overload the ``solve``, ``unpack``, and ``run`` methods.
+    """
+
+    def __init__(self, system, config):
+        DCPFlowBase.__init__(self, system, config)
+        self.info = 'DC Power Flow'
+
+        # --- bus ---
+        self.aBus = RAlgeb(info='bus voltage angle',
+                           unit='rad',
+                           name='aBus',
+                           src='a',
+                           tex_name=r'a_{Bus}',
+                           owner_name='Bus',
+                           )
+        # --- gen ---
+        self.pg = RAlgeb(info='actual active power generation',
+                         unit='p.u.',
+                         name='pg',
+                         src='p',
+                         tex_name=r'p_{g}',
+                         owner_name='StaticGen',
+                         )
+        # --- constraints ---
+        self.pb = Constraint(name='pb',
+                             info='power balance',
+                             e_str='sum(pd) - sum(pg)',
+                             type='eq',
+                             )
+
+
+class DCPF(DCPFlowData, DCPFlowModel):
     """
     DC Power Flow routine.
     """
 
     def __init__(self, system=None, config=None):
         DCPFlowData.__init__(self)
-        DCPFlowBase.__init__(self, system, config)
+        DCPFlowModel.__init__(self, system, config)

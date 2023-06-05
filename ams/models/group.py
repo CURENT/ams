@@ -50,6 +50,11 @@ class GroupBase(andes_GroupBase):
             pass
             # logger.debug(f'Group <{self.class_name}> does not share property <{src}>.')
 
+    def __repr__(self):
+        dev_text = 'device' if self.n == 1 else 'devices'
+        return f'{self.class_name} ({self.n} {dev_text}) at {hex(id(self))}'
+
+
 class Undefined(GroupBase):
     """
     The undefined group. Holds models with no ``group``.
@@ -70,7 +75,9 @@ class Cost(GroupBase):
 
 
 class Collection(GroupBase):
-    """Collection of topology models"""
+    """
+    Collection of topology models
+    """
     pass
 
 
@@ -106,13 +113,6 @@ class StaticLoad(GroupBase):
 class StaticShunt(GroupBase):
     """
     Static shunt compensator group.
-    """
-    pass
-
-
-class DynLoad(GroupBase):
-    """
-    Dynamic load group.
     """
     pass
 

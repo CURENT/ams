@@ -9,7 +9,7 @@ Dispatch routine is the descriptive model of the optimization problem.
       :toctree: _generated
 
       RoutineData
-      Routine
+      RoutineModel
 
 
 Optimization model is a collection of constraints and objective.

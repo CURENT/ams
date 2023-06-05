@@ -74,6 +74,13 @@ class RParam:
         else:
             return self.owner.n
 
+    @property
+    def class_name(self):
+        """
+        Return the class name
+        """
+        return self.__class__.__name__
+
     def __repr__(self):
         if self.is_set:
             return f'{self.__class__.__name__}: {self.name}, v: shape={self.v.shape}'

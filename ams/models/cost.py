@@ -17,7 +17,7 @@ class GCostData(ModelData):
         self.type = NumParam(default=2,
                              info='Cost model type. 1 for piecewise linear, 2 for polynomial',
                              power=False,
-                             tex_name=r'type',
+                             tex_name=r't_{ype}',
                              vrange=(1, 2),
                              )
         self.startup = NumParam(default=0,
@@ -36,19 +36,19 @@ class GCostData(ModelData):
                            info='coefficient 2',
                            power=False,
                            tex_name=r'c_{2}',
-                           unit=r'$/MW (MVar)',
+                           unit=r'$/(p.u.^2)',
                            )
         self.c1 = NumParam(default=0,
                            info='coefficient 1',
                            power=False,
                            tex_name=r'c_{1}',
-                           unit=r'$/MW (MVar)',
+                           unit=r'$/p.u.',
                            )
         self.c0 = NumParam(default=0,
                            info='coefficient 0',
                            power=False,
                            tex_name=r'c_{0}',
-                           unit=r'$',
+                           unit=r'$/p.u.',
                            )
 
 

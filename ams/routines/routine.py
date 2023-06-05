@@ -13,9 +13,10 @@ from andes.shared import deg2rad
 from andes.utils.misc import elapsed
 from ams.utils import timer
 from ams.core.param import RParam
-from ams.opt.omodel import OModel, Constraint
+from ams.opt.omodel import OModel, Constraint, Objective
 
 from ams.core.symprocessor import SymProcessor
+from ams.core.documenter import RDocumenter
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ class RoutineData:
         self.rparams = OrderedDict()  # list out RParam in a routine
 
 
-class Routine:
+class RoutineModel:
     """
     CLass to hold routine parameters and variables.
     """
@@ -47,6 +48,8 @@ class Routine:
         self.constrs = OrderedDict()
         self.obj = None
         self.is_setup = False
+        self.type = 'UndefinedType'
+        self.docum = RDocumenter(self)
 
         # --- optimization modeling ---
         self.om = OModel(routine=self)
@@ -76,9 +79,9 @@ class Routine:
 
     def doc(self, max_width=78, export='plain'):
         """
-        Routine documentation interface.
+        Retrieve routine documentation as a string.
         """
-        return self.config.doc(max_width, export)
+        return self.docum.get(max_width=max_width, export=export)
 
     def setup(self):
         """
@@ -142,9 +145,8 @@ class Routine:
         """
         raise NotImplementedError
 
-    def __repr__(self) -> str:
-        info = f"Routine {self.info}: Is Setup: {self.is_setup}; Exit Code: {self.exit_code}"
-        return info
+    def __repr__(self):
+        return f'{self.class_name} at {hex(id(self))}'
 
     def _ppc2ams(self):
         """
@@ -158,9 +160,9 @@ class Routine:
 
         Parameters
         ----------
-        key : str
+        key: str
             name of the attribute
-        value : [Algeb]
+        value:
             value of the attribute
         """
 
@@ -171,15 +173,14 @@ class Routine:
             value.id = len(self.rparams)
         self._register_attribute(key, value)
 
-        super(Routine, self).__setattr__(key, value)
+        super(RoutineModel, self).__setattr__(key, value)
 
     def _register_attribute(self, key, value):
         """
-        Register a pair of attributes to the model instance.
+        Register a pair of attributes to the routine instance.
 
         Called within ``__setattr__``, this is where the magic happens.
         Subclass attributes are automatically registered based on the variable type.
-        Block attributes will be exported and registered recursively.
         """
         if isinstance(value, RAlgeb):
             self.ralgebs[key] = value
