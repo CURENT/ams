@@ -156,6 +156,7 @@ class DCOPFBase(RoutineModel):
                 idx = owner.get_idx()
                 owner.set(src=ralgeb.src, attr='v', idx=idx, value=ralgeb.v)
         self.obj.v = self.om.obj.value
+        self.system.recent = self.system.routines[self.class_name]
         return True
 
 

@@ -117,6 +117,7 @@ class DCPFlowBase(RoutineModel):
                 logger.warning(msg)
                 continue
             ralgeb.v = owner.get(src=ralgeb.src, attr='v', idx=idx)
+        self.system.recent = self.system.routines[self.class_name]
         return True
 
     def run(self, **kwargs):

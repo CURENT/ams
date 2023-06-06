@@ -7,14 +7,11 @@ import importlib
 import logging
 import json
 
-from andes.models import file_classes
-from andes.system import System as andes_system
 from andes.shared import pd, np
 from andes.utils.misc import elapsed
 from andes import load as andes_load
-from andes.io import xlsx as andes_xlsx
 
-from ams.io import input_formats, guess, xlsx
+from ams.io import input_formats, xlsx
 
 logger = logging.getLogger(__name__)
 
@@ -126,3 +123,23 @@ def to_andes(system,
         sa.setup()
 
     return sa
+
+def sync_andes(sp, sa):
+    """
+    Sync the AMS system with the ANDES system.
+
+    Parameters
+    ----------
+    sp: ams.system.System
+        The AMS system to be synced with.
+    sa: andes.system.System
+        The ANDES system to be synced with.
+    """
+    pass
+    # --- from andes ---
+    # TODO: determin what needs to be retrieved from ANDES
+
+    # --- to andes ---
+
+    # TODO: 
+    # --- bus ---

@@ -92,7 +92,7 @@ class ACOPFBase(RoutineModel):
         # --- Objective ---        
         self.obj.v = res['f'] # TODO: check unit
                 
-
+        self.system.recent = self.system.routines[self.class_name]
         return True
 
     def run(self, **kwargs):
