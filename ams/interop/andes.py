@@ -3,9 +3,7 @@ Interface with ANDES
 """
 
 import os
-import importlib
 import logging
-import json
 
 from andes.shared import pd, np
 from andes.utils.misc import elapsed
@@ -124,6 +122,7 @@ def to_andes(system,
 
     return sa
 
+
 def sync_andes(sp, sa):
     """
     Sync the AMS system with the ANDES system.
@@ -140,6 +139,28 @@ def sync_andes(sp, sa):
     # TODO: determin what needs to be retrieved from ANDES
 
     # --- to andes ---
+    logger.debug(f'Sending {sp.recent.class_name} results into ANDES...')
 
-    # TODO: 
+    sync_map = {
+        'Bus': {
+            'aBus': 'a0',
+            'vBus': 'v0',
+        },
+        'StaticGen': {
+            'pg': 'p0',
+            'qg': 'q0',
+        },
+    }
+
+    for mdl_name, param_map in sync_map.items():
+        mdl = getattr(sa, mdl_name)
+        for ams_algeb, andes_param in param_map.items():
+            # TODO: check idx consistency
+            idx_ams = getattr(sp.recent, ams_algeb).get_idx()
+            v_ams = getattr(sp.recent, ams_algeb).v
+            mdl.set(src=andes_param, attr='v',
+                    idx=idx_ams, value=v_ams,
+                    )
+
+    # TODO:
     # --- bus ---
