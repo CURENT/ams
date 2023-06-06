@@ -400,7 +400,5 @@ class System(andes_System):
         """
         Wrapper function of ``ams.interop.andes.to_andes``.
         """
-        return to_andes(self,
-                        setup=setup,
-                        addfile=addfile,
+        return to_andes(self, setup=setup, addfile=addfile,
                         **kwargs)

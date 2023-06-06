@@ -2,6 +2,7 @@
 Interface with ANDES
 """
 
+import os
 import importlib
 import logging
 import json
@@ -11,6 +12,7 @@ from andes.system import System as andes_system
 from andes.shared import pd, np
 from andes.utils.misc import elapsed
 from andes import load as andes_load
+from andes.io import xlsx as andes_xlsx
 
 from ams.io import input_formats, guess, xlsx
 
@@ -40,19 +42,66 @@ def to_andes(system,
     xlsx.write(system, andes_file,
                overwrite=overwrite,
                to_andes=True,
-               **kwargs,
                )
 
     _, s = elapsed(t0)
     logger.info(f'System convert to ANDES in {s}, save to "{andes_file}".')
 
-    sa = andes_load(andes_file, setup=setup, addfile=addfile, **kwargs)
-
-    # Try parsing the addfile
-    t, _ = elapsed()
+    sa = andes_load(andes_file, setup=False, **kwargs)
 
     # additonal file for dynamic simulation
-    # if addfile:
+    add_format = None
+    if addfile:
+        t, _ = elapsed()
+
+        # guess addfile format
+        _, add_ext = os.path.splitext(addfile)
+        for key, val in input_formats.items():
+            if add_ext[1:] in val:
+                add_format = key
+                logger.debug('Addfile format guessed as %s.', key)
+                break
+
+        # Try parsing the addfile
+        logger.info('Parsing additional file "%s"...', addfile)
+        if key == 'xlsx':
+            # TODO: check if power flow devices exist in the addfile
+            andes_xlsx.read(sa, addfile)
+        else:
+            logger.warning('Addfile format "%s" is not supported yet.', add_format)
+            # FIXME: xlsx input file with dyr addfile result into KeyError: 'Toggle'
+            # add_parser = importlib.import_module('andes.io.' + add_format)
+            # if not add_parser.read_add(system, addfile):
+            #     logger.error('Error parsing addfile "%s" with %s parser.', addfile, add_format)
+        
+        # --- consistency check ---
+        syngen_idx = sa.SynGen.find_idx(keys='bus', values=sa.Bus.idx.v, allow_none=True, default=None)
+        syngen_idx = [x for x in syngen_idx if x is not None]
+
+        stg_idx = sa.StaticGen.find_idx(keys='bus', values=sa.Bus.idx.v, allow_none=True, default=None)
+        stg_idx = [x for x in stg_idx if x is not None]
+
+        # SynGen gen with StaticGen idx
+        if any(item not in stg_idx for item in syngen_idx):
+            logger.debug("Correct SynGen to match StaticGen.")
+            sa.SynGen.set(src='gen', idx=syngen_idx, attr='v', value=stg_idx)
+
+        # SynGen Vn with Bus Vn
+        syngen_bus = sa.SynGen.get(src='bus', idx=syngen_idx, attr='v')
+
+        gen_vn = sa.SynGen.get(src='Vn', idx=syngen_idx, attr='v')
+        bus_vn = sa.Bus.get(src='Vn', idx=syngen_bus, attr='v')
+        if not np.equal(gen_vn, bus_vn).all():
+            sa.SynGen.set(src='Vn', idx=syngen_idx, attr='v', value=bus_vn)
+            logger.warning('Correct SynGen Vn to match Bus Vn.')
+
+        # FIXME: add consistency check for other devices similar to SynGen
+
+        _, s = elapsed(t)
+        logger.info('Addfile parsed in %s.', s)
+
+    #     andes_xlsx.read(sa, addfile)
+
     #     sa.files.addfile = addfile
     #     sa.files.add_format = guess(sa)
     #     logger.info('Parsing additional file "%s"...', sa.files.addfile)
@@ -75,5 +124,6 @@ def to_andes(system,
     #         logger.warning('Correct SynGen Vn to match bus Vn.')
     #     _, s = elapsed(t)
     #     logger.info('Addfile parsed in %s.', s)
-
+    if setup:
+        sa.setup()
     return sa
