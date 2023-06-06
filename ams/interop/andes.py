@@ -64,16 +64,38 @@ def to_andes(system,
 
         # Try parsing the addfile
         logger.info('Parsing additional file "%s"...', addfile)
+        # FIXME: hard-coded power flow models
+        pflow_mdl = ['Bus', 'PQ', 'PV', 'Slack', 'Shunt', 'Line', 'Area']
         if key == 'xlsx':
             # TODO: check if power flow devices exist in the addfile
-            andes_xlsx.read(sa, addfile)
+            reader = pd.ExcelFile(addfile)
+
+            common_elements = set(reader.sheet_names) & set(pflow_mdl)
+            if common_elements:
+                logger.warning('Power flow models exist in the addfile. Only dynamic models will be kept.')
+            mdl_to_keep = list(set(reader.sheet_names) - set(pflow_mdl))
+            df_models = pd.read_excel(addfile,
+                                      sheet_name=mdl_to_keep,
+                                      index_col=0,
+                                      engine='openpyxl',
+                                      )
+
+            for name, df in df_models.items():
+                # drop rows that all nan
+                df.dropna(axis=0, how='all', inplace=True)
+                for row in df.to_dict(orient='records'):
+                    sa.add(name, row)
+
+            # --- for debugging ---
+            sa.df_in = df_models
+
         else:
             logger.warning('Addfile format "%s" is not supported yet.', add_format)
             # FIXME: xlsx input file with dyr addfile result into KeyError: 'Toggle'
             # add_parser = importlib.import_module('andes.io.' + add_format)
             # if not add_parser.read_add(system, addfile):
             #     logger.error('Error parsing addfile "%s" with %s parser.', addfile, add_format)
-        
+
         # --- consistency check ---
         syngen_idx = sa.SynGen.find_idx(keys='bus', values=sa.Bus.idx.v, allow_none=True, default=None)
         syngen_idx = [x for x in syngen_idx if x is not None]
@@ -95,7 +117,7 @@ def to_andes(system,
             sa.SynGen.set(src='Vn', idx=syngen_idx, attr='v', value=bus_vn)
             logger.warning('Correct SynGen Vn to match Bus Vn.')
 
-        # FIXME: add consistency check for other devices similar to SynGen
+        # FIXME: add consistency check for RenGen, to SynGen
 
         _, s = elapsed(t)
         logger.info('Addfile parsed in %s.', s)
