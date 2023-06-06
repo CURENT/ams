@@ -393,9 +393,7 @@ class System(andes_System):
 
         return tab.draw()
 
-    def to_andes(self,
-                 setup=True,
-                 addfile=None,
+    def to_andes(self, setup=True, addfile=None,
                  **kwargs):
         """
         Wrapper function of ``ams.interop.andes.to_andes``.
