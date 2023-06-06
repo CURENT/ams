@@ -100,30 +100,7 @@ def to_andes(system,
         _, s = elapsed(t)
         logger.info('Addfile parsed in %s.', s)
 
-    #     andes_xlsx.read(sa, addfile)
-
-    #     sa.files.addfile = addfile
-    #     sa.files.add_format = guess(sa)
-    #     logger.info('Parsing additional file "%s"...', sa.files.addfile)
-    #     add_parser = importlib.import_module('andes.io.' + sa.files.add_format)
-    #     try:
-    #         add_parser.read_add(sa, sa.files.addfile)
-    #         # logger.error('Error parsing addfile "%s" with %s parser.', sa.files.addfile, input_format)
-    #     except AttributeError:
-    #         add_parser.read(sa, addfile)
-
-    #     # check SynGen Vn
-    #     syngen_idx = sa.SynGen.find_idx(keys='bus', values=sa.Bus.idx.v, allow_none=True, default=None)
-    #     syngen_idx = [x for x in syngen_idx if x is not None]
-    #     syngen_bus = sa.SynGen.get(src='bus', idx=syngen_idx, attr='v')
-
-    #     gen_vn = sa.SynGen.get(src='Vn', idx=syngen_idx, attr='v')
-    #     bus_vn = sa.Bus.get(src='Vn', idx=syngen_bus, attr='v')
-    #     if not np.equal(gen_vn, bus_vn).all():
-    #         sa.SynGen.set(src='Vn', idx=syngen_idx, attr='v', value=bus_vn)
-    #         logger.warning('Correct SynGen Vn to match bus Vn.')
-    #     _, s = elapsed(t)
-    #     logger.info('Addfile parsed in %s.', s)
     if setup:
         sa.setup()
+
     return sa
