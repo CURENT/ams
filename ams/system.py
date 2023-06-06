@@ -28,6 +28,7 @@ from ams.routines import all_routines
 from ams.utils.paths import get_config_path
 from ams.core import Algeb
 from ams.core.matprocessor import MatProcessor
+from ams.interop.andes import to_andes
 
 logger = logging.getLogger(__name__)
 
@@ -392,23 +393,14 @@ class System(andes_System):
 
         return tab.draw()
 
-    def to_andes(self):
+    def to_andes(self,
+                 setup=True,
+                 addfile=None,
+                 **kwargs):
         """
-        Convert an AMS system to an ANDES system.
+        Wrapper function of ``ams.interop.andes.to_andes``.
         """
-        from andes.models import file_classes
-        from andes import load as andes_load
-        from ams.io.json import write as json_write
-        import json
-
-        andes_models = [value for sublist in [t[1] for t in file_classes] for value in sublist]
-        
-        temep_file = 'test.json'
-        json_write(self, temep_file)
-
-        f = open(temep_file, 'r')
-        json_in = json.load(f)
-
-        sa = andes_load(json_in, setup=True,)
-
-        return sa
+        return to_andes(self,
+                        setup=setup,
+                        addfile=addfile,
+                        **kwargs)

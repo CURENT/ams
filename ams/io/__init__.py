@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 # TODO: add support for json I/O
 input_formats = {
     'xlsx': ('xlsx',),
+    'json': ('json',),
     'matpower': ('m', ),
     'psse': ('raw', 'dyr'),
     'pypower': ('py',),
@@ -31,6 +32,7 @@ input_formats = {
 
 output_formats = {
     'xlsx': ('xlsx',),
+    'json': ('json',),
 }
 
 
