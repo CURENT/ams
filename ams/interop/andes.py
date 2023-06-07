@@ -141,6 +141,8 @@ def sync_andes(sp, sa):
     # --- to andes ---
     logger.debug(f'Sending {sp.recent.class_name} results into ANDES...')
 
+    # TODO: this implementation is not flexible if the user developed new routiens
+    # We might move it to the routines.
     sync_map = {
         'Bus': {
             'aBus': 'a0',
