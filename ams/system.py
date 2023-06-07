@@ -203,18 +203,18 @@ class System(andes_System):
                 self.routines[attr_name] = self.__dict__[attr_name]
                 self.routines[attr_name].config.check()
                 # NOTE: the following code is not used in ANDES
-                for rname, rtn in self.routines.items():
+                for vname, rtn in self.routines.items():
                     # TODO: collect routiens into types
                     type_name = getattr(rtn, 'type')
                     type_instance = self.types[type_name]
-                    type_instance.routines[rname] = rtn
-                    # self.types[rtn.type].routines[rname] = rtn
+                    type_instance.routines[vname] = rtn
+                    # self.types[rtn.type].routines[vname] = rtn
                     # Collect rparams
                     rparams = getattr(rtn, 'rparams')
                     self._collect_group_data(rparams)
-                    # Collect ralgebs
-                    ralgebs = getattr(rtn, 'ralgebs')
-                    self._collect_group_data(ralgebs)
+                    # Collect vars
+                    vars = getattr(rtn, 'vars')
+                    self._collect_group_data(vars)
                     # setup numerical optimziation model
                     # TODO: substitute symbolic expressions with numerical ones
 
@@ -330,13 +330,13 @@ class System(andes_System):
         ])
 
         # NOTE: initialize om for all routines
-        for rname, rtn in self.routines.items():
+        for vname, rtn in self.routines.items():
             # rtn.setup()  # not setup optimization model in system setup stage
             a0 = 0
-            for raname, ralgeb in rtn.ralgebs.items():
-                ralgeb.v = np.zeros(ralgeb.owner.n)
-                ralgeb.a = np.arange(a0, a0 + ralgeb.owner.n)
-                a0 += ralgeb.owner.n
+            for raname, var in rtn.vars.items():
+                var.v = np.zeros(var.owner.n)
+                var.a = np.arange(a0, a0 + var.owner.n)
+                a0 += var.owner.n
             for rpname, rparam in rtn.rparams.items():
                 if rpname in self.mat.keys():
                     rparam.is_set = True

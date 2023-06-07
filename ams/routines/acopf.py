@@ -13,12 +13,11 @@ from ams.solver.pypower.runopf import runopf
 
 from ams.io.pypower import system2ppc
 from ams.core.param import RParam
-from ams.core.var import RAlgeb
 
 from ams.routines.pflow import PFlowData, PFlowModel
 from ams.routines.dcopf import DCOPFData
 from ams.routines.routine import RoutineModel
-from ams.opt.omodel import Constraint, Objective
+from ams.opt.omodel import Var, Constraint, Objective
 
 logger = logging.getLogger(__name__)
 
@@ -73,25 +72,25 @@ class ACOPFBase(RoutineModel):
         system.Slack.q.v = res['gen'][:system.Slack.n, 2] / mva     # reactive power
 
         # --- copy results from system algeb into routine algeb ---
-        for raname, ralgeb in self.ralgebs.items():
-            owner = getattr(system, ralgeb.owner_name)  # instance of owner, Model or Group
-            if ralgeb.src is None:          # skip if no source variable is specified
+        for raname, var in self.vars.items():
+            owner = getattr(system, var.owner_name)  # instance of owner, Model or Group
+            if var.src is None:          # skip if no source variable is specified
                 continue
             elif hasattr(owner, 'group'):   # if owner is a Model instance
                 grp = getattr(system, owner.group)
-                idx=grp.get_idx()
-            elif hasattr(owner, 'get_idx'): # if owner is a Group instance
-                idx=owner.get_idx()
+                idx = grp.get_idx()
+            elif hasattr(owner, 'get_idx'):  # if owner is a Group instance
+                idx = owner.get_idx()
             else:
-                msg = f"Failed to find valid source variable `{owner.class_name}.{ralgeb.src}` for "
+                msg = f"Failed to find valid source variable `{owner.class_name}.{var.src}` for "
                 msg += f"{self.class_name}.{raname}, skip unpacking."
                 logger.warning(msg)
                 continue
-            ralgeb.v = owner.get(src=ralgeb.src, attr='v', idx=idx)
-        
-        # --- Objective ---        
-        self.obj.v = res['f'] # TODO: check unit
-                
+            var.v = owner.get(src=var.src, attr='v', idx=idx)
+
+        # --- Objective ---
+        self.obj.v = res['f']  # TODO: check unit
+
         self.system.recent = self.system.routines[self.class_name]
         return True
 
@@ -123,14 +122,14 @@ class ACOPFModel(ACOPFBase):
         self.info = 'AC Optimal Power Flow'
         self.type = 'ACED'
         # --- bus ---
-        self.aBus = RAlgeb(info='bus voltage angle',
+        self.aBus = Var(info='bus voltage angle',
                            unit='rad',
                            name='aBus',
                            src='a',
                            tex_name=r'a_{Bus}',
                            owner_name='Bus',
                            )
-        self.vBus = RAlgeb(info='bus voltage magnitude',
+        self.vBus = Var(info='bus voltage magnitude',
                            unit='p.u.',
                            name='vBus',
                            src='v',
@@ -138,14 +137,14 @@ class ACOPFModel(ACOPFBase):
                            owner_name='Bus',
                            )
         # --- gen ---
-        self.pg = RAlgeb(info='active power generation',
+        self.pg = Var(info='active power generation',
                          unit='p.u.',
                          name='pg',
                          src='p',
                          tex_name=r'p_{g}',
                          owner_name='StaticGen',
                          )
-        self.qg = RAlgeb(info='reactive power generation',
+        self.qg = Var(info='reactive power generation',
                          unit='p.u.',
                          name='qg',
                          src='q',
@@ -164,7 +163,6 @@ class ACOPFModel(ACOPFBase):
                              info='total generation cost',
                              e_str='sum(c2 * pg**2 + c1 * pg + c0)',
                              sense='min',)
-
 
 
 class ACOPF(ACOPFData, ACOPFModel):

@@ -102,7 +102,7 @@ class RDocumenter:
         self.class_name = parent.class_name
         self.config = parent.config
         self.rparams = parent.rparams
-        self.ralgebs = parent.ralgebs
+        self.vars = parent.vars
         self.constrs = parent.constrs
         self.obj = parent.obj
 
@@ -201,11 +201,11 @@ class RDocumenter:
 
         # symbols based on output format
         if export == 'rest':
-            symbols = [item.tex_name for item in self.ralgebs.values()]
+            symbols = [item.tex_name for item in self.vars.values()]
             symbols = math_wrap(symbols, export=export)
             title = 'Objective\n----------------------------------'
         else:
-            symbols = [item.name for item in self.ralgebs.values()]
+            symbols = [item.name for item in self.vars.values()]
             title = 'Objective'
         
         plain_dict = OrderedDict([('Name', names),
@@ -227,7 +227,7 @@ class RDocumenter:
 
     def _var_doc(self, max_width=78, export='plain'):
         # variable documentation
-        if len(self.ralgebs) == 0:
+        if len(self.vars) == 0:
             return ''
 
         # prepare temporary lists
@@ -235,7 +235,7 @@ class RDocumenter:
         info = list()
         units_rest = list()
 
-        for p in self.ralgebs.values():
+        for p in self.vars.values():
             names.append(p.name)
             class_names.append(p.class_name)
             info.append(p.info if p.info else '')
@@ -251,11 +251,11 @@ class RDocumenter:
 
         # symbols based on output format
         if export == 'rest':
-            symbols = [item.tex_name for item in self.ralgebs.values()]
+            symbols = [item.tex_name for item in self.vars.values()]
             symbols = math_wrap(symbols, export=export)
             title = 'Routine Algebs\n----------------------------------'
         else:
-            symbols = [item.name for item in self.ralgebs.values()]
+            symbols = [item.name for item in self.vars.values()]
             title = 'Routine Algebs'
 
         plain_dict = OrderedDict([('Name', names),

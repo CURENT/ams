@@ -8,12 +8,11 @@ from collections import OrderedDict  # NOQA
 import numpy as np
 
 from andes.core import Config
-from ams.core.var import RAlgeb
 from andes.shared import deg2rad
 from andes.utils.misc import elapsed
 from ams.utils import timer
 from ams.core.param import RParam
-from ams.opt.omodel import OModel, Constraint, Objective
+from ams.opt.omodel import OModel, Var, Constraint, Objective
 
 from ams.core.symprocessor import SymProcessor
 from ams.core.documenter import RDocumenter
@@ -44,7 +43,7 @@ class RoutineModel:
                                       ))
         self.syms = SymProcessor(self)  # symbolic processor
 
-        self.ralgebs = OrderedDict()  # list out RAlgebs in a routine
+        self.vars = OrderedDict()  # list out Vars in a routine
         self.constrs = OrderedDict()
         self.obj = None
         self.is_setup = False
@@ -167,8 +166,8 @@ class RoutineModel:
         """
 
         # NOTE: value.id is not in use yet
-        if isinstance(value, RAlgeb):
-            value.id = len(self.ralgebs)
+        if isinstance(value, Var):
+            value.id = len(self.vars)
         elif isinstance(value, RParam):
             value.id = len(self.rparams)
         self._register_attribute(key, value)
@@ -182,8 +181,8 @@ class RoutineModel:
         Called within ``__setattr__``, this is where the magic happens.
         Subclass attributes are automatically registered based on the variable type.
         """
-        if isinstance(value, RAlgeb):
-            self.ralgebs[key] = value
+        if isinstance(value, Var):
+            self.vars[key] = value
         elif isinstance(value, RParam):
             self.rparams[key] = value
         elif isinstance(value, Constraint):

@@ -10,12 +10,11 @@ from andes.shared import deg2rad
 from andes.utils.misc import elapsed
 
 from ams.routines.routine import RoutineData, RoutineModel
-from ams.opt.omodel import Constraint, Objective
+from ams.opt.omodel import Var, Constraint, Objective
 from ams.solver.pypower.runpf import runpf, rundcpf
 
 from ams.io.pypower import system2ppc
 from ams.core.param import RParam
-from ams.core.var import RAlgeb
 
 logger = logging.getLogger(__name__)
 
@@ -102,9 +101,9 @@ class DCPFlowBase(RoutineModel):
         system.Slack.q.v = res['gen'][:system.Slack.n, 2] / mva     # reactive power
 
         # --- copy results from system algeb into routine algeb ---
-        for raname, ralgeb in self.ralgebs.items():
-            owner = getattr(system, ralgeb.owner_name)  # instance of owner, Model or Group
-            if ralgeb.src is None:          # skip if no source variable is specified
+        for raname, var in self.vars.items():
+            owner = getattr(system, var.owner_name)  # instance of owner, Model or Group
+            if var.src is None:          # skip if no source variable is specified
                 continue
             elif hasattr(owner, 'group'):   # if owner is a Model instance
                 grp = getattr(system, owner.group)
@@ -112,11 +111,11 @@ class DCPFlowBase(RoutineModel):
             elif hasattr(owner, 'get_idx'): # if owner is a Group instance
                 idx=owner.get_idx()
             else:
-                msg = f"Failed to find valid source variable `{owner.class_name}.{ralgeb.src}` for "
+                msg = f"Failed to find valid source variable `{owner.class_name}.{var.src}` for "
                 msg += f"{self.class_name}.{raname}, skip unpacking."
                 logger.warning(msg)
                 continue
-            ralgeb.v = owner.get(src=ralgeb.src, attr='v', idx=idx)
+            var.v = owner.get(src=var.src, attr='v', idx=idx)
         self.system.recent = self.system.routines[self.class_name]
         return True
 
@@ -179,7 +178,7 @@ class DCPFlowModel(DCPFlowBase):
         self.info = 'DC Power Flow'
 
         # --- bus ---
-        self.aBus = RAlgeb(info='bus voltage angle',
+        self.aBus = Var(info='bus voltage angle',
                            unit='rad',
                            name='aBus',
                            src='a',
@@ -187,7 +186,7 @@ class DCPFlowModel(DCPFlowBase):
                            owner_name='Bus',
                            )
         # --- gen ---
-        self.pg = RAlgeb(info='actual active power generation',
+        self.pg = Var(info='actual active power generation',
                          unit='p.u.',
                          name='pg',
                          src='p',

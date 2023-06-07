@@ -6,11 +6,10 @@ import numpy as np
 from scipy.optimize import linprog
 
 from ams.core.param import RParam
-from ams.core.var import RAlgeb
 
 from ams.routines.routine import RoutineData, RoutineModel
 
-from ams.opt.omodel import Constraint, Objective
+from ams.opt.omodel import Var, Constraint, Objective
 
 
 class DCOPFData(RoutineData):
@@ -145,16 +144,16 @@ class DCOPFBase(RoutineModel):
         Unpack the results from CVXPY model.
         """
         # --- copy results from solver into routine algeb ---
-        for raname, ralgeb in self.ralgebs.items():
+        for raname, var in self.vars.items():
             ovar = getattr(self.om, raname)
-            ralgeb.v = getattr(ovar, 'value')
+            var.v = getattr(ovar, 'value')
             # --- copy results from routine algeb into system algeb ---
-            if ralgeb.owner_name is None:   # if no owner
+            if var.owner_name is None:   # if no owner
                 continue
             else:                           # if owner is a system algeb
-                owner = getattr(self.system, ralgeb.owner_name)
+                owner = getattr(self.system, var.owner_name)
                 idx = owner.get_idx()
-                owner.set(src=ralgeb.src, attr='v', idx=idx, value=ralgeb.v)
+                owner.set(src=var.src, attr='v', idx=idx, value=var.v)
         self.obj.v = self.om.obj.value
         self.system.recent = self.system.routines[self.class_name]
         return True
@@ -170,7 +169,7 @@ class DCOPFModel(DCOPFBase):
         self.info = 'DC Optimal Power Flow'
         self.type = 'DCED'
         # --- vars ---
-        self.pg = RAlgeb(info='actual active power generation',
+        self.pg = Var(info='actual active power generation',
                          unit='p.u.',
                          name='pg',
                          src='p',

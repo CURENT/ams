@@ -12,10 +12,9 @@ from ams.solver.pypower.runpf import runpf, rundcpf
 
 from ams.io.pypower import system2ppc
 from ams.core.param import RParam
-from ams.core.var import RAlgeb
 
 from ams.routines.dcpf import DCPFlowData, DCPFlowBase
-from ams.opt.omodel import Constraint, Objective
+from ams.opt.omodel import Var, Constraint, Objective
 
 logger = logging.getLogger(__name__)
 
@@ -47,14 +46,14 @@ class PFlowModel(DCPFlowBase):
         self.type = 'PF'
 
         # --- bus ---
-        self.aBus = RAlgeb(info='bus voltage angle',
+        self.aBus = Var(info='bus voltage angle',
                            unit='rad',
                            name='aBus',
                            src='a',
                            tex_name=r'a_{Bus}',
                            owner_name='Bus',
                            )
-        self.vBus = RAlgeb(info='bus voltage magnitude',
+        self.vBus = Var(info='bus voltage magnitude',
                            unit='p.u.',
                            name='vBus',
                            src='v',
@@ -62,14 +61,14 @@ class PFlowModel(DCPFlowBase):
                            owner_name='Bus',
                            )
         # --- gen ---
-        self.pg = RAlgeb(info='active power generation',
+        self.pg = Var(info='active power generation',
                          unit='p.u.',
                          name='pg',
                          src='p',
                          tex_name=r'p_{g}',
                          owner_name='StaticGen',
                          )
-        self.qg = RAlgeb(info='reactive power generation',
+        self.qg = Var(info='reactive power generation',
                          unit='p.u.',
                          name='qg',
                          src='q',

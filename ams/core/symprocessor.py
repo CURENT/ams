@@ -85,10 +85,10 @@ class SymProcessor:
         for key in self.parent.tex_names.keys():
             self.tex_names[key] = sp.symbols(self.parent.tex_names[key])
 
-        # RAlgebs
-        for raname, ralgeb in self.parent.ralgebs.items():
-            tmp = sp.symbols(f'{ralgeb.name}')
-            # tmp = sp.symbols(ralgeb.name)
+        # Vars
+        for raname, var in self.parent.vars.items():
+            tmp = sp.symbols(f'{var.name}')
+            # tmp = sp.symbols(var.name)
             self.vars_dict[raname] = tmp
             self.inputs_dict[raname] = tmp
             self.sub_map[rf"\b{raname}\b"] = f"self.{raname}"
