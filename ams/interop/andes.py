@@ -9,7 +9,7 @@ from andes.shared import pd, np
 from andes.utils.misc import elapsed
 from andes import load as andes_load
 
-from ams.io import input_formats, xlsx
+from ams.io import input_formats, xlsx, json
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,7 @@ def to_andes(system,
              setup=True,
              addfile=None,
              overwrite=None,
+             keep=False,
              **kwargs):
     """
     Convert the current model to ANDES format.
@@ -32,9 +33,9 @@ def to_andes(system,
         Keyword arguments to be passed to `andes.system.System`.
     """
     t0, _ = elapsed()
-    andes_file = system.files.name + '.xlsx'
+    andes_file = system.files.name + '.json'
 
-    xlsx.write(system, andes_file,
+    json.write(system, andes_file,
                overwrite=overwrite,
                to_andes=True,
                )
@@ -43,6 +44,10 @@ def to_andes(system,
     logger.info(f'System convert to ANDES in {s}, save to "{andes_file}".')
 
     sa = andes_load(andes_file, setup=False, **kwargs)
+
+    if not keep:
+        logger.info(f'Converted file is removed. Set "keep = True" if need to keep it.')
+        os.remove(andes_file)
 
     # additonal file for dynamic simulation
     add_format = None
@@ -59,7 +64,7 @@ def to_andes(system,
 
         # Try parsing the addfile
         logger.info('Parsing additional file "%s"...', addfile)
-        # FIXME: hard-coded power flow models
+        # FIXME: hard-coded list of power flow models
         pflow_mdl = ['Bus', 'PQ', 'PV', 'Slack', 'Shunt', 'Line', 'Area']
         if key == 'xlsx':
             # TODO: check if power flow devices exist in the addfile
