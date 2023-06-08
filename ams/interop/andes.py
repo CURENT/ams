@@ -29,6 +29,12 @@ def to_andes(system,
         The current system to be converted to ANDES format.
     setup: bool
         Whether to call `setup()` after the conversion.
+    addfile: str
+        The additional file to be converted to ANDES format.
+    overwrite: bool
+        Whether to overwrite the existing file.
+    keep: bool
+        Whether to keep the converted file.
     kwargs: dict
         Keyword arguments to be passed to `andes.system.System`.
     """

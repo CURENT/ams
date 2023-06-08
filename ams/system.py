@@ -394,12 +394,24 @@ class System(andes_System):
 
         return tab.draw()
 
-    def to_andes(self, setup=True, addfile=None,
+    def to_andes(self, setup=True, addfile=None, overwite=None, keep=False,
                  **kwargs):
         """
         Wrapper function of ``ams.interop.andes.to_andes``.
+
+        Parameters
+        ----------
+        setup: bool
+            Whether to call `setup()` after the conversion.
+        addfile: str
+            The additional file to be converted to ANDES format.
+        overwrite: bool
+            Whether to overwrite the existing file.
+        keep: bool
+            Whether to keep the converted file.
         """
         return to_andes(self, setup=setup, addfile=addfile,
+                        overwite=overwite, keep=keep,
                         **kwargs)
 
     def sync_andes(self, sa):
