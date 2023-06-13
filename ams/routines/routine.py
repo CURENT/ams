@@ -50,6 +50,10 @@ class RoutineModel:
         self.type = 'UndefinedType'
         self.docum = RDocumenter(self)
 
+        # --- sync mapping ---
+        self.map1 = OrderedDict()  # from ANDES
+        self.map2 = OrderedDict()  # to ANDES
+
         # --- optimization modeling ---
         self.om = OModel(routine=self)
 

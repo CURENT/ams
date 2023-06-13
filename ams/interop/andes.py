@@ -26,7 +26,7 @@ def to_andes(system,
     Parameters
     ----------
     system: System
-        The current system to be converted to ANDES format.
+        The AMS system to be converted to ANDES format.
     setup: bool
         Whether to call `setup()` after the conversion.
     addfile: str
@@ -52,7 +52,7 @@ def to_andes(system,
     sa = andes_load(andes_file, setup=False, **kwargs)
 
     if not keep:
-        logger.info(f'Converted file is removed. Set "keep = True" if need to keep it.')
+        logger.info(f'Converted file is removed. Set "keep = True" to keep it.')
         os.remove(andes_file)
 
     # additonal file for dynamic simulation
@@ -111,7 +111,7 @@ def to_andes(system,
 
         # SynGen gen with StaticGen idx
         if any(item not in stg_idx for item in syngen_idx):
-            logger.debug("Correct SynGen to match StaticGen.")
+            logger.debug("Correct SynGen idx to match StaticGen.")
             sa.SynGen.set(src='gen', idx=syngen_idx, attr='v', value=stg_idx)
 
         # SynGen Vn with Bus Vn
@@ -131,49 +131,117 @@ def to_andes(system,
     if setup:
         sa.setup()
 
+    system.dyn = Dynamic(sp=system, sa=sa)
+    logger.info(f'AMS system {hex(id(system))} link to ANDES system {hex(id(sa))}')
     return sa
 
 
-def sync_andes(sp, sa):
+class Dynamic:
     """
-    Sync the AMS system with the ANDES system.
-
-    Parameters
-    ----------
-    sp: ams.system.System
-        The AMS system to be synced with.
-    sa: andes.system.System
-        The ANDES system to be synced with.
+    The ANDES center class.
     """
-    pass
-    # --- from andes ---
-    # TODO: determin what needs to be retrieved from ANDES
+    def __init__(self,
+                 sp=None,
+                 sa=None,
+                 ) -> None:
+        self.sp = sp  # AMS system
+        self.sa = sa  # ANDES system
+        pass
 
-    # --- to andes ---
-    logger.debug(f'Sending {sp.recent.class_name} results into ANDES...')
+    def send(self):
+        """
+        Send the AMS results to ANDES.
+        """
+        # FIXME: dynamic device online status?
+        # --- send models online status ---
+        logger.debug(f'Sending model online status to ANDES...')
+        for mname, mdl in self.sp.models.items():
+            if mdl.n == 0:
+                continue
+            idx = mdl.idx.v
+            if mname in self.sa.models:
+                mdl_andes = getattr(self.sa, mname)
+                u_ams = mdl.get(src='u', idx=idx, attr='v')
+                mdl_andes.set(src='u', idx=idx, attr='v', value=u_ams)
 
-    # TODO: this implementation is not flexible if the user developed new routiens
-    # We might move it to the routines.
-    sync_map = {
-        'Bus': {
-            'aBus': 'a0',
-            'vBus': 'v0',
-        },
-        'StaticGen': {
-            'pg': 'p0',
-            'qg': 'q0',
-        },
-    }
+        # --- send routine results ---
+        try:
+            rtn_name = self.sp.recent.class_name
+            logger.debug(f'Sending {rtn_name} results to ANDES...')
+        except AttributeError:
+            logger.warning('No solved AMS routine found. Unable to sync with ANDES.')
+            return False
 
-    for mdl_name, param_map in sync_map.items():
-        mdl = getattr(sa, mdl_name)
-        for ams_algeb, andes_param in param_map.items():
-            # TODO: check idx consistency
-            idx_ams = getattr(sp.recent, ams_algeb).get_idx()
-            v_ams = getattr(sp.recent, ams_algeb).v
-            mdl.set(src=andes_param, attr='v',
-                    idx=idx_ams, value=v_ams,
-                    )
+        map2 = getattr(self.sp.recent, 'map2')
+        if len(map2) == 0:
+            logger.warning(f'Mapping dict "map2" of {self.sp.recent.class_name} is empty.')
+            return True
 
-    # TODO:
-    # --- bus ---
+        # FIXME: not consider dynamic device yet
+        for mname, pmap in map2.items():
+            mdl = getattr(self.sa, mname)
+            for ams_var, andes_param in pmap.items():
+                idx_ams = getattr(self.sp.recent, ams_var).get_idx()
+                v_ams = getattr(self.sp.recent, ams_var).v
+                try:
+                    mdl.set(src=andes_param, attr='v',
+                            idx=idx_ams, value=v_ams,
+                            )
+                except KeyError:
+                    logger.warning(f'ANDES: Param {andes_param} not found in Model {mname}.')
+                    continue
+        return True
+
+    def receive(self):
+        """
+        Receive the AMS system from the ANDES system.
+        """
+        # --- receive device online status ---
+        # FIXME: dynamic device online status?
+        logger.debug(f'Receiving model online status from ANDES...')
+        for mname, mdl in self.sp.models.items():
+            if mdl.n == 0:
+                continue
+            idx = mdl.idx.v
+            if mname in self.sa.models:
+                mdl_andes = getattr(self.sa, mname)
+                u_andes = mdl_andes.get(src='u', idx=idx, attr='v')
+                mdl.set(src='u', idx=idx, attr='v', value=u_andes)
+
+        # TODO: dynamic results
+        map1 = getattr(self.sp.recent, 'map1')
+        if len(map1) == 0:
+            logger.warning(f'Mapping dict "map1" of {self.sp.recent.class_name} is empty.')
+            return True
+        return True
+
+    def sync(self):
+        """
+        Sync the AMS system with the ANDES system.
+        """
+        # --- from andes ---
+        # TODO: determin what needs to be retrieved from ANDES
+
+        # --- to andes ---
+        try:
+            rtn_name = self.sp.recent.class_name
+            logger.debug(f'Sending {rtn_name} results into ANDES...')
+        except AttributeError:
+            logger.warning('No solved AMS routine found. Unable to sync with ANDES.')
+            return False
+
+        map1 = getattr(self.sp.recent, 'map1')
+
+        for mdl_name, param_map in map1.items():
+            mdl = getattr(self.sa, mdl_name)
+            for ams_algeb, andes_param in param_map.items():
+                # TODO: check idx consistency
+                idx_ams = getattr(self.sp.recent, ams_algeb).get_idx()
+                v_ams = getattr(self.sp.recent, ams_algeb).v
+                mdl.set(src=andes_param, attr='v',
+                        idx=idx_ams, value=v_ams,
+                        )
+
+        # TODO:
+        # --- bus ---
+        return True

@@ -28,7 +28,7 @@ from ams.routines import all_routines
 from ams.utils.paths import get_config_path
 from ams.core import Algeb
 from ams.core.matprocessor import MatProcessor
-from ams.interop.andes import to_andes, sync_andes
+from ams.interop.andes import to_andes
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +96,7 @@ class System(andes_System):
         # TODO: there should be an exit_code for each routine
         self.exit_code = 0                   # command-line exit code, 0 - normal, others - error.
         self.recent = None                   # recent solved routines
+        self.dyn = None                      # ANDES system
 
         # get and load default config file
         self._config_path = get_config_path()
@@ -413,9 +414,3 @@ class System(andes_System):
         return to_andes(self, setup=setup, addfile=addfile,
                         overwite=overwite, keep=keep,
                         **kwargs)
-
-    def sync_andes(self, sa):
-        """
-        Wrapper function of ``ams.interop.andes.sync_andes``.
-        """
-        return sync_andes(sp=self, sa=sa)

@@ -155,6 +155,68 @@ class Model:
                         for i in uid]
         return self.__dict__[src].__dict__[attr][uid]
 
+    def set(self, src, idx, attr, value):
+        """
+        Set the value of an attribute of a model property.
+
+        Performs ``self.<src>.<attr>[idx] = value``. This method will not modify
+        the input values from the case file that have not been converted to the
+        system base. As a result, changes applied by this method will not affect
+        the dumped case file.
+
+        To alter parameters and reflect it in the case file, use :meth:`alter`
+        instead.
+
+        Parameters
+        ----------
+        src : str
+            Name of the model property
+        idx : str, int, float, array-like
+            Indices of the devices
+        attr : str, optional, default='v'
+            The internal attribute of the property to get.
+            ``v`` for values, ``a`` for address, and ``e`` for equation value.
+        value : array-like
+            New values to be set
+
+        Returns
+        -------
+        bool
+            True when successful.
+        """
+        uid = self.idx2uid(idx)
+        self.__dict__[src].__dict__[attr][uid] = value
+        return True
+
+    def alter(self, src, idx, value):
+        """
+        Alter values of input parameters or constant service.
+
+        If the method operates on an input parameter, the new data should be in
+        the same base as that in the input file. This function will convert the
+        new value to per unit in the system base.
+
+        The values for storing the input data, i.e., the ``vin`` field of the
+        parameter, will be overwritten, thus the update will be reflected in the
+        dumped case file.
+
+        Parameters
+        ----------
+        src : str
+            The parameter name to alter
+        idx : str, float, int
+            The device to alter
+        value : float
+            The desired value
+        """
+        instance = self.__dict__[src]
+
+        if hasattr(instance, 'vin') and (instance.vin is not None):
+            self.set(src, idx, 'vin', value)
+            instance.v[:] = instance.vin * instance.pu_coeff
+        else:
+            self.set(src, idx, 'v', value)
+
     def idx2uid(self, idx):
         """
         Convert idx to the 0-indexed unique index.

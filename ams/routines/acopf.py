@@ -45,6 +45,26 @@ class ACOPFBase(RoutineModel):
 
     def __init__(self, system, config):
         RoutineModel.__init__(self, system, config)
+        self.map1 = OrderedDict([
+            ('Bus', {
+                'v': 'a0',
+                'a': 'v0',
+            }),
+            ('StaticGen', {
+                'p': 'p0',
+                'q': 'q0',
+            }),
+        ])
+        self.map2 = OrderedDict([
+            ('Bus', {
+                'aBus': 'a0',
+                'vBus': 'v0',
+            }),
+            ('StaticGen', {
+                'pg': 'p0',
+                'qg': 'q0',
+            }),
+        ])
 
     def solve(self, **kwargs):
         ppc = system2ppc(self.system)
