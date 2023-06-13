@@ -274,11 +274,15 @@ class OModel:
         exec("self.vars[ovar.name] = tmp")
         if ovar.lb:
             lv = ovar.lb.owner.get(src=ovar.lb.name, idx=ovar.get_idx(), attr='v')
-            exec("self.constrs[ovar.lb.name] = tmp >= lv")
+            u = ovar.lb.owner.get(src='u', idx=ovar.get_idx(), attr='v')
+            elv = u * lv
+            exec("self.constrs[ovar.lb.name] = tmp >= elv")
             self.m += ovar.lb.owner.n
         if ovar.ub:
             uv = ovar.ub.owner.get(src=ovar.ub.name, idx=ovar.get_idx(), attr='v')
-            exec("self.constrs[ovar.ub.name] = tmp <= uv")
+            u = ovar.lb.owner.get(src='u', idx=ovar.get_idx(), attr='v')
+            euv = u * uv
+            exec("self.constrs[ovar.ub.name] = tmp <= euv")
             self.m += ovar.ub.owner.n
 
     def parse_obj(self,
