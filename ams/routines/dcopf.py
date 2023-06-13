@@ -170,14 +170,14 @@ class DCOPFModel(DCOPFBase):
         self.type = 'DCED'
         # --- vars ---
         self.pg = Var(info='actual active power generation',
-                         unit='p.u.',
-                         name='pg',
-                         src='p',
-                         tex_name=r'p_{g}',
-                         owner_name='StaticGen',
-                         lb=self.pmin,
-                         ub=self.pmax,
-                         )
+                      unit='p.u.',
+                      name='pg',
+                      src='p',
+                      tex_name=r'p_{g}',
+                      owner_name='StaticGen',
+                      lb=self.pmin,
+                      ub=self.pmax,
+                      )
         # --- constraints ---
         self.pb = Constraint(name='pb',
                              info='power balance',
