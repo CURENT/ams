@@ -189,9 +189,9 @@ class Dynamic:
         self.link = make_link_table(self.sa)
         # adjust columns
         cols = ['stg_idx', 'bus_idx',               # static gen
-                'syg_idx', 'gov_idx', 'exc_idx',    # syn gen
+                'syg_idx', 'gov_idx',               # syn gen
                 'dg_idx',                           # distributed gen
-                'rg_idx', 'rexc_idx',               # renewable gen
+                'rg_idx',                           # renewable gen
                 'gammap', 'gammaq',                 # gamma
                 ]
         self.link = self.link[cols]
@@ -208,24 +208,48 @@ class Dynamic:
 
     def send_tgr(self):
         """
-        Sned to ANDES Governor refrence.
+        Sned to TurbinGov refrence.
         """
         sa = self.sa
         sp = self.sp
-        pg_ams = sp.ACOPF.get(src='pg', attr='v',
-                              idx=sp.dyn.link['stg_idx'].replace(np.NaN, None).to_list(),
-                              allow_none=True, default=0)
+        # 1) TurbineGov
+        syg_idx = sp.dyn.link['syg_idx'].dropna().tolist()  # SynGen idx
+        # corresponding StaticGen idx in ANDES
+        stg_syg_idx = sa.SynGen.get(src='gen', attr='v', idx=syg_idx,
+                                    allow_none=True, default=None,
+                                    )
+        # corresponding TurbineGov idx in ANDES
+        gov_idx = sa.TurbineGov.find_idx(keys='syn', values=syg_idx)
+        # corresponding StaticGen pg in AMS
+        syg_ams = sp.recent.get(src='pg', attr='v', idx=stg_syg_idx,
+                                allow_none=True, default=0)
         # --- check consistency ---
-        mask = self.link['syg_idx'].notnull() & self.link['gov_idx'].isnull()
-        if mask.any():
-            logger.debug('Governor is missing for SynGen.')
-            return False
-        # --- set to TurbineGov pref ---
-        sa.TurbineGov.set(value=pg_ams,
-                          idx=sp.dyn.link['gov_idx'].replace(np.NaN, None).to_list(),
+        syg_mask = self.link['syg_idx'].notnull() & self.link['gov_idx'].isnull()
+        if syg_mask.any():
+            logger.debug('Governor is not complete for SynGen.')
+        # --- pref ---
+        sa.TurbineGov.set(value=syg_ams, idx=gov_idx,
                           src='pref0', attr='v')
-        # --- set to TurbineGov paux ---
-        # TODO: sync paux
+        
+        # --- paux ---
+        # TODO: sync paux, using paux0
+
+        # 2) DG
+        dg_idx = sp.dyn.link['dg_idx'].dropna().tolist()  # DG idx
+        # corresponding StaticGen idx in ANDES
+        stg_dg_idx = sa.DG.get(src='gen', attr='v', idx=dg_idx,
+                               allow_none=True, default=None,
+                               )
+        # corresponding StaticGen pg in AMS
+        dg_ams = sp.recent.get(src='pg', attr='v', idx=stg_dg_idx,
+                               allow_none=True, default=0)
+        # --- pref ---
+        sa.DG.set(value=dg_ams, idx=dg_idx,
+                  src='pref0', attr='v')
+        # TODO: paux, using Pext0
+
+        # 3) RenGen
+        # TODO: seems to be unnecessary
 
         return True
 
@@ -285,7 +309,7 @@ class Dynamic:
         """
         # --- receive device online status ---
         # FIXME: dynamic device online status?
-        logger.debug(f'Receiving model online status from ANDES...')
+        logger.debug(f'Receiving model status from ANDES...')
         for mname, mdl in self.sp.models.items():
             if mdl.n == 0:
                 continue
@@ -293,6 +317,7 @@ class Dynamic:
                 if self.is_tds:     # sync dynamic device
                     # --- dynamic generator online status ---
                     self.receive_dgu()
+                    self.receive_pe()
                     # TODO: add other dynamic info
                     continue
             idx = mdl.idx.v
@@ -308,58 +333,44 @@ class Dynamic:
             return True
         return True
 
+    def receive_pe(self):
+        """
+        Get the dynamic generator output power.
+        """
+        # TODO: get pe from ANDES
+        # 1) SynGen
+        # using Pe
+
+        # 2) DG
+        # using Pe
+
+        # 3) RenGen
+        # using v and Ipout_y
+        # sa.PVD1.get(src='Ipout_y', attr='v', idx=[])
+        pass
+        return True
+
     def receive_dgu(self):
         """
         Get the dynamic generator online status.
         """
         sa = self.sa
         sp = self.sp
-        # --- SynGen ---
+        # 1) SynGen
         u_sg = sa.SynGen.get(idx=sp.dyn.link['syg_idx'].replace(np.NaN, None).to_list(),
                              src='u', attr='v',
                              allow_none=True, default=0,)
-        # --- RenGen ---
-        u_rg = sa.RenGen.get(idx=sp.dyn.link['rg_idx'].replace(np.NaN, None).to_list(),
-                             src='u', attr='v',
-                             allow_none=True, default=0,)
-        # --- DG ---
+        # 2) DG
         u_dg = sa.DG.get(idx=sp.dyn.link['dg_idx'].replace(np.NaN, None).to_list(),
                          src='u', attr='v',
                          allow_none=True, default=0,)
+        # 3) RenGen
+        u_rg = sa.RenGen.get(idx=sp.dyn.link['rg_idx'].replace(np.NaN, None).to_list(),
+                             src='u', attr='v',
+                             allow_none=True, default=0,)
         # --- sync into AMS ---
         u_dyngen = u_sg + u_rg + u_dg
-        sp.StaticGen.set(idx=sp.dyn.link['stg_idx'].replace(np.NaN, None).to_list(),
+        sp.StaticGen.set(idx=sp.dyn.link['stg_idx'].to_list(),
                          src='u', attr='v',
                          value=u_dyngen,)
-        return True
-
-    def sync(self):
-        """
-        Sync the AMS system with the ANDES system.
-        """
-        # --- from andes ---
-        # TODO: determin what needs to be retrieved from ANDES
-
-        # --- to andes ---
-        try:
-            rtn_name = self.sp.recent.class_name
-            logger.debug(f'Sending {rtn_name} results into ANDES...')
-        except AttributeError:
-            logger.warning('No solved AMS routine found. Unable to sync with ANDES.')
-            return False
-
-        map1 = getattr(self.sp.recent, 'map1')
-
-        for mdl_name, param_map in map1.items():
-            mdl = getattr(self.sa, mdl_name)
-            for ams_algeb, andes_param in param_map.items():
-                # TODO: check idx consistency
-                idx_ams = getattr(self.sp.recent, ams_algeb).get_idx()
-                v_ams = getattr(self.sp.recent, ams_algeb).v
-                mdl.set(src=andes_param, attr='v',
-                        idx=idx_ams, value=v_ams,
-                        )
-
-        # TODO:
-        # --- bus ---
         return True
