@@ -29,13 +29,13 @@ class DCOPFData(RoutineData):
         self.c1 = RParam(info='Gen cost coefficient 1',
                          name='c1',
                          tex_name=r'c_{1}',
-                         unit=r'$/(p.u.^2)',
+                         unit=r'$/(p.u.)',
                          owner_name='GCost',
                          )
         self.c0 = RParam(info='Gen cost coefficient 0',
                          name='c0',
                          tex_name=r'c_{0}',
-                         unit=r'$/(p.u.^2)',
+                         unit=r'$',
                          owner_name='GCost',
                          )
         # --- generator limit ---
