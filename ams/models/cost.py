@@ -48,7 +48,7 @@ class GCostData(ModelData):
                            info='coefficient 0',
                            power=False,
                            tex_name=r'c_{0}',
-                           unit=r'$/p.u.',
+                           unit=r'$',
                            )
 
 
@@ -68,5 +68,30 @@ class GCost(GCostData, Model):
 
     def __init__(self, system, config):
         GCostData.__init__(self)
+        Model.__init__(self, system, config)
+        self.group = 'Cost'
+
+
+class RCostData(ModelData):
+    def __init__(self):
+        super().__init__()
+        self.gen = IdxParam(info="static generator index",
+                            model='StaticGen',
+                            mandatory=True,
+                            )
+        self.cr = NumParam(default=0,
+                           info='coefficient',
+                           power=False,
+                           tex_name=r'c_{r}',
+                           unit=r'$/p.u.',
+                           )
+
+class RCost(RCostData, Model):
+    """
+    Linear reserve cost model.
+    """
+
+    def __init__(self, system, config):
+        RCostData.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'Cost'
