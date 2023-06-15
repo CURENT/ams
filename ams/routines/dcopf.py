@@ -38,7 +38,7 @@ class DCOPFData(RoutineData):
                          unit=r'$/(p.u.^2)',
                          owner_name='GCost',
                          )
-        # --- generator output ---
+        # --- generator limit ---
         self.pmax = RParam(info='generator maximum active power in system base',
                            name='pmax',
                            tex_name=r'p_{max}',
