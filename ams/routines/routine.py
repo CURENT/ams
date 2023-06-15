@@ -80,6 +80,19 @@ class RoutineModel:
     def class_name(self):
         return self.__class__.__name__
 
+    def get(self, src: str, idx, attr: str = 'v', allow_none=False, default=0.0):
+        """
+        Get the value of a variable or parameter.
+        """
+        if self.__dict__[src].owner is not None:
+            owner = self.__dict__[src].owner
+            return owner.get(src=self.map2[owner.class_name][src],
+                             idx=idx,
+                             attr=attr, allow_none=allow_none, default=default)
+        else:
+            logger.info(f'Variable {self.name} has no owner.')
+            return None
+
     def doc(self, max_width=78, export='plain'):
         """
         Retrieve routine documentation as a string.

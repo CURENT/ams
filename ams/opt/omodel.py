@@ -87,6 +87,9 @@ class Var(Algeb):
     def get_idx(self):
         if self.is_group:
             return self.owner.get_idx()
+        elif self.owner is None:
+            logger.info(f'Variable {self.name} has no owner.')
+            return None
         else:
             return self.owner.idx.v
 
