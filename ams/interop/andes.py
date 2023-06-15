@@ -8,6 +8,7 @@ import logging
 from andes.shared import pd, np
 from andes.utils.misc import elapsed
 from andes import load as andes_load
+from andes.interop.pandapower import make_link_table
 
 from ams.io import input_formats, xlsx, json
 
@@ -131,8 +132,10 @@ def to_andes(system,
     if setup:
         sa.setup()
 
+    t0, _ = elapsed()
     system.dyn = Dynamic(sp=system, sa=sa)
-    logger.info(f'AMS system {hex(id(system))} link to ANDES system {hex(id(sa))}')
+    _, s = elapsed(t0)
+    logger.info(f'AMS system {hex(id(system))} link to ANDES system {hex(id(sa))} in %s.', s)
     return sa
 
 
@@ -140,13 +143,36 @@ class Dynamic:
     """
     The ANDES center class.
     """
+
     def __init__(self,
                  sp=None,
                  sa=None,
                  ) -> None:
         self.sp = sp  # AMS system
         self.sa = sa  # ANDES system
+        self.is_tds = 0  # indicator for if ANDES system has run a TDS
+
+        # TODO: add summary table
+        self.link = None  # ANDES system link table
+        self.make_link()
         pass
+
+    def make_link(self):
+        """
+        Make the link table of the ANDES system.
+
+        A wrapper of `andes.interop.pandapower.make_link_table`.
+        """
+        self.link = make_link_table(self.sa)
+        # adjust columns
+        cols = ['stg_idx', 'bus_idx',               # static gen
+                'stg_u',                            # online status
+                'syg_idx', 'gov_idx', 'exc_idx',    # syn gen
+                'dg_idx',                           # distributed gen
+                'rg_idx', 'rexc_idx',               # renewable gen
+                'gammap', 'gammaq',                 # gamma
+                ]
+        self.link = self.link[cols]
 
     def send(self):
         """
