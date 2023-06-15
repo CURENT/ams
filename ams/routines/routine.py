@@ -108,6 +108,7 @@ class RoutineModel:
         """
         Setup optimization model.
         """
+        # TODO: add input check, e.g., if GCost exists
         results, elapsed_time = self.om.setup()
         common_info = f"{self.class_name} model set up "
         if results:
