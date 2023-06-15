@@ -86,9 +86,14 @@ class RoutineModel:
         """
         if self.__dict__[src].owner is not None:
             owner = self.__dict__[src].owner
-            return owner.get(src=self.map2[owner.class_name][src],
-                             idx=idx,
-                             attr=attr, allow_none=allow_none, default=default)
+            try:
+                src_map = self.map2[owner.class_name][src]
+                return owner.get(src=src_map,
+                                idx=idx,
+                                attr=attr, allow_none=allow_none, default=default)
+            except KeyError:
+                logger.info(f'Variable {self.name} has no mapping.')
+                return None
         else:
             logger.info(f'Variable {self.name} has no owner.')
             return None
