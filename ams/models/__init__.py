@@ -13,6 +13,7 @@ ams_file_classes = list([
     ('line', ['Line']),
     ('area', ['Area']),
     ('zone', ['Zone']),
+    ('agcr', ['AGCR']),
     ('cost', ['GCost', 'RCost']),
 ])
 
