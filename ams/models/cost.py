@@ -79,12 +79,19 @@ class RCostData(ModelData):
                             model='StaticGen',
                             mandatory=True,
                             )
-        self.cr = NumParam(default=0,
-                           info='coefficient',
-                           power=False,
-                           tex_name=r'c_{r}',
-                           unit=r'$/p.u.',
-                           )
+        self.cru = NumParam(default=0,
+                            info='coefficient for RegUp reserve',
+                            power=False,
+                            tex_name=r'c_{r}',
+                            unit=r'$/p.u.',
+                            )
+        self.crd = NumParam(default=0,
+                            info='coefficient for RegDn reserve',
+                            power=False,
+                            tex_name=r'c_{r}',
+                            unit=r'$/p.u.',
+                            )
+
 
 class RCost(RCostData, Model):
     """
