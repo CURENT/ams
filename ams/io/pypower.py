@@ -116,7 +116,7 @@ def system2ppc(system) -> dict:
         T_BUS = mpc['branch'][:, 1].astype(int)
         mpc['branch'][:, 1] = np.array([mapping[busi0] for busi0 in T_BUS])
     if np.min(mpc['bus'][:, 0]) > 0:
-        logger.debug('Adjusting the bus index to start from 0.')
+        logger.debug('Adjust bus index to start from 0.')
         mpc['bus'][:, 0] -= 1   # BUS_I
         mpc['gen'][:, 0] -= 1   # GEN_BUS
         mpc['branch'][:, 0] -= 1    # F_BUS
