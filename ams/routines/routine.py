@@ -104,11 +104,19 @@ class RoutineModel:
         """
         return self.docum.get(max_width=max_width, export=export)
 
+    def _data_check(self):
+        """
+        Check if data is valid for a routine.
+        """
+        pass
+        return True
+
     def setup(self):
         """
         Setup optimization model.
         """
         # TODO: add input check, e.g., if GCost exists
+        self._data_check()
         results, elapsed_time = self.om.setup()
         common_info = f"{self.class_name} model set up "
         if results:
