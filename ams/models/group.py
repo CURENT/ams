@@ -81,6 +81,12 @@ class Collection(GroupBase):
     pass
 
 
+class Reserve(GroupBase):
+    def __init__(self):
+        super().__init__()
+        self.common_params.extend(('zone',))
+
+
 class StaticGen(GroupBase):
     """
     Generator group.
