@@ -14,7 +14,8 @@ class RTEDData(DCOPFData):
 
     def __init__(self):
         DCOPFData.__init__(self)
-        # --- reserve cost ---
+        # 1. reserve
+        # 1.1. reserve cost
         self.cru = RParam(info='RegUp reserve coefficient',
                           name='cru',
                           src='cru',
@@ -29,28 +30,7 @@ class RTEDData(DCOPFData):
                           unit=r'$/(p.u.^2)',
                           owner_name='RCost',
                           )
-        # --- generator ---
-        self.pg0 = RParam(info='generator active power start point',
-                          name='pg0',
-                          src='pg0',
-                          tex_name=r'p_{g0}',
-                          unit='p.u.',
-                          owner_name='StaticGen',
-                          )
-        self.Ragc = RParam(info='AGC ramp rate',
-                           name='Ragc',
-                           src='Ragc',
-                           tex_name=r'R_{agc}',
-                           unit='p.u./min',
-                           owner_name='StaticGen',
-                           )
-        self.R10 = RParam(info='10-min ramp rate',
-                          name='R10',
-                          src='R10',
-                          tex_name=r'R_{10}',
-                          unit='p.u./min',
-                          owner_name='StaticGen',
-                          )
+        # 1.2. reserve requirement
         self.du = RParam(info='RegUp reserve requirement',
                          name='du',
                          src='du',
@@ -65,6 +45,32 @@ class RTEDData(DCOPFData):
                          unit='p.u.',
                          owner_name='AGCR',
                          )
+        # TODO: define a sum vector for reserve requirement
+        # will be multiplied by reserved power pr
+        # 1.3 reserve ramp rate
+        # FIXME: seems not used
+        self.Ragc = RParam(info='AGC ramp rate',
+                           name='Ragc',
+                           src='Ragc',
+                           tex_name=r'R_{agc}',
+                           unit='p.u./min',
+                           owner_name='StaticGen',
+                           )
+        # 2. generator
+        self.pg0 = RParam(info='generator active power start point',
+                          name='pg0',
+                          src='pg0',
+                          tex_name=r'p_{g0}',
+                          unit='p.u.',
+                          owner_name='StaticGen',
+                          )
+        self.R10 = RParam(info='10-min ramp rate',
+                          name='R10',
+                          src='R10',
+                          tex_name=r'R_{10}',
+                          unit='p.u./min',
+                          owner_name='StaticGen',
+                          )
 
 
 class RTEDModel(DCOPFModel):
@@ -90,37 +96,42 @@ class RTEDModel(DCOPFModel):
                        owner_name='StaticGen',
                        )
         # --- constraints ---
-        # self.rb = Constraint(name='rb',
-        #                      info='reserve bound',
-        #                      e_str='sum(pr) - ',
+        # self.rbu = Constraint(name='rbu',
+        #                      info='RegUp reserve balance',
+        #                      e_str='S * pru - du',
         #                      type='eq',
         #                      )
-        self.ru = Constraint(name='ru',
-                             info='RegUp reserve',
-                             e_str='pg + pru - pmax',
-                             type='uq',
-                             )
-        self.rd = Constraint(name='rd',
-                             info='RegDn reserve',
-                             e_str='-pg + prd - pmin',
-                             type='uq',
-                             )
-        self.rampu = Constraint(name='rampu',
-                                info='generator ramp up',
-                                e_str='pg - pg0 - R10',
-                                type='uq',
-                                )
-        self.rampd = Constraint(name='rampd',
-                                info='generator ramp down',
-                                e_str='-pg + pg0 - R10',
-                                type='uq',
-                                )
+        # self.rbd = Constraint(name='rbu',
+        #                      info='RegDn reserve balance',
+        #                      e_str='S * prd - dd',
+        #                      type='eq',
+        #                      )
+        self.rpru = Constraint(name='ru',
+                               info='RegUp reserve ramp',
+                               e_str='pg + pru - pmax',
+                               type='uq',
+                               )
+        self.rprd = Constraint(name='rd',
+                               info='RegDn reserve ramp',
+                               e_str='-pg + prd - pmin',
+                               type='uq',
+                               )
+        self.rpgu = Constraint(name='rampu',
+                               info='GEN ramp up',
+                               e_str='pg - pg0 - R10',
+                               type='uq',
+                               )
+        self.rpgd = Constraint(name='rampd',
+                               info='GEN ramp down',
+                               e_str='-pg + pg0 - R10',
+                               type='uq',
+                               )
         # --- objective ---
-        # TODO: add reserve cost
         self.obj = Objective(name='tc',
-                             info='total generation cost and reserve',
+                             info='total generation and reserve cost',
                              e_str='sum(c2 * pg**2 + c1 * pg + c0 + cru * pru + crd * prd)',
-                             sense='min',)
+                             sense='min',
+                             )
 
 
 class RTED(RTEDData, RTEDModel):
