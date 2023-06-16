@@ -197,6 +197,19 @@ class RoutineModel:
         """
         raise NotImplementedError
 
+    def _check_attribute(self, key, value):
+        """
+        Check the attribute pair for valid names while instantiating the class.
+
+        This function assigns `owner` to the model itself, assigns the name and tex_name.
+        """
+        if key in self.__dict__:
+            # FIXME: seems to be a bad implementation
+            if key in ['info', 'type', 'obj', 'map1', 'map2']:
+                pass
+            else:
+                logger.warning(f"{self.class_name}: redefinition of member <{key}>. Likely a modeling error.")
+
     def __setattr__(self, key, value):
         """
         Overload the setattr function to register attributes.
@@ -214,6 +227,7 @@ class RoutineModel:
             value.id = len(self.vars)
         elif isinstance(value, RParam):
             value.id = len(self.rparams)
+        self._check_attribute(key, value)
         self._register_attribute(key, value)
 
         super(RoutineModel, self).__setattr__(key, value)
