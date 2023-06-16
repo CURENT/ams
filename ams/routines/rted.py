@@ -22,8 +22,9 @@ class RTEDData(DCOPFData):
                          owner_name='RCost',
                          )
         # --- generator output ---
-        self.pg0 = RParam(info='generator output start point',
+        self.pg0 = RParam(info='generator active power start point',
                           name='pg0',
+                          src='pg0',
                           tex_name=r'p_{g0}',
                           unit='p.u.',
                           owner_name='StaticGen',
