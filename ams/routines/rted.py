@@ -1,6 +1,7 @@
 """
 Real-time economic dispatch.
 """
+import numpy as np
 from ams.core.param import RParam
 from ams.routines.dcopf import DCOPFData, DCOPFModel
 
@@ -45,8 +46,20 @@ class RTEDData(DCOPFData):
                          unit='p.u.',
                          owner_name='AGCR',
                          )
-        # TODO: define a sum vector for reserve requirement
-        # will be multiplied by reserved power pr
+        # FIXME: not generalized
+        all_zone = np.array(self.system.Zone.idx.v)
+        bus_idx = self.system.StaticGen.get(src='bus', attr='v',
+                                            idx=self.pg.get_idx())
+        zone_idx = self.system.Bus.get(src='zone', attr='v', idx=bus_idx)
+        zone_list = np.array(len(all_zone) * [zone_idx])
+        bool_array = (zone_list == all_zone[:, np.newaxis])
+        prus_v = np.array(bool_array, dtype=int)
+        self.prus = RParam(info='coefficient vector for RegUp reserve',
+                           name='prus',
+                           tex_name=r'p_{r,u,s}',
+                           owner_name='StaticGen',
+                           v=prus_v,
+                           )
         # 1.3 reserve ramp rate
         # FIXME: seems not used
         self.Ragc = RParam(info='AGC ramp rate',
@@ -98,12 +111,12 @@ class RTEDModel(DCOPFModel):
         # --- constraints ---
         # self.rbu = Constraint(name='rbu',
         #                      info='RegUp reserve balance',
-        #                      e_str='S * pru - du',
+        #                      e_str='prus @ pru - du',
         #                      type='eq',
         #                      )
         # self.rbd = Constraint(name='rbu',
         #                      info='RegDn reserve balance',
-        #                      e_str='S * prd - dd',
+        #                      e_str='prds @ prd - dd',
         #                      type='eq',
         #                      )
         self.rpru = Constraint(name='ru',

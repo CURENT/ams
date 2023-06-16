@@ -47,9 +47,11 @@ class RParam:
         self.is_group = False
         self.owner_name = owner_name  # indicate if this variable is a group variable
         self.owner = None  # instance of the owner model or group
-        self.is_set = False
+        self.is_set = False  # indicate if the value is set externally
         self.v_str = v_str
-        self._v = None
+        if v is not None:
+            self._v = v
+            self.is_set = True
 
     @property
     def v(self):

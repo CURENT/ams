@@ -342,8 +342,12 @@ class System(andes_System):
                 a0 += var.owner.n
             for rpname, rparam in rtn.rparams.items():
                 if rpname in self.mat.keys():
+                    # NOTE: set numerical values for rparams that are defined in system.mat
                     rparam.is_set = True
                     rparam._v = self.mat[rpname]
+                elif rparam.is_set is True:
+                    # NOTE: register user-defined rparams to system.mat
+                    self.mat[rpname] = rparam._v
 
         _, s = elapsed(t0)
         logger.info('System set up in %s.', s)
