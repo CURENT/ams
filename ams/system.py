@@ -322,7 +322,9 @@ class System(andes_System):
         idx_PD1 = self.PQ.find_idx(keys="bus", values=regBus, allow_none=True, default=None)
         idx_PD2 = self.PQ.find_idx(keys="bus", values=redBus, allow_none=True, default=None)
         PD1 = self.PQ.get(src='p0', attr='v', idx=idx_PD1)
+        PD1 = np.array(PD1)
         PD2 = self.PQ.get(src='p0', attr='v', idx=idx_PD2)
+        PD2 = np.array(PD2)
         PTDF1, PTDF2 = self.mats.rePTDF()
 
         self.mat = OrderedDict([

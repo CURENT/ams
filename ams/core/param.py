@@ -83,7 +83,13 @@ class RParam:
 
     def __repr__(self):
         if self.is_set:
-            return f'{self.__class__.__name__}: {self.name}, v: shape={self.v.shape}'
+            span = ''
+            if self.v.ndim == 1:
+                if len(self.v) <= 20:
+                    span = f', v={self.v}'
+            else:
+                span = f', v=shape{self.v.shape}'
+            return f'{self.__class__.__name__}: {self.name}{span}'
         else:
             span = ''
             if 1 <= self.n <= 20:
