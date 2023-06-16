@@ -108,6 +108,11 @@ class GenParam:
         self.apf = NumParam(default=0.0,
                             info="area participation factor",
                             tex_name=r'a_{pf}')
+        self.pg0 = NumParam(default=0.0,
+                            info='real power start point',
+                            tex_name=r'p_{g0}',
+                            unit='p.u.',
+                            )
 
 
 class PVModel(Model):
