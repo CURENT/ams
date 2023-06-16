@@ -108,7 +108,17 @@ class RoutineModel:
         """
         Check if data is valid for a routine.
         """
-        pass
+        no_input = []
+        owner_list = []
+        for rname, rparam in self.rparams.items():
+            if rparam.owner is not None:
+                if rparam.owner.n == 0:
+                    no_input.append(rname)
+                    owner_list.append(rparam.owner.class_name)
+        if len(no_input) > 0:
+            logger.error(f"Following models are missing from input file: {set(owner_list)}")
+            return False
+        # TODO: add data validation for RParam, typical range, etc.
         return True
 
     def setup(self):
@@ -116,7 +126,10 @@ class RoutineModel:
         Setup optimization model.
         """
         # TODO: add input check, e.g., if GCost exists
-        self._data_check()
+        if self._data_check():
+            logger.debug(f'{self.class_name} data check passed.')
+        else:
+            logger.error(f'{self.class_name} data check failed, setup may run into error!')
         results, elapsed_time = self.om.setup()
         common_info = f"{self.class_name} model set up "
         if results:
