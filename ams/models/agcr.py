@@ -37,13 +37,6 @@ class AGCR(AGCRData, Model):
         Model.__init__(self, system, config)
         self.group = 'Reserve'
 
-        # # TODO: develop a new service for summing up
-        # self.StaticGen = ExtParam(model='StaticGen',
-        #                           src='idx',
-        #                           indexer=self.zone,
-        #                           info='Retrieved StaticGen idx',
-        #                           vtype=str,
-        #                           default=None,)
         self.prs = VarSum(name='prs',
                           tex_name=r'\sum',
                           info='Sum matrix of zonal AGC reserve',
