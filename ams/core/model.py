@@ -120,6 +120,17 @@ class Model:
         for instance in self.num_params.values():
             instance.to_array()
 
+    def set_backref(self, name, from_idx, to_idx):
+        """
+        Helper function for setting idx-es to ``BackRef``.
+        """
+
+        if name not in self.services_ref:
+            return
+
+        uid = self.idx2uid(to_idx)
+        self.services_ref[name].v[uid].append(from_idx)
+
     def get(self, src: str, idx, attr: str = 'v', allow_none=False, default=0.0):
         """
         Get the value of an attribute of a model property.

@@ -71,7 +71,7 @@ class System(andes_System):
             '_check_group_common', '_clear_adder_setter', '_e_to_dae', '_expand_pycode', '_finalize_pycode',
             '_find_stale_models', '_get_models', '_init_numba', '_load_calls', '_mp_prepare',
             '_p_restore', '_store_calls', '_store_tf', '_to_orddct', '_v_to_dae',
-            'save_config', 'collect_config', 'collect_ref', 'e_clear', 'f_update',
+            'save_config', 'collect_config', 'e_clear', 'f_update',
             'fg_to_dae', 'from_ipysheet', 'g_islands', 'g_update', 'get_z',
             'init', 'j_islands', 'j_update', 'l_update_eq', 'connectivity', 'summary',
             'l_update_var', 'link_ext_param', 'precompile', 'prepare', 'reload', 'remove_pycapsule', 'reset',
@@ -270,6 +270,50 @@ class System(andes_System):
         #     self.model_aliases[key] = self.models[val]
         #     self.__dict__[key] = self.models[val]
 
+    def collect_ref(self):
+        """
+        Collect indices into `BackRef` for all models.
+        """
+        models_and_groups = list(self.models.values()) + list(self.groups.values())
+
+        # create an empty list of lists for all `BackRef` instances
+        for model in models_and_groups:
+            for ref in model.services_ref.values():
+                ref.v = [list() for _ in range(model.n)]
+
+        # `model` is the model who stores `IdxParam`s to other models
+        # `BackRef` is declared at other models specified by the `model` parameter
+        # of `IdxParam`s.
+
+        for model in models_and_groups:
+            if model.n == 0:
+                continue
+
+            # skip: a group is not allowed to link to other groups
+            if not hasattr(model, "idx_params"):
+                continue
+
+            for idxp in model.idx_params.values():
+                if (idxp.model not in self.models) and (idxp.model not in self.groups):
+                    continue
+                dest = self.__dict__[idxp.model]
+
+                if dest.n == 0:
+                    continue
+
+                for name in (model.class_name, model.group):
+                    # `BackRef` not requested by the linked models or groups
+                    if name not in dest.services_ref:
+                        continue
+
+                    for model_idx, dest_idx in zip(model.idx.v, idxp.v):
+                        if dest_idx not in dest.uid:
+                            continue
+
+                        dest.set_backref(name,
+                                         from_idx=model_idx,
+                                         to_idx=dest_idx)
+
     def setup(self):
         """
         Set up system for studies.
@@ -284,6 +328,7 @@ class System(andes_System):
             ret = False
             return ret
 
+        self.collect_ref()
         self._list2array()     # `list2array` must come before `link_ext_param`
 
         if self.Line.rate_a.v.max() == 0:
