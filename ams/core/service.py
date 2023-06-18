@@ -2,4 +2,4 @@
 Service.
 """
 
-from andes.core.service import BaseService, BackRef
+from andes.core.service import BaseService, BackRef, RefFlatten

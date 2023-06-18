@@ -2,7 +2,7 @@
 Cost model.
 """
 
-from andes.core import (ModelData, IdxParam, NumParam)
+from andes.core import (ModelData, IdxParam, NumParam, ExtParam)
 
 from ams.core.model import Model
 
@@ -35,3 +35,11 @@ class AGCR(AGCRData, Model):
         AGCRData.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'Reserve'
+
+        # TODO: develop a new service for summing up
+        self.StaticGen = ExtParam(model='StaticGen',
+                                  src='idx',
+                                  indexer=self.zone,
+                                  info='Retrieved StaticGen idx',
+                                  vtype=str,
+                                  default=None,)
