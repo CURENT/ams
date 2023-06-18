@@ -314,17 +314,6 @@ class System(andes_System):
                                          from_idx=model_idx,
                                          to_idx=dest_idx)
 
-    def set_sum(self):
-        """
-        Set sum matrix for all VarSum.
-        """
-        models_and_groups = list(self.models.values()) + list(self.groups.values())
-
-        # create an empty list of lists for all `BackRef` instances
-        for model in models_and_groups:
-            for ref in model.services_sum.values():
-                ref.v = [list() for _ in range(model.n)]
-
     def setup(self):
         """
         Set up system for studies.
