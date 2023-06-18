@@ -12,6 +12,7 @@ from andes.utils.func import list_flatten
 
 from ams.core.documenter import Documenter
 from ams.core.var import Algeb  # NOQA
+from ams.core.service import BackRef  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,9 @@ class Model:
 
         self.algebs = OrderedDict()  # internal algebraic variables
         self.vars_decl_order = OrderedDict()  # variable in the order of declaration
+
+        self.services = OrderedDict()  # service/temporary variables
+        self.services_ref = OrderedDict()  # BackRefs
 
         self.config = Config(name=self.class_name)  # `config` that can be exported
         if config is not None:
@@ -95,6 +99,8 @@ class Model:
         """
         if isinstance(value, Algeb):
             self.algebs[key] = value
+        elif isinstance(value, BackRef):
+            self.services_ref[key] = value
 
     @property
     def class_name(self):
