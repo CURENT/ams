@@ -197,6 +197,12 @@ class RoutineModel:
         """
         raise NotImplementedError
 
+    def smooth(self, **kwargs):
+        """
+        Smooth the results.
+        """
+        raise NotImplementedError
+
     def _check_attribute(self, key, value):
         """
         Check the attribute pair for valid names while instantiating the class.
@@ -206,7 +212,8 @@ class RoutineModel:
         if key in self.__dict__:
             # FIXME: seems to be a bad implementation
             non_warning_list = ['info', 'type', 'obj',
-                                'map1', 'map2', 'exec_time', 'is_setup']
+                                'map1', 'map2', 'exec_time', 'exit_code',
+                                'is_setup']
             if key in non_warning_list:
                 pass
             else:

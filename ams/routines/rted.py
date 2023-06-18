@@ -1,11 +1,16 @@
 """
 Real-time economic dispatch.
 """
+import logging
+from collections import OrderedDict
 import numpy as np
+
 from ams.core.param import RParam
 from ams.routines.dcopf import DCOPFData, DCOPFModel
 
 from ams.opt.omodel import Var, Constraint, Objective
+
+logger = logging.getLogger(__name__)
 
 
 class RTEDData(DCOPFData):
@@ -85,6 +90,21 @@ class RTEDModel(DCOPFModel):
 
     def __init__(self, system, config):
         DCOPFModel.__init__(self, system, config)
+        self.map1 = OrderedDict([
+            ('StaticGen', {
+                'pg0': 'p',
+            }),
+        ])
+        self.map2 = OrderedDict([
+            ('Bus', {
+                'aBus': 'a0',
+                'vBus': 'v0',
+            }),
+            ('StaticGen', {
+                'pg': 'p0',
+                'qg': 'q0',
+            }),
+        ])
         self.info = 'Real-time economic dispatch'
         self.type = 'DCED'
         # --- vars ---
@@ -149,3 +169,54 @@ class RTED(RTEDData, RTEDModel):
     def __init__(self, system, config):
         RTEDData.__init__(self)
         RTEDModel.__init__(self, system, config)
+    
+    def _data_check(self):
+        """
+        Check data.
+
+        Overload ``_data_check`` method in ``DCOPF``.
+        """
+        if np.all(self.pg0.v == 0):
+            logger.warning('RTED pg0 are all zeros, correct to p0.')
+            idx = self.pg.get_idx()
+            self.pg0.is_set = True
+            self.pg0._v = self.system.StaticGen.get(src='p0', attr='v', idx=idx)
+        super()._data_check()
+        return True
+
+    def smooth(self, **kwargs):
+        """
+        Smooth the RTED results with ACOPF.
+
+        Overload ``smooth`` method in ``DCOPF``.
+        """
+        if self.exec_time == 0 or self.exit_code != 0:
+            logger.warning('RTED is not executed successfully, no smoothing.')
+            return False
+        # set pru and prd into pmin and pmax
+        pr_idx = self.pru.get_idx()
+        pmin0 = self.system.StaticGen.get(src='pmin', attr='v', idx=pr_idx)
+        pmax0 = self.system.StaticGen.get(src='pmax', attr='v', idx=pr_idx)
+        p00 = self.system.StaticGen.get(src='p0', attr='v', idx=pr_idx)
+
+        # solve ACOPF
+        ACOPF = self.system.ACOPF
+        pmin = pmin0 + self.prd.v
+        pmax = pmax0 - self.pru.v
+        self.system.StaticGen.set(src='pmin', attr='v', idx=pr_idx, value=pmin)
+        self.system.StaticGen.set(src='pmax', attr='v', idx=pr_idx, value=pmax)
+        self.system.StaticGen.set(src='p0', attr='v', idx=pr_idx, value=self.pg.v)
+        ACOPF.run()
+        self.pg.v = ACOPF.pg.v
+
+        self.aBus = ACOPF.aBus
+        self.vBus = ACOPF.vBus
+        self.qg = ACOPF.qg
+
+        # reset pmin, pmax, p0
+        self.system.StaticGen.set(src='pmin', attr='v', idx=pr_idx, value=pmin0)
+        self.system.StaticGen.set(src='pmax', attr='v', idx=pr_idx, value=pmax0)
+        self.system.StaticGen.set(src='p0', attr='v', idx=pr_idx, value=p00)
+        self.system.recent = self
+
+        return True

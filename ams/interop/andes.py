@@ -257,24 +257,6 @@ class Dynamic:
         """
         Send the AMS results to ANDES.
         """
-        # FIXME: dynamic device online status?
-        # --- send models online status ---
-        logger.debug(f'Sending model online status to ANDES...')
-        for mname, mdl in self.sp.models.items():
-            if mdl.n == 0:
-                continue
-            if mdl.group == 'StaticGen':
-                if self.is_tds:     # sync dynamic device
-                    self.send_dgu()
-                    self.send_tgr()
-                    # TODO: add other dynamic info
-                    continue
-            idx = mdl.idx.v
-            if mname in self.sa.models:
-                mdl_andes = getattr(self.sa, mname)
-                u_ams = mdl.get(src='u', idx=idx, attr='v')
-                mdl_andes.set(src='u', idx=idx, attr='v', value=u_ams)
-
         # --- send routine results ---
         try:
             rtn_name = self.sp.recent.class_name
@@ -282,6 +264,27 @@ class Dynamic:
         except AttributeError:
             logger.warning('No solved AMS routine found. Unable to sync with ANDES.')
             return False
+        # FIXME: dynamic device online status?
+        # --- send models online status ---
+        if self.is_tds:     # sync dynamic device
+            logger.warning('Dynamic has been initialized, Bus angle and voltage are skipped.')
+        for mname, mdl in self.sp.models.items():
+            if mdl.n == 0:
+                continue
+            if mdl.group == 'StaticGen':
+                if self.is_tds:     # sync dynamic device
+                    self.send_dgu()
+                    self.send_tgr()
+                    # once dynamic has started, skip bus
+                    if mdl.class_name == 'Bus':
+                        continue
+                    # TODO: add other dynamic info
+                    continue
+            idx = mdl.idx.v
+            if mname in self.sa.models:
+                mdl_andes = getattr(self.sa, mname)
+                u_ams = mdl.get(src='u', idx=idx, attr='v')
+                mdl_andes.set(src='u', idx=idx, attr='v', value=u_ams)
 
         map2 = getattr(self.sp.recent, 'map2')
         if len(map2) == 0:
@@ -308,8 +311,12 @@ class Dynamic:
         Receive the AMS system from the ANDES system.
         """
         # --- receive device online status ---
-        # FIXME: dynamic device online status?
-        logger.debug(f'Receiving model status from ANDES...')
+        try:
+            rtn_name = self.sp.recent.class_name
+            logger.debug(f'Receiving ANDES results to {rtn_name}.')
+        except AttributeError:
+            logger.warning('No target AMS routine found. Unable to sync with ANDES.')
+            return False
         for mname, mdl in self.sp.models.items():
             if mdl.n == 0:
                 continue
@@ -337,6 +344,9 @@ class Dynamic:
         """
         Get the dynamic generator output power.
         """
+        if not self.is_tds:     # sync dynamic device
+            logger.warning('Dynamic is not running, receiving Pe is skipped.')
+            return True
         # TODO: get pe from ANDES
         # 1) SynGen
         # using Pe
