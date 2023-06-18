@@ -59,7 +59,6 @@ def _dump_system(system, skip_empty, orient='records', to_andes=True):
     """
 
     na_models = []
-    skip_params = []
     if to_andes:
         # Initialize an ANDES system
         sa = andes_system(setup=False, default_config=True,
@@ -68,6 +67,7 @@ def _dump_system(system, skip_empty, orient='records', to_andes=True):
                           )
     out = OrderedDict()
     for name, instance in system.models.items():
+        skip_params = []
         if skip_empty and instance.n == 0:
             continue
         if to_andes:
@@ -79,7 +79,7 @@ def _dump_system(system, skip_empty, orient='records', to_andes=True):
             andes_params = list(sa.models[name].params.keys())
             skip_params = list(set(ams_params) - set(andes_params))
         if skip_params:
-            df = instance.cache.df_in.drop(skip_params, axis=1)
+            df = instance.cache.df_in.drop(skip_params, axis=1, errors='ignore')
         else:
             df = instance.cache.df_in
         out[name] = df.to_dict(orient=orient)
