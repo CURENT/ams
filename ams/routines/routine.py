@@ -206,7 +206,7 @@ class RoutineModel:
         if key in self.__dict__:
             # FIXME: seems to be a bad implementation
             non_warning_list = ['info', 'type', 'obj',
-                                'map1', 'map2', 'exec_time']
+                                'map1', 'map2', 'exec_time', 'is_setup']
             if key in non_warning_list:
                 pass
             else:

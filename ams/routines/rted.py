@@ -46,20 +46,12 @@ class RTEDData(DCOPFData):
                          unit='p.u.',
                          owner_name='AGCR',
                          )
-        # # FIXME: not generalized
-        # all_zone = np.array(self.system.Zone.idx.v)
-        # bus_idx = self.system.StaticGen.get(src='bus', attr='v',
-        #                                     idx=self.pg.get_idx())
-        # zone_idx = self.system.Bus.get(src='zone', attr='v', idx=bus_idx)
-        # zone_list = np.array(len(all_zone) * [zone_idx])
-        # bool_array = (zone_list == all_zone[:, np.newaxis])
-        # prus_v = np.array(bool_array, dtype=int)
-        # self.prus = RParam(info='coefficient vector for RegUp reserve',
-        #                    name='prus',
-        #                    tex_name=r'p_{r,u,s}',
-        #                    owner_name='StaticGen',
-        #                    v=prus_v,
-        #                    )
+        self.prs = RParam(info='sum matrix of reserve',
+                          name='prs',
+                          src='prs',
+                          tex_name=r'\sum',
+                          owner_name='AGCR',
+                          )
         # 1.3 reserve ramp rate
         # FIXME: seems not used
         self.Ragc = RParam(info='AGC ramp rate',
@@ -101,44 +93,46 @@ class RTEDModel(DCOPFModel):
                        name='pru',
                        tex_name=r'p_{r,u}',
                        owner_name='StaticGen',
+                       nonneg=True,
                        )
         self.prd = Var(info='RegDn reserve',
                        unit='p.u.',
                        name='prd',
                        tex_name=r'p_{r,d}',
                        owner_name='StaticGen',
+                       nonneg=True,
                        )
         # --- constraints ---
-        # self.rbu = Constraint(name='rbu',
-        #                      info='RegUp reserve balance',
-        #                      e_str='prus @ pru - du',
-        #                      type='eq',
-        #                      )
-        # self.rbd = Constraint(name='rbu',
-        #                      info='RegDn reserve balance',
-        #                      e_str='prds @ prd - dd',
-        #                      type='eq',
-        #                      )
-        self.rpru = Constraint(name='ru',
-                               info='RegUp reserve ramp',
-                               e_str='pg + pru - pmax',
-                               type='uq',
-                               )
-        self.rprd = Constraint(name='rd',
-                               info='RegDn reserve ramp',
-                               e_str='-pg + prd - pmin',
-                               type='uq',
-                               )
-        self.rpgu = Constraint(name='rampu',
-                               info='GEN ramp up',
-                               e_str='pg - pg0 - R10',
-                               type='uq',
-                               )
-        self.rpgd = Constraint(name='rampd',
-                               info='GEN ramp down',
-                               e_str='-pg + pg0 - R10',
-                               type='uq',
-                               )
+        self.rbu = Constraint(name='rbu',
+                              info='RegUp reserve balance',
+                              e_str='prs @ pru - du',
+                              type='eq',
+                              )
+        self.rbd = Constraint(name='rbd',
+                              info='RegDn reserve balance',
+                              e_str='prs @ prd - dd',
+                              type='eq',
+                              )
+        self.rru = Constraint(name='rru',
+                              info='RegUp reserve ramp',
+                              e_str='pg + pru - pmax',
+                              type='uq',
+                              )
+        self.rrd = Constraint(name='rrd',
+                              info='RegDn reserve ramp',
+                              e_str='-pg + prd - pmin',
+                              type='uq',
+                              )
+        self.rgu = Constraint(name='rgu',
+                              info='ramp up limit of generator output',
+                              e_str='pg - pg0 - R10',
+                              type='uq',
+                              )
+        self.rgd = Constraint(name='rgd',
+                              info='ramp down limit of generator output',
+                              e_str='-pg + pg0 - R10',
+                              type='uq',
+                              )
         # --- objective ---
         self.obj = Objective(name='tc',
                              info='total generation and reserve cost',
