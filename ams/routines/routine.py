@@ -89,8 +89,8 @@ class RoutineModel:
             try:
                 src_map = self.map2[owner.class_name][src]
                 return owner.get(src=src_map,
-                                idx=idx,
-                                attr=attr, allow_none=allow_none, default=default)
+                                 idx=idx,
+                                 attr=attr, allow_none=allow_none, default=default)
             except KeyError:
                 logger.info(f'Variable {self.name} has no mapping.')
                 return None
@@ -205,7 +205,9 @@ class RoutineModel:
         """
         if key in self.__dict__:
             # FIXME: seems to be a bad implementation
-            if key in ['info', 'type', 'obj', 'map1', 'map2']:
+            non_warning_list = ['info', 'type', 'obj',
+                                'map1', 'map2', 'exec_time']
+            if key in non_warning_list:
                 pass
             else:
                 logger.warning(f"{self.class_name}: redefinition of member <{key}>. Likely a modeling error.")
