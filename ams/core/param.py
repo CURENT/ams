@@ -99,6 +99,12 @@ class RParam:
                 if hasattr(self, 'vin') and (self.vin is not None):
                     span += f', vin={self.vin}'
 
+            if self.v.ndim == 1:
+                if len(self.v) <= 20:
+                    span = f', v={self.v}'
+            else:
+                span = f', v=shape{self.v.shape}'
+
             return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}{span}'
 
     def get_idx(self):
