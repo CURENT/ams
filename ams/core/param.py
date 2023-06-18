@@ -11,7 +11,7 @@ from collections import OrderedDict
 import numpy as np
 
 from andes.core.common import Config
-from andes.core import BaseParam, DataParam, IdxParam, NumParam
+from andes.core import BaseParam, DataParam, IdxParam, NumParam, ExtParam
 from andes.models.group import GroupBase
 
 from ams.core.var import Algeb

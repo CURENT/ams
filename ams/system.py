@@ -74,7 +74,7 @@ class System(andes_System):
             'save_config', 'collect_config', 'e_clear', 'f_update',
             'fg_to_dae', 'from_ipysheet', 'g_islands', 'g_update', 'get_z',
             'init', 'j_islands', 'j_update', 'l_update_eq', 'connectivity', 'summary',
-            'l_update_var', 'link_ext_param', 'precompile', 'prepare', 'reload', 'remove_pycapsule', 'reset',
+            'l_update_var', 'precompile', 'prepare', 'reload', 'remove_pycapsule', 'reset',
             's_update_post', 's_update_var', 'store_adder_setter', 'store_no_check_init',
             'store_sparse_pattern', 'store_switch_times', 'switch_action', 'to_ipysheet',
             'undill']
@@ -330,6 +330,8 @@ class System(andes_System):
 
         self.collect_ref()
         self._list2array()     # `list2array` must come before `link_ext_param`
+        if not self.link_ext_param():
+            ret = False
 
         if self.Line.rate_a.v.max() == 0:
             logger.warning("Line rate_a is corrected to large value automatically.")

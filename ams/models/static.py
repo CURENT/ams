@@ -1,6 +1,6 @@
 from collections import OrderedDict  # NOQA
 
-from andes.core.param import NumParam
+from andes.core.param import NumParam, ExtParam
 from andes.models.static.pq import PQData  # NOQA
 from andes.models.static.pv import PVData  # NOQA
 from andes.models.static.slack import SlackData  # NOQA
@@ -151,6 +151,10 @@ class PVModel(Model):
                               min_iter="sw_{iter}",
                               err_tol=r"\epsilon_{tol}"
                               )
+
+        self.zone = ExtParam(model='Bus', src='zone', indexer=self.bus, export=False,
+                            info='Retrieved zone idx', vtype=str, default=None,
+                            )
 
         self.ud = Algeb(info='connection status decision',
                         unit='bool',
