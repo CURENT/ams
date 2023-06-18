@@ -12,7 +12,7 @@ from andes.utils.func import list_flatten
 
 from ams.core.documenter import Documenter
 from ams.core.var import Algeb  # NOQA
-from ams.core.service import BackRef  # NOQA
+from ams.core.service import BaseService, BackRef  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ class Model:
 
         This function assigns `owner` to the model itself, assigns the name and tex_name.
         """
-        if isinstance(value, (Algeb,)):
+        if isinstance(value, (Algeb, BaseService)):
             if not value.owner:
                 value.owner = self
             if not value.name:

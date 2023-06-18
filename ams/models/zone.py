@@ -3,6 +3,7 @@ import logging
 from andes.core.model import ModelData
 from andes.utils.tab import Tab
 from ams.core.model import Model
+from ams.core.service import BackRef
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,9 @@ class Zone(ZoneData, Model):
         Model.__init__(self, system, config)
 
         self.group = 'Collection'
+
+        self.Bus = BackRef()
+        self.ACTopology = BackRef()
 
     def bus_table(self):
         """
