@@ -9,6 +9,7 @@ import numpy as np
 from andes.models.group import GroupBase as andes_GroupBase
 
 from ams.core.var import Algeb
+from ams.core.service import BackRef
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,30 @@ class GroupBase(andes_GroupBase):
     def __repr__(self):
         dev_text = 'device' if self.n == 1 else 'devices'
         return f'{self.class_name} ({self.n} {dev_text}) at {hex(id(self))}'
+
+    def __setattr__(self, key, value):
+        if hasattr(value, 'owner'):
+            if value.owner is None:
+                value.owner = self
+        if hasattr(value, 'name'):
+            if value.name is None:
+                value.name = key
+
+        if isinstance(value, BackRef):
+            self.services_ref[key] = value
+
+        super().__setattr__(key, value)
+
+    def set_backref(self, name, from_idx, to_idx):
+        """
+        Set idxes to ``BackRef``, and set them to models.
+        """
+
+        uid = self.idx2uid(to_idx)
+        self.services_ref[name].v[uid].append(from_idx)
+
+        model = self.idx2model(to_idx)
+        model.set_backref(name, from_idx, to_idx)
 
 
 class Undefined(GroupBase):
