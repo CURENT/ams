@@ -196,19 +196,11 @@ class Dynamic:
                 ]
         self.link = self.link[cols]
 
-    def send_dgu(self):
-        """
-        Send to ANDES the dynamic generator online status.
-
-        # TODO: add support for switch dynamic gen online status
-        """
-        sa = self.sa
-        sp = self.sp
-        return True
-
     def send_tgr(self):
         """
         Sned to TurbinGov refrence.
+
+        # TODO: AGC power reference (`paux`) is not included in this model.
         """
         sa = self.sa
         sp = self.sp
@@ -216,8 +208,7 @@ class Dynamic:
         syg_idx = sp.dyn.link['syg_idx'].dropna().tolist()  # SynGen idx
         # corresponding StaticGen idx in ANDES
         stg_syg_idx = sa.SynGen.get(src='gen', attr='v', idx=syg_idx,
-                                    allow_none=True, default=None,
-                                    )
+                                    allow_none=True, default=None)
         # corresponding TurbineGov idx in ANDES
         gov_idx = sa.TurbineGov.find_idx(keys='syn', values=syg_idx)
         # corresponding StaticGen pg in AMS
@@ -230,7 +221,7 @@ class Dynamic:
         # --- pref ---
         sa.TurbineGov.set(value=syg_ams, idx=gov_idx,
                           src='pref0', attr='v')
-        
+
         # --- paux ---
         # TODO: sync paux, using paux0
 
@@ -246,10 +237,55 @@ class Dynamic:
         # --- pref ---
         sa.DG.set(value=dg_ams, idx=dg_idx,
                   src='pref0', attr='v')
-        # TODO: paux, using Pext0
+        # TODO: paux, using Pext0, this one should be do in other place rather than here
 
         # 3) RenGen
         # TODO: seems to be unnecessary
+        # which models/params are used to control output and auxillary power?
+
+        return True
+
+    def send_dgu(self):
+        """
+        Send to ANDES the dynamic generator online status.
+
+        # TODO: add support for switch dynamic gen online status
+        """
+        sa = self.sa
+        sp = self.sp
+        # 1) TurbineGov
+        syg_idx = sp.dyn.link['syg_idx'].dropna().tolist()  # SynGen idx
+        # corresponding StaticGen idx in ANDES
+        stg_syg_idx = sa.SynGen.get(src='gen', attr='v', idx=syg_idx,
+                                    allow_none=True, default=None)
+        # corresponding StaticGen u in AMS
+        stg_u_ams = sp.StaticGen.get(src='u', attr='v', idx=stg_syg_idx,
+                                     allow_none=True, default=0)
+        # set u to dynamic
+        sa.SynGen.set(src='gen', attr='v', idx=syg_idx, value=stg_u_ams)
+
+        # 2) DG
+        dg_idx = sp.dyn.link['dg_idx'].dropna().tolist()  # DG idx
+        # corresponding StaticGen idx in ANDES
+        stg_dg_idx = sa.DG.get(src='gen', attr='v', idx=dg_idx,
+                               allow_none=True, default=None,
+                               )
+        # corresponding DG u in AMS
+        dg_u_ams = sp.StaticGen.get(src='u', attr='v', idx=stg_dg_idx,
+                                    allow_none=True, default=0)
+        # set u to dynamic
+        sa.DG.set(src='gen', attr='v', idx=dg_idx, value=dg_u_ams)
+
+        # 3) RenGen
+        rg_idx = sp.dyn.link['rg_idx'].dropna().tolist()  # RenGen idx
+        # corresponding StaticGen idx in ANDES
+        stg_rg_idx = sa.RenGen.get(src='gen', attr='v', idx=rg_idx,
+                                   allow_none=True, default=None)
+        # corresponding RenGen u in AMS
+        rg_u_ams = sp.StaticGen.get(src='u', attr='v', idx=stg_rg_idx,
+                                    allow_none=True, default=0)
+        # set u to dynamic
+        sa.RenGen.set(src='gen', attr='v', idx=rg_idx, value=rg_u_ams)
 
         return True
 
@@ -257,58 +293,95 @@ class Dynamic:
         """
         Send the AMS results to ANDES.
         """
-        if self.sp.recent.type != 'ACED':
-            if self.sp.recent.is_smooth:
-                logger.debug(f'{self.sp.recent.class_name} results has been smoothed.')
+        sa = self.sa
+        sp = self.sp
+        # 1. information
+        # NOTE:if DC types, check if results are smoothed
+        if sp.recent.type != 'ACED':
+            if sp.recent.is_smooth:
+                logger.debug(f'{sp.recent.class_name} results has been smoothed.')
             else:
-                logger.warning(f'{self.sp.recent.class_name} has not been smoothed, error might be introduced in dynamic simulation.')
-        # --- send routine results ---
+                logger.warning(
+                    f'{sp.recent.class_name} has not been smoothed, error might be introduced in dynamic simulation.')
+
         try:
-            rtn_name = self.sp.recent.class_name
-            logger.debug(f'Sending {rtn_name} results to ANDES...')
+            logger.debug(f'Sending {sp.recent.class_name} results to ANDES...')
         except AttributeError:
             logger.warning('No solved AMS routine found. Unable to sync with ANDES.')
             return False
-        # FIXME: dynamic device online status?
-        for mname, mdl in self.sp.models.items():
-            if mdl.n == 0:
-                continue
-            if mdl.group == 'StaticGen':
-                if self.is_tds:     # sync dynamic device
-                    self.send_dgu()
-                    self.send_tgr()
-                    # once dynamic has started, skip bus
-            if mdl.class_name == 'Bus':
-                if self.is_tds:     # sync dynamic device
-                    logger.warning('Dynamic has been initialized, Bus angle and voltage are skipped.')
-                    continue
-                    # TODO: add other dynamic info
-            idx = mdl.idx.v
-            # --- send models online status ---
-            if mname in self.sa.models:
-                mdl_andes = getattr(self.sa, mname)
-                u_ams = mdl.get(src='u', idx=idx, attr='v')
-                mdl_andes.set(src='u', idx=idx, attr='v', value=u_ams)
 
-        map2 = getattr(self.sp.recent, 'map2')
+        # mapping dict
+        map2 = getattr(sp.recent, 'map2')
         if len(map2) == 0:
-            logger.warning(f'Mapping dict "map2" of {self.sp.recent.class_name} is empty.')
+            logger.warning(f'Mapping dict "map2" of {sp.recent.class_name} is empty.')
             return True
 
-        for mname, pmap in map2.items():
-            logger.debug(f'Sending {mname} parameters to ANDES...')  # TODO: remove later
-            mdl = getattr(self.sa, mname)
-            for ams_var, andes_param in pmap.items():
-                idx_ams = getattr(self.sp.recent, ams_var).get_idx()
-                v_ams = getattr(self.sp.recent, ams_var).v
-                try:
-                    mdl.set(src=andes_param, attr='v',
-                            idx=idx_ams, value=v_ams,
-                            )
-                except KeyError:
-                    logger.warning(f'ANDES: Param {andes_param} not found in Model {mname}.')
+        # 2. sync static results if dynamic is not initialized
+        if not self.is_tds:
+            logger.debug(f'Sending results to <pflow> models...')
+            for mname, mdl in self.sp.models.items():
+                if mdl.n == 0:
                     continue
-        return True
+                idx = mdl.idx.v
+                if mname in sa.models:
+                    mdl_andes = getattr(sa, mname)
+                    # 1) send models online status
+                    u_ams = mdl.get(src='u', idx=idx, attr='v')
+                    mdl_andes.set(src='u', idx=idx, attr='v', value=u_ams)
+                    # 2) send other results
+                    # NOTE: send power reference to dynamic device
+                    for ams_vname, andes_pname in map2[mname].items():
+                        # a. power reference
+                        if ams_vname in ['pg']:
+                            self.send_tgr()
+                        # b. voltage reference
+                        if ams_vname in ['qg']:
+                            logger.warning('Setting qg to ANDES dynamic does not take effect.')
+                        # c. others, if any
+                        ams_var = getattr(sp.recent, ams_vname)
+                        v_ams = sp.recent.get(src=ams_vname, attr='v',
+                                              idx=ams_var.get_idx())
+                        mdl_andes.set(src=andes_pname, idx=idx, attr='v', value=v_ams)
+                return True
+        else:
+            # 3. sync dynamic results if dynamic is initialized
+            logger.debug(f'Sending results to <tds> models...')
+            # 1) send models online status
+            # TODO:
+            is_dgu_set = False
+            for mname, mdl in self.sp.models.items():
+                if mdl.n == 0:
+                    continue
+                # a. dynamic generator
+                if not is_dgu_set and mdl.group in ['StaticGen']:
+                    self.send_dgu()
+                    is_dgu_set = True
+                    logger.warning('Generator online status are sent to dynamic generators.')
+                    continue
+                # b. other models
+                idx = mdl.idx.v
+                if mname in sa.models:
+                    mdl_andes = getattr(sa, mname)
+                    # 1) send models online status
+                    u_ams = mdl.get(src='u', idx=idx, attr='v')
+                    mdl_andes.set(src='u', idx=idx, attr='v', value=u_ams)
+            # 2) send other results
+            for mname, pmap in map2.items():
+                if mname == 'Bus':
+                    logger.warning('Dynamic has been initialized, Bus angle and voltage are skipped.')
+                    continue
+                mdl = getattr(self.sa, mname)
+                for ams_vname, andes_pname in pmap.items():
+                    ams_var = getattr(sp.recent, ams_vname)
+                    v_ams = sp.recent.get(src=ams_vname, attr='v',
+                                          idx=ams_var.get_idx())
+                    try:
+                        mdl.set(src=andes_pname, attr='v',
+                                idx=ams_var.get_idx(), value=v_ams)
+                    except KeyError:
+                        logger.warning(f'Param {andes_pname} not found in ANDES model <{mname}>.')
+                        continue
+            return True
 
     def receive(self):
         """
@@ -358,22 +431,22 @@ class Dynamic:
         # TODO: get pe from ANDES
         # 1) SynGen
         Pe_sg = sa.SynGen.get(idx=sp.dyn.link['syg_idx'].replace(np.NaN, None).to_list(),
-                             src='Pe', attr='v',
-                             allow_none=True, default=0,)
+                              src='Pe', attr='v',
+                              allow_none=True, default=0,)
 
         # 2) DG
         Ie_dg = sa.DG.get(src='Ipout_y', attr='v',
-                            idx=sp.dyn.link['dg_idx'].replace(np.NaN, None).to_list(),
-                             allow_none=True, default=0,)
+                          idx=sp.dyn.link['dg_idx'].replace(np.NaN, None).to_list(),
+                          allow_none=True, default=0,)
         v_dg = sa.DG.get(src='v', attr='v',
-                            idx=sp.dyn.link['dg_idx'].replace(np.NaN, None).to_list(),
-                                allow_none=True, default=0,)
+                         idx=sp.dyn.link['dg_idx'].replace(np.NaN, None).to_list(),
+                         allow_none=True, default=0,)
         Pe_dg = v_dg * Ie_dg
 
         # 3) RenGen
         Pe_rg = sa.RenGen.get(idx=sp.dyn.link['rg_idx'].replace(np.NaN, None).to_list(),
-                         src='Pe', attr='v',
-                         allow_none=True, default=0,)
+                              src='Pe', attr='v',
+                              allow_none=True, default=0,)
         Pe = Pe_sg + Pe_dg + Pe_rg
         logger.debug(f'Pe={Pe}')
         return True

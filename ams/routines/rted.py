@@ -209,6 +209,7 @@ class RTED(RTEDData, RTEDModel):
         ACOPF.run()
         self.pg.v = ACOPF.pg.v
 
+        # NOTE: mock results to fit interface with ANDES
         self.aBus = ACOPF.aBus
         self.vBus = ACOPF.vBus
         self.qg = ACOPF.qg
