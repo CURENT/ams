@@ -77,7 +77,9 @@ class RoutineModel:
 
         self.exec_time = 0.0  # recorded time to execute the routine in seconds
         # TODO: check exit_code of gurobipy or any other similiar solvers
-        self.exit_code = 0  # exit code of the routine; 1 for successs
+        self.exit_code = 0  # exit code of the routine;
+
+        self.is_smooth = False  # whether the routine is smooth
 
     @property
     def class_name(self):
@@ -253,13 +255,7 @@ class RoutineModel:
         This function assigns `owner` to the model itself, assigns the name and tex_name.
         """
         if key in self.__dict__:
-            # FIXME: seems to be a bad implementation
-            non_warning_list = ['info', 'type', 'obj',
-                                'map1', 'map2', 'exec_time', 'exit_code',
-                                'is_setup']
-            if key in non_warning_list:
-                pass
-            else:
+            if key in self.constrs.keys() or key in self.vars.keys():
                 logger.warning(f"{self.class_name}: redefinition of member <{key}>. Likely a modeling error.")
 
     def __setattr__(self, key, value):

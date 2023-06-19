@@ -219,4 +219,6 @@ class RTED(RTEDData, RTEDModel):
         self.system.StaticGen.set(src='p0', attr='v', idx=pr_idx, value=p00)
         self.system.recent = self
 
+        self.is_smooth = True
+        logger.warning('RTED is smoothed with ACOPF.')
         return True
