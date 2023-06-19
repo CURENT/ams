@@ -11,6 +11,8 @@ from andes import load as andes_load
 from andes.interop.pandapower import make_link_table
 
 from ams.io import input_formats, xlsx, json
+from ams.models.group import StaticGen
+from ams.models.static import PV, Slack
 
 logger = logging.getLogger(__name__)
 
@@ -198,9 +200,9 @@ class Dynamic:
 
     def send_tgr(self):
         """
-        Sned to TurbinGov refrence.
+        Sned to generator power refrence.
 
-        # TODO: AGC power reference (`paux`) is not included in this model.
+        # NOTE: AGC power reference (`paux`) is not included in this model.
         """
         sa = self.sa
         sp = self.sp
@@ -262,7 +264,7 @@ class Dynamic:
         stg_u_ams = sp.StaticGen.get(src='u', attr='v', idx=stg_syg_idx,
                                      allow_none=True, default=0)
         # set u to dynamic
-        sa.SynGen.set(src='gen', attr='v', idx=syg_idx, value=stg_u_ams)
+        sa.SynGen.set(src='u', attr='v', idx=syg_idx, value=stg_u_ams)
 
         # 2) DG
         dg_idx = sp.dyn.link['dg_idx'].dropna().tolist()  # DG idx
@@ -274,7 +276,7 @@ class Dynamic:
         dg_u_ams = sp.StaticGen.get(src='u', attr='v', idx=stg_dg_idx,
                                     allow_none=True, default=0)
         # set u to dynamic
-        sa.DG.set(src='gen', attr='v', idx=dg_idx, value=dg_u_ams)
+        sa.DG.set(src='u', attr='v', idx=dg_idx, value=dg_u_ams)
 
         # 3) RenGen
         rg_idx = sp.dyn.link['rg_idx'].dropna().tolist()  # RenGen idx
@@ -285,7 +287,7 @@ class Dynamic:
         rg_u_ams = sp.StaticGen.get(src='u', attr='v', idx=stg_rg_idx,
                                     allow_none=True, default=0)
         # set u to dynamic
-        sa.RenGen.set(src='gen', attr='v', idx=rg_idx, value=rg_u_ams)
+        sa.RenGen.set(src='u', attr='v', idx=rg_idx, value=rg_u_ams)
 
         return True
 
@@ -315,6 +317,10 @@ class Dynamic:
         if len(map2) == 0:
             logger.warning(f'Mapping dict "map2" of {sp.recent.class_name} is empty.')
             return True
+        # check map2
+        pv_slack = 'PV' in map2.keys() and 'SLACK' in map2.keys()
+        if pv_slack:
+            logger.warning('PV and SLACK are both in map2, this might cause error when mapping.')
 
         # 2. sync static results if dynamic is not initialized
         if not self.is_tds:
@@ -331,20 +337,17 @@ class Dynamic:
                     # 2) send other results
                     # NOTE: send power reference to dynamic device
                     for ams_vname, andes_pname in map2[mname].items():
-                        # a. power reference
-                        if ams_vname in ['pg']:
-                            self.send_tgr()
-                        # b. voltage reference
+                        # a. voltage reference
                         if ams_vname in ['qg']:
                             logger.warning('Setting qg to ANDES dynamic does not take effect.')
-                        # c. others, if any
+                        # b. others, if any
                         ams_var = getattr(sp.recent, ams_vname)
                         v_ams = sp.recent.get(src=ams_vname, attr='v',
                                               idx=ams_var.get_idx())
                         mdl_andes.set(src=andes_pname, idx=idx, attr='v', value=v_ams)
                 return True
+        # 3. sync dynamic results if dynamic is initialized
         else:
-            # 3. sync dynamic results if dynamic is initialized
             logger.debug(f'Sending results to <tds> models...')
             # 1) send models online status
             # TODO:
@@ -352,13 +355,13 @@ class Dynamic:
             for mname, mdl in self.sp.models.items():
                 if mdl.n == 0:
                     continue
-                # a. dynamic generator
+                # a. dynamic generator online status
                 if not is_dgu_set and mdl.group in ['StaticGen']:
                     self.send_dgu()
                     is_dgu_set = True
                     logger.warning('Generator online status are sent to dynamic generators.')
                     continue
-                # b. other models
+                # b. other models online status
                 idx = mdl.idx.v
                 if mname in sa.models:
                     mdl_andes = getattr(sa, mname)
@@ -366,12 +369,22 @@ class Dynamic:
                     u_ams = mdl.get(src='u', idx=idx, attr='v')
                     mdl_andes.set(src='u', idx=idx, attr='v', value=u_ams)
             # 2) send other results
+            is_tgr_set = False
             for mname, pmap in map2.items():
                 if mname == 'Bus':
                     logger.warning('Dynamic has been initialized, Bus angle and voltage are skipped.')
                     continue
                 mdl = getattr(self.sa, mname)
                 for ams_vname, andes_pname in pmap.items():
+                    # a. power reference
+                    # FIXME: in this implementation, PV and Slack are only sync once, this might
+                    # cause problem if PV and Slack are mapped separately
+                    if not is_tgr_set and isinstance(mdl, (StaticGen, PV, Slack)):
+                        self.send_tgr()
+                        is_tgr_set = True
+                        logger.warning('Generator power reference are sent to dynamic devices.')
+                        continue
+                    # c. others, if any
                     ams_var = getattr(sp.recent, ams_vname)
                     v_ams = sp.recent.get(src=ams_vname, attr='v',
                                           idx=ams_var.get_idx())
@@ -387,37 +400,49 @@ class Dynamic:
         """
         Receive the AMS system from the ANDES system.
         """
+        sa = self.sa
+        sp = self.sp
+        # 1. information
         try:
             rtn_name = self.sp.recent.class_name
             logger.debug(f'Receiving ANDES results to {rtn_name}.')
         except AttributeError:
             logger.warning('No target AMS routine found. Failed to sync with ANDES.')
             return False
-        for mname, mdl in self.sp.models.items():
-            if mdl.n == 0:
-                continue
-            if mdl.group == 'StaticGen':
-                if self.is_tds:     # sync dynamic device
-                    # --- dynamic generator online status ---
-                    logger.debug('Receiving dynamic Gen u...')  # TODO: remove later
-                    self.receive_dgu()
-                    logger.debug('Receiving dynamic Pe...')    # TODO: remove later
-                    self.receive_pe()
-                    # TODO: add other dynamic info
-                    continue
-            idx = mdl.idx.v
-            # --- receive device online status ---
-            if mname in self.sa.models:
-                mdl_andes = getattr(self.sa, mname)
-                u_andes = mdl_andes.get(src='u', idx=idx, attr='v')
-                mdl.set(src='u', idx=idx, attr='v', value=u_andes)
 
-        # TODO: dynamic results
-        map1 = getattr(self.sp.recent, 'map1')
+        # mapping dict
+        map1 = getattr(sp.recent, 'map1')
         if len(map1) == 0:
-            logger.warning(f'Mapping dict "map1" of {self.sp.recent.class_name} is empty.')
+            logger.warning(f'Mapping dict "map1" of {sp.recent.class_name} is empty.')
             return True
-        return True
+
+        # 2. sync static results if dynamic is not initialized
+        if not self.is_tds:
+            logger.debug(f'Receiving <pflow> results to {sp.recent.class_name}...')
+            for mname, mdl in self.sp.models.items():
+                if mdl.n == 0:
+                    continue
+                if mdl.group == 'StaticGen':
+                    if self.is_tds:     # sync dynamic device
+                        # --- dynamic generator online status ---
+                        logger.debug('Receiving dynamic Gen u...')  # TODO: remove later
+                        self.receive_dgu()
+                        logger.debug('Receiving dynamic Pe...')    # TODO: remove later
+                        self.receive_pe()
+                        # TODO: add other dynamic info
+                        continue
+                idx = mdl.idx.v
+                # --- receive device online status ---
+                if mname in self.sa.models:
+                    mdl_andes = getattr(self.sa, mname)
+                    u_andes = mdl_andes.get(src='u', idx=idx, attr='v')
+                    mdl.set(src='u', idx=idx, attr='v', value=u_andes)
+            return True
+        # 3. sync dynamic results if dynamic is initialized
+        else:
+            pass
+            # TODO: dynamic results
+            return True
 
     def receive_pe(self):
         """
