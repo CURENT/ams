@@ -21,7 +21,7 @@ class TypeBase:
     def __init__(self):
 
         self.common_rparams = []
-        self.common_ralgebs = []
+        self.common_vars = []
         self.common_constrs = []
 
         self.routines = OrderedDict()
@@ -63,8 +63,8 @@ class TypeBase:
         if len(self.common_rparams):
             out += 'Common Routine Parameters: ' + ', '.join(self.common_rparams)
             out += '\n\n'
-        if len(self.common_ralgebs):
-            out += 'Common Routine Algebs: ' + ', '.join(self.common_ralgebs)
+        if len(self.common_vars):
+            out += 'Common Routine Algebs: ' + ', '.join(self.common_vars)
             out += '\n\n'
         if len(self.common_constrs):
             out += 'Common Constraints: ' + ', '.join(self.common_constrs)
@@ -121,7 +121,7 @@ class PF(TypeBase):
     def __init__(self):
         TypeBase.__init__(self)
         self.common_rparams.extend(('pd',))
-        self.common_ralgebs.extend(('pg',))
+        self.common_vars.extend(('pg',))
 
 
 class DCED(TypeBase):
@@ -132,7 +132,7 @@ class DCED(TypeBase):
     def __init__(self):
         TypeBase.__init__(self)
         self.common_rparams.extend(('c2', 'c1', 'c0', 'pmax', 'pmin', 'pd', 'rate_a',))
-        self.common_ralgebs.extend(('pg',))
+        self.common_vars.extend(('pg',))
         self.common_constrs.extend(('pb', 'lub', 'llb'))
 
 
@@ -144,7 +144,7 @@ class ACED(DCED):
     def __init__(self):
         DCED.__init__(self)
         self.common_rparams.extend(('qd',))
-        self.common_ralgebs.extend(('aBus', 'vBus', 'qg',))
+        self.common_vars.extend(('aBus', 'vBus', 'qg',))
 
 
 class DCUC(TypeBase):
