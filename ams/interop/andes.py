@@ -257,6 +257,11 @@ class Dynamic:
         """
         Send the AMS results to ANDES.
         """
+        if self.sp.recent.type != 'ACED':
+            if self.sp.recent.is_smooth:
+                logger.debug(f'{self.sp.recent.class_name} results has been smoothed.')
+            else:
+                logger.warning(f'{self.sp.recent.class_name} has not been smoothed, error might be introduced in dynamic simulation.')
         # --- send routine results ---
         try:
             rtn_name = self.sp.recent.class_name
@@ -265,9 +270,6 @@ class Dynamic:
             logger.warning('No solved AMS routine found. Unable to sync with ANDES.')
             return False
         # FIXME: dynamic device online status?
-        # --- send models online status ---
-        if self.is_tds:     # sync dynamic device
-            logger.warning('Dynamic has been initialized, Bus angle and voltage are skipped.')
         for mname, mdl in self.sp.models.items():
             if mdl.n == 0:
                 continue
@@ -276,11 +278,13 @@ class Dynamic:
                     self.send_dgu()
                     self.send_tgr()
                     # once dynamic has started, skip bus
-                    if mdl.class_name == 'Bus':
-                        continue
-                    # TODO: add other dynamic info
+            if mdl.class_name == 'Bus':
+                if self.is_tds:     # sync dynamic device
+                    logger.warning('Dynamic has been initialized, Bus angle and voltage are skipped.')
                     continue
+                    # TODO: add other dynamic info
             idx = mdl.idx.v
+            # --- send models online status ---
             if mname in self.sa.models:
                 mdl_andes = getattr(self.sa, mname)
                 u_ams = mdl.get(src='u', idx=idx, attr='v')
@@ -291,8 +295,8 @@ class Dynamic:
             logger.warning(f'Mapping dict "map2" of {self.sp.recent.class_name} is empty.')
             return True
 
-        # FIXME: not consider dynamic device yet
         for mname, pmap in map2.items():
+            logger.debug(f'Sending {mname} parameters to ANDES...')  # TODO: remove later
             mdl = getattr(self.sa, mname)
             for ams_var, andes_param in pmap.items():
                 idx_ams = getattr(self.sp.recent, ams_var).get_idx()
@@ -310,12 +314,11 @@ class Dynamic:
         """
         Receive the AMS system from the ANDES system.
         """
-        # --- receive device online status ---
         try:
             rtn_name = self.sp.recent.class_name
             logger.debug(f'Receiving ANDES results to {rtn_name}.')
         except AttributeError:
-            logger.warning('No target AMS routine found. Unable to sync with ANDES.')
+            logger.warning('No target AMS routine found. Failed to sync with ANDES.')
             return False
         for mname, mdl in self.sp.models.items():
             if mdl.n == 0:
@@ -323,11 +326,14 @@ class Dynamic:
             if mdl.group == 'StaticGen':
                 if self.is_tds:     # sync dynamic device
                     # --- dynamic generator online status ---
+                    logger.debug('Receiving dynamic Gen u...')  # TODO: remove later
                     self.receive_dgu()
+                    logger.debug('Receiving dynamic Pe...')    # TODO: remove later
                     self.receive_pe()
                     # TODO: add other dynamic info
                     continue
             idx = mdl.idx.v
+            # --- receive device online status ---
             if mname in self.sa.models:
                 mdl_andes = getattr(self.sa, mname)
                 u_andes = mdl_andes.get(src='u', idx=idx, attr='v')
@@ -347,17 +353,29 @@ class Dynamic:
         if not self.is_tds:     # sync dynamic device
             logger.warning('Dynamic is not running, receiving Pe is skipped.')
             return True
+        sa = self.sa
+        sp = self.sp
         # TODO: get pe from ANDES
         # 1) SynGen
-        # using Pe
+        Pe_sg = sa.SynGen.get(idx=sp.dyn.link['syg_idx'].replace(np.NaN, None).to_list(),
+                             src='Pe', attr='v',
+                             allow_none=True, default=0,)
 
         # 2) DG
-        # using Pe
+        Ie_dg = sa.DG.get(src='Ipout_y', attr='v',
+                            idx=sp.dyn.link['dg_idx'].replace(np.NaN, None).to_list(),
+                             allow_none=True, default=0,)
+        v_dg = sa.DG.get(src='v', attr='v',
+                            idx=sp.dyn.link['dg_idx'].replace(np.NaN, None).to_list(),
+                                allow_none=True, default=0,)
+        Pe_dg = v_dg * Ie_dg
 
         # 3) RenGen
-        # using v and Ipout_y
-        # sa.PVD1.get(src='Ipout_y', attr='v', idx=[])
-        pass
+        Pe_rg = sa.RenGen.get(idx=sp.dyn.link['rg_idx'].replace(np.NaN, None).to_list(),
+                         src='Pe', attr='v',
+                         allow_none=True, default=0,)
+        Pe = Pe_sg + Pe_dg + Pe_rg
+        logger.debug(f'Pe={Pe}')
         return True
 
     def receive_dgu(self):
