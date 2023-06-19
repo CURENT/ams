@@ -3,8 +3,11 @@ Base class for variables.
 """
 
 from typing import Optional
+import logging
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 class Algeb:
