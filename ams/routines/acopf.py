@@ -57,12 +57,12 @@ class ACOPFBase(RoutineModel):
         ])
         self.map2 = OrderedDict([
             ('Bus', {
-                'aBus': 'a0',
                 'vBus': 'v0',
             }),
+            # NOTE: separating PV and Slack rather than using StaticGen
+            # might introduce error when sync with ANDES dynamic
             ('StaticGen', {
                 'pg': 'p0',
-                'qg': 'q0',
             }),
         ])
 

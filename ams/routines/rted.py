@@ -95,14 +95,15 @@ class RTEDModel(DCOPFModel):
                 'pg0': 'p',
             }),
         ])
+        # NOTE: define map2
+        # DC-based RTED assume bus voltage to be 1
+        # here we mock the ACOPF bus voltage results to fit the interface
         self.map2 = OrderedDict([
             ('Bus', {
-                'aBus': 'a0',
                 'vBus': 'v0',
             }),
             ('StaticGen', {
                 'pg': 'p0',
-                'qg': 'q0',
             }),
         ])
         self.info = 'Real-time economic dispatch'
@@ -210,9 +211,7 @@ class RTED(RTEDData, RTEDModel):
         self.pg.v = ACOPF.pg.v
 
         # NOTE: mock results to fit interface with ANDES
-        self.aBus = ACOPF.aBus
         self.vBus = ACOPF.vBus
-        self.qg = ACOPF.qg
 
         # reset pmin, pmax, p0
         self.system.StaticGen.set(src='pmin', attr='v', idx=pr_idx, value=pmin0)
