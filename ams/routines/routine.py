@@ -17,6 +17,9 @@ from ams.opt.omodel import OModel, Var, Constraint, Objective
 from ams.core.symprocessor import SymProcessor
 from ams.core.documenter import RDocumenter
 
+from ams.models.group import GroupBase
+from ams.core.model import Model
+
 logger = logging.getLogger(__name__)
 
 
@@ -80,22 +83,62 @@ class RoutineModel:
     def class_name(self):
         return self.__class__.__name__
 
+    def _loc(self, src: str, idx, allow_none=False):
+        """
+        Helper function to index a variable or parameter in a routine.
+        """
+        src_idx = self.__dict__[src].get_idx()
+        loc = [src_idx.index(idxe) if idxe in src_idx else None for idxe in idx]
+        if None not in loc:
+            return loc
+        else:
+            idx_none = [idxe for idxe in idx if idxe not in src_idx]
+            raise ValueError(f'Var <{self.class_name}.{src}> does not contain value with idx={idx_none[0]}')
+
     def get(self, src: str, idx, attr: str = 'v', allow_none=False, default=0.0):
         """
         Get the value of a variable or parameter.
         """
         if self.__dict__[src].owner is not None:
             owner = self.__dict__[src].owner
-            try:
+            if src in self.map2[owner.class_name].keys():
                 src_map = self.map2[owner.class_name][src]
-                return owner.get(src=src_map,
-                                 idx=idx,
-                                 attr=attr, allow_none=allow_none, default=default)
+                logger.debug(f'Var <{self.class_name}.{src}> is mapped to <{src_map}> of {owner.class_name}.')
+                try:
+                    out = owner.get(src=src_map, idx=idx, attr=attr,
+                                    allow_none=allow_none, default=default)
+                    return out
+                except ValueError:
+                    raise ValueError(f'Failed to get value of <{src_map}> from {owner.class_name}.')
+            else:
+                logger.warning(f'Var {self.class_name}.{src} has no mapping to a model or group, try search in routine {self.class_name}.')
+                loc = self._loc(src=src, idx=idx, allow_none=allow_none)
+                src_v = self.__dict__[src].v
+                out = [src_v[l] for l in loc]
+                return np.array(out)
+        else:
+            logger.info(f'Var {self.class_name}.{src} has no owner.')
+            # FIXME: add idx for non-grouped variables
+            return None
+
+    def set(self, src: str, idx, attr: str = 'v', value=0.0):
+        """
+        Set the value of an attribute of a routine parameter.
+        """
+        if self.__dict__[src].owner is not None:
+            owner = self.__dict__[src].owner
+            try:
+                owner.set(src=src, idx=idx, attr=attr, value=value)
+                # TODO: set value of routine variable
+                src_idx = self.__dict__[src].get_idx()
+                var = getattr(self, src)
+                return True
             except KeyError:
                 logger.info(f'Variable {self.name} has no mapping.')
                 return None
         else:
             logger.info(f'Variable {self.name} has no owner.')
+            # FIXME: add idx for non-grouped variables
             return None
 
     def doc(self, max_width=78, export='plain'):
