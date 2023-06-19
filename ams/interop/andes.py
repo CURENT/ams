@@ -17,11 +17,8 @@ from ams.models.static import PV, Slack
 logger = logging.getLogger(__name__)
 
 
-def to_andes(system,
-             setup=True,
-             addfile=None,
-             overwrite=None,
-             keep=False,
+def to_andes(system, setup=True, addfile=None,
+             overwrite=None, keep=False,
              **kwargs):
     """
     Convert the current model to ANDES format.
@@ -160,26 +157,47 @@ def to_andes(system,
 
 class Dynamic:
     """
-    The ANDES center class.
+    ANDES interface class.
+
+    This class is used to interface with ANDES system.
     """
 
-    def __init__(self,
-                 sp=None,
-                 sa=None,
-                 ) -> None:
+    def __init__(self, sp=None, sa=None) -> None:
+        """
+        Initialize the Dynamic class.
+
+        Parameters
+        ----------
+        sp : AMS system
+            The AMS system.
+        sa : ANDES system
+            The ANDES system.
+
+        Attributes
+        ----------
+        sp : AMS system
+            The AMS system.
+        sa : ANDES system
+            The ANDES system.
+        link : ANDES system link table
+            The ANDES system link table.
+        is_tds : bool
+            Whether the ANDES system is running a TDS.
+
+        Notes
+        -----
+        - The `link` attribute is set to `None` initially and will be populated by the `make_link()` method.
+        """
+
         self.sp = sp  # AMS system
         self.sa = sa  # ANDES system
 
         # TODO: add summary table
         self.link = None  # ANDES system link table
         self.make_link()
-        pass
 
     @property
     def is_tds(self):
-        """
-        Check if ANDES system has run a TDS.
-        """
         return self.sa.TDS.initialized & bool(self.sa.dae.t)
 
     def make_link(self):

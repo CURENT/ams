@@ -14,7 +14,7 @@ class ZoneData(ModelData):
 
 class Zone(ZoneData, Model):
     """
-    Area model.
+    Zone model.
     """
     def __init__(self, system, config):
         ZoneData.__init__(self)

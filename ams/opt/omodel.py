@@ -151,6 +151,9 @@ class Var(Algeb):
 
     @property
     def n(self):
+        """
+        Return the number of variables.
+        """
         return self.owner.n
 
     def __repr__(self):
@@ -181,6 +184,38 @@ class Var(Algeb):
 class Constraint:
     """
     Base class for constraints.
+
+    This class is used as a template for defining constraints. Each
+    instance of this class represents a single constraint.
+
+    Parameters
+    ----------
+    name : str, optional
+        A user-defined name for the constraint.
+    e_str : str, optional
+        A mathematical expression representing the constraint.
+    info : str, optional
+        Additional informational text about the constraint.
+    type : str, optional
+        The type of constraint, defaults to 'uq'. It might represent
+        different types of mathematical relationships such as equality or
+        inequality.
+
+    Attributes
+    ----------
+    name : str or None
+        Name of the constraint.
+    e_str : str or None
+        Expression string of the constraint.
+    info : str or None
+        Additional information about the constraint.
+    type : str
+        Type of the constraint.
+
+    Notes
+    -----
+    - The attribute 'type' needs to be properly handled with predefined types.
+    - There is also a TODO for incorporating constraint information from the solver.
     """
 
     def __init__(self,
@@ -197,6 +232,9 @@ class Constraint:
 
     @property
     def class_name(self):
+        """
+        Return the class name
+        """
         return self.__class__.__name__
 
     def __repr__(self):
@@ -207,6 +245,36 @@ class Constraint:
 class Objective:
     """
     Base class for objective functions.
+
+    This class serves as a template for defining objective functions. Each
+    instance of this class represents a single objective function that can
+    be minimized or maximized depending on the sense ('min' or 'max').
+
+    Parameters
+    ----------
+    name : str, optional
+        A user-defined name for the objective function.
+    e_str : str, optional
+        A mathematical expression representing the objective function.
+    info : str, optional
+        Additional informational text about the objective function.
+    sense : str, optional
+        The sense of the objective function. It should be either 'min'
+        for minimization or 'max' for maximization. Default is 'min'.
+
+    Attributes
+    ----------
+    name : str or None
+        Name of the objective function.
+    e_str : str or None
+        Expression string of the objective function.
+    info : str or None
+        Additional information about the objective function.
+    sense : str
+        Sense of the objective function ('min' or 'max').
+    v : NoneType
+        The value of the objective function. It needs to be set through
+        computation.
     """
 
     def __init__(self,
@@ -222,6 +290,9 @@ class Objective:
 
     @property
     def class_name(self):
+        """
+        Return the class name
+        """
         return self.__class__.__name__
 
     def __repr__(self):
@@ -307,6 +378,9 @@ class OModel:
 
     @property
     def class_name(self):
+        """
+        Return the class name
+        """
         return self.__class__.__name__
 
     def parse_var(self,

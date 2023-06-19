@@ -117,8 +117,9 @@ class StaticGen(GroupBase):
 
     Notes
     -----
-    For co-simulation with ANDES, replacing static generators with dynamic generators can be found in
-    [ANDES StaticGen](https://docs.andes.app/en/latest/groupdoc/StaticGen.html#staticgen).
+    For co-simulation with ANDES, check
+    `ANDES StaticGen <https://docs.andes.app/en/latest/groupdoc/StaticGen.html#staticgen>`_
+    for replacing static generators with dynamic generators.
     """
 
     def __init__(self):

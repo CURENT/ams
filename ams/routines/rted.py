@@ -26,14 +26,14 @@ class RTEDData(DCOPFData):
                           name='cru',
                           src='cru',
                           tex_name=r'c_{r,u}',
-                          unit=r'$/(p.u.^2)',
+                          unit=r'$/(p.u.)',
                           owner_name='RCost',
                           )
         self.crd = RParam(info='RegDown reserve coefficient',
                           name='crd',
                           src='crd',
                           tex_name=r'c_{r,d}',
-                          unit=r'$/(p.u.^2)',
+                          unit=r'$/(p.u.)',
                           owner_name='RCost',
                           )
         # 1.2. reserve requirement

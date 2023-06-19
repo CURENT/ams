@@ -7,7 +7,7 @@
 
    <p style="color: #00746F; font-variant: small-caps; font-weight: bold;
    margin-bottom: 2em">
-   Python Library for Power System Dispatch Modeling and Dispatch-Dynamic Co-Simulation</p>
+   Python Library for Flexible Dispatch Modeling and Dispatch-Dynamic Co-Simulation</p>
    </embed>
 
 .. _getting-started:

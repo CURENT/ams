@@ -126,7 +126,7 @@ class PF(TypeBase):
 
 class DCED(TypeBase):
     """
-    Type for DCOPF-based routines.
+    Type for DC-based economic dispatch.
     """
 
     def __init__(self):
@@ -138,7 +138,7 @@ class DCED(TypeBase):
 
 class ACED(DCED):
     """
-    Type for ACOPF-based routines.
+    Type for AC-based economic dispatch.
     """
 
     def __init__(self):
@@ -149,7 +149,7 @@ class ACED(DCED):
 
 class DCUC(TypeBase):
     """
-    Type for DC-based unit commitment routines.
+    Type for DC-based unit commitment.
     """
 
     def __init__(self):

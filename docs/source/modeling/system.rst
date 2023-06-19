@@ -1,6 +1,7 @@
 System
 ======
 
+
 Overview
 --------
 System is the top-level class for organizing power system dispatch models
@@ -22,11 +23,28 @@ following examples.
 .. autofunction:: ams.system.System.import_routines
     :noindex:
 
-Optimization Formulations
+.. autofunction:: ams.system.System.import_types
+    :noindex:
+
+
+Models
+-----------
+AMS follows the model organization design of `ANDES`.
+
+
+Routines
+-----------
+In AMS, routines are responsible for collecting data, defining optimization
+problems, and solving them.
+
+
+Optimization
 --------------------------------------------
 
-In AMS, the dispatch modeling is formulated as standard optimization problem.
+In AMS, the dispatch is formulated as `CVXPY <https://www.cvxpy.org/>`_
+optimization problem with Vars, Constraints, and Objectives.
+The full API reference of them can be found in :py:mod:`ams.opt.Var`,
+:py:mod:`ams.opt.Constraint`, and :py:mod:`ams.opt.Objective`.
 
 .. autofunction:: ams.opt.omodel.OModel
     :noindex:
-
