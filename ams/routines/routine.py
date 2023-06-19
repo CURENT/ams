@@ -131,11 +131,9 @@ class RoutineModel:
             owner = self.__dict__[src].owner
             try:
                 owner.set(src=src, idx=idx, attr=attr, value=value)
-                # TODO: set value of routine variable
-                src_idx = self.__dict__[src].get_idx()
-                var = getattr(self, src)
                 return True
             except KeyError:
+                # TODO: hold values to _v if necessary in the future
                 logger.info(f'Variable {self.name} has no mapping.')
                 return None
         else:

@@ -180,7 +180,6 @@ class RTED(RTEDData, RTEDModel):
         if np.all(self.pg0.v == 0):
             logger.warning('RTED pg0 are all zeros, correct to p0.')
             idx = self.pg.get_idx()
-            self.pg0.is_set = True
             self.pg0._v = self.system.StaticGen.get(src='p0', attr='v', idx=idx)
         super()._data_check()
         return True
