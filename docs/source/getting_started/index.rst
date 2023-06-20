@@ -23,6 +23,7 @@ Getting started
     overview
     install
     formats/index
+    testcase
 
 Quick install
 =============

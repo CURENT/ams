@@ -1,4 +1,0 @@
-"""
-Module for optimization solvers.
-"""
-

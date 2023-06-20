@@ -203,7 +203,13 @@ class DCPFlowModel(DCPFlowBase):
 
 class DCPF(DCPFlowData, DCPFlowModel):
     """
-    DC Power Flow routine.
+    DC power flow.
+
+    Notes
+    -----
+    1. DCPF is solved with PYPOWER ``runpf`` function.
+    2. DCPF formulation is not complete yet, but this does not affect the
+       results because the data are passed to PYPOWER for solving.
     """
 
     def __init__(self, system=None, config=None):

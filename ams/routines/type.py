@@ -61,10 +61,10 @@ class TypeBase:
             out += inspect.cleandoc(self.__doc__) + '\n\n'
 
         if len(self.common_rparams):
-            out += 'Common Routine Parameters: ' + ', '.join(self.common_rparams)
+            out += 'Common Parameters: ' + ', '.join(self.common_rparams)
             out += '\n\n'
         if len(self.common_vars):
-            out += 'Common Routine Algebs: ' + ', '.join(self.common_vars)
+            out += 'Common Vars: ' + ', '.join(self.common_vars)
             out += '\n\n'
         if len(self.common_constrs):
             out += 'Common Constraints: ' + ', '.join(self.common_constrs)

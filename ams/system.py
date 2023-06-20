@@ -47,10 +47,66 @@ def disable_methods(methods):
 
 class System(andes_System):
     """
-    System contains data, models, and routines for dispatch modeling and analysis.
+    A subclass of ``andes.system.System``, this class encapsulates data, models, 
+    and routines for dispatch modeling and analysis in power systems.
+    Some methods  inherited from the parent class are intentionally disabled.
 
-    This class is a subclass of ``andes.system.System``.
-    Some methods inherited from ``andes.system.System`` are disabled but remain in the class for now.
+    Parameters
+    ----------
+    case : str, optional
+        The path to the case file.
+    name : str, optional
+        Name of the system instance.
+    config : dict, optional
+        Configuration options for the system. Overrides the default configuration if provided.
+    config_path : str, optional
+        The path to the configuration file.
+    default_config : bool, optional
+        If True, the default configuration file is loaded.
+    options : dict, optional
+        Additional configuration options for the system.
+    **kwargs :
+        Additional configuration options passed as keyword arguments.
+
+    Attributes
+    ----------
+    name : str
+        Name of the system instance.
+    options : dict
+        A dictionary containing configuration options for the system.
+    models : OrderedDict
+        An ordered dictionary holding the model names and instances.
+    model_aliases : OrderedDict
+        An ordered dictionary holding model aliases and their corresponding instances.
+    groups : OrderedDict
+        An ordered dictionary holding group names and instances.
+    routines : OrderedDict
+        An ordered dictionary holding routine names and instances.
+    types : OrderedDict
+        An ordered dictionary holding type names and instances.
+    mats : MatrixProcessor, None
+        A matrix processor instance, initially set to None.
+    mat : OrderedDict
+        An ordered dictionary holding common matrices.
+    exit_code : int
+        Command-line exit code. 0 indicates normal execution, while other values indicate errors.
+    recent : RecentSolvedRoutines, None
+        An object storing recently solved routines, initially set to None.
+    dyn : ANDES System, None
+        linked dynamic system, initially set to None.
+        It is an instance of the ANDES system, which will be automatically
+        set when using ``System.to_andes()``.
+    files : FileMan
+        File path manager instance.
+    is_setup : bool
+        Internal flag indicating if the system has been set up.
+
+    Methods
+    -------
+    setup:
+        Set up the system.
+    to_andes:
+        Convert the system to an ANDES system.
     """
 
     def __init__(self,
@@ -451,14 +507,19 @@ class System(andes_System):
     def to_andes(self, setup=True, addfile=None, overwite=None, keep=False,
                  **kwargs):
         """
-        Wrapper function of ``ams.interop.andes.to_andes``.
+        Wrapper function for converting AMS system instance to ANDES system instance.
+
+        This function is a wrapper of ``ams.interop.andes.to_andes``. When the file
+        conversion is performed using ``sp.to_andes()``, it will automatically link
+        the AMS system instance to the converted ANDES system instance through the
+        AMS system attribute ``sp.dyn``.
 
         Parameters
         ----------
         setup: bool
             Whether to call `setup()` after the conversion.
         addfile: str
-            The additional file to be converted to ANDES format.
+            The additional file to be converted to ANDES dynamic mdoels.
         overwrite: bool
             Whether to overwrite the existing file.
         keep: bool

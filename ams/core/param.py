@@ -21,11 +21,65 @@ logger = logging.getLogger(__name__)
 
 class RParam:
     """
-    Class for parameters in a routine.
+    Class for parameters used in a routine.
+
+    This class is developed to simplify the routine definition.
+
 
     This class is an extension of conventional parameters
-    `BaseParam`, `DataParam`, `IdxParam`, and `NumParam`.
+    ``BaseParam``, ``DataParam``, ``IdxParam``, and ``NumParam``.
     It contains a `group` attribute to indicate the group.
+
+    Parameters
+    ----------
+    name : str, optional
+        Name of the parameter.
+    tex_name : str, optional
+        TeX name of the parameter.
+    info : str, optional
+        Additional information about the parameter.
+    src : str, optional
+        Source of the parameter.
+    unit : str, optional
+        Unit of the parameter.
+    owner_name : str, optional
+        Name of the owner model or group.
+    v : np.ndarray, optional
+        Value of the parameter.
+    v_str : str, optional
+        String representation of the parameter value.
+
+    Attributes
+    ----------
+    name : str
+        Name of the parameter.
+    tex_name : str
+        TeX name of the parameter.
+    info : str
+        Additional information about the parameter.
+    src : str
+        Source of the parameter.
+    unit : str
+        Unit of the parameter.
+    is_group : bool
+        Indicates if the parameter is a group variable.
+    owner_name : str
+        Name of the owner model or group.
+    owner : object
+        Instance of the owner model or group.
+    is_set : bool
+        Indicates if the value is set externally.
+    v_str : str
+        String representation of the parameter value.
+
+    Properties
+    ----------
+    v : np.ndarray
+        Value of the parameter.
+    n : int
+        Number of elements in the parameter.
+    class_name : str
+        Class name of the parameter.
     """
 
     def __init__(self,
@@ -56,9 +110,11 @@ class RParam:
     @property
     def v(self):
         """
-        Return the value of the parameter.
+        The value of the parameter.
 
-        This property is a wrapper of the `get` method.
+        Notes
+        -----
+        This property is a wrapper for the ``get`` method of the owner class.
         """
         if self.is_set:
             return self._v
@@ -71,6 +127,9 @@ class RParam:
 
     @property
     def n(self):
+        """
+        Return the szie of the parameter.
+        """
         if self.is_set:
             return self._v.shape[0]
         else:

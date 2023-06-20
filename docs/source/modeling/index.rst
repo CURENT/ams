@@ -4,9 +4,9 @@
 Development
 ===========
 
-This chapter introduces advanced topics on modeling with AMS. It aims to give an
-in-depth explanation of flexible dispatch mdoeling framework and the interoperation
-with dynamic simulation.
+This chapter introduces advanced topics on modeling with AMS.
+It aims to give an in-depth explanation of flexible dispatch mdoeling
+framework and the interoperation with dynamic simulation.
 
 .. toctree::
     :maxdepth: 2
@@ -15,3 +15,4 @@ with dynamic simulation.
     model
     routine
     optz
+    interop

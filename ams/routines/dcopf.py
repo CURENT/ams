@@ -208,7 +208,7 @@ class DCOPFModel(DCOPFBase):
 
 class DCOPF(DCOPFData, DCOPFModel):
     """
-    DCOPF dispatch routine.
+    Standard DC optimal power flow (DCOPF).
     """
 
     def __init__(self, system, config):

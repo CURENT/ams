@@ -21,22 +21,41 @@ def to_andes(system, setup=True, addfile=None,
              overwrite=None, keep=False,
              **kwargs):
     """
-    Convert the current model to ANDES format.
+    Convert the AMS system to an ANDES system.
+
+    This function is wrapped as the ``System`` class method ``to_andes()``.
+    Using the file conversion ``sp.to_andes()`` will automatically
+    link the AMS system instance to the converted ANDES system instance
+    in the AMS system attribute ``sp.dyn``.
 
     Parameters
     ----------
-    system: System
+    system : System
         The AMS system to be converted to ANDES format.
-    setup: bool
-        Whether to call `setup()` after the conversion.
-    addfile: str
-        The additional file to be converted to ANDES format.
-    overwrite: bool
+    setup : bool, optional
+        Whether to call `setup()` after the conversion. Default is True.
+    addfile : str, optional
+        The additional file to be converted to ANDES dynamic mdoels.
+    overwrite : bool, optional
         Whether to overwrite the existing file.
-    keep: bool
+    keep : bool, optional
         Whether to keep the converted file.
-    kwargs: dict
+    **kwargs : dict
         Keyword arguments to be passed to `andes.system.System`.
+
+    Returns
+    -------
+    sa : andes.system.System
+        The converted ANDES system.
+
+    Examples
+    --------
+    >>> import ams
+    >>> import andes
+    >>> sp = ams.load(ams.get_case('ieee14/ieee14_rted.xlsx'), setup=True)
+    >>> sa = sp.to_andes(setup=False,
+    ...                  addfile=andes.get_case('ieee14/ieee14_wt3.xlsx'),
+    ...                  overwrite=True, keep=False, no_output=True)
     """
     t0, _ = elapsed()
     andes_file = system.files.name + '.json'
@@ -159,36 +178,47 @@ class Dynamic:
     """
     ANDES interface class.
 
-    This class is used to interface with ANDES system.
+    Parameters
+    ----------
+    sp : AMS system
+        The AMS system.
+    sa : ANDES system
+        The ANDES system.
+
+    Attributes
+    ----------
+    sp : AMS system
+        The AMS system instance.
+    sa : ANDES system
+        The ANDES system instance.
+    link : ANDES system link table
+        The ANDES system link table.
+    is_tds : bool
+        Whether the ANDES system is running a TDS.
+
+    Notes
+    -----
+    1. Using the file conversion ``sp.to_andes()`` will automatically
+       link the AMS system to the converted ANDES system in the
+       attribute ``sp.dyn``.
+
+    Examples
+    --------
+    >>> import ams
+    >>> import andes
+    >>> sp = ams.load(ams.get_case('ieee14/ieee14_rted.xlsx'), setup=True)
+    >>> sa = sp.to_andes(setup=True,
+    ...                  addfile=andes.get_case('ieee14/ieee14_wt3.xlsx'),
+    ...                  overwrite=True, keep=False, no_output=True)
+    >>> sp.RTED.run()
+    >>> sp.RTED.smooth()
+    >>> sp.dyn.send()  # send RTED results to ANDES system
+    >>> sa.PFlow.run()
+    >>> sp.TDS.run()
+    >>> sp.dyn.receive()  # receive TDS results from ANDES system
     """
 
     def __init__(self, sp=None, sa=None) -> None:
-        """
-        Initialize the Dynamic class.
-
-        Parameters
-        ----------
-        sp : AMS system
-            The AMS system.
-        sa : ANDES system
-            The ANDES system.
-
-        Attributes
-        ----------
-        sp : AMS system
-            The AMS system.
-        sa : ANDES system
-            The ANDES system.
-        link : ANDES system link table
-            The ANDES system link table.
-        is_tds : bool
-            Whether the ANDES system is running a TDS.
-
-        Notes
-        -----
-        - The `link` attribute is set to `None` initially and will be populated by the `make_link()` method.
-        """
-
         self.sp = sp  # AMS system
         self.sa = sa  # ANDES system
 
@@ -198,7 +228,13 @@ class Dynamic:
 
     @property
     def is_tds(self):
-        return self.sa.TDS.initialized & bool(self.sa.dae.t)
+        """
+        Indicator of whether the ANDES system is running a TDS.
+        This property will return ``True`` as long as TDS is initialized.
+
+        Check ``andes.tds.TDS.init()`` for more details.
+        """
+        return bool(self.sa.TDS.initialized)
 
     def make_link(self):
         """
@@ -311,7 +347,8 @@ class Dynamic:
 
     def send(self):
         """
-        Send the AMS results to ANDES.
+        Send results of the recent sovled AMS dispatch (``sp.recent``) to the
+        linked ANDES system isntance (``sp.dyn.sa``).
         """
         sa = self.sa
         sp = self.sp
@@ -416,7 +453,9 @@ class Dynamic:
 
     def receive(self):
         """
-        Receive the AMS system from the ANDES system.
+        Receive the results from the linked ANDES system.
+        Receive results from the linked ANDES system instance (``sp.dyn.sa``) to
+        the recent solved AMS dispatch (``sp.recent``).
         """
         sa = self.sa
         sp = self.sp

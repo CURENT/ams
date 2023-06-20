@@ -29,7 +29,7 @@ following examples.
 
 Models
 -----------
-AMS follows the model organization design of `ANDES`.
+AMS follows the model organization design of ANDES.
 
 
 Routines
@@ -46,5 +46,5 @@ optimization problem with Vars, Constraints, and Objectives.
 The full API reference of them can be found in :py:mod:`ams.opt.Var`,
 :py:mod:`ams.opt.Constraint`, and :py:mod:`ams.opt.Objective`.
 
-.. autofunction:: ams.opt.omodel.OModel
+.. autoclass:: ams.opt.omodel.OModel
     :noindex:

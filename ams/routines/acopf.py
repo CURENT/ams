@@ -179,7 +179,13 @@ class ACOPFModel(ACOPFBase):
 
 class ACOPF(ACOPFData, ACOPFModel):
     """
-    AC Optimal Power Flow routine.
+    Standard AC optimal power flow.
+
+    Notes
+    -----
+    1. ACOPF is solved with PYPOWER ``runopf`` function.
+    2. ACOPF formulation is not complete yet, but this does not affect the results
+       because the data are passed to PYPOWER for solving.
     """
 
     def __init__(self, system=None, config=None):

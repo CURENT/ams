@@ -6,17 +6,20 @@
 ==================
 AMS documentation
 ==================
-**Useful Links**: `Source Repository`_ | `Report Issues`_ | `Q&A`_ 
+**Useful Links**: `Source Repository`_ | `Report Issues`_ | `Q&A`_  | `LTB Repository`_
+| `ANDES Repository`_
 
 .. _`Source Repository`: https://github.com/jinningwang/ams
 .. _`Report Issues`: https://github.com/jinningwang/ams/issues
 .. _`Q&A`: https://github.com/jinningwang/ams/discussions
-.. _`LTB Repository`: https://github.com/CURENT/ltb2
+.. _`ANDES Repository`: https://github.com/CURENT/andes
+.. _`LTB Repository`: https://github.com/CURENT/
 
-AMS is an open-source packages for **flexible** dispatch modeling and co-simulation with **dynanic**.
+LTB AMS is an open-source packages for dispatch modeling, serving as the market
+simulator for the CURENT Large scale Testbed (LTB).
 
-AMS is the dispatch simulation engine for the CURENT Largescale Testbed (LTB).
-More information about CURENT LTB can be found at the `LTB Repository`_.
+AMS enables **flexible** dispatch modeling and **interoprability** with the in-house
+dynamic simulator ANDES.
 
 .. panels::
     :card: + intro-card text-center

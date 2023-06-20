@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class RTEDData(DCOPFData):
     """
-    RTED parameters and variables.
+    RTED data.
     """
 
     def __init__(self):
@@ -164,7 +164,25 @@ class RTEDModel(DCOPFModel):
 
 class RTED(RTEDData, RTEDModel):
     """
-    DCOPF dispatch routine.
+    DC-based real-time economic dispatch (RTED).
+
+    RTED extends DCOPF with:
+
+    1. zonal AGC reserve: Vars ``pru`` and ``prd``; linear cost ``cru`` and ``crd``; requirement ``du`` and ``dd``
+
+    2. generator ramp rate: generator start point ``pg0``; generator ramp limit ``R10``
+
+    RTED has mapping dicts to interface with ANDES.
+
+    RTED routine adds a function ``smooth`` to do the conversion using ACOPF, otherwise the
+    dynamic simulation might fail due to gap between DC-based dispatch results and AC-based dynamic
+    initialization.
+    The function will add a Var ``aBus`` copied from solved ACOPF to fit the ANDES interface.
+
+    Notes
+    -----
+    1. RTED is a DC-based model, which assumes bus voltage to be 1
+    2. RTED routien add data check on ``pg0``, if all zeros, correct to the value of ``p0``
     """
 
     def __init__(self, system, config):

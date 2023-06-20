@@ -253,10 +253,10 @@ class RDocumenter:
         if export == 'rest':
             symbols = [item.tex_name for item in self.vars.values()]
             symbols = math_wrap(symbols, export=export)
-            title = 'Routine Algebs\n----------------------------------'
+            title = 'Vars\n----------------------------------'
         else:
             symbols = [item.name for item in self.vars.values()]
-            title = 'Routine Algebs'
+            title = 'Vars'
 
         plain_dict = OrderedDict([('Name', names),
                                   ('Description', info),
@@ -319,10 +319,10 @@ class RDocumenter:
         if export == 'rest':
             symbols = [item.tex_name for item in self.rparams.values()]
             symbols = math_wrap(symbols, export=export)
-            title = 'Routine Parameters\n----------------------------------'
+            title = 'Parameters\n----------------------------------'
         else:
             symbols = [item.name for item in self.rparams.values()]
-            title = 'Routine Parameters'
+            title = 'Parameters'
 
         plain_dict = OrderedDict([('Name', names),
                                   ('Description', info),
