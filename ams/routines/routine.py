@@ -105,7 +105,7 @@ class RoutineModel:
             owner = self.__dict__[src].owner
             if src in self.map2[owner.class_name].keys():
                 src_map = self.map2[owner.class_name][src]
-                logger.debug(f'Var <{self.class_name}.{src}> is mapped to <{src_map}> of {owner.class_name}.')
+                logger.debug(f'Var <{self.class_name}.{src}> is mapped from <{owner.class_name}.{src_map}>.')
                 try:
                     out = owner.get(src=src_map, idx=idx, attr=attr,
                                     allow_none=allow_none, default=default)

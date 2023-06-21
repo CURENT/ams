@@ -381,6 +381,9 @@ class Dynamic:
         sa = adsys if adsys is not None else self.adsys
         sp = self.ams
         # 1. information
+        if sp.recent.exit_code != 0:
+            logger.warning(f'{sp.recent.class_name} is not solved optimally.')
+            return False
         # NOTE:if DC types, check if results are converted
         if sp.recent.type != 'ACED':
             if sp.recent.is_ac:
@@ -453,6 +456,7 @@ class Dynamic:
                     except KeyError:
                         logger.warning(f'Param {andes_pname} not found in ANDES model <{mname}>.')
                         continue
+            return True
         # 3. sync static results if dynamic is not initialized
         else:
             logger.debug(f'Sending results to <pflow> models...')
@@ -467,16 +471,18 @@ class Dynamic:
                     mdl_andes.set(src='u', idx=idx, attr='v', value=u_ams)
                     # 2) send other results
                     # NOTE: send power reference to dynamic device
-                    for ams_vname, andes_pname in map2[mname].items():
-                        # a. voltage reference
-                        if ams_vname in ['qg']:
-                            logger.warning('Setting `qg` to ANDES dynamic does not take effect.')
-                        # b. others, if any
-                        ams_var = getattr(sp.recent, ams_vname)
-                        v_ams = sp.recent.get(src=ams_vname, attr='v',
-                                              idx=ams_var.get_idx())
-                        mdl_andes.set(src=andes_pname, idx=idx, attr='v', value=v_ams)
-                return True
+                    if mname in map2.keys():
+                        for ams_vname, andes_pname in map2[mname].items():
+                            # a. voltage reference
+                            if ams_vname in ['qg']:
+                                logger.warning('Setting `qg` to ANDES dynamic does not take effect.')
+                            # b. others, if any
+                            ams_var = getattr(sp.recent, ams_vname)
+                            v_ams = sp.recent.get(src=ams_vname, attr='v',
+                                                idx=ams_var.get_idx())
+                            mdl_andes.set(src=andes_pname, idx=idx, attr='v', value=v_ams)
+                    else:
+                        pass
             return True
 
     def receive(self, adsys=None):
