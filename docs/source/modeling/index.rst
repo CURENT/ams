@@ -14,5 +14,4 @@ framework and the interoperation with dynamic simulation.
     system
     model
     routine
-    optz
-    interop
+    example

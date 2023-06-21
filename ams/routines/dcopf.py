@@ -14,7 +14,7 @@ from ams.opt.omodel import Var, Constraint, Objective
 
 class DCOPFData(RoutineData):
     """
-    DCOPF parameters and variables.
+    DCOPF data.
     """
 
     def __init__(self):
@@ -64,13 +64,11 @@ class DCOPFData(RoutineData):
                           name='pd1',
                           tex_name=r'p_{d1}',
                           unit='p.u.',
-                          v_str='pd1',
                           )
         self.pd2 = RParam(info='active power load in system base in non-gen bus',
                           name='pd2',
                           tex_name=r'p_{d2}',
                           unit='p.u.',
-                          v_str='pd2',
                           )
         # --- line ---
         self.rate_a = RParam(info='long-term flow limit flow limit',
@@ -82,12 +80,10 @@ class DCOPFData(RoutineData):
         self.PTDF1 = RParam(info='PTDF matrix 1',
                             name='PTDF1',
                             tex_name=r'P_{TDF1}',
-                            v_str='PTDF1',
                             )
         self.PTDF2 = RParam(info='PTDF matrix 2',
                             name='PTDF2',
                             tex_name=r'P_{TDF2}',
-                            v_str='PTDF2',
                             )
 
 
@@ -166,7 +162,7 @@ class DCOPFBase(RoutineModel):
 
 class DCOPFModel(DCOPFBase):
     """
-    DCOPF dispatch model.
+    DCOPF model.
     """
 
     def __init__(self, system, config):

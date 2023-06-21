@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 class RoutineData:
     """
-    CLass to hold routine parameters and variables for a dispatch model.
+    Class to hold routine parameters.
     """
 
     def __init__(self):
@@ -34,7 +34,7 @@ class RoutineData:
 
 class RoutineModel:
     """
-    CLass to hold routine parameters and variables.
+    Class to hold descriptive routine models and data mapping.
     """
 
     def __init__(self, system=None, config=None):

@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 class Var(Algeb):
     """
-    Class for variables used in a routine.
+    Base class for variables used in a routine.
 
     Parameters
     ----------

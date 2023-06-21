@@ -22,64 +22,46 @@ logger = logging.getLogger(__name__)
 class RParam:
     """
     Class for parameters used in a routine.
-
     This class is developed to simplify the routine definition.
-
-
-    This class is an extension of conventional parameters
-    ``BaseParam``, ``DataParam``, ``IdxParam``, and ``NumParam``.
-    It contains a `group` attribute to indicate the group.
 
     Parameters
     ----------
     name : str, optional
-        Name of the parameter.
+        Name of this parameter. If not provided, `name` will be set
+        to the attribute name.
     tex_name : str, optional
-        TeX name of the parameter.
+        LaTeX-formatted parameter name. If not provided, `tex_name`
+        will be assigned the same as `name`.
     info : str, optional
-        Additional information about the parameter.
+        A description of this parameter
     src : str, optional
-        Source of the parameter.
+        Source name of the parameter.
     unit : str, optional
         Unit of the parameter.
     owner_name : str, optional
         Name of the owner model or group.
     v : np.ndarray, optional
-        Value of the parameter.
-    v_str : str, optional
-        String representation of the parameter value.
+        External value of the parameter.
 
-    Attributes
-    ----------
-    name : str
-        Name of the parameter.
-    tex_name : str
-        TeX name of the parameter.
-    info : str
-        Additional information about the parameter.
-    src : str
-        Source of the parameter.
-    unit : str
-        Unit of the parameter.
-    is_group : bool
-        Indicates if the parameter is a group variable.
-    owner_name : str
-        Name of the owner model or group.
-    owner : object
-        Instance of the owner model or group.
-    is_set : bool
-        Indicates if the value is set externally.
-    v_str : str
-        String representation of the parameter value.
+    Examples
+    --------
+    Example 1: Define a routine parameter from a source model or group.
 
-    Properties
-    ----------
-    v : np.ndarray
-        Value of the parameter.
-    n : int
-        Number of elements in the parameter.
-    class_name : str
-        Class name of the parameter.
+    In this example, we define the parameter `cru` from the source model
+    `RCost` with the parameter `cru`.
+
+    >>> self.cru = RParam(info='RegUp reserve coefficient',
+    >>>                   tex_name=r'c_{r,u}',
+    >>>                   unit=r'$/(p.u.)',
+    >>>                   name='cru',
+    >>>                   src='cru',
+    >>>                   owner_name='RCost'
+    >>>                   )
+
+    Example 2: Define a routine parameter with a user-defined value.
+
+    In this example, we define the parameter with a user-defined value.
+    TODO: Add example
     """
 
     def __init__(self,
@@ -90,7 +72,6 @@ class RParam:
                  unit: Optional[str] = None,
                  owner_name: Optional[str] = None,
                  v: Optional[np.ndarray] = None,
-                 v_str: Optional[str] = None,
                  ):
 
         self.name = name
@@ -101,11 +82,10 @@ class RParam:
         self.is_group = False
         self.owner_name = owner_name  # indicate if this variable is a group variable
         self.owner = None  # instance of the owner model or group
-        self.is_set = False  # indicate if the value is set externally
-        self.v_str = v_str
+        self.is_ext = False  # indicate if the value is set externally
         if v is not None:
             self._v = v
-            self.is_set = True
+            self.is_ext = True
 
     @property
     def v(self):
@@ -116,7 +96,7 @@ class RParam:
         -----
         This property is a wrapper for the ``get`` method of the owner class.
         """
-        if self.is_set:
+        if self.is_ext:
             return self._v
         elif self.is_group:
             return self.owner.get(src=self.src, attr='v',
@@ -130,7 +110,7 @@ class RParam:
         """
         Return the szie of the parameter.
         """
-        if self.is_set:
+        if self.is_ext:
             return self._v.shape[0]
         else:
             return self.owner.n
@@ -143,7 +123,7 @@ class RParam:
         return self.__class__.__name__
 
     def __repr__(self):
-        if self.is_set:
+        if self.is_ext:
             span = ''
             if self.v.ndim == 1:
                 if len(self.v) <= 20:
@@ -167,6 +147,14 @@ class RParam:
             return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}{span}'
 
     def get_idx(self):
+        """
+        Get the index of the parameter.
+
+        Returns
+        -------
+        idx : list
+            Index of the parameter.
+        """
         if self.is_group:
             return self.owner.get_idx()
         elif self.owner is None:

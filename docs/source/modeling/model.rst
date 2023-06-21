@@ -1,7 +1,9 @@
 Model
 =========
 
-This section introduces the modeling of power system devices.
+This section introduces the modeling of power system devices. Here the term
+``model`` refers to the descriptive model of a device, which is used to
+hold the model-level data and variables.
 
 AMS follows the model organization design of `ANDES`, where two classes
 defined in ANDES, `ModelData` and `Model`, are used.
@@ -17,12 +19,6 @@ AMS leverages the parameter definition in ANDES, where four classes,
 More details can be found in ANDES documentation
 `Development - Parameters <https://docs.andes.app/en/latest/modeling/parameters.html>`_.
 
-Further, to facilitate the routine definition, AMS developed a class
-:py:mod:`ams.core.param.RParam` to pass the model data to multiple routine modeling.
-
-.. autoclass:: ams.core.param.RParam
-    :noindex:
-
 Variables
 -----------
 
@@ -33,3 +29,9 @@ Variables
 
 ModelData and Model
 ------------------------------
+
+
+Examples
+------------
+
+Following two examples show how to define a device model in AMS.
