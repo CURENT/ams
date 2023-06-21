@@ -63,16 +63,16 @@ class SymProcessor:
             ])
 
         self.status = {
-            0: 'optimal',
-            1: 'infeasible',
-            2: 'unbounded',
-            3: 'infeasible_inaccurate',
-            4: 'unbounded_inaccurate',
-            5: 'optimal_inaccurate',
-            6: 'solver_error',
-            7: 'time_limit',
-            8: 'interrupted',
-            9: 'unknown'
+            'optimal': 0,
+            'infeasible': 1,
+            'unbounded': 2,
+            'infeasible_inaccurate': 3,
+            'unbounded_inaccurate': 4,
+            'optimal_inaccurate': 5,
+            'solver_error': 6,
+            'time_limit': 7,
+            'interrupted': 8,
+            'unknown': 9
         }
 
     def generate_symbols(self):

@@ -207,16 +207,31 @@ class RoutineModel:
         """
         Run the routine.
         """
+        # --- setup check ---
         if not self.is_setup:
             logger.info(f"Setup model of {self.class_name}")
             self.setup()
+        # NOTE: if the model data is altered, we need to re-setup the model
+        # this implementation if not efficient at large-scale
+        # FIXME: find a more efficient way to update the OModel values if
+        # the system data is altered
+        elif self.exec_time > 0:
+            self.setup()
+        # --- solve optimization ---
         t0, _ = elapsed()
         result = self.solve(**kwargs)
+        status = self.om.mdl.status
+        self.exit_code = self.syms.status[status]
+        self.system.exit_code = self.exit_code
         _, s = elapsed(t0)
         self.exec_time = float(s.split(' ')[0])
         self.unpack(**kwargs)
-        info = f"{self.class_name} completed in {s} with exit code {self.exit_code}."
-        logger.info(info)
+        if self.exit_code == 0:
+            info = f"{self.class_name} solved as {status} in {s} with exit code {self.exit_code}."
+            logger.warning(info)
+        else:
+            info = f"{self.class_name} failed as {status} with exit code {self.exit_code}!"
+            logger.warning(info)
         return self.exit_code
 
     def summary(self, **kwargs):
