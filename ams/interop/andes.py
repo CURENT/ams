@@ -187,11 +187,11 @@ class Dynamic:
 
     Attributes
     ----------
-    sp : AMS system
+    ams : AMS system
         The AMS system instance.
-    sa : ANDES system
+    andes : ANDES system
         The ANDES system instance.
-    link : ANDES system link table
+    link : pandas.DataFrame
         The ANDES system link table.
     is_tds : bool
         Whether the ANDES system is running a TDS.
@@ -219,8 +219,8 @@ class Dynamic:
     """
 
     def __init__(self, sp=None, sa=None) -> None:
-        self.sp = sp  # AMS system
-        self.sa = sa  # ANDES system
+        self.ams = sp  # AMS system
+        self.andes = sa  # ANDES system
 
         # TODO: add summary table
         self.link = None  # ANDES system link table
@@ -234,7 +234,7 @@ class Dynamic:
 
         Check ``andes.tds.TDS.init()`` for more details.
         """
-        return bool(self.sa.TDS.initialized)
+        return bool(self.andes.TDS.initialized)
 
     def make_link(self):
         """
@@ -242,7 +242,7 @@ class Dynamic:
 
         A wrapper of `andes.interop.pandapower.make_link_table`.
         """
-        self.link = make_link_table(self.sa)
+        self.link = make_link_table(self.andes)
         # adjust columns
         cols = ['stg_idx', 'bus_idx',               # static gen
                 'syg_idx', 'gov_idx',               # syn gen
@@ -258,8 +258,8 @@ class Dynamic:
 
         # NOTE: AGC power reference (`paux`) is not included in this model.
         """
-        sa = self.sa
-        sp = self.sp
+        sa = self.andes
+        sp = self.ams
         # 1) TurbineGov
         syg_idx = sp.dyn.link['syg_idx'].dropna().tolist()  # SynGen idx
         # corresponding StaticGen idx in ANDES
@@ -307,8 +307,8 @@ class Dynamic:
 
         # TODO: add support for switch dynamic gen online status
         """
-        sa = self.sa
-        sp = self.sp
+        sa = self.andes
+        sp = self.ams
         # 1) TurbineGov
         syg_idx = sp.dyn.link['syg_idx'].dropna().tolist()  # SynGen idx
         # corresponding StaticGen idx in ANDES
@@ -350,8 +350,8 @@ class Dynamic:
         Send results of the recent sovled AMS dispatch (``sp.recent``) to the
         linked ANDES system isntance (``sp.dyn.sa``).
         """
-        sa = self.sa
-        sp = self.sp
+        sa = self.andes
+        sp = self.ams
         # 1. information
         # NOTE:if DC types, check if results are smoothed
         if sp.recent.type != 'ACED':
@@ -383,7 +383,7 @@ class Dynamic:
             # 1) send models online status
             # TODO:
             is_dgu_set = False
-            for mname, mdl in self.sp.models.items():
+            for mname, mdl in sa.models.items():
                 if mdl.n == 0:
                     continue
                 # a. dynamic generator online status
@@ -405,7 +405,7 @@ class Dynamic:
                 if mname == 'Bus':
                     logger.warning('Dynamic has been initialized, Bus angle and voltage are skipped.')
                     continue
-                mdl = getattr(self.sa, mname)
+                mdl = getattr(sa, mname)
                 for ams_vname, andes_pname in pmap.items():
                     # a. power reference
                     # FIXME: in this implementation, PV and Slack are only sync once, this might
@@ -428,7 +428,7 @@ class Dynamic:
         # 3. sync static results if dynamic is not initialized
         else:
             logger.debug(f'Sending results to <pflow> models...')
-            for mname, mdl in self.sp.models.items():
+            for mname, mdl in sp.models.items():
                 if mdl.n == 0:
                     continue
                 idx = mdl.idx.v
@@ -457,11 +457,11 @@ class Dynamic:
         Receive results from the linked ANDES system instance (``sp.dyn.sa``) to
         the recent solved AMS dispatch (``sp.recent``).
         """
-        sa = self.sa
-        sp = self.sp
+        sa = self.andes
+        sp = self.ams
         # 1. information
         try:
-            rtn_name = self.sp.recent.class_name
+            rtn_name = sp.recent.class_name
             logger.debug(f'Receiving ANDES results to {rtn_name}.')
         except AttributeError:
             logger.warning('No target AMS routine found. Failed to sync with ANDES.')
@@ -479,7 +479,7 @@ class Dynamic:
             logger.debug(f'Receiving <tds> results to {sp.recent.class_name}...')
             # 1) receive models online status
             is_dgu_set = False
-            for mname, mdl in self.sp.models.items():
+            for mname, mdl in self.ams.models.items():
                 if mdl.n == 0:
                     continue
                 # a. dynamic generator online status
@@ -498,7 +498,7 @@ class Dynamic:
             # 2) receive other results
             is_pe_set = False
             for mname, pmap in map1.items():
-                mdl = getattr(self.sa, mname)
+                mdl = getattr(sa, mname)
                 for ams_vname, andes_pname in pmap.items():
                     # a. output power
                     if not is_pe_set and andes_pname == 'p' and mname == 'StaticGen':
@@ -521,13 +521,13 @@ class Dynamic:
         # 3. sync static results if dynamic is not initialized
         else:
             logger.debug(f'Receiving <pflow> results to {sp.recent.class_name}...')
-            for mname, mdl in self.sp.models.items():
+            for mname, mdl in sp.models.items():
                 if mdl.n == 0:
                     continue
                 # 1) receive models online status
                 idx = mdl.idx.v
-                if mname in self.sa.models:
-                    mdl_andes = getattr(self.sa, mname)
+                if mname in sa.models:
+                    mdl_andes = getattr(sa, mname)
                     u_andes = mdl_andes.get(src='u', idx=idx, attr='v')
                     mdl.set(src='u', idx=idx, attr='v', value=u_andes)
                     # update routine variables if any
@@ -551,8 +551,8 @@ class Dynamic:
         if not self.is_tds:     # sync dynamic device
             logger.warning('Dynamic is not running, receiving Pe is skipped.')
             return True
-        sa = self.sa
-        sp = self.sp
+        sa = self.andes
+        sp = self.ams
         # TODO: get pe from ANDES
         # 1) SynGen
         Pe_sg = sa.SynGen.get(idx=sp.dyn.link['syg_idx'].replace(np.NaN, None).to_list(),
@@ -580,8 +580,8 @@ class Dynamic:
         """
         Get the dynamic generator online status.
         """
-        sa = self.sa
-        sp = self.sp
+        sa = self.andes
+        sp = self.ams
         # 1) SynGen
         u_sg = sa.SynGen.get(idx=sp.dyn.link['syg_idx'].replace(np.NaN, None).to_list(),
                              src='u', attr='v',
