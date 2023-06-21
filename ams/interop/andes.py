@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def to_andes(system, setup=True, addfile=None,
-             overwrite=None, keep=False,
+             overwrite=None, no_keep=True,
              **kwargs):
     """
     Convert the AMS system to an ANDES system.
@@ -38,8 +38,8 @@ def to_andes(system, setup=True, addfile=None,
         The additional file to be converted to ANDES dynamic mdoels.
     overwrite : bool, optional
         Whether to overwrite the existing file.
-    keep : bool, optional
-        Whether to keep the converted file.
+    no_keep : bool, optional
+        True to remove the converted file after the conversion.
     **kwargs : dict
         Keyword arguments to be passed to `andes.system.System`.
 
@@ -55,7 +55,7 @@ def to_andes(system, setup=True, addfile=None,
     >>> sp = ams.load(ams.get_case('ieee14/ieee14_rted.xlsx'), setup=True)
     >>> sa = sp.to_andes(setup=False,
     ...                  addfile=andes.get_case('ieee14/ieee14_wt3.xlsx'),
-    ...                  overwrite=True, keep=False, no_output=True)
+    ...                  overwrite=True, no_keep=True, no_output=True)
     """
     t0, _ = elapsed()
     andes_file = system.files.name + '.json'
@@ -66,15 +66,15 @@ def to_andes(system, setup=True, addfile=None,
                )
 
     _, s = elapsed(t0)
-    logger.info(f'System convert to ANDES in {s}, save to "{andes_file}".')
+    logger.info(f'System convert to ANDES in {s}, saved as "{andes_file}".')
 
     andes = andes_load(andes_file, setup=False, **kwargs)
 
-    if not keep:
-        logger.info(f'Converted file is removed. Set "keep = True" to keep it.')
+    if no_keep:
+        logger.info(f'Converted file is removed. Set "no_keep=False" to keep it.')
         os.remove(andes_file)
 
-    # additonal file for dynamic simulation
+    # 1. additonal file for dynamic simulation
     add_format = None
     if addfile:
         t, _ = elapsed()
@@ -95,6 +95,7 @@ def to_andes(system, setup=True, addfile=None,
             # TODO: check if power flow devices exist in the addfile
             reader = pd.ExcelFile(addfile)
 
+            # FIXME: improve this part to better connect with AMS file
             common_elements = set(reader.sheet_names) & set(pflow_mdl)
             if common_elements:
                 logger.warning('Power flow models exist in the addfile. Only dynamic models will be kept.')
@@ -121,7 +122,11 @@ def to_andes(system, setup=True, addfile=None,
             # if not add_parser.read_add(system, addfile):
             #     logger.error('Error parsing addfile "%s" with %s parser.', addfile, add_format)
 
-        # --- consistency check ---
+        # 2. consistency check
+        # a. size check
+        # TODO: implement size check between addfile and AMS system
+
+        # b. data summary
         stg_idx = andes.StaticGen.find_idx(keys='bus',
                                            values=andes.Bus.idx.v,
                                            allow_none=True, default=None)
@@ -147,7 +152,7 @@ def to_andes(system, setup=True, addfile=None,
         rg_bus = andes.RenGen.get(src='bus', idx=rg_idx, attr='v')
         dg_bus = andes.DG.get(src='bus', idx=dg_idx, attr='v')
 
-        # SynGen gen with StaticGen idx
+        # b. SynGen gen with StaticGen idx
         if any(item not in stg_idx for item in syg_idx):
             logger.debug("Correct SynGen idx to match StaticGen.")
             syg_stg = andes.StaticGen.find_idx(keys='bus',
@@ -166,7 +171,7 @@ def to_andes(system, setup=True, addfile=None,
                                               allow_none=True, default=None)
             andes.DG.set(src='gen', idx=dg_idx, attr='v', value=dg_stg)
 
-        # SynGen Vn with Bus Vn
+        # c. SynGen Vn with Bus Vn
         syg_vn = andes.SynGen.get(src='Vn', idx=syg_idx, attr='v')
         bus_vn = andes.Bus.get(src='Vn', idx=syg_bus, attr='v')
         if not np.equal(syg_vn, bus_vn).all():
@@ -185,7 +190,7 @@ def to_andes(system, setup=True, addfile=None,
     system.dyn = Dynamic(ams=system, andes=andes)
     system.dyn.link_andes(andes=andes)
     _, s = elapsed(t0)
-    logger.info(f'AMS system {hex(id(system))} link to ANDES system {hex(id(andes))} in %s.', s)
+    logger.info(f'AMS system <{hex(id(system))}> link to ANDES system <{hex(id(andes))}> in %s.', s)
     return andes
 
 

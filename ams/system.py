@@ -504,27 +504,45 @@ class System(andes_System):
 
         return tab.draw()
 
-    def to_andes(self, setup=True, addfile=None, overwite=None, keep=False,
+    def to_andes(self, setup=True, addfile=None, overwite=None, no_keep=True,
                  **kwargs):
         """
-        Wrapper function for converting AMS system instance to ANDES system instance.
+        Convert the AMS system to an ANDES system.
+        This function is a wrapper of ``ams.interop.andes.to_andes()``.
 
-        This function is a wrapper of ``ams.interop.andes.to_andes``. When the file
-        conversion is performed using ``sp.to_andes()``, it will automatically link
-        the AMS system instance to the converted ANDES system instance through the
-        AMS system attribute ``sp.dyn``.
+        Using the file conversion ``sp.to_andes()`` will automatically
+        link the AMS system instance to the converted ANDES system instance
+        in the AMS system attribute ``sp.dyn``.
 
         Parameters
         ----------
-        setup: bool
-            Whether to call `setup()` after the conversion.
-        addfile: str
+        system : System
+            The AMS system to be converted to ANDES format.
+        setup : bool, optional
+            Whether to call `setup()` after the conversion. Default is True.
+        addfile : str, optional
             The additional file to be converted to ANDES dynamic mdoels.
-        overwrite: bool
+        overwrite : bool, optional
             Whether to overwrite the existing file.
-        keep: bool
-            Whether to keep the converted file.
+        no_keep : bool, optional
+            True to remove the converted file after the conversion.
+        **kwargs : dict
+            Keyword arguments to be passed to `andes.system.System`.
+
+        Returns
+        -------
+        andes : andes.system.System
+            The converted ANDES system.
+
+        Examples
+        --------
+        >>> import ams
+        >>> import andes
+        >>> sp = ams.load(ams.get_case('ieee14/ieee14_rted.xlsx'), setup=True)
+        >>> sa = sp.to_andes(setup=False,
+        ...                  addfile=andes.get_case('ieee14/ieee14_wt3.xlsx'),
+        ...                  overwrite=True, no_keep=True, no_output=True)
         """
         return to_andes(self, setup=setup, addfile=addfile,
-                        overwite=overwite, keep=keep,
+                        overwite=overwite, no_keep=no_keep,
                         **kwargs)
