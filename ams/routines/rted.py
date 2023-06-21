@@ -239,3 +239,10 @@ class RTED(RTEDData, RTEDModel):
         self.is_smooth = True
         logger.warning('RTED is smoothed with ACOPF.')
         return True
+
+    def run(self, **kwargs):
+        if self.is_smooth:
+            delattr(self, 'vBus')
+            del self.vars['vBus']
+            self.is_smooth = False
+        super().run(**kwargs)

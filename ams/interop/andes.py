@@ -45,7 +45,7 @@ def to_andes(system, setup=True, addfile=None,
 
     Returns
     -------
-    sa : andes.system.System
+    andes : andes.system.System
         The converted ANDES system.
 
     Examples
@@ -68,7 +68,7 @@ def to_andes(system, setup=True, addfile=None,
     _, s = elapsed(t0)
     logger.info(f'System convert to ANDES in {s}, save to "{andes_file}".')
 
-    sa = andes_load(andes_file, setup=False, **kwargs)
+    andes = andes_load(andes_file, setup=False, **kwargs)
 
     if not keep:
         logger.info(f'Converted file is removed. Set "keep = True" to keep it.')
@@ -109,10 +109,10 @@ def to_andes(system, setup=True, addfile=None,
                 # drop rows that all nan
                 df.dropna(axis=0, how='all', inplace=True)
                 for row in df.to_dict(orient='records'):
-                    sa.add(name, row)
+                    andes.add(name, row)
 
             # --- for debugging ---
-            sa.df_in = df_models
+            andes.df_in = df_models
 
         else:
             logger.warning('Addfile format "%s" is not supported yet.', add_format)
@@ -122,41 +122,55 @@ def to_andes(system, setup=True, addfile=None,
             #     logger.error('Error parsing addfile "%s" with %s parser.', addfile, add_format)
 
         # --- consistency check ---
-        stg_idx = sa.StaticGen.find_idx(keys='bus', values=sa.Bus.idx.v, allow_none=True, default=None)
+        stg_idx = andes.StaticGen.find_idx(keys='bus',
+                                           values=andes.Bus.idx.v,
+                                           allow_none=True, default=None)
         stg_idx = [x for x in stg_idx if x is not None]
 
-        syg_idx = sa.SynGen.find_idx(keys='bus', values=sa.Bus.idx.v, allow_none=True, default=None)
+        syg_idx = andes.SynGen.find_idx(keys='bus',
+                                        values=andes.Bus.idx.v,
+                                        allow_none=True,
+                                        default=None)
         syg_idx = [x for x in syg_idx if x is not None]
 
-        rg_idx = sa.RenGen.find_idx(keys='bus', values=sa.Bus.idx.v, allow_none=True, default=None)
+        rg_idx = andes.RenGen.find_idx(keys='bus',
+                                       values=andes.Bus.idx.v,
+                                       allow_none=True, default=None)
         rg_idx = [x for x in rg_idx if x is not None]
 
-        dg_idx = sa.DG.find_idx(keys='bus', values=sa.Bus.idx.v, allow_none=True, default=None)
+        dg_idx = andes.DG.find_idx(keys='bus',
+                                   values=andes.Bus.idx.v,
+                                   allow_none=True, default=None)
         dg_idx = [x for x in dg_idx if x is not None]
 
-        syg_bus = sa.SynGen.get(src='bus', idx=syg_idx, attr='v')
-        rg_bus = sa.RenGen.get(src='bus', idx=rg_idx, attr='v')
-        dg_bus = sa.DG.get(src='bus', idx=dg_idx, attr='v')
+        syg_bus = andes.SynGen.get(src='bus', idx=syg_idx, attr='v')
+        rg_bus = andes.RenGen.get(src='bus', idx=rg_idx, attr='v')
+        dg_bus = andes.DG.get(src='bus', idx=dg_idx, attr='v')
 
         # SynGen gen with StaticGen idx
         if any(item not in stg_idx for item in syg_idx):
             logger.debug("Correct SynGen idx to match StaticGen.")
-            syg_stg = sa.StaticGen.find_idx(keys='bus', values=syg_bus, allow_none=True, default=None)
-            sa.SynGen.set(src='gen', idx=syg_idx, attr='v', value=syg_stg)
+            syg_stg = andes.StaticGen.find_idx(keys='bus',
+                                               values=syg_bus,
+                                               allow_none=True, default=None)
+            andes.SynGen.set(src='gen', idx=syg_idx, attr='v', value=syg_stg)
         if any(item not in stg_idx for item in rg_idx):
             logger.debug("Correct RenGen idx to match StaticGen.")
-            rg_stg = sa.StaticGen.find_idx(keys='bus', values=rg_bus, allow_none=True, default=None)
-            sa.RenGen.set(src='gen', idx=rg_idx, attr='v', value=rg_stg)
+            rg_stg = andes.StaticGen.find_idx(keys='bus',
+                                              values=rg_bus,
+                                              allow_none=True, default=None)
+            andes.RenGen.set(src='gen', idx=rg_idx, attr='v', value=rg_stg)
         if any(item not in stg_idx for item in dg_idx):
             logger.debug("Correct DG idx to match StaticGen.")
-            dg_stg = sa.StaticGen.find_idx(keys='bus', values=dg_bus, allow_none=True, default=None)
-            sa.DG.set(src='gen', idx=dg_idx, attr='v', value=dg_stg)
+            dg_stg = andes.StaticGen.find_idx(keys='bus', values=dg_bus,
+                                              allow_none=True, default=None)
+            andes.DG.set(src='gen', idx=dg_idx, attr='v', value=dg_stg)
 
         # SynGen Vn with Bus Vn
-        syg_vn = sa.SynGen.get(src='Vn', idx=syg_idx, attr='v')
-        bus_vn = sa.Bus.get(src='Vn', idx=syg_bus, attr='v')
+        syg_vn = andes.SynGen.get(src='Vn', idx=syg_idx, attr='v')
+        bus_vn = andes.Bus.get(src='Vn', idx=syg_bus, attr='v')
         if not np.equal(syg_vn, bus_vn).all():
-            sa.SynGen.set(src='Vn', idx=syg_idx, attr='v', value=bus_vn)
+            andes.SynGen.set(src='Vn', idx=syg_idx, attr='v', value=bus_vn)
             logger.warning('Correct SynGen Vn to match Bus Vn.')
 
         # NOTE: RenGen and DG do not have Vn
@@ -165,13 +179,14 @@ def to_andes(system, setup=True, addfile=None,
         logger.info('Addfile parsed in %s.', s)
 
     if setup:
-        sa.setup()
+        andes.setup()
 
     t0, _ = elapsed()
-    system.dyn = Dynamic(sp=system, sa=sa)
+    system.dyn = Dynamic(ams=system, andes=andes)
+    system.dyn.link_andes(andes=andes)
     _, s = elapsed(t0)
-    logger.info(f'AMS system {hex(id(system))} link to ANDES system {hex(id(sa))} in %s.', s)
-    return sa
+    logger.info(f'AMS system {hex(id(system))} link to ANDES system {hex(id(andes))} in %s.', s)
+    return andes
 
 
 class Dynamic:
@@ -180,21 +195,15 @@ class Dynamic:
 
     Parameters
     ----------
-    sp : AMS system
+    ams : AMS system
         The AMS system.
-    sa : ANDES system
+    andes : ANDES system
         The ANDES system.
 
     Attributes
     ----------
-    ams : AMS system
-        The AMS system instance.
-    andes : ANDES system
-        The ANDES system instance.
     link : pandas.DataFrame
         The ANDES system link table.
-    is_tds : bool
-        Whether the ANDES system is running a TDS.
 
     Notes
     -----
@@ -218,12 +227,23 @@ class Dynamic:
     >>> sp.dyn.receive()  # receive TDS results from ANDES system
     """
 
-    def __init__(self, sp=None, sa=None) -> None:
-        self.ams = sp  # AMS system
-        self.andes = sa  # ANDES system
+    def __init__(self, ams=None, andes=None) -> None:
+        self.ams = ams  # AMS system
+        self.andes = andes  # ANDES system
 
         # TODO: add summary table
         self.link = None  # ANDES system link table
+
+    def link_andes(self, andes):
+        """
+        Link the ANDES system to the AMS system.
+
+        Parameters
+        ----------
+        andes : ANDES.system.System
+            The ANDES system instance.
+        """
+        self.andes = andes
         self.make_link()
 
     @property
@@ -252,14 +272,14 @@ class Dynamic:
                 ]
         self.link = self.link[cols]
 
-    def send_tgr(self):
+    def send_tgr(self, sa, sp):
         """
         Sned to generator power refrence.
 
-        # NOTE: AGC power reference (`paux`) is not included in this model.
+        Notes
+        -----
+        1. AGC power reference ``paux`` is not included in this function.
         """
-        sa = self.andes
-        sp = self.ams
         # 1) TurbineGov
         syg_idx = sp.dyn.link['syg_idx'].dropna().tolist()  # SynGen idx
         # corresponding StaticGen idx in ANDES
@@ -301,14 +321,10 @@ class Dynamic:
 
         return True
 
-    def send_dgu(self):
+    def send_dgu(self, sa, sp):
         """
         Send to ANDES the dynamic generator online status.
-
-        # TODO: add support for switch dynamic gen online status
         """
-        sa = self.andes
-        sp = self.ams
         # 1) TurbineGov
         syg_idx = sp.dyn.link['syg_idx'].dropna().tolist()  # SynGen idx
         # corresponding StaticGen idx in ANDES
@@ -345,12 +361,18 @@ class Dynamic:
 
         return True
 
-    def send(self):
+    def send(self, andes=None):
         """
         Send results of the recent sovled AMS dispatch (``sp.recent``) to the
-        linked ANDES system isntance (``sp.dyn.sa``).
+        target ANDES system.
+
+        Parameters
+        ----------
+        andes : andes.System.system, optional
+            The target ANDES dynamic system instance. If not provided, use the
+            linked ANDES system isntance (``sp.dyn.andes``).
         """
-        sa = self.andes
+        sa = andes if andes is not None else self.andes
         sp = self.ams
         # 1. information
         # NOTE:if DC types, check if results are smoothed
@@ -362,7 +384,7 @@ class Dynamic:
                     f'{sp.recent.class_name} has not been smoothed, error might be introduced in dynamic simulation.')
 
         try:
-            logger.debug(f'Sending {sp.recent.class_name} results to ANDES...')
+            logger.debug(f'Sending {sp.recent.class_name} results to ANDES <{hex(id(sa))}>...')
         except AttributeError:
             logger.warning('No solved AMS routine found. Unable to sync with ANDES.')
             return False
@@ -388,7 +410,7 @@ class Dynamic:
                     continue
                 # a. dynamic generator online status
                 if not is_dgu_set and mdl.group in ['StaticGen']:
-                    self.send_dgu()
+                    self.send_dgu(sa=sa, sp=sp)
                     is_dgu_set = True
                     logger.warning('Generator online status are sent to dynamic generators.')
                     continue
@@ -411,7 +433,7 @@ class Dynamic:
                     # FIXME: in this implementation, PV and Slack are only sync once, this might
                     # cause problem if PV and Slack are mapped separately
                     if not is_tgr_set and isinstance(mdl, (StaticGen, PV, Slack)):
-                        self.send_tgr()
+                        self.send_tgr(sa=sa, sp=sp)
                         is_tgr_set = True
                         logger.warning('Generator power reference are sent to dynamic devices.')
                         continue
@@ -442,7 +464,7 @@ class Dynamic:
                     for ams_vname, andes_pname in map2[mname].items():
                         # a. voltage reference
                         if ams_vname in ['qg']:
-                            logger.warning('Setting qg to ANDES dynamic does not take effect.')
+                            logger.warning('Setting `qg` to ANDES dynamic does not take effect.')
                         # b. others, if any
                         ams_var = getattr(sp.recent, ams_vname)
                         v_ams = sp.recent.get(src=ams_vname, attr='v',
@@ -451,18 +473,22 @@ class Dynamic:
                 return True
             return True
 
-    def receive(self):
+    def receive(self, andes=None):
         """
-        Receive the results from the linked ANDES system.
-        Receive results from the linked ANDES system instance (``sp.dyn.sa``) to
-        the recent solved AMS dispatch (``sp.recent``).
+        Receive the results from the target ANDES system.
+
+        Parameters
+        ----------
+        andes : andes.System.system, optional
+            The target ANDES dynamic system instance. If not provided, use the
+            linked ANDES system isntance (``sp.dyn.andes``).
         """
-        sa = self.andes
+        sa = andes if andes is not None else self.andes
         sp = self.ams
         # 1. information
         try:
             rtn_name = sp.recent.class_name
-            logger.debug(f'Receiving ANDES results to {rtn_name}.')
+            logger.debug(f'Receiving ANDES <{hex(id(sa))}> results to {rtn_name}.')
         except AttributeError:
             logger.warning('No target AMS routine found. Failed to sync with ANDES.')
             return False
@@ -484,7 +510,7 @@ class Dynamic:
                     continue
                 # a. dynamic generator online status
                 if not is_dgu_set and mdl.group in ['StaticGen']:
-                    self.receive_dgu()
+                    self.receive_dgu(sa=sa, sp=sp)
                     is_dgu_set = True
                     logger.warning('Generator online status are received from dynamic generators.')
                     continue
@@ -502,7 +528,7 @@ class Dynamic:
                 for ams_vname, andes_pname in pmap.items():
                     # a. output power
                     if not is_pe_set and andes_pname == 'p' and mname == 'StaticGen':
-                        Pe, idx = self.receive_pe()
+                        Pe, idx = self.receive_pe(sa=sa, sp=sp)
                         sp.recent.set(src=ams_vname, idx=idx, attr='v', value=Pe)
                         is_pe_set = True
                         logger.warning('Generator output power are received from dynamic generators.')
@@ -544,16 +570,13 @@ class Dynamic:
                         sp.recent.set(src=ams_vname, idx=idx, attr='v', value=v_andes)
             return True
 
-    def receive_pe(self):
+    def receive_pe(self, sa, sp):
         """
         Get the dynamic generator output power.
         """
         if not self.is_tds:     # sync dynamic device
             logger.warning('Dynamic is not running, receiving Pe is skipped.')
             return True
-        sa = self.andes
-        sp = self.ams
-        # TODO: get pe from ANDES
         # 1) SynGen
         Pe_sg = sa.SynGen.get(idx=sp.dyn.link['syg_idx'].replace(np.NaN, None).to_list(),
                               src='Pe', attr='v',
@@ -576,12 +599,10 @@ class Dynamic:
         idx = sp.dyn.link['stg_idx'].replace(np.NaN, None).to_list()
         return Pe, idx
 
-    def receive_dgu(self):
+    def receive_dgu(self, sa, sp):
         """
         Get the dynamic generator online status.
         """
-        sa = self.andes
-        sp = self.ams
         # 1) SynGen
         u_sg = sa.SynGen.get(idx=sp.dyn.link['syg_idx'].replace(np.NaN, None).to_list(),
                              src='u', attr='v',
