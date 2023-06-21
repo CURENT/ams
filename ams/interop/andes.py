@@ -68,7 +68,7 @@ def to_andes(system, setup=True, addfile=None,
     _, s = elapsed(t0)
     logger.info(f'System convert to ANDES in {s}, saved as "{andes_file}".')
 
-    andes = andes_load(andes_file, setup=False, **kwargs)
+    adsys = andes_load(andes_file, setup=False, **kwargs)
 
     if no_keep:
         logger.info(f'Converted file is removed. Set "no_keep=False" to keep it.')
@@ -110,10 +110,10 @@ def to_andes(system, setup=True, addfile=None,
                 # drop rows that all nan
                 df.dropna(axis=0, how='all', inplace=True)
                 for row in df.to_dict(orient='records'):
-                    andes.add(name, row)
+                    adsys.add(name, row)
 
             # --- for debugging ---
-            andes.df_in = df_models
+            adsys.df_in = df_models
 
         else:
             logger.warning('Addfile format "%s" is not supported yet.', add_format)
@@ -126,56 +126,57 @@ def to_andes(system, setup=True, addfile=None,
         # a. size check
         # TODO: implement size check between addfile and AMS system
 
+
         # b. data summary
-        stg_idx = andes.StaticGen.find_idx(keys='bus',
-                                           values=andes.Bus.idx.v,
+        stg_idx = adsys.StaticGen.find_idx(keys='bus',
+                                           values=adsys.Bus.idx.v,
                                            allow_none=True, default=None)
         stg_idx = [x for x in stg_idx if x is not None]
 
-        syg_idx = andes.SynGen.find_idx(keys='bus',
-                                        values=andes.Bus.idx.v,
+        syg_idx = adsys.SynGen.find_idx(keys='bus',
+                                        values=adsys.Bus.idx.v,
                                         allow_none=True,
                                         default=None)
         syg_idx = [x for x in syg_idx if x is not None]
 
-        rg_idx = andes.RenGen.find_idx(keys='bus',
-                                       values=andes.Bus.idx.v,
+        rg_idx = adsys.RenGen.find_idx(keys='bus',
+                                       values=adsys.Bus.idx.v,
                                        allow_none=True, default=None)
         rg_idx = [x for x in rg_idx if x is not None]
 
-        dg_idx = andes.DG.find_idx(keys='bus',
-                                   values=andes.Bus.idx.v,
+        dg_idx = adsys.DG.find_idx(keys='bus',
+                                   values=adsys.Bus.idx.v,
                                    allow_none=True, default=None)
         dg_idx = [x for x in dg_idx if x is not None]
 
-        syg_bus = andes.SynGen.get(src='bus', idx=syg_idx, attr='v')
-        rg_bus = andes.RenGen.get(src='bus', idx=rg_idx, attr='v')
-        dg_bus = andes.DG.get(src='bus', idx=dg_idx, attr='v')
+        syg_bus = adsys.SynGen.get(src='bus', idx=syg_idx, attr='v')
+        rg_bus = adsys.RenGen.get(src='bus', idx=rg_idx, attr='v')
+        dg_bus = adsys.DG.get(src='bus', idx=dg_idx, attr='v')
 
         # b. SynGen gen with StaticGen idx
         if any(item not in stg_idx for item in syg_idx):
             logger.debug("Correct SynGen idx to match StaticGen.")
-            syg_stg = andes.StaticGen.find_idx(keys='bus',
+            syg_stg = adsys.StaticGen.find_idx(keys='bus',
                                                values=syg_bus,
                                                allow_none=True, default=None)
-            andes.SynGen.set(src='gen', idx=syg_idx, attr='v', value=syg_stg)
+            adsys.SynGen.set(src='gen', idx=syg_idx, attr='v', value=syg_stg)
         if any(item not in stg_idx for item in rg_idx):
             logger.debug("Correct RenGen idx to match StaticGen.")
-            rg_stg = andes.StaticGen.find_idx(keys='bus',
+            rg_stg = adsys.StaticGen.find_idx(keys='bus',
                                               values=rg_bus,
                                               allow_none=True, default=None)
-            andes.RenGen.set(src='gen', idx=rg_idx, attr='v', value=rg_stg)
+            adsys.RenGen.set(src='gen', idx=rg_idx, attr='v', value=rg_stg)
         if any(item not in stg_idx for item in dg_idx):
             logger.debug("Correct DG idx to match StaticGen.")
-            dg_stg = andes.StaticGen.find_idx(keys='bus', values=dg_bus,
+            dg_stg = adsys.StaticGen.find_idx(keys='bus', values=dg_bus,
                                               allow_none=True, default=None)
-            andes.DG.set(src='gen', idx=dg_idx, attr='v', value=dg_stg)
+            adsys.DG.set(src='gen', idx=dg_idx, attr='v', value=dg_stg)
 
         # c. SynGen Vn with Bus Vn
-        syg_vn = andes.SynGen.get(src='Vn', idx=syg_idx, attr='v')
-        bus_vn = andes.Bus.get(src='Vn', idx=syg_bus, attr='v')
+        syg_vn = adsys.SynGen.get(src='Vn', idx=syg_idx, attr='v')
+        bus_vn = adsys.Bus.get(src='Vn', idx=syg_bus, attr='v')
         if not np.equal(syg_vn, bus_vn).all():
-            andes.SynGen.set(src='Vn', idx=syg_idx, attr='v', value=bus_vn)
+            adsys.SynGen.set(src='Vn', idx=syg_idx, attr='v', value=bus_vn)
             logger.warning('Correct SynGen Vn to match Bus Vn.')
 
         # NOTE: RenGen and DG do not have Vn
@@ -184,14 +185,14 @@ def to_andes(system, setup=True, addfile=None,
         logger.info('Addfile parsed in %s.', s)
 
     if setup:
-        andes.setup()
+        adsys.setup()
 
     t0, _ = elapsed()
-    system.dyn = Dynamic(ams=system, andes=andes)
-    system.dyn.link_andes(andes=andes)
+    system.dyn = Dynamic(amsys=system, adsys=adsys)
+    system.dyn.link_andes(adsys=adsys)
     _, s = elapsed(t0)
-    logger.info(f'AMS system <{hex(id(system))}> link to ANDES system <{hex(id(andes))}> in %s.', s)
-    return andes
+    logger.info(f'AMS system <{hex(id(system))}> link to ANDES system <{hex(id(adsys))}> in %s.', s)
+    return adsys
 
 
 class Dynamic:
@@ -200,9 +201,9 @@ class Dynamic:
 
     Parameters
     ----------
-    ams : AMS system
+    amsys : AMS.system.System
         The AMS system.
-    andes : ANDES system
+    adsys : ANDES.system.System
         The ANDES system.
 
     Attributes
@@ -232,23 +233,23 @@ class Dynamic:
     >>> sp.dyn.receive()  # receive TDS results from ANDES system
     """
 
-    def __init__(self, ams=None, andes=None) -> None:
-        self.ams = ams  # AMS system
-        self.andes = andes  # ANDES system
+    def __init__(self, amsys=None, adsys=None) -> None:
+        self.ams = amsys  # AMS system
+        self.adsys = adsys  # ANDES system
 
         # TODO: add summary table
         self.link = None  # ANDES system link table
 
-    def link_andes(self, andes):
+    def link_andes(self, adsys):
         """
         Link the ANDES system to the AMS system.
 
         Parameters
         ----------
-        andes : ANDES.system.System
+        adsys : ANDES.system.System
             The ANDES system instance.
         """
-        self.andes = andes
+        self.adsys = adsys
         self.make_link()
 
     @property
@@ -257,17 +258,17 @@ class Dynamic:
         Indicator of whether the ANDES system is running a TDS.
         This property will return ``True`` as long as TDS is initialized.
 
-        Check ``andes.tds.TDS.init()`` for more details.
+        Check ``adsys.tds.TDS.init()`` for more details.
         """
-        return bool(self.andes.TDS.initialized)
+        return bool(self.adsys.TDS.initialized)
 
     def make_link(self):
         """
         Make the link table of the ANDES system.
 
-        A wrapper of `andes.interop.pandapower.make_link_table`.
+        A wrapper of `adsys.interop.pandapower.make_link_table`.
         """
-        self.link = make_link_table(self.andes)
+        self.link = make_link_table(self.adsys)
         # adjust columns
         cols = ['stg_idx', 'bus_idx',               # static gen
                 'syg_idx', 'gov_idx',               # syn gen
@@ -366,18 +367,18 @@ class Dynamic:
 
         return True
 
-    def send(self, andes=None):
+    def send(self, adsys=None):
         """
         Send results of the recent sovled AMS dispatch (``sp.recent``) to the
         target ANDES system.
 
         Parameters
         ----------
-        andes : andes.System.system, optional
+        adsys : adsys.System.system, optional
             The target ANDES dynamic system instance. If not provided, use the
-            linked ANDES system isntance (``sp.dyn.andes``).
+            linked ANDES system isntance (``sp.dyn.adsys``).
         """
-        sa = andes if andes is not None else self.andes
+        sa = adsys if adsys is not None else self.adsys
         sp = self.ams
         # 1. information
         # NOTE:if DC types, check if results are converted
@@ -478,17 +479,17 @@ class Dynamic:
                 return True
             return True
 
-    def receive(self, andes=None):
+    def receive(self, adsys=None):
         """
         Receive the results from the target ANDES system.
 
         Parameters
         ----------
-        andes : andes.System.system, optional
+        adsys : adsys.System.system, optional
             The target ANDES dynamic system instance. If not provided, use the
-            linked ANDES system isntance (``sp.dyn.andes``).
+            linked ANDES system isntance (``sp.dyn.adsys``).
         """
-        sa = andes if andes is not None else self.andes
+        sa = adsys if adsys is not None else self.adsys
         sp = self.ams
         # 1. information
         try:
