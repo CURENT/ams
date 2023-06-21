@@ -375,13 +375,13 @@ class Dynamic:
         sa = andes if andes is not None else self.andes
         sp = self.ams
         # 1. information
-        # NOTE:if DC types, check if results are smoothed
+        # NOTE:if DC types, check if results are converted
         if sp.recent.type != 'ACED':
-            if sp.recent.is_smooth:
-                logger.debug(f'{sp.recent.class_name} results has been smoothed.')
+            if sp.recent.is_ac:
+                logger.debug(f'{sp.recent.class_name} results has been converted to AC.')
             else:
                 logger.warning(
-                    f'{sp.recent.class_name} has not been smoothed, error might be introduced in dynamic simulation.')
+                    f'{sp.recent.class_name} has not been converted to AC, error might be introduced in dynamic simulation.')
 
         try:
             logger.debug(f'Sending {sp.recent.class_name} results to ANDES <{hex(id(sa))}>...')

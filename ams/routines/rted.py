@@ -202,11 +202,11 @@ class RTED(RTEDData, RTEDModel):
         super()._data_check()
         return True
 
-    def smooth(self, **kwargs):
+    def dc2ac(self, **kwargs):
         """
-        Smooth the RTED results with ACOPF.
+        Convert the RTED results with ACOPF.
 
-        Overload ``smooth`` method in ``DCOPF``.
+        Overload ``dc2ac`` method in ``DCOPF``.
         """
         if self.exec_time == 0 or self.exit_code != 0:
             logger.warning('RTED is not executed successfully, no smoothing.')
@@ -236,13 +236,14 @@ class RTED(RTEDData, RTEDModel):
         self.system.StaticGen.set(src='p0', attr='v', idx=pr_idx, value=p00)
         self.system.recent = self
 
-        self.is_smooth = True
-        logger.warning('RTED is smoothed with ACOPF.')
+        self.is_ac = True
+        logger.warning('RTED is converted to AC.')
         return True
 
     def run(self, **kwargs):
-        if self.is_smooth:
+        # remove vBus if has been converted to AC using ``dc2ac``
+        if self.is_ac:
             delattr(self, 'vBus')
             del self.vars['vBus']
-            self.is_smooth = False
+            self.is_ac = False
         super().run(**kwargs)
