@@ -27,14 +27,14 @@ class RTEDData(DCOPFData):
                           src='cru',
                           tex_name=r'c_{r,u}',
                           unit=r'$/(p.u.)',
-                          owner_name='RCost',
+                          owner_name='SFRCost',
                           )
         self.crd = RParam(info='RegDown reserve coefficient',
                           name='crd',
                           src='crd',
                           tex_name=r'c_{r,d}',
                           unit=r'$/(p.u.)',
-                          owner_name='RCost',
+                          owner_name='SFRCost',
                           )
         # 1.2. reserve requirement
         self.du = RParam(info='RegUp reserve requirement',
@@ -42,20 +42,20 @@ class RTEDData(DCOPFData):
                          src='du',
                          tex_name=r'd_{u}',
                          unit='p.u.',
-                         owner_name='AGCR',
+                         owner_name='SFR',
                          )
         self.dd = RParam(info='RegDown reserve requirement',
                          name='dd',
                          src='dd',
                          tex_name=r'd_{d}',
                          unit='p.u.',
-                         owner_name='AGCR',
+                         owner_name='SFR',
                          )
         self.prs = RParam(info='sum matrix of reserve',
                           name='prs',
                           src='prs',
                           tex_name=r'\sum',
-                          owner_name='AGCR',
+                          owner_name='SFR',
                           )
         # 1.3 reserve ramp rate
         # FIXME: seems not used

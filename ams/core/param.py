@@ -48,14 +48,14 @@ class RParam:
     Example 1: Define a routine parameter from a source model or group.
 
     In this example, we define the parameter `cru` from the source model
-    `RCost` with the parameter `cru`.
+    `SFRCost` with the parameter `cru`.
 
     >>> self.cru = RParam(info='RegUp reserve coefficient',
     >>>                   tex_name=r'c_{r,u}',
     >>>                   unit=r'$/(p.u.)',
     >>>                   name='cru',
     >>>                   src='cru',
-    >>>                   owner_name='RCost'
+    >>>                   owner_name='SFRCost'
     >>>                   )
 
     Example 2: Define a routine parameter with a user-defined value.

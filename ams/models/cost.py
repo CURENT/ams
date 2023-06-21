@@ -72,7 +72,7 @@ class GCost(GCostData, Model):
         self.group = 'Cost'
 
 
-class RCostData(ModelData):
+class SFRCostData(ModelData):
     def __init__(self):
         super().__init__()
         self.gen = IdxParam(info="static generator index",
@@ -93,12 +93,12 @@ class RCostData(ModelData):
                             )
 
 
-class RCost(RCostData, Model):
+class SFRCost(SFRCostData, Model):
     """
-    Linear reserve cost model.
+    Linear SFR cost model.
     """
 
     def __init__(self, system, config):
-        RCostData.__init__(self)
+        SFRCostData.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'Cost'
