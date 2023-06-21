@@ -331,6 +331,10 @@ class OModel:
         Number of decision variables.
     m: int
         Number of constraints.
+    
+    TODO:
+    - Add _check_attribute and _register_attribute for vars, constrs, and obj.
+    - Add support for user-defined vars, constrs, and obj.
     """
 
     def __init__(self, routine):
