@@ -134,6 +134,8 @@ def to_andes(system, setup=True, addfile=None,
         else:
             pass
             # check idx
+            ad_line_idx = adsys.Line.idx.v
+            am_line_idx = system.Line.idx.v
 
         # b. bus
 
