@@ -123,11 +123,21 @@ def to_andes(system, setup=True, addfile=None,
             #     logger.error('Error parsing addfile "%s" with %s parser.', addfile, add_format)
 
         # 2. consistency check
-        # a. size check
-        # TODO: implement size check between addfile and AMS system
+        # a. line
+        if adsys.Line.n != system.Line.n:
+            adsys_trans = adsys.Line.get(src='trans', attr='v', idx=adsys.Line.idx.v)
+            amsys_trans = system.Line.get(src='trans', attr='v', idx=adsys.Line.idx.v)
+            zeros_eq = np.count_nonzero(adsys_trans == 0) == np.count_nonzero(amsys_trans == 0)
+            ones_eq = np.count_nonzero(adsys_trans == 1) == np.count_nonzero(amsys_trans == 1)
+            if zeros_eq and ones_eq:
+                logger.warning('There is a <Line> mismatch betwen addfile and AMS system, error might occur in conversion.')
+        else:
+            pass
+            # check idx
 
+        # b. bus
 
-        # b. data summary
+        # c. generator
         stg_idx = adsys.StaticGen.find_idx(keys='bus',
                                            values=adsys.Bus.idx.v,
                                            allow_none=True, default=None)
@@ -153,7 +163,7 @@ def to_andes(system, setup=True, addfile=None,
         rg_bus = adsys.RenGen.get(src='bus', idx=rg_idx, attr='v')
         dg_bus = adsys.DG.get(src='bus', idx=dg_idx, attr='v')
 
-        # b. SynGen gen with StaticGen idx
+        # generator idx
         if any(item not in stg_idx for item in syg_idx):
             logger.debug("Correct SynGen idx to match StaticGen.")
             syg_stg = adsys.StaticGen.find_idx(keys='bus',
@@ -172,7 +182,7 @@ def to_andes(system, setup=True, addfile=None,
                                               allow_none=True, default=None)
             adsys.DG.set(src='gen', idx=dg_idx, attr='v', value=dg_stg)
 
-        # c. SynGen Vn with Bus Vn
+        # generator voltage
         syg_vn = adsys.SynGen.get(src='Vn', idx=syg_idx, attr='v')
         bus_vn = adsys.Bus.get(src='Vn', idx=syg_bus, attr='v')
         if not np.equal(syg_vn, bus_vn).all():
