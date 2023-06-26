@@ -4,6 +4,7 @@ Interface with ANDES
 
 import os
 import logging
+from collections import OrderedDict, Counter
 
 from andes.shared import pd, np
 from andes.utils.misc import elapsed
@@ -56,6 +57,10 @@ def to_andes(system, setup=True, addfile=None,
     >>> sa = sp.to_andes(setup=False,
     ...                  addfile=andes.get_case('ieee14/ieee14_wt3.xlsx'),
     ...                  overwrite=True, no_keep=True, no_output=True)
+
+    Notes
+    -----
+    1. Power flow models in the addfile will be skipped and only dynamic models will be used.
     """
     t0, _ = elapsed()
     andes_file = system.files.name + '.json'
@@ -78,28 +83,32 @@ def to_andes(system, setup=True, addfile=None,
     if addfile:
         t, _ = elapsed()
 
-        # 1. parse addfile
-        adsys = _parse_addfile(adsys=adsys, addfile=addfile)
-        # 2. consistency check
-        adsys = _check_addfile(adsys=adsys, amsys=system)
+        # --- parse addfile ---
+        adsys = _parse_addfile(adsys=adsys, amsys=system, addfile=addfile)
 
         _, s = elapsed(t)
         logger.info('Addfile parsed in %s.', s)
 
+    # finalize
+    system.dyn = Dynamic(amsys=system, adsys=adsys)
     if setup:
         adsys.setup()
-
-    t0, _ = elapsed()
-    system.dyn = Dynamic(amsys=system, adsys=adsys)
-    system.dyn.link_andes(adsys=adsys)
-    _, s = elapsed(t0)
-    logger.info(f'AMS system <{hex(id(system))}> link to ANDES system <{hex(id(adsys))}> in %s.', s)
+        system.dyn.link_andes(adsys=adsys)
     return adsys
 
 
-def _parse_addfile(adsys, addfile):
+def _parse_addfile(adsys, amsys, addfile):
     """
     Parse the addfile for ANDES dynamic file.
+
+    Parameters
+    ----------
+    adsys : andes.system.System
+        The ANDES system instance.
+    amsys : ams.system.System
+        The AMS system instance.
+    addfile : str
+        The additional file to be converted to ANDES dynamic mdoels.
     """
     # guess addfile format
     add_format = None
@@ -110,125 +119,117 @@ def _parse_addfile(adsys, addfile):
             logger.debug('Addfile format guessed as %s.', key)
             break
 
-    # Try parsing the addfile
-    logger.info('Parsing additional file "%s"...', addfile)
-    # FIXME: hard-coded list of power flow models
-    pflow_mdl = ['Bus', 'PQ', 'PV', 'Slack', 'Shunt', 'Line', 'Area']
-    if key == 'xlsx':
-        reader = pd.ExcelFile(addfile)
-
-        # FIXME: improve this part to better connect with AMS file
-        common_elements = set(reader.sheet_names) & set(pflow_mdl)
-        if common_elements:
-            logger.warning('Power flow models exist in the addfile. Only dynamic models will be kept.')
-        mdl_to_keep = list(set(reader.sheet_names) - set(pflow_mdl))
-        df_models = pd.read_excel(addfile,
-                                  sheet_name=mdl_to_keep,
-                                  index_col=0,
-                                  engine='openpyxl',
-                                  )
-
-        for name, df in df_models.items():
-            # drop rows that all nan
-            df.dropna(axis=0, how='all', inplace=True)
-            for row in df.to_dict(orient='records'):
-                adsys.add(name, row)
-
-        # --- for debugging ---
-        adsys.df_in = df_models
-
-    else:
-        logger.warning('Addfile format "%s" is not supported yet.', add_format)
+    if key != 'xlsx':
+        logger.error('Addfile format "%s" is not supported yet.', add_format)
         # FIXME: xlsx input file with dyr addfile result into KeyError: 'Toggle'
         # add_parser = importlib.import_module('andes.io.' + add_format)
         # if not add_parser.read_add(system, addfile):
         #     logger.error('Error parsing addfile "%s" with %s parser.', addfile, add_format)
+        return adsys
 
-    return adsys
+    # Try parsing the addfile
+    logger.info('Parsing additional file "%s"...', addfile)
+    # FIXME: hard-coded list of power flow models
+    # FIXME: this might be a problem in the future once we add more models
+    # FIXME: find a better way to handle this, e.g. REGCV1, or ESD1
+    pflow_mdl = ['Bus', 'PQ', 'PV', 'Slack', 'Shunt', 'Line', 'Area']
+    idx_map = OrderedDict([])
 
+    reader = pd.ExcelFile(addfile)
+    common_elements = set(reader.sheet_names) & set(pflow_mdl)
+    if common_elements:
+        logger.warning('Power flow models exist in the addfile. Only dynamic models will be used.')
 
-def _check_addfile(adsys, amsys):
-    """
-    Check the consistency of the addfile with the ANDES system.
+    pflow_df_models = pd.read_excel(addfile,
+                                    sheet_name=pflow_mdl,
+                                    index_col=0,
+                                    engine='openpyxl',
+                                    )
+    # drop rows that all nan
+    for name, df in pflow_df_models.items():
+        df.dropna(axis=0, how='all', inplace=True)
 
-    Parameters
-    ----------
-    adsys : andes.system.System
-        The ANDES system.
-    amsys : ams.system.System
-        The AMS system.
-    """
-    # a. line
-    if adsys.Line.n != amsys.Line.n:
-        adsys_trans = adsys.Line.get(src='trans', attr='v', idx=adsys.Line.idx.v)
-        amsys_trans = amsys.Line.get(src='trans', attr='v', idx=adsys.Line.idx.v)
-        zeros_eq = np.count_nonzero(adsys_trans == 0) == np.count_nonzero(amsys_trans == 0)
-        ones_eq = np.count_nonzero(adsys_trans == 1) == np.count_nonzero(amsys_trans == 1)
-        if zeros_eq and ones_eq:
-            logger.warning('There is a <Line> shape mismatch betwen addfile and AMS system, unknown error might occur.')
-    else:
-        pass
-        # check idx
-        ad_line_idx = set(adsys.Line.idx.v)
-        am_line_idx = set(amsys.Line.idx.v)
-        if ad_line_idx > am_line_idx:
-            logger.warning('There is a <Line> idx mismatch betwen addfile and AMS system, unknown error might occur.')
+    # collect idx_map if difference exists
+    for name, df in pflow_df_models.items():
+        am_idx = amsys.models[name].idx.v
+        ad_idx = df['idx'].values
+        if set(am_idx) != set(ad_idx):
+            idx_map[name] = dict(zip(ad_idx, am_idx))
 
-    # b. bus
+    # --- dynamic models to be added ---
+    mdl_to_keep = list(set(reader.sheet_names) - set(pflow_mdl))
+    mdl_to_keep.sort(key=str.lower)
+    df_models = pd.read_excel(addfile,
+                              sheet_name=mdl_to_keep,
+                              index_col=0,
+                              engine='openpyxl',
+                              )
 
-    # c. generator
-    stg_idx = adsys.StaticGen.find_idx(keys='bus',
-                                       values=adsys.Bus.idx.v,
-                                       allow_none=True, default=None)
-    stg_idx = [x for x in stg_idx if x is not None]
+    # adjust models index
+    for name, df in df_models.items():
+        try:
+            mdl = adsys.models[name]
+        except KeyError:
+            mdl = adsys.model_aliases[name]
+        # skip if no idx_params
+        if len(mdl.idx_params) == 0:
+            continue
+        for idxn, idxp in mdl.idx_params.items():
+            if idxp.model is None:  # make a guess if no model is specified
+                mdl_guess = idxn.capitalize()
+                if mdl_guess not in adsys.models.keys():
+                    typical_map = {'rego': 'RenGovernor',
+                                   'ree': 'RenExciter',
+                                   'rea': 'RenAerodynamics',
+                                   'rep': 'RenPitch',
+                                   'busf': 'BusFreq',
+                                   'zone': 'Region',
+                                   'gen': 'StaticGen',
+                                   'pq': 'PQ', }
+                    try:
+                        mdl_guess = typical_map[idxp.name]
+                    except KeyError:  # set the most frequent string as the model name
+                        split_list = []
+                        for item in df[idxn].values:
+                            try:
+                                split_list.append(item.split('_'))
+                                # Flatten the nested list and filter non-numerical strings
+                                flattened_list = [item for sublist in split_list for item in sublist
+                                                  if not isinstance(item, int)]
+                                # Count the occurrences of non-numerical strings
+                                string_counter = Counter(flattened_list)
+                                # Find the most common non-numerical string
+                                mdl_guess = string_counter.most_common(1)[0][0]
+                            except AttributeError:
+                                logger.error(f'Failed to parse IdxParam {name}.{idxn}.')
+                                continue
+            else:
+                mdl_guess = idxp.model
+            if mdl_guess in adsys.groups.keys():
+                grp_idx = {}
+                for mname, mdl in adsys.groups[mdl_guess].models.items():
+                    # add group index to index map
+                    if mname in idx_map.keys():
+                        grp_idx.update(idx_map[mname])
+                if len(grp_idx) == 0:
+                    continue  # no index consistency issue, skip
+                idx_map[mdl_guess] = grp_idx
+            if mdl_guess not in idx_map.keys():
+                continue  # no index consistency issue, skip
+            else:
+                df[idxn] = df[idxn].replace(idx_map[mdl_guess])
+                logger.debug(f'Adjust {idxp.class_name} <{name}.{idxp.name}>')
 
-    syg_idx = adsys.SynGen.find_idx(keys='bus',
-                                    values=adsys.Bus.idx.v,
-                                    allow_none=True,
-                                    default=None)
-    syg_idx = [x for x in syg_idx if x is not None]
+    # parse addfile and add models to ANDES system
+    for name, df in df_models.items():
+        # drop rows that all nan
+        df.dropna(axis=0, how='all', inplace=True)
+        for row in df.to_dict(orient='records'):
+            adsys.add(name, row)
 
-    rg_idx = adsys.RenGen.find_idx(keys='bus',
-                                   values=adsys.Bus.idx.v,
-                                   allow_none=True, default=None)
-    rg_idx = [x for x in rg_idx if x is not None]
+    # --- for debugging ---
+    adsys.df_in = df_models
 
-    dg_idx = adsys.DG.find_idx(keys='bus',
-                               values=adsys.Bus.idx.v,
-                               allow_none=True, default=None)
-    dg_idx = [x for x in dg_idx if x is not None]
-
-    syg_bus = adsys.SynGen.get(src='bus', idx=syg_idx, attr='v')
-    rg_bus = adsys.RenGen.get(src='bus', idx=rg_idx, attr='v')
-    dg_bus = adsys.DG.get(src='bus', idx=dg_idx, attr='v')
-
-    # generator idx
-    if any(item not in stg_idx for item in syg_idx):
-        logger.debug("Correct SynGen idx to match StaticGen.")
-        syg_stg = adsys.StaticGen.find_idx(keys='bus',
-                                           values=syg_bus,
-                                           allow_none=True, default=None)
-        adsys.SynGen.set(src='gen', idx=syg_idx, attr='v', value=syg_stg)
-    if any(item not in stg_idx for item in rg_idx):
-        logger.debug("Correct RenGen idx to match StaticGen.")
-        rg_stg = adsys.StaticGen.find_idx(keys='bus',
-                                          values=rg_bus,
-                                          allow_none=True, default=None)
-        adsys.RenGen.set(src='gen', idx=rg_idx, attr='v', value=rg_stg)
-    if any(item not in stg_idx for item in dg_idx):
-        logger.debug("Correct DG idx to match StaticGen.")
-        dg_stg = adsys.StaticGen.find_idx(keys='bus', values=dg_bus,
-                                          allow_none=True, default=None)
-        adsys.DG.set(src='gen', idx=dg_idx, attr='v', value=dg_stg)
-
-    # generator voltage
-    syg_vn = adsys.SynGen.get(src='Vn', idx=syg_idx, attr='v')
-    bus_vn = adsys.Bus.get(src='Vn', idx=syg_bus, attr='v')
-    if not np.equal(syg_vn, bus_vn).all():
-        adsys.SynGen.set(src='Vn', idx=syg_idx, attr='v', value=bus_vn)
-        logger.warning('Correct SynGen Vn to match Bus Vn.')
-
-    # NOTE: RenGen and DG do not have Vn
     return adsys
 
 
@@ -287,7 +288,12 @@ class Dynamic:
             The ANDES system instance.
         """
         self.adsys = adsys
-        self.make_link()
+        if self.adsys.is_setup:
+            self.make_link()
+            logger.warning(f'ANDES system {hex(id(adsys))} is linked to the AMS system {hex(id(self.amsys))}.')
+        else:
+            msg = 'ANDES system is not setup, you can call ``dyn.link_andes()`` later on to link it.'
+            logger.warning(msg)
 
     @property
     def is_tds(self):
