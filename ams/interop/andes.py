@@ -84,7 +84,7 @@ def to_andes(system, setup=True, addfile=None,
         t, _ = elapsed()
 
         # --- parse addfile ---
-        adsys = _parse_addfile(adsys=adsys, amsys=system, addfile=addfile)
+        adsys = parse_addfile(adsys=adsys, amsys=system, addfile=addfile)
 
         _, s = elapsed(t)
         logger.info('Addfile parsed in %s.', s)
@@ -97,7 +97,7 @@ def to_andes(system, setup=True, addfile=None,
     return adsys
 
 
-def _parse_addfile(adsys, amsys, addfile):
+def parse_addfile(adsys, amsys, addfile):
     """
     Parse the addfile for ANDES dynamic file.
 
@@ -109,6 +109,11 @@ def _parse_addfile(adsys, amsys, addfile):
         The AMS system instance.
     addfile : str
         The additional file to be converted to ANDES dynamic mdoels.
+
+    Returns
+    -------
+    adsys : andes.system.System
+        The ANDES system instance with dynamic models added.
     """
     # guess addfile format
     add_format = None
