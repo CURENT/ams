@@ -79,79 +79,9 @@ def to_andes(system, setup=True, addfile=None,
         t, _ = elapsed()
 
         # 1. parse addfile
-        addsys = _parse_addfile(adsys=adsys, addfile=addfile)
+        adsys = _parse_addfile(adsys=adsys, addfile=addfile)
         # 2. consistency check
-        # a. line
-        if adsys.Line.n != system.Line.n:
-            adsys_trans = adsys.Line.get(src='trans', attr='v', idx=adsys.Line.idx.v)
-            amsys_trans = system.Line.get(src='trans', attr='v', idx=adsys.Line.idx.v)
-            zeros_eq = np.count_nonzero(adsys_trans == 0) == np.count_nonzero(amsys_trans == 0)
-            ones_eq = np.count_nonzero(adsys_trans == 1) == np.count_nonzero(amsys_trans == 1)
-            if zeros_eq and ones_eq:
-                logger.warning('There is a <Line> shape mismatch betwen addfile and AMS system, unknown error might occur.')
-        else:
-            pass
-            # check idx
-            ad_line_idx = set(adsys.Line.idx.v)
-            am_line_idx = set(system.Line.idx.v)
-            if ad_line_idx > am_line_idx:
-                logger.warning('There is a <Line> idx mismatch betwen addfile and AMS system, unknown error might occur.')
-
-        # b. bus
-
-        # c. generator
-        stg_idx = adsys.StaticGen.find_idx(keys='bus',
-                                           values=adsys.Bus.idx.v,
-                                           allow_none=True, default=None)
-        stg_idx = [x for x in stg_idx if x is not None]
-
-        syg_idx = adsys.SynGen.find_idx(keys='bus',
-                                        values=adsys.Bus.idx.v,
-                                        allow_none=True,
-                                        default=None)
-        syg_idx = [x for x in syg_idx if x is not None]
-
-        rg_idx = adsys.RenGen.find_idx(keys='bus',
-                                       values=adsys.Bus.idx.v,
-                                       allow_none=True, default=None)
-        rg_idx = [x for x in rg_idx if x is not None]
-
-        dg_idx = adsys.DG.find_idx(keys='bus',
-                                   values=adsys.Bus.idx.v,
-                                   allow_none=True, default=None)
-        dg_idx = [x for x in dg_idx if x is not None]
-
-        syg_bus = adsys.SynGen.get(src='bus', idx=syg_idx, attr='v')
-        rg_bus = adsys.RenGen.get(src='bus', idx=rg_idx, attr='v')
-        dg_bus = adsys.DG.get(src='bus', idx=dg_idx, attr='v')
-
-        # generator idx
-        if any(item not in stg_idx for item in syg_idx):
-            logger.debug("Correct SynGen idx to match StaticGen.")
-            syg_stg = adsys.StaticGen.find_idx(keys='bus',
-                                               values=syg_bus,
-                                               allow_none=True, default=None)
-            adsys.SynGen.set(src='gen', idx=syg_idx, attr='v', value=syg_stg)
-        if any(item not in stg_idx for item in rg_idx):
-            logger.debug("Correct RenGen idx to match StaticGen.")
-            rg_stg = adsys.StaticGen.find_idx(keys='bus',
-                                              values=rg_bus,
-                                              allow_none=True, default=None)
-            adsys.RenGen.set(src='gen', idx=rg_idx, attr='v', value=rg_stg)
-        if any(item not in stg_idx for item in dg_idx):
-            logger.debug("Correct DG idx to match StaticGen.")
-            dg_stg = adsys.StaticGen.find_idx(keys='bus', values=dg_bus,
-                                              allow_none=True, default=None)
-            adsys.DG.set(src='gen', idx=dg_idx, attr='v', value=dg_stg)
-
-        # generator voltage
-        syg_vn = adsys.SynGen.get(src='Vn', idx=syg_idx, attr='v')
-        bus_vn = adsys.Bus.get(src='Vn', idx=syg_bus, attr='v')
-        if not np.equal(syg_vn, bus_vn).all():
-            adsys.SynGen.set(src='Vn', idx=syg_idx, attr='v', value=bus_vn)
-            logger.warning('Correct SynGen Vn to match Bus Vn.')
-
-        # NOTE: RenGen and DG do not have Vn
+        adsys = _check_addfile(adsys=adsys, amsys=system)
 
         _, s = elapsed(t)
         logger.info('Addfile parsed in %s.', s)
@@ -214,6 +144,91 @@ def _parse_addfile(adsys, addfile):
         # if not add_parser.read_add(system, addfile):
         #     logger.error('Error parsing addfile "%s" with %s parser.', addfile, add_format)
 
+    return adsys
+
+
+def _check_addfile(adsys, amsys):
+    """
+    Check the consistency of the addfile with the ANDES system.
+
+    Parameters
+    ----------
+    adsys : andes.system.System
+        The ANDES system.
+    amsys : ams.system.System
+        The AMS system.
+    """
+    # a. line
+    if adsys.Line.n != amsys.Line.n:
+        adsys_trans = adsys.Line.get(src='trans', attr='v', idx=adsys.Line.idx.v)
+        amsys_trans = amsys.Line.get(src='trans', attr='v', idx=adsys.Line.idx.v)
+        zeros_eq = np.count_nonzero(adsys_trans == 0) == np.count_nonzero(amsys_trans == 0)
+        ones_eq = np.count_nonzero(adsys_trans == 1) == np.count_nonzero(amsys_trans == 1)
+        if zeros_eq and ones_eq:
+            logger.warning('There is a <Line> shape mismatch betwen addfile and AMS system, unknown error might occur.')
+    else:
+        pass
+        # check idx
+        ad_line_idx = set(adsys.Line.idx.v)
+        am_line_idx = set(amsys.Line.idx.v)
+        if ad_line_idx > am_line_idx:
+            logger.warning('There is a <Line> idx mismatch betwen addfile and AMS system, unknown error might occur.')
+
+    # b. bus
+
+    # c. generator
+    stg_idx = adsys.StaticGen.find_idx(keys='bus',
+                                       values=adsys.Bus.idx.v,
+                                       allow_none=True, default=None)
+    stg_idx = [x for x in stg_idx if x is not None]
+
+    syg_idx = adsys.SynGen.find_idx(keys='bus',
+                                    values=adsys.Bus.idx.v,
+                                    allow_none=True,
+                                    default=None)
+    syg_idx = [x for x in syg_idx if x is not None]
+
+    rg_idx = adsys.RenGen.find_idx(keys='bus',
+                                   values=adsys.Bus.idx.v,
+                                   allow_none=True, default=None)
+    rg_idx = [x for x in rg_idx if x is not None]
+
+    dg_idx = adsys.DG.find_idx(keys='bus',
+                               values=adsys.Bus.idx.v,
+                               allow_none=True, default=None)
+    dg_idx = [x for x in dg_idx if x is not None]
+
+    syg_bus = adsys.SynGen.get(src='bus', idx=syg_idx, attr='v')
+    rg_bus = adsys.RenGen.get(src='bus', idx=rg_idx, attr='v')
+    dg_bus = adsys.DG.get(src='bus', idx=dg_idx, attr='v')
+
+    # generator idx
+    if any(item not in stg_idx for item in syg_idx):
+        logger.debug("Correct SynGen idx to match StaticGen.")
+        syg_stg = adsys.StaticGen.find_idx(keys='bus',
+                                           values=syg_bus,
+                                           allow_none=True, default=None)
+        adsys.SynGen.set(src='gen', idx=syg_idx, attr='v', value=syg_stg)
+    if any(item not in stg_idx for item in rg_idx):
+        logger.debug("Correct RenGen idx to match StaticGen.")
+        rg_stg = adsys.StaticGen.find_idx(keys='bus',
+                                          values=rg_bus,
+                                          allow_none=True, default=None)
+        adsys.RenGen.set(src='gen', idx=rg_idx, attr='v', value=rg_stg)
+    if any(item not in stg_idx for item in dg_idx):
+        logger.debug("Correct DG idx to match StaticGen.")
+        dg_stg = adsys.StaticGen.find_idx(keys='bus', values=dg_bus,
+                                          allow_none=True, default=None)
+        adsys.DG.set(src='gen', idx=dg_idx, attr='v', value=dg_stg)
+
+    # generator voltage
+    syg_vn = adsys.SynGen.get(src='Vn', idx=syg_idx, attr='v')
+    bus_vn = adsys.Bus.get(src='Vn', idx=syg_bus, attr='v')
+    if not np.equal(syg_vn, bus_vn).all():
+        adsys.SynGen.set(src='Vn', idx=syg_idx, attr='v', value=bus_vn)
+        logger.warning('Correct SynGen Vn to match Bus Vn.')
+
+    # NOTE: RenGen and DG do not have Vn
     return adsys
 
 
