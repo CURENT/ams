@@ -79,7 +79,7 @@ class RoutineModel:
         # TODO: check exit_code of gurobipy or any other similiar solvers
         self.exit_code = 0  # exit code of the routine;
 
-        self.is_ac = False  # whether the routine is smooth
+        self.is_ac = False  # whether the routine is converted to AC
 
     @property
     def class_name(self):

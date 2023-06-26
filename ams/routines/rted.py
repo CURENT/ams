@@ -174,7 +174,7 @@ class RTED(RTEDData, RTEDModel):
 
     RTED has mapping dicts to interface with ANDES.
 
-    RTED routine adds a function ``smooth`` to do the conversion using ACOPF, otherwise the
+    RTED routine adds a function ``dc2ac`` to do the conversion using ACOPF, otherwise the
     dynamic simulation might fail due to gap between DC-based dispatch results and AC-based dynamic
     initialization.
     The function will add a Var ``aBus`` copied from solved ACOPF to fit the ANDES interface.
@@ -209,7 +209,7 @@ class RTED(RTEDData, RTEDModel):
         Overload ``dc2ac`` method in ``DCOPF``.
         """
         if self.exec_time == 0 or self.exit_code != 0:
-            logger.warning('RTED is not executed successfully, no smoothing.')
+            logger.warning('RTED is not executed successfully, quit conversion.')
             return False
         # set pru and prd into pmin and pmax
         pr_idx = self.pru.get_idx()

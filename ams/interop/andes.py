@@ -46,7 +46,7 @@ def to_andes(system, setup=True, addfile=None,
 
     Returns
     -------
-    andes : andes.system.System
+    adsys : andes.system.System
         The converted ANDES system.
 
     Examples
@@ -61,6 +61,8 @@ def to_andes(system, setup=True, addfile=None,
     Notes
     -----
     1. Power flow models in the addfile will be skipped and only dynamic models will be used.
+    2. The addfile format is guessed based on the file extension. Currently only ``xlsx`` is supported.
+    3. Index in the addfile is automatically adjusted when necessary.
     """
     t0, _ = elapsed()
     andes_file = system.files.name + '.json'
@@ -269,7 +271,7 @@ class Dynamic:
     ...                  addfile=andes.get_case('ieee14/ieee14_wt3.xlsx'),
     ...                  overwrite=True, keep=False, no_output=True)
     >>> sp.RTED.run()
-    >>> sp.RTED.smooth()
+    >>> sp.RTED.dc2ac()
     >>> sp.dyn.send()  # send RTED results to ANDES system
     >>> sa.PFlow.run()
     >>> sp.TDS.run()
