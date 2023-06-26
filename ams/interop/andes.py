@@ -75,53 +75,11 @@ def to_andes(system, setup=True, addfile=None,
         os.remove(andes_file)
 
     # 1. additonal file for dynamic simulation
-    add_format = None
     if addfile:
         t, _ = elapsed()
 
-        # guess addfile format
-        _, add_ext = os.path.splitext(addfile)
-        for key, val in input_formats.items():
-            if add_ext[1:] in val:
-                add_format = key
-                logger.debug('Addfile format guessed as %s.', key)
-                break
-
-        # Try parsing the addfile
-        logger.info('Parsing additional file "%s"...', addfile)
-        # FIXME: hard-coded list of power flow models
-        pflow_mdl = ['Bus', 'PQ', 'PV', 'Slack', 'Shunt', 'Line', 'Area']
-        if key == 'xlsx':
-            # TODO: check if power flow devices exist in the addfile
-            reader = pd.ExcelFile(addfile)
-
-            # FIXME: improve this part to better connect with AMS file
-            common_elements = set(reader.sheet_names) & set(pflow_mdl)
-            if common_elements:
-                logger.warning('Power flow models exist in the addfile. Only dynamic models will be kept.')
-            mdl_to_keep = list(set(reader.sheet_names) - set(pflow_mdl))
-            df_models = pd.read_excel(addfile,
-                                      sheet_name=mdl_to_keep,
-                                      index_col=0,
-                                      engine='openpyxl',
-                                      )
-
-            for name, df in df_models.items():
-                # drop rows that all nan
-                df.dropna(axis=0, how='all', inplace=True)
-                for row in df.to_dict(orient='records'):
-                    adsys.add(name, row)
-
-            # --- for debugging ---
-            adsys.df_in = df_models
-
-        else:
-            logger.warning('Addfile format "%s" is not supported yet.', add_format)
-            # FIXME: xlsx input file with dyr addfile result into KeyError: 'Toggle'
-            # add_parser = importlib.import_module('andes.io.' + add_format)
-            # if not add_parser.read_add(system, addfile):
-            #     logger.error('Error parsing addfile "%s" with %s parser.', addfile, add_format)
-
+        # 1. parse addfile
+        addsys = _parse_addfile(adsys=adsys, addfile=addfile)
         # 2. consistency check
         # a. line
         if adsys.Line.n != system.Line.n:
@@ -130,12 +88,14 @@ def to_andes(system, setup=True, addfile=None,
             zeros_eq = np.count_nonzero(adsys_trans == 0) == np.count_nonzero(amsys_trans == 0)
             ones_eq = np.count_nonzero(adsys_trans == 1) == np.count_nonzero(amsys_trans == 1)
             if zeros_eq and ones_eq:
-                logger.warning('There is a <Line> mismatch betwen addfile and AMS system, error might occur in conversion.')
+                logger.warning('There is a <Line> shape mismatch betwen addfile and AMS system, unknown error might occur.')
         else:
             pass
             # check idx
-            ad_line_idx = adsys.Line.idx.v
-            am_line_idx = system.Line.idx.v
+            ad_line_idx = set(adsys.Line.idx.v)
+            am_line_idx = set(system.Line.idx.v)
+            if ad_line_idx > am_line_idx:
+                logger.warning('There is a <Line> idx mismatch betwen addfile and AMS system, unknown error might occur.')
 
         # b. bus
 
@@ -204,6 +164,56 @@ def to_andes(system, setup=True, addfile=None,
     system.dyn.link_andes(adsys=adsys)
     _, s = elapsed(t0)
     logger.info(f'AMS system <{hex(id(system))}> link to ANDES system <{hex(id(adsys))}> in %s.', s)
+    return adsys
+
+
+def _parse_addfile(adsys, addfile):
+    """
+    Parse the addfile for ANDES dynamic file.
+    """
+    # guess addfile format
+    add_format = None
+    _, add_ext = os.path.splitext(addfile)
+    for key, val in input_formats.items():
+        if add_ext[1:] in val:
+            add_format = key
+            logger.debug('Addfile format guessed as %s.', key)
+            break
+
+    # Try parsing the addfile
+    logger.info('Parsing additional file "%s"...', addfile)
+    # FIXME: hard-coded list of power flow models
+    pflow_mdl = ['Bus', 'PQ', 'PV', 'Slack', 'Shunt', 'Line', 'Area']
+    if key == 'xlsx':
+        reader = pd.ExcelFile(addfile)
+
+        # FIXME: improve this part to better connect with AMS file
+        common_elements = set(reader.sheet_names) & set(pflow_mdl)
+        if common_elements:
+            logger.warning('Power flow models exist in the addfile. Only dynamic models will be kept.')
+        mdl_to_keep = list(set(reader.sheet_names) - set(pflow_mdl))
+        df_models = pd.read_excel(addfile,
+                                  sheet_name=mdl_to_keep,
+                                  index_col=0,
+                                  engine='openpyxl',
+                                  )
+
+        for name, df in df_models.items():
+            # drop rows that all nan
+            df.dropna(axis=0, how='all', inplace=True)
+            for row in df.to_dict(orient='records'):
+                adsys.add(name, row)
+
+        # --- for debugging ---
+        adsys.df_in = df_models
+
+    else:
+        logger.warning('Addfile format "%s" is not supported yet.', add_format)
+        # FIXME: xlsx input file with dyr addfile result into KeyError: 'Toggle'
+        # add_parser = importlib.import_module('andes.io.' + add_format)
+        # if not add_parser.read_add(system, addfile):
+        #     logger.error('Error parsing addfile "%s" with %s parser.', addfile, add_format)
+
     return adsys
 
 
@@ -491,7 +501,7 @@ class Dynamic:
                             # b. others, if any
                             ams_var = getattr(sp.recent, ams_vname)
                             v_ams = sp.recent.get(src=ams_vname, attr='v',
-                                                idx=ams_var.get_idx())
+                                                  idx=ams_var.get_idx())
                             mdl_andes.set(src=andes_pname, idx=idx, attr='v', value=v_ams)
                     else:
                         pass
