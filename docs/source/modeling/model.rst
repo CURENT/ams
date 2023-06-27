@@ -31,7 +31,7 @@ exchange data with dynamic simulator.
 
       Algeb
 
-:: note
+.. note::
 
     The ``Algeb`` class here is not directly used for optimization purpose, we will discuss
     its role further in the Routine section.
@@ -55,7 +55,7 @@ minor modifications.
 Examples
 ------------
 
-Following two examples show how to define a device model in AMS.
+The following two examples demonstrate how to define a device model in AMS.
 
 
 PV model
@@ -90,7 +90,7 @@ we hold the parameters in a separate class ``GenParam``.
                                 unit='p.u.',
                                 )
 
-Second, we define the ``PVModel`` model with three algebraic variables ``ud``, ``p``, and ``q``.
+Second, we define the ``PVModel`` model with two algebraic variables and a external parameter.
 
 .. code-block:: python
 
