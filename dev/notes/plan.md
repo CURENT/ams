@@ -1,6 +1,10 @@
-# Development plan
+# Development Roadmap
 
 ## v1.0
+
+### v1.2
+
+* [Energy management system](./ems.md)
 
 ### v1.1
 

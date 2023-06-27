@@ -1,4 +1,4 @@
-# Energy management system design
+# Energy management system
 
 ## Overview
 
@@ -25,6 +25,7 @@ The design of a module parallel to ANDES/AMS system module can avoid making an A
 One system corresponds with one EMS. The EMS should be initialized with a given ANDES/AMS system, or both but with consistency check.
 
 ## Pseudo code
+
 ```python
 class EMS:
     """

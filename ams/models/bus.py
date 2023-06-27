@@ -14,11 +14,16 @@ class Bus(BusData, Model):
     """
     AC Bus model.
     """
+
     def __init__(self, system, config):
         BusData.__init__(self)
         Model.__init__(self, system, config)
 
         self.group = 'ACTopology'
+        # NOTE: in ANDES, self.zone is defined to trace a non-existing model "Region"
+        # in AMS, model "Zone" is developed,
+        # so we need to change the model name of IdxParam self.zone
+        self.zone.model = 'Region'
 
         self.a = Algeb(name='a',
                        tex_name=r'\theta',

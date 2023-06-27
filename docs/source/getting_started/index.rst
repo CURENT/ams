@@ -7,7 +7,7 @@
 
    <p style="color: #00746F; font-variant: small-caps; font-weight: bold;
    margin-bottom: 2em">
-   Python Library for Power System Dispatch Modeling and Dispatch-Dynamic Co-Simulation</p>
+   Python Library for Flexible Dispatch Modeling and Dispatch-Dynamic Co-Simulation</p>
    </embed>
 
 .. _getting-started:
@@ -23,9 +23,13 @@ Getting started
     overview
     install
     formats/index
+    testcase
 
 Quick install
 =============
+
+**Before AGVis comes to conda-forge and PyPI, you can install it from source,**
+check the guide in :ref:`Develop Install`.
 
 .. panels::
     :card: + install-card
@@ -33,7 +37,6 @@ Quick install
 
     Working with conda?
     ^^^^^^^^^^^^^^^^^^^
-
     AMS will available on conda-forge and can be installed with
     Anaconda, Miniconda, and Mambaforge:
 

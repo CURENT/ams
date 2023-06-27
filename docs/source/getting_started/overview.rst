@@ -4,10 +4,13 @@
 Package Overview
 ================
 
-AMS is an open-source packages for dispatch modeling and co-simulation with dynanic.
+AMS is an open-source packages for flexible dispatch modeling and co-simulation with
+the in-house dynanic simulation engine `ANDES <https://github.com/curent/andes>`_.
 
 AMS is currently under active development. To get involved,
 
+* Report issues in the
+  `GitHub issues page <https://github.com/CURENT/ams/issues>`_
 * Learn version control with
   `the command-line git <https://git-scm.com/docs/gittutorial>`_ or
   `GitHub Desktop <https://help.github.com/en/desktop/getting-started-with-github-desktop>`_

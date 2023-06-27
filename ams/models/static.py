@@ -1,6 +1,6 @@
 from collections import OrderedDict  # NOQA
 
-from andes.core.param import NumParam
+from andes.core.param import NumParam, ExtParam
 from andes.models.static.pq import PQData  # NOQA
 from andes.models.static.pv import PVData  # NOQA
 from andes.models.static.slack import SlackData  # NOQA
@@ -57,7 +57,7 @@ class PQ(PQData, Model):
                               )
 
 
-class GENADD:
+class GenParam:
     """
     Additional parameters for static generators.
 
@@ -107,21 +107,22 @@ class GENADD:
                            unit='p.u./min')
         self.apf = NumParam(default=0.0,
                             info="area participation factor",
-                            tex_name=r'apf')
+                            tex_name=r'a_{pf}')
+        self.pg0 = NumParam(default=0.0,
+                            info='real power start point',
+                            tex_name=r'p_{g0}',
+                            unit='p.u.',
+                            )
 
 
-class PV(PVData, GENADD, Model):
+class PVModel(Model):
     """
-    PV generator model.
-
-    TODO: implement type conversion in config
+    PV generator model (power flow) with q limit and PV-PQ conversion.
     """
 
-    def __init__(self, system, config):
-        PVData.__init__(self)
-        GENADD.__init__(self)
-        Model.__init__(self, system, config)
-        self.group = 'Gen'
+    def __init__(self, system=None, config=None):
+        super().__init__(system, config)
+        self.group = 'StaticGen'
 
         self.config.add(OrderedDict((('pv2pq', 0),
                                      ('npv2pq', 0),
@@ -151,24 +152,15 @@ class PV(PVData, GENADD, Model):
                               err_tol=r"\epsilon_{tol}"
                               )
 
-        self.q = Algeb(info='actual reactive power generation',
-                       unit='p.u.',
-                       tex_name='q',
-                       name='q',
-                       )
+        self.zone = ExtParam(model='Bus', src='zone', indexer=self.bus, export=False,
+                            info='Retrieved zone idx', vtype=str, default=None,
+                            )
 
-
-class Slack(SlackData, GENADD, Model):
-    """
-    Slack generator model.
-    """
-
-    def __init__(self, system=None, config=None):
-        SlackData.__init__(self)
-        GENADD.__init__(self)
-        Model.__init__(self, system, config)
-        self.group = 'Gen'
-
+        self.ud = Algeb(info='connection status decision',
+                        unit='bool',
+                        tex_name=r'u_d',
+                        name='ud',
+                        )
         self.p = Algeb(info='actual active power generation',
                        unit='p.u.',
                        tex_name='p',
@@ -180,14 +172,26 @@ class Slack(SlackData, GENADD, Model):
                        name='q',
                        )
 
-        self.config.add(OrderedDict((('av2pv', 0),
-                                     )))
-        self.config.add_extra("_help",
-                              av2pv="convert Slack to PV in PFlow at P limits",
-                              )
-        self.config.add_extra("_alt",
-                              av2pv=(0, 1),
-                              )
-        self.config.add_extra("_tex",
-                              av2pv="z_{av2pv}",
-                              )
+
+class PV(PVData, GenParam, PVModel):
+    """
+    PV generator model.
+
+    TODO: implement type conversion in config
+    """
+
+    def __init__(self, system, config):
+        PVData.__init__(self)
+        GenParam.__init__(self)
+        PVModel.__init__(self, system, config)
+
+
+class Slack(SlackData, GenParam, PVModel):
+    """
+    Slack generator model.
+    """
+
+    def __init__(self, system=None, config=None):
+        SlackData.__init__(self)
+        GenParam.__init__(self)
+        PVModel.__init__(self, system, config)

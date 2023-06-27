@@ -191,7 +191,7 @@ def mpc2system(mpc: dict, system) -> bool:
         system.Bus.name.v[:] = mpc['bus_name']
 
     gcost_idx = 0
-    gen_idx = system.Gen.find_idx(keys='bus', values=mpc['gen'][:, 0])
+    gen_idx = system.StaticGen.find_idx(keys='bus', values=mpc['gen'][:, 0])
     for data, gen in zip(mpc['gencost'], gen_idx):
         # NOTE: only type 2 costs are supported for now
         # type  startup shutdown	n	c2  c1  c0
@@ -202,9 +202,9 @@ def mpc2system(mpc: dict, system) -> bool:
         type = int(data[0])
         startup = data[1]
         shutdown = data[2]
-        c2 = data[4]
-        c1 = data[5]
-        c0 = data[6]
+        c2 = data[4] * base_mva ** 2
+        c1 = data[5] * base_mva
+        c0 = data[6] * base_mva
 
         system.add('GCost', gen=str(gen),
                    u=1, name=f'GCost_{gcost_idx}',
@@ -352,9 +352,9 @@ def system2mpc(system) -> dict:
         gencost[:, 1] = system.GCost.startup.v
         gencost[:, 2] = system.GCost.shutdown.v
         gencost[:, 3] = 3
-        gencost[:, 4] = system.GCost.c2.v
-        gencost[:, 5] = system.GCost.c1.v
-        gencost[:, 6] = system.GCost.c0.v
+        gencost[:, 4] = system.GCost.c2.v / base_mva / base_mva
+        gencost[:, 5] = system.GCost.c1.v / base_mva
+        gencost[:, 6] = system.GCost.c0.v / base_mva
 
     mpc['bus_name'] = np.array(system.Bus.name.v)
 
