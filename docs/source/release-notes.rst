@@ -9,11 +9,13 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v0.6.5 (2023-06-19)
+v0.6.5 (2023-06-27)
 -------------------
 
 - Update documentation with auto-generated model and routine reference
 - Add interface with ANDES ``ams.interop.andes``
+- Add routine RTED and example of RTED-TDS co-simulation
+- Draft development documentation
 
 v0.6.4 (2023-05-23)
 -------------------
