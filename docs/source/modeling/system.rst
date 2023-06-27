@@ -42,7 +42,7 @@ Optimization
 --------------------------------------------
 
 In AMS, the dispatch is formulated as `CVXPY <https://www.cvxpy.org/>`_
-optimization problem with Vars, Constraints, and Objectives.
+optimization problem with ``Vars``, ``Constraints``, and ``Objective``.
 The full API reference of them can be found in :py:mod:`ams.opt.Var`,
 :py:mod:`ams.opt.Constraint`, and :py:mod:`ams.opt.Objective`.
 
