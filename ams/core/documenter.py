@@ -226,13 +226,15 @@ class RDocumenter:
 
 
     def _var_doc(self, max_width=78, export='plain'):
+        # NOTE: this is for the optimization variables
+        # not the _var_doc for ANDES parameters
         # variable documentation
         if len(self.vars) == 0:
             return ''
 
         # prepare temporary lists
         names, units, class_names = list(), list(), list()
-        info = list()
+        properties, info = list(), list()
         units_rest = list()
 
         for p in self.vars.values():
@@ -243,11 +245,16 @@ class RDocumenter:
             units.append(f'{p.unit}' if p.unit else '')
             units_rest.append(f'*{p.unit}*' if p.unit else '')
 
-            # plist = []
-            # for key, val in p.property.items():
-            #     if val is True:
-            #         plist.append(key)
-            # properties.append(','.join(plist))
+            # collect properties
+            all_properties = ['nonneg', 'nonpos', 'complex', 'imag', 'symmetric',
+                              'diag', 'psd', 'nsd', 'hermitian', 'bool', 'integer',
+                              'pos', 'neg',
+                              ]
+            plist = []
+            for key, val in p.config.as_dict().items():
+                if val is True:
+                    plist.append(key)
+            properties.append(','.join(plist))
 
         # symbols based on output format
         if export == 'rest':
@@ -261,13 +268,13 @@ class RDocumenter:
         plain_dict = OrderedDict([('Name', names),
                                   ('Description', info),
                                   ('Unit', units),
-                                  ])
+                                  ('Properties', properties)])
 
         rest_dict = OrderedDict([('Name', names),
                                  ('Symbol', symbols),
                                  ('Description', info),
                                  ('Unit', units_rest),
-                                 ])
+                                 ('Properties', properties)])
 
         # convert to rows and export as table
         return make_doc_table(title=title,
