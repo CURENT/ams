@@ -5,7 +5,7 @@ This file is used to generate reStructuredText tables for Model and Routine refe
 import os
 import ams
 
-if not (os.path.isfile('modelref.rst') and os.path.isfile('rtnref.rst')):
+if not (os.path.isfile('modelref.rst') and os.path.isfile('configref.rst')):
 
     ss = ams.load(ams.get_case('ieee14/ieee14.xlsx'))
 
@@ -45,3 +45,17 @@ and view details.
     for group in ss.groups.values():
         with open(f'groupdoc/{group.class_name}.rst', 'w') as f:
             f.write(group.doc_all(export='rest'))
+
+    # # Config Reference Section
+
+    # out = ''
+    # out += '.. _configref:\n\n'
+    # out += '****************\n'
+    # out += 'Config reference\n'
+    # out += '****************\n'
+    # out += '\n'
+
+    # out += ss.config.doc(export='rest', target=True, symbol=False)
+
+    # for r in ss.routines.values():
+    #     out += r.config.doc(export='rest', target=True, symbol=False)

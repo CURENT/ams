@@ -41,7 +41,7 @@ Likewise, one can convert PSS/E files to AMS xlsx:
 
 .. code-block:: bash
 
-    ams run kundur.raw
+    ams run kundur.raw -c
 
 This will convert all models in the RAW files. 
 

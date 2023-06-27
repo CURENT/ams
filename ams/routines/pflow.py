@@ -8,112 +8,87 @@ import numpy as np
 
 from andes.shared import deg2rad
 
-from ams.routines.base import BaseRoutine
 from ams.solver.pypower.runpf import runpf, rundcpf
 
 from ams.io.pypower import system2ppc
+from ams.core.param import RParam
 
-from ams.utils import timer
+from ams.routines.dcpf import DCPFlowData, DCPFlowBase
+from ams.opt.omodel import Var, Constraint, Objective
 
 logger = logging.getLogger(__name__)
 
 
-class PFlow(BaseRoutine):
+class PFlowData(DCPFlowData):
+    """
+    AC Power Flow routine.
+    """
+
+    def __init__(self):
+        DCPFlowData.__init__(self)
+        self.qd = RParam(info='reactive power load in system base',
+                         name='qd',
+                         src='q0',
+                         tex_name=r'q_{d}',
+                         unit='p.u.',
+                         owner_name='PQ',
+                         )
+
+
+class PFlowModel(DCPFlowBase):
+    """
+    AC Power Flow model.
+    """
+
+    def __init__(self, system, config):
+        DCPFlowBase.__init__(self, system, config)
+        self.info = 'AC Power Flow'
+        self.type = 'PF'
+
+        # --- bus ---
+        self.aBus = Var(info='bus voltage angle',
+                           unit='rad',
+                           name='aBus',
+                           src='a',
+                           tex_name=r'a_{Bus}',
+                           owner_name='Bus',
+                           )
+        self.vBus = Var(info='bus voltage magnitude',
+                           unit='p.u.',
+                           name='vBus',
+                           src='v',
+                           tex_name=r'v_{Bus}',
+                           owner_name='Bus',
+                           )
+        # --- gen ---
+        self.pg = Var(info='active power generation',
+                         unit='p.u.',
+                         name='pg',
+                         src='p',
+                         tex_name=r'p_{g}',
+                         owner_name='StaticGen',
+                         )
+        self.qg = Var(info='reactive power generation',
+                         unit='p.u.',
+                         name='qg',
+                         src='q',
+                         tex_name=r'q_{g}',
+                         owner_name='StaticGen',
+                         )
+        # --- constraints ---
+        self.pb = Constraint(name='pb',
+                             info='power balance',
+                             e_str='sum(pd) - sum(pg)',
+                             type='eq',
+                             )
+        # TODO: AC power flow formulation
+
+
+class PFlow(PFlowData, PFlowModel):
     """
     AC Power Flow routine.
     """
 
     def __init__(self, system=None, config=None):
-        super().__init__(system, config)
-        # FIXME: temp solution, adapt to new routine later on
-        self.rparams = OrderedDict()
-        self.ralgebs = OrderedDict()
-        # --- remove above two arrtributes later on ---
-        self.info = "AC Power flow"
-        self.rtn_models = OrderedDict([
-            ('Bus', ['vmax', 'vmin']),
-            ('Slack', ['pmax', 'pmin', 'qmax', 'qmin']),
-            ('PV', ['pmax', 'pmin', 'qmax', 'qmin']),
-        ])
-
-    @timer
-    def solve(self, **kwargs):
-        ppc = system2ppc(self.system)
-        res, success = runpf(ppc, **kwargs)
-        return ppc, success
-    
-    def unpack(self, ppc):
-        """
-        Unpack results from ppc to system.
-        """
-        system = self.system
-
-        # --- Bus ---
-        system.Bus.v.v = ppc['bus'][:, 7]  # voltage magnitude
-        system.Bus.a.v = ppc['bus'][:, 8] * deg2rad  # voltage angle
-
-        # --- PV ---
-        system.PV.q.v = ppc['gen'][system.Slack.n:, 2]  # reactive power
-
-        # --- Slack ---
-        system.Slack.p.v = ppc['gen'][:system.Slack.n, 1]  # active power
-        system.Slack.q.v = ppc['gen'][:system.Slack.n, 2]  # reactive power
-
-        # --- store results into routine algeb ---
-        for raname, oalgeb in self.oalgebs.items():
-            oalgeb.v = oalgeb.Algeb.v.copy()
-
-    def run(self, **kwargs):
-        """
-        Run power flow.
-        """
-        (ppc, success), elapsed_time = self.solve(**kwargs)
-        self.exit_code = int(not success)
-        if success:
-            info = f'{self.class_name} completed in {elapsed_time} seconds with exit code {self.exit_code}.'
-        else:
-            info = f'{self.class_name} failed in {elapsed_time} seconds with exit code {self.exit_code}.'
-        logger.info(info)
-        self.exec_time = float(elapsed_time.split(' ')[0])
-        self.unpack(ppc)
-        return self.exit_code
-
-    def summary(self, **kwargs):
-        """
-        Print power flow summary.
-        """
-        pass
-
-    def report(self, **kwargs):
-        """
-        Print power flow report.
-        """
-        pass
-
-
-class DCPF(PFlow):
-    """
-    DC Power Flow routine.
-    """
-
-    def __init__(self, system=None, config=None):
-        super().__init__(system, config)
-        self.info = "DC Power Flow"
-
-    def run(self, **kwargs):
-        """
-        Run power flow.
-        """
-        pass
-
-    def summary(self, **kwargs):
-        """
-        Print power flow summary.
-        """
-        pass
-
-    def report(self, **kwargs):
-        """
-        Print power flow report.
-        """
-        pass
+        PFlowData.__init__(self)
+        PFlowModel.__init__(self, system, config)

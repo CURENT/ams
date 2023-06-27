@@ -8,7 +8,7 @@ import numpy as np
 
 from andes.models.group import GroupBase as andes_GroupBase
 
-from ams.core.var import Algeb
+from ams.core.service import BackRef
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +50,35 @@ class GroupBase(andes_GroupBase):
             pass
             # logger.debug(f'Group <{self.class_name}> does not share property <{src}>.')
 
+    def __repr__(self):
+        dev_text = 'device' if self.n == 1 else 'devices'
+        return f'{self.class_name} ({self.n} {dev_text}) at {hex(id(self))}'
+
+    def __setattr__(self, key, value):
+        if hasattr(value, 'owner'):
+            if value.owner is None:
+                value.owner = self
+        if hasattr(value, 'name'):
+            if value.name is None:
+                value.name = key
+
+        if isinstance(value, BackRef):
+            self.services_ref[key] = value
+
+        super().__setattr__(key, value)
+
+    def set_backref(self, name, from_idx, to_idx):
+        """
+        Set idxes to ``BackRef``, and set them to models.
+        """
+
+        uid = self.idx2uid(to_idx)
+        self.services_ref[name].v[uid].append(from_idx)
+
+        model = self.idx2model(to_idx)
+        model.set_backref(name, from_idx, to_idx)
+
+
 class Undefined(GroupBase):
     """
     The undefined group. Holds models with no ``group``.
@@ -70,8 +99,16 @@ class Cost(GroupBase):
 
 
 class Collection(GroupBase):
-    """Collection of topology models"""
+    """
+    Collection of topology models
+    """
     pass
+
+
+class Reserve(GroupBase):
+    def __init__(self):
+        super().__init__()
+        self.common_params.extend(('zone',))
 
 
 class StaticGen(GroupBase):
@@ -80,8 +117,9 @@ class StaticGen(GroupBase):
 
     Notes
     -----
-    For co-simulation with ANDES, replacing static generators with dynamic generators can be found in
-    [ANDES StaticGen](https://docs.andes.app/en/latest/groupdoc/StaticGen.html#staticgen).
+    For co-simulation with ANDES, check
+    `ANDES StaticGen <https://docs.andes.app/en/latest/groupdoc/StaticGen.html#staticgen>`_
+    for replacing static generators with dynamic generators.
     """
 
     def __init__(self):
@@ -106,13 +144,6 @@ class StaticLoad(GroupBase):
 class StaticShunt(GroupBase):
     """
     Static shunt compensator group.
-    """
-    pass
-
-
-class DynLoad(GroupBase):
-    """
-    Dynamic load group.
     """
     pass
 

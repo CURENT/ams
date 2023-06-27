@@ -12,6 +12,8 @@ from andes.utils.func import list_flatten
 
 from ams.core.documenter import Documenter
 from ams.core.var import Algeb  # NOQA
+from ams.core.param import ExtParam  # NOQA
+from ams.core.service import BaseService, BackRef, VarSum  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +33,12 @@ class Model:
 
         self.algebs = OrderedDict()  # internal algebraic variables
         self.vars_decl_order = OrderedDict()  # variable in the order of declaration
+
+        self.params_ext = OrderedDict()  # external parameters
+
+        self.services = OrderedDict()  # service/temporary variables
+        self.services_ref = OrderedDict()  # BackRefs
+        self.services_sum = OrderedDict()  # VarSums
 
         self.config = Config(name=self.class_name)  # `config` that can be exported
         if config is not None:
@@ -59,7 +67,7 @@ class Model:
 
         This function assigns `owner` to the model itself, assigns the name and tex_name.
         """
-        if isinstance(value, (Algeb,)):
+        if isinstance(value, (Algeb, BaseService)):
             if not value.owner:
                 value.owner = self
             if not value.name:
@@ -95,6 +103,12 @@ class Model:
         """
         if isinstance(value, Algeb):
             self.algebs[key] = value
+        elif isinstance(value, ExtParam):
+            self.params_ext[key] = value
+        elif isinstance(value, BackRef):
+            self.services_ref[key] = value
+        elif isinstance(value, VarSum):
+            self.services_sum[key] = value
 
     @property
     def class_name(self):
@@ -113,6 +127,17 @@ class Model:
 
         for instance in self.num_params.values():
             instance.to_array()
+
+    def set_backref(self, name, from_idx, to_idx):
+        """
+        Helper function for setting idx-es to ``BackRef``.
+        """
+
+        if name not in self.services_ref:
+            return
+
+        uid = self.idx2uid(to_idx)
+        self.services_ref[name].v[uid].append(from_idx)
 
     def get(self, src: str, idx, attr: str = 'v', allow_none=False, default=0.0):
         """
@@ -154,6 +179,68 @@ class Model:
                 return [self.__dict__[src].__dict__[attr][i] if i is not None else default
                         for i in uid]
         return self.__dict__[src].__dict__[attr][uid]
+
+    def set(self, src, idx, attr, value):
+        """
+        Set the value of an attribute of a model property.
+
+        Performs ``self.<src>.<attr>[idx] = value``. This method will not modify
+        the input values from the case file that have not been converted to the
+        system base. As a result, changes applied by this method will not affect
+        the dumped case file.
+
+        To alter parameters and reflect it in the case file, use :meth:`alter`
+        instead.
+
+        Parameters
+        ----------
+        src : str
+            Name of the model property
+        idx : str, int, float, array-like
+            Indices of the devices
+        attr : str, optional, default='v'
+            The internal attribute of the property to get.
+            ``v`` for values, ``a`` for address, and ``e`` for equation value.
+        value : array-like
+            New values to be set
+
+        Returns
+        -------
+        bool
+            True when successful.
+        """
+        uid = self.idx2uid(idx)
+        self.__dict__[src].__dict__[attr][uid] = value
+        return True
+
+    def alter(self, src, idx, value):
+        """
+        Alter values of input parameters or constant service.
+
+        If the method operates on an input parameter, the new data should be in
+        the same base as that in the input file. This function will convert the
+        new value to per unit in the system base.
+
+        The values for storing the input data, i.e., the ``vin`` field of the
+        parameter, will be overwritten, thus the update will be reflected in the
+        dumped case file.
+
+        Parameters
+        ----------
+        src : str
+            The parameter name to alter
+        idx : str, float, int
+            The device to alter
+        value : float
+            The desired value
+        """
+        instance = self.__dict__[src]
+
+        if hasattr(instance, 'vin') and (instance.vin is not None):
+            self.set(src, idx, 'vin', value)
+            instance.v[:] = instance.vin * instance.pu_coeff
+        else:
+            self.set(src, idx, 'v', value)
 
     def idx2uid(self, idx):
         """

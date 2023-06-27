@@ -5,4 +5,4 @@ Examples
 
 .. _`development demos`: https://github.com/jinningwang/ams/tree/master/dev/demo
 
-You can check `development demos`_ for examples.
+Refer to the development `development demos`_ for examples prior to preparing this section.

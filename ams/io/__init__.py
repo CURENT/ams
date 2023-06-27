@@ -9,7 +9,7 @@ import os
 
 from andes.utils.misc import elapsed
 
-from ams.io import xlsx, psse, matpower, pypower   # NOQA
+from ams.io import xlsx, psse, matpower, pypower, json   # NOQA
 
 
 logger = logging.getLogger(__name__)
@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 # TODO: add support for json I/O
 input_formats = {
     'xlsx': ('xlsx',),
+    'json': ('json',),
     'matpower': ('m', ),
     'psse': ('raw', 'dyr'),
     'pypower': ('py',),
@@ -31,6 +32,7 @@ input_formats = {
 
 output_formats = {
     'xlsx': ('xlsx',),
+    'json': ('json',),
 }
 
 

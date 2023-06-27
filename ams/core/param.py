@@ -11,7 +11,7 @@ from collections import OrderedDict
 import numpy as np
 
 from andes.core.common import Config
-from andes.core import BaseParam, DataParam, IdxParam, NumParam
+from andes.core import BaseParam, DataParam, IdxParam, NumParam, ExtParam
 from andes.models.group import GroupBase
 
 from ams.core.var import Algeb
@@ -21,11 +21,47 @@ logger = logging.getLogger(__name__)
 
 class RParam:
     """
-    Class for parameters in a routine.
+    Class for parameters used in a routine.
+    This class is developed to simplify the routine definition.
 
-    This class is an extension of conventional parameters
-    `BaseParam`, `DataParam`, `IdxParam`, and `NumParam`.
-    It contains a `group` attribute to indicate the group.
+    Parameters
+    ----------
+    name : str, optional
+        Name of this parameter. If not provided, `name` will be set
+        to the attribute name.
+    tex_name : str, optional
+        LaTeX-formatted parameter name. If not provided, `tex_name`
+        will be assigned the same as `name`.
+    info : str, optional
+        A description of this parameter
+    src : str, optional
+        Source name of the parameter.
+    unit : str, optional
+        Unit of the parameter.
+    owner_name : str, optional
+        Name of the owner model or group.
+    v : np.ndarray, optional
+        External value of the parameter.
+
+    Examples
+    --------
+    Example 1: Define a routine parameter from a source model or group.
+
+    In this example, we define the parameter `cru` from the source model
+    `SFRCost` with the parameter `cru`.
+
+    >>> self.cru = RParam(info='RegUp reserve coefficient',
+    >>>                   tex_name=r'c_{r,u}',
+    >>>                   unit=r'$/(p.u.)',
+    >>>                   name='cru',
+    >>>                   src='cru',
+    >>>                   owner_name='SFRCost'
+    >>>                   )
+
+    Example 2: Define a routine parameter with a user-defined value.
+
+    In this example, we define the parameter with a user-defined value.
+    TODO: Add example
     """
 
     def __init__(self,
@@ -36,7 +72,6 @@ class RParam:
                  unit: Optional[str] = None,
                  owner_name: Optional[str] = None,
                  v: Optional[np.ndarray] = None,
-                 v_str: Optional[str] = None,
                  ):
 
         self.name = name
@@ -47,18 +82,21 @@ class RParam:
         self.is_group = False
         self.owner_name = owner_name  # indicate if this variable is a group variable
         self.owner = None  # instance of the owner model or group
-        self.is_set = False
-        self.v_str = v_str
-        self._v = None
+        self.is_ext = False  # indicate if the value is set externally
+        if v is not None:
+            self._v = v
+            self.is_ext = True
 
     @property
     def v(self):
         """
-        Return the value of the parameter.
+        The value of the parameter.
 
-        This property is a wrapper of the `get` method.
+        Notes
+        -----
+        This property is a wrapper for the ``get`` method of the owner class.
         """
-        if self.is_set:
+        if self.is_ext:
             return self._v
         elif self.is_group:
             return self.owner.get(src=self.src, attr='v',
@@ -69,14 +107,30 @@ class RParam:
 
     @property
     def n(self):
-        if self.is_set:
+        """
+        Return the szie of the parameter.
+        """
+        if self.is_ext:
             return self._v.shape[0]
         else:
             return self.owner.n
 
+    @property
+    def class_name(self):
+        """
+        Return the class name
+        """
+        return self.__class__.__name__
+
     def __repr__(self):
-        if self.is_set:
-            return f'{self.__class__.__name__}: {self.name}, v: shape={self.v.shape}'
+        if self.is_ext:
+            span = ''
+            if self.v.ndim == 1:
+                if len(self.v) <= 20:
+                    span = f', v={self.v}'
+            else:
+                span = f', v=shape{self.v.shape}'
+            return f'{self.__class__.__name__}: {self.name}{span}'
         else:
             span = ''
             if 1 <= self.n <= 20:
@@ -84,10 +138,27 @@ class RParam:
                 if hasattr(self, 'vin') and (self.vin is not None):
                     span += f', vin={self.vin}'
 
+            if self.v.ndim == 1:
+                if len(self.v) <= 20:
+                    span = f', v={self.v}'
+            else:
+                span = f', v=shape{self.v.shape}'
+
             return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}{span}'
 
     def get_idx(self):
+        """
+        Get the index of the parameter.
+
+        Returns
+        -------
+        idx : list
+            Index of the parameter.
+        """
         if self.is_group:
             return self.owner.get_idx()
+        elif self.owner is None:
+            logger.info(f'Param <{self.name}> has no owner.')
+            return None
         else:
             return self.owner.idx.v

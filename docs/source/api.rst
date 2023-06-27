@@ -18,6 +18,21 @@ System
    ams.system
 
 
+Model
+======
+
+.. autosummary::
+   :maxdepth:4
+   :recursive:
+   :toctree: _generated
+   :caption: Model
+   :template: autosummary/module_toctree.rst
+
+   ams.core.model
+   ams.core.param
+   ams.core.service
+
+
 Routines
 ========
 
@@ -41,7 +56,7 @@ Optimization
    :caption: Optimization
    :template: autosummary/module_toctree.rst
 
-   ams.opt
+   ams.opt.omodel
 
 
 I/O
@@ -55,6 +70,19 @@ I/O
    :template: autosummary/module_toctree.rst
 
    ams.io
+
+
+Interoperability
+================
+
+.. autosummary::
+   :maxdepth:4
+   :toctree: _generated
+   :recursive:
+   :caption: Interoperability
+   :template: autosummary/module_toctree.rst
+
+   ams.interop
 
 
 Others

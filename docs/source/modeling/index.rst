@@ -4,15 +4,14 @@
 Development
 ===========
 
-Modeling guide for AMS.
-
-This chapter introduces advanced topics on modeling with AMS. It aims to give an
-in-depth explanation of flexible dispatch mdoeling framework of AMS.
+This chapter introduces advanced topics on modeling with AMS.
+It aims to give an in-depth explanation of flexible dispatch mdoeling
+framework and the interoperation with dynamic simulation.
 
 .. toctree::
     :maxdepth: 2
 
     system
-    param
-    var
+    model
     routine
+    example

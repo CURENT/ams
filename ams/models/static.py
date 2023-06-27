@@ -1,6 +1,6 @@
 from collections import OrderedDict  # NOQA
 
-from andes.core.param import NumParam
+from andes.core.param import NumParam, ExtParam
 from andes.models.static.pq import PQData  # NOQA
 from andes.models.static.pv import PVData  # NOQA
 from andes.models.static.slack import SlackData  # NOQA
@@ -107,7 +107,12 @@ class GenParam:
                            unit='p.u./min')
         self.apf = NumParam(default=0.0,
                             info="area participation factor",
-                            tex_name=r'apf')
+                            tex_name=r'a_{pf}')
+        self.pg0 = NumParam(default=0.0,
+                            info='real power start point',
+                            tex_name=r'p_{g0}',
+                            unit='p.u.',
+                            )
 
 
 class PVModel(Model):
@@ -146,6 +151,10 @@ class PVModel(Model):
                               min_iter="sw_{iter}",
                               err_tol=r"\epsilon_{tol}"
                               )
+
+        self.zone = ExtParam(model='Bus', src='zone', indexer=self.bus, export=False,
+                            info='Retrieved zone idx', vtype=str, default=None,
+                            )
 
         self.ud = Algeb(info='connection status decision',
                         unit='bool',

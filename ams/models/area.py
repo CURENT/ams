@@ -3,6 +3,7 @@ import logging
 from andes.models.area import AreaData  # NOQA
 from andes.utils.tab import Tab
 from ams.core.model import Model
+from ams.core.service import BackRef
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,9 @@ class Area(AreaData, Model):
         Model.__init__(self, system, config)
 
         self.group = 'Collection'
+
+        self.Bus = BackRef()
+        self.ACTopology = BackRef()
 
     def bus_table(self):
         """

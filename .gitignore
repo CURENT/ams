@@ -20,6 +20,8 @@ __pycache__/
 docs/source/modelref.rst
 docs/source/configref.rst
 docs/source/groupdoc
+docs/source/routineref.rst
+docs/source/typedoc
 docs/source/_examples
 docs/build/
 docs/jupyter_execute/

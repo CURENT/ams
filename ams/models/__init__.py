@@ -12,7 +12,9 @@ ams_file_classes = list([
     ('shunt', ['Shunt']),
     ('line', ['Line']),
     ('area', ['Area']),
-    ('cost', ['GCost']),
+    ('region', ['Region']),
+    ('reserve', ['SFR']),
+    ('cost', ['GCost', 'SFRCost']),
 ])
 
 file_classes = ams_file_classes

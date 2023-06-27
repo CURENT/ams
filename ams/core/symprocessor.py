@@ -62,6 +62,19 @@ class SymProcessor:
             (r'\bproblem\b', f'{lang}.Problem'),  # only used for CVXPY
             ])
 
+        self.status = {
+            'optimal': 0,
+            'infeasible': 1,
+            'unbounded': 2,
+            'infeasible_inaccurate': 3,
+            'unbounded_inaccurate': 4,
+            'optimal_inaccurate': 5,
+            'solver_error': 6,
+            'time_limit': 7,
+            'interrupted': 8,
+            'unknown': 9
+        }
+
     def generate_symbols(self):
         """
         Generate symbols for all variables.
@@ -72,10 +85,10 @@ class SymProcessor:
         for key in self.parent.tex_names.keys():
             self.tex_names[key] = sp.symbols(self.parent.tex_names[key])
 
-        # RAlgebs
-        for raname, ralgeb in self.parent.ralgebs.items():
-            tmp = sp.symbols(f'{ralgeb.name}')
-            # tmp = sp.symbols(ralgeb.name)
+        # Vars
+        for raname, var in self.parent.vars.items():
+            tmp = sp.symbols(f'{var.name}')
+            # tmp = sp.symbols(var.name)
             self.vars_dict[raname] = tmp
             self.inputs_dict[raname] = tmp
             self.sub_map[rf"\b{raname}\b"] = f"self.{raname}"
