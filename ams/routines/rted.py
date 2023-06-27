@@ -168,9 +168,9 @@ class RTED(RTEDData, RTEDModel):
 
     RTED extends DCOPF with:
 
-    1. zonal AGC reserve: Vars ``pru`` and ``prd``; linear cost ``cru`` and ``crd``; requirement ``du`` and ``dd``
+    1. zonal SFR reserve: decision reserve ``pru`` and ``prd``; linear cost ``cru`` and ``crd``; requirement ``du`` and ``dd``
 
-    2. generator ramp rate: generator start point ``pg0``; generator ramp limit ``R10``
+    2. generator ramping: start point ``pg0``; ramping limit ``R10``
 
     RTED has mapping dicts to interface with ANDES.
 
@@ -182,7 +182,7 @@ class RTED(RTEDData, RTEDModel):
     Notes
     -----
     1. RTED is a DC-based model, which assumes bus voltage to be 1
-    2. RTED routien add data check on ``pg0``, if all zeros, correct to the value of ``p0``
+    2. RTED adds a data check on ``pg0``, if all zeros, correct as the value of ``p0``
     """
 
     def __init__(self, system, config):
