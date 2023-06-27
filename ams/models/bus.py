@@ -23,7 +23,7 @@ class Bus(BusData, Model):
         # NOTE: in ANDES, self.zone is defined to trace a non-existing model "Region"
         # in AMS, model "Zone" is developed,
         # so we need to change the model name of IdxParam self.zone
-        self.zone.model = 'Zone'
+        self.zone.model = 'Region'
 
         self.a = Algeb(name='a',
                        tex_name=r'\theta',

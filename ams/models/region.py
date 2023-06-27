@@ -7,17 +7,23 @@ from ams.core.service import BackRef
 
 logger = logging.getLogger(__name__)
 
-class ZoneData(ModelData):
+class RegionData(ModelData):
     def __init__(self):
         super().__init__()
 
 
-class Zone(ZoneData, Model):
+class Region(RegionData, Model):
     """
-    Zone model.
+    Region model for zonal resource dispatch.
+
+    Notes
+    -----
+    1. Region is a collection of buses and can be used for zonal reserve dispatch.
+    2. Model ``Region`` is not actually defined in ANDES.
+    
     """
     def __init__(self, system, config):
-        ZoneData.__init__(self)
+        RegionData.__init__(self)
         Model.__init__(self, system, config)
 
         self.group = 'Collection'
