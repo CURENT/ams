@@ -52,13 +52,6 @@ class DCOPFData(RoutineData):
                            owner_name='StaticGen',
                            )
         # --- load ---
-        self.pd = RParam(info='active power load in system base',
-                         name='pd',
-                         src='p0',
-                         tex_name=r'p_{d}',
-                         unit='p.u.',
-                         owner_name='PQ',
-                         )
         # NOTE: following two parameters are temporary solution
         self.pd1 = RParam(info='active power load in system base in gen bus',
                           name='pd1',
@@ -77,11 +70,11 @@ class DCOPFData(RoutineData):
                              unit='MVA',
                              owner_name='Line',
                              )
-        self.PTDF1 = RParam(info='PTDF matrix 1',
+        self.PTDF1 = RParam(info='PTDF matrix for gen bus',
                             name='PTDF1',
                             tex_name=r'P_{TDF1}',
                             )
-        self.PTDF2 = RParam(info='PTDF matrix 2',
+        self.PTDF2 = RParam(info='PTDF matrix for non-gen bus',
                             name='PTDF2',
                             tex_name=r'P_{TDF2}',
                             )
@@ -182,7 +175,7 @@ class DCOPFModel(DCOPFBase):
         # --- constraints ---
         self.pb = Constraint(name='pb',
                              info='power balance',
-                             e_str='sum(pd) - sum(pg)',
+                             e_str='sum(pd1) + sum(pd2) - sum(pg)',
                              type='eq',
                              )
         self.lub = Constraint(name='lub',
@@ -205,6 +198,14 @@ class DCOPFModel(DCOPFBase):
 class DCOPF(DCOPFData, DCOPFModel):
     """
     Standard DC optimal power flow (DCOPF).
+
+    In this model, the power demand ``pd`` is reorganized as ``pd1`` and ``pd2``,
+    where ``pd1`` is the load connected to generator bus and ``pd2`` is the load
+    connected to non-generator bus.
+
+    Similarly, power transfer distribution factor (PTDF) matrix ``PTDF`` is reorganized
+    as ``PTDF1`` and ``PTDF2``, where ``PTDF1`` is the matrix for generator bus
+    and ``PTDF2`` is the matrix for non-generator bus.
     """
 
     def __init__(self, system, config):
