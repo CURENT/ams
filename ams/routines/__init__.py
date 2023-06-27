@@ -11,6 +11,7 @@ all_routines = OrderedDict([
     ('pflow', ['PFlow']),
     ('dcopf', ['DCOPF']),
     ('rted', ['RTED']),
+    ('uc', ['UC']),
     ('acopf', ['ACOPF']),
 ])
 
