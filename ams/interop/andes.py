@@ -96,6 +96,9 @@ def to_andes(system, setup=True, addfile=None,
     if setup:
         adsys.setup()
         system.dyn.link_andes(adsys=adsys)
+    else:
+        msg = 'System has not been linked to ANDES. Call ``dyn.link_andes(adsys=sa)`` after setup ANDES system.'
+        logger.warning(msg)
     return adsys
 
 
@@ -279,7 +282,7 @@ class Dynamic:
     """
 
     def __init__(self, amsys=None, adsys=None) -> None:
-        self.ams = amsys  # AMS system
+        self.amsys = amsys  # AMS system
         self.adsys = adsys  # ANDES system
 
         # TODO: add summary table
@@ -297,9 +300,9 @@ class Dynamic:
         self.adsys = adsys
         if self.adsys.is_setup:
             self.make_link()
-            logger.warning(f'ANDES system {hex(id(adsys))} is linked to the AMS system {hex(id(self.amsys))}.')
+            logger.warning(f'AMS system {hex(id(self.amsys))} is linked to the ANDES system {hex(id(adsys))}.')
         else:
-            msg = 'ANDES system is not setup, you can call ``dyn.link_andes()`` later on to link it.'
+            msg = 'ANDES system is not setup yet.'
             logger.warning(msg)
 
     @property
@@ -311,6 +314,25 @@ class Dynamic:
         Check ``adsys.tds.TDS.init()`` for more details.
         """
         return bool(self.adsys.TDS.initialized)
+
+    def require_link(func):
+        """
+        Wrapper function to check if the link table is available before calling
+        ``send()`` and ``receive()``.
+
+        Parameters
+        ----------
+        adsys : adsys.System.system, optional
+            The target ANDES dynamic system instance. If not provided, use the
+            linked ANDES system instance (`sp.dyn.adsys`).
+        """
+        def wrapper(self, adsys=None):
+            if self.link is None:
+                logger.warning("System has not been linked with dynamic. Unable to sync with ANDES.")
+                return False
+            else:
+                return func(self, adsys)
+        return wrapper
 
     def make_link(self):
         """
@@ -417,6 +439,7 @@ class Dynamic:
 
         return True
 
+    @require_link
     def send(self, adsys=None):
         """
         Send results of the recent sovled AMS dispatch (``sp.recent``) to the
@@ -429,7 +452,7 @@ class Dynamic:
             linked ANDES system isntance (``sp.dyn.adsys``).
         """
         sa = adsys if adsys is not None else self.adsys
-        sp = self.ams
+        sp = self.amsys
         # 1. information
         if sp.recent.exit_code != 0:
             logger.warning(f'{sp.recent.class_name} is not solved optimally.')
@@ -535,6 +558,7 @@ class Dynamic:
                         pass
             return True
 
+    @require_link
     def receive(self, adsys=None):
         """
         Receive the results from the target ANDES system.
@@ -546,7 +570,7 @@ class Dynamic:
             linked ANDES system isntance (``sp.dyn.adsys``).
         """
         sa = adsys if adsys is not None else self.adsys
-        sp = self.ams
+        sp = self.amsys
         # 1. information
         try:
             rtn_name = sp.recent.class_name
@@ -567,7 +591,7 @@ class Dynamic:
             logger.debug(f'Receiving <tds> results to {sp.recent.class_name}...')
             # 1) receive models online status
             is_dgu_set = False
-            for mname, mdl in self.ams.models.items():
+            for mname, mdl in self.amsys.models.items():
                 if mdl.n == 0:
                     continue
                 # a. dynamic generator online status
