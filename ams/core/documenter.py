@@ -2,6 +2,7 @@
 Documenter class for AMS models.
 """
 import inspect
+import re
 
 import logging
 from collections import OrderedDict
@@ -88,7 +89,7 @@ class Documenter(andes_Documenter):
 
 class RDocumenter:
     """
-    Helper class for documenting models.
+    Helper class for documenting routines.
 
     Parameters
     ----------
@@ -108,7 +109,7 @@ class RDocumenter:
 
     def get(self, max_width=78, export='plain'):
         """
-        Return the model documentation in table-formatted string.
+        Return the routine documentation in table-formatted string.
 
         Parameters
         ----------
@@ -140,9 +141,9 @@ class RDocumenter:
         out += '\n\n'  # this fixes the indentation for the next line
 
         # add tables
-        # TODO: fix obj and constr doc
-        # out += self._obj_doc(max_width=max_width, export=export)
-        # out += self._constr_doc(max_width=max_width, export=export)
+        self.parent.syms.generate_symbols()
+        out += self._obj_doc(max_width=max_width, export=export)
+        out += self._constr_doc(max_width=max_width, export=export)
         out += self._var_doc(max_width=max_width, export=export)
         out += self._param_doc(max_width=max_width, export=export)
 
@@ -161,13 +162,43 @@ class RDocumenter:
             class_names.append(p.class_name)
             info.append(p.info if p.info else '')
 
-        # symbols based on output format
+        # NOTE: in the future, there might occur special math symbols
+        special_map = OrderedDict([
+            ('sum', '\sum'),
+            ('SUMSYMBOL', '\sum'),
+        ])
+
+        # expressions based on output format
         if export == 'rest':
-            symbols = [item.tex_name for item in self.constrs.values()]
-            symbols = math_wrap(symbols, export=export)
+            expressions = []
+            logger.debug(f'tex_map: {self.parent.syms.tex_map}')
+            for p in self.constrs.values():
+                expr = p.e_str
+                skip_list = []
+                for pattern, replacement in self.parent.syms.tex_map.items():
+                    if 'sum' in replacement:
+                        expr = re.sub(pattern, 'SUMSYMBOL', expr)
+                        continue
+                    if '\p' in replacement:
+                        continue
+                    else:
+                        try:
+                            expr = re.sub(pattern, replacement, expr)
+                        except re.error:
+                            expr_pattern = pattern.removeprefix('\\b').removesuffix('\\b')
+                            logger.error(f'Faild parse Element {expr_pattern} in {p.class_name}, check its tex_name.')
+                            expr = ''
+                for pattern, replacement in special_map.items():
+                    expr = expr.replace(pattern, replacement)
+                if p.type == 'eq':
+                    expr = f'{expr} = 0'
+                elif p.type == 'uq':
+                    expr = f'{expr} <= 0'
+                logger.debug(f'{p.name} expr after: {expr}')
+                expressions.append(expr)
+            expressions = math_wrap(expressions, export=export)
             title = 'Constraints\n----------------------------------'
         else:
-            symbols = [item.name for item in self.constrs.values()]
             title = 'Constraints'
 
         plain_dict = OrderedDict([('Name', names),
@@ -175,8 +206,8 @@ class RDocumenter:
                                   ])
 
         rest_dict = OrderedDict([('Name', names),
-                                 ('Symbol', symbols),
                                  ('Description', info),
+                                 ('Expression', expressions),
                                  ])
 
         # convert to rows and export as table
@@ -199,22 +230,37 @@ class RDocumenter:
         class_names.append(p.class_name)
         info.append(p.info if p.info else '')
 
-        # symbols based on output format
+        # expressions based on output format
+        expr = p.e_str
+        # NOTE: re.sub will run into error if `\` occurs at first position
+        # here we skip `\sum` in re replacement and do this using string replace
+        # however, this method might not be robust
+        for pattern, replacement in self.parent.syms.tex_map.items():
+            if 'sum' in replacement:
+                continue
+            else:
+                try:
+                    expr = re.sub(pattern, replacement, expr)
+                except re.error:
+                    expr_pattern = pattern.removeprefix('\\b').removesuffix('\\b')
+                    logger.error(f'Faild parse Element {expr_pattern} in {p.class_name}, check its tex_name.')
+                    return ''
+        expr = expr.replace('sum', '\sum')
+        expr = p.sense + '. ' + expr  # minimize or maximize
+        expr = [expr]
         if export == 'rest':
-            symbols = [item.tex_name for item in self.vars.values()]
-            symbols = math_wrap(symbols, export=export)
+            expr = math_wrap(expr, export=export)
             title = 'Objective\n----------------------------------'
         else:
-            symbols = [item.name for item in self.vars.values()]
             title = 'Objective'
-        
+
         plain_dict = OrderedDict([('Name', names),
                                   ('Description', info),
                                   ])
 
         rest_dict = OrderedDict([('Name', names),
-                                 ('Symbol', symbols),
                                  ('Description', info),
+                                 ('Expression', expr),
                                  ])
 
         # convert to rows and export as table
@@ -224,15 +270,17 @@ class RDocumenter:
                               plain_dict=plain_dict,
                               rest_dict=rest_dict)
 
-
     def _var_doc(self, max_width=78, export='plain'):
+        # NOTE: this is for the optimization variables
+        # not the _var_doc for ANDES parameters
         # variable documentation
         if len(self.vars) == 0:
             return ''
 
         # prepare temporary lists
         names, units, class_names = list(), list(), list()
-        info = list()
+        properties, info = list(), list()
+        sources = list()
         units_rest = list()
 
         for p in self.vars.values():
@@ -243,11 +291,17 @@ class RDocumenter:
             units.append(f'{p.unit}' if p.unit else '')
             units_rest.append(f'*{p.unit}*' if p.unit else '')
 
-            # plist = []
-            # for key, val in p.property.items():
-            #     if val is True:
-            #         plist.append(key)
-            # properties.append(','.join(plist))
+            # collect properties defined in config
+            plist = []
+            for key, val in p.config.as_dict().items():
+                if val is True:
+                    plist.append(key)
+            properties.append(','.join(plist))
+
+            slist = []
+            if p.owner is not None and p.src is not None:
+                slist.append(f'{p.src}<{p.owner.class_name}>')
+            sources.append(','.join(slist))
 
         # symbols based on output format
         if export == 'rest':
@@ -261,13 +315,14 @@ class RDocumenter:
         plain_dict = OrderedDict([('Name', names),
                                   ('Description', info),
                                   ('Unit', units),
-                                  ])
+                                  ('Properties', properties)])
 
         rest_dict = OrderedDict([('Name', names),
                                  ('Symbol', symbols),
                                  ('Description', info),
                                  ('Unit', units_rest),
-                                 ])
+                                 ('Source', sources),
+                                 ('Properties', properties)])
 
         # convert to rows and export as table
         return make_doc_table(title=title,
@@ -299,6 +354,7 @@ class RDocumenter:
         # prepare temporary lists
         names, units, class_names = list(), list(), list()
         info = list()
+        sources = list()
         units_rest = list()
 
         for p in self.rparams.values():
@@ -309,11 +365,10 @@ class RDocumenter:
             units.append(f'{p.unit}' if p.unit else '')
             units_rest.append(f'*{p.unit}*' if p.unit else '')
 
-            # plist = []
-            # for key, val in p.property.items():
-            #     if val is True:
-            #         plist.append(key)
-            # properties.append(','.join(plist))
+            slist = []
+            if p.owner is not None and p.src is not None:
+                slist.append(f'{p.src}<{p.owner.class_name}>')
+            sources.append(','.join(slist))
 
         # symbols based on output format
         if export == 'rest':
@@ -333,6 +388,7 @@ class RDocumenter:
                                  ('Symbol', symbols),
                                  ('Description', info),
                                  ('Unit', units_rest),
+                                 ('Source', sources),
                                  ])
 
         # convert to rows and export as table

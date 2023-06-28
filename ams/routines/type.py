@@ -131,7 +131,7 @@ class DCED(TypeBase):
 
     def __init__(self):
         TypeBase.__init__(self)
-        self.common_rparams.extend(('c2', 'c1', 'c0', 'pmax', 'pmin', 'pd', 'rate_a',))
+        self.common_rparams.extend(('c2', 'c1', 'c0', 'pmax', 'pmin', 'pd', 'ptdf', 'rate_a',))
         self.common_vars.extend(('pg',))
         self.common_constrs.extend(('pb', 'lub', 'llb'))
 

@@ -166,13 +166,13 @@ class ACOPFModel(ACOPFBase):
         # --- constraints ---
         self.pb = Constraint(name='pb',
                              info='power balance',
-                             e_str='sum(pd) - sum(pg)',
+                             e_str='sum( pd1 ) +sum( pd2 ) - sum( pg )',
                              type='eq',
                              )
         # TODO: ACOPF formulation
         # --- objective ---
         self.obj = Objective(name='tc',
-                             info='total generation cost',
+                             info='total cost',
                              e_str='sum(c2 * pg**2 + c1 * pg + c0)',
                              sense='min',)
 
@@ -184,7 +184,8 @@ class ACOPF(ACOPFData, ACOPFModel):
     Notes
     -----
     1. ACOPF is solved with PYPOWER ``runopf`` function.
-    2. ACOPF formulation is not complete yet, but this does not affect the results
+    2. ACOPF formulation in AMS style is NOT DONE YET,
+       but this does not affect the results
        because the data are passed to PYPOWER for solving.
     """
 

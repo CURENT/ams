@@ -57,13 +57,6 @@ Defines routine data
                               owner_name='StaticGen',
                               )
             # --- load ---
-            self.pd = RParam(info='active power load in system base',
-                              name='pd',
-                              src='p0',
-                              tex_name=r'p_{d}',
-                              unit='p.u.',
-                              owner_name='PQ',
-                              )
             # NOTE: following two parameters are temporary solution
             self.pd1 = RParam(info='active power load in system base in gen bus',
                               name='pd1',
@@ -120,7 +113,7 @@ Defines routine model
             # --- constraints ---
             self.pb = Constraint(name='pb',
                               info='power balance',
-                              e_str='sum(pd) - sum(pg)',
+                              e_str='sum(pd1) + sum(pd2) - sum(pg)',
                               type='eq',
                               )
             self.lub = Constraint(name='lub',
@@ -163,8 +156,6 @@ Finalize
 RTED
 -----------
 
-Real-time economic dispatch (RTED) is the base routine used to interface with
+TODO. Real-time economic dispatch (RTED) is the base routine used to interface with
 the dynamic simulator. In this example, we will show how to extend the existing DCOPF
 routine to the desired RTED routine.
-
-TODO.

@@ -44,7 +44,7 @@ class DCPFlowData(RoutineData):
         self.phi = RParam(info="transformer branch phase shift in rad",
                           name='phi',
                           src='phi',
-                          tex_name=r'\phi',
+                          tex_name='\phi',
                           unit='radian',
                           owner_name='Line',
                           )
@@ -193,12 +193,6 @@ class DCPFlowModel(DCPFlowBase):
                          tex_name=r'p_{g}',
                          owner_name='StaticGen',
                          )
-        # --- constraints ---
-        self.pb = Constraint(name='pb',
-                             info='power balance',
-                             e_str='sum(pd) - sum(pg)',
-                             type='eq',
-                             )
 
 
 class DCPF(DCPFlowData, DCPFlowModel):

@@ -78,7 +78,7 @@ class PFlowModel(DCPFlowBase):
         # --- constraints ---
         self.pb = Constraint(name='pb',
                              info='power balance',
-                             e_str='sum(pd) - sum(pg)',
+                             e_str='sum(pd1) + sum(pd2) - sum(pg)',
                              type='eq',
                              )
         # TODO: AC power flow formulation
