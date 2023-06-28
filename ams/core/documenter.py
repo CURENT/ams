@@ -164,6 +164,7 @@ class RDocumenter:
 
         # NOTE: in the future, there might occur special math symbols
         special_map = OrderedDict([
+            ('sum', '\sum'),
             ('SUMSYMBOL', '\sum'),
         ])
 
@@ -175,7 +176,7 @@ class RDocumenter:
                 expr = p.e_str
                 skip_list = []
                 for pattern, replacement in self.parent.syms.tex_map.items():
-                    if '\sum' in replacement:
+                    if 'sum' in replacement:
                         expr = re.sub(pattern, 'SUMSYMBOL', expr)
                         continue
                     if '\p' in replacement:

@@ -184,7 +184,8 @@ class ACOPF(ACOPFData, ACOPFModel):
     Notes
     -----
     1. ACOPF is solved with PYPOWER ``runopf`` function.
-    2. ACOPF formulation is not complete yet, but this does not affect the results
+    2. ACOPF formulation in AMS style is NOT DONE YET,
+       but this does not affect the results
        because the data are passed to PYPOWER for solving.
     """
 
