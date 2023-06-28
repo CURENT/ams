@@ -66,6 +66,7 @@ class SymProcessor:
         self.tex_map = OrderedDict([
             (r'\*\*(\d+)', '^{\\1}'),
             (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 \2'),
+            (r'\@', r' '),
         ])
 
         self.status = {
