@@ -20,21 +20,21 @@ class UCData(DCOPFData):
 
     def __init__(self):
         DCOPFData.__init__(self)
-        self.csu = RParam(info='startup cost in US dollars',
+        self.csu = RParam(info='startup cost',
                           name='csu',
                           src='csu',
                           tex_name=r'c_{su}',
-                          unit='USD',
+                          unit='$',
                           owner_name='GCost',
                           )
-        self.csd = RParam(info='shutdown cost in US dollars',
+        self.csd = RParam(info='shutdown cost',
                           name='csd',
                           src='csd',
                           tex_name=r'c_{sd}',
-                          unit='USD',
+                          unit='$',
                           owner_name='GCost',
                           )
-        self.R30 = RParam(info='30-min ramp rate',
+        self.R30 = RParam(info='30-min ramp rate (system base)',
                           name='R30',
                           src='R30',
                           tex_name=r'R_{30}',

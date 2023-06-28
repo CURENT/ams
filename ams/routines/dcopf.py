@@ -39,13 +39,13 @@ class DCOPFData(RoutineData):
                          owner_name='GCost',
                          )
         # --- generator limit ---
-        self.pmax = RParam(info='generator maximum active power in system base',
+        self.pmax = RParam(info='generator maximum active power (system base)',
                            name='pmax',
                            tex_name=r'p_{max}',
                            unit='p.u.',
                            owner_name='StaticGen',
                            )
-        self.pmin = RParam(info='generator minimum active power in system base',
+        self.pmin = RParam(info='generator minimum active power (system base)',
                            name='pmin',
                            tex_name=r'p_{min}',
                            unit='p.u.',
@@ -53,12 +53,12 @@ class DCOPFData(RoutineData):
                            )
         # --- load ---
         # NOTE: following two parameters are temporary solution
-        self.pd1 = RParam(info='active power load in system base in gen bus',
+        self.pd1 = RParam(info='active power load on gen bus',
                           name='pd1',
                           tex_name=r'p_{d1}',
                           unit='p.u.',
                           )
-        self.pd2 = RParam(info='active power load in system base in non-gen bus',
+        self.pd2 = RParam(info='active power load on non-gen bus',
                           name='pd2',
                           tex_name=r'p_{d2}',
                           unit='p.u.',
@@ -163,7 +163,7 @@ class DCOPFModel(DCOPFBase):
         self.info = 'DC Optimal Power Flow'
         self.type = 'DCED'
         # --- vars ---
-        self.pg = Var(info='actual active power generation',
+        self.pg = Var(info='active power generation (system base)',
                       unit='p.u.',
                       name='pg',
                       src='p',

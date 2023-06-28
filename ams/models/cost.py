@@ -24,13 +24,13 @@ class GCostData(ModelData):
                             info='startup cost in US dollars',
                             power=False,
                             tex_name=r'c_{su}',
-                            unit='USD',
+                            unit='$',
                             )
         self.csd = NumParam(default=0,
                             info='shutdown cost in US dollars',
                             power=False,
                             tex_name=r'c_{sd}',
-                            unit='USD',
+                            unit='$',
                             )
         self.c2 = NumParam(default=0,
                            info='coefficient 2',

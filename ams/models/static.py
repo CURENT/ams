@@ -161,12 +161,12 @@ class PVModel(Model):
                         tex_name=r'u_d',
                         name='ud',
                         )
-        self.p = Algeb(info='actual active power generation',
+        self.p = Algeb(info='active power generation',
                        unit='p.u.',
                        tex_name='p',
                        name='p',
                        )
-        self.q = Algeb(info='actual reactive power generation',
+        self.q = Algeb(info='reactive power generation',
                        unit='p.u.',
                        tex_name='q',
                        name='q',

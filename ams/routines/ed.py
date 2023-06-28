@@ -37,14 +37,14 @@ class EDData(DCOPFData):
                           owner_name='SFRCost',
                           )
         # 1.2. reserve requirement
-        self.du = RParam(info='RegUp reserve requirement',
+        self.du = RParam(info='RegUp reserve requirement (system base)',
                          name='du',
                          src='du',
                          tex_name=r'd_{u}',
                          unit='p.u.',
                          owner_name='SFR',
                          )
-        self.dd = RParam(info='RegDown reserve requirement',
+        self.dd = RParam(info='RegDown reserve requirement (system base)',
                          name='dd',
                          src='dd',
                          tex_name=r'd_{d}',
@@ -58,14 +58,14 @@ class EDData(DCOPFData):
                           owner_name='SFR',
                           )
         # 2. generator
-        self.pg0 = RParam(info='generator active power start point',
+        self.pg0 = RParam(info='generator active power start point (system base)',
                           name='pg0',
                           src='pg0',
                           tex_name=r'p_{g0}',
                           unit='p.u.',
                           owner_name='StaticGen',
                           )
-        self.R10 = RParam(info='10-min ramp rate',
+        self.R10 = RParam(info='10-min ramp rate (system base)',
                           name='R10',
                           src='R10',
                           tex_name=r'R_{10}',
@@ -84,14 +84,14 @@ class EDModel(DCOPFModel):
         self.info = 'Economic dispatch'
         self.type = 'DCED'
         # --- vars ---
-        self.pru = Var(info='RegUp reserve',
+        self.pru = Var(info='RegUp reserve (system base)',
                        unit='p.u.',
                        name='pru',
                        tex_name=r'p_{r,u}',
                        owner_name='StaticGen',
                        nonneg=True,
                        )
-        self.prd = Var(info='RegDn reserve',
+        self.prd = Var(info='RegDn reserve (system base)',
                        unit='p.u.',
                        name='prd',
                        tex_name=r'p_{r,d}',
