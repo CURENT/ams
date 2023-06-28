@@ -372,7 +372,7 @@ class OModel:
                            sub_map=self.routine.syms.sub_map)
             # --- finalize the optimziation formulation ---
             code_mdl = f"problem(self.obj, [constr for constr in self.constrs.values()])"
-            for pattern, replacement, in self.routine.syms.sub_map.items():
+            for pattern, replacement in self.routine.syms.sub_map.items():
                 code_mdl = re.sub(pattern, replacement, code_mdl)
             code_mdl = "self.mdl=" + code_mdl
             exec(code_mdl)
