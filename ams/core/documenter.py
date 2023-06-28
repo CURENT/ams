@@ -235,6 +235,7 @@ class RDocumenter:
         # prepare temporary lists
         names, units, class_names = list(), list(), list()
         properties, info = list(), list()
+        sources = list()
         units_rest = list()
 
         for p in self.vars.values():
@@ -245,16 +246,17 @@ class RDocumenter:
             units.append(f'{p.unit}' if p.unit else '')
             units_rest.append(f'*{p.unit}*' if p.unit else '')
 
-            # collect properties
-            all_properties = ['nonneg', 'nonpos', 'complex', 'imag', 'symmetric',
-                              'diag', 'psd', 'nsd', 'hermitian', 'bool', 'integer',
-                              'pos', 'neg',
-                              ]
+            # collect properties defined in config
             plist = []
             for key, val in p.config.as_dict().items():
                 if val is True:
                     plist.append(key)
             properties.append(','.join(plist))
+
+            slist = []
+            if p.owner is not None and p.src is not None:
+                slist.append(f'{p.owner.class_name}.{p.src}')
+            sources.append(','.join(slist))
 
         # symbols based on output format
         if export == 'rest':
@@ -274,6 +276,7 @@ class RDocumenter:
                                  ('Symbol', symbols),
                                  ('Description', info),
                                  ('Unit', units_rest),
+                                 ('Source', sources),
                                  ('Properties', properties)])
 
         # convert to rows and export as table
@@ -306,6 +309,7 @@ class RDocumenter:
         # prepare temporary lists
         names, units, class_names = list(), list(), list()
         info = list()
+        sources = list()
         units_rest = list()
 
         for p in self.rparams.values():
@@ -316,11 +320,10 @@ class RDocumenter:
             units.append(f'{p.unit}' if p.unit else '')
             units_rest.append(f'*{p.unit}*' if p.unit else '')
 
-            # plist = []
-            # for key, val in p.property.items():
-            #     if val is True:
-            #         plist.append(key)
-            # properties.append(','.join(plist))
+            slist = []
+            if p.owner is not None and p.src is not None:
+                slist.append(f'{p.owner.class_name}.{p.src}')
+            sources.append(','.join(slist))
 
         # symbols based on output format
         if export == 'rest':
@@ -340,6 +343,7 @@ class RDocumenter:
                                  ('Symbol', symbols),
                                  ('Description', info),
                                  ('Unit', units_rest),
+                                 ('Source', sources),
                                  ])
 
         # convert to rows and export as table
