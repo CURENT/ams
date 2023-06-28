@@ -11,6 +11,7 @@ import sympy as sp
 
 logger = logging.getLogger(__name__)
 
+
 class SymProcessor:
     """
     Class for symbolic processing in AMS routine.
@@ -61,11 +62,11 @@ class SymProcessor:
             (r'\bsum\b', f'{lang}.sum'),  # only used for CVXPY
             (r'\bvar\b', f'{lang}.Variable'),  # only used for CVXPY
             (r'\bproblem\b', f'{lang}.Problem'),  # only used for CVXPY
-            ])
+        ])
         self.tex_map = OrderedDict([
-            (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 * \2'),
-            (r'sum', r'\\sum'),
-            ])
+            (r'\*\*(\d+)', '^{\\1}'),
+            (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 \2'),
+        ])
 
         self.status = {
             'optimal': 0,
@@ -97,14 +98,14 @@ class SymProcessor:
             self.vars_dict[vname] = tmp
             self.inputs_dict[vname] = tmp
             self.sub_map[rf"\b{vname}\b"] = f"self.{vname}"
-            self.tex_map[rf"\b{vname}\b"] = var.tex_name
+            self.tex_map[rf"\b{vname}\b"] = rf'{var.tex_name}'
 
         # RParams
         for rpname, rparam in self.parent.rparams.items():
             tmp = sp.symbols(f'{rparam.name}')
             self.inputs_dict[rpname] = tmp
             self.sub_map[rf"\b{rpname}\b"] = f'self.routine.{rpname}.v'
-            self.tex_map[rf"\b{rpname}\b"] = rparam.tex_name
+            self.tex_map[rf"\b{rpname}\b"] = f'{rparam.tex_name}'
 
         # store tex names defined in `self.config`
         for key in self.config.as_dict():
@@ -140,35 +141,4 @@ class SymProcessor:
         """
         Generate pretty print math formulation.
         """
-        logger.debug("- Generating pretty prints for %s", self.class_name)
-
-        # equation symbols for pretty printing
-        self.c = sp.Matrix([])
-        self.bub, self.beq = sp.Matrix([]), sp.Matrix([])
-        self.lb, self.ub = sp.Matrix([]), sp.Matrix([])
-
-        try:
-            self.x = sp.Matrix(list(self.vars_dict.values())).subs(self.tex_names)
-        except TypeError as e:
-            logger.error("Error while substituting tex_name for variables.")
-            logger.error("Variable names might have conflicts with SymPy functions.")
-            raise e
-
-        # get pretty printing equations by substituting symbols
-        self.Aub = self.Aub_matrix.subs(self.tex_names)
-        self.Aeq = self.Aeq_matrix.subs(self.tex_names)
-
-        # --- disabled part --- not understand yet, seems not necessary in AMS?
-        # store latex strings
-        # nub = len(self.Aub)
-        # neq = len(self.Aeq)
-        # self.calls.x_latex = [sp.latex(item) for item in self.xy[:nx]]
-        # self.calls.y_latex = [sp.latex(item) for item in self.xy[nx:nx + ny]]
-
-        # self.calls.f_latex = [sp.latex(item) for item in self.f]
-        # self.calls.g_latex = [sp.latex(item) for item in self.g]
-        # self.calls.s_latex = [sp.latex(item) for item in self.s]
-
-        # self.df = self.df_sparse.subs(self.tex_names)
-        # self.dg = self.dg_sparse.subs(self.tex_names)
-        # --- end ---
+        raise NotImplementedError

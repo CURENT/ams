@@ -201,19 +201,22 @@ class RDocumenter:
         info.append(p.info if p.info else '')
 
         # expressions based on output format
-        # FIXME: now we have to setup a routine to get the expressions
         self.parent.syms.generate_symbols()
-        logger.debug(f'sub_map: {self.parent.syms.sub_map}')
+        expressions = p.e_str
+        # NOTE: re.sub will run into error if `\` occurs at first position
+        # here we skip `\sum` in re replacement and do this using string replace
+        # however, this method might not be robust
+        for pattern, replacement in self.parent.syms.tex_map.items():
+            if r'\sum' in replacement:
+                continue
+            expressions = re.sub(pattern, replacement, expressions)
+        expressions = expressions.replace('sum', '\sum')
+        expressions = p.sense + '. ' + expressions
+        expressions = [expressions]
         if export == 'rest':
-            expressions = p.e_str
-            for pattern, replacement in self.parent.syms.tex_map.items():
-                expressions = re.sub(pattern, replacement, expressions)
             expressions = math_wrap(expressions, export=export)
             title = 'Objective\n----------------------------------'
         else:
-            expressions = p.e_str
-            for pattern, replacement in self.parent.syms.tex_map.items():
-                expressions = re.sub(pattern, replacement, expressions)
             title = 'Objective'
 
         plain_dict = OrderedDict([('Name', names),
@@ -263,7 +266,7 @@ class RDocumenter:
 
             slist = []
             if p.owner is not None and p.src is not None:
-                slist.append(f'{p.owner.class_name}.{p.src}')
+                slist.append(f'{p.src}<{p.owner.class_name}>')
             sources.append(','.join(slist))
 
         # symbols based on output format
@@ -330,7 +333,7 @@ class RDocumenter:
 
             slist = []
             if p.owner is not None and p.src is not None:
-                slist.append(f'{p.owner.class_name}.{p.src}')
+                slist.append(f'{p.src}<{p.owner.class_name}>')
             sources.append(','.join(slist))
 
         # symbols based on output format
