@@ -2,6 +2,7 @@
 Documenter class for AMS models.
 """
 import inspect
+import re
 
 import logging
 from collections import OrderedDict
@@ -141,7 +142,7 @@ class RDocumenter:
 
         # add tables
         # TODO: fix obj and constr doc
-        # out += self._obj_doc(max_width=max_width, export=export)
+        out += self._obj_doc(max_width=max_width, export=export)
         # out += self._constr_doc(max_width=max_width, export=export)
         out += self._var_doc(max_width=max_width, export=export)
         out += self._param_doc(max_width=max_width, export=export)
@@ -175,8 +176,8 @@ class RDocumenter:
                                   ])
 
         rest_dict = OrderedDict([('Name', names),
-                                 ('Symbol', symbols),
                                  ('Description', info),
+                                 ('Expression', symbols),
                                  ])
 
         # convert to rows and export as table
@@ -199,22 +200,29 @@ class RDocumenter:
         class_names.append(p.class_name)
         info.append(p.info if p.info else '')
 
-        # symbols based on output format
+        # expressions based on output format
+        # FIXME: now we have to setup a routine to get the expressions
+        self.parent.syms.generate_symbols()
+        logger.debug(f'sub_map: {self.parent.syms.sub_map}')
         if export == 'rest':
-            symbols = [item.tex_name for item in self.vars.values()]
-            symbols = math_wrap(symbols, export=export)
+            expressions = p.e_str
+            for pattern, replacement in self.parent.syms.tex_map.items():
+                expressions = re.sub(pattern, replacement, expressions)
+            expressions = math_wrap(expressions, export=export)
             title = 'Objective\n----------------------------------'
         else:
-            symbols = [item.name for item in self.vars.values()]
+            expressions = p.e_str
+            for pattern, replacement in self.parent.syms.tex_map.items():
+                expressions = re.sub(pattern, replacement, expressions)
             title = 'Objective'
-        
+
         plain_dict = OrderedDict([('Name', names),
                                   ('Description', info),
                                   ])
 
         rest_dict = OrderedDict([('Name', names),
-                                 ('Symbol', symbols),
                                  ('Description', info),
+                                 ('Expression', expressions),
                                  ])
 
         # convert to rows and export as table

@@ -53,6 +53,7 @@ class SymProcessor:
         self.config = parent.config
         self.class_name = parent.class_name
         self.tex_names = OrderedDict()
+        self.tex_map = OrderedDict()
 
         lang = "cp"  # TODO: might need to be generalized to other solvers
         self.sub_map = OrderedDict([
@@ -60,6 +61,10 @@ class SymProcessor:
             (r'\bsum\b', f'{lang}.sum'),  # only used for CVXPY
             (r'\bvar\b', f'{lang}.Variable'),  # only used for CVXPY
             (r'\bproblem\b', f'{lang}.Problem'),  # only used for CVXPY
+            ])
+        self.tex_map = OrderedDict([
+            (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 * \2'),
+            (r'sum', r'\\sum'),
             ])
 
         self.status = {
@@ -86,18 +91,20 @@ class SymProcessor:
             self.tex_names[key] = sp.symbols(self.parent.tex_names[key])
 
         # Vars
-        for raname, var in self.parent.vars.items():
+        for vname, var in self.parent.vars.items():
             tmp = sp.symbols(f'{var.name}')
             # tmp = sp.symbols(var.name)
-            self.vars_dict[raname] = tmp
-            self.inputs_dict[raname] = tmp
-            self.sub_map[rf"\b{raname}\b"] = f"self.{raname}"
+            self.vars_dict[vname] = tmp
+            self.inputs_dict[vname] = tmp
+            self.sub_map[rf"\b{vname}\b"] = f"self.{vname}"
+            self.tex_map[rf"\b{vname}\b"] = var.tex_name
 
         # RParams
         for rpname, rparam in self.parent.rparams.items():
             tmp = sp.symbols(f'{rparam.name}')
             self.inputs_dict[rpname] = tmp
             self.sub_map[rf"\b{rpname}\b"] = f'self.routine.{rpname}.v'
+            self.tex_map[rf"\b{rpname}\b"] = rparam.tex_name
 
         # store tex names defined in `self.config`
         for key in self.config.as_dict():

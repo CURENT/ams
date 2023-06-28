@@ -190,7 +190,7 @@ class DCOPFModel(DCOPFBase):
                               )
         # --- objective ---
         self.obj = Objective(name='tc',
-                             info='total generation cost',
+                             info='total cost',
                              e_str='sum(c2 * pg**2 + c1 * pg + c0)',
                              sense='min',)
 
