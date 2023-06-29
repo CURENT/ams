@@ -11,6 +11,7 @@ ams_file_classes = list([
     ('static', ['PQ', 'PV', 'Slack']),
     ('shunt', ['Shunt']),
     ('line', ['Line']),
+    ('distributed', ['ESD1']),
     ('area', ['Area']),
     ('region', ['Region']),
     ('reserve', ['SFR']),
