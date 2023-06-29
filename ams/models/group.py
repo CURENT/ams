@@ -92,6 +92,19 @@ class ACTopology(GroupBase):
         self.common_vars.extend(('a', 'v'))
 
 
+class DG(GroupBase):
+    """
+    Distributed generation (small-scale).
+
+    See :ref:`SynGen` for the notes on replacing StaticGen and setting the power
+    ratio parameters.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.common_params.extend(('bus', 'fn'))
+
+
 class Cost(GroupBase):
     def __init__(self):
         super().__init__()
