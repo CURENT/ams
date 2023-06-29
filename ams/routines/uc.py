@@ -52,6 +52,14 @@ class UCModel(DCOPFModel):
         DCOPFModel.__init__(self, system, config)
         self.info = 'unit commitment'
         self.type = 'DCUC'
+        # --- vars ---
+        self.ug = Var(info='gen connection status',
+                       name='ug',
+                       tex_name=r'u_{g}',
+                       owner_name='StaticGen',
+                       bool=True,
+                       src='u',
+                       )
         # --- constraints ---
         # self.rgu = Constraint(name='rgu',
         #                       info='ramp up limit of generator output',
@@ -66,7 +74,7 @@ class UCModel(DCOPFModel):
         # --- objective ---
         self.obj = Objective(name='tc',
                              info='total generation and reserve cost',
-                             e_str='sum(c2 * pg**2 + c1 * pg + c0)',
+                             e_str='sum(pg**2 * ug + c1 * pg * ug+ c0 * ug + csu * ug + csd * (1 - ug))',
                              sense='min',
                              )
 
