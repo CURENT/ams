@@ -41,9 +41,11 @@ class Documenter(andes_Documenter):
         self.class_name = parent.class_name
         self.config = parent.config
         self.params = parent.params
+        self.algebs = parent.algebs
+        self.services = parent.services
 
-        func_to_disable = ['_var_doc', '_init_doc', '_eq_doc',
-                           '_service_doc', '_discrete_doc', '_block_doc']
+        func_to_disable = ['_init_doc', '_eq_doc',
+                           '_discrete_doc', '_block_doc']
         disable_methods(func_to_disable)
 
     def get(self, max_width=78, export='plain'):
@@ -81,10 +83,87 @@ class Documenter(andes_Documenter):
 
         # add tables
         out += self._param_doc(max_width=max_width, export=export)
+        out += self._var_doc(max_width=max_width, export=export)
+        out += self._service_doc(max_width=max_width, export=export)
         # TODO: fix and add the config doc later on
         # out += self.config.doc(max_width=max_width, export=export)
 
         return out
+
+    def _var_doc(self, max_width=78, export='plain'):
+        # variable documentation
+        if len(self.algebs) == 0:
+            return ''
+
+        names, symbols, units = list(), list(), list()
+        info = list()
+        units_rest, ty = list(), list()
+
+        for p in self.algebs.values():
+            names.append(p.name)
+            ty.append(p.class_name)
+            info.append(p.info if p.info else '')
+            units.append(p.unit if p.unit else '')
+            units_rest.append(f'*{p.unit}*' if p.unit else '')
+
+        title = 'Variables'
+
+        # replace with latex math expressions if export is ``rest``
+        if export == 'rest':
+            symbols = [item.tex_name for item in self.algebs.values()]
+            symbols = math_wrap(symbols, export=export)
+            title = 'Variables\n---------'
+
+        plain_dict = OrderedDict([('Name', names),
+                                  ('Type', ty),
+                                  ('Description', info),
+                                  ('Unit', units)])
+
+        rest_dict = OrderedDict([('Name', names),
+                                 ('Symbol', symbols),
+                                 ('Type', ty),
+                                 ('Description', info),
+                                 ('Unit', units_rest)])
+
+        return make_doc_table(title=title,
+                              max_width=max_width,
+                              export=export,
+                              plain_dict=plain_dict,
+                              rest_dict=rest_dict)
+
+    def _service_doc(self, max_width=78, export='plain'):
+        if len(self.services) == 0:
+            return ''
+
+        names, symbols = list(), list()
+        info = list()
+        class_names = list()
+
+        for p in self.services.values():
+            names.append(p.name)
+            class_names.append(p.class_name)
+            info.append(p.info if p.info else '')
+            symbols.append(p.tex_name if p.tex_name is not None else '')
+
+        title = 'Services'
+        if export == 'rest':
+            symbols = math_wrap(symbols, export=export)
+            title = 'Services\n----------'
+
+        plain_dict = OrderedDict([('Name', names),
+                                  ('Description', info),
+                                  ('Type', class_names)])
+
+        rest_dict = OrderedDict([('Name', names),
+                                 ('Description', info),
+                                 ('Symbol', symbols),
+                                 ('Type', class_names)])
+
+        return make_doc_table(title=title,
+                              max_width=max_width,
+                              export=export,
+                              plain_dict=plain_dict,
+                              rest_dict=rest_dict)
 
 
 class RDocumenter:

@@ -107,8 +107,10 @@ class Model:
             self.params_ext[key] = value
         elif isinstance(value, BackRef):
             self.services_ref[key] = value
+            self.services[key] = value
         elif isinstance(value, VarSum):
             self.services_sum[key] = value
+            self.services[key] = value
 
     @property
     def class_name(self):

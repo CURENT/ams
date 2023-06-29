@@ -96,8 +96,16 @@ class DG(GroupBase):
     """
     Distributed generation (small-scale).
 
-    See :ref:`SynGen` for the notes on replacing StaticGen and setting the power
+    See ANDES Documentation SynGen here for the notes on replacing StaticGen and setting the power
     ratio parameters.
+
+    Reference:
+
+    [1] ANDES Documentation, SynGen, [Online]
+
+    Available:
+
+    https://docs.andes.app/en/latest/groupdoc/SynGen.html#syngen
     """
 
     def __init__(self):
