@@ -243,7 +243,6 @@ class RDocumenter:
 
         # NOTE: in the future, there might occur special math symbols
         special_map = OrderedDict([
-            ('sum', '\sum'),
             ('SUMSYMBOL', '\sum'),
         ])
 
@@ -255,17 +254,18 @@ class RDocumenter:
                 expr = p.e_str
                 skip_list = []
                 for pattern, replacement in self.parent.syms.tex_map.items():
-                    if 'sum' in replacement:
-                        expr = re.sub(pattern, 'SUMSYMBOL', expr)
-                        continue
+                    if '\sum' in replacement:
+                        replacement = replacement.replace('\sum', 'SUMSYMBOL')
                     if '\p' in replacement:
                         continue
+                    if 'sum' in expr:
+                        expr = expr.replace('sum', 'SUMSYMBOL')
                     else:
                         try:
                             expr = re.sub(pattern, replacement, expr)
                         except re.error:
                             expr_pattern = pattern.removeprefix('\\b').removesuffix('\\b')
-                            logger.error(f'Faild parse Element {expr_pattern} in {p.class_name}, check its tex_name.')
+                            logger.error(f'Faild parse Element <{expr_pattern}> in {p.class_name}, check its tex_name.')
                             expr = ''
                 for pattern, replacement in special_map.items():
                     expr = expr.replace(pattern, replacement)

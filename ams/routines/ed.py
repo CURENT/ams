@@ -51,10 +51,10 @@ class EDData(DCOPFData):
                          unit='p.u.',
                          owner_name='SFR',
                          )
-        self.prs = RParam(info='sum matrix of reserve',
+        self.prs = RParam(info='The matrix to sum zonal SFR reserve ``pru`` and ``prd`` as vectors',
                           name='prs',
                           src='prs',
-                          tex_name=r'\sum',
+                          tex_name=r'\sum_{pr}',
                           owner_name='SFR',
                           )
         # 2. generator
@@ -143,7 +143,7 @@ class ED(EDData, EDModel):
 
     ED extends DCOPF with:
 
-    1. zonal SFR reserve: decision reserve ``pru`` and ``prd``; linear cost ``cru`` and ``crd``; requirement ``du`` and ``dd``
+    1. zonal SFR reserve: decision variables ``pru`` and ``prd``; linear cost ``cru`` and ``crd``; requirement ``du`` and ``dd``
 
     2. generator ramping: start point ``pg0``; ramping limit ``R10``
 
