@@ -126,7 +126,7 @@ class DCOPFBase(RoutineModel):
         kwargs : keywords, optional
             Additional solver specific arguments. See CVXPY documentation for details.
         """
-        RoutineModel.run(self, **kwargs)
+        return RoutineModel.run(self, **kwargs)
 
     def unpack(self, **kwargs):
         """
