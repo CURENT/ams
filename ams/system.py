@@ -422,6 +422,7 @@ class System(andes_System):
         redBus = [int(bus) if isinstance(bus, (int, float)) else bus for bus in all_bus if bus not in gen_bus]
 
         # Restrucrue PQ load value to match gen bus pattern
+        # FIXME: if we need sparse matrix storage?
         idx_PD1 = self.PQ.find_idx(keys="bus", values=regBus, allow_none=True, default=None)
         idx_PD2 = self.PQ.find_idx(keys="bus", values=redBus, allow_none=True, default=None)
         PD1 = self.PQ.get(src='p0', attr='v', idx=idx_PD1)
