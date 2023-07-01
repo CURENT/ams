@@ -11,7 +11,7 @@ from andes.utils.misc import elapsed
 
 from ams.routines.routine import RoutineData, RoutineModel
 from ams.opt.omodel import Var, Constraint, Objective
-from ams.solver.pypower.runpf import runpf, rundcpf
+from ams.solver.pypower.runpf import rundcpf
 
 from ams.io.pypower import system2ppc
 from ams.core.param import RParam
