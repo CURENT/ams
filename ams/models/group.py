@@ -126,6 +126,14 @@ class Collection(GroupBase):
     pass
 
 
+class TimeHorizon(GroupBase):
+    """
+    Time horizon group.
+    """
+    def __init__(self):
+        super().__init__()
+
+
 class Reserve(GroupBase):
     def __init__(self):
         super().__init__()
