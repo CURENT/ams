@@ -148,6 +148,12 @@ class RTEDModel(DCOPFModel):
                               e_str='-pg + pg0 - R10',
                               type='uq',
                               )
+        # --- objective ---
+        self.obj = Objective(name='tc',
+                             info='total generation and reserve cost',
+                             e_str='sum(c2 * pg**2 + c1 * pg + c0 + cru * pru + crd * prd)',
+                             sense='min',
+                             )
 
 
 class RTED(RTEDData, RTEDModel):
@@ -155,16 +161,19 @@ class RTED(RTEDData, RTEDModel):
     DC-based real-time economic dispatch (RTED).
 
     RTED extends DCOPF with:
+
     1. Parameter ``pg0``, which can be retrieved from dynamic simulation results.
+
     2. RTED has mapping dicts to interface with ANDES.
+
     3. RTED routine adds a function ``dc2ac`` to do the AC conversion using ACOPF
-    4. zonal SFR reserve: decision variables ``pru`` and ``prd``; linear cost ``cru`` and ``crd``;
-       requirement ``du`` and ``dd``
+
+    4. zonal SFR reserve: decision variables ``pru`` and ``prd``; linear cost ``cru`` and ``crd``; requirement ``du`` and ``dd``
+
     5. generator ramping: start point ``pg0``; ramping limit ``R10``
 
-    The function ``dc2ac`` sets the solved ``vBus`` value with the solved ACOPF.
-
-    Without ``dc2ac`` conversion, dynamic simulation might fail due to the gap between
+    The function ``dc2ac`` sets the ``vBus`` value from solved ACOPF.
+    Without this conversion, dynamic simulation might fail due to the gap between
     DC-based dispatch results and AC-based dynamic initialization.
     """
 
@@ -212,10 +221,10 @@ class RTED(RTEDData, RTEDModel):
 
     def run(self, **kwargs):
         """
-        Overload ``run`` method.
+        Overload ``run()`` method.
 
         Notes
-        ------
+        -----
         1. remove ``vBus`` if has been converted with ``dc2ac``
         """
         if self.is_ac:
