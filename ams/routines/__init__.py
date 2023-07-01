@@ -9,10 +9,10 @@ from ams.routines.routine import RoutineData, RoutineModel
 all_routines = OrderedDict([
     ('dcpf', ['DCPF']),
     ('pflow', ['PFlow']),
+    ('acopf', ['ACOPF']),
     ('dcopf', ['DCOPF']),
     ('ed', ['ED', 'RTED']),
     ('uc', ['UC']),
-    ('acopf', ['ACOPF']),
 ])
 
 class_names = list_flatten(list(all_routines.values()))
