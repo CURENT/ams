@@ -201,7 +201,7 @@ class DCPF(DCPFlowData, DCPFlowModel):
 
     Notes
     -----
-    1. DCPF is solved with PYPOWER ``runpf`` function.
+    1. DCPF is solved with PYPOWER ``rundcpf`` function.
     2. DCPF formulation is not complete yet, but this does not affect the
        results because the data are passed to PYPOWER for solving.
     """
