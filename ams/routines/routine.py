@@ -229,10 +229,11 @@ class RoutineModel:
         if self.exit_code == 0:
             info = f"{self.class_name} solved as {status} in {s} with exit code {self.exit_code}."
             logger.warning(info)
+            return True
         else:
             info = f"{self.class_name} failed as {status} with exit code {self.exit_code}!"
             logger.warning(info)
-        return self.exit_code
+            return False
 
     def summary(self, **kwargs):
         """

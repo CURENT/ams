@@ -149,9 +149,14 @@ class DCPFlowBase(RoutineModel):
         _, s = elapsed(t0)
         self.exec_time = float(s.split(' ')[0])
         self.unpack(res)
-        info = f"{self.class_name} completed in {s} with exit code {self.exit_code}."
-        logger.info(info)
-        return self.exit_code
+        if self.exit_code == 0:
+            info = f"{self.class_name} completed in {s} with exit code {self.exit_code}."
+            logger.info(info)
+            return True
+        else:
+            info = f"{self.class_name} failed!"
+            logger.warning(info)
+            return False
 
     def summary(self, **kwargs):
         """
