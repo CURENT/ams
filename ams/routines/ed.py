@@ -27,14 +27,6 @@ class EDData(DCOPFData):
                          owner_name='RolHorizon',
                          )
 
-        # 2. generator
-        self.pg0 = RParam(info='generator active power start point (system base)',
-                          name='pg0',
-                          src='pg0',
-                          tex_name=r'p_{g0}',
-                          unit='p.u.',
-                          owner_name='StaticGen',
-                          )
         self.R10 = RParam(info='10-min ramp rate (system base)',
                           name='R10',
                           src='R10',
@@ -79,14 +71,13 @@ class ED(EDData, EDModel):
 
     ED extends DCOPF with:
 
-    1. zonal SFR reserve: decision variables ``pru`` and ``prd``; linear cost ``cru`` and ``crd``; requirement ``du`` and ``dd``
+    1. rolling horizon: ``nt`` intervals
 
-    2. generator ramping: start point ``pg0``; ramping limit ``R10``
+    2. generator ramping limits ``rgu`` and ``rgd``
 
     Notes
     -----
     1. ED is a DC-based model, which assumes bus voltage to be 1
-    2. ED adds a data check on ``pg0``, if all zeros, correct as the value of ``p0``
     """
 
     def __init__(self, system, config):
