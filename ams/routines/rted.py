@@ -51,11 +51,11 @@ class RTEDData(DCOPFData):
                          unit='p.u.',
                          owner_name='SFR',
                          )
-        self.prs = RParam(info='sum matrix of reserve',
-                          name='prs',
-                          src='prs',
-                          tex_name=r'\sum',
-                          owner_name='SFR',
+        self.gsm = RParam(info='sum matrix of gen var',
+                          name='gsm',
+                          src='gsm',
+                          tex_name=r'\sum_{g}',
+                          owner_name='Region',
                           )
         # 2. generator
         self.pg0 = RParam(info='generator active power start point (system base)',
@@ -120,12 +120,12 @@ class RTEDModel(DCOPFModel):
         # --- constraints ---
         self.rbu = Constraint(name='rbu',
                               info='RegUp reserve balance',
-                              e_str='prs @ pru - du',
+                              e_str='gsm @ pru - du',
                               type='eq',
                               )
         self.rbd = Constraint(name='rbd',
                               info='RegDn reserve balance',
-                              e_str='prs @ prd - dd',
+                              e_str='gsm @ prd - dd',
                               type='eq',
                               )
         self.rru = Constraint(name='rru',

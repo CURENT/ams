@@ -15,9 +15,28 @@ logger = logging.getLogger(__name__)
 
 class VarSum(BaseService):
     """
-    Build sum matrix for a variable.
+    Build sum matrix for a variable vector in the shape of indexer vector.
+    The value array is in the shape of (nr, nc), where nr is the number of
+    unique values in indexer.v, and nc is the length of the target var.
 
-    #TODO: add example
+    See :py:mod:`ams.models.region` for example usage.
+
+    Parameters
+    ----------
+    name : str
+        Instance name.
+    tex_name : str
+        TeX name.
+    unit : str
+        Unit.
+    info : str
+        Description.
+    vtype : Type
+        Variable type.
+    indexer : Callable
+        Indexer instance.
+    model : str
+        Model name.
     """
 
     def __init__(self, name: str = None, tex_name: str = None, unit: str = None,
@@ -43,10 +62,10 @@ class VarSum(BaseService):
         except AttributeError:
             idx = mdl_or_grp.get_idx()
         try:
-            mdl_indexer_val = mdl_or_grp.get(src=self.indexer.name, attr='v',
+            mdl_indexer_val = mdl_or_grp.get(src='zone', attr='v',
                                              idx=idx, allow_none=True, default=None)
         except KeyError:
-            raise KeyError(f'Indexer {self.indexer.name} not found in model {self.model}')
+            raise KeyError(f'Indexer <zone> not found in model <{self.model}>!')
         row, col = np.meshgrid(mdl_indexer_val, self.indexer.v)
         result = (row == col).astype(int)
 

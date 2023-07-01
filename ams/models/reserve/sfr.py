@@ -5,7 +5,6 @@ SFR model.
 from andes.core import (ModelData, IdxParam, NumParam, ExtParam)
 
 from ams.core.model import Model
-from ams.core.service import VarSum
 
 
 class SFRData(ModelData):
@@ -39,9 +38,3 @@ class SFR(SFRData, Model):
         SFRData.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'Reserve'
-
-        self.prs = VarSum(name='prs',
-                          tex_name=r'\sum_{pr}',
-                          info='The matrix to sum zonal SFR reserve ``pru`` and ``prd`` as vectors',
-                          indexer=self.zone,
-                          model='StaticGen',)
