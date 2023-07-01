@@ -2,32 +2,71 @@
 Distributed energy storage model.
 """
 
-from andes.core.param import NumParam
-from andes.models.distributed.esd1 import ESD1Data  # NOQA
+from andes.core.param import IdxParam, NumParam  # NOQA
+from andes.core.model import ModelData  # NOQA
 
 from ams.core.model import Model  # NOQA
 from ams.core.var import Algeb  # NOQA
 
 
-class ESD1Data(ESD1Data):
+class ESD1Data(ModelData):
     """
-    ESD1 model data, revised from ANDES ``ESD1Data``.
+    ESD1 model data.
     """
 
     def __init__(self):
-        super().__init__()
-        self.pqflag = NumParam(info='P/Q priority for I limit; 0-Q priority, 1-P priority',
-                               mandatory=False,
-                               unit='bool',
+        ModelData.__init__(self)
+
+        self.bus = IdxParam(model='Bus',
+                            info="interface bus id",
+                            mandatory=True,
+                            )
+
+        self.gen = IdxParam(info="static generator index",
+                            mandatory=True,
+                            )
+
+        self.Sn = NumParam(default=100.0, tex_name='S_n',
+                           info='device MVA rating',
+                           unit='MVA',
+                           )
+
+        self.gammap = NumParam(default=1.0, tex_name=r'\gamma_p',
+                               info='Ratio of PVD1.pref0 w.r.t to that of static PV',
+                               vrange='(0, 1]',
                                )
-        attr_to_remove = ['fn', 'busf', 'xc', 'pqflag', 'igreg',
-                          'v0', 'v1', 'dqdv', 'fdbd', 'ddn',
-                          'ialim', 'vt0', 'vt1', 'vt2', 'vt3',
-                          'vrflag', 'ft0', 'ft1', 'ft2', 'ft3',
-                          'frflag', 'tip', 'tiq',
-                          'recflag', 'Tf']
-        for attr in attr_to_remove:
-            delattr(self, attr)
+
+        self.gammaq = NumParam(default=1.0, tex_name=r'\gamma_q',
+                               info='Ratio of PVD1.qref0 w.r.t to that of static PV',
+                               vrange='(0, 1]',
+                               )
+
+        self.SOCmin = NumParam(default=0.0, tex_name='SOC_{min}',
+                               info='Minimum required value for SOC in limiter',
+                               )
+
+        self.SOCmax = NumParam(default=1.0, tex_name='SOC_{max}',
+                               info='Maximum allowed value for SOC in limiter',
+                               )
+
+        self.SOCinit = NumParam(default=0.5, tex_name='SOC_{init}',
+                                info='Initial state of charge',
+                                )
+
+        self.En = NumParam(default=100.0, tex_name='E_n',
+                           info='Rated energy capacity',
+                           unit="MWh"
+                           )
+
+        self.EtaC = NumParam(default=1.0, tex_name='Eta_C',
+                             info='Efficiency during charging',
+                             vrange=(0, 1),
+                             )
+
+        self.EtaD = NumParam(default=1.0, tex_name='Eta_D',
+                             info='Efficiency during discharging',
+                             vrange=(0, 1),
+                             )
 
 
 class ESD1Model(Model):
