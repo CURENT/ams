@@ -82,6 +82,8 @@ class Var(Algeb):
         variable address
     v : array-like
         local-storage of the variable value
+    rtn : ams.routines.Routine
+        The owner routine instance.
     """
 
     def __init__(self,
@@ -108,6 +110,7 @@ class Var(Algeb):
                  neg: Optional[bool] = False,
                  ):
         super().__init__(name=name, tex_name=tex_name, info=info, unit=unit)
+        self.rtn = None
         self.src = name if (src is None) else src
         self.is_group = False
         self.model = model  # indicate if this variable is a group variable
@@ -211,6 +214,8 @@ class Constraint:
         Additional information about the constraint.
     type : str
         Type of the constraint.
+    rtn : ams.routines.Routine
+        The owner routine instance.
 
     Notes
     -----
@@ -224,6 +229,7 @@ class Constraint:
                  info: Optional[str] = None,
                  type: Optional[str] = 'uq',
                  ):
+        self.rtn = None
         self.name = name
         self.e_str = e_str
         self.info = info
@@ -275,6 +281,8 @@ class Objective:
     v : NoneType
         The value of the objective function. It needs to be set through
         computation.
+    rtn : ams.routines.Routine
+        The owner routine instance.
     """
 
     def __init__(self,
@@ -282,6 +290,7 @@ class Objective:
                  e_str: Optional[str] = None,
                  info: Optional[str] = None,
                  sense: Optional[str] = 'min'):
+        self.rtn = None
         self.name = name
         self.e_str = e_str
         self.info = info

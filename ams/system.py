@@ -232,13 +232,21 @@ class System(andes_System):
             self.types[name] = self.__dict__[name]
 
     def _collect_group_data(self, items):
+        """
+        Set the owner for routine attributes: ``RParam``, ``Var``, and ``RBaseService``.
+        """
         for item_name, item in items.items():
-            # logger.debug(f'RVar {item_name} has owner {item.model} in size {item.owner.n}')
             if item.model in self.groups.keys():
                 item.is_group = True
                 item.owner = self.groups[item.model]
             elif item.model in self.models.keys():
                 item.owner = self.models[item.model]
+            elif item_name in ['PTDF1', 'PTDF2', 'pd1', 'pd2']:
+                pass
+            else:
+                msg = f'Model indicator \'{item.model}\' of <{item.rtn.class_name}.{item_name}>'
+                msg += f' is not a model or group. Likely a modeling error.'
+                logger.warning(msg)
 
     def import_routines(self):
         """
@@ -272,8 +280,9 @@ class System(andes_System):
                     # Collect vars
                     vars = getattr(rtn, 'vars')
                     self._collect_group_data(vars)
-                    # setup numerical optimziation model
-                    # TODO: substitute symbolic expressions with numerical ones
+                    # Collect services
+                    services = getattr(rtn, 'services')
+                    self._collect_group_data(services)
 
     def import_groups(self):
         """

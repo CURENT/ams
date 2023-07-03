@@ -5,20 +5,21 @@ Module for routine data.
 import logging  # NOQA
 from collections import OrderedDict  # NOQA
 
-import numpy as np
+import numpy as np  # NOQA
 
-from andes.core import Config
-from andes.shared import deg2rad
-from andes.utils.misc import elapsed
-from ams.utils import timer
-from ams.core.param import RParam
-from ams.opt.omodel import OModel, Var, Constraint, Objective
+from andes.core import Config  # NOQA
+from andes.shared import deg2rad  # NOQA
+from andes.utils.misc import elapsed  # NOQA
+from ams.utils import timer  # NOQA
+from ams.core.param import RParam  # NOQA
+from ams.opt.omodel import OModel, Var, Constraint, Objective  # NOQA
 
-from ams.core.symprocessor import SymProcessor
-from ams.core.documenter import RDocumenter
+from ams.core.symprocessor import SymProcessor  # NOQA
+from ams.core.documenter import RDocumenter  # NOQA
+from ams.core.service import RBaseService  # NOQA
 
-from ams.models.group import GroupBase
-from ams.core.model import Model
+from ams.models.group import GroupBase  # NOQA
+from ams.core.model import Model  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,8 @@ class RoutineModel:
                                       ('sys_mva', 'S_{b,sys}'),
                                       ))
         self.syms = SymProcessor(self)  # symbolic processor
+
+        self.services = OrderedDict()  # list out services in a routine
 
         self.vars = OrderedDict()  # list out Vars in a routine
         self.constrs = OrderedDict()
@@ -113,7 +116,8 @@ class RoutineModel:
                 except ValueError:
                     raise ValueError(f'Failed to get value of <{src_map}> from {owner.class_name}.')
             else:
-                logger.warning(f'Var {self.class_name}.{src} has no mapping to a model or group, try search in routine {self.class_name}.')
+                logger.warning(
+                    f'Var {self.class_name}.{src} has no mapping to a model or group, try search in routine {self.class_name}.')
                 loc = self._loc(src=src, idx=idx, allow_none=allow_none)
                 src_v = self.__dict__[src].v
                 out = [src_v[l] for l in loc]
@@ -269,8 +273,13 @@ class RoutineModel:
         This function assigns `owner` to the model itself, assigns the name and tex_name.
         """
         if key in self.__dict__:
-            if key in self.constrs.keys() or key in self.vars.keys():
-                logger.warning(f"{self.class_name}: redefinition of member <{key}>. Likely a modeling error.")
+            if hasattr(self, 'constrs'):
+                if key in self.constrs.keys() or key in self.vars.keys():
+                    logger.warning(f"{self.class_name}: redefinition of member <{key}>. Likely a modeling error.")
+
+        # register owner routine instance of following attributes
+        if isinstance(value, (Var, RParam, Constraint, RBaseService)):
+            value.rtn = self
 
     def __setattr__(self, key, value):
         """
@@ -307,3 +316,5 @@ class RoutineModel:
             self.rparams[key] = value
         elif isinstance(value, Constraint):
             self.constrs[key] = value
+        elif isinstance(value, RBaseService):
+            self.services[key] = value
