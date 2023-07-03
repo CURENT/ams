@@ -6,6 +6,8 @@ from andes.core import (ModelData, IdxParam, NumParam)
 
 from ams.core.model import Model
 
+from ams.core.service import VarSub
+
 
 class RolHorizon(ModelData, Model):
     """

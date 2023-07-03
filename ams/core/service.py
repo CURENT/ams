@@ -13,6 +13,68 @@ from andes.core.service import BaseService, BackRef, RefFlatten
 logger = logging.getLogger(__name__)
 
 
+class NumTile(BaseService):
+    """
+    Tile a numerical vector.
+    """
+
+    def __init__(self, name: str = None, tex_name: str = None,
+                 unit: str = None,
+                 info: str = None, vtype: Type = None,
+                 model: str = None,
+                 src: str = None,
+                 ):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype)
+        self.src = src
+        self.model = model
+        self.export = False
+
+    @property
+    def v(self):
+        pass
+        
+
+
+class VarSub(BaseService):
+    """
+    Build substraction matrix for a variable vector in the shape of
+    indexer vector.
+    """
+
+    def __init__(self, name: str = None, tex_name: str = None,
+                 unit: str = None,
+                 info: str = None, vtype: Type = None,
+                 indexer: Callable = None,
+                 model: str = None,
+                 ):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype)
+        self.indexer = indexer
+        self.model = model
+        self.export = False
+
+    @property
+    def v(self):
+        nr = self.indexer.n
+        mdl_or_grp = self.owner.system.__dict__[self.model]
+        nc = mdl_or_grp.n
+
+        idx = None
+        try:
+            idx = mdl_or_grp.idx.v
+        except AttributeError:
+            idx = mdl_or_grp.get_idx()
+        try:
+            mdl_indexer_val = mdl_or_grp.get(src='zone', attr='v',
+                                             idx=idx, allow_none=True, default=None)
+        except KeyError:
+            raise KeyError(f'Indexer <zone> not found in model <{self.model}>!')
+        row, col = np.meshgrid(mdl_indexer_val, self.indexer.v)
+        result = (row == col).astype(int)
+
+        return result
+
 class VarSum(BaseService):
     """
     Build sum matrix for a variable vector in the shape of indexer vector.
