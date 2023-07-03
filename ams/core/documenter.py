@@ -181,6 +181,7 @@ class RDocumenter:
         self.system = parent.system
         self.class_name = parent.class_name
         self.config = parent.config
+        self.services = parent.services
         self.rparams = parent.rparams
         self.vars = parent.vars
         self.constrs = parent.constrs
@@ -224,9 +225,43 @@ class RDocumenter:
         out += self._obj_doc(max_width=max_width, export=export)
         out += self._constr_doc(max_width=max_width, export=export)
         out += self._var_doc(max_width=max_width, export=export)
+        out += self._service_doc(max_width=max_width, export=export)
         out += self._param_doc(max_width=max_width, export=export)
 
         return out
+
+    def _service_doc(self, max_width=78, export='plain'):
+        # routine service documentation
+        if len(self.services) == 0:
+            return ''
+
+        names, symbols = list(), list()
+        info = list()
+
+        for p in self.services.values():
+            names.append(p.name)
+            info.append(p.info if p.info else '')
+
+        title = 'Services'
+
+        # replace with latex math expressions if export is ``rest``
+        if export == 'rest':
+            symbols = [item.tex_name for item in self.services.values()]
+            symbols = math_wrap(symbols, export=export)
+            title = 'Services\n---------'
+
+        plain_dict = OrderedDict([('Name', names),
+                                  ('Description', info)])
+
+        rest_dict = OrderedDict([('Name', names),
+                                 ('Symbol', symbols),
+                                 ('Description', info)])
+
+        return make_doc_table(title=title,
+                              max_width=max_width,
+                              export=export,
+                              plain_dict=plain_dict,
+                              rest_dict=rest_dict)
 
     def _constr_doc(self, max_width=78, export='plain'):
         # constraint documentation
