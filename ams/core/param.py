@@ -38,7 +38,7 @@ class RParam:
         Source name of the parameter.
     unit : str, optional
         Unit of the parameter.
-    owner_name : str, optional
+    model : str, optional
         Name of the owner model or group.
     v : np.ndarray, optional
         External value of the parameter.
@@ -55,7 +55,7 @@ class RParam:
     >>>                   unit=r'$/(p.u.)',
     >>>                   name='cru',
     >>>                   src='cru',
-    >>>                   owner_name='SFRCost'
+    >>>                   model='SFRCost'
     >>>                   )
 
     Example 2: Define a routine parameter with a user-defined value.
@@ -70,7 +70,7 @@ class RParam:
                  info: Optional[str] = None,
                  src: Optional[str] = None,
                  unit: Optional[str] = None,
-                 owner_name: Optional[str] = None,
+                 model: Optional[str] = None,
                  v: Optional[np.ndarray] = None,
                  ):
 
@@ -80,7 +80,7 @@ class RParam:
         self.src = name if (src is None) else src
         self.unit = unit
         self.is_group = False
-        self.owner_name = owner_name  # indicate if this variable is a group variable
+        self.model = model  # name of a group or model
         self.owner = None  # instance of the owner model or group
         self.is_ext = False  # indicate if the value is set externally
         if v is not None:
@@ -138,12 +138,19 @@ class RParam:
                 if hasattr(self, 'vin') and (self.vin is not None):
                     span += f', vin={self.vin}'
 
-            if self.v.ndim == 1:
+            if isinstance(self.v, np.ndarray):
+                if self.v.ndim == 1:
+                    if len(self.v) <= 20:
+                        span = f', v={self.v}'
+                else:
+                    span = f', v=shape{self.v.shape}'
+            elif isinstance(self.v, list):
                 if len(self.v) <= 20:
                     span = f', v={self.v}'
+                else:
+                    span = f', v=shape{len(self.v)}'
             else:
-                span = f', v=shape{self.v.shape}'
-
+                span = f', v={self.v}'
             return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}{span}'
 
     def get_idx(self):

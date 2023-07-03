@@ -6,6 +6,7 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
+from ams.core.service import VarSum
 from ams.routines.dcopf import DCOPFData, DCOPFModel
 
 from ams.opt.omodel import Var, Constraint, Objective
@@ -27,14 +28,14 @@ class RTEDData(DCOPFData):
                           src='cru',
                           tex_name=r'c_{r,u}',
                           unit=r'$/(p.u.)',
-                          owner_name='SFRCost',
+                          model='SFRCost',
                           )
         self.crd = RParam(info='RegDown reserve coefficient',
                           name='crd',
                           src='crd',
                           tex_name=r'c_{r,d}',
                           unit=r'$/(p.u.)',
-                          owner_name='SFRCost',
+                          model='SFRCost',
                           )
         # 1.2. reserve requirement
         self.du = RParam(info='RegUp reserve requirement (system base)',
@@ -42,35 +43,46 @@ class RTEDData(DCOPFData):
                          src='du',
                          tex_name=r'd_{u}',
                          unit='p.u.',
-                         owner_name='SFR',
+                         model='SFR',
                          )
         self.dd = RParam(info='RegDown reserve requirement (system base)',
                          name='dd',
                          src='dd',
                          tex_name=r'd_{d}',
                          unit='p.u.',
-                         owner_name='SFR',
+                         model='SFR',
                          )
         self.gsm = RParam(info='sum matrix of gen var',
                           name='gsm',
                           src='gsm',
                           tex_name=r'\sum_{g}',
-                          owner_name='Region',
+                          model='Region',
                           )
+        self.zg = RParam(info='gen zone',
+                           name='busz',
+                           src='zone',
+                           tex_name='z_{one,g}',
+                           model='StaticGen',
+                           )
+        # self.psm = VarSum(name='gsm',
+        #                   tex_name='\sum_{g}',
+        #                   info='Sum matrix to sum gen vars vector as vector in shape of zone',
+        #                   indexer=self.idx,
+        #                   model='StaticGen',)
         # 2. generator
         self.pg0 = RParam(info='generator active power start point (system base)',
                           name='pg0',
                           src='pg0',
                           tex_name=r'p_{g0}',
                           unit='p.u.',
-                          owner_name='StaticGen',
+                          model='StaticGen',
                           )
         self.R10 = RParam(info='10-min ramp rate (system base)',
                           name='R10',
                           src='R10',
                           tex_name=r'R_{10}',
                           unit='p.u./min',
-                          owner_name='StaticGen',
+                          model='StaticGen',
                           )
 
 
@@ -107,14 +119,14 @@ class RTEDModel(DCOPFModel):
                        unit='p.u.',
                        name='pru',
                        tex_name=r'p_{r,u}',
-                       owner_name='StaticGen',
+                       model='StaticGen',
                        nonneg=True,
                        )
         self.prd = Var(info='RegDn reserve (system base)',
                        unit='p.u.',
                        name='prd',
                        tex_name=r'p_{r,d}',
-                       owner_name='StaticGen',
+                       model='StaticGen',
                        nonneg=True,
                        )
         # --- constraints ---

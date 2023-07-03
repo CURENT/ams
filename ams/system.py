@@ -233,12 +233,12 @@ class System(andes_System):
 
     def _collect_group_data(self, items):
         for item_name, item in items.items():
-            # logger.debug(f'RVar {item_name} has owner {item.owner_name} in size {item.owner.n}')
-            if item.owner_name in self.groups.keys():
+            # logger.debug(f'RVar {item_name} has owner {item.model} in size {item.owner.n}')
+            if item.model in self.groups.keys():
                 item.is_group = True
-                item.owner = self.groups[item.owner_name]
-            elif item.owner_name in self.models.keys():
-                item.owner = self.models[item.owner_name]
+                item.owner = self.groups[item.model]
+            elif item.model in self.models.keys():
+                item.owner = self.models[item.model]
 
     def import_routines(self):
         """

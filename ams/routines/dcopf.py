@@ -24,32 +24,32 @@ class DCOPFData(RoutineData):
                          name='c2',
                          tex_name=r'c_{2}',
                          unit=r'$/(p.u.^2)',
-                         owner_name='GCost',
+                         model='GCost',
                          )
         self.c1 = RParam(info='Gen cost coefficient 1',
                          name='c1',
                          tex_name=r'c_{1}',
                          unit=r'$/(p.u.)',
-                         owner_name='GCost',
+                         model='GCost',
                          )
         self.c0 = RParam(info='Gen cost coefficient 0',
                          name='c0',
                          tex_name=r'c_{0}',
                          unit=r'$',
-                         owner_name='GCost',
+                         model='GCost',
                          )
         # --- generator limit ---
         self.pmax = RParam(info='generator maximum active power (system base)',
                            name='pmax',
                            tex_name=r'p_{max}',
                            unit='p.u.',
-                           owner_name='StaticGen',
+                           model='StaticGen',
                            )
         self.pmin = RParam(info='generator minimum active power (system base)',
                            name='pmin',
                            tex_name=r'p_{min}',
                            unit='p.u.',
-                           owner_name='StaticGen',
+                           model='StaticGen',
                            )
         # --- load ---
         # NOTE: following two parameters are temporary solution
@@ -68,7 +68,7 @@ class DCOPFData(RoutineData):
                              name='rate_a',
                              tex_name=r'R_{ATEA}',
                              unit='MVA',
-                             owner_name='Line',
+                             model='Line',
                              )
         self.PTDF1 = RParam(info='PTDF matrix for gen bus',
                             name='PTDF1',
@@ -137,10 +137,10 @@ class DCOPFBase(RoutineModel):
             ovar = getattr(self.om, raname)
             var.v = getattr(ovar, 'value')
             # --- copy results from routine algeb into system algeb ---
-            if var.owner_name is None:          # if no owner
+            if var.model is None:          # if no owner
                 continue
             else:
-                owner = getattr(self.system, var.owner_name)
+                owner = getattr(self.system, var.model)
                 try:
                     idx = owner.get_idx()
                 except AttributeError:
@@ -168,7 +168,7 @@ class DCOPFModel(DCOPFBase):
                       name='pg',
                       src='p',
                       tex_name=r'p_{g}',
-                      owner_name='StaticGen',
+                      model='StaticGen',
                       lb=self.pmin,
                       ub=self.pmax,
                       )

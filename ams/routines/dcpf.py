@@ -32,21 +32,21 @@ class DCPFlowData(RoutineData):
                         tex_name='x',
                         src='x',
                         unit='p.u.',
-                        owner_name='Line',
+                        model='Line',
                         )
         self.tap = RParam(info="transformer branch tap ratio",
                           name='tap',
                           src='tap',
                           tex_name='t_{ap}',
                           unit='float',
-                          owner_name='Line',
+                          model='Line',
                           )
         self.phi = RParam(info="transformer branch phase shift in rad",
                           name='phi',
                           src='phi',
                           tex_name='\phi',
                           unit='radian',
-                          owner_name='Line',
+                          model='Line',
                           )
 
         # --- load ---
@@ -55,7 +55,7 @@ class DCPFlowData(RoutineData):
                          src='p0',
                          tex_name=r'p_{d}',
                          unit='p.u.',
-                         owner_name='PQ',
+                         model='PQ',
                          )
 
 
@@ -102,7 +102,7 @@ class DCPFlowBase(RoutineModel):
 
         # --- copy results from system algeb into routine algeb ---
         for raname, var in self.vars.items():
-            owner = getattr(system, var.owner_name)  # instance of owner, Model or Group
+            owner = getattr(system, var.model)  # instance of owner, Model or Group
             if var.src is None:          # skip if no source variable is specified
                 continue
             elif hasattr(owner, 'group'):   # if owner is a Model instance
@@ -188,7 +188,7 @@ class DCPFlowModel(DCPFlowBase):
                            name='aBus',
                            src='a',
                            tex_name=r'a_{Bus}',
-                           owner_name='Bus',
+                           model='Bus',
                            )
         # --- gen ---
         self.pg = Var(info='actual active power generation',
@@ -196,7 +196,7 @@ class DCPFlowModel(DCPFlowBase):
                          name='pg',
                          src='p',
                          tex_name=r'p_{g}',
-                         owner_name='StaticGen',
+                         model='StaticGen',
                          )
 
 

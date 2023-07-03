@@ -32,7 +32,7 @@ class PFlowData(DCPFlowData):
                          src='q0',
                          tex_name=r'q_{d}',
                          unit='p.u.',
-                         owner_name='PQ',
+                         model='PQ',
                          )
 
 
@@ -52,14 +52,14 @@ class PFlowModel(DCPFlowBase):
                         name='aBus',
                         src='a',
                         tex_name=r'a_{Bus}',
-                        owner_name='Bus',
+                        model='Bus',
                         )
         self.vBus = Var(info='bus voltage magnitude',
                         unit='p.u.',
                         name='vBus',
                         src='v',
                         tex_name=r'v_{Bus}',
-                        owner_name='Bus',
+                        model='Bus',
                         )
         # --- gen ---
         self.pg = Var(info='active power generation',
@@ -67,14 +67,14 @@ class PFlowModel(DCPFlowBase):
                       name='pg',
                       src='p',
                       tex_name=r'p_{g}',
-                      owner_name='StaticGen',
+                      model='StaticGen',
                       )
         self.qg = Var(info='reactive power generation',
                       unit='p.u.',
                       name='qg',
                       src='q',
                       tex_name=r'q_{g}',
-                      owner_name='StaticGen',
+                      model='StaticGen',
                       )
         # --- constraints ---
         self.pb = Constraint(name='pb',

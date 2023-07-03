@@ -25,21 +25,21 @@ class UCData(DCOPFData):
                           src='csu',
                           tex_name=r'c_{su}',
                           unit='$',
-                          owner_name='GCost',
+                          model='GCost',
                           )
         self.csd = RParam(info='shutdown cost',
                           name='csd',
                           src='csd',
                           tex_name=r'c_{sd}',
                           unit='$',
-                          owner_name='GCost',
+                          model='GCost',
                           )
         self.R30 = RParam(info='30-min ramp rate (system base)',
                           name='R30',
                           src='R30',
                           tex_name=r'R_{30}',
                           unit='p.u./min',
-                          owner_name='StaticGen',
+                          model='StaticGen',
                           )
 
 
@@ -56,7 +56,7 @@ class UCModel(DCOPFModel):
         self.ug = Var(info='gen connection status',
                        name='ug',
                        tex_name=r'u_{g}',
-                       owner_name='StaticGen',
+                       model='StaticGen',
                        bool=True,
                        src='u',
                        )

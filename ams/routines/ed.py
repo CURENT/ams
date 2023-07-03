@@ -24,7 +24,7 @@ class EDData(DCOPFData):
                          name='nt',
                          src='nt',
                          tex_name=r'n_{t}',
-                         owner_name='RolHorizon',
+                         model='RolHorizon',
                          )
 
         self.R10 = RParam(info='10-min ramp rate (system base)',
@@ -32,7 +32,7 @@ class EDData(DCOPFData):
                           src='R10',
                           tex_name=r'R_{10}',
                           unit='p.u./min',
-                          owner_name='StaticGen',
+                          model='StaticGen',
                           )
 
 

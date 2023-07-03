@@ -43,7 +43,7 @@ class Var(Algeb):
         will be the symbol name to be used in expressions.
     src : str, optional
         Source variable name. If is None, the value of `name` will be used.
-    owner_name : str, optional
+    model : str, optional
         Name of the owner model or group.
     lb : str, optional
         Lower bound
@@ -90,7 +90,7 @@ class Var(Algeb):
                  info: Optional[str] = None,
                  src: Optional[str] = None,
                  unit: Optional[str] = None,
-                 owner_name: Optional[str] = None,
+                 model: Optional[str] = None,
                  lb: Optional[str] = None,
                  ub: Optional[str] = None,
                  nonneg: Optional[bool] = False,
@@ -110,7 +110,7 @@ class Var(Algeb):
         super().__init__(name=name, tex_name=tex_name, info=info, unit=unit)
         self.src = name if (src is None) else src
         self.is_group = False
-        self.owner_name = owner_name  # indicate if this variable is a group variable
+        self.model = model  # indicate if this variable is a group variable
         self.owner = None  # instance of the owner model or group
         self.lb = lb
         self.ub = ub
