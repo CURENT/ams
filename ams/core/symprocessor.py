@@ -51,6 +51,7 @@ class SymProcessor:
         self.inputs_dict = OrderedDict()
         self.vars_dict = OrderedDict()
         self.vars_list = list()       # list of variable symbols, corresponding to `self.xy`
+        self.services_dict = OrderedDict()
         self.config = parent.config
         self.class_name = parent.class_name
         self.tex_names = OrderedDict()
@@ -107,6 +108,14 @@ class SymProcessor:
             self.inputs_dict[rpname] = tmp
             self.sub_map[rf"\b{rpname}\b"] = f'self.routine.{rpname}.v'
             self.tex_map[rf"\b{rpname}\b"] = f'{rparam.tex_name}'
+
+        # Routine Services
+        for sname, service in self.parent.services.items():
+            tmp = sp.symbols(f'{service.name}')
+            self.services_dict[sname] = tmp
+            self.inputs_dict[sname] = tmp
+            self.sub_map[rf"\b{sname}\b"] = f'self.routine.{sname}.v'
+            self.tex_map[rf"\b{sname}\b"] = f'{service.tex_name}'
 
         # store tex names defined in `self.config`
         for key in self.config.as_dict():

@@ -33,11 +33,11 @@ class Region(RegionData, Model):
         self.Bus = BackRef()
         self.ACTopology = BackRef()
 
-        self.gsm = VarSum(name='gsm',
-                          tex_name='\sum_{g}',
-                          info='Sum matrix to sum gen vars vector as vector in shape of zone',
-                          indexer=self.idx,
-                          model='StaticGen',)
+        # self.gsm = VarSum(name='gsm',
+        #                   tex_name='\sum_{g}',
+        #                   info='Sum matrix to sum gen vars vector as vector in shape of zone',
+        #                   indexer=self.idx,
+        #                   model='StaticGen',)
 
     def bus_table(self):
         """

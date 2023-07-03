@@ -52,23 +52,12 @@ class RTEDData(DCOPFData):
                          unit='p.u.',
                          model='SFR',
                          )
-        self.gsm = RParam(info='sum matrix of gen var',
-                          name='gsm',
-                          src='gsm',
-                          tex_name=r'\sum_{g}',
-                          model='Region',
-                          )
         self.zg = RParam(info='gen zone',
-                           name='busz',
-                           src='zone',
-                           tex_name='z_{one,g}',
-                           model='StaticGen',
-                           )
-        # self.psm = VarSum(name='gsm',
-        #                   tex_name='\sum_{g}',
-        #                   info='Sum matrix to sum gen vars vector as vector in shape of zone',
-        #                   indexer=self.idx,
-        #                   model='StaticGen',)
+                         name='busz',
+                         src='zone',
+                         tex_name='z_{one,g}',
+                         model='StaticGen',
+                         )
         # 2. generator
         self.pg0 = RParam(info='generator active power start point (system base)',
                           name='pg0',
@@ -114,6 +103,12 @@ class RTEDModel(DCOPFModel):
 
         self.info = 'Economic dispatch'
         self.type = 'DCED'
+        # --- service ---
+        self.gsm = VarSum(name='gsm',
+                          tex_name=r'\sum_{g}',
+                          info='Sum matrix to sum gen vars vector as vector in shape of zone',
+                          cid=self.zg,
+                          rid='Region',)
         # --- vars ---
         self.pru = Var(info='RegUp reserve (system base)',
                        unit='p.u.',

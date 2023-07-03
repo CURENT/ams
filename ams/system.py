@@ -27,6 +27,7 @@ from ams.models import file_classes
 from ams.routines import all_routines
 from ams.utils.paths import get_config_path
 from ams.core import Algeb
+from ams.core.service import RBaseService
 from ams.core.matprocessor import MatProcessor
 from ams.interop.andes import to_andes
 
@@ -280,9 +281,6 @@ class System(andes_System):
                     # Collect vars
                     vars = getattr(rtn, 'vars')
                     self._collect_group_data(vars)
-                    # Collect services
-                    services = getattr(rtn, 'services')
-                    self._collect_group_data(services)
 
     def import_groups(self):
         """
