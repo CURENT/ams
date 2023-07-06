@@ -44,17 +44,16 @@ class EDModel(DCOPFModel):
     def __init__(self, system, config):
         DCOPFModel.__init__(self, system, config)
         # DEBUG: clear constraints and objective
-        for name in ['pb', 'lub', 'llb', 'obj']:
+        for name in ['lub', 'llb']:
             delattr(self, name)
 
         self.info = 'Economic dispatch'
         self.type = 'DCED'
         # --- vars ---
         self.pg.horizon = self.nt
-        self.pg.lb = None
-        self.pg.ub = None
 
         # --- constraints ---
+        self.pb.e_str = 'sum(pd1) + sum(pd2) - sum(pg, axis=1)'
         # self.rgu = Constraint(name='rgu',
         #                       info='ramp up limit of generator output',
         #                       e_str='pg - pg0 - R10',
@@ -65,12 +64,6 @@ class EDModel(DCOPFModel):
         #                       e_str='-pg + pg0 - R10',
         #                       type='uq',
         #                       )
-        # # --- objective ---
-        # self.obj = Objective(name='tc',
-        #                      info='total generation and reserve cost',
-        #                      e_str='sum(c2 * pg**2 + c1 * pg + c0)',
-        #                      sense='min',
-        #                      )
 
 
 class ED(EDData, EDModel):
