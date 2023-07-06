@@ -2,16 +2,14 @@
 Model for rolling horizon used in dispatch.
 """
 
-from andes.core import (ModelData, IdxParam, NumParam)
+from andes.core import (ModelData, NumParam)  # NOQA
 
-from ams.core.model import Model
-
-from ams.core.service import VarSub
+from ams.core.model import Model  # NOQA
 
 
-class RolHorizon(ModelData, Model):
+class Horizon(ModelData, Model):
     """
-    Model for rolling horizon.
+    Rolling horizon.
     """
 
     def __init__(self, system=None, config=None):
