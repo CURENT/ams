@@ -44,26 +44,28 @@ class OptzBase:
                  name: Optional[str] = None,
                  info: Optional[str] = None,
                  ):
-        self.rtn = None
+        self.om = None
         self.name = name
         self.info = info
+        self.is_enabled = True
 
     @property
     def shape(self):
         """
         Return the shape of variables.
         """
-        if self.rtn.is_setup:
-            return self.rtn.om.__dict__[self.name].shape
+        rtn = self.om.rtn
+        if rtn.is_setup:
+            return self.om.__dict__[self.name].shape
         else:
-            logger.warning(f'<{self.rtn.class_name}> is not setup yet.')
+            logger.warning(f'<{rtn.class_name}> is not setup yet.')
             return None
 
-    def remove(self):
+    def disable(self):
         """
-        Remove the element from the routine.
+        Disable the element.
         """
-        self.rtn.remove(self)
+        raise NotImplementedError
 
 
 class Var(Algeb, OptzBase):
@@ -289,9 +291,27 @@ class Constraint(OptzBase):
         """
         return self.__class__.__name__
 
+    def disable(self):
+        """
+        Disable the constraint.
+        """
+        try:
+            del self.om.constrs[self.name]
+            self.is_setup = False
+            logger.warning(f'Constraint <{self.name}> is disabled.')
+            return True
+        except KeyError:
+            if self.om.rtn.is_setup:
+                logger.warning(f'Constraint <{self.name}> does not exist.')
+                return False
+            else:
+                logger.warning(f'<{self.om.rtn.class_name}> is not setup yet.')
+                return False
+
     def __repr__(self):
         name = self.name if self.name is not None else 'Unnamed constr'
-        return f"{name}: {self.e_str}"
+        enabled = 'on' if self.name in self.om.constrs else 'off'
+        return f"{name }({enabled}): {self.e_str}"
 
 
 class Objective(OptzBase):
@@ -393,7 +413,7 @@ class OModel:
     """
 
     def __init__(self, routine):
-        self.routine = routine
+        self.rtn = routine
         self.mdl = None
         self.vars = OrderedDict()
         self.constrs = OrderedDict()
@@ -409,30 +429,30 @@ class OModel:
         Decision variables are the ``Var`` of a routine.
         For example, the power outputs ``pg`` of routine ``DCOPF``.
         """
-        self.routine.syms.generate_symbols()
+        self.rtn.syms.generate_symbols()
         # --- add decision variables ---
-        for ovname, ovar in self.routine.vars.items():
+        for ovname, ovar in self.rtn.vars.items():
             self.parse_var(ovar=ovar,
-                           sub_map=self.routine.syms.sub_map)
+                           sub_map=self.rtn.syms.sub_map)
             self.n += ovar.n
         # --- parse constraints ---
-        for cname, constr in self.routine.constrs.items():
+        for cname, constr in self.rtn.constrs.items():
             self.parse_constr(constr=constr,
-                              sub_map=self.routine.syms.sub_map)
+                              sub_map=self.rtn.syms.sub_map)
             self.m += self.constrs[cname].size
 
         # --- parse objective functions ---
-        if self.routine.obj is not None:
-            self.parse_obj(obj=self.routine.obj,
-                           sub_map=self.routine.syms.sub_map)
+        if self.rtn.obj is not None:
+            self.parse_obj(obj=self.rtn.obj,
+                           sub_map=self.rtn.syms.sub_map)
             # --- finalize the optimziation formulation ---
             code_mdl = f"problem(self.obj, [constr for constr in self.constrs.values()])"
-            for pattern, replacement in self.routine.syms.sub_map.items():
+            for pattern, replacement in self.rtn.syms.sub_map.items():
                 code_mdl = re.sub(pattern, replacement, code_mdl)
             code_mdl = "self.mdl=" + code_mdl
             exec(code_mdl)
         else:
-            logger.warning(f"{self.routine.class_name} has no objective function.")
+            logger.warning(f"{self.rtn.class_name} has no objective function.")
         return True
 
     @property
@@ -541,7 +561,7 @@ class OModel:
         elif constr.type == 'eq':
             code_constr = f'{code_constr} == 0'
         else:
-            raise ValueError(f'Objective sense {self.routine.obj.sense} is not supported.')
+            raise ValueError(f'Objective sense {self.rtn.obj.sense} is not supported.')
         code_constr = f'self.constrs["{constr.name}"]=' + code_constr
         logger.debug(f"Set constrs {constr.name}: {code_constr}")
         exec(code_constr)

@@ -106,7 +106,7 @@ class SymProcessor:
         for rpname, rparam in self.parent.rparams.items():
             tmp = sp.symbols(f'{rparam.name}')
             self.inputs_dict[rpname] = tmp
-            self.sub_map[rf"\b{rpname}\b"] = f'self.routine.{rpname}.v'
+            self.sub_map[rf"\b{rpname}\b"] = f'self.rtn.{rpname}.v'
             self.tex_map[rf"\b{rpname}\b"] = f'{rparam.tex_name}'
 
         # Routine Services
@@ -114,7 +114,7 @@ class SymProcessor:
             tmp = sp.symbols(f'{service.name}')
             self.services_dict[sname] = tmp
             self.inputs_dict[sname] = tmp
-            self.sub_map[rf"\b{sname}\b"] = f'self.routine.{sname}.v'
+            self.sub_map[rf"\b{sname}\b"] = f'self.rtn.{sname}.v'
             self.tex_map[rf"\b{sname}\b"] = f'{service.tex_name}'
 
         # store tex names defined in `self.config`

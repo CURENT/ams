@@ -278,7 +278,7 @@ class RoutineModel:
                     logger.warning(f"{self.class_name}: redefinition of member <{key}>. Likely a modeling error.")
 
         # register owner routine instance of following attributes
-        if isinstance(value, (Var, RParam, Constraint, RBaseService)):
+        if isinstance(value, (RBaseService)):
             value.rtn = self
 
     def __setattr__(self, key, value):
@@ -310,12 +310,14 @@ class RoutineModel:
         Called within ``__setattr__``, this is where the magic happens.
         Subclass attributes are automatically registered based on the variable type.
         """
+        if isinstance(value, (Var, Constraint, Objective)):
+            value.om = self.om
         if isinstance(value, Var):
             self.vars[key] = value
-        elif isinstance(value, RParam):
-            self.rparams[key] = value
         elif isinstance(value, Constraint):
             self.constrs[key] = value
+        elif isinstance(value, RParam):
+            self.rparams[key] = value
         elif isinstance(value, RBaseService):
             self.services[key] = value
 
@@ -353,3 +355,14 @@ class RoutineModel:
                 del self.om.constrs[name]
         elif name in self.services:
             del self.services[name]
+
+    def disable(self, name):
+        """
+        Disable a constraint by name.
+        """
+        if name in self.constrs:
+            self.is_setup = False
+            return self.constrs[name].disable()
+        else:
+            logger.warning(f"Constraint {name} not found.")
+            return False
