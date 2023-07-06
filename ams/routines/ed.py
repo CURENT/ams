@@ -43,13 +43,9 @@ class EDModel(DCOPFModel):
 
     def __init__(self, system, config):
         super().__init__(system, config)
-        # DEBUG: clear constraints
-        self.pb = None
-        self.lub = None
-        self.llb = None
-        self.constrs.clear()
-        # DEBUG: clear objective
-        self.obj = None
+        # DEBUG: clear constraints and objective
+        for name in ['pb', 'lub', 'llb', 'obj']:
+            delattr(self, name)
 
         self.info = 'Economic dispatch'
         self.type = 'DCED'

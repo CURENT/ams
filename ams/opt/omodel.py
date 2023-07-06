@@ -24,7 +24,38 @@ import cvxpy as cp
 logger = logging.getLogger(__name__)
 
 
-class Var(Algeb):
+class OptzBase:
+    """
+    Base class for optimization elements, e.g., Var and Constraint.
+
+    Parameters
+    ----------
+    name : str, optional
+        Name.
+    info : str, optional
+        Descriptive information
+
+    Attributes
+    ----------
+    rtn : ams.routines.Routine
+        The owner routine instance.
+    """
+    def __init__(self,
+                 name: Optional[str] = None,
+                 info: Optional[str] = None,
+                 ):
+        self.rtn = None
+        self.name = name
+        self.info = info
+
+    def remove(self):
+        """
+        Remove the element from the routine.
+        """
+        self.rtn.remove(self)
+
+
+class Var(Algeb, OptzBase):
     """
     Base class for variables used in a routine.
 
@@ -112,8 +143,8 @@ class Var(Algeb):
                  pos: Optional[bool] = False,
                  neg: Optional[bool] = False,
                  ):
-        super().__init__(name=name, tex_name=tex_name, info=info, unit=unit)
-        self.rtn = None
+        Algeb.__init__(self, name=name, tex_name=tex_name, info=info, unit=unit)
+        OptzBase.__init__(self, name=name, info=info)
         self.src = name if (src is None) else src
         self.is_group = False
         self.model = model  # indicate if this variable is a group variable
@@ -188,7 +219,7 @@ class Var(Algeb):
         return self.__class__.__name__
 
 
-class Constraint:
+class Constraint(OptzBase):
     """
     Base class for constraints.
 
@@ -233,7 +264,7 @@ class Constraint:
                  info: Optional[str] = None,
                  type: Optional[str] = 'uq',
                  ):
-        self.rtn = None
+        OptzBase.__init__(self, name=name, info=info)
         self.name = name
         self.e_str = e_str
         self.info = info
@@ -252,7 +283,7 @@ class Constraint:
         return f"{name}: {self.e_str}"
 
 
-class Objective:
+class Objective(OptzBase):
     """
     Base class for objective functions.
 
@@ -294,7 +325,7 @@ class Objective:
                  e_str: Optional[str] = None,
                  info: Optional[str] = None,
                  sense: Optional[str] = 'min'):
-        self.rtn = None
+        OptzBase.__init__(self, name=name, info=info)
         self.name = name
         self.e_str = e_str
         self.info = info

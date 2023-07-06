@@ -318,3 +318,34 @@ class RoutineModel:
             self.constrs[key] = value
         elif isinstance(value, RBaseService):
             self.services[key] = value
+
+    def __delattr__(self, name):
+        """
+        Overload the delattr function to unregister attributes.
+
+        Parameters
+        ----------
+        name: str
+            name of the attribute
+        """
+        self._unregister_attribute(name)
+        if name == 'obj':
+            self.obj = None
+        else:
+            super().__delattr__(name)  # Call the superclass implementation
+
+    def _unregister_attribute(self, name):
+        """
+        Unregister a pair of attributes from the routine instance.
+
+        Called within ``__delattr__``, this is where the magic happens.
+        Subclass attributes are automatically unregistered based on the variable type.
+        """
+        if name in self.vars:
+            del self.vars[name]
+        elif name in self.rparams:
+            del self.rparams[name]
+        elif name in self.constrs:
+            del self.constrs[name]
+        elif name in self.services:
+            del self.services[name]
