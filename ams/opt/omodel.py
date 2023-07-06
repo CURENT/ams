@@ -40,6 +40,7 @@ class OptzBase:
     rtn : ams.routines.Routine
         The owner routine instance.
     """
+
     def __init__(self,
                  name: Optional[str] = None,
                  info: Optional[str] = None,
@@ -52,11 +53,23 @@ class OptzBase:
     @property
     def shape(self):
         """
-        Return the shape of variables.
+        Return the shape.
         """
         rtn = self.om.rtn
         if rtn.is_setup:
             return self.om.__dict__[self.name].shape
+        else:
+            logger.warning(f'<{rtn.class_name}> is not setup yet.')
+            return None
+
+    @property
+    def size(self):
+        """
+        Return the size.
+        """
+        rtn = self.om.rtn
+        if rtn.is_setup:
+            return self.om.__dict__[self.name].size
         else:
             logger.warning(f'<{rtn.class_name}> is not setup yet.')
             return None
@@ -386,7 +399,7 @@ class OModel:
         Number of decision variables.
     m: int
         Number of constraints.
-    
+
     TODO:
     - Add _check_attribute and _register_attribute for vars, constrs, and obj.
     - Add support for user-defined vars, constrs, and obj.
@@ -409,20 +422,27 @@ class OModel:
         Decision variables are the ``Var`` of a routine.
         For example, the power outputs ``pg`` of routine ``DCOPF``
         are decision variables.
+
+        Only enabled constraints (indicated by attr ``is_enabled``)
+        are added to the optimization model.
         """
         self.rtn.syms.generate_symbols()
         # --- add decision variables ---
         for ovname, ovar in self.rtn.vars.items():
             self.parse_var(ovar=ovar,
                            sub_map=self.rtn.syms.sub_map)
-            self.n += ovar.n
+        # count the number of decision variables
+        n_list = [cpvar.size for cpvar in self.vars.values()]
+        self.n = np.sum(n_list)
         # --- parse constraints ---
         for cname, constr in self.rtn.constrs.items():
             if not constr.is_enabled:
                 continue
             self.parse_constr(constr=constr,
                               sub_map=self.rtn.syms.sub_map)
-            self.m += self.constrs[cname].size
+        # count the number of constraints
+        m_list = [cpconstr.size for cpconstr in self.constrs.values()]
+        self.m = np.sum(m_list)
 
         # --- parse objective functions ---
         if self.rtn.obj is not None:
