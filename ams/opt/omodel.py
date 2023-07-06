@@ -61,12 +61,6 @@ class OptzBase:
             logger.warning(f'<{rtn.class_name}> is not setup yet.')
             return None
 
-    def disable(self):
-        """
-        Disable the element.
-        """
-        raise NotImplementedError
-
 
 class Var(Algeb, OptzBase):
     """
@@ -264,6 +258,8 @@ class Constraint(OptzBase):
         Type of the constraint.
     rtn : ams.routines.Routine
         The owner routine instance.
+    is_enabled : bool
+        Flag indicating if the constraint is enabled, True by default.
 
     Notes
     -----
@@ -282,6 +278,7 @@ class Constraint(OptzBase):
         self.e_str = e_str
         self.info = info
         self.type = type  # TODO: determine constraint type
+        self.is_enabled = True
         # TODO: add constraint info from solver
 
     @property
@@ -291,27 +288,10 @@ class Constraint(OptzBase):
         """
         return self.__class__.__name__
 
-    def disable(self):
-        """
-        Disable the constraint.
-        """
-        try:
-            del self.om.constrs[self.name]
-            self.is_setup = False
-            logger.warning(f'Constraint <{self.name}> is disabled.')
-            return True
-        except KeyError:
-            if self.om.rtn.is_setup:
-                logger.warning(f'Constraint <{self.name}> does not exist.')
-                return False
-            else:
-                logger.warning(f'<{self.om.rtn.class_name}> is not setup yet.')
-                return False
-
     def __repr__(self):
         name = self.name if self.name is not None else 'Unnamed constr'
-        enabled = 'on' if self.name in self.om.constrs else 'off'
-        return f"{name }({enabled}): {self.e_str}"
+        enabled = 'ON' if self.name in self.om.constrs else 'OFF'
+        return f"{name } ({enabled}): {self.e_str}"
 
 
 class Objective(OptzBase):
@@ -427,7 +407,8 @@ class OModel:
         Setup the optimziation model from symbolic description.
 
         Decision variables are the ``Var`` of a routine.
-        For example, the power outputs ``pg`` of routine ``DCOPF``.
+        For example, the power outputs ``pg`` of routine ``DCOPF``
+        are decision variables.
         """
         self.rtn.syms.generate_symbols()
         # --- add decision variables ---
@@ -437,6 +418,8 @@ class OModel:
             self.n += ovar.n
         # --- parse constraints ---
         for cname, constr in self.rtn.constrs.items():
+            if not constr.is_enabled:
+                continue
             self.parse_constr(constr=constr,
                               sub_map=self.rtn.syms.sub_map)
             self.m += self.constrs[cname].size
