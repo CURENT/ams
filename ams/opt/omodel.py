@@ -54,7 +54,14 @@ class OptzBase:
         """
         Parse the object.
         """
-        return NotImplementedError
+        raise NotImplementedError
+
+    @property
+    def class_name(self):
+        """
+        Return the class name
+        """
+        return self.__class__.__name__
 
     @property
     def shape(self):
@@ -279,13 +286,6 @@ class Var(Algeb, OptzBase):
 
         return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}, {span}'
 
-    @property
-    def class_name(self):
-        """
-        Return the class name
-        """
-        return self.__class__.__name__
-
 
 class Constraint(OptzBase):
     """
@@ -342,13 +342,6 @@ class Constraint(OptzBase):
         self.is_enabled = True
         # TODO: add constraint info from solver
 
-    @property
-    def class_name(self):
-        """
-        Return the class name
-        """
-        return self.__class__.__name__
-
     def __repr__(self):
         name = self.name if self.name is not None else 'Unnamed constr'
         enabled = 'ON' if self.name in self.om.constrs else 'OFF'
@@ -403,13 +396,6 @@ class Objective(OptzBase):
         self.info = info
         self.sense = sense
         self.v = None  # objective value
-
-    @property
-    def class_name(self):
-        """
-        Return the class name
-        """
-        return self.__class__.__name__
 
     def __repr__(self):
         if self.name is not None:
