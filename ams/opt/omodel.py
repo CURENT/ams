@@ -50,6 +50,12 @@ class OptzBase:
         self.info = info
         self.is_enabled = True
 
+    def parse(self):
+        """
+        Parse the object.
+        """
+        return NotImplementedError
+
     @property
     def shape(self):
         """
@@ -207,12 +213,54 @@ class Var(Algeb, OptzBase):
         else:
             return self.owner.idx.v
 
-    @property
-    def n(self):
+    def parse(self, sub_map: Optional[dict] = None):
         """
-        Return the number of variables.
+        Parse the variable.
+
+        Parameters
+        ----------
+        sub_map : dict, optional
+            Substitution map.
         """
-        return self.owner.n
+        om = self.om
+        # only used for CVXPY
+        # NOTE: Config only allow lower case letters, do a conversion here
+        config = {}
+        for k, v in self.config.as_dict().items():
+            if k == 'psd':
+                config['PSD'] = v
+            elif k == 'nsd':
+                config['NSD'] = v
+            elif k == 'bool':
+                config['boolean'] = v
+            else:
+                config[k] = v
+        # NOTE: number of rows is the size of the source variable
+        nr = self.owner.n
+        if self.horizon:
+            # NOTE: numer of columns is the horizon if exists
+            nc = int(self.horizon.v[0])
+            shape = (nr, nc)
+        else:
+            shape = (nr,)
+        code_var = f"tmp=var({shape}, **config)"
+        for pattern, replacement, in sub_map.items():
+            code_var = re.sub(pattern, replacement, code_var)
+        exec(code_var)
+        exec(f"om.vars[self.name] = tmp")
+        exec(f'setattr(om, self.name, om.vars["{self.name}"])')
+        if self.lb:
+            lv = self.lb.owner.get(src=self.lb.name, idx=self.get_idx(), attr='v')
+            u = self.lb.owner.get(src='u', idx=self.get_idx(), attr='v')
+            elv = u * lv
+            exec("om.constrs[self.lb.name] = tmp >= elv")
+            om.m += self.lb.owner.n
+        if self.ub:
+            uv = self.ub.owner.get(src=self.ub.name, idx=self.get_idx(), attr='v')
+            u = self.lb.owner.get(src='u', idx=self.get_idx(), attr='v')
+            euv = u * uv
+            exec("om.constrs[self.ub.name] = tmp <= euv")
+            om.m += self.ub.owner.n
 
     def __repr__(self):
         if self.owner.n == 0:
@@ -427,10 +475,10 @@ class OModel:
         are added to the optimization model.
         """
         self.rtn.syms.generate_symbols()
+        sub_map = self.rtn.syms.sub_map
         # --- add decision variables ---
-        for ovname, ovar in self.rtn.vars.items():
-            self.parse_var(ovar=ovar,
-                           sub_map=self.rtn.syms.sub_map)
+        for ovar in self.rtn.vars.values():
+            ovar.parse(sub_map=sub_map)
         # count the number of decision variables
         n_list = [cpvar.size for cpvar in self.vars.values()]
         self.n = np.sum(n_list)
