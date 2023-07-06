@@ -49,6 +49,8 @@ class Var(Algeb):
         Lower bound
     ub : str, optional
         Upper bound
+    horizon : ams.routines.RParam, optional
+        Horizon parameter
     nonneg : bool, optional
         Non-negative variable
     nonpos : bool, optional
@@ -95,6 +97,7 @@ class Var(Algeb):
                  model: Optional[str] = None,
                  lb: Optional[str] = None,
                  ub: Optional[str] = None,
+                 horizon: Optional[RParam] = None,
                  nonneg: Optional[bool] = False,
                  nonpos: Optional[bool] = False,
                  complex: Optional[bool] = False,
@@ -117,6 +120,7 @@ class Var(Algeb):
         self.owner = None  # instance of the owner model or group
         self.lb = lb
         self.ub = ub
+        self.horizon = horizon
 
         self.config = Config(name=self.class_name)  # `config` that can be exported
 
@@ -422,7 +426,12 @@ class OModel:
                 config['boolean'] = v
             else:
                 config[k] = v
-        code_var = "tmp=var(ovar.n, **config)"
+        if ovar.horizon:
+            pass
+            nc = int(ovar.horizon.v[0])
+            code_var = "tmp=var((ovar.n, nc), **config)"
+        else:
+            code_var = "tmp=var(ovar.n, **config)"
         for pattern, replacement, in sub_map.items():
             code_var = re.sub(pattern, replacement, code_var)
         exec(code_var)

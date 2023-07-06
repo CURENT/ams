@@ -24,7 +24,7 @@ class EDData(DCOPFData):
                          name='nt',
                          src='nt',
                          tex_name=r'n_{t}',
-                         model='RolHorizon',
+                         model='Horizon',
                          )
 
         self.R10 = RParam(info='10-min ramp rate (system base)',
@@ -42,27 +42,39 @@ class EDModel(DCOPFModel):
     """
 
     def __init__(self, system, config):
-        DCOPFModel.__init__(self, system, config)
+        super().__init__(system, config)
+        # DEBUG: clear constraints
+        self.pb = None
+        self.lub = None
+        self.llb = None
+        self.constrs.clear()
+        # DEBUG: clear objective
+        self.obj = None
+
         self.info = 'Economic dispatch'
         self.type = 'DCED'
         # --- vars ---
+        self.pg.horizon = self.nt
+        self.pg.lb = None
+        self.pg.ub = None
+
         # --- constraints ---
-        self.rgu = Constraint(name='rgu',
-                              info='ramp up limit of generator output',
-                              e_str='pg - pg0 - R10',
-                              type='uq',
-                              )
-        self.rgd = Constraint(name='rgd',
-                              info='ramp down limit of generator output',
-                              e_str='-pg + pg0 - R10',
-                              type='uq',
-                              )
-        # --- objective ---
-        self.obj = Objective(name='tc',
-                             info='total generation and reserve cost',
-                             e_str='sum(c2 * pg**2 + c1 * pg + c0)',
-                             sense='min',
-                             )
+        # self.rgu = Constraint(name='rgu',
+        #                       info='ramp up limit of generator output',
+        #                       e_str='pg - pg0 - R10',
+        #                       type='uq',
+        #                       )
+        # self.rgd = Constraint(name='rgd',
+        #                       info='ramp down limit of generator output',
+        #                       e_str='-pg + pg0 - R10',
+        #                       type='uq',
+        #                       )
+        # # --- objective ---
+        # self.obj = Objective(name='tc',
+        #                      info='total generation and reserve cost',
+        #                      e_str='sum(c2 * pg**2 + c1 * pg + c0)',
+        #                      sense='min',
+        #                      )
 
 
 class ED(EDData, EDModel):
