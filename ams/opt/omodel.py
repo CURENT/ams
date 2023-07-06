@@ -48,6 +48,17 @@ class OptzBase:
         self.name = name
         self.info = info
 
+    @property
+    def shape(self):
+        """
+        Return the shape of variables.
+        """
+        if self.rtn.is_setup:
+            return self.rtn.om.__dict__[self.name].shape
+        else:
+            logger.warning(f'<{self.rtn.class_name}> is not setup yet.')
+            return None
+
     def remove(self):
         """
         Remove the element from the routine.
@@ -466,8 +477,8 @@ class OModel:
         for pattern, replacement, in sub_map.items():
             code_var = re.sub(pattern, replacement, code_var)
         exec(code_var)
-        exec("setattr(self, ovar.name, tmp)")
-        exec(f"self.vars[ovar.name] = self.{ovar.name}")
+        exec(f"self.vars[ovar.name] = tmp")
+        exec(f'setattr(self, ovar.name, self.vars["{ovar.name}"])')
         if ovar.lb:
             lv = ovar.lb.owner.get(src=ovar.lb.name, idx=ovar.get_idx(), attr='v')
             u = ovar.lb.owner.get(src='u', idx=ovar.get_idx(), attr='v')
@@ -534,3 +545,4 @@ class OModel:
         code_constr = f'self.constrs["{constr.name}"]=' + code_constr
         logger.debug(f"Set constrs {constr.name}: {code_constr}")
         exec(code_constr)
+        exec(f'setattr(self, constr.name, self.constrs["{constr.name}"])')
