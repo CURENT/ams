@@ -359,15 +359,32 @@ class RoutineModel:
     def disable(self, name):
         """
         Disable a constraint by name.
+
+        Parameters
+        ----------
+        name: str or list
+            name of the constraint to be disabled
         """
+        if isinstance(name, list):
+            for n in name:
+                if n not in self.constrs:
+                    logger.warning(f"Constraint <{n}> not found.")
+                    continue
+                if self.constrs[n].is_disabled:
+                    logger.warning(f"Constraint <{n}> has already been disabled.")
+                    continue
+                self.constrs[n].is_disabled = True
+                self.is_setup = False
+                logger.warning(f"Disable constraint <{n}>.")
+            return True
+        
         if name in self.constrs:
             if self.constrs[name].is_disabled:
                 logger.warning(f"Constraint <{name}> has already been disabled.")
-                return True
-            self.is_setup = False
-            self.constrs[name].is_disabled = True
-            logger.warning(f"Constraint <{name}> is disabled.")
+            else:
+                self.constrs[name].is_disabled = True
+                self.is_setup = False
+                logger.warning(f"Disable constraint <{name}>.")
             return True
-        else:
-            logger.warning(f"Constraint <{name}> not found.")
-            return False
+        
+        logger.warning(f"Constraint <{name}> not found.")

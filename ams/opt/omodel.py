@@ -357,15 +357,14 @@ class Constraint(OptzBase):
         else:
             raise ValueError(f'Constraint type {self.type} is not supported.')
         code_constr = f'om.constrs["{self.name}"]=' + code_constr
-        logger.debug(f"Set constrs {self.name}: {code_constr}")
+        logger.debug(f"Set constrs {self.name}: {self.e_str}")
         exec(code_constr)
         exec(f'setattr(om, self.name, om.constrs["{self.name}"])')
         return True
 
     def __repr__(self):
-        name = self.name if self.name is not None else 'Unnamed constr'
         enabled = 'ON' if self.name in self.om.constrs else 'OFF'
-        return f"{name } ({enabled}): {self.e_str}"
+        return f"[{enabled}]: {self.e_str}"
 
 
 class Objective(OptzBase):
