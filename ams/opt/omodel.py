@@ -342,9 +342,14 @@ class Constraint(OptzBase):
         self.is_disabled = False
         # TODO: add constraint info from solver
 
-    def parse(self):
+    def parse(self, show_code=False):
         """
         Parse the constraint.
+
+        Parameters
+        ----------
+        show_code : bool, optional
+            Flag indicating if the code should be shown, False by default.
         """
         sub_map = self.om.rtn.syms.sub_map
         if self.is_disabled:
@@ -361,6 +366,8 @@ class Constraint(OptzBase):
             raise ValueError(f'Constraint type {self.type} is not supported.')
         code_constr = f'om.constrs["{self.name}"]=' + code_constr
         logger.debug(f"Set constrs {self.name}: {self.e_str}")
+        if show_code:
+            logger.info(f"Code Constr: {code_constr}")
         exec(code_constr)
         exec(f'setattr(om, self.name, om.constrs["{self.name}"])')
         return True
@@ -418,9 +425,14 @@ class Objective(OptzBase):
         self.sense = sense
         self.v = None  # objective value
 
-    def parse(self):
+    def parse(self, show_code=False):
         """
         Parse the objective function.
+
+        Parameters
+        ----------
+        show_code : bool, optional
+            Flag indicating if the code should be shown, False by default.
         """
         om = self.om
         sub_map = self.om.rtn.syms.sub_map
@@ -434,7 +446,8 @@ class Objective(OptzBase):
         else:
             raise ValueError(f'Objective sense {self.sense} is not supported.')
         code_obj = 'om.obj=' + code_obj
-        logger.debug(f"code_obj: {code_obj}")
+        if show_code:
+            logger.info(f"Code Obj: {code_obj}")
         exec(code_obj)
         return True
 
@@ -490,7 +503,7 @@ class OModel:
         self.m = 0  # number of constraints
 
     @timer
-    def setup(self):
+    def setup(self, show_code=False):
         """
         Setup the optimziation model from symbolic description.
 
@@ -500,6 +513,11 @@ class OModel:
 
         Disabled constraints (indicated by attr ``is_disabled``) will not
         be added to the optimization model.
+
+        Parameters
+        ----------
+        show_code : bool, optional
+            Flag indicating if the code should be shown, False by default.
         """
         rtn = self.rtn
         rtn.syms.generate_symbols()
@@ -508,13 +526,13 @@ class OModel:
             ovar.parse()
         # --- add constraints ---
         for constr in rtn.constrs.values():
-            constr.parse()
+            constr.parse(show_code=show_code)
         # --- parse objective functions ---
         if rtn.type == 'PF':
             # NOTE: power flow type has no objective function
             pass
         elif rtn.obj is not None:
-            rtn.obj.parse()
+            rtn.obj.parse(show_code=show_code)
             # --- finalize the optimziation formulation ---
             code_mdl = f"problem(self.obj, [constr for constr in self.constrs.values()])"
             for pattern, replacement in self.rtn.syms.sub_map.items():

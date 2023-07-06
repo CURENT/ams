@@ -168,16 +168,27 @@ class RoutineModel:
         # TODO: add data validation for RParam, typical range, etc.
         return True
 
-    def setup(self):
+    def setup(self, **kwargs):
         """
         Setup optimization model.
+
+        Parameters
+        ----------
+        show_code: bool
+            Whether to show generated code.
+
+        Other Parameters
+        ----------------
+        show_code: bool
+            Whether to show generated code, passed to `om.setup()`.
         """
         # TODO: add input check, e.g., if GCost exists
         if self._data_check():
             logger.debug(f'{self.class_name} data check passed.')
         else:
             logger.error(f'{self.class_name} data check failed, setup may run into error!')
-        results, elapsed_time = self.om.setup()
+        show_code = kwargs.get('show_code', False)
+        results, elapsed_time = self.om.setup(show_code=show_code)
         common_info = f"{self.class_name} model set up "
         if results:
             info = f"in {elapsed_time}."
