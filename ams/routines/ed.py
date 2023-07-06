@@ -42,7 +42,7 @@ class EDModel(DCOPFModel):
     """
 
     def __init__(self, system, config):
-        super().__init__(system, config)
+        DCOPFModel.__init__(self, system, config)
         # DEBUG: clear constraints and objective
         for name in ['pb', 'lub', 'llb', 'obj']:
             delattr(self, name)

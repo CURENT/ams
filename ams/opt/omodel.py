@@ -467,7 +467,7 @@ class OModel:
             code_var = re.sub(pattern, replacement, code_var)
         exec(code_var)
         exec("setattr(self, ovar.name, tmp)")
-        exec("self.vars[ovar.name] = tmp")
+        exec(f"self.vars[ovar.name] = self.{ovar.name}")
         if ovar.lb:
             lv = ovar.lb.owner.get(src=ovar.lb.name, idx=ovar.get_idx(), attr='v')
             u = ovar.lb.owner.get(src='u', idx=ovar.get_idx(), attr='v')

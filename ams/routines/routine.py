@@ -343,9 +343,13 @@ class RoutineModel:
         """
         if name in self.vars:
             del self.vars[name]
+            if name in self.om.vars:
+                del self.om.vars[name]
         elif name in self.rparams:
             del self.rparams[name]
         elif name in self.constrs:
             del self.constrs[name]
+            if name in self.om.constrs:
+                del self.om.constrs[name]
         elif name in self.services:
             del self.services[name]
