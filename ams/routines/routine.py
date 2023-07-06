@@ -361,11 +361,11 @@ class RoutineModel:
         Disable a constraint by name.
         """
         if name in self.constrs:
-            if not self.constrs[name].is_enabled:
+            if self.constrs[name].is_disabled:
                 logger.warning(f"Constraint <{name}> has already been disabled.")
                 return True
             self.is_setup = False
-            self.constrs[name].is_enabled = False
+            self.constrs[name].is_disabled = True
             logger.warning(f"Constraint <{name}> is disabled.")
             return True
         else:

@@ -48,7 +48,7 @@ class OptzBase:
         self.om = None
         self.name = name
         self.info = info
-        self.is_enabled = True
+        self.is_disabled = False
 
     def parse(self):
         """
@@ -220,16 +220,12 @@ class Var(Algeb, OptzBase):
         else:
             return self.owner.idx.v
 
-    def parse(self, sub_map: Optional[dict] = None):
+    def parse(self):
         """
         Parse the variable.
-
-        Parameters
-        ----------
-        sub_map : dict, optional
-            Substitution map.
         """
         om = self.om
+        sub_map = self.om.rtn.syms.sub_map
         # only used for CVXPY
         # NOTE: Config only allow lower case letters, do a conversion here
         config = {}
@@ -268,6 +264,7 @@ class Var(Algeb, OptzBase):
             euv = u * uv
             exec("om.constrs[self.ub.name] = tmp <= euv")
             om.m += self.ub.owner.n
+        return True
 
     def __repr__(self):
         if self.owner.n == 0:
@@ -319,8 +316,8 @@ class Constraint(OptzBase):
         Type of the constraint.
     rtn : ams.routines.Routine
         The owner routine instance.
-    is_enabled : bool
-        Flag indicating if the constraint is enabled, True by default.
+    is_disabled : bool
+        Flag indicating if the constraint is disabled, False by default.
 
     Notes
     -----
@@ -339,8 +336,31 @@ class Constraint(OptzBase):
         self.e_str = e_str
         self.info = info
         self.type = type  # TODO: determine constraint type
-        self.is_enabled = True
+        self.is_disabled = False
         # TODO: add constraint info from solver
+
+    def parse(self):
+        """
+        Parse the constraint.
+        """
+        sub_map = self.om.rtn.syms.sub_map
+        if self.is_disabled:
+            return True
+        om = self.om
+        code_constr = self.e_str
+        for pattern, replacement in sub_map.items():
+            code_constr = re.sub(pattern, replacement, code_constr)
+        if self.type == 'uq':
+            code_constr = f'{code_constr} <= 0'
+        elif self.type == 'eq':
+            code_constr = f'{code_constr} == 0'
+        else:
+            raise ValueError(f'Constraint type {self.type} is not supported.')
+        code_constr = f'om.constrs["{self.name}"]=' + code_constr
+        logger.debug(f"Set constrs {self.name}: {code_constr}")
+        exec(code_constr)
+        exec(f'setattr(om, self.name, om.constrs["{self.name}"])')
+        return True
 
     def __repr__(self):
         name = self.name if self.name is not None else 'Unnamed constr'
@@ -396,6 +416,25 @@ class Objective(OptzBase):
         self.info = info
         self.sense = sense
         self.v = None  # objective value
+
+    def parse(self):
+        """
+        Parse the objective function.
+        """
+        om = self.om
+        sub_map = self.om.rtn.syms.sub_map
+        code_obj = self.e_str
+        for pattern, replacement, in sub_map.items():
+            code_obj = re.sub(pattern, replacement, code_obj)
+        if self.sense == 'min':
+            code_obj = f'cp.Minimize({code_obj})'
+        elif self.sense == 'max':
+            code_obj = f'cp.Maximize({code_obj})'
+        else:
+            raise ValueError(f'Objective sense {self.sense} is not supported.')
+        code_obj = 'om.obj=' + code_obj
+        exec(code_obj)
+        return True
 
     def __repr__(self):
         if self.name is not None:
@@ -457,31 +496,30 @@ class OModel:
         For example, the power outputs ``pg`` of routine ``DCOPF``
         are decision variables.
 
-        Only enabled constraints (indicated by attr ``is_enabled``)
-        are added to the optimization model.
+        Disabled constraints (indicated by attr ``is_disabled``) will not
+        be added to the optimization model.
         """
-        self.rtn.syms.generate_symbols()
-        sub_map = self.rtn.syms.sub_map
+        rtn = self.rtn
+        rtn.syms.generate_symbols()
         # --- add decision variables ---
-        for ovar in self.rtn.vars.values():
-            ovar.parse(sub_map=sub_map)
+        for ovar in rtn.vars.values():
+            ovar.parse()
         # count the number of decision variables
         n_list = [cpvar.size for cpvar in self.vars.values()]
         self.n = np.sum(n_list)
         # --- parse constraints ---
-        for cname, constr in self.rtn.constrs.items():
-            if not constr.is_enabled:
-                continue
-            self.parse_constr(constr=constr,
-                              sub_map=self.rtn.syms.sub_map)
+        for constr in rtn.constrs.values():
+            constr.parse()
         # count the number of constraints
         m_list = [cpconstr.size for cpconstr in self.constrs.values()]
         self.m = np.sum(m_list)
 
         # --- parse objective functions ---
-        if self.rtn.obj is not None:
-            self.parse_obj(obj=self.rtn.obj,
-                           sub_map=self.rtn.syms.sub_map)
+        if rtn.type == 'PF':
+            # NOTE: power flow type has no objective function
+            pass
+        elif rtn.obj is not None:
+            rtn.obj.parse()
             # --- finalize the optimziation formulation ---
             code_mdl = f"problem(self.obj, [constr for constr in self.constrs.values()])"
             for pattern, replacement in self.rtn.syms.sub_map.items():
@@ -489,7 +527,7 @@ class OModel:
             code_mdl = "self.mdl=" + code_mdl
             exec(code_mdl)
         else:
-            logger.warning(f"{self.rtn.class_name} has no objective function.")
+            logger.warning(f"{rtn.class_name} has no objective function.")
         return True
 
     @property
@@ -498,108 +536,3 @@ class OModel:
         Return the class name
         """
         return self.__class__.__name__
-
-    def parse_var(self,
-                  ovar: Var,
-                  sub_map: OrderedDict,
-                  ):
-        """
-        Parse the decision variables from symbolic dispatch model.
-
-        Parameters
-        ----------
-        var : Var
-            The routine Var
-        sub_map : OrderedDict
-            A dictionary of substitution map, generated by symprocessor.
-        """
-        # only used for CVXPY
-        # NOTE: Config only allow lower case letters, do a conversion here
-        config = {}
-        for k, v in ovar.config.as_dict().items():
-            if k == 'psd':
-                config['PSD'] = v
-            elif k == 'nsd':
-                config['NSD'] = v
-            elif k == 'bool':
-                config['boolean'] = v
-            else:
-                config[k] = v
-        if ovar.horizon:
-            pass
-            nc = int(ovar.horizon.v[0])
-            code_var = "tmp=var((ovar.n, nc), **config)"
-        else:
-            code_var = "tmp=var(ovar.n, **config)"
-        for pattern, replacement, in sub_map.items():
-            code_var = re.sub(pattern, replacement, code_var)
-        exec(code_var)
-        exec(f"self.vars[ovar.name] = tmp")
-        exec(f'setattr(self, ovar.name, self.vars["{ovar.name}"])')
-        if ovar.lb:
-            lv = ovar.lb.owner.get(src=ovar.lb.name, idx=ovar.get_idx(), attr='v')
-            u = ovar.lb.owner.get(src='u', idx=ovar.get_idx(), attr='v')
-            elv = u * lv
-            exec("self.constrs[ovar.lb.name] = tmp >= elv")
-            self.m += ovar.lb.owner.n
-        if ovar.ub:
-            uv = ovar.ub.owner.get(src=ovar.ub.name, idx=ovar.get_idx(), attr='v')
-            u = ovar.lb.owner.get(src='u', idx=ovar.get_idx(), attr='v')
-            euv = u * uv
-            exec("self.constrs[ovar.ub.name] = tmp <= euv")
-            self.m += ovar.ub.owner.n
-
-    def parse_obj(self,
-                  obj: Objective,
-                  sub_map: OrderedDict,
-                  ):
-        """
-        Parse the objective function from symbolic dispatch model.
-
-        Parameters
-        ----------
-        obj : Objective
-            The routine Objective
-        sub_map : OrderedDict
-            A dictionary of substitution map, generated by symprocessor.
-        """
-        code_obj = obj.e_str
-        for pattern, replacement, in sub_map.items():
-            code_obj = re.sub(pattern, replacement, code_obj)
-        if obj.sense == 'min':
-            code_obj = f'cp.Minimize({code_obj})'
-        elif obj.sense == 'max':
-            code_obj = f'cp.Maximize({code_obj})'
-        else:
-            raise ValueError(f'Objective sense {obj.sense} is not supported.')
-        code_obj = 'self.obj=' + code_obj
-        exec(code_obj)
-        return True
-
-    def parse_constr(self,
-                     constr: Constraint,
-                     sub_map: OrderedDict,
-                     ):
-        """
-        Parse the constraint from symbolic dispatch model.
-
-        Parameters
-        ----------
-        constr : Constraint
-            The routine Constraint
-        sub_map : OrderedDict
-            A dictionary of substitution map, generated by symprocessor.
-        """
-        code_constr = constr.e_str
-        for pattern, replacement in sub_map.items():
-            code_constr = re.sub(pattern, replacement, code_constr)
-        if constr.type == 'uq':
-            code_constr = f'{code_constr} <= 0'
-        elif constr.type == 'eq':
-            code_constr = f'{code_constr} == 0'
-        else:
-            raise ValueError(f'Objective sense {self.rtn.obj.sense} is not supported.')
-        code_constr = f'self.constrs["{constr.name}"]=' + code_constr
-        logger.debug(f"Set constrs {constr.name}: {code_constr}")
-        exec(code_constr)
-        exec(f'setattr(self, constr.name, self.constrs["{constr.name}"])')
