@@ -156,11 +156,8 @@ class RTEDModel(DCOPFModel):
                               type='uq',
                               )
         # --- objective ---
-        self.obj = Objective(name='tc',
-                             info='total generation and reserve cost',
-                             e_str='sum(c2 * pg**2 + c1 * pg + c0 + cru * pru + crd * prd)',
-                             sense='min',
-                             )
+        self.obj.info = 'total generation and reserve cost'
+        self.obj.e_str = 'sum(c2 * pg**2 + c1 * pg + ug * c0 + cru * pru + crd * prd)'
 
 
 class RTED(RTEDData, RTEDModel):

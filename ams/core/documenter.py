@@ -338,11 +338,14 @@ class RDocumenter:
 
         # prepare temporary lists
         names, class_names, info = list(), list(), list()
+        units, units_rest = list(), list()
 
         p = self.parent.obj
         names.append(p.name)
         class_names.append(p.class_name)
         info.append(p.info if p.info else '')
+        units.append(p.unit if p.unit else '')
+        units_rest.append(f'*{p.unit}*' if p.unit else '')
 
         # expressions based on output format
         expr = p.e_str
@@ -369,13 +372,13 @@ class RDocumenter:
             title = 'Objective'
 
         plain_dict = OrderedDict([('Name', names),
-                                  ('Description', info),
-                                  ])
+                                  ('Unit', units),
+                                  ('Description', info)])
 
         rest_dict = OrderedDict([('Name', names),
                                  ('Description', info),
-                                 ('Expression', expr),
-                                 ])
+                                 ('Unit', units_rest),
+                                 ('Expression', expr)])
 
         # convert to rows and export as table
         return make_doc_table(title=title,

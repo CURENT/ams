@@ -44,10 +44,12 @@ class OptzBase:
     def __init__(self,
                  name: Optional[str] = None,
                  info: Optional[str] = None,
+                 unit: Optional[str] = None,
                  ):
         self.om = None
         self.name = name
         self.info = info
+        self.unit = unit
         self.is_disabled = False
 
     def parse(self):
@@ -177,7 +179,7 @@ class Var(Algeb, OptzBase):
                  neg: Optional[bool] = False,
                  ):
         Algeb.__init__(self, name=name, tex_name=tex_name, info=info, unit=unit)
-        OptzBase.__init__(self, name=name, info=info)
+        OptzBase.__init__(self, name=name, info=info, unit=unit)
         self.src = name if (src is None) else src
         self.is_group = False
         self.model = model  # indicate if this variable is a group variable
@@ -240,6 +242,7 @@ class Var(Algeb, OptzBase):
                 config[k] = v
         # NOTE: number of rows is the size of the source variable
         nr = self.owner.n
+        nc = 0
         if self.horizon:
             # NOTE: numer of columns is the horizon if exists
             nc = int(self.horizon.v[0])
@@ -255,15 +258,17 @@ class Var(Algeb, OptzBase):
         if self.lb:
             lv = self.lb.owner.get(src=self.lb.name, idx=self.get_idx(), attr='v')
             u = self.lb.owner.get(src='u', idx=self.get_idx(), attr='v')
-            elv = u * lv
+            elv = u * lv  # element-wise lower bound considering online status
+            # fit variable shape if horizon exists
+            elv = np.tile(elv, (nc, 1)).T if nc > 0 else elv
             exec("om.constrs[self.lb.name] = tmp >= elv")
-            om.m += self.lb.owner.n
         if self.ub:
             uv = self.ub.owner.get(src=self.ub.name, idx=self.get_idx(), attr='v')
             u = self.lb.owner.get(src='u', idx=self.get_idx(), attr='v')
-            euv = u * uv
+            euv = u * uv  # element-wise upper bound considering online status
+            # fit variable shape if horizon exists
+            euv = np.tile(euv, (nc, 1)).T if nc > 0 else euv
             exec("om.constrs[self.ub.name] = tmp <= euv")
-            om.m += self.ub.owner.n
         return True
 
     def __repr__(self):
@@ -332,9 +337,7 @@ class Constraint(OptzBase):
                  type: Optional[str] = 'uq',
                  ):
         OptzBase.__init__(self, name=name, info=info)
-        self.name = name
         self.e_str = e_str
-        self.info = info
         self.type = type  # TODO: determine constraint type
         self.is_disabled = False
         # TODO: add constraint info from solver
@@ -408,11 +411,10 @@ class Objective(OptzBase):
                  name: Optional[str] = None,
                  e_str: Optional[str] = None,
                  info: Optional[str] = None,
+                 unit: Optional[str] = None,
                  sense: Optional[str] = 'min'):
-        OptzBase.__init__(self, name=name, info=info)
-        self.name = name
+        OptzBase.__init__(self, name=name, info=info, unit=unit)
         self.e_str = e_str
-        self.info = info
         self.sense = sense
         self.v = None  # objective value
 
@@ -432,6 +434,7 @@ class Objective(OptzBase):
         else:
             raise ValueError(f'Objective sense {self.sense} is not supported.')
         code_obj = 'om.obj=' + code_obj
+        logger.debug(f"code_obj: {code_obj}")
         exec(code_obj)
         return True
 
@@ -503,16 +506,9 @@ class OModel:
         # --- add decision variables ---
         for ovar in rtn.vars.values():
             ovar.parse()
-        # count the number of decision variables
-        n_list = [cpvar.size for cpvar in self.vars.values()]
-        self.n = np.sum(n_list)
-        # --- parse constraints ---
+        # --- add constraints ---
         for constr in rtn.constrs.values():
             constr.parse()
-        # count the number of constraints
-        m_list = [cpconstr.size for cpconstr in self.constrs.values()]
-        self.m = np.sum(m_list)
-
         # --- parse objective functions ---
         if rtn.type == 'PF':
             # NOTE: power flow type has no objective function
@@ -525,8 +521,17 @@ class OModel:
                 code_mdl = re.sub(pattern, replacement, code_mdl)
             code_mdl = "self.mdl=" + code_mdl
             exec(code_mdl)
-        else:
+
+        # --- count ---
+        n_list = [cpvar.size for cpvar in self.vars.values()]
+        self.n = np.sum(n_list)  # number of decision variables
+        m_list = [cpconstr.size for cpconstr in self.constrs.values()]
+        self.m = np.sum(m_list)  # number of constraints
+
+        if rtn.type != 'PF' and rtn.obj is None:
             logger.warning(f"{rtn.class_name} has no objective function.")
+            return False
+
         return True
 
     @property

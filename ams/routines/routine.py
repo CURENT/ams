@@ -273,9 +273,8 @@ class RoutineModel:
         This function assigns `owner` to the model itself, assigns the name and tex_name.
         """
         if key in self.__dict__:
-            if hasattr(self, 'constrs'):
-                if key in self.constrs.keys() or key in self.vars.keys():
-                    logger.warning(f"{self.class_name}: redefinition of member <{key}>. Likely a modeling error.")
+            if key in self.constrs.keys() or key in self.vars.keys():
+                logger.warning(f"{self.class_name}: redefinition of member <{key}>. Likely a modeling error.")
 
         # register owner routine instance of following attributes
         if isinstance(value, (RBaseService)):

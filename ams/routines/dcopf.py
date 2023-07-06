@@ -20,6 +20,12 @@ class DCOPFData(RoutineData):
     def __init__(self):
         RoutineData.__init__(self)
         # --- generator cost ---
+        self.ug = RParam(info='Gen connection status',
+                         name='ug',
+                         src='u',
+                         tex_name=r'u_{g}',
+                         model='StaticGen',
+                         )
         self.c2 = RParam(info='Gen cost coefficient 2',
                          name='c2',
                          tex_name=r'c_{2}',
@@ -191,7 +197,8 @@ class DCOPFModel(DCOPFBase):
         # --- objective ---
         self.obj = Objective(name='tc',
                              info='total cost',
-                             e_str='sum(c2 * pg**2 + c1 * pg + c0)',
+                             unit='$',
+                             e_str='sum(c2 * pg**2 + c1 * pg + ug * c0)',
                              sense='min',)
 
 
