@@ -50,6 +50,16 @@ class RBaseService(BaseService):
         self.rtn = None
 
     @property
+    def shape(self):
+        """
+        Return the shape of the service.
+        """
+        if isinstance(self.v, np.ndarray):
+            return self.v.shape
+        else:
+            raise TypeError(f'{self.class_name}: {self.name} is not an array.')
+
+    @property
     def v(self):
         """
         Value of the service.
@@ -80,6 +90,8 @@ class RBaseService(BaseService):
                 val_str = f', v=shape{self.v.shape}'
 
             return f'{self.class_name}: {self.rtn.class_name}.{self.name}{val_str}'
+        else:
+            return f'{self.class_name}: {self.rtn.class_name}.{self.name}'
 
 
 class ROperationService(RBaseService):
@@ -115,6 +127,82 @@ class ROperationService(RBaseService):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model)
         self.u = u
+
+
+class NumOperation(ROperationService):
+    """
+    Operation on a numerical array, ``fun(u.v, **kwargs)``.
+
+    Note that the scalar output is converted to a 1D array.
+
+    **kwargs are passed to the input function.
+
+    Parameters
+    ----------
+    u : Callable
+        Input.
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    vtype : Type, optional
+        Variable type.
+    model : str, optional
+        Model name.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 fun: Callable,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 model: str = None,
+                 **kwargs):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                        info=info, vtype=vtype, model=model,
+                        u=u,)
+        self.fun = fun
+        self.kwargs = kwargs
+
+    @property
+    def v(self):
+        out = self.fun(self.u.v, **self.kwargs)
+        if not isinstance(out, np.ndarray):
+            out = np.array([out])
+        return out
+
+
+class NumOneslike(ROperationService):
+    """
+    Oneslike operation on a numerical array,
+    ``u.v * np.ones_like(a=u.v, shape=ref.shape)``.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 ref: Callable,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 model: str = None):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                        info=info, vtype=vtype, model=model,
+                        u=u,)
+        self.ref = ref
+
+    @property
+    def v(self):
+        ones_array = np.ones_like(a=self.u.v, shape=self.ref.shape)
+        return self.u.v * ones_array
 
 
 class ZonalVarSum(ROperationService):

@@ -6,7 +6,7 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
-from ams.core.service import VarReduce
+from ams.core.service import VarReduce, NumOperation, NumOneslike
 
 from ams.routines.dcopf import DCOPFData, DCOPFModel
 
@@ -22,20 +22,24 @@ class EDData(DCOPFData):
 
     def __init__(self):
         DCOPFData.__init__(self)
+        self.pd = RParam(info='active power load',
+                         name='pd',
+                         tex_name=r'p_{d}',
+                         unit='p.u.',
+                         src='p0',
+                         model='PQ')
         self.nt = RParam(info='Number of rolling intervals',
                          name='nt',
                          src='nt',
                          tex_name=r'n_{t}',
-                         model='Horizon',
-                         )
+                         model='Horizon')
 
         self.R10 = RParam(info='10-min ramp rate (system base)',
                           name='R10',
                           src='R10',
                           tex_name=r'R_{10}',
                           unit='p.u./min',
-                          model='StaticGen',
-                          )
+                          model='StaticGen')
 
 
 class EDModel(DCOPFModel):
@@ -55,11 +59,25 @@ class EDModel(DCOPFModel):
         self.pg.horizon = self.nt
 
         # --- service ---
+        self.pdt = NumOperation(u=self.pd,
+                                fun=np.sum,
+                                name='pdt',
+                                tex_name='p_{d, total}',
+                                unit='p.u.',
+                                info='Total load',
+                                )
+        self.pdr = NumOneslike(u=self.pdt,
+                                ref=self.pg,
+                                name='pdr',
+                                tex_name='p_{d, repeat}',
+                                unit='p.u.',
+                                info='Repeated total load',
+                                )
         self.pgs = VarReduce(u=self.pg,
                              fun=np.ones,
                              name='pgs',
                              tex_name='\sum_{p,g}',)
-        self.pgs.info='Sum matrix to sum pg from (nr, nc) to (1, nc)'
+        self.pgs.info='Sum matrix to reduce pg axis0 to 1'
         # --- constraints ---
         self.pb.e_str = 'pgs @ pg'
         # self.rgu = Constraint(name='rgu',
