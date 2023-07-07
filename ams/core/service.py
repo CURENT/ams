@@ -230,11 +230,33 @@ class NumMultiply(NumOperation):
         return self.fun(self.u.v, self.u2.v, **self.kwargs)
 
 
-class NumTile(NumOperation):
+class NumHstack(NumOperation):
     """
-    Tile a numerical array using NumPy's tile function,
-    ``np.tile(A=u.v, reps=(1, ref.shape[1]), **kwargs)``,
-    where ``reps`` is the column number of ref.
+    Repeat an array along the second axis nc times
+    using NumPy's hstack function, where nc is the column number of the
+    reference array,
+    ``np.hstack([u.v[:, np.newaxis] * ref.shape[1]], **kwargs)``.
+
+    Parameters
+    ----------
+    u : Callable
+        Input array.
+    ref : Callable
+        Reference array used to determine the number of repetitions.
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    vtype : Type, optional
+        Variable type.
+    model : str, optional
+        Model name.
+    **kwargs
+        Additional keyword arguments to be passed to np.hstack.
     """
 
     def __init__(self,
@@ -249,13 +271,12 @@ class NumTile(NumOperation):
                  **kwargs):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model,
-                         u=u, fun=np.tile, **kwargs)
+                         u=u, fun=np.hstack, **kwargs)
         self.ref = ref
 
     @property
     def v(self):
-        return self.fun(A=self.u.v,
-                        reps=(1, self.ref.shape[1]),
+        return self.fun([self.u.v[:, np.newaxis]] * self.ref.shape[1],
                         **self.kwargs)
 
 

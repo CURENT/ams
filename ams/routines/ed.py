@@ -6,7 +6,8 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
-from ams.core.service import VarReduction, NumOperation, NumMultiply
+from ams.core.service import (VarReduction, NumOperation, NumMultiply,
+                              NumHstack, VarSub)
 
 from ams.routines.dcopf import DCOPFData, DCOPFModel
 
@@ -39,10 +40,10 @@ class EDData(DCOPFData):
                               tex_name=r'h_{idx}',
                               model='Horizon')
 
-        self.R10 = RParam(info='10-min ramp rate (system base)',
-                          name='R10',
-                          src='R10',
-                          tex_name=r'R_{10}',
+        self.R30 = RParam(info='30-min ramp rate (system base)',
+                          name='R30',
+                          src='R30',
+                          tex_name=r'R_{30}',
                           unit='p.u./min',
                           model='StaticGen')
 
@@ -67,47 +68,61 @@ class EDModel(DCOPFModel):
         self.pg.info = '2D power generation (system base, row for gen, col for horizon)'
 
         # --- service ---
-        self.spd = NumOperation(u=self.pd,
+        self.Spd = NumOperation(u=self.pd,
                                 fun=np.sum,
-                                name='spd',
-                                tex_name=r'\sum_{p,d}',
+                                name='Spd',
+                                tex_name=r'\sum_{pd}',
                                 unit='p.u.',
-                                info='Total load in shape(1)',
+                                info='Total load in shape (1, )',
                                 )
-        self.sr = NumOperation(u=self.scale,
+        self.Sr = NumOperation(u=self.scale,
                                fun=np.expand_dims,
-                               name='sr',
-                               tex_name='s_{pd, r}',
+                               name='Sr',
+                               tex_name=r'S_{pd}',
                                unit='p.u.',
                                info='Scale in shape (1, nh)',
                                axis=0,
                                )
-        self.pdr = NumMultiply(u=self.spd,
-                               u2=self.sr,
-                               name='pdr',
-                               tex_name='p_{d, r}',
+        self.Rpd = NumMultiply(u=self.Spd,
+                               u2=self.Sr,
+                               name='Rpd',
+                               tex_name=r'R_{pd}',
                                unit='p.u.',
                                info='Scaled total load in shape (1, nh)',
                                )
-        self.pgs = VarReduction(u=self.pg,
+        self.Spg = VarReduction(u=self.pg,
                                 fun=np.ones,
-                                name='pgs',
-                                tex_name='\sum_{p,g}',)
-        self.pgs.info = 'Sum matrix to reduce pg axis0 to 1'
+                                name='spg',
+                                tex_name=r'\sum_{pg}',)
+        self.Spg.info = 'Sum matrix to reduce pg axis0 to 1'
+
         # NOTE: pgs @ pg will return size (1, nh), where nh is the number of
         #       horizon intervals
-        # # --- constraints ---
-        self.pb.e_str = 'pdr - pgs @ pg'
-        # self.rgu = Constraint(name='rgu',
-        #                       info='ramp up limit of generator output',
-        #                       e_str='pg - pg0 - R10',
-        #                       type='uq',
-        #                       )
-        # self.rgd = Constraint(name='rgd',
-        #                       info='ramp down limit of generator output',
-        #                       e_str='-pg + pg0 - R10',
-        #                       type='uq',
-        #                       )
+        # --- constraints ---
+        self.pb.e_str = 'Rpd - Spg @ pg'  # power balance
+
+        self.Mr = VarSub(u=self.pg,
+                         horizon=self.horizon,
+                         name='Mr',
+                         tex_name=r'M_{r}',
+                         info='Subtraction matrix for ramping',
+                         )
+        self.RR30 = NumHstack(u=self.R30,
+                              ref=self.Mr,
+                              name='RR30',
+                              tex_name=r'R_{R30}',
+                              info='Repeated ramp rate',
+                              )
+        self.rgu = Constraint(name='rgu',
+                              info='generator ramping up',
+                              e_str='pg @ Mr - RR30',
+                              type='uq',
+                              )
+        self.rgd = Constraint(name='rgd',
+                              info='generator ramping down',
+                              e_str='-pg @ Mr - RR30',
+                              type='uq',
+                              )
 
 
 class ED(EDData, EDModel):
