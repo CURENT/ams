@@ -159,26 +159,32 @@ class VarSum(RBaseService):
         return result
 
 
-class NumTile(BaseService):
+class VarReduce(RBaseService):
     """
-    Tile a numerical vector.
+    A service that reduces a two dimensional variable matrix
+    to one dimensional vector.
     """
 
-    def __init__(self, name: str = None, tex_name: str = None,
+    def __init__(self, 
+                 fun: Callable,
+                 var: Callable = None,
+                 name: str = None,
+                 tex_name: str = None,
                  unit: str = None,
-                 info: str = None, vtype: Type = None,
-                 model: str = None,
-                 src: str = None,
+                 info: str = None,
+                 vtype: Type = None,
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype)
-        self.src = src
-        self.model = model
-        self.export = False
+        self.var = var
+        self.fun = fun
 
     @property
     def v(self):
-        pass
+        # NOTE: the nc will run into error if input var has no owner
+        nc = len(self.var.owner.get_idx())
+        shape = (1, nc)
+        return self.fun(shape=shape)
 
 
 class VarSub(BaseService):

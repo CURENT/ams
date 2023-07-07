@@ -6,6 +6,8 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
+from ams.core.service import VarReduce
+
 from ams.routines.dcopf import DCOPFData, DCOPFModel
 
 from ams.opt.omodel import Var, Constraint, Objective
@@ -52,8 +54,14 @@ class EDModel(DCOPFModel):
         # --- vars ---
         self.pg.horizon = self.nt
 
+        # --- service ---
+        self.pgs = VarReduce(fun=np.ones,
+                             var=self.pg,
+                             name='pgs',
+                             tex_name='\sum_{p,g}',)
+        self.pgs.info='Sum matrix to sum pg from (nr, nc) to (1, nc)'
         # --- constraints ---
-        self.pb.e_str = 'sum(pd1) + sum(pd2) - sum(pg, axis=1)'
+        self.pb.e_str = 'pgs @ pg'
         # self.rgu = Constraint(name='rgu',
         #                       info='ramp up limit of generator output',
         #                       e_str='pg - pg0 - R10',
