@@ -6,7 +6,7 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
-from ams.core.service import ZonalVarSum
+from ams.core.service import VarSumZonal
 from ams.routines.dcopf import DCOPFData, DCOPFModel
 
 from ams.opt.omodel import Var, Constraint, Objective
@@ -104,7 +104,7 @@ class RTEDModel(DCOPFModel):
         self.info = 'Economic dispatch'
         self.type = 'DCED'
         # --- service ---
-        self.gsm = ZonalVarSum(u=self.zg,
+        self.gsm = VarSumZonal(u=self.zg,
                                zone='Region',
                                name='gsm',
                                tex_name=r'\sum_{g}')

@@ -230,7 +230,36 @@ class NumMultiply(NumOperation):
         return self.fun(self.u.v, self.u2.v, **self.kwargs)
 
 
-class ZonalVarSum(ROperationService):
+class NumTile(NumOperation):
+    """
+    Tile a numerical array using NumPy's tile function,
+    ``np.tile(A=u.v, reps=(1, ref.shape[1]), **kwargs)``,
+    where ``reps`` is the column number of ref.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 ref: Callable,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 model: str = None,
+                 **kwargs):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype, model=model,
+                         u=u, fun=np.tile, **kwargs)
+        self.ref = ref
+
+    @property
+    def v(self):
+        return self.fun(A=self.u.v,
+                        reps=(1, self.ref.shape[1]),
+                        **self.kwargs)
+
+
+class VarSumZonal(ROperationService):
     """
     Build zonal sum matrix for a ``Var`` vector in the shape of collection model,
     ``Area`` or ``Region``.
@@ -362,37 +391,53 @@ class VarReduction(ROperationService):
 
 class VarSub(ROperationService):
     """
-    Build substraction matrix for a variable vector in the shape of
-    indexer vector.
+    Build a substraction matrix for a 2D variable in the shape (nr, nc),
+    where nr is the length of the horizon reference vector ``horizon.n``,
+    and nc is the length of the input vector ``u.n``.
+
+    This can be used for generator ramping constraints in multi-period
+    optimization problems.
+
+    The subtraction matrix is constructed as follows:
+    ``np.eye(nr, nc, k=-1) - np.eye(nr, nc, k=0)``.
+
+    Parameters
+    ----------
+    u : Callable
+        Input.
+    horizon : Callable
+        Horizon reference.
+    name : str
+        Instance name.
+    tex_name : str
+        TeX name.
+    unit : str
+        Unit.
+    info : str
+        Description.
+    vtype : Type
+        Variable type.
+    model : str
+        Model name.
     """
 
     def __init__(self,
                  u: Callable,
-                 u2: Callable,
+                 horizon: Callable,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 model: str = None,
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype)
-        self.indexer = indexer
-        self.model = model
-        self.export = False
+                         info=info, vtype=vtype, model=model,
+                         u=u)
+        self.horizon = horizon
 
     @property
     def v(self):
-        nr = self.indexer.n
-        mdl_or_grp = self.owner.system.__dict__[self.model]
-        nc = mdl_or_grp.n
-
-        idx = None
-        try:
-            idx = mdl_or_grp.idx.v
-        except AttributeError:
-            idx = mdl_or_grp.get_idx()
-        try:
-            mdl_indexer_val = mdl_or_grp.get(src='zone', attr='v',
-                                             idx=idx, allow_none=True, default=None)
-        except KeyError:
-            raise KeyError(f'Indexer <zone> not found in model <{self.model}>!')
-        row, col = np.meshgrid(mdl_indexer_val, self.indexer.v)
-        result = (row == col).astype(int)
-
-        return result
+        nr = self.horizon.n
+        nc = self.u.n - 1
+        return np.eye(nr, nc, k=-1) - np.eye(nr, nc, k=0)
