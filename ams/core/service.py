@@ -166,6 +166,9 @@ class NumOperation(ROperationService):
                  vtype: Type = None,
                  model: str = None,
                  **kwargs):
+        tex_name = tex_name if tex_name is not None else u.tex_name
+        unit = unit if unit is not None else u.unit
+        info = info if info is not None else u.info
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model,
                          u=u,)
@@ -178,6 +181,50 @@ class NumOperation(ROperationService):
         if not isinstance(out, np.ndarray):
             out = np.array([out])
         return out
+
+
+class NumExpandDim(NumOperation):
+    """
+    Expand the dimensions of the input array along a specified axis
+    using NumPy's ``np.expand_dims(u.v, axis=axis)``.
+
+    Parameters
+    ----------
+    u : Callable
+        Input.
+    axis : int
+        Axis along which to expand the dimensions (default is 0).
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    vtype : Type, optional
+        Variable type.
+    model : str, optional
+        Model name.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 axis: int = 0,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 model: str = None,):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype, model=model,
+                         u=u, fun=np.expand_dims)
+        self.axis = axis
+
+    @property
+    def v(self):
+        return self.fun(self.u.v, axis=self.axis)
 
 
 class NumMultiply(NumOperation):

@@ -6,8 +6,8 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
-from ams.core.service import (VarReduction, NumOperation, NumMultiply,
-                              NumHstack, VarSub)
+from ams.core.service import (VarReduction, NumOperation, NumExpandDim,
+                              NumMultiply, NumHstack, VarSub)
 
 from ams.routines.dcopf import DCOPFData, DCOPFModel
 
@@ -95,46 +95,38 @@ class EDModel(DCOPFModel):
 
         # --- constraints ---
         # power balance
-        # NOTE: pgs @ pg will return size (1, nh), where nh is the number of
-        #       horizon intervals
+        # NOTE: Spg @ pg will return a row vector
         self.pb.e_str = 'Rpd - Spg @ pg'  # power balance
 
         # line limits
         self.cdup0 = NumOperation(u=self.scale,
                                   fun=np.ones_like,
                                   name='cdup0',
-                                  tex_name=r'c_{dup,0}',
-                                  info='Column duplication vector',
+                                  tex_name=r'c_{dup}',
+                                  info='Column duplication array',
                                   )
-        self.cdup = NumOperation(u=self.cdup0,
-                                 fun=np.expand_dims,
+        self.cdup = NumExpandDim(u=self.cdup0,
                                  name='cdup',
-                                 tex_name=r'c_{dup}',
-                                 info='Column duplication vector in shape (1, nh)',
+                                 tex_name=r'c_{dup,r}',
+                                 info='Column duplication array as row vector',
                                  axis=0,
                                  )
-        self.RAr = NumOperation(u=self.rate_a,
-                                fun=np.expand_dims,
+        self.RAr = NumExpandDim(u=self.rate_a,
                                 name='RAr',
-                                tex_name=r'R_{ATEA,r}',
-                                unit='p.u.',
-                                info='rate_a in shape (nh, 1)',
+                                tex_name=r'R_{ATEA,c}',
+                                info='rate_a as column vector',
                                 axis=1,
                                 )
-        self.Rpd1 = NumOperation(u=self.pd1,
-                                 fun=np.expand_dims,
+        self.Rpd1 = NumExpandDim(u=self.pd1,
                                  name='Rpd1',
-                                 tex_name=r'p_{d1,r}',
-                                 unit='p.u.',
-                                 info='pd1 in shape (nh, 1)',
+                                 tex_name=r'p_{d1,c}',
+                                 info='pd1 as column vector',
                                  axis=1,
                                  )
-        self.Rpd2 = NumOperation(u=self.pd2,
-                                 fun=np.expand_dims,
+        self.Rpd2 = NumExpandDim(u=self.pd2,
                                  name='Rpd2',
-                                 tex_name=r'p_{d2,r}',
-                                 unit='p.u.',
-                                 info='pd2 in shape (nh, 1)',
+                                 tex_name=r'p_{d2,c}',
+                                 info='pd2 as column vector',
                                  axis=1,
                                  )
         self.lub.e_str = 'PTDF1@pg - PTDF1*Rpd1@cdup - PTDF2@Rpd2@cdup - RAr@cdup'
@@ -164,16 +156,24 @@ class EDModel(DCOPFModel):
                               type='uq',
                               )
 
+        # --- objective ---
+        # NOTE: no need to fix objective function
+
 
 class ED(EDData, EDModel):
     """
-    DC-based economic dispatch (ED).
+    DC-based multi-period economic dispatch (ED).
 
-    ED extends DCOPF with:
+    ED extends DCOPF as follows:
 
-    1. rolling horizon using model ``Horizon``
+    Power generation ``pg`` is extended to 2D matrix using argument
+    ``horizon`` to represent the power generation of each generator in
+    each time period (horizon).
+    The rows correspond to generators and the columns correspond to time
+    periods (horizons).
 
-    2. generator ramping limits ``rgu`` and ``rgd``
+    Ramping limits ``rgu`` and ``rgd`` are introduced as 2D matrices to
+    represent the upward and downward ramping limits for each generator.
     """
 
     def __init__(self, system, config):
