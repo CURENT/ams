@@ -20,23 +20,26 @@ class RBaseService(BaseService):
 
     Parameters
     ----------
-    name : str
+    name : str, optional
         Instance name.
-    tex_name : str
+    tex_name : str, optional
         TeX name.
-    unit : str
+    unit : str, optional
         Unit.
-    info : str
+    info : str, optional
         Description.
-    vtype : Type
+    vtype : Type, optional
         Variable type.
-    model : str
+    model : str, optional
         Model name.
     """
 
-    def __init__(self, name: str = None, tex_name: str = None,
+    def __init__(self,
+                 name: str = None,
+                 tex_name: str = None,
                  unit: str = None,
-                 info: str = None, vtype: Type = None,
+                 info: str = None,
+                 vtype: Type = None,
                  model: str = None,
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
@@ -77,6 +80,24 @@ class RBaseService(BaseService):
                 val_str = f', v=shape{self.v.shape}'
 
             return f'{self.class_name}: {self.rtn.class_name}.{self.name}{val_str}'
+
+
+class ROperationService(RBaseService):
+    """
+    Base calss for operational services used in routine.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 model: str = None):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype, model=model)
+        self.u = u
 
 
 class VarSum(RBaseService):
@@ -159,30 +180,31 @@ class VarSum(RBaseService):
         return result
 
 
-class VarReduce(RBaseService):
+class VarReduce(ROperationService):
     """
     A service that reduces a two dimensional variable matrix
     to one dimensional vector.
     """
 
     def __init__(self, 
+                 u: Callable,
                  fun: Callable,
-                 var: Callable = None,
                  name: str = None,
                  tex_name: str = None,
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
+                 model: str = None,
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype)
-        self.var = var
+                         info=info, vtype=vtype, model=model,
+                         u=u)
         self.fun = fun
 
     @property
     def v(self):
         # NOTE: the nc will run into error if input var has no owner
-        nc = len(self.var.owner.get_idx())
+        nc = len(self.u.owner.get_idx())
         shape = (1, nc)
         return self.fun(shape=shape)
 

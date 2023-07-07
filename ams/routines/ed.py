@@ -55,8 +55,8 @@ class EDModel(DCOPFModel):
         self.pg.horizon = self.nt
 
         # --- service ---
-        self.pgs = VarReduce(fun=np.ones,
-                             var=self.pg,
+        self.pgs = VarReduce(u=self.pg,
+                             fun=np.ones,
                              name='pgs',
                              tex_name='\sum_{p,g}',)
         self.pgs.info='Sum matrix to sum pg from (nr, nc) to (1, nc)'
