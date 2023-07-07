@@ -66,6 +66,16 @@ class OptzBase:
         return self.__class__.__name__
 
     @property
+    def n(self):
+        """
+        Return the number of elements.
+        """
+        if self.owner is None:
+            return len(self.v)
+        else:
+            return self.owner.n
+
+    @property
     def shape(self):
         """
         Return the shape.
@@ -116,7 +126,7 @@ class Var(Algeb, OptzBase):
     ub : str, optional
         Upper bound
     horizon : ams.routines.RParam, optional
-        Horizon parameter
+        Horizon idx.
     nonneg : bool, optional
         Non-negative variable
     nonpos : bool, optional
@@ -245,7 +255,7 @@ class Var(Algeb, OptzBase):
         nc = 0
         if self.horizon:
             # NOTE: numer of columns is the horizon if exists
-            nc = int(self.horizon.v[0])
+            nc = int(self.horizon.n)
             shape = (nr, nc)
         else:
             shape = (nr,)

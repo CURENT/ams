@@ -6,7 +6,7 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
-from ams.core.service import VarReduce, NumOperation, NumOneslike
+from ams.core.service import VarReduce, NumOperation, NumMultiply
 
 from ams.routines.dcopf import DCOPFData, DCOPFModel
 
@@ -31,8 +31,13 @@ class EDData(DCOPFData):
         self.scale = RParam(info='scaling factor for load',
                             name='scale',
                             src='scale',
-                            tex_name=r's_{load}',
+                            tex_name=r's_{pd}',
                             model='Horizon')
+        self.horizon = RParam(info='horizon idx',
+                              name='horizon',
+                              src='idx',
+                              tex_name=r'h_{idx}',
+                              model='Horizon')
 
         self.R10 = RParam(info='10-min ramp rate (system base)',
                           name='R10',
@@ -55,31 +60,44 @@ class EDModel(DCOPFModel):
 
         self.info = 'Economic dispatch'
         self.type = 'DCED'
+
         # --- vars ---
-        # self.pg.horizon = self.nt
+        # NOTE: extend pg to 2D matrix, where row is gen and col is horizon
+        self.pg.horizon = self.horizon
+        self.pg.info = '2D power generation (system base, row for gen, col for horizon)'
 
         # --- service ---
-        # self.pdt = NumOperation(u=self.pd,
-        #                         fun=np.sum,
-        #                         name='pdt',
-        #                         tex_name='p_{d, total}',
-        #                         unit='p.u.',
-        #                         info='Total load',
-        #                         )
-        # self.pdr = NumOneslike(u=self.pdt,
-        #                        ref=self.pg,
-        #                        name='pdr',
-        #                        tex_name='p_{d, repeat}',
-        #                        unit='p.u.',
-        #                        info='Repeated total load',
-        #                        )
-        # self.pgs = VarReduce(u=self.pg,
-        #                      fun=np.ones,
-        #                      name='pgs',
-        #                      tex_name='\sum_{p,g}',)
-        # self.pgs.info = 'Sum matrix to reduce pg axis0 to 1'
+        self.spd = NumOperation(u=self.pd,
+                                fun=np.sum,
+                                name='spd',
+                                tex_name=r'\sum_{p,d}',
+                                unit='p.u.',
+                                info='Total load in shape(1)',
+                                )
+        self.sr = NumOperation(u=self.scale,
+                               fun=np.expand_dims,
+                               name='sr',
+                               tex_name='s_{pd, r}',
+                               unit='p.u.',
+                               info='Scale in shape (1, nh)',
+                               axis=0,
+                               )
+        self.pdr = NumMultiply(u=self.spd,
+                               u2=self.sr,
+                               name='pdr',
+                               tex_name='p_{d, r}',
+                               unit='p.u.',
+                               info='Scaled total load in shape (1, nh)',
+                               )
+        self.pgs = VarReduce(u=self.pg,
+                             fun=np.ones,
+                             name='pgs',
+                             tex_name='\sum_{p,g}',)
+        self.pgs.info = 'Sum matrix to reduce pg axis0 to 1'
+        # NOTE: pgs @ pg will return size (1, nh), where nh is the number of
+        #       horizon intervals
         # # --- constraints ---
-        # self.pb.e_str = 'pgs @ pg'
+        self.pb.e_str = 'pdr - pgs @ pg'
         # self.rgu = Constraint(name='rgu',
         #                       info='ramp up limit of generator output',
         #                       e_str='pg - pg0 - R10',
@@ -98,13 +116,9 @@ class ED(EDData, EDModel):
 
     ED extends DCOPF with:
 
-    1. rolling horizon: ``nt`` intervals
+    1. rolling horizon using model ``Horizon``
 
     2. generator ramping limits ``rgu`` and ``rgd``
-
-    Notes
-    -----
-    1. ED is a DC-based model, which assumes bus voltage to be 1
     """
 
     def __init__(self, system, config):

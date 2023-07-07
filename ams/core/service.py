@@ -131,11 +131,12 @@ class ROperationService(RBaseService):
 
 class NumOperation(ROperationService):
     """
-    Operation on a numerical array, ``fun(u.v, **kwargs)``.
+    Perform an operation on a numerical array using the
+    function ``fun(u.v, **kwargs)``.
 
     Note that the scalar output is converted to a 1D array.
 
-    **kwargs are passed to the input function.
+    The optional **kwargs are passed to the input function.
 
     Parameters
     ----------
@@ -166,8 +167,8 @@ class NumOperation(ROperationService):
                  model: str = None,
                  **kwargs):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                        info=info, vtype=vtype, model=model,
-                        u=u,)
+                         info=info, vtype=vtype, model=model,
+                         u=u,)
         self.fun = fun
         self.kwargs = kwargs
 
@@ -179,30 +180,54 @@ class NumOperation(ROperationService):
         return out
 
 
-class NumOneslike(ROperationService):
+class NumMultiply(NumOperation):
     """
-    Oneslike operation on a numerical array,
-    ``u.v * np.ones_like(a=u.v, shape=ref.shape)``.
+    Perform element-wise multiplication on two numerical arrays
+    using NumPy's multiply function,
+    ``np.multiply(u.v, u2.v, **kwargs)``.
+
+    The optional **kwargs are passed to the input function.
+
+    Parameters
+    ----------
+    u : Callable
+        The first input array for multiplication.
+    u2 : Callable
+        The second input array for multiplication.
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    vtype : Type, optional
+        Variable type.
+    model : str, optional
+        Model name.
     """
 
     def __init__(self,
                  u: Callable,
-                 ref: Callable,
+                 u2: Callable,
                  name: str = None,
                  tex_name: str = None,
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 model: str = None):
+                 model: str = None,
+                 **kwargs):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                        info=info, vtype=vtype, model=model,
-                        u=u,)
-        self.ref = ref
+                         info=info, vtype=vtype, model=model,
+                         u=u, fun=np.multiply, **kwargs)
+        self.u2 = u2
 
+    # NOTE: when using self.fun(x1=self.u.v, x2=self.u2.v, **self.kwargs),
+    # the function runs into error with 0 arguments were given.
     @property
     def v(self):
-        ones_array = np.ones_like(a=self.u.v, shape=self.ref.shape)
-        return self.u.v * ones_array
+        return self.fun(self.u.v, self.u2.v, **self.kwargs)
 
 
 class ZonalVarSum(ROperationService):
@@ -296,7 +321,7 @@ class VarReduce(ROperationService):
     to one dimensional vector.
     """
 
-    def __init__(self, 
+    def __init__(self,
                  u: Callable,
                  fun: Callable,
                  name: str = None,
