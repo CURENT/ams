@@ -6,7 +6,7 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
-from ams.core.service import VarReduce, NumOperation, NumMultiply
+from ams.core.service import VarReduction, NumOperation, NumMultiply
 
 from ams.routines.dcopf import DCOPFData, DCOPFModel
 
@@ -89,10 +89,10 @@ class EDModel(DCOPFModel):
                                unit='p.u.',
                                info='Scaled total load in shape (1, nh)',
                                )
-        self.pgs = VarReduce(u=self.pg,
-                             fun=np.ones,
-                             name='pgs',
-                             tex_name='\sum_{p,g}',)
+        self.pgs = VarReduction(u=self.pg,
+                                fun=np.ones,
+                                name='pgs',
+                                tex_name='\sum_{p,g}',)
         self.pgs.info = 'Sum matrix to reduce pg axis0 to 1'
         # NOTE: pgs @ pg will return size (1, nh), where nh is the number of
         #       horizon intervals

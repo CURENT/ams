@@ -315,10 +315,29 @@ class ZonalVarSum(ROperationService):
         return result
 
 
-class VarReduce(ROperationService):
+class VarReduction(ROperationService):
     """
-    A service that reduces a two dimensional variable matrix
-    to one dimensional vector.
+    A numerical matrix to reduce a 2D variable to 1D,
+    ``np.fun(shape=(1, u.n))``.
+
+    Parameters
+    ----------
+    u : Callable
+        The input matrix variable.
+    fun : Callable
+        The reduction function that takes a shape parameter (1D shape) as input.
+    name : str, optional
+        The name of the instance.
+    tex_name : str, optional
+        The TeX name for the instance.
+    unit : str, optional
+        The unit of the output.
+    info : str, optional
+        A description of the operation.
+    vtype : Type, optional
+        The variable type.
+    model : str, optional
+        The model name associated with the operation.
     """
 
     def __init__(self,
@@ -338,23 +357,18 @@ class VarReduce(ROperationService):
 
     @property
     def v(self):
-        # NOTE: the nc will run into error if input var has no owner
-        nc = len(self.u.owner.get_idx())
-        shape = (1, nc)
-        return self.fun(shape=shape)
+        return self.fun(shape=(1, self.u.n))
 
 
-class VarSub(BaseService):
+class VarSub(ROperationService):
     """
     Build substraction matrix for a variable vector in the shape of
     indexer vector.
     """
 
-    def __init__(self, name: str = None, tex_name: str = None,
-                 unit: str = None,
-                 info: str = None, vtype: Type = None,
-                 indexer: Callable = None,
-                 model: str = None,
+    def __init__(self,
+                 u: Callable,
+                 u2: Callable,
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype)
