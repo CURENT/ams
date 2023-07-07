@@ -85,6 +85,23 @@ class RBaseService(BaseService):
 class ROperationService(RBaseService):
     """
     Base calss for operational services used in routine.
+
+    Parameters
+    ----------
+    u : Callable
+        Input.
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    vtype : Type, optional
+        Variable type.
+    model : str, optional
+        Model name.
     """
 
     def __init__(self,
@@ -100,9 +117,9 @@ class ROperationService(RBaseService):
         self.u = u
 
 
-class VarSum(RBaseService):
+class ZonalVarSum(ROperationService):
     """
-    Build sum matrix for a ``Var`` vector in the shape of collection model,
+    Build zonal sum matrix for a ``Var`` vector in the shape of collection model,
     ``Area`` or ``Region``.
     The value array is in the shape of (nr, nc), where nr is the length of
     rid instance idx, and nc is the length of the cid value.
@@ -134,6 +151,10 @@ class VarSum(RBaseService):
 
     Parameters
     ----------
+    u : Callable
+        Input.
+    zone : str
+        Zonal model name, e.g., "Area" or "Region".
     name : str
         Instance name.
     tex_name : str
@@ -146,35 +167,36 @@ class VarSum(RBaseService):
         Variable type.
     model : str
         Model name.
-    cid : Callable
-        Column indexer, usually an RParam that points to an IdxParam
-        "zone" or "area" defined in a model.
-    rid : str
-        Row indexer, usually the name of a collection model, e.g.,
-        "Region" or "Area".
     """
 
-    def __init__(self, name: str = None, tex_name: str = None, unit: str = None,
-                 info: str = None, vtype: Type = None,
+    def __init__(self,
+                 u: Callable,
+                 zone: str,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
                  model: str = None,
-                 cid: Callable = None,
-                 rid: str = None,
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model)
-        self.cid = cid
-        self.rid = rid
+                         info=info, vtype=vtype, model=model,
+                         u=u)
+        self.zone = zone
 
     @property
     def v(self):
-        rid = getattr(self.rtn.system, self.rid)
+        try:
+            zone_mdl = getattr(self.rtn.system, self.zone)
+        except AttributeError:
+            raise AttributeError(f'Zonal model <{self.zone}> not found.')
         ridx = None
         try:
-            ridx = rid.idx.v
+            ridx = zone_mdl.idx.v
         except AttributeError:
-            ridx = rid.get_idx()
+            ridx = zone_mdl.get_idx()
 
-        row, col = np.meshgrid(self.cid.v, ridx)
+        row, col = np.meshgrid(self.u.v, ridx)
         result = (row == col).astype(int)
 
         return result

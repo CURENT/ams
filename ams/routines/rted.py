@@ -6,7 +6,7 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
-from ams.core.service import VarSum
+from ams.core.service import ZonalVarSum
 from ams.routines.dcopf import DCOPFData, DCOPFModel
 
 from ams.opt.omodel import Var, Constraint, Objective
@@ -104,11 +104,12 @@ class RTEDModel(DCOPFModel):
         self.info = 'Economic dispatch'
         self.type = 'DCED'
         # --- service ---
-        self.gsm = VarSum(name='gsm',
-                          tex_name=r'\sum_{g}',
-                          info='Sum matrix to sum gen vars vector as vector in shape of zone',
-                          cid=self.zg,
-                          rid='Region',)
+        self.gsm = ZonalVarSum(u=self.zg,
+                               zone='Region',
+                               name='gsm',
+                               tex_name=r'\sum_{g}')
+        self.gsm.info = 'Sum matrix to sum Gen vars vector in shape of zone'
+
         # --- vars ---
         self.pru = Var(info='RegUp reserve (system base)',
                        unit='p.u.',

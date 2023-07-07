@@ -3,7 +3,7 @@ import logging
 from andes.core.model import ModelData
 from andes.utils.tab import Tab
 from ams.core.model import Model
-from ams.core.service import BackRef, VarSum
+from ams.core.service import BackRef
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +32,6 @@ class Region(RegionData, Model):
 
         self.Bus = BackRef()
         self.ACTopology = BackRef()
-
-        # self.gsm = VarSum(name='gsm',
-        #                   tex_name='\sum_{g}',
-        #                   info='Sum matrix to sum gen vars vector as vector in shape of zone',
-        #                   indexer=self.idx,
-        #                   model='StaticGen',)
 
     def bus_table(self):
         """
