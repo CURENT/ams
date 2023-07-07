@@ -55,9 +55,6 @@ class EDModel(DCOPFModel):
 
     def __init__(self, system, config):
         DCOPFModel.__init__(self, system, config)
-        # DEBUG: clear constraints and objective
-        for name in ['lub', 'llb']:
-            delattr(self, name)
 
         self.info = 'Economic dispatch'
         self.type = 'DCED'
@@ -96,11 +93,54 @@ class EDModel(DCOPFModel):
                                 tex_name=r'\sum_{pg}',)
         self.Spg.info = 'Sum matrix to reduce pg axis0 to 1'
 
+        # --- constraints ---
+        # power balance
         # NOTE: pgs @ pg will return size (1, nh), where nh is the number of
         #       horizon intervals
-        # --- constraints ---
         self.pb.e_str = 'Rpd - Spg @ pg'  # power balance
 
+        # line limits
+        self.cdup0 = NumOperation(u=self.scale,
+                                  fun=np.ones_like,
+                                  name='cdup0',
+                                  tex_name=r'c_{dup,0}',
+                                  info='Column duplication vector',
+                                  )
+        self.cdup = NumOperation(u=self.cdup0,
+                                 fun=np.expand_dims,
+                                 name='cdup',
+                                 tex_name=r'c_{dup}',
+                                 info='Column duplication vector in shape (1, nh)',
+                                 axis=0,
+                                 )
+        self.RAr = NumOperation(u=self.rate_a,
+                                fun=np.expand_dims,
+                                name='RAr',
+                                tex_name=r'R_{ATEA,r}',
+                                unit='p.u.',
+                                info='rate_a in shape (nh, 1)',
+                                axis=1,
+                                )
+        self.Rpd1 = NumOperation(u=self.pd1,
+                                 fun=np.expand_dims,
+                                 name='Rpd1',
+                                 tex_name=r'p_{d1,r}',
+                                 unit='p.u.',
+                                 info='pd1 in shape (nh, 1)',
+                                 axis=1,
+                                 )
+        self.Rpd2 = NumOperation(u=self.pd2,
+                                 fun=np.expand_dims,
+                                 name='Rpd2',
+                                 tex_name=r'p_{d2,r}',
+                                 unit='p.u.',
+                                 info='pd2 in shape (nh, 1)',
+                                 axis=1,
+                                 )
+        self.lub.e_str = 'PTDF1@pg - PTDF1*Rpd1@cdup - PTDF2@Rpd2@cdup - RAr@cdup'
+        self.llb.e_str = '-PTDF1@pg + PTDF1*Rpd1@cdup + PTDF2@Rpd2@cdup - RAr@cdup'
+
+        # ramping limits
         self.Mr = VarSub(u=self.pg,
                          horizon=self.horizon,
                          name='Mr',

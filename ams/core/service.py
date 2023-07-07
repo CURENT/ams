@@ -136,7 +136,7 @@ class NumOperation(ROperationService):
 
     Note that the scalar output is converted to a 1D array.
 
-    The optional **kwargs are passed to the input function.
+    The optional kwargs are passed to the input function.
 
     Parameters
     ----------
@@ -186,7 +186,7 @@ class NumMultiply(NumOperation):
     using NumPy's multiply function,
     ``np.multiply(u.v, u2.v, **kwargs)``.
 
-    The optional **kwargs are passed to the input function.
+    The optional kwargs are passed to the input function.
 
     Parameters
     ----------
