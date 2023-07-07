@@ -17,12 +17,7 @@ class Horizon(ModelData, Model):
         Model.__init__(self, system, config)
         self.group = 'TimeHorizon'
 
-        self.nt = NumParam(default=6,
-                           info='number of intervals',
-                           tex_name=r'n_{t}',
-                           )
-        self.dt = NumParam(default=60,
-                           info='time interval in minutes',
-                           tex_name='\delta_{t}',
-                           unit='min',
-                           )
+        self.scale = NumParam(default=1.0,
+                              info='scaling factor for load',
+                              tex_name=r's_{load}',
+                              )

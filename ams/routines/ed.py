@@ -28,11 +28,11 @@ class EDData(DCOPFData):
                          unit='p.u.',
                          src='p0',
                          model='PQ')
-        self.nt = RParam(info='Number of rolling intervals',
-                         name='nt',
-                         src='nt',
-                         tex_name=r'n_{t}',
-                         model='Horizon')
+        self.scale = RParam(info='scaling factor for load',
+                            name='scale',
+                            src='scale',
+                            tex_name=r's_{load}',
+                            model='Horizon')
 
         self.R10 = RParam(info='10-min ramp rate (system base)',
                           name='R10',
@@ -56,30 +56,30 @@ class EDModel(DCOPFModel):
         self.info = 'Economic dispatch'
         self.type = 'DCED'
         # --- vars ---
-        self.pg.horizon = self.nt
+        # self.pg.horizon = self.nt
 
         # --- service ---
-        self.pdt = NumOperation(u=self.pd,
-                                fun=np.sum,
-                                name='pdt',
-                                tex_name='p_{d, total}',
-                                unit='p.u.',
-                                info='Total load',
-                                )
-        self.pdr = NumOneslike(u=self.pdt,
-                                ref=self.pg,
-                                name='pdr',
-                                tex_name='p_{d, repeat}',
-                                unit='p.u.',
-                                info='Repeated total load',
-                                )
-        self.pgs = VarReduce(u=self.pg,
-                             fun=np.ones,
-                             name='pgs',
-                             tex_name='\sum_{p,g}',)
-        self.pgs.info='Sum matrix to reduce pg axis0 to 1'
-        # --- constraints ---
-        self.pb.e_str = 'pgs @ pg'
+        # self.pdt = NumOperation(u=self.pd,
+        #                         fun=np.sum,
+        #                         name='pdt',
+        #                         tex_name='p_{d, total}',
+        #                         unit='p.u.',
+        #                         info='Total load',
+        #                         )
+        # self.pdr = NumOneslike(u=self.pdt,
+        #                        ref=self.pg,
+        #                        name='pdr',
+        #                        tex_name='p_{d, repeat}',
+        #                        unit='p.u.',
+        #                        info='Repeated total load',
+        #                        )
+        # self.pgs = VarReduce(u=self.pg,
+        #                      fun=np.ones,
+        #                      name='pgs',
+        #                      tex_name='\sum_{p,g}',)
+        # self.pgs.info = 'Sum matrix to reduce pg axis0 to 1'
+        # # --- constraints ---
+        # self.pb.e_str = 'pgs @ pg'
         # self.rgu = Constraint(name='rgu',
         #                       info='ramp up limit of generator output',
         #                       e_str='pg - pg0 - R10',
