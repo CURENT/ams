@@ -77,7 +77,7 @@ class EDModel(DCOPFModel):
                                name='Sr',
                                tex_name=r'S_{pd}',
                                unit='p.u.',
-                               info='Scale in shape (1, nh)',
+                               info='Scale as row vector',
                                axis=0,
                                )
         self.Rpd = NumMultiply(u=self.Spd,
@@ -85,13 +85,13 @@ class EDModel(DCOPFModel):
                                name='Rpd',
                                tex_name=r'R_{pd}',
                                unit='p.u.',
-                               info='Scaled total load in shape (1, nh)',
+                               info='Scaled total load as row vector',
                                )
         self.Spg = VarReduction(u=self.pg,
                                 fun=np.ones,
-                                name='spg',
+                                name='Spg',
                                 tex_name=r'\sum_{pg}',)
-        self.Spg.info = 'Sum matrix to reduce pg axis0 to 1'
+        self.Spg.info = 'Sum matrix to sum pg as row vector'
 
         # --- constraints ---
         # power balance
@@ -142,7 +142,7 @@ class EDModel(DCOPFModel):
         self.RR30 = NumHstack(u=self.R30,
                               ref=self.Mr,
                               name='RR30',
-                              tex_name=r'R_{R30}',
+                              tex_name=r'R_{30,R}',
                               info='Repeated ramp rate',
                               )
         self.rgu = Constraint(name='rgu',
