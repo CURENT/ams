@@ -237,10 +237,12 @@ class RDocumenter:
 
         names, symbols = list(), list()
         info = list()
+        class_names = list()
 
         for p in self.services.values():
             names.append(p.name)
             info.append(p.info if p.info else '')
+            class_names.append(p.class_name)
 
         title = 'Services'
 
@@ -251,11 +253,13 @@ class RDocumenter:
             title = 'Services\n---------'
 
         plain_dict = OrderedDict([('Name', names),
-                                  ('Description', info)])
+                                  ('Description', info),
+                                  ('Type', class_names)])
 
         rest_dict = OrderedDict([('Name', names),
                                  ('Symbol', symbols),
-                                 ('Description', info)])
+                                 ('Description', info),
+                                 ('Type', class_names)])
 
         return make_doc_table(title=title,
                               max_width=max_width,
