@@ -63,6 +63,7 @@ class SymProcessor:
             (r'\bsum\b', f'{lang}.sum'),  # only used for CVXPY
             (r'\bvar\b', f'{lang}.Variable'),  # only used for CVXPY
             (r'\bproblem\b', f'{lang}.Problem'),  # only used for CVXPY
+            (r'\bmultiply\b', f'{lang}.multiply'),  # only used for CVXPY
         ])
         self.tex_map = OrderedDict([
             (r'\*\*(\d+)', '^{\\1}'),

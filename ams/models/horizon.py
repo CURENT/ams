@@ -6,7 +6,8 @@ from andes.core import (ModelData, NumParam)  # NOQA
 
 from ams.core.model import Model  # NOQA
 
-
+# TODO: rename to TimeSlot to avoid confusion with horizon in UC
+# TODO: input load curve, do the load computation
 class Horizon(ModelData, Model):
     """
     Rolling horizon.
