@@ -34,11 +34,11 @@ class EDData(DCOPFData):
                             src='scale',
                             tex_name=r's_{pd}',
                             model='Horizon')
-        self.horizon = RParam(info='horizon idx',
-                              name='horizon',
+        self.timeslot = RParam(info='Time slot for multi-period dispatch',
+                              name='timeslot',
                               src='idx',
-                              tex_name=r'h_{idx}',
-                              model='Horizon')
+                              tex_name=r't_{s,idx}',
+                              model='TimeSlot')
 
         self.R30 = RParam(info='30-min ramp rate (system base)',
                           name='R30',
@@ -61,7 +61,7 @@ class EDModel(DCOPFModel):
 
         # --- vars ---
         # NOTE: extend pg to 2D matrix, where row is gen and col is horizon
-        self.pg.horizon = self.horizon
+        self.pg.horizon = self.timeslot
         self.pg.info = '2D power generation (system base, row for gen, col for horizon)'
 
         # --- service ---
@@ -72,89 +72,89 @@ class EDModel(DCOPFModel):
                                 unit='p.u.',
                                 info='Total load in shape (1, )',
                                 )
-        self.Sr = NumOperation(u=self.scale,
-                               fun=np.expand_dims,
-                               name='Sr',
-                               tex_name=r'S_{pd}',
-                               unit='p.u.',
-                               info='Scale as row vector',
-                               axis=0,
-                               )
-        self.Rpd = NumMultiply(u=self.Spd,
-                               u2=self.Sr,
-                               name='Rpd',
-                               tex_name=r'R_{pd}',
-                               unit='p.u.',
-                               info='Scaled total load as row vector',
-                               )
-        self.Spg = VarReduction(u=self.pg,
-                                fun=np.ones,
-                                name='Spg',
-                                tex_name=r'\sum_{pg}',)
-        self.Spg.info = 'Sum matrix to sum pg as row vector'
+        # self.Sr = NumOperation(u=self.scale,
+        #                        fun=np.expand_dims,
+        #                        name='Sr',
+        #                        tex_name=r'S_{pd}',
+        #                        unit='p.u.',
+        #                        info='Scale as row vector',
+        #                        axis=0,
+        #                        )
+        # self.Rpd = NumMultiply(u=self.Spd,
+        #                        u2=self.Sr,
+        #                        name='Rpd',
+        #                        tex_name=r'R_{pd}',
+        #                        unit='p.u.',
+        #                        info='Scaled total load as row vector',
+        #                        )
+        # self.Spg = VarReduction(u=self.pg,
+        #                         fun=np.ones,
+        #                         name='Spg',
+        #                         tex_name=r'\sum_{pg}',)
+        # self.Spg.info = 'Sum matrix to sum pg as row vector'
 
         # --- constraints ---
         # power balance
         # NOTE: Spg @ pg will return a row vector
-        self.pb.e_str = 'Rpd - Spg @ pg'  # power balance
+        # self.pb.e_str = 'Rpd - Spg @ pg'  # power balance
 
         # line limits
-        self.cdup0 = NumOperation(u=self.scale,
-                                  fun=np.ones_like,
-                                  name='cdup0',
-                                  tex_name=r'c_{dup}',
-                                  info='Column duplication array',
-                                  )
-        self.cdup = NumExpandDim(u=self.cdup0,
-                                 name='cdup',
-                                 tex_name=r'c_{dup,r}',
-                                 info='Column duplication array as row vector',
-                                 axis=0,
-                                 )
-        self.RAr = NumExpandDim(u=self.rate_a,
-                                name='RAr',
-                                tex_name=r'R_{ATEA,c}',
-                                info='rate_a as column vector',
-                                axis=1,
-                                )
-        self.Rpd1 = NumExpandDim(u=self.pd1,
-                                 name='Rpd1',
-                                 tex_name=r'p_{d1,c}',
-                                 info='pd1 as column vector',
-                                 axis=1,
-                                 )
-        self.Rpd2 = NumExpandDim(u=self.pd2,
-                                 name='Rpd2',
-                                 tex_name=r'p_{d2,c}',
-                                 info='pd2 as column vector',
-                                 axis=1,
-                                 )
-        self.lub.e_str = 'PTDF1@pg - PTDF1*Rpd1@cdup - PTDF2@Rpd2@cdup - RAr@cdup'
-        self.llb.e_str = '-PTDF1@pg + PTDF1*Rpd1@cdup + PTDF2@Rpd2@cdup - RAr@cdup'
+        # self.cdup0 = NumOperation(u=self.scale,
+        #                           fun=np.ones_like,
+        #                           name='cdup0',
+        #                           tex_name=r'c_{dup}',
+        #                           info='Column duplication array',
+        #                           )
+        # self.cdup = NumExpandDim(u=self.cdup0,
+        #                          name='cdup',
+        #                          tex_name=r'c_{dup,r}',
+        #                          info='Column duplication array as row vector',
+        #                          axis=0,
+        #                          )
+        # self.RAr = NumExpandDim(u=self.rate_a,
+        #                         name='RAr',
+        #                         tex_name=r'R_{ATEA,c}',
+        #                         info='rate_a as column vector',
+        #                         axis=1,
+        #                         )
+        # self.Rpd1 = NumExpandDim(u=self.pd1,
+        #                          name='Rpd1',
+        #                          tex_name=r'p_{d1,c}',
+        #                          info='pd1 as column vector',
+        #                          axis=1,
+        #                          )
+        # self.Rpd2 = NumExpandDim(u=self.pd2,
+        #                          name='Rpd2',
+        #                          tex_name=r'p_{d2,c}',
+        #                          info='pd2 as column vector',
+        #                          axis=1,
+        #                          )
+        # self.lub.e_str = 'PTDF1@pg - PTDF1*Rpd1@cdup - PTDF2@Rpd2@cdup - RAr@cdup'
+        # self.llb.e_str = '-PTDF1@pg + PTDF1*Rpd1@cdup + PTDF2@Rpd2@cdup - RAr@cdup'
 
         # ramping limits
-        self.Mr = VarSub(u=self.pg,
-                         horizon=self.horizon,
-                         name='Mr',
-                         tex_name=r'M_{r}',
-                         info='Subtraction matrix for ramping',
-                         )
-        self.RR30 = NumHstack(u=self.R30,
-                              ref=self.Mr,
-                              name='RR30',
-                              tex_name=r'R_{30,R}',
-                              info='Repeated ramp rate',
-                              )
-        self.rgu = Constraint(name='rgu',
-                              info='generator ramping up',
-                              e_str='pg @ Mr - RR30',
-                              type='uq',
-                              )
-        self.rgd = Constraint(name='rgd',
-                              info='generator ramping down',
-                              e_str='-pg @ Mr - RR30',
-                              type='uq',
-                              )
+        # self.Mr = VarSub(u=self.pg,
+        #                  horizon=self.timeslot,
+        #                  name='Mr',
+        #                  tex_name=r'M_{r}',
+        #                  info='Subtraction matrix for ramping',
+        #                  )
+        # self.RR30 = NumHstack(u=self.R30,
+        #                       ref=self.Mr,
+        #                       name='RR30',
+        #                       tex_name=r'R_{30,R}',
+        #                       info='Repeated ramp rate',
+        #                       )
+        # self.rgu = Constraint(name='rgu',
+        #                       info='generator ramping up',
+        #                       e_str='pg @ Mr - RR30',
+        #                       type='uq',
+        #                       )
+        # self.rgd = Constraint(name='rgd',
+        #                       info='generator ramping down',
+        #                       e_str='-pg @ Mr - RR30',
+        #                       type='uq',
+        #                       )
 
         # --- objective ---
         # NOTE: no need to fix objective function

@@ -48,7 +48,7 @@ class UCModel(EDModel):
         # --- vars ---
         self.ugd = Var(info='gen on decision',
                        name='ugd',
-                       horizon=self.horizon,
+                       horizon=self.timeslot,
                        tex_name=r'u_{g,d}',
                        model='StaticGen',
                        bool=True,

@@ -126,7 +126,7 @@ class Collection(GroupBase):
     pass
 
 
-class TimeHorizon(GroupBase):
+class Horizon(GroupBase):
     """
     Time horizon group.
     """
