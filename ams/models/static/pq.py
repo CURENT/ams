@@ -1,5 +1,6 @@
 from collections import OrderedDict  # NOQA
 
+from andes.core.param import ExtParam  # NOQA
 from andes.models.static.pq import PQData  # NOQA
 
 from ams.core.model import Model
@@ -51,3 +52,7 @@ class PQ(PQData, Model):
                               q2i=r"\gamma_{q2i}",
                               q2z=r"\gamma_{q2z}",
                               )
+
+        self.zone = ExtParam(model='Bus', src='zone', indexer=self.bus, export=False,
+                             info='Retrieved zone idx', vtype=str, default=None,
+                             )
