@@ -6,8 +6,9 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
-from ams.core.service import (VarReduction, NumOperation, NumExpandDim,
-                              NumMultiply, NumHstack, VarSub)
+from ams.core.service import (ZonalSum, VarReduction, NumOperation,
+                              NumExpandDim, NumMultiply, NumHstack,
+                              VarSub)
 
 from ams.routines.dcopf import DCOPFData, DCOPFModel
 
@@ -29,16 +30,25 @@ class EDData(DCOPFData):
                          unit='p.u.',
                          src='p0',
                          model='PQ')
+        # NOTE: Setting `ED.scale.owner` to `Horizon` will cause an error when calling `ED.scale.v`.
+        # This is because `Horizon` is a group that only contains the model `TimeSlot`.
+        # The `get` method of `Horizon` calls `andes.models.group.GroupBase.get` and results in an error.
         self.scale = RParam(info='scaling factor for load',
                             name='scale',
                             src='scale',
                             tex_name=r's_{pd}',
-                            model='Horizon')
+                            model='TimeSlot')
+        self.zl = RParam(info='load zone',
+                         name='zl',
+                         src='zone',
+                         tex_name='z_{one,l}',
+                         model='PQ',
+                         )
         self.timeslot = RParam(info='Time slot for multi-period dispatch',
-                              name='timeslot',
-                              src='idx',
-                              tex_name=r't_{s,idx}',
-                              model='TimeSlot')
+                               name='timeslot',
+                               src='idx',
+                               tex_name=r't_{s,idx}',
+                               model='TimeSlot')
 
         self.R30 = RParam(info='30-min ramp rate (system base)',
                           name='R30',
@@ -59,44 +69,49 @@ class EDModel(DCOPFModel):
         self.info = 'Economic dispatch'
         self.type = 'DCED'
 
+        for ele in ['lub', 'llb']:
+            delattr(self, ele)
+
         # --- vars ---
-        # NOTE: extend pg to 2D matrix, where row is gen and col is horizon
+        # NOTE: extend pg to 2D matrix, where row is gen and col is timeslot
         self.pg.horizon = self.timeslot
         self.pg.info = '2D power generation (system base, row for gen, col for horizon)'
 
         # --- service ---
-        self.Spd = NumOperation(u=self.pd,
-                                fun=np.sum,
-                                name='Spd',
-                                tex_name=r'\sum_{pd}',
+        self.lsm = ZonalSum(u=self.zl,
+                            zone='Region',
+                            name='gsm',
+                            tex_name=r'\sum_{g}')
+        self.lsm.info = 'Sum load vector in shape of zone'
+        self.Spdz = NumMultiply(u=self.lsm,
+                                u2=self.pd,
+                                name='Spdz',
+                                tex_name=r'\sum_{pd,z}',
                                 unit='p.u.',
-                                info='Total load in shape (1, )',
+                                rfun=np.sum,
+                                rargs=dict(axis=1),
+                                info='Zonal total load',
                                 )
-        # self.Sr = NumOperation(u=self.scale,
-        #                        fun=np.expand_dims,
-        #                        name='Sr',
-        #                        tex_name=r'S_{pd}',
-        #                        unit='p.u.',
-        #                        info='Scale as row vector',
-        #                        axis=0,
-        #                        )
-        # self.Rpd = NumMultiply(u=self.Spd,
-        #                        u2=self.Sr,
-        #                        name='Rpd',
-        #                        tex_name=r'R_{pd}',
-        #                        unit='p.u.',
-        #                        info='Scaled total load as row vector',
-        #                        )
-        # self.Spg = VarReduction(u=self.pg,
-        #                         fun=np.ones,
-        #                         name='Spg',
-        #                         tex_name=r'\sum_{pg}',)
-        # self.Spg.info = 'Sum matrix to sum pg as row vector'
+        self.Spd = NumMultiply(u=self.scale,
+                               u2=self.Spdz,
+                               name='Spd',
+                               tex_name=r'S_{pd,t}',
+                               unit='p.u.',
+                               rfun=np.sum,
+                               rargs=dict(axis=1),
+                               expand_dims=0,
+                               info='Scaled total load as row vector',
+                               )
+        self.Spg = VarReduction(u=self.pg,
+                                fun=np.ones,
+                                name='Spg',
+                                tex_name=r'\sum_{pg}',)
+        self.Spg.info = 'Sum pg as row vector'
 
         # --- constraints ---
         # power balance
-        # NOTE: Spg @ pg will return a row vector
-        # self.pb.e_str = 'Rpd - Spg @ pg'  # power balance
+        # NOTE: Spg @ pg returns a row vector
+        self.pb.e_str = 'Spd - Spg @ pg'  # power balance
 
         # line limits
         # self.cdup0 = NumOperation(u=self.scale,

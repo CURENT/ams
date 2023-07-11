@@ -222,16 +222,19 @@ class RoutineModel:
         """
         Run the routine.
         """
+        show_code = kwargs.get('show_code', False)
+        if 'show_code' in kwargs:
+            del kwargs['show_code']
         # --- setup check ---
         if not self.is_setup:
             logger.info(f"Setup model of {self.class_name}")
-            self.setup()
+            self.setup(show_code=show_code)
         # NOTE: if the model data is altered, we need to re-setup the model
         # this implementation if not efficient at large-scale
         # FIXME: find a more efficient way to update the OModel values if
         # the system data is altered
         elif self.exec_time > 0:
-            self.setup()
+            self.setup(show_code=show_code)
         # --- solve optimization ---
         t0, _ = elapsed()
         result = self.solve(**kwargs)
@@ -388,7 +391,7 @@ class RoutineModel:
                 self.is_setup = False
                 logger.warning(f"Disable constraint <{n}>.")
             return True
-        
+
         if name in self.constrs:
             if self.constrs[name].is_disabled:
                 logger.warning(f"Constraint <{name}> has already been disabled.")
@@ -397,5 +400,5 @@ class RoutineModel:
                 self.is_setup = False
                 logger.warning(f"Disable constraint <{name}>.")
             return True
-        
+
         logger.warning(f"Constraint <{name}> not found.")

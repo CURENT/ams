@@ -154,6 +154,12 @@ class NumOperation(ROperationService):
         Variable type.
     model : str, optional
         Model name.
+    rfun : Callable, optional
+        Function to apply to the output of ``fun``.
+    rargs : dict, optional
+        Keyword arguments to pass to ``rfun``.
+    expand_dims : int, optional
+        Expand the dimensions of the output array along a specified axis.
     """
 
     def __init__(self,
@@ -165,6 +171,9 @@ class NumOperation(ROperationService):
                  info: str = None,
                  vtype: Type = None,
                  model: str = None,
+                 rfun: Callable = None,
+                 rargs: dict = {},
+                 expand_dims: int = None,
                  **kwargs):
         tex_name = tex_name if tex_name is not None else u.tex_name
         unit = unit if unit is not None else u.unit
@@ -174,13 +183,30 @@ class NumOperation(ROperationService):
                          u=u,)
         self.fun = fun
         self.kwargs = kwargs
+        self.rfun = rfun
+        self.rargs = rargs
+        self.expand_dims = expand_dims
 
     @property
-    def v(self):
+    def v0(self):
         out = self.fun(self.u.v, **self.kwargs)
         if not isinstance(out, np.ndarray):
             out = np.array([out])
         return out
+
+    @property
+    def v1(self):
+        if self.rfun is not None:
+            return self.rfun(self.v0, **self.rargs)
+        else:
+            return self.v0
+
+    @property
+    def v(self):
+        if self.expand_dims is not None:
+            return np.expand_dims(self.v1, axis=self.expand_dims)
+        else:
+            return self.v1
 
 
 class NumExpandDim(NumOperation):
@@ -253,6 +279,12 @@ class NumMultiply(NumOperation):
         Variable type.
     model : str, optional
         Model name.
+    rfun : Callable, optional
+        Function to apply to the output of ``fun``.
+    rargs : dict, optional
+        Keyword arguments to pass to ``rfun``.
+    expand_dims : int, optional
+        Expand the dimensions of the output array along a specified axis.
     """
 
     def __init__(self,
@@ -264,16 +296,22 @@ class NumMultiply(NumOperation):
                  info: str = None,
                  vtype: Type = None,
                  model: str = None,
+                 rfun: Callable = None,
+                 rargs: dict = {},
+                 expand_dims: int = None,
                  **kwargs):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model,
-                         u=u, fun=np.multiply, **kwargs)
+                         u=u, fun=np.multiply,
+                         rfun=rfun, rargs=rargs,
+                         expand_dims=expand_dims,
+                         **kwargs)
         self.u2 = u2
 
     # NOTE: when using self.fun(x1=self.u.v, x2=self.u2.v, **self.kwargs),
     # the function runs into error with 0 arguments were given.
     @property
-    def v(self):
+    def v0(self):
         return self.fun(self.u.v, self.u2.v, **self.kwargs)
 
 
@@ -315,21 +353,25 @@ class NumHstack(NumOperation):
                  info: str = None,
                  vtype: Type = None,
                  model: str = None,
+                 rfun: Callable = None,
+                 rargs: dict = {},
                  **kwargs):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model,
-                         u=u, fun=np.hstack, **kwargs)
+                         u=u, fun=np.hstack,
+                         rfun=rfun, rargs=rargs,
+                         **kwargs)
         self.ref = ref
 
     @property
-    def v(self):
+    def v0(self):
         return self.fun([self.u.v[:, np.newaxis]] * self.ref.shape[1],
                         **self.kwargs)
 
 
-class VarSumZonal(ROperationService):
+class ZonalSum(NumOperation):
     """
-    Build zonal sum matrix for a ``Var`` vector in the shape of collection model,
+    Build zonal sum matrix for a vector in the shape of collection model,
     ``Area`` or ``Region``.
     The value array is in the shape of (nr, nc), where nr is the length of
     rid instance idx, and nc is the length of the cid value.
@@ -388,14 +430,18 @@ class VarSumZonal(ROperationService):
                  info: str = None,
                  vtype: Type = None,
                  model: str = None,
+                 rfun: Callable = None,
+                 rargs: dict = {},
+                 **kwargs
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model,
-                         u=u)
+                         u=u, fun=None, rfun=rfun, rargs=rargs,
+                         **kwargs)
         self.zone = zone
 
     @property
-    def v(self):
+    def v0(self):
         try:
             zone_mdl = getattr(self.rtn.system, self.zone)
         except AttributeError:
@@ -412,7 +458,7 @@ class VarSumZonal(ROperationService):
         return result
 
 
-class VarReduction(ROperationService):
+class VarReduction(NumOperation):
     """
     A numerical matrix to reduce a 2D variable to 1D,
     ``np.fun(shape=(1, u.n))``.
@@ -446,18 +492,22 @@ class VarReduction(ROperationService):
                  info: str = None,
                  vtype: Type = None,
                  model: str = None,
+                 rfun: Callable = None,
+                 rargs: dict = {},
+                 **kwargs
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model,
-                         u=u)
+                         u=u, fun=None, rfun=rfun, rargs=rargs,
+                         **kwargs)
         self.fun = fun
 
     @property
-    def v(self):
+    def v0(self):
         return self.fun(shape=(1, self.u.n))
 
 
-class VarSub(ROperationService):
+class VarSub(NumOperation):
     """
     Build a substraction matrix for a 2D variable in the shape (nr, nc),
     where nr is the length of the horizon reference vector ``horizon.n``,
@@ -498,14 +548,17 @@ class VarSub(ROperationService):
                  info: str = None,
                  vtype: Type = None,
                  model: str = None,
+                 rfun: Callable = None,
+                 rargs: dict = {},
+                 **kwargs
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model,
-                         u=u)
+                         u=u, fun=None, rfun=rfun, rargs=rargs,)
         self.horizon = horizon
 
     @property
-    def v(self):
+    def v0(self):
         nr = self.horizon.n
         nc = self.u.n - 1
         return np.eye(nr, nc, k=-1) - np.eye(nr, nc, k=0)
