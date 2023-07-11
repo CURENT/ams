@@ -53,7 +53,7 @@ class RTEDData(DCOPFData):
                          model='SFR',
                          )
         self.zg = RParam(info='gen zone',
-                         name='busz',
+                         name='zg',
                          src='zone',
                          tex_name='z_{one,g}',
                          model='StaticGen',
