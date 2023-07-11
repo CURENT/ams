@@ -81,7 +81,7 @@ class RBaseService(BaseService):
         if v is None:
             return f'{self.class_name}: {self.owner.class_name}.{self.name}'
         elif isinstance(v, np.ndarray):
-            if v.ndim == 1:
+            if 1 in v.shape:
                 if len(self.v) <= 20:
                     val_str = f', v={self.v}'
                 else:

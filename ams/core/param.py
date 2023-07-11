@@ -106,6 +106,13 @@ class RParam:
             return getattr(src_param, 'v')
 
     @property
+    def shape(self):
+        """
+        Return the shape of the parameter.
+        """
+        return self.v.shape
+
+    @property
     def n(self):
         """
         Return the szie of the parameter.
@@ -125,7 +132,7 @@ class RParam:
     def __repr__(self):
         if self.is_ext:
             span = ''
-            if self.v.ndim == 1:
+            if 1 in self.v.shape:
                 if len(self.v) <= 20:
                     span = f', v={self.v}'
             else:
@@ -139,7 +146,7 @@ class RParam:
                     span += f', vin={self.vin}'
 
             if isinstance(self.v, np.ndarray):
-                if self.v.ndim == 1:
+                if 1 in self.v.shape:
                     if len(self.v) <= 20:
                         span = f', v={self.v}'
                 else:
