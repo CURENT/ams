@@ -175,28 +175,28 @@ class EDModel(DCOPFModel):
         self.llb.e_str = '-PTDF1@pg + PTDF1@pd1s + PTDF2@pd2s - RAr@cdup'
 
         # ramping limits
-        # self.Mr = VarSub(u=self.pg,
-        #                  horizon=self.timeslot,
-        #                  name='Mr',
-        #                  tex_name=r'M_{r}',
-        #                  info='Subtraction matrix for ramping',
-        #                  )
-        # self.RR30 = NumHstack(u=self.R30,
-        #                       ref=self.Mr,
-        #                       name='RR30',
-        #                       tex_name=r'R_{30,R}',
-        #                       info='Repeated ramp rate',
-        #                       )
-        # self.rgu = Constraint(name='rgu',
-        #                       info='generator ramping up',
-        #                       e_str='pg @ Mr - RR30',
-        #                       type='uq',
-        #                       )
-        # self.rgd = Constraint(name='rgd',
-        #                       info='generator ramping down',
-        #                       e_str='-pg @ Mr - RR30',
-        #                       type='uq',
-        #                       )
+        self.Mr = VarSub(u=self.pg,
+                         horizon=self.timeslot,
+                         name='Mr',
+                         tex_name=r'M_{r}',
+                         info='Subtraction matrix for ramping',
+                         )
+        self.RR30 = NumHstack(u=self.R30,
+                              ref=self.Mr,
+                              name='RR30',
+                              tex_name=r'R_{30,R}',
+                              info='Repeated ramp rate',
+                              )
+        self.rgu = Constraint(name='rgu',
+                              info='generator ramping up',
+                              e_str='pg @ Mr - RR30',
+                              type='uq',
+                              )
+        self.rgd = Constraint(name='rgd',
+                              info='generator ramping down',
+                              e_str='-pg @ Mr - RR30',
+                              type='uq',
+                              )
 
         # --- objective ---
         # NOTE: no need to fix objective function

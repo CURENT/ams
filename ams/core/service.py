@@ -356,6 +356,7 @@ class NumHstack(NumOp):
     def __init__(self,
                  u: Callable,
                  ref: Callable,
+                 args: dict = {},
                  name: str = None,
                  tex_name: str = None,
                  unit: str = None,
@@ -367,15 +368,14 @@ class NumHstack(NumOp):
                  **kwargs):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model,
-                         u=u, fun=np.hstack,
-                         rfun=rfun, rargs=rargs,
-                         **kwargs)
+                         u=u, fun=np.hstack, args=args,
+                         rfun=rfun, rargs=rargs)
         self.ref = ref
 
     @property
     def v0(self):
         return self.fun([self.u.v[:, np.newaxis]] * self.ref.shape[1],
-                        **self.kwargs)
+                        **self.args)
 
 
 class ZonalSum(NumOp):
@@ -441,12 +441,11 @@ class ZonalSum(NumOp):
                  model: str = None,
                  rfun: Callable = None,
                  rargs: dict = {},
-                 **kwargs
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model,
-                         u=u, fun=None, rfun=rfun, rargs=rargs,
-                         **kwargs)
+                         u=u, fun=None, args={},
+                         rfun=rfun, rargs=rargs)
         self.zone = zone
 
     @property
