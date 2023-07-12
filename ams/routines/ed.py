@@ -87,11 +87,6 @@ class EDModel(DCOPFModel):
         self.pg.info = '2D power generation (system base, row for gen, col for horizon)'
 
         # --- service ---
-        self.ls = ZonalSum(u=self.zl,
-                           zone='Region',
-                           name='ls',
-                           tex_name=r'\sum_{l}',
-                           info='Sum load in shape of zone',)
         self.l1s = ZonalSum(u=self.zl1,
                             zone='Region',
                             name='l1s',
@@ -102,8 +97,8 @@ class EDModel(DCOPFModel):
                             name='l2s',
                             tex_name=r'\sum_{l,2}',
                             info='Sum pd2 vector in shape of zone',)
-        self.Spd1 = NumMultiply(u=self.pd1,
-                                u2=self.l1s,
+        self.Spd1 = NumMultiply(u=self.l1s,
+                                u2=self.pd1,
                                 name='Spd1',
                                 tex_name=r'S_{pd1,t}',
                                 unit='p.u.',
@@ -111,8 +106,8 @@ class EDModel(DCOPFModel):
                                 rargs=dict(axis=1),
                                 expand_dims=0,
                                 info='Sum total load1 as row vector')
-        self.Spd2 = NumMultiply(u=self.pd2,
-                                u2=self.l2s,
+        self.Spd2 = NumMultiply(u=self.l2s,
+                                u2=self.pd2,
                                 name='Spd2',
                                 tex_name=r'S_{pd2,t}',
                                 unit='p.u.',
@@ -120,24 +115,6 @@ class EDModel(DCOPFModel):
                                 rargs=dict(axis=1),
                                 expand_dims=0,
                                 info='Sum total load2 as row vector')
-        self.Spd1s = NumMultiply(u=self.scale,
-                                 u2=self.Spd1,
-                                 name='Spd1s',
-                                 tex_name=r'S_{pd,t,s}',
-                                 unit='p.u.',
-                                 # rfun=np.sum,
-                                 # rargs=dict(axis=1),
-                                 # expand_dims=0,
-                                 info='Scaled total load1 as row vector')
-        self.Spd2s = NumMultiply(u=self.scale,
-                                 u2=self.Spd2,
-                                 name='Spd2s',
-                                 tex_name=r'S_{pd,t,s}',
-                                 unit='p.u.',
-                                 rfun=np.sum,
-                                 rargs=dict(axis=1),
-                                 expand_dims=0,
-                                 info='Scaled total load2 as row vector')
         self.Spd = NumAdd(u=self.Spd1,
                           u2=self.Spd2,
                           name='Spd',
@@ -171,7 +148,7 @@ class EDModel(DCOPFModel):
                                  tex_name=r'c_{dup}',
                                  expand_dims=0,
                                  info='row vector of 1s, to duplicate columns',
-                                 dtype=np.int)
+                                 dtype=int)
         self.RAr = NumExpandDim(u=self.rate_a,
                                 name='RAr',
                                 tex_name=r'R_{ATEA,c}',

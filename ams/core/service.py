@@ -204,7 +204,7 @@ class NumOperation(ROperationService):
     @property
     def v(self):
         if self.expand_dims is not None:
-            return np.expand_dims(self.v1, axis=self.expand_dims)
+            return np.expand_dims(self.v1, axis=int(self.expand_dims))
         else:
             return self.v1
 
@@ -302,7 +302,7 @@ class NumMultiply(NumOperation):
                  **kwargs):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model,
-                         u=u, fun=np.add,
+                         u=u, fun=np.multiply,
                          rfun=rfun, rargs=rargs,
                          expand_dims=expand_dims,
                          **kwargs)
