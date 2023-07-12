@@ -135,7 +135,7 @@ class EDModel(DCOPFModel):
                                 fun=np.ones,
                                 name='Spg',
                                 tex_name=r'\sum_{pg}',
-                                info = 'Sum pg as row vector')
+                                info='Sum pg as row vector')
 
         # --- constraints ---
         # power balance
@@ -148,39 +148,31 @@ class EDModel(DCOPFModel):
                           name='cdup',
                           tex_name=r'c_{dup}',
                           expand_dims=0,
-                          info='row vector of 1s, to duplicate columns')
+                          info='row vector of 1s to duplicate column vector')
         self.RAr = NumExpandDim(u=self.rate_a,
                                 axis=1,
                                 name='RAr',
                                 tex_name=r'R_{ATEA,c}',
                                 info='rate_a as column vector',)
-        self.Spd1t = NumOpDual(u=self.pd1,
-                               u2=self.l1s,
-                               fun=np.multiply,
-                               rfun=np.transpose,
-                               name='Spd1t',
-                               tex_name=r'S_{pd1}^{T}',
-                               unit='p.u.',
-                               info='Zonal total load1')
-        self.Spd2t = NumOpDual(u=self.pd2,
-                               u2=self.l2s,
-                               fun=np.multiply,
-                               rfun=np.transpose,
-                               name='Spd2t',
-                               tex_name=r'S_{pd2}^{T}',
-                               unit='p.u.',
-                               info='Zonal total load2')
-        self.sT = NumOp(u=self.scale,
-                        fun=np.transpose,
-                        name='sT',
-                        tex_name=r's_{cale}^{T}',
-                        unit='p.u.',
-                        info='Zonal scale transpose',)
-        delattr(self, 'lub')
-        delattr(self, 'llb')
+        self.pd1s = NumOpDual(u=self.scale,
+                              u2=self.pd1z,
+                              fun=np.matmul,
+                              rfun=np.transpose,
+                              name='pd1s',
+                              tex_name=r'p_{d1,s,t}',
+                              unit='p.u.',
+                              info='Scaled load1')
+        self.pd2s = NumOpDual(u=self.scale,
+                              u2=self.pd2z,
+                              fun=np.matmul,
+                              rfun=np.transpose,
+                              name='pd2s',
+                              tex_name=r'p_{d2,s,t}',
+                              unit='p.u.',
+                              info='Scaled load2')
         # NOTE: PTDF1@pg returns a 2D matrix, row for line and col for horizon
-        # self.lub.e_str = 'PTDF1@pg - PTDF1@Spd1t@sT - PTDF2@Spd2t@sT - RAr@cdup'
-        # self.llb.e_str = '-PTDF1@pg + PTDF1@Spd1t@sT + PTDF2@Spd2t@sT - RAr@cdup'
+        self.lub.e_str = 'PTDF1@pg - PTDF1@pd1s - PTDF2@pd2s - RAr@cdup'
+        self.llb.e_str = '-PTDF1@pg + PTDF1@pd1s + PTDF2@pd2s - RAr@cdup'
 
         # ramping limits
         # self.Mr = VarSub(u=self.pg,
