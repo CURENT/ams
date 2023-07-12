@@ -104,11 +104,11 @@ class RTEDModel(DCOPFModel):
         self.info = 'Economic dispatch'
         self.type = 'DCED'
         # --- service ---
-        self.gsm = ZonalSum(u=self.zg,
+        self.gs = ZonalSum(u=self.zg,
                             zone='Region',
-                            name='gsm',
+                            name='gs',
                             tex_name=r'\sum_{g}')
-        self.gsm.info = 'Sum Gen vars vector in shape of zone'
+        self.gs.info = 'Sum Gen vars vector in shape of zone'
 
         # --- vars ---
         self.pru = Var(info='RegUp reserve (system base)',
@@ -128,12 +128,12 @@ class RTEDModel(DCOPFModel):
         # --- constraints ---
         self.rbu = Constraint(name='rbu',
                               info='RegUp reserve balance',
-                              e_str='gsm @ pru - du',
+                              e_str='gs @ pru - du',
                               type='eq',
                               )
         self.rbd = Constraint(name='rbd',
                               info='RegDn reserve balance',
-                              e_str='gsm @ prd - dd',
+                              e_str='gs @ prd - dd',
                               type='eq',
                               )
         self.rru = Constraint(name='rru',

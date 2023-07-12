@@ -7,8 +7,8 @@ import numpy as np
 
 from ams.core.param import RParam
 from ams.core.service import (ZonalSum, VarReduction, NumOperation,
-                              NumExpandDim, NumMultiply, NumHstack,
-                              VarSub)
+                              NumExpandDim, NumMultiply, NumAdd,
+                              NumHstack, VarSub)
 
 from ams.routines.dcopf import DCOPFData, DCOPFModel
 
@@ -33,17 +33,29 @@ class EDData(DCOPFData):
         # NOTE: Setting `ED.scale.owner` to `Horizon` will cause an error when calling `ED.scale.v`.
         # This is because `Horizon` is a group that only contains the model `TimeSlot`.
         # The `get` method of `Horizon` calls `andes.models.group.GroupBase.get` and results in an error.
-        self.scale = RParam(info='scaling factor for load',
+        self.scale = RParam(info='zonal scaling factor for load',
                             name='scale',
                             src='scale',
                             tex_name=r's_{pd}',
                             model='TimeSlot')
+        self.ts = RParam(info='time slot',
+                         name='ts',
+                         src='idx',
+                         tex_name=r't_{s,idx}',
+                         model='TimeSlot')
         self.zl = RParam(info='load zone',
                          name='zl',
                          src='zone',
                          tex_name='z_{one,l}',
-                         model='PQ',
-                         )
+                         model='PQ')
+        self.zl1 = RParam(info='gen-bus load zone',
+                          name='zl1',
+                          tex_name=r'z_{one,l1}',
+                          unit='p.u.')
+        self.zl2 = RParam(info='non-gen-bus load zone',
+                          name='zl2',
+                          tex_name=r'z_{one,l2}',
+                          unit='p.u.')
         self.timeslot = RParam(info='Time slot for multi-period dispatch',
                                name='timeslot',
                                src='idx',
@@ -69,83 +81,125 @@ class EDModel(DCOPFModel):
         self.info = 'Economic dispatch'
         self.type = 'DCED'
 
-        for ele in ['lub', 'llb']:
-            delattr(self, ele)
-
         # --- vars ---
         # NOTE: extend pg to 2D matrix, where row is gen and col is timeslot
         self.pg.horizon = self.timeslot
         self.pg.info = '2D power generation (system base, row for gen, col for horizon)'
 
         # --- service ---
-        self.lsm = ZonalSum(u=self.zl,
+        self.ls = ZonalSum(u=self.zl,
+                           zone='Region',
+                           name='ls',
+                           tex_name=r'\sum_{l}',
+                           info='Sum load in shape of zone',)
+        self.l1s = ZonalSum(u=self.zl1,
                             zone='Region',
-                            name='gsm',
-                            tex_name=r'\sum_{g}')
-        self.lsm.info = 'Sum load vector in shape of zone'
-        self.Spdz = NumMultiply(u=self.lsm,
-                                u2=self.pd,
-                                name='Spdz',
-                                tex_name=r'\sum_{pd,z}',
+                            name='l1s',
+                            tex_name=r'\sum_{l,1}',
+                            info='Sum pd1 vector in shape of zone',)
+        self.l2s = ZonalSum(u=self.zl2,
+                            zone='Region',
+                            name='l2s',
+                            tex_name=r'\sum_{l,2}',
+                            info='Sum pd2 vector in shape of zone',)
+        self.Spd1 = NumMultiply(u=self.pd1,
+                                u2=self.l1s,
+                                name='Spd1',
+                                tex_name=r'S_{pd1,t}',
                                 unit='p.u.',
                                 rfun=np.sum,
                                 rargs=dict(axis=1),
-                                info='Zonal total load',
-                                )
-        self.Spd = NumMultiply(u=self.scale,
-                               u2=self.Spdz,
-                               name='Spd',
-                               tex_name=r'S_{pd,t}',
-                               unit='p.u.',
-                               rfun=np.sum,
-                               rargs=dict(axis=1),
-                               expand_dims=0,
-                               info='Scaled total load as row vector',
-                               )
+                                expand_dims=0,
+                                info='Sum total load1 as row vector')
+        self.Spd2 = NumMultiply(u=self.pd2,
+                                u2=self.l2s,
+                                name='Spd2',
+                                tex_name=r'S_{pd2,t}',
+                                unit='p.u.',
+                                rfun=np.sum,
+                                rargs=dict(axis=1),
+                                expand_dims=0,
+                                info='Sum total load2 as row vector')
+        self.Spd1s = NumMultiply(u=self.scale,
+                                 u2=self.Spd1,
+                                 name='Spd1s',
+                                 tex_name=r'S_{pd,t,s}',
+                                 unit='p.u.',
+                                 # rfun=np.sum,
+                                 # rargs=dict(axis=1),
+                                 # expand_dims=0,
+                                 info='Scaled total load1 as row vector')
+        self.Spd2s = NumMultiply(u=self.scale,
+                                 u2=self.Spd2,
+                                 name='Spd2s',
+                                 tex_name=r'S_{pd,t,s}',
+                                 unit='p.u.',
+                                 rfun=np.sum,
+                                 rargs=dict(axis=1),
+                                 expand_dims=0,
+                                 info='Scaled total load2 as row vector')
+        self.Spd = NumAdd(u=self.Spd1,
+                          u2=self.Spd2,
+                          name='Spd',
+                          tex_name=r'S_{pd,t}',
+                          unit='p.u.',
+                          info='Sum total load as row vector')
+        self.Spds = NumMultiply(u=self.scale,
+                                u2=self.Spd,
+                                name='Spds',
+                                tex_name=r'S_{pd,t,s}',
+                                unit='p.u.',
+                                rfun=np.sum,
+                                rargs=dict(axis=1),
+                                expand_dims=0,
+                                info='Scaled total load as row vector')
         self.Spg = VarReduction(u=self.pg,
                                 fun=np.ones,
                                 name='Spg',
-                                tex_name=r'\sum_{pg}',)
+                                tex_name=r'\sum_{pg}')
         self.Spg.info = 'Sum pg as row vector'
 
         # --- constraints ---
         # power balance
         # NOTE: Spg @ pg returns a row vector
-        self.pb.e_str = 'Spd - Spg @ pg'  # power balance
+        self.pb.e_str = 'Spds - Spg @ pg'  # power balance
 
         # line limits
-        # self.cdup0 = NumOperation(u=self.scale,
-        #                           fun=np.ones_like,
-        #                           name='cdup0',
-        #                           tex_name=r'c_{dup}',
-        #                           info='Column duplication array',
-        #                           )
-        # self.cdup = NumExpandDim(u=self.cdup0,
-        #                          name='cdup',
-        #                          tex_name=r'c_{dup,r}',
-        #                          info='Column duplication array as row vector',
-        #                          axis=0,
-        #                          )
-        # self.RAr = NumExpandDim(u=self.rate_a,
-        #                         name='RAr',
-        #                         tex_name=r'R_{ATEA,c}',
-        #                         info='rate_a as column vector',
-        #                         axis=1,
-        #                         )
-        # self.Rpd1 = NumExpandDim(u=self.pd1,
-        #                          name='Rpd1',
-        #                          tex_name=r'p_{d1,c}',
-        #                          info='pd1 as column vector',
-        #                          axis=1,
-        #                          )
-        # self.Rpd2 = NumExpandDim(u=self.pd2,
-        #                          name='Rpd2',
-        #                          tex_name=r'p_{d2,c}',
-        #                          info='pd2 as column vector',
-        #                          axis=1,
-        #                          )
-        # self.lub.e_str = 'PTDF1@pg - PTDF1*Rpd1@cdup - PTDF2@Rpd2@cdup - RAr@cdup'
-        # self.llb.e_str = '-PTDF1@pg + PTDF1*Rpd1@cdup + PTDF2@Rpd2@cdup - RAr@cdup'
+        self.cdup = NumOperation(u=self.ts,
+                                 fun=np.ones_like,
+                                 name='cdup',
+                                 tex_name=r'c_{dup}',
+                                 expand_dims=0,
+                                 info='row vector of 1s, to duplicate columns',
+                                 dtype=np.int)
+        self.RAr = NumExpandDim(u=self.rate_a,
+                                name='RAr',
+                                tex_name=r'R_{ATEA,c}',
+                                info='rate_a as column vector',
+                                axis=1)
+        self.Spd1t = NumMultiply(u=self.pd1,
+                                 u2=self.l1s,
+                                 name='Spd1t',
+                                 tex_name=r'S_{pd1}^{T}',
+                                 unit='p.u.',
+                                 rfun=np.transpose,
+                                 info='Zonal total load1')
+        self.Spd2t = NumMultiply(u=self.pd2,
+                                 u2=self.l2s,
+                                 name='Spd2t',
+                                 tex_name=r'S_{pd2}^{T}',
+                                 unit='p.u.',
+                                 rfun=np.transpose,
+                                 info='Zonal total load2')
+        self.sT = NumOperation(u=self.scale,
+                               fun=np.transpose,
+                               name='sT',
+                               tex_name=r's_{cale}^{T}',
+                               unit='p.u.',
+                               info='Zonal scale transpose',)
+        # NOTE: PTDF1@pg returns a 2D matrix, row for line and col for horizon
+        self.lub.e_str = 'PTDF1@pg - PTDF1@Spd1t@sT - PTDF2@Spd2t@sT - RAr@cdup'
+        self.llb.e_str = '-PTDF1@pg + PTDF1@Spd1t@sT + PTDF2@Spd2t@sT - RAr@cdup'
 
         # ramping limits
         # self.Mr = VarSub(u=self.pg,
@@ -194,3 +248,8 @@ class ED(EDData, EDModel):
     def __init__(self, system, config):
         EDData.__init__(self)
         EDModel.__init__(self, system, config)
+
+# TODO: add data check
+# if has model ``TimeSlot``, mandatory
+# if has model ``Region``, optional
+# if ``Region``, if ``Bus`` has param ``zone``, optional, if none, auto fill

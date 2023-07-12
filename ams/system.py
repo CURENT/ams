@@ -242,9 +242,11 @@ class System(andes_System):
                 item.owner = self.groups[item.model]
             elif item.model in self.models.keys():
                 item.owner = self.models[item.model]
-            elif item_name in ['PTDF1', 'PTDF2', 'pd1', 'pd2']:
+            elif item_name in ['pd1', 'pd2', 'PTDF1', 'PTDF2', 'zl1', 'zl2']:
+                # FIXME: hard-coded, should be improved
                 pass
             else:
+                logger.debug(f'item_name: {item_name}')
                 msg = f'Model indicator \'{item.model}\' of <{item.rtn.class_name}.{item_name}>'
                 msg += f' is not a model or group. Likely a modeling error.'
                 logger.warning(msg)
@@ -436,11 +438,17 @@ class System(andes_System):
         PD1 = np.array(PD1)
         PD2 = self.PQ.get(src='p0', attr='v', idx=idx_PD2)
         PD2 = np.array(PD2)
+        # load zone information
+        zl1 = self.PQ.get(src='zone', attr='v', idx=idx_PD1, allow_none=True, default=None)
+        zl2 = self.PQ.get(src='zone', attr='v', idx=idx_PD2, allow_none=True, default=None)
+
+        # reorganize PTDF matrix
         PTDF1, PTDF2 = self.mats.rePTDF()
 
         self.mat = OrderedDict([
             ('pd1', PD1), ('pd2', PD2),
             ('PTDF1', PTDF1), ('PTDF2', PTDF2),
+            ('zl1', zl1), ('zl2', zl2),
         ])
 
         # NOTE: initialize om for all routines

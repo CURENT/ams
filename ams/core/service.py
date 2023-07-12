@@ -81,13 +81,13 @@ class RBaseService(BaseService):
         if v is None:
             return f'{self.class_name}: {self.owner.class_name}.{self.name}'
         elif isinstance(v, np.ndarray):
-            if 1 in v.shape:
+            if v.shape[0] == 1:
                 if len(self.v) <= 20:
                     val_str = f', v={self.v}'
                 else:
-                    val_str = f', v=shape{self.v.shape}'
+                    val_str = f', v in shape of {self.v.shape}'
             else:
-                val_str = f', v=shape{self.v.shape}'
+                val_str = f', v in shape of {self.v.shape}'
 
             return f'{self.class_name}: {self.rtn.class_name}.{self.name}{val_str}'
         else:
@@ -302,7 +302,7 @@ class NumMultiply(NumOperation):
                  **kwargs):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model,
-                         u=u, fun=np.multiply,
+                         u=u, fun=np.add,
                          rfun=rfun, rargs=rargs,
                          expand_dims=expand_dims,
                          **kwargs)
@@ -310,6 +310,66 @@ class NumMultiply(NumOperation):
 
     # NOTE: when using self.fun(x1=self.u.v, x2=self.u2.v, **self.kwargs),
     # the function runs into error with 0 arguments were given.
+    @property
+    def v0(self):
+        return self.fun(self.u.v, self.u2.v, **self.kwargs)
+
+
+class NumAdd(NumOperation):
+    """
+    Perform element-wise add on two numerical arrays
+    using NumPy's add function,
+    ``np.add(u.v, u2.v)``.
+
+    The optional kwargs are passed to the input function.
+
+    Parameters
+    ----------
+    u : Callable
+        The first input array for multiplication.
+    u2 : Callable
+        The second input array for multiplication.
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    vtype : Type, optional
+        Variable type.
+    model : str, optional
+        Model name.
+    rfun : Callable, optional
+        Function to apply to the output of ``fun``.
+    rargs : dict, optional
+        Keyword arguments to pass to ``rfun``.
+    expand_dims : int, optional
+        Expand the dimensions of the output array along a specified axis.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 u2: Callable,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 model: str = None,
+                 rfun: Callable = None,
+                 rargs: dict = {},
+                 expand_dims: int = None,
+                 **kwargs):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype, model=model,
+                         u=u, fun=np.add,
+                         rfun=rfun, rargs=rargs,
+                         expand_dims=expand_dims,
+                         **kwargs)
+        self.u2 = u2
+
     @property
     def v0(self):
         return self.fun(self.u.v, self.u2.v, **self.kwargs)
