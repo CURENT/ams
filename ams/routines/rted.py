@@ -234,6 +234,5 @@ class RTED(RTEDData, RTEDModel):
         """
         if self.is_ac:
             delattr(self, 'vBus')
-            del self.vars['vBus']
             self.is_ac = False
         return super().run(**kwargs)
