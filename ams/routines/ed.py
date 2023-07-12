@@ -6,8 +6,9 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
-from ams.core.service import (ZonalSum, VarReduction, NumOperation,
-                              NumExpandDim, NumMultiply, NumAdd,
+from ams.core.service import (ZonalSum, VarReduction, NumOp,
+                              NumOpDual,
+                              NumExpandDim,
                               NumHstack, VarSub)
 
 from ams.routines.dcopf import DCOPFData, DCOPFModel
@@ -97,86 +98,89 @@ class EDModel(DCOPFModel):
                             name='l2s',
                             tex_name=r'\sum_{l,2}',
                             info='Sum pd2 vector in shape of zone',)
-        self.Spd1 = NumMultiply(u=self.l1s,
-                                u2=self.pd1,
-                                name='Spd1',
-                                tex_name=r'S_{pd1,t}',
-                                unit='p.u.',
-                                rfun=np.sum,
-                                rargs=dict(axis=1),
-                                expand_dims=0,
-                                info='Sum total load1 as row vector')
-        self.Spd2 = NumMultiply(u=self.l2s,
-                                u2=self.pd2,
-                                name='Spd2',
-                                tex_name=r'S_{pd2,t}',
-                                unit='p.u.',
-                                rfun=np.sum,
-                                rargs=dict(axis=1),
-                                expand_dims=0,
-                                info='Sum total load2 as row vector')
-        self.Spd = NumAdd(u=self.Spd1,
-                          u2=self.Spd2,
-                          name='Spd',
-                          tex_name=r'S_{pd,t}',
-                          unit='p.u.',
-                          info='Sum total load as row vector')
-        self.Spds = NumMultiply(u=self.scale,
-                                u2=self.Spd,
-                                name='Spds',
-                                tex_name=r'S_{pd,t,s}',
-                                unit='p.u.',
-                                rfun=np.sum,
-                                rargs=dict(axis=1),
-                                expand_dims=0,
-                                info='Scaled total load as row vector')
+        self.pd1z = NumOpDual(u=self.l1s,
+                              u2=self.pd1,
+                              fun=np.multiply,
+                              name='Spd1',
+                              tex_name=r'p_{d1,z}',
+                              unit='p.u.',
+                              info='zonal load1')
+        self.pd2z = NumOpDual(u=self.l2s,
+                              u2=self.pd2,
+                              fun=np.multiply,
+                              name='Spd2',
+                              tex_name=r'p_{d2,z}',
+                              unit='p.u.',
+                              info='zonal load2')
+        self.pdz = NumOp(u=[self.pd1z, self.pd2z],
+                         fun=np.hstack,
+                         rfun=np.sum,
+                         rargs=dict(axis=1),
+                         expand_dims=0,
+                         name='pdz',
+                         tex_name=r'p_{d,z}',
+                         unit='p.u.',
+                         info='zonal load as row vector')
+        self.pds = NumOpDual(u=self.scale,
+                             u2=self.pdz,
+                             fun=np.multiply,
+                             rfun=np.sum,
+                             rargs=dict(axis=1),
+                             expand_dims=0,
+                             name='pds',
+                             tex_name=r'p_{d,s,t}',
+                             unit='p.u.',
+                             info='Scaled total load as row vector')
         self.Spg = VarReduction(u=self.pg,
                                 fun=np.ones,
                                 name='Spg',
-                                tex_name=r'\sum_{pg}')
-        self.Spg.info = 'Sum pg as row vector'
+                                tex_name=r'\sum_{pg}',
+                                info = 'Sum pg as row vector')
 
         # --- constraints ---
         # power balance
         # NOTE: Spg @ pg returns a row vector
-        self.pb.e_str = 'Spds - Spg @ pg'  # power balance
-
+        self.pb.e_str = 'pds - Spg @ pg'  # power balance
         # line limits
-        self.cdup = NumOperation(u=self.ts,
-                                 fun=np.ones_like,
-                                 name='cdup',
-                                 tex_name=r'c_{dup}',
-                                 expand_dims=0,
-                                 info='row vector of 1s, to duplicate columns',
-                                 dtype=int)
+        self.cdup = NumOp(u=self.ts,
+                          fun=np.ones_like,
+                          args=dict(dtype=int),
+                          name='cdup',
+                          tex_name=r'c_{dup}',
+                          expand_dims=0,
+                          info='row vector of 1s, to duplicate columns')
         self.RAr = NumExpandDim(u=self.rate_a,
+                                axis=1,
                                 name='RAr',
                                 tex_name=r'R_{ATEA,c}',
-                                info='rate_a as column vector',
-                                axis=1)
-        self.Spd1t = NumMultiply(u=self.pd1,
-                                 u2=self.l1s,
-                                 name='Spd1t',
-                                 tex_name=r'S_{pd1}^{T}',
-                                 unit='p.u.',
-                                 rfun=np.transpose,
-                                 info='Zonal total load1')
-        self.Spd2t = NumMultiply(u=self.pd2,
-                                 u2=self.l2s,
-                                 name='Spd2t',
-                                 tex_name=r'S_{pd2}^{T}',
-                                 unit='p.u.',
-                                 rfun=np.transpose,
-                                 info='Zonal total load2')
-        self.sT = NumOperation(u=self.scale,
-                               fun=np.transpose,
-                               name='sT',
-                               tex_name=r's_{cale}^{T}',
+                                info='rate_a as column vector',)
+        self.Spd1t = NumOpDual(u=self.pd1,
+                               u2=self.l1s,
+                               fun=np.multiply,
+                               rfun=np.transpose,
+                               name='Spd1t',
+                               tex_name=r'S_{pd1}^{T}',
                                unit='p.u.',
-                               info='Zonal scale transpose',)
+                               info='Zonal total load1')
+        self.Spd2t = NumOpDual(u=self.pd2,
+                               u2=self.l2s,
+                               fun=np.multiply,
+                               rfun=np.transpose,
+                               name='Spd2t',
+                               tex_name=r'S_{pd2}^{T}',
+                               unit='p.u.',
+                               info='Zonal total load2')
+        self.sT = NumOp(u=self.scale,
+                        fun=np.transpose,
+                        name='sT',
+                        tex_name=r's_{cale}^{T}',
+                        unit='p.u.',
+                        info='Zonal scale transpose',)
+        delattr(self, 'lub')
+        delattr(self, 'llb')
         # NOTE: PTDF1@pg returns a 2D matrix, row for line and col for horizon
-        self.lub.e_str = 'PTDF1@pg - PTDF1@Spd1t@sT - PTDF2@Spd2t@sT - RAr@cdup'
-        self.llb.e_str = '-PTDF1@pg + PTDF1@Spd1t@sT + PTDF2@Spd2t@sT - RAr@cdup'
+        # self.lub.e_str = 'PTDF1@pg - PTDF1@Spd1t@sT - PTDF2@Spd2t@sT - RAr@cdup'
+        # self.llb.e_str = '-PTDF1@pg + PTDF1@Spd1t@sT + PTDF2@Spd2t@sT - RAr@cdup'
 
         # ramping limits
         # self.Mr = VarSub(u=self.pg,

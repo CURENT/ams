@@ -3,7 +3,7 @@ Service.
 """
 
 import logging  # NOQA
-from typing import Callable, Optional, Type, Union  # NOQA
+from typing import Callable, Optional, Type, Union, Iterable  # NOQA
 
 import numpy as np  # NOQA
 
@@ -129,10 +129,10 @@ class ROperationService(RBaseService):
         self.u = u
 
 
-class NumOperation(ROperationService):
+class NumOp(ROperationService):
     """
     Perform an operation on a numerical array using the
-    function ``fun(u.v, **kwargs)``.
+    function ``fun(u.v, **args)``.
 
     Note that the scalar output is converted to a 1D array.
 
@@ -165,6 +165,7 @@ class NumOperation(ROperationService):
     def __init__(self,
                  u: Callable,
                  fun: Callable,
+                 args: dict = {},
                  name: str = None,
                  tex_name: str = None,
                  unit: str = None,
@@ -173,8 +174,7 @@ class NumOperation(ROperationService):
                  model: str = None,
                  rfun: Callable = None,
                  rargs: dict = {},
-                 expand_dims: int = None,
-                 **kwargs):
+                 expand_dims: int = None):
         tex_name = tex_name if tex_name is not None else u.tex_name
         unit = unit if unit is not None else u.unit
         info = info if info is not None else u.info
@@ -182,14 +182,17 @@ class NumOperation(ROperationService):
                          info=info, vtype=vtype, model=model,
                          u=u,)
         self.fun = fun
-        self.kwargs = kwargs
+        self.args = args
         self.rfun = rfun
         self.rargs = rargs
         self.expand_dims = expand_dims
 
     @property
     def v0(self):
-        out = self.fun(self.u.v, **self.kwargs)
+        if isinstance(self.u, Iterable):
+            out = self.fun([u.v for u in self.u], **self.args)
+        else:
+            out = self.fun(self.u.v, **self.args)
         if not isinstance(out, np.ndarray):
             out = np.array([out])
         return out
@@ -209,7 +212,7 @@ class NumOperation(ROperationService):
             return self.v1
 
 
-class NumExpandDim(NumOperation):
+class NumExpandDim(NumOp):
     """
     Expand the dimensions of the input array along a specified axis
     using NumPy's ``np.expand_dims(u.v, axis=axis)``.
@@ -237,6 +240,7 @@ class NumExpandDim(NumOperation):
     def __init__(self,
                  u: Callable,
                  axis: int = 0,
+                 args: dict = {},
                  name: str = None,
                  tex_name: str = None,
                  unit: str = None,
@@ -245,28 +249,29 @@ class NumExpandDim(NumOperation):
                  model: str = None,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model,
-                         u=u, fun=np.expand_dims)
+                         u=u, fun=np.expand_dims, args=args)
         self.axis = axis
 
     @property
     def v(self):
-        return self.fun(self.u.v, axis=self.axis)
+        return self.fun(self.u.v, axis=self.axis, **self.args)
 
 
-class NumMultiply(NumOperation):
+class NumOpDual(NumOp):
     """
-    Perform element-wise multiplication on two numerical arrays
-    using NumPy's multiply function,
-    ``np.multiply(u.v, u2.v, **kwargs)``.
+    Performan an operation on two numerical arrays using the
+    function ``fun(u.v, u2.v, **args)``.
+
+    Note that the scalar output is converted to a 1D array.
 
     The optional kwargs are passed to the input function.
 
     Parameters
     ----------
     u : Callable
-        The first input array for multiplication.
+        Input.
     u2 : Callable
-        The second input array for multiplication.
+        Input2.
     name : str, optional
         Instance name.
     tex_name : str, optional
@@ -290,6 +295,8 @@ class NumMultiply(NumOperation):
     def __init__(self,
                  u: Callable,
                  u2: Callable,
+                 fun: Callable,
+                 args: dict = {},
                  name: str = None,
                  tex_name: str = None,
                  unit: str = None,
@@ -298,84 +305,26 @@ class NumMultiply(NumOperation):
                  model: str = None,
                  rfun: Callable = None,
                  rargs: dict = {},
-                 expand_dims: int = None,
-                 **kwargs):
+                 expand_dims: int = None):
+        tex_name = tex_name if tex_name is not None else u.tex_name
+        unit = unit if unit is not None else u.unit
+        info = info if info is not None else u.info
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model,
-                         u=u, fun=np.multiply,
+                         u=u, fun=fun, args=args,
                          rfun=rfun, rargs=rargs,
-                         expand_dims=expand_dims,
-                         **kwargs)
-        self.u2 = u2
-
-    # NOTE: when using self.fun(x1=self.u.v, x2=self.u2.v, **self.kwargs),
-    # the function runs into error with 0 arguments were given.
-    @property
-    def v0(self):
-        return self.fun(self.u.v, self.u2.v, **self.kwargs)
-
-
-class NumAdd(NumOperation):
-    """
-    Perform element-wise add on two numerical arrays
-    using NumPy's add function,
-    ``np.add(u.v, u2.v)``.
-
-    The optional kwargs are passed to the input function.
-
-    Parameters
-    ----------
-    u : Callable
-        The first input array for multiplication.
-    u2 : Callable
-        The second input array for multiplication.
-    name : str, optional
-        Instance name.
-    tex_name : str, optional
-        TeX name.
-    unit : str, optional
-        Unit.
-    info : str, optional
-        Description.
-    vtype : Type, optional
-        Variable type.
-    model : str, optional
-        Model name.
-    rfun : Callable, optional
-        Function to apply to the output of ``fun``.
-    rargs : dict, optional
-        Keyword arguments to pass to ``rfun``.
-    expand_dims : int, optional
-        Expand the dimensions of the output array along a specified axis.
-    """
-
-    def __init__(self,
-                 u: Callable,
-                 u2: Callable,
-                 name: str = None,
-                 tex_name: str = None,
-                 unit: str = None,
-                 info: str = None,
-                 vtype: Type = None,
-                 model: str = None,
-                 rfun: Callable = None,
-                 rargs: dict = {},
-                 expand_dims: int = None,
-                 **kwargs):
-        super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model,
-                         u=u, fun=np.add,
-                         rfun=rfun, rargs=rargs,
-                         expand_dims=expand_dims,
-                         **kwargs)
+                         expand_dims=expand_dims)
         self.u2 = u2
 
     @property
     def v0(self):
-        return self.fun(self.u.v, self.u2.v, **self.kwargs)
+        out = self.fun(self.u.v, self.u2.v, **self.args)
+        if not isinstance(out, np.ndarray):
+            out = np.array([out])
+        return out
 
 
-class NumHstack(NumOperation):
+class NumHstack(NumOp):
     """
     Repeat an array along the second axis nc times
     using NumPy's hstack function, where nc is the column number of the
@@ -429,7 +378,7 @@ class NumHstack(NumOperation):
                         **self.kwargs)
 
 
-class ZonalSum(NumOperation):
+class ZonalSum(NumOp):
     """
     Build zonal sum matrix for a vector in the shape of collection model,
     ``Area`` or ``Region``.
@@ -518,7 +467,7 @@ class ZonalSum(NumOperation):
         return result
 
 
-class VarReduction(NumOperation):
+class VarReduction(NumOp):
     """
     A numerical matrix to reduce a 2D variable to 1D,
     ``np.fun(shape=(1, u.n))``.
@@ -567,7 +516,7 @@ class VarReduction(NumOperation):
         return self.fun(shape=(1, self.u.n))
 
 
-class VarSub(NumOperation):
+class VarSub(NumOp):
     """
     Build a substraction matrix for a 2D variable in the shape (nr, nc),
     where nr is the length of the horizon reference vector ``horizon.n``,
