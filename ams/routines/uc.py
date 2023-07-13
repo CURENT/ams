@@ -20,6 +20,12 @@ class UCData(EDData):
 
     def __init__(self):
         EDData.__init__(self)
+        self.ug0 = RParam(info='initial gen connection status',
+                          name='ug0',
+                          src='u',
+                          tex_name=r'u_{g,0}',
+                          model='StaticGen',
+                          )
         self.csu = RParam(info='startup cost',
                           name='csu',
                           src='csu',
@@ -101,7 +107,27 @@ class UCModel(EDModel):
                        bool=True,
                        src='u',
                        )
-        # TODO: add action constraints
+        # NOTE: add action constraints by two parts
+        self.actv = Constraint(name='actv',
+                               info='startup action',
+                               e_str='ugd @ Mr - vgd[:, 1:]',
+                               type='uq',
+                               )
+        self.actv0 = Constraint(name='actv0',
+                                info='initial startup action',
+                                e_str='ugd[:, 0] - ug0  - vgd[:, 0]',
+                                type='uq',
+                                )
+        self.actw = Constraint(name='actw',
+                               info='shutdown action',
+                                    e_str='-ugd @ Mr - wgd[:, 1:]',
+                                    type='uq',
+                               )
+        self.actw0 = Constraint(name='actw0',
+                                info='initial shutdown action',
+                                e_str='-ugd[:, 0] + ug0 - wgd[:, 0]',
+                                type='uq',
+                                )
 
         # TODO: add variable "reserve"
         # NOTE: spinning reserve or non-spinning reserve?

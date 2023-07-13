@@ -375,54 +375,6 @@ class NumHstack(NumOp):
                         **self.args)
 
 
-class ColSelect(NumOp):
-    """
-    A column vector to select columns from a matrix, which is to be
-    right-multiplied to the matrix.
-    """
-
-    def __init__(self,
-                 u: Callable,
-                 c: Union[int, list, tuple],
-                 args: dict = {},
-                 name: str = None,
-                 tex_name: str = None,
-                 unit: str = None,
-                 info: str = None,
-                 vtype: Type = None,
-                 model: str = None,
-                 rfun: Callable = None,
-                 rargs: dict = {}):
-        super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model,
-                         u=u, fun=np.ones_like, args=args,
-                         rfun=rfun, rargs=rargs)
-        self.c = c
-
-    @property
-    def v0(self):
-        return self.v
-
-    @property
-    def v1(self):
-        return self.v
-
-    @property
-    def v(self):
-        try:
-            nr = self.u.shape[1]
-        except IndexError:
-            raise IndexError("The input should be 2D.")
-        out = np.zeros(nr)
-        if isinstance(self.c, list):
-            out[self.c] = 1
-        elif isinstance(self.c, tuple):
-            out[list(self.c)] = 1
-        else:
-            out[self.c] = 1
-        return out[:, np.newaxis]
-
-
 class ZonalSum(NumOp):
     """
     Build zonal sum matrix for a vector in the shape of collection model,
