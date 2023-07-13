@@ -150,7 +150,7 @@ class RParam:
                     span += f', v in length of {self.vin}'
 
             if isinstance(self.v, np.ndarray):
-                if self.v.shape[0] == 1:
+                if self.v.shape[0] == 1 or self.v.ndim == 1:
                     if len(self.v) <= 20:
                         span = f', v={self.v}'
                 else:
