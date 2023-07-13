@@ -45,8 +45,10 @@ class UCModel(EDModel):
         EDModel.__init__(self, system, config)
         self.info = 'unit commitment'
         self.type = 'DCUC'
+        for ele in ['pb', 'lub', 'llb', 'rgu', 'rgd']:
+            delattr(self, ele)
         # --- vars ---
-        self.ugd = Var(info='gen on decision',
+        self.ugd = Var(info='commitment decision',
                        name='ugd',
                        horizon=self.timeslot,
                        tex_name=r'u_{g,d}',
@@ -54,13 +56,29 @@ class UCModel(EDModel):
                        bool=True,
                        src='u',
                        )
-        # TODO: add variable "off"
+        self.vgd = Var(info='startup action',
+                       name='vgd',
+                       horizon=self.timeslot,
+                       tex_name=r'v_{g,d}',
+                       model='StaticGen',
+                       bool=True,
+                       src='u',
+                       )
+        self.wgd = Var(info='shutdown action',
+                       name='wgd',
+                       horizon=self.timeslot,
+                       tex_name=r'w_{g,d}',
+                       model='StaticGen',
+                       bool=True,
+                       src='u',
+                       )
+        # TODO: add action constraints
 
         # TODO: add variable "reserve"
         # NOTE: spinning reserve or non-spinning reserve?
         # NOTE: is spinning reserve and AGC reserve the same? seems True
         # --- constraints ---
-        self.pb.e_str = 'Rpd - Spg @ multiply(ugd, pg)'  # power balance
+        # self.pb.e_str = 'pds - Spg @ multiply(ugd, pg)'  # power balance
         # TODO: add reserve balance, 3% or 5%
         # TODO: constrs: minimum ON/OFF time for conventional units
         # TODO: add data prameters: minimum ON/OFF time for conventional units
