@@ -20,20 +20,6 @@ class UCData(EDData):
 
     def __init__(self):
         EDData.__init__(self)
-        self.td1 = RParam(info='minimum ON duration',
-                          name='td1',
-                          src='td1',
-                          tex_name=r't_{d1}',
-                          unit='min',
-                          model='StaticGen',
-                          )
-        self.td2 = RParam(info='minimum OFF duration',
-                          name='td2',
-                          src='td2',
-                          tex_name=r't_{d2}',
-                          unit='min',
-                          model='StaticGen',
-                          )
         self.csu = RParam(info='startup cost',
                           name='csu',
                           src='csu',
@@ -48,6 +34,27 @@ class UCData(EDData):
                           unit='$',
                           model='GCost',
                           )
+
+        self.td1 = RParam(info='minimum ON duration',
+                          name='td1',
+                          src='td1',
+                          tex_name=r't_{d1}',
+                          unit='min',
+                          model='StaticGen',
+                          )
+        self.td2 = RParam(info='minimum OFF duration',
+                          name='td2',
+                          src='td2',
+                          tex_name=r't_{d2}',
+                          unit='min',
+                          model='StaticGen',
+                          )
+
+        self.scale.info = 'zonal load factor for UC'
+        self.scale.model = 'UCTSlot'
+
+        self.timeslot.info = 'Time slot for multi-period UC'
+        self.timeslot.model = 'UCTSlot'
 
 
 class UCModel(EDModel):

@@ -34,16 +34,16 @@ class EDData(DCOPFData):
         # NOTE: Setting `ED.scale.owner` to `Horizon` will cause an error when calling `ED.scale.v`.
         # This is because `Horizon` is a group that only contains the model `TimeSlot`.
         # The `get` method of `Horizon` calls `andes.models.group.GroupBase.get` and results in an error.
-        self.scale = RParam(info='zonal scaling factor for load',
+        self.scale = RParam(info='zonal load factor for ED',
                             name='scale',
                             src='scale',
                             tex_name=r's_{pd}',
-                            model='TimeSlot')
+                            model='EDTSlot')
         self.ts = RParam(info='time slot',
                          name='ts',
                          src='idx',
                          tex_name=r't_{s,idx}',
-                         model='TimeSlot')
+                         model='EDTSlot')
         self.zl = RParam(info='load zone',
                          name='zl',
                          src='zone',
@@ -57,11 +57,11 @@ class EDData(DCOPFData):
                           name='zl2',
                           tex_name=r'z_{one,l2}',
                           unit='p.u.')
-        self.timeslot = RParam(info='Time slot for multi-period dispatch',
+        self.timeslot = RParam(info='Time slot for multi-period ED',
                                name='timeslot',
                                src='idx',
                                tex_name=r't_{s,idx}',
-                               model='TimeSlot')
+                               model='EDTSlot')
 
         self.R30 = RParam(info='30-min ramp rate (system base)',
                           name='R30',

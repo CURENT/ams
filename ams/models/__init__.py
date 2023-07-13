@@ -16,7 +16,7 @@ ams_file_classes = list([
     ('region', ['Region']),
     ('reserve', ['SFR']),
     ('cost', ['GCost', 'SFRCost']),
-    ('timeslot', ['TimeSlot']),
+    ('timeslot', ['TimeSlot', 'EDTSlot', 'UCTSlot']),
 ])
 
 file_classes = ams_file_classes
