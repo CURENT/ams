@@ -162,7 +162,7 @@ class RParam:
                     span = f', v in length of {len(self.v)}'
             else:
                 span = f', v={self.v}'
-            return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}{span}'
+            return f'{self.__class__.__name__}: {self.name} <{self.owner.__class__.__name__}>{span}'
 
     def get_idx(self):
         """
