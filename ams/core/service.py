@@ -349,8 +349,6 @@ class NumHstack(NumOp):
         Variable type.
     model : str, optional
         Model name.
-    **kwargs
-        Additional keyword arguments to be passed to np.hstack.
     """
 
     def __init__(self,
@@ -364,8 +362,7 @@ class NumHstack(NumOp):
                  vtype: Type = None,
                  model: str = None,
                  rfun: Callable = None,
-                 rargs: dict = {},
-                 **kwargs):
+                 rargs: dict = {}):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model,
                          u=u, fun=np.hstack, args=args,
@@ -376,6 +373,54 @@ class NumHstack(NumOp):
     def v0(self):
         return self.fun([self.u.v[:, np.newaxis]] * self.ref.shape[1],
                         **self.args)
+
+
+class ColSelect(NumOp):
+    """
+    A column vector to select columns from a matrix, which is to be
+    right-multiplied to the matrix.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 c: Union[int, list, tuple],
+                 args: dict = {},
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 model: str = None,
+                 rfun: Callable = None,
+                 rargs: dict = {}):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype, model=model,
+                         u=u, fun=np.ones_like, args=args,
+                         rfun=rfun, rargs=rargs)
+        self.c = c
+
+    @property
+    def v0(self):
+        return self.v
+
+    @property
+    def v1(self):
+        return self.v
+
+    @property
+    def v(self):
+        try:
+            nr = self.u.shape[1]
+        except IndexError:
+            raise IndexError("The input should be 2D.")
+        out = np.zeros(nr)
+        if isinstance(self.c, list):
+            out[self.c] = 1
+        elif isinstance(self.c, tuple):
+            out[list(self.c)] = 1
+        else:
+            out[self.c] = 1
+        return out[:, np.newaxis]
 
 
 class ZonalSum(NumOp):
@@ -515,11 +560,10 @@ class VarReduction(NumOp):
         return self.fun(shape=(1, self.u.n))
 
 
-class VarSub(NumOp):
+class RampSub(NumOp):
     """
-    Build a substraction matrix for a 2D variable in the shape (nr, nc),
-    where nr is the length of the horizon reference vector ``horizon.n``,
-    and nc is the length of the input vector ``u.n``.
+    Build a substraction matrix for a 2D variable in the shape (nr, nr-1),
+    where nr is the rows of the input.
 
     This can be used for generator ramping constraints in multi-period
     optimization problems.
@@ -549,7 +593,6 @@ class VarSub(NumOp):
 
     def __init__(self,
                  u: Callable,
-                 horizon: Callable,
                  name: str = None,
                  tex_name: str = None,
                  unit: str = None,
@@ -558,15 +601,20 @@ class VarSub(NumOp):
                  model: str = None,
                  rfun: Callable = None,
                  rargs: dict = {},
-                 **kwargs
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model,
                          u=u, fun=None, rfun=rfun, rargs=rargs,)
-        self.horizon = horizon
 
     @property
     def v0(self):
-        nr = self.horizon.n
-        nc = self.u.n - 1
-        return np.eye(nr, nc, k=-1) - np.eye(nr, nc, k=0)
+        return self.v
+
+    @property
+    def v1(self):
+        return self.v
+
+    @property
+    def v(self):
+        nr = self.u.horizon.n
+        return np.eye(nr, nr-1, k=-1) - np.eye(nr, nr-1, k=0)

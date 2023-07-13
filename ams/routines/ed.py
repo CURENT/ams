@@ -1,15 +1,14 @@
 """
 Real-time economic dispatch.
 """
-import logging
-from collections import OrderedDict
-import numpy as np
+import logging  # NOQA
+from collections import OrderedDict  # NOQA
+import numpy as np  # NOQA
 
 from ams.core.param import RParam
 from ams.core.service import (ZonalSum, VarReduction, NumOp,
-                              NumOpDual,
-                              NumExpandDim,
-                              NumHstack, VarSub)
+                              NumOpDual, NumExpandDim, NumHstack,
+                              RampSub)
 
 from ams.routines.dcopf import DCOPFData, DCOPFModel
 
@@ -175,17 +174,18 @@ class EDModel(DCOPFModel):
         self.llb.e_str = '-PTDF1@pg + PTDF1@pd1s + PTDF2@pd2s - RAr@cdup'
 
         # ramping limits
-        self.Mr = VarSub(u=self.pg,
-                         horizon=self.timeslot,
-                         name='Mr',
-                         tex_name=r'M_{r}',
-                         info='Subtraction matrix for ramping',
-                         )
+        # FIXME: do we need to consider ramping limits for T0?
+        # which means from p0 (initial power) to pg(:, 0)?
+        self.Mr = RampSub(u=self.pg,
+                          name='Mr',
+                          tex_name=r'M_{r}',
+                          info='Subtraction matrix for ramping, (ng, ng-1)',
+                          )
         self.RR30 = NumHstack(u=self.R30,
                               ref=self.Mr,
                               name='RR30',
                               tex_name=r'R_{30,R}',
-                              info='Repeated ramp rate',
+                              info='Repeated ramp rate as 2D matrix, (ng, ng-1)',
                               )
         self.rgu = Constraint(name='rgu',
                               info='generator ramping up',
