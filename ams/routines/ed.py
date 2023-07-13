@@ -24,6 +24,12 @@ class EDData(DCOPFData):
 
     def __init__(self):
         DCOPFData.__init__(self)
+        self.pg0 = RParam(info='active power start point (system base)',
+                          name='pg0',
+                          tex_name=r'p_{g0}',
+                          unit='p.u.',
+                          src='pg0',
+                          model='StaticGen')
         self.pd = RParam(info='active power load',
                          name='pd',
                          tex_name=r'p_{d}',
@@ -188,15 +194,25 @@ class EDModel(DCOPFModel):
                               info='Repeated ramp rate as 2D matrix, (ng, ng-1)',
                               )
         self.rgu = Constraint(name='rgu',
-                              info='generator ramping up',
+                              info='Gen ramping up',
                               e_str='pg @ Mr - RR30',
                               type='uq',
                               )
+        self.rgu0 = Constraint(name='rgu0',
+                               info='Initial gen ramping up',
+                               e_str='pg[:, 0] - pg0 - R30',
+                               type='uq',
+                               )
         self.rgd = Constraint(name='rgd',
-                              info='generator ramping down',
+                              info='Gen ramping down',
                               e_str='-pg @ Mr - RR30',
                               type='uq',
                               )
+        self.rgd0 = Constraint(name='rgd0',
+                               info='Initial gen ramping down',
+                               e_str='- pg[:, 0] + pg0 - R30',
+                               type='uq',
+                               )
 
         # --- objective ---
         # NOTE: no need to fix objective function

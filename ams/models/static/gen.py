@@ -60,7 +60,7 @@ class GenParam:
                             info="area participation factor",
                             tex_name=r'a_{pf}')
         self.pg0 = NumParam(default=0.0,
-                            info='real power start point',
+                            info='active power start point (system base)',
                             tex_name=r'p_{g0}',
                             unit='p.u.',
                             )
