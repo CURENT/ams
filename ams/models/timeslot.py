@@ -23,6 +23,11 @@ class TimeSlot(ModelData, Model):
                               oconvert=str_list_oconv,
                               vtype=float,
                               )
+        self.dt = NumParam(default=60,
+                           info='time slot duration',
+                           tex_name=r'Delta t',
+                           unit='min',
+                           )
 
 
 class EDTSlot(TimeSlot):

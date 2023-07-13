@@ -56,6 +56,14 @@ class UCData(EDData):
         self.timeslot.info = 'Time slot for multi-period UC'
         self.timeslot.model = 'UCTSlot'
 
+        self.dt = RParam(info='UC interval',
+                         name='dt',
+                         src='dt',
+                         tex_name=r'\Delta t',
+                         unit='min',
+                         model='UCTSlot',
+                         )
+
 
 class UCModel(EDModel):
     """
