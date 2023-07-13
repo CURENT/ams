@@ -20,6 +20,20 @@ class UCData(EDData):
 
     def __init__(self):
         EDData.__init__(self)
+        self.td1 = RParam(info='minimum ON duration',
+                          name='td1',
+                          src='td1',
+                          tex_name=r't_{d1}',
+                          unit='min',
+                          model='StaticGen',
+                          )
+        self.td2 = RParam(info='minimum OFF duration',
+                          name='td2',
+                          src='td2',
+                          tex_name=r't_{d2}',
+                          unit='min',
+                          model='StaticGen',
+                          )
         self.csu = RParam(info='startup cost',
                           name='csu',
                           src='csu',

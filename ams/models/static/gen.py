@@ -64,6 +64,16 @@ class GenParam:
                             tex_name=r'p_{g0}',
                             unit='p.u.',
                             )
+        self.td1 = NumParam(default=30,
+                            info='minimum ON duration',
+                            tex_name=r't_{d1}',
+                            unit='min',
+                            )
+        self.td2 = NumParam(default=30,
+                            info='minimum OFF duration',
+                            tex_name=r't_{d2}',
+                            unit='min',
+                            )
 
 
 class PVModel(Model):
