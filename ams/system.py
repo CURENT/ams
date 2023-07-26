@@ -242,7 +242,7 @@ class System(andes_System):
                 item.owner = self.groups[item.model]
             elif item.model in self.models.keys():
                 item.owner = self.models[item.model]
-            elif item_name in ['pd1', 'pd2', 'PTDF1', 'PTDF2', 'zl1', 'zl2']:
+            elif item_name in ['pd1', 'pd2', 'PTDF1', 'PTDF2', 'zl1', 'zl2', 'Cft']:
                 # FIXME: hard-coded, should be improved
                 pass
             else:
@@ -445,10 +445,14 @@ class System(andes_System):
         # reorganize PTDF matrix
         PTDF1, PTDF2 = self.mats.rePTDF()
 
+        # connection matrix
+        Cft = self.mats.Cft
+
         self.mat = OrderedDict([
             ('pd1', PD1), ('pd2', PD2),
             ('PTDF1', PTDF1), ('PTDF2', PTDF2),
             ('zl1', zl1), ('zl2', zl2),
+            ('Cft', Cft)
         ])
 
         # NOTE: initialize om for all routines

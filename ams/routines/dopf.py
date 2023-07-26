@@ -31,18 +31,84 @@ class DOPFBase(DCOPFBase):
 
     def __init__(self, system, config):
         DCOPFBase.__init__(self, system, config)
+        self.r = RParam(info='line resistance',
+                        name='r',
+                        tex_name='r',
+                        unit='p.u.',
+                        model='Line',
+                        )
+        self.x = RParam(info='line reactance',
+                        name='x',
+                        tex_name='x',
+                        unit='p.u.',
+                        model='Line',
+                        )
+        self.qmax = RParam(info='generator maximum reactive power (system base)',
+                           name='qmax',
+                           tex_name=r'q_{max}',
+                           unit='p.u.',
+                           model='StaticGen',
+                           )
+        self.qmin = RParam(info='generator minimum reactive power (system base)',
+                           name='qmin',
+                           tex_name=r'q_{min}',
+                           unit='p.u.',
+                           model='StaticGen',
+                           )
+        self.Cft = RParam(info='connection matrix',
+                          name='Cft',
+                          tex_name=r'C_{ft}',
+                          )
 
 
-class DOPFModel(DOPFBase, DCOPFModel):
+class DOPFModel(DOPFBase):
     """
     DOPF model.
     """
 
     def __init__(self, system, config):
         DOPFBase.__init__(self, system, config)
-        DCOPFModel.__init__(self, system, config)
         self.info = 'Distributional Optimal Power Flow'
         self.type = 'DED'
+        # --- vars ---
+        self.pl = Var(info='line active power',
+                      unit='p.u.',
+                      name='pl',
+                      tex_name=r'p_{l}',
+                      model='Line',
+                      )
+        self.ql = Var(info='line reactive power',
+                      unit='p.u.',
+                      name='ql',
+                      tex_name=r'q_{l}',
+                      model='Line',
+                      )
+
+        self.isq = Var(info='square of line current',
+                       unit='p.u.',
+                       name='isq',
+                       tex_name=r'i^{2}',
+                       model='Line',
+                       )
+        self.vsq = Var(info='square of Bus voltage',
+                       unit='p.u.',
+                       name='vsq',
+                       tex_name=r'v^{2}',
+                       model='Bus',
+                       )
+
+        self.pn = Var(info='Bus active power',
+                      unit='p.u.',
+                      name='pn',
+                      tex_name=r'p_{n}',
+                      model='Bus',
+                      )
+        self.qn = Var(info='Bus reactive power',
+                      unit='p.u.',
+                      name='qn',
+                      tex_name=r'q_{n}',
+                      model='Bus',
+                      )
 
 
 class DOPF(DOPFData, DOPFModel):

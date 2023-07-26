@@ -4,6 +4,8 @@ Module for system matrix make.
 
 import logging
 
+from andes.shared import np
+
 from ams.solver.pypower.makePTDF import makePTDF
 from ams.io.pypower import system2ppc
 
@@ -25,6 +27,25 @@ class MatProcessor:
         """
         ppc = system2ppc(self.system)
         return makePTDF(ppc['baseMVA'], ppc['bus'], ppc['branch'])
+
+    @property
+    def Cft(self):
+        """
+        Build the connection matrix.
+
+        # TODO: add support for sparsity
+        """
+        # size
+        nb = self.system.Bus.n
+        nl = self.system.Line.n
+        # Bus matrix location
+        fbus = np.array(self.system.Bus.idx2uid(self.system.Line.bus1.v))
+        tbus = np.array(self.system.Bus.idx2uid(self.system.Line.bus2.v))
+        # connection matrix
+        Cft = np.zeros((nl, nb))
+        Cft[fbus - 1, np.arange(nl)] = 1
+        Cft[tbus - 1, np.arange(nl)] = -1
+        return Cft
 
     def rePTDF(self):
         """
