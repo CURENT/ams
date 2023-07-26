@@ -83,7 +83,6 @@ class TypeBase:
 
         return out
 
-
     def doc_all(self, export='plain'):
         """
         Return documentation of the type and its routines.
@@ -134,6 +133,16 @@ class DCED(TypeBase):
         self.common_rparams.extend(('c2', 'c1', 'c0', 'pmax', 'pmin', 'pd', 'ptdf', 'rate_a',))
         self.common_vars.extend(('pg',))
         self.common_constrs.extend(('pb', 'lub', 'llb'))
+
+
+class DED(TypeBase):
+    """
+    Type for Distributional economic dispatch.
+    """
+
+    def __init__(self):
+        TypeBase.__init__(self)
+        # TODO: add common parameters and variables
 
 
 class ACED(DCED):
