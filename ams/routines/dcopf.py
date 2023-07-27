@@ -1,6 +1,8 @@
 """
 OPF routines.
 """
+import logging
+
 from collections import OrderedDict
 import numpy as np
 from scipy.optimize import linprog
@@ -10,6 +12,9 @@ from ams.core.param import RParam
 from ams.routines.routine import RoutineData, RoutineModel
 
 from ams.opt.omodel import Var, Constraint, Objective
+
+
+logger = logging.getLogger(__name__)
 
 
 class DCOPFData(RoutineData):
@@ -40,19 +45,6 @@ class DCOPFData(RoutineData):
                          tex_name=r'c_{0}',
                          unit=r'$',
                          model='GCost',)
-        # --- bus ---
-        self.vmax = RParam(info="Bus voltage upper limit",
-                           name='vmax',
-                           tex_name=r'v_{max}',
-                           unit='p.u.',
-                           model='Bus',
-                           src='vmax',)
-        self.vmin = RParam(info="Bus voltage lower limit",
-                           name='vmin',
-                           tex_name=r'v_{min}',
-                           unit='p.u.',
-                           model='Bus',
-                           src='vmin',)
         # --- generator limit ---
         self.pmax = RParam(info='generator maximum active power (system base)',
                            name='pmax',
@@ -81,8 +73,6 @@ class DCOPFData(RoutineData):
         self.PTDF = RParam(info='Power transfer distribution factor matrix',
                            name='PTDF',
                            tex_name=r'P_{TDF}',)
-        self.Cft = RParam(info='connection matrix for line to bus',
-                          name='Cft', tex_name=r'C_{ft}',)
 
 
 class DCOPFBase(RoutineModel):
@@ -144,17 +134,20 @@ class DCOPFBase(RoutineModel):
             # --- copy results from routine algeb into system algeb ---
             if var.model is None:          # if no owner
                 continue
+            if var.src is None:            # if no source
+                continue
             else:
-                owner = getattr(self.system, var.model)
                 try:
-                    idx = owner.get_idx()
+                    idx = var.owner.get_idx()
                 except AttributeError:
-                    idx = owner.idx.v
+                    idx = var.owner.idx.v
                 else:
-                    continue
+                    pass
                 # NOTE: only unpack the variables that are in the model or group
-                if var.src in owner.__dict__.keys():
-                    owner.set(src=var.src, attr='v', idx=idx, value=var.v)
+                try:
+                    var.owner.set(src=var.src, attr='v', idx=idx, value=var.v)
+                except KeyError:
+                    pass
         self.obj.v = self.om.obj.value
         self.system.recent = self.system.routines[self.class_name]
         return True
