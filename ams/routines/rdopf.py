@@ -14,18 +14,18 @@ from ams.routines.dcopf import DCOPFData, DCOPFBase, DCOPFModel
 from ams.opt.omodel import Var, Constraint, Objective
 
 
-class DOPFData(DCOPFData):
+class RDOPFData(DCOPFData):
     """
-    DOPF data.
+    RDOPF data.
     """
 
     def __init__(self):
         DCOPFData.__init__(self)
 
 
-class DOPFBase(DCOPFBase):
+class RDOPFBase(DCOPFBase):
     """
-    Base class for DOPF dispatch model.
+    Base class for RDOPF dispatch model.
 
     Overload the ``solve``, ``unpack``, and ``run`` methods.
     """
@@ -90,14 +90,14 @@ class DOPFBase(DCOPFBase):
                          )
 
 
-class DOPFModel(DOPFBase):
+class RDOPFModel(RDOPFBase):
     """
     DOPF model.
     """
 
     def __init__(self, system, config):
-        DOPFBase.__init__(self, system, config)
-        self.info = 'Distributional Optimal Power Flow'
+        RDOPFBase.__init__(self, system, config)
+        self.info = 'Radial distribution network OPF'
         self.type = 'DED'
         # --- vars ---
         # --- generation ---
@@ -233,11 +233,11 @@ class DOPFModel(DOPFBase):
                              sense='min',)
 
 
-class DOPF(DOPFData, DOPFModel):
+class RDOPF(RDOPFData, RDOPFModel):
     """
-    Distributional optimal power flow (DOPF) routine.
+    Radial distributiona network OPF (RDOPF) routine.
     """
 
     def __init__(self, system, config):
-        DOPFData.__init__(self)
-        DOPFModel.__init__(self, system, config)
+        RDOPFData.__init__(self)
+        RDOPFModel.__init__(self, system, config)
