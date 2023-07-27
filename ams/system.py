@@ -236,13 +236,14 @@ class System(andes_System):
         """
         Set the owner for routine attributes: ``RParam``, ``Var``, and ``RBaseService``.
         """
+        mat_name = ['pd1', 'pd2', 'PTDF1', 'PTDF2', 'zl1', 'zl2', 'Cft', 'pd', 'qd']
         for item_name, item in items.items():
             if item.model in self.groups.keys():
                 item.is_group = True
                 item.owner = self.groups[item.model]
             elif item.model in self.models.keys():
                 item.owner = self.models[item.model]
-            elif item_name in ['pd1', 'pd2', 'PTDF1', 'PTDF2', 'zl1', 'zl2', 'Cft']:
+            elif item_name in mat_name:
                 # FIXME: hard-coded, should be improved
                 pass
             else:
@@ -432,12 +433,16 @@ class System(andes_System):
 
         # Restrucrue PQ load value to match gen bus pattern
         # FIXME: if we need sparse matrix storage?
+        # FIXME: the value can be wrong if user modified Ppf or Qpf in ANDES
         idx_PD1 = self.PQ.find_idx(keys="bus", values=regBus, allow_none=True, default=None)
         idx_PD2 = self.PQ.find_idx(keys="bus", values=redBus, allow_none=True, default=None)
         PD1 = self.PQ.get(src='p0', attr='v', idx=idx_PD1)
         PD1 = np.array(PD1)
         PD2 = self.PQ.get(src='p0', attr='v', idx=idx_PD2)
         PD2 = np.array(PD2)
+        idx_PD = self.PQ.find_idx(keys="bus", values=all_bus, allow_none=True, default=None)
+        PD = self.PQ.get(src='p0', attr='v', idx=idx_PD)
+        QD = self.PQ.get(src='q0', attr='v', idx=idx_PD)
         # load zone information
         zl1 = self.PQ.get(src='zone', attr='v', idx=idx_PD1, allow_none=True, default=None)
         zl2 = self.PQ.get(src='zone', attr='v', idx=idx_PD2, allow_none=True, default=None)
@@ -450,6 +455,7 @@ class System(andes_System):
 
         self.mat = OrderedDict([
             ('pd1', PD1), ('pd2', PD2),
+            ('pd', PD), ('qd', QD),
             ('PTDF1', PTDF1), ('PTDF2', PTDF2),
             ('zl1', zl1), ('zl2', zl2),
             ('Cft', Cft)

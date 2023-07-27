@@ -6,6 +6,7 @@ import numpy as np
 from scipy.optimize import linprog
 
 from ams.core.param import RParam
+from ams.core.service import NumOp
 
 from ams.routines.routine import RoutineData, RoutineModel
 from ams.routines.dcopf import DCOPFData, DCOPFBase, DCOPFModel
@@ -31,6 +32,16 @@ class DOPFBase(DCOPFBase):
 
     def __init__(self, system, config):
         DCOPFBase.__init__(self, system, config)
+        self.pd = RParam(info='active power demand connected to Bus (system base)',
+                         name='pd',
+                         tex_name=r'p_{d}',
+                         unit='p.u.',
+                         )
+        self.qd = RParam(info='reactive power demand connected to Bus (system base)',
+                         name='qd',
+                         tex_name=r'q_{d}',
+                         unit='p.u.',
+                         )
         self.r = RParam(info='line resistance',
                         name='r',
                         tex_name='r',
@@ -109,6 +120,26 @@ class DOPFModel(DOPFBase):
                       tex_name=r'q_{n}',
                       model='Bus',
                       )
+
+        # --- constraints ---
+        self.CftT = NumOp(u=self.Cft,
+                          fun=np.transpose,
+                          name='CftT',
+                          tex_name=r'C_{ft}^{T}',
+                          info='transpose of connection matrix',)
+        self.pinj = Constraint(name='pinj',
+                               info='node active power injection',
+                               e_str='CftT@(pl - r * isq ) - pd - pn',
+                               type='eq',
+                               )
+
+        # --- objective ---
+        # TODO: need a conversion from pn to pg
+        self.obj = Objective(name='tc',
+                             info='total cost [experiment]',
+                             unit='$',
+                             e_str='sum(pn)',
+                             sense='min',)
 
 
 class DOPF(DOPFData, DOPFModel):
