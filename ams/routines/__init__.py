@@ -13,7 +13,7 @@ all_routines = OrderedDict([
     ('dcopf', ['DCOPF']),
     ('ed', ['ED']),
     ('rted', ['RTED']),
-    ('uc', ['UC']),
+    # ('uc', ['UC']),
     ('dopf', ['LDOPF']),
 ])
 
