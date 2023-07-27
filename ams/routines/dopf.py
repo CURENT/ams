@@ -122,16 +122,30 @@ class DOPFModel(DOPFBase):
                       )
 
         # --- constraints ---
+        # --- node injection ---
         self.CftT = NumOp(u=self.Cft,
                           fun=np.transpose,
                           name='CftT',
                           tex_name=r'C_{ft}^{T}',
-                          info='transpose of connection matrix',)
+                          info='transpose of connection matrix',
+                          is_sparse=True,)
         self.pinj = Constraint(name='pinj',
                                info='node active power injection',
                                e_str='CftT@(pl - r * isq ) - pd - pn',
                                type='eq',
                                )
+        # TODO: is the e_str correct? Not sure if the sign is negative
+        self.qinj = Constraint(name='qinj',
+                               info='node reactive power injection',
+                               e_str='CftT@(ql - x * isq ) - qd - qn',
+                               type='eq',
+                               )
+        # # --- branch voltage drop ---
+        # self.lvd = Constraint(name='lvd',
+        #                       info='branch voltage drop',
+        #                       e_str='Cft',
+        #                       type='eq',
+        #                       )
 
         # --- objective ---
         # TODO: need a conversion from pn to pg

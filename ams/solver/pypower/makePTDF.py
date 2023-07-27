@@ -219,4 +219,5 @@ def makeBdc(baseMVA, bus, branch):
     # Ptinj = -Pfinj                            ## and extracted at the to bus
     Pbusinj = Cft.T * Pfinj  # Pbusinj = Cf * Pfinj + Ct * Ptinj
 
-    return Bbus, Bf, Pbusinj, Pfinj
+    logger.debug(f"PYPOWER: Cft sum: {Cft.nnz}")
+    return Bbus, Bf, Pbusinj, Pfinj, Cft
