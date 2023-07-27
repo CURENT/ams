@@ -64,12 +64,12 @@ class LDOPFModel(DCOPFModel):
                       name='qn', tex_name=r'q_{n}', unit='p.u.',
                       model='Bus',)
 
-        self.isq = Var(info='square of Line current',
-                       name='isq', tex_name=r'i^{2}', unit='p.u.',
-                       model='Line',)
-        self.lub.e_str = 'isq - rate_a**2'
-        self.llb.e_str = '-isq + rate_a**2'
-
+        self.isq = Var(info='square of line current',
+                       unit='p.u.',
+                       name='isq',
+                       tex_name=r'i^{2}',
+                       model='Line',
+                       )
         self.vsq = Var(info='square of Bus voltage',
                        name='vsq', tex_name=r'v^{2}', unit='p.u.',
                        model='Bus',)
@@ -90,18 +90,19 @@ class LDOPFModel(DCOPFModel):
                       model='Line',)
 
         # --- constraints ---
-        self.pinj.e_str = 'Cg@(pn - pd) - pg'
+        self.CftT = NumOp(u=self.Cft,
+                          fun=np.transpose,
+                          name='CftT',
+                          tex_name=r'C_{ft}^{T}',
+                          info='transpose of connection matrix',)
+        self.pinj.e_str='CftT@(pl - r * isq ) - pd - pn'
         self.qinj = Constraint(name='qinj',
                                info='node reactive power injection',
-                               e_str='Cg@(qn - qd) - qg',
+                                 e_str='CftT@(ql - x * isq) - qd - qn',
                                type='eq',)
-        self.CftT = NumOp(u=self.Cft, fun=np.transpose,
-                          name='CftT', tex_name=r'C_{ft}^{T}',
-                          info='transpose of connection matrix',)
 
-        self.pb.e_str = 'CftT@(pl - r * isq)- pn'
         self.qb = Constraint(name='qb', info='reactive power balance',
-                             e_str='CftT@(ql - x * isq)- qn',
+                             e_str='sum(qd) - sum(qg)',
                              type='eq',)
 
         self.lvd = Constraint(name='lvd',
