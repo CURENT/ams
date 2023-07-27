@@ -160,8 +160,6 @@ class NumOp(ROperationService):
         Keyword arguments to pass to ``rfun``.
     expand_dims : int, optional
         Expand the dimensions of the output array along a specified axis.
-    is_sparse : bool, optional
-        Whether the input is a sparse matrix.
     """
 
     def __init__(self,
@@ -176,8 +174,7 @@ class NumOp(ROperationService):
                  model: str = None,
                  rfun: Callable = None,
                  rargs: dict = {},
-                 expand_dims: int = None,
-                 is_sparse: bool = False,):
+                 expand_dims: int = None):
         tex_name = tex_name if tex_name is not None else u.tex_name
         unit = unit if unit is not None else u.unit
         info = info if info is not None else u.info
@@ -189,20 +186,13 @@ class NumOp(ROperationService):
         self.rfun = rfun
         self.rargs = rargs
         self.expand_dims = expand_dims
-        self.is_sparse = is_sparse
 
     @property
     def v0(self):
-        if self.is_sparse:
-            if isinstance(self.u, Iterable):
-                out = self.fun([u.v.toarray() for u in self.u], **self.args)
-            else:
-                out = self.fun(self.u.v.toarray(), **self.args)
+        if isinstance(self.u, Iterable):
+            out = self.fun([u.v for u in self.u], **self.args)
         else:
-            if isinstance(self.u, Iterable):
-                out = self.fun([u.v for u in self.u], **self.args)
-            else:
-                out = self.fun(self.u.v, **self.args)
+            out = self.fun(self.u.v, **self.args)
         if not isinstance(out, np.ndarray):
             out = np.array([out])
         return out
@@ -245,8 +235,6 @@ class NumExpandDim(NumOp):
         Variable type.
     model : str, optional
         Model name.
-    is_sparse : bool, optional
-        Whether the input is a sparse matrix.
     """
 
     def __init__(self,
@@ -258,20 +246,15 @@ class NumExpandDim(NumOp):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 model: str = None,
-                 is_sparse: bool = False,):
+                 model: str = None,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model,
-                         is_sparse=is_sparse,
                          u=u, fun=np.expand_dims, args=args)
         self.axis = axis
 
     @property
     def v(self):
-        if self.is_sparse:
-            return self.fun([u.v.toarray() for u in self.u], axis=self.axis, **self.args)
-        else:
-            return self.fun(self.u.v, axis=self.axis, **self.args)
+        return self.fun(self.u.v, axis=self.axis, **self.args)
 
 
 class NumOpDual(NumOp):
@@ -322,24 +305,20 @@ class NumOpDual(NumOp):
                  model: str = None,
                  rfun: Callable = None,
                  rargs: dict = {},
-                 expand_dims: int = None,
-                 is_sparse: bool = False,):
+                 expand_dims: int = None):
         tex_name = tex_name if tex_name is not None else u.tex_name
         unit = unit if unit is not None else u.unit
         info = info if info is not None else u.info
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model,
-                         u=u, is_sparse=is_sparse, fun=fun, args=args,
+                         u=u, fun=fun, args=args,
                          rfun=rfun, rargs=rargs,
                          expand_dims=expand_dims)
         self.u2 = u2
 
     @property
     def v0(self):
-        if self.is_sparse:
-            out = self.fun(self.u.v.toarray(), self.u2.v.toarray(), **self.args)
-        else:
-            out = self.fun(self.u.v, self.u2.v, **self.args)
+        out = self.fun(self.u.v, self.u2.v, **self.args)
         if not isinstance(out, np.ndarray):
             out = np.array([out])
         return out
@@ -383,25 +362,19 @@ class NumHstack(NumOp):
                  vtype: Type = None,
                  model: str = None,
                  rfun: Callable = None,
-                 rargs: dict = {},
-                 is_sparse: bool = False,):
+                 rargs: dict = {}):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, model=model,
-                         u=u, is_sparse=is_sparse, fun=np.hstack, args=args,
+                         u=u, fun=np.hstack, args=args,
                          rfun=rfun, rargs=rargs)
         self.ref = ref
 
     @property
     def v0(self):
-        if self.is_sparse:
-            return self.fun([self.u.v.toarray()[:, np.newaxis]] * self.ref.shape[1],
-                            **self.args)
-        else:
-            return self.fun([self.u.v[:, np.newaxis]] * self.ref.shape[1],
-                            **self.args)
+        return self.fun([self.u.v[:, np.newaxis]] * self.ref.shape[1],
+                        **self.args)
 
 
-# TODO: fit is_sparse
 class ZonalSum(NumOp):
     """
     Build zonal sum matrix for a vector in the shape of collection model,

@@ -9,6 +9,7 @@ from typing import Callable, Iterable, List, Optional, Tuple, Type, Union
 from collections import OrderedDict
 
 import numpy as np
+from scipy.sparse import issparse
 
 from andes.core.common import Config
 from andes.core import BaseParam, DataParam, IdxParam, NumParam, ExtParam
@@ -97,7 +98,10 @@ class RParam:
         This property is a wrapper for the ``get`` method of the owner class.
         """
         if self.is_ext:
-            return self._v
+            if issparse(self._v):
+                return self._v.toarray()
+            else:
+                return self._v
         elif self.is_group:
             return self.owner.get(src=self.src, attr='v',
                                   idx=self.owner.get_idx())

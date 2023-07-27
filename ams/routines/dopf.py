@@ -127,8 +127,7 @@ class DOPFModel(DOPFBase):
                           fun=np.transpose,
                           name='CftT',
                           tex_name=r'C_{ft}^{T}',
-                          info='transpose of connection matrix',
-                          is_sparse=True,)
+                          info='transpose of connection matrix',)
         self.pinj = Constraint(name='pinj',
                                info='node active power injection',
                                e_str='CftT@(pl - r * isq ) - pd - pn',
@@ -141,11 +140,11 @@ class DOPFModel(DOPFBase):
                                type='eq',
                                )
         # # --- branch voltage drop ---
-        # self.lvd = Constraint(name='lvd',
-        #                       info='branch voltage drop',
-        #                       e_str='Cft',
-        #                       type='eq',
-        #                       )
+        self.lvd = Constraint(name='lvd',
+                              info='branch voltage drop',
+                              e_str='Cft@vsq - 2*(r * pl + x * ql) + (r**2 + x**2) @ isq',
+                              type='eq',
+                              )
 
         # --- objective ---
         # TODO: need a conversion from pn to pg
