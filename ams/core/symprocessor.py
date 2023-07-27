@@ -58,12 +58,16 @@ class SymProcessor:
         self.tex_map = OrderedDict()
 
         lang = "cp"  # TODO: might need to be generalized to other solvers
+        # only used for CVXPY
         self.sub_map = OrderedDict([
+            (r'\b(\w+)\s* dot \s*(\w+)\b', r'\1 * \2'),
             (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 @ \2'),
-            (r'\bsum\b', f'{lang}.sum'),  # only used for CVXPY
-            (r'\bvar\b', f'{lang}.Variable'),  # only used for CVXPY
-            (r'\bproblem\b', f'{lang}.Problem'),  # only used for CVXPY
-            (r'\bmultiply\b', f'{lang}.multiply'),  # only used for CVXPY
+            (r'\bsum\b', f'{lang}.sum'),  
+            (r'\bvar\b', f'{lang}.Variable'),
+            (r'\bproblem\b', f'{lang}.Problem'),
+            (r'\bmultiply\b', f'{lang}.multiply'),
+            (r'\bvstack\b', f'{lang}.vstack'),
+            (r'\bnorm\b', f'{lang}.norm'),
         ])
         self.tex_map = OrderedDict([
             (r'\*\*(\d+)', '^{\\1}'),

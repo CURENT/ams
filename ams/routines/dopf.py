@@ -139,12 +139,20 @@ class DOPFModel(DOPFBase):
                                e_str='CftT@(ql - x * isq ) - qd - qn',
                                type='eq',
                                )
-        # # --- branch voltage drop ---
+
+        # --- branch voltage drop ---
         self.lvd = Constraint(name='lvd',
                               info='branch voltage drop',
                               e_str='Cft@vsq - 2*(r * pl + x * ql) + (r**2 + x**2) @ isq',
                               type='eq',
                               )
+
+        # --- branch current ---
+        self.lc = Constraint(name='lc',
+                             info='branch current using SOCP',
+                             e_str='norm(vstack([2*(pl), 2*(ql), isq - Cft@vsq]), 2) - isq - Cft@vsq',
+                             type='uq',
+                             )
 
         # --- objective ---
         # TODO: need a conversion from pn to pg
