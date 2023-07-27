@@ -237,7 +237,7 @@ class System(andes_System):
         Set the owner for routine attributes: ``RParam``, ``Var``, and ``RBaseService``.
         """
         mat_name = ['pd1', 'pd2', 'PTDF1', 'PTDF2', 'zl1', 'zl2',
-                    'ptdf', 'Cft', 'pd', 'qd']
+                    'ptdf', 'Cft', 'Cg', 'pd', 'qd']
         for item_name, item in items.items():
             if item.model in self.groups.keys():
                 item.is_group = True
@@ -454,13 +454,17 @@ class System(andes_System):
         PD = self.PQ.get(src='p0', attr='v', idx=idx_PD)
         QD = self.PQ.get(src='q0', attr='v', idx=idx_PD)
 
+        row, col = np.meshgrid(all_bus, gen_bus)
+        # TODO: sparsity?
+        Cg = (row == col).astype(int)
+
         self.mat = OrderedDict([
             ('pd1', PD1), ('pd2', PD2),
             ('pd', PD), ('qd', QD),
             ('PTDF1', PTDF1), ('PTDF2', PTDF2),
             ('ptdf', PTDF),
             ('zl1', zl1), ('zl2', zl2),
-            ('Cft', Cft),
+            ('Cft', Cft), ('Cg', Cg),
         ])
 
         # NOTE: initialize om for all routines
