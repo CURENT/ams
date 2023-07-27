@@ -24,55 +24,37 @@ class RTEDData(DCOPFData):
         # 1. reserve
         # 1.1. reserve cost
         self.cru = RParam(info='RegUp reserve coefficient',
-                          name='cru',
-                          src='cru',
-                          tex_name=r'c_{r,u}',
-                          unit=r'$/(p.u.)',
-                          model='SFRCost',
-                          )
+                          name='cru', src='cru',
+                          tex_name=r'c_{r,u}', unit=r'$/(p.u.)',
+                          model='SFRCost')
         self.crd = RParam(info='RegDown reserve coefficient',
                           name='crd',
                           src='crd',
                           tex_name=r'c_{r,d}',
                           unit=r'$/(p.u.)',
-                          model='SFRCost',
-                          )
+                          model='SFRCost',)
         # 1.2. reserve requirement
         self.du = RParam(info='RegUp reserve requirement (system base)',
-                         name='du',
-                         src='du',
-                         tex_name=r'd_{u}',
-                         unit='p.u.',
-                         model='SFR',
-                         )
+                         name='du', src='du',
+                         tex_name=r'd_{u}', unit='p.u.',
+                         model='SFR',)
         self.dd = RParam(info='RegDown reserve requirement (system base)',
-                         name='dd',
-                         src='dd',
-                         tex_name=r'd_{d}',
-                         unit='p.u.',
-                         model='SFR',
-                         )
+                         name='dd', src='dd',
+                         tex_name=r'd_{d}', unit='p.u.',
+                         model='SFR',)
         self.zg = RParam(info='generator zone data',
-                         name='zg',
-                         src='zone',
+                         name='zg', src='zone',
                          tex_name='z_{one,g}',
-                         model='StaticGen',
-                         )
+                         model='StaticGen',)
         # 2. generator
         self.pg0 = RParam(info='generator active power start point (system base)',
-                          name='pg0',
-                          src='pg0',
-                          tex_name=r'p_{g0}',
-                          unit='p.u.',
-                          model='StaticGen',
-                          )
+                          name='pg0', src='pg0',
+                          tex_name=r'p_{g0}', unit='p.u.',
+                          model='StaticGen',)
         self.R10 = RParam(info='10-min ramp rate (system base)',
-                          name='R10',
-                          src='R10',
-                          tex_name=r'R_{10}',
-                          unit='p.u./min',
-                          model='StaticGen',
-                          )
+                          name='R10', src='R10',
+                          tex_name=r'R_{10}', unit='p.u./min',
+                          model='StaticGen',)
 
 
 class RTEDModel(DCOPFModel):
@@ -105,23 +87,18 @@ class RTEDModel(DCOPFModel):
         self.type = 'DCED'
         # --- service ---
         self.gs = ZonalSum(u=self.zg,
-                            zone='Region',
-                            name='gs',
-                            tex_name=r'\sum_{g}')
+                           zone='Region',
+                           name='gs', tex_name=r'\sum_{g}')
         self.gs.info = 'Sum Gen vars vector in shape of zone'
 
         # --- vars ---
         self.pru = Var(info='RegUp reserve (system base)',
-                       unit='p.u.',
-                       name='pru',
-                       tex_name=r'p_{r,u}',
+                       unit='p.u.', name='pru', tex_name=r'p_{r,u}',
                        model='StaticGen',
                        nonneg=True,
                        )
         self.prd = Var(info='RegDn reserve (system base)',
-                       unit='p.u.',
-                       name='prd',
-                       tex_name=r'p_{r,d}',
+                       unit='p.u.', name='prd', tex_name=r'p_{r,d}',
                        model='StaticGen',
                        nonneg=True,
                        )
@@ -129,33 +106,27 @@ class RTEDModel(DCOPFModel):
         self.rbu = Constraint(name='rbu',
                               info='RegUp reserve balance',
                               e_str='gs @ pru - du',
-                              type='eq',
-                              )
+                              type='eq',)
         self.rbd = Constraint(name='rbd',
                               info='RegDn reserve balance',
                               e_str='gs @ prd - dd',
-                              type='eq',
-                              )
+                              type='eq',)
         self.rru = Constraint(name='rru',
                               info='RegUp reserve ramp',
                               e_str='pg + pru - pmax',
-                              type='uq',
-                              )
+                              type='uq',)
         self.rrd = Constraint(name='rrd',
                               info='RegDn reserve ramp',
                               e_str='-pg + prd - pmin',
-                              type='uq',
-                              )
+                              type='uq',)
         self.rgu = Constraint(name='rgu',
                               info='ramp up limit of generator output',
                               e_str='pg - pg0 - R10',
-                              type='uq',
-                              )
+                              type='uq',)
         self.rgd = Constraint(name='rgd',
                               info='ramp down limit of generator output',
                               e_str='-pg + pg0 - R10',
-                              type='uq',
-                              )
+                              type='uq',)
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
         self.obj.e_str = 'sum(c2 * pg**2 + c1 * pg + ug * c0 + cru * pru + crd * prd)'

@@ -371,7 +371,14 @@ class NumHstack(NumOp):
 
     @property
     def v0(self):
-        return self.fun([self.u.v[:, np.newaxis]] * self.ref.shape[1],
+        nc = 1
+        if hasattr(self.ref, "shape"):
+            nc = self.ref.shape[1]
+        elif isinstance(self.ref.v, (list, tuple)):
+            nc = len(self.ref.v)
+        else:
+            raise AttributeError(f"{self.rtn.class_name}: ref {self.ref.name} has no attribute shape nor length.")
+        return self.fun([self.u.v[:, np.newaxis]] * nc,
                         **self.args)
 
 

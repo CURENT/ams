@@ -236,8 +236,7 @@ class System(andes_System):
         """
         Set the owner for routine attributes: ``RParam``, ``Var``, and ``RBaseService``.
         """
-        mat_name = ['pd1', 'pd2', 'PTDF1', 'PTDF2', 'zl1', 'zl2',
-                    'ptdf', 'Cft', 'Cg', 'pd', 'qd']
+        mat_name = ['PTDF', 'Cft', 'Cg', 'pd', 'qd']
         for item_name, item in items.items():
             if item.model in self.groups.keys():
                 item.is_group = True
@@ -433,37 +432,22 @@ class System(andes_System):
         redBus = [int(bus) if isinstance(bus, (int, float)) else bus for bus in all_bus if bus not in gen_bus]
 
         # Restrucrue PQ load value to match gen bus pattern
-        # FIXME: if we need sparse matrix storage?
-        # FIXME: the value can be wrong if user modified Ppf or Qpf in ANDES
-        idx_PD1 = self.PQ.find_idx(keys="bus", values=regBus, allow_none=True, default=None)
-        idx_PD2 = self.PQ.find_idx(keys="bus", values=redBus, allow_none=True, default=None)
-        PD1 = self.PQ.get(src='p0', attr='v', idx=idx_PD1)
-        PD1 = np.array(PD1)
-        PD2 = self.PQ.get(src='p0', attr='v', idx=idx_PD2)
-        PD2 = np.array(PD2)
 
-        # load zone information
-        zl1 = self.PQ.get(src='zone', attr='v', idx=idx_PD1, allow_none=True, default=None)
-        zl2 = self.PQ.get(src='zone', attr='v', idx=idx_PD2, allow_none=True, default=None)
-
-        # reorganize PTDF matrix
-        PTDF1, PTDF2, PTDF, Cft = self.mats.make()
+        # PTDF matrix
+        PTDF, Cft = self.mats.make()
 
         # node load
         idx_PD = self.PQ.find_idx(keys="bus", values=all_bus, allow_none=True, default=None)
-        PD = self.PQ.get(src='p0', attr='v', idx=idx_PD)
-        QD = self.PQ.get(src='q0', attr='v', idx=idx_PD)
+        PD = np.array(self.PQ.get(src='p0', attr='v', idx=idx_PD))
+        QD = np.array(self.PQ.get(src='q0', attr='v', idx=idx_PD))
 
         row, col = np.meshgrid(all_bus, gen_bus)
         # TODO: sparsity?
         Cg = (row == col).astype(int)
 
         self.mat = OrderedDict([
-            ('pd1', PD1), ('pd2', PD2),
             ('pd', PD), ('qd', QD),
-            ('PTDF1', PTDF1), ('PTDF2', PTDF2),
-            ('ptdf', PTDF),
-            ('zl1', zl1), ('zl2', zl2),
+            ('PTDF', PTDF),
             ('Cft', Cft), ('Cg', Cg),
         ])
 

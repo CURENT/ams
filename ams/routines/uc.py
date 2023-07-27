@@ -81,7 +81,10 @@ class UCModel(EDModel):
         self.info = 'unit commitment'
         self.type = 'DCUC'
         for ele in ['pb', 'lub', 'llb', 'rgu', 'rgd']:
-            delattr(self, ele)
+            try:
+                delattr(self, ele)
+            except AttributeError:
+                pass
         # --- vars ---
         self.ugd = Var(info='commitment decision',
                        name='ugd',
