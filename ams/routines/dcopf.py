@@ -153,7 +153,9 @@ class DCOPFBase(RoutineModel):
                     idx = owner.idx.v
                 else:
                     continue
-                owner.set(src=var.src, attr='v', idx=idx, value=var.v)
+                # NOTE: only unpack the variables that are in the model or group
+                if var.src in owner.__dict__.keys():
+                    owner.set(src=var.src, attr='v', idx=idx, value=var.v)
         self.obj.v = self.om.obj.value
         self.system.recent = self.system.routines[self.class_name]
         return True
