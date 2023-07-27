@@ -226,11 +226,10 @@ class DOPFModel(DOPFBase):
                               )
 
         # --- objective ---
-        # TODO: need a conversion from pn to pg
         self.obj = Objective(name='tc',
                              info='total cost [experiment]',
                              unit='$',
-                             e_str='sum(pn)',
+                             e_str='sum(c2 * pg**2 + c1 * pg + ug * c0)',
                              sense='min',)
 
 
