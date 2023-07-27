@@ -46,21 +46,21 @@ class DCOPFData(RoutineData):
                          unit=r'$',
                          model='GCost',)
         # --- generator limit ---
-        self.pmax = RParam(info='generator maximum active power (system base)',
+        self.pmax = RParam(info='Gen maximum active power (system base)',
                            name='pmax',
                            tex_name=r'p_{max}',
                            unit='p.u.',
                            model='StaticGen',)
-        self.pmin = RParam(info='generator minimum active power (system base)',
+        self.pmin = RParam(info='Gen minimum active power (system base)',
                            name='pmin',
                            tex_name=r'p_{min}',
                            unit='p.u.',
                            model='StaticGen',)
-        self.Cg = RParam(info='connection matrix for gen to bus',
+        self.Cg = RParam(info='connection matrix for Gen and Bus',
                          name='Cg',
                          tex_name=r'C_{g}',)
         # --- load ---
-        self.pd = RParam(info='active power demand connected to Bus (system base)',
+        self.pd = RParam(info='active power demand (system base)',
                          name='pd',
                          tex_name=r'p_{d}',
                          unit='p.u.',)
@@ -163,7 +163,7 @@ class DCOPFModel(DCOPFBase):
         self.info = 'DC Optimal Power Flow'
         self.type = 'DCED'
         # --- vars ---
-        self.pg = Var(info='active power generation (system base)',
+        self.pg = Var(info='Gen active power (system base)',
                       unit='p.u.', name='pg', src='p',
                       tex_name=r'p_{g}',
                       model='StaticGen',
@@ -179,10 +179,10 @@ class DCOPFModel(DCOPFBase):
                                info='nodal power injection',
                                e_str='Cg@(pn - pd) - pg',
                                type='eq',)
-        self.lub = Constraint(name='lub', info='line limits upper bound',
+        self.lub = Constraint(name='lub', info='Line limits upper bound',
                               e_str='PTDF @ (pn - pd) - rate_a',
                               type='uq',)
-        self.llb = Constraint(name='llb', info='line limits lower bound',
+        self.llb = Constraint(name='llb', info='Line limits lower bound',
                               e_str='- PTDF @ (pn - pd) - rate_a',
                               type='uq',)
         # --- objective ---

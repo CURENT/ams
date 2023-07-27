@@ -29,7 +29,7 @@ class ACOPFData(DCOPFData):
 
     def __init__(self):
         DCOPFData.__init__(self)
-        self.qd = RParam(info='reactive power load in system base',
+        self.qd = RParam(info='reactive power demand (system base)',
                          name='qd',
                          src='q0',
                          tex_name=r'q_{d}',
@@ -139,14 +139,14 @@ class ACOPFModel(ACOPFBase):
         self.info = 'AC Optimal Power Flow'
         self.type = 'ACED'
         # --- bus ---
-        self.aBus = Var(info='bus voltage angle',
+        self.aBus = Var(info='Bus voltage angle',
                         unit='rad',
                         name='aBus',
                         src='a',
                         tex_name=r'a_{Bus}',
                         model='Bus',
                         )
-        self.vBus = Var(info='bus voltage magnitude',
+        self.vBus = Var(info='Bus voltage magnitude',
                         unit='p.u.',
                         name='vBus',
                         src='v',
@@ -154,14 +154,14 @@ class ACOPFModel(ACOPFBase):
                         model='Bus',
                         )
         # --- gen ---
-        self.pg = Var(info='active power generation',
+        self.pg = Var(info='Gen active power',
                       unit='p.u.',
                       name='pg',
                       src='p',
                       tex_name=r'p_{g}',
                       model='StaticGen',
                       )
-        self.qg = Var(info='reactive power generation',
+        self.qg = Var(info='Gen reactive power',
                       unit='p.u.',
                       name='qg',
                       src='q',

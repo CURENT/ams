@@ -42,7 +42,7 @@ class DOPFData(DCOPFData):
         self.qmin = RParam(info='generator minimum reactive power (system base)',
                            name='qmin', tex_name=r'q_{min}', unit='p.u.',
                            model='StaticGen', src='qmin',)
-        self.Cft = RParam(info='connection matrix for line to bus',
+        self.Cft = RParam(info='connection matrix for Line and Bus',
                           name='Cft', tex_name=r'C_{ft}',)
 
 
@@ -56,7 +56,7 @@ class LDOPFModel(DCOPFModel):
         self.info = 'Linearzied distribution OPF'
         self.type = 'DED'
         # --- vars ---
-        self.qg = Var(info='active power generation (system base)',
+        self.qg = Var(info='Gen reactive power (system base)',
                       name='qg', tex_name=r'q_{g}', unit='p.u.',
                       model='StaticGen', src='q',
                       lb=self.qmin, ub=self.qmax,)
@@ -64,7 +64,7 @@ class LDOPFModel(DCOPFModel):
                       name='qn', tex_name=r'q_{n}', unit='p.u.',
                       model='Bus',)
 
-        self.isq = Var(info='square of line current',
+        self.isq = Var(info='square of Line current',
                        name='isq', tex_name=r'i^{2}', unit='p.u.',
                        model='Line',)
         self.lub.e_str = 'isq - rate_a**2'

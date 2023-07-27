@@ -98,7 +98,7 @@ class EDModel(DCOPFModel):
         # --- bus power injection ---
         self.pdR = NumHstack(u=self.pd, ref=self.timeslot,
                              name='pdR', tex_name=r'p_{d,R}',
-                             info='Repeated power demand as 2D matrix, (:, ng)',)
+                             info='Repeated power demand as 2D matrix',)
         self.pinj.e_str = 'Cg @ (pn - pdR) - pg'  # power injection
 
         # --- line limits ---
