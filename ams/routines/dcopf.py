@@ -1,6 +1,8 @@
 """
 OPF routines.
 """
+import logging
+
 from collections import OrderedDict
 import numpy as np
 from scipy.optimize import linprog
@@ -12,6 +14,9 @@ from ams.routines.routine import RoutineData, RoutineModel
 from ams.opt.omodel import Var, Constraint, Objective
 
 
+logger = logging.getLogger(__name__)
+
+
 class DCOPFData(RoutineData):
     """
     DCOPF data.
@@ -20,64 +25,54 @@ class DCOPFData(RoutineData):
     def __init__(self):
         RoutineData.__init__(self)
         # --- generator cost ---
+        self.ug = RParam(info='Gen connection status',
+                         name='ug',
+                         src='u',
+                         tex_name=r'u_{g}',
+                         model='StaticGen',)
         self.c2 = RParam(info='Gen cost coefficient 2',
                          name='c2',
                          tex_name=r'c_{2}',
                          unit=r'$/(p.u.^2)',
-                         owner_name='GCost',
-                         )
+                         model='GCost',)
         self.c1 = RParam(info='Gen cost coefficient 1',
                          name='c1',
                          tex_name=r'c_{1}',
                          unit=r'$/(p.u.)',
-                         owner_name='GCost',
-                         )
+                         model='GCost',)
         self.c0 = RParam(info='Gen cost coefficient 0',
                          name='c0',
                          tex_name=r'c_{0}',
                          unit=r'$',
-                         owner_name='GCost',
-                         )
+                         model='GCost',)
         # --- generator limit ---
-        self.pmax = RParam(info='generator maximum active power (system base)',
+        self.pmax = RParam(info='Gen maximum active power (system base)',
                            name='pmax',
                            tex_name=r'p_{max}',
                            unit='p.u.',
-                           owner_name='StaticGen',
-                           )
-        self.pmin = RParam(info='generator minimum active power (system base)',
+                           model='StaticGen',)
+        self.pmin = RParam(info='Gen minimum active power (system base)',
                            name='pmin',
                            tex_name=r'p_{min}',
                            unit='p.u.',
-                           owner_name='StaticGen',
-                           )
+                           model='StaticGen',)
+        self.Cg = RParam(info='connection matrix for Gen and Bus',
+                         name='Cg',
+                         tex_name=r'C_{g}',)
         # --- load ---
-        # NOTE: following two parameters are temporary solution
-        self.pd1 = RParam(info='active power load on gen bus',
-                          name='pd1',
-                          tex_name=r'p_{d1}',
-                          unit='p.u.',
-                          )
-        self.pd2 = RParam(info='active power load on non-gen bus',
-                          name='pd2',
-                          tex_name=r'p_{d2}',
-                          unit='p.u.',
-                          )
+        self.pd = RParam(info='active power demand (system base)',
+                         name='pd',
+                         tex_name=r'p_{d}',
+                         unit='p.u.',)
         # --- line ---
         self.rate_a = RParam(info='long-term flow limit flow limit',
                              name='rate_a',
                              tex_name=r'R_{ATEA}',
                              unit='MVA',
-                             owner_name='Line',
-                             )
-        self.PTDF1 = RParam(info='PTDF matrix for gen bus',
-                            name='PTDF1',
-                            tex_name=r'P_{TDF1}',
-                            )
-        self.PTDF2 = RParam(info='PTDF matrix for non-gen bus',
-                            name='PTDF2',
-                            tex_name=r'P_{TDF2}',
-                            )
+                             model='Line',)
+        self.PTDF = RParam(info='Power transfer distribution factor matrix',
+                           name='PTDF',
+                           tex_name=r'P_{TDF}',)
 
 
 class DCOPFBase(RoutineModel):
@@ -126,7 +121,7 @@ class DCOPFBase(RoutineModel):
         kwargs : keywords, optional
             Additional solver specific arguments. See CVXPY documentation for details.
         """
-        RoutineModel.run(self, **kwargs)
+        return RoutineModel.run(self, **kwargs)
 
     def unpack(self, **kwargs):
         """
@@ -137,17 +132,22 @@ class DCOPFBase(RoutineModel):
             ovar = getattr(self.om, raname)
             var.v = getattr(ovar, 'value')
             # --- copy results from routine algeb into system algeb ---
-            if var.owner_name is None:          # if no owner
+            if var.model is None:          # if no owner
+                continue
+            if var.src is None:            # if no source
                 continue
             else:
-                owner = getattr(self.system, var.owner_name)
                 try:
-                    idx = owner.get_idx()
+                    idx = var.owner.get_idx()
                 except AttributeError:
-                    idx = owner.idx.v
+                    idx = var.owner.idx.v
                 else:
-                    continue
-                owner.set(src=var.src, attr='v', idx=idx, value=var.v)
+                    pass
+                # NOTE: only unpack the variables that are in the model or group
+                try:
+                    var.owner.set(src=var.src, attr='v', idx=idx, value=var.v)
+                except KeyError:
+                    pass
         self.obj.v = self.om.obj.value
         self.system.recent = self.system.routines[self.class_name]
         return True
@@ -163,35 +163,32 @@ class DCOPFModel(DCOPFBase):
         self.info = 'DC Optimal Power Flow'
         self.type = 'DCED'
         # --- vars ---
-        self.pg = Var(info='active power generation (system base)',
-                      unit='p.u.',
-                      name='pg',
-                      src='p',
+        self.pg = Var(info='Gen active power (system base)',
+                      unit='p.u.', name='pg', src='p',
                       tex_name=r'p_{g}',
-                      owner_name='StaticGen',
-                      lb=self.pmin,
-                      ub=self.pmax,
-                      )
+                      model='StaticGen',
+                      lb=self.pmin, ub=self.pmax,)
+        self.pn = Var(info='Bus active power injection (system base)',
+                      unit='p.u.', name='pn', tex_name=r'p_{n}',
+                      model='Bus',)
         # --- constraints ---
-        self.pb = Constraint(name='pb',
-                             info='power balance',
-                             e_str='sum(pd1) + sum(pd2) - sum(pg)',
-                             type='eq',
-                             )
-        self.lub = Constraint(name='lub',
-                              info='line limits upper bound',
-                              e_str='PTDF1 @ (pg - pd1) - PTDF2 * pd2 - rate_a',
-                              type='uq',
-                              )
-        self.llb = Constraint(name='llb',
-                              info='line limits lower bound',
-                              e_str='- PTDF1 @ (pg - pd1) + PTDF2 * pd2 - rate_a',
-                              type='uq',
-                              )
+        self.pb = Constraint(name='pb', info='power balance',
+                             e_str='sum(pd) - sum(pg)',
+                             type='eq',)
+        self.pinj = Constraint(name='pinj',
+                               info='nodal power injection',
+                               e_str='Cg@(pn - pd) - pg',
+                               type='eq',)
+        self.lub = Constraint(name='lub', info='Line limits upper bound',
+                              e_str='PTDF @ (pn - pd) - rate_a',
+                              type='uq',)
+        self.llb = Constraint(name='llb', info='Line limits lower bound',
+                              e_str='- PTDF @ (pn - pd) - rate_a',
+                              type='uq',)
         # --- objective ---
         self.obj = Objective(name='tc',
-                             info='total cost',
-                             e_str='sum(c2 * pg**2 + c1 * pg + c0)',
+                             info='total cost', unit='$',
+                             e_str='sum(c2 * pg**2 + c1 * pg + ug * c0)',
                              sense='min',)
 
 
@@ -199,13 +196,8 @@ class DCOPF(DCOPFData, DCOPFModel):
     """
     Standard DC optimal power flow (DCOPF).
 
-    In this model, the power demand ``pd`` is reorganized as ``pd1`` and ``pd2``,
-    where ``pd1`` is the load connected to generator bus and ``pd2`` is the load
-    connected to non-generator bus.
-
-    Similarly, power transfer distribution factor (PTDF) matrix ``PTDF`` is reorganized
-    as ``PTDF1`` and ``PTDF2``, where ``PTDF1`` is the matrix for generator bus
-    and ``PTDF2`` is the matrix for non-generator bus.
+    In this model, the bus injected power ``pn`` is used as internal variable
+    between generator output and load demand.
     """
 
     def __init__(self, system, config):

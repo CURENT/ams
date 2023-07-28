@@ -11,7 +11,7 @@ from andes.utils.misc import elapsed
 
 from ams.routines.routine import RoutineData, RoutineModel
 from ams.opt.omodel import Var, Constraint, Objective
-from ams.solver.pypower.runpf import runpf, rundcpf
+from ams.solver.pypower.runpf import rundcpf
 
 from ams.io.pypower import system2ppc
 from ams.core.param import RParam
@@ -32,21 +32,21 @@ class DCPFlowData(RoutineData):
                         tex_name='x',
                         src='x',
                         unit='p.u.',
-                        owner_name='Line',
+                        model='Line',
                         )
         self.tap = RParam(info="transformer branch tap ratio",
                           name='tap',
                           src='tap',
                           tex_name='t_{ap}',
                           unit='float',
-                          owner_name='Line',
+                          model='Line',
                           )
         self.phi = RParam(info="transformer branch phase shift in rad",
                           name='phi',
                           src='phi',
                           tex_name='\phi',
                           unit='radian',
-                          owner_name='Line',
+                          model='Line',
                           )
 
         # --- load ---
@@ -55,7 +55,7 @@ class DCPFlowData(RoutineData):
                          src='p0',
                          tex_name=r'p_{d}',
                          unit='p.u.',
-                         owner_name='PQ',
+                         model='PQ',
                          )
 
 
@@ -102,7 +102,7 @@ class DCPFlowBase(RoutineModel):
 
         # --- copy results from system algeb into routine algeb ---
         for raname, var in self.vars.items():
-            owner = getattr(system, var.owner_name)  # instance of owner, Model or Group
+            owner = getattr(system, var.model)  # instance of owner, Model or Group
             if var.src is None:          # skip if no source variable is specified
                 continue
             elif hasattr(owner, 'group'):   # if owner is a Model instance
@@ -149,9 +149,14 @@ class DCPFlowBase(RoutineModel):
         _, s = elapsed(t0)
         self.exec_time = float(s.split(' ')[0])
         self.unpack(res)
-        info = f"{self.class_name} completed in {s} with exit code {self.exit_code}."
-        logger.info(info)
-        return self.exit_code
+        if self.exit_code == 0:
+            info = f"{self.class_name} completed in {s} with exit code {self.exit_code}."
+            logger.info(info)
+            return True
+        else:
+            info = f"{self.class_name} failed!"
+            logger.warning(info)
+            return False
 
     def summary(self, **kwargs):
         """
@@ -183,7 +188,7 @@ class DCPFlowModel(DCPFlowBase):
                            name='aBus',
                            src='a',
                            tex_name=r'a_{Bus}',
-                           owner_name='Bus',
+                           model='Bus',
                            )
         # --- gen ---
         self.pg = Var(info='actual active power generation',
@@ -191,7 +196,7 @@ class DCPFlowModel(DCPFlowBase):
                          name='pg',
                          src='p',
                          tex_name=r'p_{g}',
-                         owner_name='StaticGen',
+                         model='StaticGen',
                          )
 
 
@@ -201,7 +206,7 @@ class DCPF(DCPFlowData, DCPFlowModel):
 
     Notes
     -----
-    1. DCPF is solved with PYPOWER ``runpf`` function.
+    1. DCPF is solved with PYPOWER ``rundcpf`` function.
     2. DCPF formulation is not complete yet, but this does not affect the
        results because the data are passed to PYPOWER for solving.
     """

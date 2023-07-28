@@ -9,10 +9,11 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v0.6.6 (2023-xx-xx)
+v0.6.6 (2023-07-27)
 -------------------
 
 - Improve routine reference
+- Add routine ED, LDOPF
 
 v0.6.5 (2023-06-27)
 -------------------

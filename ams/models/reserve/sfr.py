@@ -5,7 +5,6 @@ SFR model.
 from andes.core import (ModelData, IdxParam, NumParam, ExtParam)
 
 from ams.core.model import Model
-from ams.core.service import VarSum
 
 
 class SFRData(ModelData):
@@ -16,12 +15,12 @@ class SFRData(ModelData):
                              info="Zone code",
                              )
         self.du = NumParam(default=0,
-                           info='Zonal RegUp reserve demand',
+                           info='Zonal RegUp reserve demand (system base)',
                            tex_name=r'd_{u}',
                            unit=r'p.u.',
                            )
         self.dd = NumParam(default=0,
-                           info='Zonal RegDown reserve demand',
+                           info='Zonal RegDown reserve demand (system base)',
                            tex_name=r'd_{d}',
                            unit=r'p.u.',
                            )
@@ -31,17 +30,11 @@ class SFR(SFRData, Model):
     """
     Zonal secondary frequency reserve (SFR) model.
 
-    ``Zone`` model is required for this model, and zone code is
-    defined in the ``Bus.zone`` parameter.
+    ``Zone`` model is required for this model, and zone is
+    defined by Param ``Bus.zone``.
     """
 
     def __init__(self, system, config):
         SFRData.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'Reserve'
-
-        self.prs = VarSum(name='prs',
-                          tex_name=r'\sum',
-                          info='Sum matrix of zonal SFR reserve',
-                          indexer=self.zone,
-                          model='StaticGen',)
