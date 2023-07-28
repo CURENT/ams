@@ -92,6 +92,27 @@ class ACTopology(GroupBase):
         self.common_vars.extend(('a', 'v'))
 
 
+class DG(GroupBase):
+    """
+    Distributed generation (small-scale).
+
+    See ANDES Documentation SynGen here for the notes on replacing StaticGen and setting the power
+    ratio parameters.
+
+    Reference:
+
+    [1] ANDES Documentation, SynGen, [Online]
+
+    Available:
+
+    https://docs.andes.app/en/latest/groupdoc/SynGen.html#syngen
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.common_params.extend(('bus', 'fn'))
+
+
 class Cost(GroupBase):
     def __init__(self):
         super().__init__()
@@ -103,6 +124,14 @@ class Collection(GroupBase):
     Collection of topology models
     """
     pass
+
+
+class Horizon(GroupBase):
+    """
+    Time horizon group.
+    """
+    def __init__(self):
+        super().__init__()
 
 
 class Reserve(GroupBase):

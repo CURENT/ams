@@ -218,5 +218,4 @@ def makeBdc(baseMVA, bus, branch):
     Pfinj = b * (-branch[:, SHIFT] * deg2rad)  # injected at the from bus ...
     # Ptinj = -Pfinj                            ## and extracted at the to bus
     Pbusinj = Cft.T * Pfinj  # Pbusinj = Cf * Pfinj + Ct * Ptinj
-
-    return Bbus, Bf, Pbusinj, Pfinj
+    return Bbus, Bf, Pbusinj, Pfinj, Cft

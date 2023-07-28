@@ -83,7 +83,6 @@ class TypeBase:
 
         return out
 
-
     def doc_all(self, export='plain'):
         """
         Return documentation of the type and its routines.
@@ -131,9 +130,29 @@ class DCED(TypeBase):
 
     def __init__(self):
         TypeBase.__init__(self)
-        self.common_rparams.extend(('c2', 'c1', 'c0', 'pmax', 'pmin', 'pd', 'rate_a',))
+        self.common_rparams.extend(('c2', 'c1', 'c0', 'pmax', 'pmin', 'pd', 'ptdf', 'rate_a',))
         self.common_vars.extend(('pg',))
         self.common_constrs.extend(('pb', 'lub', 'llb'))
+
+
+class DCUC(TypeBase):
+    """
+    Type for DC-based unit commitment.
+    """
+
+    def __init__(self):
+        TypeBase.__init__(self)
+        # TODO: add common parameters and variables
+
+
+class DED(TypeBase):
+    """
+    Type for Distributional economic dispatch.
+    """
+
+    def __init__(self):
+        TypeBase.__init__(self)
+        # TODO: add common parameters and variables
 
 
 class ACED(DCED):
@@ -145,13 +164,3 @@ class ACED(DCED):
         DCED.__init__(self)
         self.common_rparams.extend(('qd',))
         self.common_vars.extend(('aBus', 'vBus', 'qg',))
-
-
-class DCUC(TypeBase):
-    """
-    Type for DC-based unit commitment.
-    """
-
-    def __init__(self):
-        TypeBase.__init__(self)
-        # TODO: add common parameters and variables

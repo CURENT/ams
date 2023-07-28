@@ -13,7 +13,7 @@ from andes.utils.func import list_flatten
 from ams.core.documenter import Documenter
 from ams.core.var import Algeb  # NOQA
 from ams.core.param import ExtParam  # NOQA
-from ams.core.service import BaseService, BackRef, VarSum  # NOQA
+from ams.core.service import BaseService, BackRef  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -107,8 +107,7 @@ class Model:
             self.params_ext[key] = value
         elif isinstance(value, BackRef):
             self.services_ref[key] = value
-        elif isinstance(value, VarSum):
-            self.services_sum[key] = value
+            self.services[key] = value
 
     @property
     def class_name(self):

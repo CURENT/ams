@@ -209,7 +209,7 @@ def mpc2system(mpc: dict, system) -> bool:
         system.add('GCost', gen=str(gen),
                    u=1, name=f'GCost_{gcost_idx}',
                    type=type,
-                   startup=startup, shutdown=shutdown,
+                   csu=startup, csd=shutdown,
                    c2=c2, c1=c1, c0=c0
                    )
         gcost_idx += 1
@@ -349,8 +349,8 @@ def system2mpc(system) -> dict:
     if system.GCost.n > 0:
         gencost = mpc['gencost']
         gencost[:, 0] = system.GCost.type.v
-        gencost[:, 1] = system.GCost.startup.v
-        gencost[:, 2] = system.GCost.shutdown.v
+        gencost[:, 1] = system.GCost.csu.v
+        gencost[:, 2] = system.GCost.csd.v
         gencost[:, 3] = 3
         gencost[:, 4] = system.GCost.c2.v / base_mva / base_mva
         gencost[:, 5] = system.GCost.c1.v / base_mva

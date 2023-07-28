@@ -29,12 +29,12 @@ class ACOPFData(DCOPFData):
 
     def __init__(self):
         DCOPFData.__init__(self)
-        self.qd = RParam(info='reactive power load in system base',
+        self.qd = RParam(info='reactive power demand (system base)',
                          name='qd',
                          src='q0',
                          tex_name=r'q_{d}',
                          unit='p.u.',
-                         owner_name='PQ',
+                         model='PQ',
                          )
 
 
@@ -85,7 +85,7 @@ class ACOPFBase(RoutineModel):
 
         # --- copy results from system algeb into routine algeb ---
         for raname, var in self.vars.items():
-            owner = getattr(system, var.owner_name)  # instance of owner, Model or Group
+            owner = getattr(system, var.model)  # instance of owner, Model or Group
             if var.src is None:          # skip if no source variable is specified
                 continue
             elif hasattr(owner, 'group'):   # if owner is a Model instance
@@ -119,9 +119,14 @@ class ACOPFBase(RoutineModel):
         _, s = elapsed(t0)
         self.exec_time = float(s.split(' ')[0])
         self.unpack(res)
-        info = f"{self.class_name} completed in {s} with exit code {self.exit_code}."
-        logger.info(info)
-        return self.exit_code
+        if self.exit_code == 0:
+            info = f"{self.class_name} completed in {s} with exit code {self.exit_code}."
+            logger.info(info)
+            return True
+        else:
+            info = f"{self.class_name} failed!"
+            logger.error(info)
+            return False
 
 
 class ACOPFModel(ACOPFBase):
@@ -134,34 +139,34 @@ class ACOPFModel(ACOPFBase):
         self.info = 'AC Optimal Power Flow'
         self.type = 'ACED'
         # --- bus ---
-        self.aBus = Var(info='bus voltage angle',
+        self.aBus = Var(info='Bus voltage angle',
                         unit='rad',
                         name='aBus',
                         src='a',
                         tex_name=r'a_{Bus}',
-                        owner_name='Bus',
+                        model='Bus',
                         )
-        self.vBus = Var(info='bus voltage magnitude',
+        self.vBus = Var(info='Bus voltage magnitude',
                         unit='p.u.',
                         name='vBus',
                         src='v',
                         tex_name=r'v_{Bus}',
-                        owner_name='Bus',
+                        model='Bus',
                         )
         # --- gen ---
-        self.pg = Var(info='active power generation',
+        self.pg = Var(info='Gen active power',
                       unit='p.u.',
                       name='pg',
                       src='p',
                       tex_name=r'p_{g}',
-                      owner_name='StaticGen',
+                      model='StaticGen',
                       )
-        self.qg = Var(info='reactive power generation',
+        self.qg = Var(info='Gen reactive power',
                       unit='p.u.',
                       name='qg',
                       src='q',
                       tex_name=r'q_{g}',
-                      owner_name='StaticGen',
+                      model='StaticGen',
                       )
         # --- constraints ---
         self.pb = Constraint(name='pb',
@@ -172,7 +177,7 @@ class ACOPFModel(ACOPFBase):
         # TODO: ACOPF formulation
         # --- objective ---
         self.obj = Objective(name='tc',
-                             info='total generation cost',
+                             info='total cost',
                              e_str='sum(c2 * pg**2 + c1 * pg + c0)',
                              sense='min',)
 
@@ -184,7 +189,8 @@ class ACOPF(ACOPFData, ACOPFModel):
     Notes
     -----
     1. ACOPF is solved with PYPOWER ``runopf`` function.
-    2. ACOPF formulation is not complete yet, but this does not affect the results
+    2. ACOPF formulation in AMS style is NOT DONE YET,
+       but this does not affect the results
        because the data are passed to PYPOWER for solving.
     """
 

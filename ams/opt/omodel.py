@@ -24,7 +24,83 @@ import cvxpy as cp
 logger = logging.getLogger(__name__)
 
 
-class Var(Algeb):
+class OptzBase:
+    """
+    Base class for optimization elements, e.g., Var and Constraint.
+
+    Parameters
+    ----------
+    name : str, optional
+        Name.
+    info : str, optional
+        Descriptive information
+
+    Attributes
+    ----------
+    rtn : ams.routines.Routine
+        The owner routine instance.
+    """
+
+    def __init__(self,
+                 name: Optional[str] = None,
+                 info: Optional[str] = None,
+                 unit: Optional[str] = None,
+                 ):
+        self.om = None
+        self.name = name
+        self.info = info
+        self.unit = unit
+        self.is_disabled = False
+
+    def parse(self):
+        """
+        Parse the object.
+        """
+        raise NotImplementedError
+
+    @property
+    def class_name(self):
+        """
+        Return the class name
+        """
+        return self.__class__.__name__
+
+    @property
+    def n(self):
+        """
+        Return the number of elements.
+        """
+        if self.owner is None:
+            return len(self.v)
+        else:
+            return self.owner.n
+
+    @property
+    def shape(self):
+        """
+        Return the shape.
+        """
+        rtn = self.om.rtn
+        if rtn.is_setup:
+            return self.om.__dict__[self.name].shape
+        else:
+            logger.warning(f'<{rtn.class_name}> is not setup yet.')
+            return None
+
+    @property
+    def size(self):
+        """
+        Return the size.
+        """
+        rtn = self.om.rtn
+        if rtn.is_setup:
+            return self.om.__dict__[self.name].size
+        else:
+            logger.warning(f'<{rtn.class_name}> is not setup yet.')
+            return None
+
+
+class Var(Algeb, OptzBase):
     """
     Base class for variables used in a routine.
 
@@ -43,12 +119,14 @@ class Var(Algeb):
         will be the symbol name to be used in expressions.
     src : str, optional
         Source variable name. If is None, the value of `name` will be used.
-    owner_name : str, optional
+    model : str, optional
         Name of the owner model or group.
     lb : str, optional
         Lower bound
     ub : str, optional
         Upper bound
+    horizon : ams.routines.RParam, optional
+        Horizon idx.
     nonneg : bool, optional
         Non-negative variable
     nonpos : bool, optional
@@ -82,6 +160,8 @@ class Var(Algeb):
         variable address
     v : array-like
         local-storage of the variable value
+    rtn : ams.routines.Routine
+        The owner routine instance.
     """
 
     def __init__(self,
@@ -90,9 +170,10 @@ class Var(Algeb):
                  info: Optional[str] = None,
                  src: Optional[str] = None,
                  unit: Optional[str] = None,
-                 owner_name: Optional[str] = None,
+                 model: Optional[str] = None,
                  lb: Optional[str] = None,
                  ub: Optional[str] = None,
+                 horizon: Optional[RParam] = None,
                  nonneg: Optional[bool] = False,
                  nonpos: Optional[bool] = False,
                  complex: Optional[bool] = False,
@@ -107,13 +188,15 @@ class Var(Algeb):
                  pos: Optional[bool] = False,
                  neg: Optional[bool] = False,
                  ):
-        super().__init__(name=name, tex_name=tex_name, info=info, unit=unit)
+        Algeb.__init__(self, name=name, tex_name=tex_name, info=info, unit=unit)
+        OptzBase.__init__(self, name=name, info=info, unit=unit)
         self.src = name if (src is None) else src
         self.is_group = False
-        self.owner_name = owner_name  # indicate if this variable is a group variable
+        self.model = model  # indicate if this variable is a group variable
         self.owner = None  # instance of the owner model or group
         self.lb = lb
         self.ub = ub
+        self.horizon = horizon
 
         self.config = Config(name=self.class_name)  # `config` that can be exported
 
@@ -149,12 +232,54 @@ class Var(Algeb):
         else:
             return self.owner.idx.v
 
-    @property
-    def n(self):
+    def parse(self):
         """
-        Return the number of variables.
+        Parse the variable.
         """
-        return self.owner.n
+        om = self.om
+        sub_map = self.om.rtn.syms.sub_map
+        # only used for CVXPY
+        # NOTE: Config only allow lower case letters, do a conversion here
+        config = {}
+        for k, v in self.config.as_dict().items():
+            if k == 'psd':
+                config['PSD'] = v
+            elif k == 'nsd':
+                config['NSD'] = v
+            elif k == 'bool':
+                config['boolean'] = v
+            else:
+                config[k] = v
+        # NOTE: number of rows is the size of the source variable
+        nr = self.owner.n
+        nc = 0
+        if self.horizon:
+            # NOTE: numer of columns is the horizon if exists
+            nc = int(self.horizon.n)
+            shape = (nr, nc)
+        else:
+            shape = (nr,)
+        code_var = f"tmp=var({shape}, **config)"
+        for pattern, replacement, in sub_map.items():
+            code_var = re.sub(pattern, replacement, code_var)
+        exec(code_var)
+        exec(f"om.vars[self.name] = tmp")
+        exec(f'setattr(om, self.name, om.vars["{self.name}"])')
+        if self.lb:
+            lv = self.lb.owner.get(src=self.lb.name, idx=self.get_idx(), attr='v')
+            u = self.lb.owner.get(src='u', idx=self.get_idx(), attr='v')
+            elv = u * lv  # element-wise lower bound considering online status
+            # fit variable shape if horizon exists
+            elv = np.tile(elv, (nc, 1)).T if nc > 0 else elv
+            exec("om.constrs[self.lb.name] = tmp >= elv")
+        if self.ub:
+            uv = self.ub.owner.get(src=self.ub.name, idx=self.get_idx(), attr='v')
+            u = self.lb.owner.get(src='u', idx=self.get_idx(), attr='v')
+            euv = u * uv  # element-wise upper bound considering online status
+            # fit variable shape if horizon exists
+            euv = np.tile(euv, (nc, 1)).T if nc > 0 else euv
+            exec("om.constrs[self.ub.name] = tmp <= euv")
+        return True
 
     def __repr__(self):
         if self.owner.n == 0:
@@ -173,15 +298,8 @@ class Var(Algeb):
 
         return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}, {span}'
 
-    @property
-    def class_name(self):
-        """
-        Return the class name
-        """
-        return self.__class__.__name__
 
-
-class Constraint:
+class Constraint(OptzBase):
     """
     Base class for constraints.
 
@@ -211,6 +329,10 @@ class Constraint:
         Additional information about the constraint.
     type : str
         Type of the constraint.
+    rtn : ams.routines.Routine
+        The owner routine instance.
+    is_disabled : bool
+        Flag indicating if the constraint is disabled, False by default.
 
     Notes
     -----
@@ -224,25 +346,48 @@ class Constraint:
                  info: Optional[str] = None,
                  type: Optional[str] = 'uq',
                  ):
-        self.name = name
+        OptzBase.__init__(self, name=name, info=info)
         self.e_str = e_str
-        self.info = info
         self.type = type  # TODO: determine constraint type
+        self.is_disabled = False
         # TODO: add constraint info from solver
 
-    @property
-    def class_name(self):
+    def parse(self, show_code=False):
         """
-        Return the class name
+        Parse the constraint.
+
+        Parameters
+        ----------
+        show_code : bool, optional
+            Flag indicating if the code should be shown, False by default.
         """
-        return self.__class__.__name__
+        sub_map = self.om.rtn.syms.sub_map
+        if self.is_disabled:
+            return True
+        om = self.om
+        code_constr = self.e_str
+        for pattern, replacement in sub_map.items():
+            code_constr = re.sub(pattern, replacement, code_constr)
+        if self.type == 'uq':
+            code_constr = f'{code_constr} <= 0'
+        elif self.type == 'eq':
+            code_constr = f'{code_constr} == 0'
+        else:
+            raise ValueError(f'Constraint type {self.type} is not supported.')
+        code_constr = f'om.constrs["{self.name}"]=' + code_constr
+        logger.debug(f"Set constrs {self.name}: {self.e_str}")
+        if show_code:
+            logger.info(f"Code Constr: {code_constr}")
+        exec(code_constr)
+        exec(f'setattr(om, self.name, om.constrs["{self.name}"])')
+        return True
 
     def __repr__(self):
-        name = self.name if self.name is not None else 'Unnamed constr'
-        return f"{name}: {self.e_str}"
+        enabled = 'ON' if self.name in self.om.constrs else 'OFF'
+        return f"[{enabled}]: {self.e_str}"
 
 
-class Objective:
+class Objective(OptzBase):
     """
     Base class for objective functions.
 
@@ -275,25 +420,46 @@ class Objective:
     v : NoneType
         The value of the objective function. It needs to be set through
         computation.
+    rtn : ams.routines.Routine
+        The owner routine instance.
     """
 
     def __init__(self,
                  name: Optional[str] = None,
                  e_str: Optional[str] = None,
                  info: Optional[str] = None,
+                 unit: Optional[str] = None,
                  sense: Optional[str] = 'min'):
-        self.name = name
+        OptzBase.__init__(self, name=name, info=info, unit=unit)
         self.e_str = e_str
-        self.info = info
         self.sense = sense
         self.v = None  # objective value
 
-    @property
-    def class_name(self):
+    def parse(self, show_code=False):
         """
-        Return the class name
+        Parse the objective function.
+
+        Parameters
+        ----------
+        show_code : bool, optional
+            Flag indicating if the code should be shown, False by default.
         """
-        return self.__class__.__name__
+        om = self.om
+        sub_map = self.om.rtn.syms.sub_map
+        code_obj = self.e_str
+        for pattern, replacement, in sub_map.items():
+            code_obj = re.sub(pattern, replacement, code_obj)
+        if self.sense == 'min':
+            code_obj = f'cp.Minimize({code_obj})'
+        elif self.sense == 'max':
+            code_obj = f'cp.Maximize({code_obj})'
+        else:
+            raise ValueError(f'Objective sense {self.sense} is not supported.')
+        code_obj = 'om.obj=' + code_obj
+        if show_code:
+            logger.info(f"Code Obj: {code_obj}")
+        exec(code_obj)
+        return True
 
     def __repr__(self):
         if self.name is not None:
@@ -331,14 +497,14 @@ class OModel:
         Number of decision variables.
     m: int
         Number of constraints.
-    
+
     TODO:
     - Add _check_attribute and _register_attribute for vars, constrs, and obj.
     - Add support for user-defined vars, constrs, and obj.
     """
 
     def __init__(self, routine):
-        self.routine = routine
+        self.rtn = routine
         self.mdl = None
         self.vars = OrderedDict()
         self.constrs = OrderedDict()
@@ -347,37 +513,53 @@ class OModel:
         self.m = 0  # number of constraints
 
     @timer
-    def setup(self):
+    def setup(self, show_code=False):
         """
         Setup the optimziation model from symbolic description.
 
         Decision variables are the ``Var`` of a routine.
-        For example, the power outputs ``pg`` of routine ``DCOPF``.
-        """
-        self.routine.syms.generate_symbols()
-        # --- add decision variables ---
-        for ovname, ovar in self.routine.vars.items():
-            self.parse_var(ovar=ovar,
-                           sub_map=self.routine.syms.sub_map)
-            self.n += ovar.n
-        # --- parse constraints ---
-        for cname, constr in self.routine.constrs.items():
-            self.parse_constr(constr=constr,
-                              sub_map=self.routine.syms.sub_map)
-            self.m += self.constrs[cname].size
+        For example, the power outputs ``pg`` of routine ``DCOPF``
+        are decision variables.
 
+        Disabled constraints (indicated by attr ``is_disabled``) will not
+        be added to the optimization model.
+
+        Parameters
+        ----------
+        show_code : bool, optional
+            Flag indicating if the code should be shown, False by default.
+        """
+        rtn = self.rtn
+        rtn.syms.generate_symbols()
+        # --- add decision variables ---
+        for ovar in rtn.vars.values():
+            ovar.parse()
+        # --- add constraints ---
+        for constr in rtn.constrs.values():
+            constr.parse(show_code=show_code)
         # --- parse objective functions ---
-        if self.routine.obj is not None:
-            self.parse_obj(obj=self.routine.obj,
-                           sub_map=self.routine.syms.sub_map)
+        if rtn.type == 'PF':
+            # NOTE: power flow type has no objective function
+            pass
+        elif rtn.obj is not None:
+            rtn.obj.parse(show_code=show_code)
             # --- finalize the optimziation formulation ---
             code_mdl = f"problem(self.obj, [constr for constr in self.constrs.values()])"
-            for pattern, replacement, in self.routine.syms.sub_map.items():
+            for pattern, replacement in self.rtn.syms.sub_map.items():
                 code_mdl = re.sub(pattern, replacement, code_mdl)
             code_mdl = "self.mdl=" + code_mdl
             exec(code_mdl)
-        else:
-            logger.warning(f"{self.routine.class_name} has no objective function.")
+
+        # --- count ---
+        n_list = [cpvar.size for cpvar in self.vars.values()]
+        self.n = np.sum(n_list)  # number of decision variables
+        m_list = [cpconstr.size for cpconstr in self.constrs.values()]
+        self.m = np.sum(m_list)  # number of constraints
+
+        if rtn.type != 'PF' and rtn.obj is None:
+            logger.warning(f"{rtn.class_name} has no objective function.")
+            return False
+
         return True
 
     @property
@@ -386,102 +568,3 @@ class OModel:
         Return the class name
         """
         return self.__class__.__name__
-
-    def parse_var(self,
-                  ovar: Var,
-                  sub_map: OrderedDict,
-                  ):
-        """
-        Parse the decision variables from symbolic dispatch model.
-
-        Parameters
-        ----------
-        var : Var
-            The routine Var
-        sub_map : OrderedDict
-            A dictionary of substitution map, generated by symprocessor.
-        """
-        # only used for CVXPY
-        # NOTE: Config only allow lower case letters, do a conversion here
-        config = {}
-        for k, v in ovar.config.as_dict().items():
-            if k == 'psd':
-                config['PSD'] = v
-            elif k == 'nsd':
-                config['NSD'] = v
-            elif k == 'bool':
-                config['boolean'] = v
-            else:
-                config[k] = v
-        code_var = "tmp=var(ovar.n, **config)"
-        for pattern, replacement, in sub_map.items():
-            code_var = re.sub(pattern, replacement, code_var)
-        exec(code_var)
-        exec("setattr(self, ovar.name, tmp)")
-        exec("self.vars[ovar.name] = tmp")
-        if ovar.lb:
-            lv = ovar.lb.owner.get(src=ovar.lb.name, idx=ovar.get_idx(), attr='v')
-            u = ovar.lb.owner.get(src='u', idx=ovar.get_idx(), attr='v')
-            elv = u * lv
-            exec("self.constrs[ovar.lb.name] = tmp >= elv")
-            self.m += ovar.lb.owner.n
-        if ovar.ub:
-            uv = ovar.ub.owner.get(src=ovar.ub.name, idx=ovar.get_idx(), attr='v')
-            u = ovar.lb.owner.get(src='u', idx=ovar.get_idx(), attr='v')
-            euv = u * uv
-            exec("self.constrs[ovar.ub.name] = tmp <= euv")
-            self.m += ovar.ub.owner.n
-
-    def parse_obj(self,
-                  obj: Objective,
-                  sub_map: OrderedDict,
-                  ):
-        """
-        Parse the objective function from symbolic dispatch model.
-
-        Parameters
-        ----------
-        obj : Objective
-            The routine Objective
-        sub_map : OrderedDict
-            A dictionary of substitution map, generated by symprocessor.
-        """
-        code_obj = obj.e_str
-        for pattern, replacement, in sub_map.items():
-            code_obj = re.sub(pattern, replacement, code_obj)
-        if obj.sense == 'min':
-            code_obj = f'cp.Minimize({code_obj})'
-        elif obj.sense == 'max':
-            code_obj = f'cp.Maximize({code_obj})'
-        else:
-            raise ValueError(f'Objective sense {obj.sense} is not supported.')
-        code_obj = 'self.obj=' + code_obj
-        exec(code_obj)
-        return True
-
-    def parse_constr(self,
-                     constr: Constraint,
-                     sub_map: OrderedDict,
-                     ):
-        """
-        Parse the constraint from symbolic dispatch model.
-
-        Parameters
-        ----------
-        constr : Constraint
-            The routine Constraint
-        sub_map : OrderedDict
-            A dictionary of substitution map, generated by symprocessor.
-        """
-        code_constr = constr.e_str
-        for pattern, replacement in sub_map.items():
-            code_constr = re.sub(pattern, replacement, code_constr)
-        if constr.type == 'uq':
-            code_constr = f'{code_constr} <= 0'
-        elif constr.type == 'eq':
-            code_constr = f'{code_constr} == 0'
-        else:
-            raise ValueError(f'Objective sense {self.routine.obj.sense} is not supported.')
-        code_constr = f'self.constrs["{constr.name}"]=' + code_constr
-        logger.debug(f"Set constrs {constr.name}: {code_constr}")
-        exec(code_constr)

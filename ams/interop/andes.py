@@ -488,6 +488,9 @@ class Dynamic:
             # TODO:
             is_dgu_set = False
             for mname, mdl in sa.models.items():
+                # NOTE: skip models without idx: ``Summary``
+                if not hasattr(mdl, 'idx'):
+                    continue
                 if mdl.n == 0:
                     continue
                 # a. dynamic generator online status
@@ -534,6 +537,9 @@ class Dynamic:
         else:
             logger.debug(f'Sending results to <pflow> models...')
             for mname, mdl in sp.models.items():
+                # NOTE: skip models without idx: ``Summary``
+                if not hasattr(mdl, 'idx'):
+                    continue
                 if mdl.n == 0:
                     continue
                 idx = mdl.idx.v
@@ -592,6 +598,9 @@ class Dynamic:
             # 1) receive models online status
             is_dgu_set = False
             for mname, mdl in self.amsys.models.items():
+                # NOTE: skip models without idx: ``Summary``
+                if not hasattr(mdl, 'idx'):
+                    continue
                 if mdl.n == 0:
                     continue
                 # a. dynamic generator online status
@@ -634,6 +643,9 @@ class Dynamic:
         else:
             logger.debug(f'Receiving <pflow> results to {sp.recent.class_name}...')
             for mname, mdl in sp.models.items():
+                # NOTE: skip models without idx: ``Summary``
+                if not hasattr(mdl, 'idx'):
+                    continue
                 if mdl.n == 0:
                     continue
                 # 1) receive models online status

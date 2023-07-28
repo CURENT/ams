@@ -27,6 +27,7 @@ from ams.models import file_classes
 from ams.routines import all_routines
 from ams.utils.paths import get_config_path
 from ams.core import Algeb
+from ams.core.service import RBaseService
 from ams.core.matprocessor import MatProcessor
 from ams.interop.andes import to_andes
 
@@ -232,13 +233,24 @@ class System(andes_System):
             self.types[name] = self.__dict__[name]
 
     def _collect_group_data(self, items):
+        """
+        Set the owner for routine attributes: ``RParam``, ``Var``, and ``RBaseService``.
+        """
+        mat_name = ['PTDF', 'Cft', 'Cg', 'pd', 'qd']
         for item_name, item in items.items():
-            # logger.debug(f'RVar {item_name} has owner {item.owner_name} in size {item.owner.n}')
-            if item.owner_name in self.groups.keys():
+            if item.model in self.groups.keys():
                 item.is_group = True
-                item.owner = self.groups[item.owner_name]
-            elif item.owner_name in self.models.keys():
-                item.owner = self.models[item.owner_name]
+                item.owner = self.groups[item.model]
+            elif item.model in self.models.keys():
+                item.owner = self.models[item.model]
+            elif item_name in mat_name:
+                # FIXME: hard-coded, should be improved
+                pass
+            else:
+                logger.debug(f'item_name: {item_name}')
+                msg = f'Model indicator \'{item.model}\' of <{item.rtn.class_name}.{item_name}>'
+                msg += f' is not a model or group. Likely a modeling error.'
+                logger.warning(msg)
 
     def import_routines(self):
         """
@@ -272,8 +284,6 @@ class System(andes_System):
                     # Collect vars
                     vars = getattr(rtn, 'vars')
                     self._collect_group_data(vars)
-                    # setup numerical optimziation model
-                    # TODO: substitute symbolic expressions with numerical ones
 
     def import_groups(self):
         """
@@ -422,17 +432,23 @@ class System(andes_System):
         redBus = [int(bus) if isinstance(bus, (int, float)) else bus for bus in all_bus if bus not in gen_bus]
 
         # Restrucrue PQ load value to match gen bus pattern
-        idx_PD1 = self.PQ.find_idx(keys="bus", values=regBus, allow_none=True, default=None)
-        idx_PD2 = self.PQ.find_idx(keys="bus", values=redBus, allow_none=True, default=None)
-        PD1 = self.PQ.get(src='p0', attr='v', idx=idx_PD1)
-        PD1 = np.array(PD1)
-        PD2 = self.PQ.get(src='p0', attr='v', idx=idx_PD2)
-        PD2 = np.array(PD2)
-        PTDF1, PTDF2 = self.mats.rePTDF()
+
+        # PTDF matrix
+        PTDF, Cft = self.mats.make()
+
+        # node load
+        idx_PD = self.PQ.find_idx(keys="bus", values=all_bus, allow_none=True, default=None)
+        PD = np.array(self.PQ.get(src='p0', attr='v', idx=idx_PD))
+        QD = np.array(self.PQ.get(src='q0', attr='v', idx=idx_PD))
+
+        row, col = np.meshgrid(all_bus, gen_bus)
+        # TODO: sparsity?
+        Cg = (row == col).astype(int)
 
         self.mat = OrderedDict([
-            ('pd1', PD1), ('pd2', PD2),
-            ('PTDF1', PTDF1), ('PTDF2', PTDF2),
+            ('pd', PD), ('qd', QD),
+            ('PTDF', PTDF),
+            ('Cft', Cft), ('Cg', Cg),
         ])
 
         # NOTE: initialize om for all routines

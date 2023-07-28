@@ -5,20 +5,21 @@ Module for routine data.
 import logging  # NOQA
 from collections import OrderedDict  # NOQA
 
-import numpy as np
+import numpy as np  # NOQA
 
-from andes.core import Config
-from andes.shared import deg2rad
-from andes.utils.misc import elapsed
-from ams.utils import timer
-from ams.core.param import RParam
-from ams.opt.omodel import OModel, Var, Constraint, Objective
+from andes.core import Config  # NOQA
+from andes.shared import deg2rad  # NOQA
+from andes.utils.misc import elapsed  # NOQA
+from ams.utils import timer  # NOQA
+from ams.core.param import RParam  # NOQA
+from ams.opt.omodel import OModel, Var, Constraint, Objective  # NOQA
 
-from ams.core.symprocessor import SymProcessor
-from ams.core.documenter import RDocumenter
+from ams.core.symprocessor import SymProcessor  # NOQA
+from ams.core.documenter import RDocumenter  # NOQA
+from ams.core.service import RBaseService  # NOQA
 
-from ams.models.group import GroupBase
-from ams.core.model import Model
+from ams.models.group import GroupBase  # NOQA
+from ams.core.model import Model  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,8 @@ class RoutineModel:
                                       ('sys_mva', 'S_{b,sys}'),
                                       ))
         self.syms = SymProcessor(self)  # symbolic processor
+
+        self.services = OrderedDict()  # list out services in a routine
 
         self.vars = OrderedDict()  # list out Vars in a routine
         self.constrs = OrderedDict()
@@ -113,7 +116,8 @@ class RoutineModel:
                 except ValueError:
                     raise ValueError(f'Failed to get value of <{src_map}> from {owner.class_name}.')
             else:
-                logger.warning(f'Var {self.class_name}.{src} has no mapping to a model or group, try search in routine {self.class_name}.')
+                logger.warning(
+                    f'Var {self.class_name}.{src} has no mapping to a model or group, try search in routine {self.class_name}.')
                 loc = self._loc(src=src, idx=idx, allow_none=allow_none)
                 src_v = self.__dict__[src].v
                 out = [src_v[l] for l in loc]
@@ -164,16 +168,27 @@ class RoutineModel:
         # TODO: add data validation for RParam, typical range, etc.
         return True
 
-    def setup(self):
+    def setup(self, **kwargs):
         """
         Setup optimization model.
+
+        Parameters
+        ----------
+        show_code: bool
+            Whether to show generated code.
+
+        Other Parameters
+        ----------------
+        show_code: bool
+            Whether to show generated code, passed to `om.setup()`.
         """
         # TODO: add input check, e.g., if GCost exists
         if self._data_check():
             logger.debug(f'{self.class_name} data check passed.')
         else:
             logger.error(f'{self.class_name} data check failed, setup may run into error!')
-        results, elapsed_time = self.om.setup()
+        show_code = kwargs.get('show_code', False)
+        results, elapsed_time = self.om.setup(show_code=show_code)
         common_info = f"{self.class_name} model set up "
         if results:
             info = f"in {elapsed_time}."
@@ -207,16 +222,19 @@ class RoutineModel:
         """
         Run the routine.
         """
+        show_code = kwargs.get('show_code', False)
+        if 'show_code' in kwargs:
+            del kwargs['show_code']
         # --- setup check ---
         if not self.is_setup:
             logger.info(f"Setup model of {self.class_name}")
-            self.setup()
+            self.setup(show_code=show_code)
         # NOTE: if the model data is altered, we need to re-setup the model
         # this implementation if not efficient at large-scale
         # FIXME: find a more efficient way to update the OModel values if
         # the system data is altered
         elif self.exec_time > 0:
-            self.setup()
+            self.setup(show_code=show_code)
         # --- solve optimization ---
         t0, _ = elapsed()
         result = self.solve(**kwargs)
@@ -229,10 +247,11 @@ class RoutineModel:
         if self.exit_code == 0:
             info = f"{self.class_name} solved as {status} in {s} with exit code {self.exit_code}."
             logger.warning(info)
+            return True
         else:
             info = f"{self.class_name} failed as {status} with exit code {self.exit_code}!"
             logger.warning(info)
-        return self.exit_code
+            return False
 
     def summary(self, **kwargs):
         """
@@ -268,8 +287,13 @@ class RoutineModel:
         This function assigns `owner` to the model itself, assigns the name and tex_name.
         """
         if key in self.__dict__:
-            if key in self.constrs.keys() or key in self.vars.keys():
+            existing_keys = list(self.constrs.keys()) + list(self.vars.keys()) + list(self.rparams.keys())
+            if key in existing_keys:
                 logger.warning(f"{self.class_name}: redefinition of member <{key}>. Likely a modeling error.")
+
+        # register owner routine instance of following attributes
+        if isinstance(value, (RBaseService)):
+            value.rtn = self
 
     def __setattr__(self, key, value):
         """
@@ -300,9 +324,81 @@ class RoutineModel:
         Called within ``__setattr__``, this is where the magic happens.
         Subclass attributes are automatically registered based on the variable type.
         """
+        if isinstance(value, (Var, Constraint, Objective)):
+            value.om = self.om
         if isinstance(value, Var):
             self.vars[key] = value
-        elif isinstance(value, RParam):
-            self.rparams[key] = value
         elif isinstance(value, Constraint):
             self.constrs[key] = value
+        elif isinstance(value, RParam):
+            self.rparams[key] = value
+        elif isinstance(value, RBaseService):
+            self.services[key] = value
+
+    def __delattr__(self, name):
+        """
+        Overload the delattr function to unregister attributes.
+
+        Parameters
+        ----------
+        name: str
+            name of the attribute
+        """
+        self._unregister_attribute(name)
+        if name == 'obj':
+            self.obj = None
+        else:
+            super().__delattr__(name)  # Call the superclass implementation
+
+    def _unregister_attribute(self, name):
+        """
+        Unregister a pair of attributes from the routine instance.
+
+        Called within ``__delattr__``, this is where the magic happens.
+        Subclass attributes are automatically unregistered based on the variable type.
+        """
+        if name in self.vars:
+            del self.vars[name]
+            if name in self.om.vars:
+                del self.om.vars[name]
+        elif name in self.rparams:
+            del self.rparams[name]
+        elif name in self.constrs:
+            del self.constrs[name]
+            if name in self.om.constrs:
+                del self.om.constrs[name]
+        elif name in self.services:
+            del self.services[name]
+
+    def disable(self, name):
+        """
+        Disable a constraint by name.
+
+        Parameters
+        ----------
+        name: str or list
+            name of the constraint to be disabled
+        """
+        if isinstance(name, list):
+            for n in name:
+                if n not in self.constrs:
+                    logger.warning(f"Constraint <{n}> not found.")
+                    continue
+                if self.constrs[n].is_disabled:
+                    logger.warning(f"Constraint <{n}> has already been disabled.")
+                    continue
+                self.constrs[n].is_disabled = True
+                self.is_setup = False
+                logger.warning(f"Disable constraint <{n}>.")
+            return True
+
+        if name in self.constrs:
+            if self.constrs[name].is_disabled:
+                logger.warning(f"Constraint <{name}> has already been disabled.")
+            else:
+                self.constrs[name].is_disabled = True
+                self.is_setup = False
+                logger.warning(f"Disable constraint <{name}>.")
+            return True
+
+        logger.warning(f"Constraint <{name}> not found.")

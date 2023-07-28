@@ -20,18 +20,18 @@ class GCostData(ModelData):
                              tex_name=r't_{ype}',
                              vrange=(1, 2),
                              )
-        self.startup = NumParam(default=0,
-                                info='startup cost in US dollars',
-                                power=False,
-                                tex_name=r'c_{su}',
-                                unit='USD',
-                                )
-        self.shutdown = NumParam(default=0,
-                                 info='shutdown cost in US dollars',
-                                 power=False,
-                                 tex_name=r'c_{sd}',
-                                 unit='USD',
-                                 )
+        self.csu = NumParam(default=0,
+                            info='startup cost in US dollars',
+                            power=False,
+                            tex_name=r'c_{su}',
+                            unit='$',
+                            )
+        self.csd = NumParam(default=0,
+                            info='shutdown cost in US dollars',
+                            power=False,
+                            tex_name=r'c_{sd}',
+                            unit='$',
+                            )
         self.c2 = NumParam(default=0,
                            info='coefficient 2',
                            power=False,

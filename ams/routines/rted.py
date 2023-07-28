@@ -6,6 +6,7 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
+from ams.core.service import ZonalSum
 from ams.routines.dcopf import DCOPFData, DCOPFModel
 
 from ams.opt.omodel import Var, Constraint, Objective
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class RTEDData(DCOPFData):
     """
-    RTED data.
+    Data for real-time economic dispatch.
     """
 
     def __init__(self):
@@ -23,64 +24,37 @@ class RTEDData(DCOPFData):
         # 1. reserve
         # 1.1. reserve cost
         self.cru = RParam(info='RegUp reserve coefficient',
-                          name='cru',
-                          src='cru',
-                          tex_name=r'c_{r,u}',
-                          unit=r'$/(p.u.)',
-                          owner_name='SFRCost',
-                          )
+                          name='cru', src='cru',
+                          tex_name=r'c_{r,u}', unit=r'$/(p.u.)',
+                          model='SFRCost')
         self.crd = RParam(info='RegDown reserve coefficient',
                           name='crd',
                           src='crd',
                           tex_name=r'c_{r,d}',
                           unit=r'$/(p.u.)',
-                          owner_name='SFRCost',
-                          )
+                          model='SFRCost',)
         # 1.2. reserve requirement
-        self.du = RParam(info='RegUp reserve requirement',
-                         name='du',
-                         src='du',
-                         tex_name=r'd_{u}',
-                         unit='p.u.',
-                         owner_name='SFR',
-                         )
-        self.dd = RParam(info='RegDown reserve requirement',
-                         name='dd',
-                         src='dd',
-                         tex_name=r'd_{d}',
-                         unit='p.u.',
-                         owner_name='SFR',
-                         )
-        self.prs = RParam(info='sum matrix of reserve',
-                          name='prs',
-                          src='prs',
-                          tex_name=r'\sum',
-                          owner_name='SFR',
-                          )
-        # 1.3 reserve ramp rate
-        # FIXME: seems not used
-        self.Ragc = RParam(info='AGC ramp rate',
-                           name='Ragc',
-                           src='Ragc',
-                           tex_name=r'R_{agc}',
-                           unit='p.u./min',
-                           owner_name='StaticGen',
-                           )
+        self.du = RParam(info='RegUp reserve requirement (system base)',
+                         name='du', src='du',
+                         tex_name=r'd_{u}', unit='p.u.',
+                         model='SFR',)
+        self.dd = RParam(info='RegDown reserve requirement (system base)',
+                         name='dd', src='dd',
+                         tex_name=r'd_{d}', unit='p.u.',
+                         model='SFR',)
+        self.zg = RParam(info='generator zone data',
+                         name='zg', src='zone',
+                         tex_name='z_{one,g}',
+                         model='StaticGen',)
         # 2. generator
-        self.pg0 = RParam(info='generator active power start point',
-                          name='pg0',
-                          src='pg0',
-                          tex_name=r'p_{g0}',
-                          unit='p.u.',
-                          owner_name='StaticGen',
-                          )
-        self.R10 = RParam(info='10-min ramp rate',
-                          name='R10',
-                          src='R10',
-                          tex_name=r'R_{10}',
-                          unit='p.u./min',
-                          owner_name='StaticGen',
-                          )
+        self.pg0 = RParam(info='generator active power start point (system base)',
+                          name='pg0', src='pg0',
+                          tex_name=r'p_{g0}', unit='p.u.',
+                          model='StaticGen',)
+        self.R10 = RParam(info='10-min ramp rate (system base)',
+                          name='R10', src='R10',
+                          tex_name=r'R_{10}', unit='p.u./min',
+                          model='StaticGen',)
 
 
 class RTEDModel(DCOPFModel):
@@ -108,58 +82,54 @@ class RTEDModel(DCOPFModel):
         ])
         self.info = 'Real-time economic dispatch'
         self.type = 'DCED'
+
+        self.info = 'Economic dispatch'
+        self.type = 'DCED'
+        # --- service ---
+        self.gs = ZonalSum(u=self.zg,
+                           zone='Region',
+                           name='gs', tex_name=r'\sum_{g}')
+        self.gs.info = 'Sum Gen vars vector in shape of zone'
+
         # --- vars ---
-        self.pru = Var(info='RegUp reserve',
-                       unit='p.u.',
-                       name='pru',
-                       tex_name=r'p_{r,u}',
-                       owner_name='StaticGen',
+        self.pru = Var(info='RegUp reserve (system base)',
+                       unit='p.u.', name='pru', tex_name=r'p_{r,u}',
+                       model='StaticGen',
                        nonneg=True,
                        )
-        self.prd = Var(info='RegDn reserve',
-                       unit='p.u.',
-                       name='prd',
-                       tex_name=r'p_{r,d}',
-                       owner_name='StaticGen',
+        self.prd = Var(info='RegDn reserve (system base)',
+                       unit='p.u.', name='prd', tex_name=r'p_{r,d}',
+                       model='StaticGen',
                        nonneg=True,
                        )
         # --- constraints ---
         self.rbu = Constraint(name='rbu',
                               info='RegUp reserve balance',
-                              e_str='prs @ pru - du',
-                              type='eq',
-                              )
+                              e_str='gs @ pru - du',
+                              type='eq',)
         self.rbd = Constraint(name='rbd',
                               info='RegDn reserve balance',
-                              e_str='prs @ prd - dd',
-                              type='eq',
-                              )
+                              e_str='gs @ prd - dd',
+                              type='eq',)
         self.rru = Constraint(name='rru',
                               info='RegUp reserve ramp',
                               e_str='pg + pru - pmax',
-                              type='uq',
-                              )
+                              type='uq',)
         self.rrd = Constraint(name='rrd',
                               info='RegDn reserve ramp',
                               e_str='-pg + prd - pmin',
-                              type='uq',
-                              )
+                              type='uq',)
         self.rgu = Constraint(name='rgu',
                               info='ramp up limit of generator output',
                               e_str='pg - pg0 - R10',
-                              type='uq',
-                              )
+                              type='uq',)
         self.rgd = Constraint(name='rgd',
                               info='ramp down limit of generator output',
                               e_str='-pg + pg0 - R10',
-                              type='uq',
-                              )
+                              type='uq',)
         # --- objective ---
-        self.obj = Objective(name='tc',
-                             info='total generation and reserve cost',
-                             e_str='sum(c2 * pg**2 + c1 * pg + c0 + cru * pru + crd * prd)',
-                             sense='min',
-                             )
+        self.obj.info = 'total generation and reserve cost'
+        self.obj.e_str = 'sum(c2 * pg**2 + c1 * pg + ug * c0 + cru * pru + crd * prd)'
 
 
 class RTED(RTEDData, RTEDModel):
@@ -168,45 +138,30 @@ class RTED(RTEDData, RTEDModel):
 
     RTED extends DCOPF with:
 
-    1. zonal SFR reserve: decision reserve ``pru`` and ``prd``; linear cost ``cru`` and ``crd``; requirement ``du`` and ``dd``
+    1. Parameter ``pg0``, which can be retrieved from dynamic simulation results.
 
-    2. generator ramping: start point ``pg0``; ramping limit ``R10``
+    2. RTED has mapping dicts to interface with ANDES.
 
-    RTED has mapping dicts to interface with ANDES.
+    3. RTED routine adds a function ``dc2ac`` to do the AC conversion using ACOPF
 
-    RTED routine adds a function ``dc2ac`` to do the conversion using ACOPF, otherwise the
-    dynamic simulation might fail due to gap between DC-based dispatch results and AC-based dynamic
-    initialization.
-    The function will add a Var ``aBus`` copied from solved ACOPF to fit the ANDES interface.
+    4. zonal SFR reserve: decision variables ``pru`` and ``prd``; linear cost ``cru`` and ``crd``; requirement ``du`` and ``dd``
 
-    Notes
-    -----
-    1. RTED is a DC-based model, which assumes bus voltage to be 1
-    2. RTED adds a data check on ``pg0``, if all zeros, correct as the value of ``p0``
+    5. generator ramping: start point ``pg0``; ramping limit ``R10``
+
+    The function ``dc2ac`` sets the ``vBus`` value from solved ACOPF.
+    Without this conversion, dynamic simulation might fail due to the gap between
+    DC-based dispatch results and AC-based dynamic initialization.
     """
 
     def __init__(self, system, config):
         RTEDData.__init__(self)
         RTEDModel.__init__(self, system, config)
-    
-    def _data_check(self):
-        """
-        Check data.
-
-        Overload ``_data_check`` method in ``DCOPF``.
-        """
-        if np.all(self.pg0.v == 0):
-            logger.warning('RTED pg0 are all zeros, correct to p0.')
-            idx = self.pg.get_idx()
-            self.pg0._v = self.system.StaticGen.get(src='p0', attr='v', idx=idx)
-        super()._data_check()
-        return True
 
     def dc2ac(self, **kwargs):
         """
         Convert the RTED results with ACOPF.
 
-        Overload ``dc2ac`` method in ``DCOPF``.
+        Overload ``dc2ac`` method.
         """
         if self.exec_time == 0 or self.exit_code != 0:
             logger.warning('RTED is not executed successfully, quit conversion.')
@@ -241,9 +196,14 @@ class RTED(RTEDData, RTEDModel):
         return True
 
     def run(self, **kwargs):
-        # remove vBus if has been converted to AC using ``dc2ac``
+        """
+        Overload ``run()`` method.
+
+        Notes
+        -----
+        1. remove ``vBus`` if has been converted with ``dc2ac``
+        """
         if self.is_ac:
             delattr(self, 'vBus')
-            del self.vars['vBus']
             self.is_ac = False
-        super().run(**kwargs)
+        return super().run(**kwargs)

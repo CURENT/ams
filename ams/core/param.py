@@ -9,6 +9,7 @@ from typing import Callable, Iterable, List, Optional, Tuple, Type, Union
 from collections import OrderedDict
 
 import numpy as np
+from scipy.sparse import issparse
 
 from andes.core.common import Config
 from andes.core import BaseParam, DataParam, IdxParam, NumParam, ExtParam
@@ -38,7 +39,7 @@ class RParam:
         Source name of the parameter.
     unit : str, optional
         Unit of the parameter.
-    owner_name : str, optional
+    model : str, optional
         Name of the owner model or group.
     v : np.ndarray, optional
         External value of the parameter.
@@ -55,7 +56,7 @@ class RParam:
     >>>                   unit=r'$/(p.u.)',
     >>>                   name='cru',
     >>>                   src='cru',
-    >>>                   owner_name='SFRCost'
+    >>>                   model='SFRCost'
     >>>                   )
 
     Example 2: Define a routine parameter with a user-defined value.
@@ -70,7 +71,7 @@ class RParam:
                  info: Optional[str] = None,
                  src: Optional[str] = None,
                  unit: Optional[str] = None,
-                 owner_name: Optional[str] = None,
+                 model: Optional[str] = None,
                  v: Optional[np.ndarray] = None,
                  ):
 
@@ -80,7 +81,7 @@ class RParam:
         self.src = name if (src is None) else src
         self.unit = unit
         self.is_group = False
-        self.owner_name = owner_name  # indicate if this variable is a group variable
+        self.model = model  # name of a group or model
         self.owner = None  # instance of the owner model or group
         self.is_ext = False  # indicate if the value is set externally
         if v is not None:
@@ -97,13 +98,23 @@ class RParam:
         This property is a wrapper for the ``get`` method of the owner class.
         """
         if self.is_ext:
-            return self._v
+            if issparse(self._v):
+                return self._v.toarray()
+            else:
+                return self._v
         elif self.is_group:
             return self.owner.get(src=self.src, attr='v',
                                   idx=self.owner.get_idx())
         else:
             src_param = getattr(self.owner, self.src)
             return getattr(src_param, 'v')
+
+    @property
+    def shape(self):
+        """
+        Return the shape of the parameter.
+        """
+        return self.v.shape
 
     @property
     def n(self):
@@ -125,26 +136,37 @@ class RParam:
     def __repr__(self):
         if self.is_ext:
             span = ''
-            if self.v.ndim == 1:
+            if isinstance(self.v, np.ndarray):
+                if 1 in self.v.shape:
+                    if len(self.v) <= 20:
+                        span = f', v={self.v}'
+            else:
                 if len(self.v) <= 20:
                     span = f', v={self.v}'
-            else:
-                span = f', v=shape{self.v.shape}'
+                else:
+                    span = f', v in length of {len(self.v)}'
             return f'{self.__class__.__name__}: {self.name}{span}'
         else:
             span = ''
             if 1 <= self.n <= 20:
                 span = f', v={self.v}'
                 if hasattr(self, 'vin') and (self.vin is not None):
-                    span += f', vin={self.vin}'
+                    span += f', v in length of {self.vin}'
 
-            if self.v.ndim == 1:
+            if isinstance(self.v, np.ndarray):
+                if self.v.shape[0] == 1 or self.v.ndim == 1:
+                    if len(self.v) <= 20:
+                        span = f', v={self.v}'
+                else:
+                    span = f', v in shape({self.v.shape})'
+            elif isinstance(self.v, list):
                 if len(self.v) <= 20:
                     span = f', v={self.v}'
+                else:
+                    span = f', v in length of {len(self.v)}'
             else:
-                span = f', v=shape{self.v.shape}'
-
-            return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}{span}'
+                span = f', v={self.v}'
+            return f'{self.__class__.__name__}: {self.name} <{self.owner.__class__.__name__}>{span}'
 
     def get_idx(self):
         """
