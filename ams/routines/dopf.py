@@ -64,12 +64,6 @@ class LDOPFModel(DCOPFModel):
                       name='qn', tex_name=r'q_{n}', unit='p.u.',
                       model='Bus',)
 
-        self.isq = Var(info='square of line current',
-                       unit='p.u.',
-                       name='isq',
-                       tex_name=r'i^{2}',
-                       model='Line',
-                       )
         self.vsq = Var(info='square of Bus voltage',
                        name='vsq', tex_name=r'v^{2}', unit='p.u.',
                        model='Bus',)
@@ -95,10 +89,10 @@ class LDOPFModel(DCOPFModel):
                           name='CftT',
                           tex_name=r'C_{ft}^{T}',
                           info='transpose of connection matrix',)
-        self.pinj.e_str='CftT@(pl - r * isq ) - pd - pn'
+        self.pinj.e_str='CftT@pl - pd - pn'
         self.qinj = Constraint(name='qinj',
                                info='node reactive power injection',
-                                 e_str='CftT@(ql - x * isq) - qd - qn',
+                                 e_str='CftT@ql - qd - qn',
                                type='eq',)
 
         self.qb = Constraint(name='qb', info='reactive power balance',
@@ -121,6 +115,12 @@ class LDOPFModel(DCOPFModel):
 class LDOPF(DOPFData, LDOPFModel):
     """
     Linearzied distribution OPF, where power loss are ignored.
+
+    Reference:
+
+    [1] L. Bai, J. Wang, C. Wang, C. Chen, and F. Li, “Distribution Locational Marginal Pricing (DLMP)
+    for Congestion Management and Voltage Support,” IEEE Trans. Power Syst., vol. 33, no. 4,
+    pp. 4061–4073, Jul. 2018, doi: 10.1109/TPWRS.2017.2767632.
     """
 
     def __init__(self, system, config):
