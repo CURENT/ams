@@ -188,7 +188,15 @@ class Var(Algeb, OptzBase):
                  pos: Optional[bool] = False,
                  neg: Optional[bool] = False,
                  ):
-        Algeb.__init__(self, name=name, tex_name=tex_name, info=info, unit=unit)
+        # Algeb.__init__(self, name=name, tex_name=tex_name, info=info, unit=unit)
+        # below info is the same as Algeb
+        self.name = name
+        self.info = info
+        self.unit = unit
+
+        self.tex_name = tex_name if tex_name else name
+        self.owner = None  # instance of the owner Model
+        self.id = None     # variable internal index inside a model (assigned in run time)
         OptzBase.__init__(self, name=name, info=info, unit=unit)
         self.src = name if (src is None) else src
         self.is_group = False
@@ -217,11 +225,14 @@ class Var(Algeb, OptzBase):
 
         self.id = None     # variable internal index inside a model (assigned in run time)
 
-        # TODO: set a
-        # address into the variable and equation arrays (dae.f/dae.g and dae.x/dae.y)
         self.a: np.ndarray = np.array([], dtype=int)
 
-        self.v: np.ndarray = np.array([], dtype=float)  # variable value array
+    @property
+    def v(self):
+        """
+        Return the CVXPY variable value.
+        """
+        return self.om.vars[self.name].value
 
     def get_idx(self):
         if self.is_group:
@@ -433,7 +444,13 @@ class Objective(OptzBase):
         OptzBase.__init__(self, name=name, info=info, unit=unit)
         self.e_str = e_str
         self.sense = sense
-        self.v = None  # objective value
+
+    @property
+    def v(self):
+        """
+        Return the CVXPY objective value.
+        """
+        return self.om.obj.value
 
     def parse(self, show_code=False):
         """

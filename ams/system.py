@@ -456,7 +456,6 @@ class System(andes_System):
             # rtn.setup()  # not setup optimization model in system setup stage
             a0 = 0
             for raname, var in rtn.vars.items():
-                var.v = np.zeros(var.owner.n)
                 var.a = np.arange(a0, a0 + var.owner.n)
                 a0 += var.owner.n
             for rpname, rparam in rtn.rparams.items():
