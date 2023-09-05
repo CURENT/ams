@@ -129,8 +129,6 @@ class DCOPFBase(RoutineModel):
         """
         # --- copy results from solver into routine algeb ---
         for raname, var in self.vars.items():
-            ovar = getattr(self.om, raname)
-            var.v = getattr(ovar, 'value')
             # --- copy results from routine algeb into system algeb ---
             if var.model is None:          # if no owner
                 continue
@@ -148,7 +146,6 @@ class DCOPFBase(RoutineModel):
                     var.owner.set(src=var.src, attr='v', idx=idx, value=var.v)
                 except KeyError:
                     pass
-        self.obj.v = self.om.obj.value
         self.system.recent = self.system.routines[self.class_name]
         return True
 
