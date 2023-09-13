@@ -102,3 +102,35 @@ class SFRCost(SFRCostData, Model):
         SFRCostData.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'Cost'
+
+
+class PFRCostData(ModelData):
+    def __init__(self):
+        super().__init__()
+        self.reg = IdxParam(info="Renewable generator idx",
+                            model='RenGen',
+                            mandatory=True,
+                            )
+        self.cm = NumParam(default=0,
+                           info='coefficient for M',
+                           power=False,
+                           tex_name=r'c_{r}',
+                           unit=r'$/p.u.',
+                           )
+        self.cd = NumParam(default=0,
+                           info='coefficient for D',
+                           power=False,
+                           tex_name=r'c_{r}',
+                           unit=r'$/p.u.',
+                           )
+
+
+class PFRCost(PFRCostData, Model):
+    """
+    Linear PFR cost model, only applied virtual inertia and damping for group ``RenGen`` .
+    """
+
+    def __init__(self, system, config):
+        PFRCostData.__init__(self)
+        Model.__init__(self, system, config)
+        self.group = 'Cost'
