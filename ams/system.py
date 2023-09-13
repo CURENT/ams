@@ -452,13 +452,14 @@ class System(andes_System):
         ])
 
         # NOTE: initialize om for all routines
-        for vname, rtn in self.routines.items():
+        for rtnname, rtn in self.routines.items():
             # rtn.setup()  # not setup optimization model in system setup stage
             a0 = 0
-            for raname, var in rtn.vars.items():
+            for vname, var in rtn.vars.items():
                 var.a = np.arange(a0, a0 + var.owner.n)
                 a0 += var.owner.n
             for rpname, rparam in rtn.rparams.items():
+                rparam.rtn = rtn
                 if rpname in self.mat.keys():
                     # NOTE: set numerical values for rparams that are defined in system.mat
                     rparam.is_ext = True

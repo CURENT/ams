@@ -34,7 +34,10 @@ class DCOPFData(RoutineData):
                          name='c2',
                          tex_name=r'c_{2}',
                          unit=r'$/(p.u.^2)',
-                         model='GCost',)
+                         model='GCost',
+                         indexer='gen',
+                         imodel='StaticGen',
+                         )
         self.c1 = RParam(info='Gen cost coefficient 1',
                          name='c1',
                          tex_name=r'c_{1}',

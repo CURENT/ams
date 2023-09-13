@@ -43,6 +43,10 @@ class RParam:
         Name of the owner model or group.
     v : np.ndarray, optional
         External value of the parameter.
+    indexer : str, optional
+        Indexer of the parameter.
+    imodel : str, optional
+        Name of the owner model or group of the indexer.
 
     Examples
     --------
@@ -73,6 +77,8 @@ class RParam:
                  unit: Optional[str] = None,
                  model: Optional[str] = None,
                  v: Optional[np.ndarray] = None,
+                 indexer: Optional[str] = None,
+                 imodel: Optional[str] = None,
                  ):
 
         self.name = name
@@ -82,11 +88,33 @@ class RParam:
         self.unit = unit
         self.is_group = False
         self.model = model  # name of a group or model
+        self.indexer = indexer  # name of the indexer
+        self.imodel = imodel  # name of a group or model of the indexer
         self.owner = None  # instance of the owner model or group
+        self.rtn = None # instance of the owner routine
         self.is_ext = False  # indicate if the value is set externally
         if v is not None:
             self._v = v
             self.is_ext = True
+
+    @property
+    def _ov(self):
+        """
+        The value for optimization modeling.
+        """
+        if self.indexer is None:
+            return self.v
+        else:
+            try:
+                if self.is_group:
+                    indexr_v = self.owner.get(src=self.indexer, attr='v',
+                                              idx=self.owner.get_idx())
+                else:
+                    indexr_v = getattr(self.owner, self.indexer)
+                return indexr_v
+            except AttributeError:
+                logger.error(f'Indexer <{self.indexer}> not found in <{self.imodel}>, likely a modeling error.')
+                return None
 
     @property
     def v(self):
