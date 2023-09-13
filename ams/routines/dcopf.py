@@ -36,18 +36,21 @@ class DCOPFData(RoutineData):
                          unit=r'$/(p.u.^2)',
                          model='GCost',
                          indexer='gen',
-                         imodel='StaticGen',
-                         )
+                         imodel='StaticGen',)
         self.c1 = RParam(info='Gen cost coefficient 1',
                          name='c1',
                          tex_name=r'c_{1}',
                          unit=r'$/(p.u.)',
-                         model='GCost',)
+                         model='GCost',
+                         indexer='gen',
+                         imodel='StaticGen',)
         self.c0 = RParam(info='Gen cost coefficient 0',
                          name='c0',
                          tex_name=r'c_{0}',
                          unit=r'$',
-                         model='GCost',)
+                         model='GCost',
+                         indexer='gen',
+                         imodel='StaticGen',)
         # --- generator limit ---
         self.pmax = RParam(info='Gen maximum active power (system base)',
                            name='pmax',
