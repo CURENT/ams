@@ -108,6 +108,26 @@ class ACTopology(GroupBase):
         super().__init__()
         self.common_vars.extend(('a', 'v'))
 
+class RenGen(GroupBase):
+    """
+    Renewable generator (converter) group.
+
+    See ANDES Documentation SynGen here for the notes on replacing StaticGen and setting the power
+    ratio parameters.
+
+    Reference:
+
+    [1] ANDES Documentation, RenGen, [Online]
+
+    Available:
+
+    https://docs.andes.app/en/latest/groupdoc/RenGen.html#rengen
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.common_params.extend(('bus', 'gen', 'Sn'))
+        self.common_vars.extend(('Pe', 'Qe'))
 
 class DG(GroupBase):
     """

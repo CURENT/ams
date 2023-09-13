@@ -12,6 +12,7 @@ ams_file_classes = list([
     ('shunt', ['Shunt']),
     ('line', ['Line']),
     ('distributed', ['ESD1']),
+    ('renewable', ['REGCV1']),
     ('area', ['Area']),
     ('region', ['Region']),
     ('reserve', ['SFR']),
