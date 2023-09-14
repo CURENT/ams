@@ -97,6 +97,21 @@ class RBaseService(BaseService):
 class ValueService(RBaseService):
     """
     Service to store given numeric values.
+
+    Parameters
+    ----------
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    vtype : Type, optional
+        Variable type.
+    model : str, optional
+        Model name.
     """
 
     def __init__(self,

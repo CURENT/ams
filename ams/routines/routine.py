@@ -412,6 +412,67 @@ class RoutineModel:
         self.exec_time = 0.0
         self.exit_code = 0
 
+    def addRParam(self,
+                  name: str,
+                  tex_name: Optional[str] = None,
+                  info: Optional[str] = None,
+                  src: Optional[str] = None,
+                  unit: Optional[str] = None,
+                  model: Optional[str] = None,
+                  v: Optional[np.ndarray] = None,
+                  indexer: Optional[str] = None,
+                  imodel: Optional[str] = None,):
+        """
+        Add :ref:`RParam` to the routine.
+
+        Parameters
+        ----------
+        name : str
+            Name of this parameter. If not provided, `name` will be set
+            to the attribute name.
+        tex_name : str, optional
+            LaTeX-formatted parameter name. If not provided, `tex_name`
+            will be assigned the same as `name`.
+        info : str, optional
+            A description of this parameter
+        src : str, optional
+            Source name of the parameter.
+        unit : str, optional
+            Unit of the parameter.
+        model : str, optional
+            Name of the owner model or group.
+        v : np.ndarray, optional
+            External value of the parameter.
+        indexer : str, optional
+            Indexer of the parameter.
+        imodel : str, optional
+            Name of the owner model or group of the indexer.
+        """
+        item = RParam(name=name, tex_name=tex_name, info=info, src=src, unit=unit,
+                      model=model, v=v, indexer=indexer, imodel=imodel)
+
+        # add the parameter as an routine attribute
+        setattr(self, name, item)
+
+        # NOTE: manually register the owner of the parameter
+        # This is skipped in ``addVars`` because of ``Var.__setattr__``
+        item.rtn = self
+
+        # check variable owner validity if given
+        if model is not None:
+            if item.model in self.system.groups.keys():
+                item.is_group = True
+                item.owner = self.system.groups[item.model]
+            elif item.model in self.system.models.keys():
+                item.owner = self.system.models[item.model]
+            else:
+                msg = f'Model indicator \'{item.model}\' of <{item.rtn.class_name}.{name}>'
+                msg += f' is not a model or group. Likely a modeling error.'
+                logger.warning(msg)
+
+        self._post_add_check()
+        return True
+
     def addService(self,
                    name: str,
                    value: np.ndarray,
@@ -421,7 +482,24 @@ class RoutineModel:
                    vtype: Type = None,
                    model: str = None,):
         """
-        Add numerical service to the routine.
+        Add :ref:`ValueService` to the routine.
+
+        Parameters
+        ----------
+        name : str
+            Instance name.
+        value : np.ndarray
+            Value.
+        tex_name : str, optional
+            TeX name.
+        unit : str, optional
+            Unit.
+        info : str, optional
+            Description.
+        vtype : Type, optional
+            Variable type.
+        model : str, optional
+            Model name.
         """
         item = ValueService(name=name, value=value, tex_name=tex_name, unit=unit,
                             info=info, vtype=vtype, model=model)
@@ -439,7 +517,7 @@ class RoutineModel:
                    type: Optional[str] = 'uq',
                    ):
         """
-        Add a constraint to the routine.
+        Add :ref:`Constraint` to the routine. to the routine.
 
         Parameters
         ----------

@@ -32,3 +32,15 @@ class REGCV1(ModelData, Model):
         self.gen = IdxParam(info="static generator index",
                             mandatory=True,
                             )
+        self.Sn = NumParam(default=100.0, tex_name='S_n',
+                           info='device MVA rating',
+                           unit='MVA',
+                           )
+        self.gammap = NumParam(default=1.0,
+                               info="P ratio of linked static gen",
+                               tex_name=r'\gamma_P'
+                               )
+        self.gammaq = NumParam(default=1.0,
+                               info="Q ratio of linked static gen",
+                               tex_name=r'\gamma_Q'
+                               )
