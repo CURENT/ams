@@ -137,14 +137,15 @@ class DOPF2Data(DOPFData):
     def __init__(self):
         DOPFData.__init__(self)
         self.cm = RParam(info='RegUp reserve coefficient',
-                          name='cm', src='cm',
-                          tex_name=r'c_{m}', unit=r'$/s',
-                          model='PFRCost',
-                          indexer='reg', imodel='REGCV1')
+                         name='cm', src='cm',
+                         tex_name=r'c_{m}', unit=r'$/s',
+                         model='REGCV1Cost',
+                         indexer='reg', imodel='REGCV1')
         self.cd = RParam(info='RegDown reserve coefficient',
-                          name='cd', src='cd',
-                          tex_name=r'c_{d}', unit=r'$/(p.u.)',
-                          model='PFRCost', imodel='REGCV1',)
+                         name='cd', src='cd',
+                         tex_name=r'c_{d}', unit=r'$/(p.u.)',
+                         model='REGCV1Cost',
+                         indexer='reg', imodel='REGCV1',)
 
 
 class LDOPF2Model(LDOPFModel):
@@ -165,6 +166,7 @@ class LDOPF2Model(LDOPFModel):
                              info='total cost', unit='$',
                              e_str='sum(c2 * pg**2 + c1 * pg + ug * c0 + cm * M + cd * D)',
                              sense='min',)
+
 
 class LDOPF2(DOPF2Data, LDOPF2Model):
     """

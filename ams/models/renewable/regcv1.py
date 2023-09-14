@@ -11,7 +11,13 @@ from ams.core.model import Model  # NOQA
 
 class REGCV1(ModelData, Model):
     """
-    REGCV1 model data.
+    Voltage-controlled converter model (virtual synchronous generator) with inertia emulation.
+
+    Notes
+    -----
+    - The generation is defined by group :ref:`StaticGen`
+    - Generation cost is defined by model :ref:`GCost`
+    - Inertia emulation cost is defined by model :ref:`REGCV1Cost`
     """
 
     def __init__(self, system=None, config=None) -> None:
