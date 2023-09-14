@@ -134,7 +134,7 @@ class DCOPFBase(RoutineModel):
         Unpack the results from CVXPY model.
         """
         # --- copy results from solver into routine algeb ---
-        for raname, var in self.vars.items():
+        for _, var in self.vars.items():
             # --- copy results from routine algeb into system algeb ---
             if var.model is None:          # if no owner
                 continue
