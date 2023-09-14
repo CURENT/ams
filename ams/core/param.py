@@ -127,8 +127,9 @@ class RParam:
             try:
                 sorted_idx = self.owner.find_idx(keys=self.indexer, values=imodel.get_idx())
             except AttributeError:
-                raise AttributeError(f'Indexer <{self.indexer}> not found in <{self.imodel}>, likely a modeling error.')
-
+                sorted_idx = self.owner.idx.v
+            except Exception as e:
+                raise e
             model = getattr(self.rtn.system, self.model)
             sorted_v = model.get(src=self.src, attr='v', idx=sorted_idx)
             return sorted_v
