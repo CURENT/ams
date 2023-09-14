@@ -3,6 +3,7 @@ Module for routine data.
 """
 
 import logging  # NOQA
+from typing import Optional, Union  # NOQA
 from collections import OrderedDict  # NOQA
 
 import numpy as np  # NOQA
@@ -402,3 +403,149 @@ class RoutineModel:
             return True
 
         logger.warning(f"Constraint <{name}> not found.")
+
+    def _post_add_check(self):
+        """
+        Post-addition check.
+        """
+        self.is_setup = False
+        self.exec_time = 0.0
+        self.exit_code = 0
+
+    def addConstrs(self,
+                   name: str,
+                   e_str: str,
+                   info: Optional[str] = None,
+                   type: Optional[str] = 'uq',
+                   ):
+        """
+        Add a constraint to the routine.
+
+        Parameters
+        ----------
+        name : str
+            Constraint name. One should typically assigning the name directly because
+            it will be automatically assigned by the model. The value of ``name``
+            will be the symbol name to be used in expressions.
+        e_str : str
+            Constraint expression string.
+        info : str, optional
+            Descriptive information
+        type : str, optional
+            Constraint type, ``uq`` for uncertain, ``eq`` for equality, ``ineq`` for inequality.
+
+        """
+        item = Constraint(name=name, e_str=e_str, info=info, type=type)
+        # add the constraint as an routine attribute
+        setattr(self, name, item)
+
+        self._post_add_check()
+
+        return True
+
+    def addVars(self,
+                name: str,
+                model: Optional[str] = None,
+                shape: Optional[Union[int, tuple]] = None,
+                tex_name: Optional[str] = None,
+                info: Optional[str] = None,
+                src: Optional[str] = None,
+                unit: Optional[str] = None,
+                lb: Optional[str] = None,
+                ub: Optional[str] = None,
+                horizon: Optional[RParam] = None,
+                nonneg: Optional[bool] = False,
+                nonpos: Optional[bool] = False,
+                complex: Optional[bool] = False,
+                imag: Optional[bool] = False,
+                symmetric: Optional[bool] = False,
+                diag: Optional[bool] = False,
+                psd: Optional[bool] = False,
+                nsd: Optional[bool] = False,
+                hermitian: Optional[bool] = False,
+                bool: Optional[bool] = False,
+                integer: Optional[bool] = False,
+                pos: Optional[bool] = False,
+                neg: Optional[bool] = False,):
+        """
+        Add a variable to the routine.
+
+        Parameters
+        ----------
+        name : str, optional
+            Variable name. One should typically assigning the name directly because
+            it will be automatically assigned by the model. The value of ``name``
+            will be the symbol name to be used in expressions.
+        model : str, optional
+            Name of the owner model or group.
+        shape : int or tuple, optional
+            Shape of the variable. If is None, the shape of `model` will be used.
+        info : str, optional
+            Descriptive information
+        unit : str, optional
+            Unit
+        tex_name : str
+            LaTeX-formatted variable symbol. If is None, the value of `name` will be
+            used.
+        src : str, optional
+            Source variable name. If is None, the value of `name` will be used.
+        lb : str, optional
+            Lower bound
+        ub : str, optional
+            Upper bound
+        horizon : ams.routines.RParam, optional
+            Horizon idx.
+        nonneg : bool, optional
+            Non-negative variable
+        nonpos : bool, optional
+            Non-positive variable
+        complex : bool, optional
+            Complex variable
+        imag : bool, optional
+            Imaginary variable
+        symmetric : bool, optional
+            Symmetric variable
+        diag : bool, optional
+            Diagonal variable
+        psd : bool, optional
+            Positive semi-definite variable
+        nsd : bool, optional
+            Negative semi-definite variable
+        hermitian : bool, optional
+            Hermitian variable
+        bool : bool, optional
+            Boolean variable
+        integer : bool, optional
+            Integer variable
+        pos : bool, optional
+            Positive variable
+        neg : bool, optional
+            Negative variable
+
+        """
+        if model is None and shape is None:
+            raise ValueError("Either model or shape must be specified.")
+        item = Var(name=name, tex_name=tex_name, info=info, src=src, unit=unit,
+                   model=model, shape=shape, lb=lb, ub=ub, horizon=horizon, nonneg=nonneg,
+                   nonpos=nonpos, complex=complex, imag=imag, symmetric=symmetric,
+                   diag=diag, psd=psd, nsd=nsd, hermitian=hermitian, bool=bool,
+                   integer=integer, pos=pos, neg=neg, )
+
+        # add the variable as an routine attribute
+        setattr(self, name, item)
+
+        # check variable owner validity if given
+        if model is not None:
+            if item.model in self.system.groups.keys():
+                item.is_group = True
+                item.owner = self.system.groups[item.model]
+            elif item.model in self.system.models.keys():
+                item.owner = self.system.models[item.model]
+            else:
+                msg = f'Model indicator \'{item.model}\' of <{item.rtn.class_name}.{name}>'
+                msg += f' is not a model or group. Likely a modeling error.'
+                logger.warning(msg)
+
+        self._post_add_check()
+
+        return True
