@@ -138,6 +138,13 @@ class EDModel(DCOPFModel):
         # --- objective ---
         # NOTE: no need to fix objective function
 
+    def unpack(self, **kwargs):
+        """
+        ED will not unpack results from solver into devices
+        because the resutls are multi-time-period.
+        """
+        return None
+
 
 class ED(EDData, EDModel):
     """
