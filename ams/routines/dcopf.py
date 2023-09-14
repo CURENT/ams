@@ -71,7 +71,7 @@ class DCOPFData(RoutineData):
                          tex_name=r'p_{d}',
                          unit='p.u.',)
         # --- line ---
-        self.rate_a = RParam(info='long-term flow limit flow limit',
+        self.rate_a = RParam(info='long-term flow limit',
                              name='rate_a',
                              tex_name=r'R_{ATEA}',
                              unit='MVA',
