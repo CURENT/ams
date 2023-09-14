@@ -26,14 +26,3 @@ class REGCV1(ModelData, Model):
         self.gen = IdxParam(info="static generator index",
                             mandatory=True,
                             )
-
-        self.M = NumParam(default=10, tex_name='M',
-                          info='Emulated startup time constant (M=2H)',
-                          unit='s',
-                          power=True,
-                          )
-        self.D = NumParam(default=0, tex_name='D',
-                          info='Emulated damping coefficient',
-                          unit='p.u.',
-                          power=True,
-                          )

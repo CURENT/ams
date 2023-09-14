@@ -112,13 +112,13 @@ class PFRCostData(ModelData):
                             mandatory=True,
                             )
         self.cm = NumParam(default=0,
-                           info='coefficient for M',
+                           info='cost for emulated inertia',
                            power=False,
                            tex_name=r'c_{r}',
-                           unit=r'$/p.u.',
+                           unit=r'$/s',
                            )
         self.cd = NumParam(default=0,
-                           info='coefficient for D',
+                           info='cost for emulated damping',
                            power=False,
                            tex_name=r'c_{r}',
                            unit=r'$/p.u.',
