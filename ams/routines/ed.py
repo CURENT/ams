@@ -31,9 +31,9 @@ class EDData(DCOPFData):
         # NOTE: Setting `ED.scale.owner` to `Horizon` will cause an error when calling `ED.scale.v`.
         # This is because `Horizon` is a group that only contains the model `TimeSlot`.
         # The `get` method of `Horizon` calls `andes.models.group.GroupBase.get` and results in an error.
-        self.scale = RParam(info='zonal load factor for ED',
-                            name='scale', tex_name=r's_{pd}',
-                            src='scale', model='EDTSlot')
+        self.sd = RParam(info='zonal load factor for ED',
+                         name='sd', tex_name=r's_{d}',
+                         src='sd', model='EDTSlot')
         self.ts = RParam(info='time slot',
                          name='ts', tex_name=r't_{s,idx}',
                          src='idx', model='EDTSlot')
@@ -84,7 +84,7 @@ class EDModel(DCOPFModel):
                              expand_dims=0,
                              name='pdz', tex_name=r'p_{d,z}',
                              unit='p.u.', info='zonal load')
-        self.pds = NumOpDual(u=self.scale, u2=self.pdz,
+        self.pds = NumOpDual(u=self.sd, u2=self.pdz,
                              fun=np.multiply, rfun=np.sum,
                              rargs=dict(axis=1), expand_dims=0,
                              name='pds', tex_name=r'p_{d,s,t}',
