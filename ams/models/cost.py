@@ -36,13 +36,13 @@ class GCostData(ModelData):
                            info='coefficient 2',
                            power=False,
                            tex_name=r'c_{2}',
-                           unit=r'$/(p.u.^2)',
+                           unit=r'$/(p.u.*h)^2',
                            )
         self.c1 = NumParam(default=0,
                            info='coefficient 1',
                            power=False,
                            tex_name=r'c_{1}',
-                           unit=r'$/p.u.',
+                           unit=r'$/p.u.*h',
                            )
         self.c0 = NumParam(default=0,
                            info='coefficient 0',
@@ -83,13 +83,13 @@ class SFRCostData(ModelData):
                             info='coefficient for RegUp reserve',
                             power=False,
                             tex_name=r'c_{r}',
-                            unit=r'$/p.u.',
+                            unit=r'$/p.u.*h',
                             )
         self.crd = NumParam(default=0,
                             info='coefficient for RegDn reserve',
                             power=False,
                             tex_name=r'c_{r}',
-                            unit=r'$/p.u.',
+                            unit=r'$/p.u.*h',
                             )
 
 
@@ -100,5 +100,37 @@ class SFRCost(SFRCostData, Model):
 
     def __init__(self, system, config):
         SFRCostData.__init__(self)
+        Model.__init__(self, system, config)
+        self.group = 'Cost'
+
+
+class REGCV1CostData(ModelData):
+    def __init__(self):
+        super().__init__()
+        self.reg = IdxParam(info="Renewable generator idx",
+                            model='RenGen',
+                            mandatory=True,
+                            )
+        self.cm = NumParam(default=0,
+                           info='cost for emulated inertia (M)',
+                           power=False,
+                           tex_name=r'c_{r}',
+                           unit=r'$/s',
+                           )
+        self.cd = NumParam(default=0,
+                           info='cost for emulated damping (D)',
+                           power=False,
+                           tex_name=r'c_{r}',
+                           unit=r'$/p.u.',
+                           )
+
+
+class REGCV1Cost(REGCV1CostData, Model):
+    """
+    Linear cost model for :ref:`REGCV1` emulated inertia (M) and damping (D).
+    """
+
+    def __init__(self, system, config):
+        REGCV1CostData.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'Cost'

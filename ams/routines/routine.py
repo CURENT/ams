@@ -243,10 +243,10 @@ class RoutineModel:
         self.system.exit_code = self.exit_code
         _, s = elapsed(t0)
         self.exec_time = float(s.split(' ')[0])
-        self.unpack(**kwargs)
         if self.exit_code == 0:
             info = f"{self.class_name} solved as {status} in {s} with exit code {self.exit_code}."
             logger.warning(info)
+            self.unpack(**kwargs)
             return True
         else:
             info = f"{self.class_name} failed as {status} with exit code {self.exit_code}!"

@@ -43,6 +43,10 @@ class RParam:
         Name of the owner model or group.
     v : np.ndarray, optional
         External value of the parameter.
+    indexer : str, optional
+        Indexer of the parameter.
+    imodel : str, optional
+        Name of the owner model or group of the indexer.
 
     Examples
     --------
@@ -73,6 +77,8 @@ class RParam:
                  unit: Optional[str] = None,
                  model: Optional[str] = None,
                  v: Optional[np.ndarray] = None,
+                 indexer: Optional[str] = None,
+                 imodel: Optional[str] = None,
                  ):
 
         self.name = name
@@ -82,7 +88,10 @@ class RParam:
         self.unit = unit
         self.is_group = False
         self.model = model  # name of a group or model
+        self.indexer = indexer  # name of the indexer
+        self.imodel = imodel  # name of a group or model of the indexer
         self.owner = None  # instance of the owner model or group
+        self.rtn = None  # instance of the owner routine
         self.is_ext = False  # indicate if the value is set externally
         if v is not None:
             self._v = v
@@ -95,19 +104,35 @@ class RParam:
 
         Notes
         -----
-        This property is a wrapper for the ``get`` method of the owner class.
+        - This property is a wrapper for the ``get`` method of the owner class.
+        - The value will sort by the indexer if indexed, used for optmization modeling.
         """
-        if self.is_ext:
-            if issparse(self._v):
-                return self._v.toarray()
+        if self.indexer is None:
+            if self.is_ext:
+                if issparse(self._v):
+                    return self._v.toarray()
+                else:
+                    return self._v
+            elif self.is_group:
+                return self.owner.get(src=self.src, attr='v',
+                                      idx=self.owner.get_idx())
             else:
-                return self._v
-        elif self.is_group:
-            return self.owner.get(src=self.src, attr='v',
-                                  idx=self.owner.get_idx())
+                src_param = getattr(self.owner, self.src)
+                return getattr(src_param, 'v')
         else:
-            src_param = getattr(self.owner, self.src)
-            return getattr(src_param, 'v')
+            try:
+                imodel = getattr(self.rtn.system, self.imodel)
+            except AttributeError:
+                raise AttributeError(f'Indexer source model <{self.imodel}> not found, likely a modeling error.')
+            try:
+                sorted_idx = self.owner.find_idx(keys=self.indexer, values=imodel.get_idx())
+            except AttributeError:
+                sorted_idx = self.owner.idx.v
+            except Exception as e:
+                raise e
+            model = getattr(self.rtn.system, self.model)
+            sorted_v = model.get(src=self.src, attr='v', idx=sorted_idx)
+            return sorted_v
 
     @property
     def shape(self):
@@ -176,11 +201,26 @@ class RParam:
         -------
         idx : list
             Index of the parameter.
+
+        Notes
+        -----
+        - The value will sort by the indexer if indexed.
         """
-        if self.is_group:
-            return self.owner.get_idx()
-        elif self.owner is None:
-            logger.info(f'Param <{self.name}> has no owner.')
-            return None
+        if self.indexer is None:
+            if self.is_group:
+                return self.owner.get_idx()
+            elif self.owner is None:
+                logger.info(f'Param <{self.name}> has no owner.')
+                return None
+            else:
+                return self.owner.idx.v
         else:
-            return self.owner.idx.v
+            try:
+                imodel = getattr(self.rtn.system, self.imodel)
+            except AttributeError:
+                raise AttributeError(f'Indexer source model <{self.imodel}> not found, likely a modeling error.')
+            try:
+                sorted_idx = self.owner.find_idx(keys=self.indexer, values=imodel.get_idx())
+            except AttributeError:
+                raise AttributeError(f'Indexer <{self.indexer}> not found in <{self.imodel}>, likely a modeling error.')
+            return sorted_idx

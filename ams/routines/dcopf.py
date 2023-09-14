@@ -34,17 +34,23 @@ class DCOPFData(RoutineData):
                          name='c2',
                          tex_name=r'c_{2}',
                          unit=r'$/(p.u.^2)',
-                         model='GCost',)
+                         model='GCost',
+                         indexer='gen',
+                         imodel='StaticGen',)
         self.c1 = RParam(info='Gen cost coefficient 1',
                          name='c1',
                          tex_name=r'c_{1}',
                          unit=r'$/(p.u.)',
-                         model='GCost',)
+                         model='GCost',
+                         indexer='gen',
+                         imodel='StaticGen',)
         self.c0 = RParam(info='Gen cost coefficient 0',
                          name='c0',
                          tex_name=r'c_{0}',
                          unit=r'$',
-                         model='GCost',)
+                         model='GCost',
+                         indexer='gen',
+                         imodel='StaticGen',)
         # --- generator limit ---
         self.pmax = RParam(info='Gen maximum active power (system base)',
                            name='pmax',
@@ -128,7 +134,7 @@ class DCOPFBase(RoutineModel):
         Unpack the results from CVXPY model.
         """
         # --- copy results from solver into routine algeb ---
-        for raname, var in self.vars.items():
+        for _, var in self.vars.items():
             # --- copy results from routine algeb into system algeb ---
             if var.model is None:          # if no owner
                 continue

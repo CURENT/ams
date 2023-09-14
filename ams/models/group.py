@@ -32,10 +32,27 @@ class GroupBase(andes_GroupBase):
 
     def get_idx(self):
         """
-        Return the value of group idx.
+        Return the value of group idx sorted in a human-readable style.
+
+        Notes
+        -----
+        This function sorts the idx values using a custom sorting key,
+        which handles varying length strings with letters and numbers.
         """
         all = [mdl.idx.v for _, mdl in self.models.items()]
-        flat_list = sorted([val for sublist in all for val in sublist])
+
+        # Custom sorting function to handle varying length strings with letters and numbers
+        def custom_sort_key(item):
+            try:
+                return int(item)  # Try to convert to integer for pure numeric strings
+            except ValueError:
+                try:
+                    # Extract numeric part for strings with letters and numbers
+                    return int(''.join(filter(str.isdigit, item)))
+                except ValueError:
+                    return item  # Return as is if not numeric
+
+        flat_list = sorted([val for sublist in all for val in sublist], key=custom_sort_key)
         return flat_list
 
     def _check_src(self, src: str):
@@ -91,6 +108,26 @@ class ACTopology(GroupBase):
         super().__init__()
         self.common_vars.extend(('a', 'v'))
 
+class RenGen(GroupBase):
+    """
+    Renewable generator (converter) group.
+
+    See ANDES Documentation SynGen here for the notes on replacing StaticGen and setting the power
+    ratio parameters.
+
+    Reference:
+
+    [1] ANDES Documentation, RenGen, [Online]
+
+    Available:
+
+    https://docs.andes.app/en/latest/groupdoc/RenGen.html#rengen
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.common_params.extend(('bus', 'gen', 'Sn'))
+        self.common_vars.extend(('Pe', 'Qe'))
 
 class DG(GroupBase):
     """
