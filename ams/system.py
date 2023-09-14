@@ -414,8 +414,8 @@ class System(andes_System):
             self.exit_code += 1
 
         a0 = 0
-        for mname, mdl in self.models.items():
-            for aname, algeb in mdl.algebs.items():
+        for _, mdl in self.models.items():
+            for _, algeb in mdl.algebs.items():
                 algeb.v = np.zeros(algeb.owner.n)
                 algeb.a = np.arange(a0, a0 + algeb.owner.n)
                 a0 += algeb.owner.n
@@ -428,8 +428,6 @@ class System(andes_System):
         gen_bus = self.StaticGen.get(src='bus', attr='v',
                                      idx=self.StaticGen.get_idx())
         all_bus = self.Bus.idx.v
-        regBus = [int(bus) if isinstance(bus, (int, float)) else bus for bus in gen_bus]
-        redBus = [int(bus) if isinstance(bus, (int, float)) else bus for bus in all_bus if bus not in gen_bus]
 
         # Restrucrue PQ load value to match gen bus pattern
 
@@ -452,10 +450,10 @@ class System(andes_System):
         ])
 
         # NOTE: initialize om for all routines
-        for rtnname, rtn in self.routines.items():
+        for _, rtn in self.routines.items():
             # rtn.setup()  # not setup optimization model in system setup stage
             a0 = 0
-            for vname, var in rtn.vars.items():
+            for _, var in rtn.vars.items():
                 var.a = np.arange(a0, a0 + var.owner.n)
                 a0 += var.owner.n
             for rpname, rparam in rtn.rparams.items():

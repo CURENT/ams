@@ -76,15 +76,21 @@ class OptzBase:
             return self.owner.n
 
     @property
+    def rtn(self):
+        """
+        Return the owner routine.
+        """
+        return self.om.rtn
+
+    @property
     def shape(self):
         """
         Return the shape.
         """
-        rtn = self.om.rtn
-        if rtn.is_setup:
+        if self.rtn.is_setup:
             return self.om.__dict__[self.name].shape
         else:
-            logger.warning(f'<{rtn.class_name}> is not setup yet.')
+            logger.warning(f'<{self.rtn.class_name}> is not setup yet.')
             return None
 
     @property
@@ -92,11 +98,10 @@ class OptzBase:
         """
         Return the size.
         """
-        rtn = self.om.rtn
-        if rtn.is_setup:
+        if self.rtn.is_setup:
             return self.om.__dict__[self.name].size
         else:
-            logger.warning(f'<{rtn.class_name}> is not setup yet.')
+            logger.warning(f'<{self.rtn.class_name}> is not setup yet.')
             return None
 
 
@@ -171,6 +176,7 @@ class Var(Algeb, OptzBase):
                  src: Optional[str] = None,
                  unit: Optional[str] = None,
                  model: Optional[str] = None,
+                 shape: Optional[Union[tuple, int]] = None,
                  lb: Optional[str] = None,
                  ub: Optional[str] = None,
                  horizon: Optional[RParam] = None,
@@ -205,6 +211,7 @@ class Var(Algeb, OptzBase):
         self.lb = lb
         self.ub = ub
         self.horizon = horizon
+        self._shape = shape
 
         self.config = Config(name=self.class_name)  # `config` that can be exported
 
@@ -262,14 +269,25 @@ class Var(Algeb, OptzBase):
             else:
                 config[k] = v
         # NOTE: number of rows is the size of the source variable
-        nr = self.owner.n
-        nc = 0
-        if self.horizon:
-            # NOTE: numer of columns is the horizon if exists
-            nc = int(self.horizon.n)
-            shape = (nr, nc)
+        if self.owner is not None:
+            nr = self.owner.n
+            nc = 0
+            if self.horizon:
+                # NOTE: numer of columns is the horizon if exists
+                nc = int(self.horizon.n)
+                shape = (nr, nc)
+            else:
+                shape = (nr,)
+        elif isinstance(self._shape, int):
+            shape = (self._shape,)
+            nr = shape
+            nc = 0
+        elif isinstance(self._shape, tuple):
+            shape = self._shape
+            nr = shape[0]
+            nc = shape[1] if len(shape) > 1 else 0
         else:
-            shape = (nr,)
+            raise ValueError(f"Invalid shape {self._shape}.")
         code_var = f"tmp=var({shape}, **config)"
         for pattern, replacement, in sub_map.items():
             code_var = re.sub(pattern, replacement, code_var)

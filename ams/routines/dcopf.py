@@ -150,7 +150,9 @@ class DCOPFBase(RoutineModel):
                 # NOTE: only unpack the variables that are in the model or group
                 try:
                     var.owner.set(src=var.src, attr='v', idx=idx, value=var.v)
-                except KeyError:
+                except KeyError:  # failed to find source var in the owner (model or group)
+                    pass
+                except TypeError:  # failed to find source var in the owner (model or group)
                     pass
         self.system.recent = self.system.routines[self.class_name]
         return True
