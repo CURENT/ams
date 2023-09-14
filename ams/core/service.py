@@ -94,6 +94,32 @@ class RBaseService(BaseService):
             return f'{self.class_name}: {self.rtn.class_name}.{self.name}'
 
 
+class ValueService(RBaseService):
+    """
+    Service to store given numeric values.
+    """
+
+    def __init__(self,
+                 name: str,
+                 value: np.ndarray,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 model: str = None,
+                 ):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype, model=model)
+        self._v = value
+
+    @property
+    def v(self):
+        """
+        Value of the service.
+        """
+        return self._v
+
+
 class ROperationService(RBaseService):
     """
     Base calss for operational services used in routine.

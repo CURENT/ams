@@ -3,7 +3,7 @@ Module for routine data.
 """
 
 import logging  # NOQA
-from typing import Optional, Union  # NOQA
+from typing import Optional, Union, Type  # NOQA
 from collections import OrderedDict  # NOQA
 
 import numpy as np  # NOQA
@@ -17,7 +17,7 @@ from ams.opt.omodel import OModel, Var, Constraint, Objective  # NOQA
 
 from ams.core.symprocessor import SymProcessor  # NOQA
 from ams.core.documenter import RDocumenter  # NOQA
-from ams.core.service import RBaseService  # NOQA
+from ams.core.service import RBaseService, ValueService  # NOQA
 
 from ams.models.group import GroupBase  # NOQA
 from ams.core.model import Model  # NOQA
@@ -411,6 +411,26 @@ class RoutineModel:
         self.is_setup = False
         self.exec_time = 0.0
         self.exit_code = 0
+
+    def addService(self,
+                   name: str,
+                   value: np.ndarray,
+                   tex_name: str = None,
+                   unit: str = None,
+                   info: str = None,
+                   vtype: Type = None,
+                   model: str = None,):
+        """
+        Add numerical service to the routine.
+        """
+        item = ValueService(name=name, value=value, tex_name=tex_name, unit=unit,
+                            info=info, vtype=vtype, model=model)
+        # add the service as an routine attribute
+        setattr(self, name, item)
+
+        self._post_add_check()
+
+        return True
 
     def addConstrs(self,
                    name: str,
