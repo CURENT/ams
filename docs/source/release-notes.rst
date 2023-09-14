@@ -9,6 +9,12 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.6.8 (2023-09-xx)
+-------------------
+
+- Add interfaces for customizing optimization models
+- Add model ``REGCV1`` and ``REGCV1Cost`` for virtual inertia scheduling
+
 v0.6.7 (2023-08-02)
 -------------------
 
