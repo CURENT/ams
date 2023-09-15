@@ -506,6 +506,10 @@ class ZonalSum(NumOp):
             ridx = zone_mdl.get_idx()
 
         row, col = np.meshgrid(self.u.v, ridx)
+        # consistency check
+        is_subset = set(self.u.v).issubset(set(ridx))
+        if not is_subset:
+            raise ValueError(f'{self.u.model} contains undefined zone, likey a data error.')
         result = (row == col).astype(int)
 
         return result
