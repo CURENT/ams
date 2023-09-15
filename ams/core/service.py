@@ -40,11 +40,9 @@ class RBaseService(BaseService):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 model: str = None,
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype)
-        self.model = model
         self.export = False
         self.is_group = False
         self.rtn = None
@@ -121,10 +119,9 @@ class ValueService(RBaseService):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 model: str = None,
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model)
+                         info=info, vtype=vtype)
         self._v = value
 
     @property
@@ -163,10 +160,9 @@ class ROperationService(RBaseService):
                  tex_name: str = None,
                  unit: str = None,
                  info: str = None,
-                 vtype: Type = None,
-                 model: str = None):
+                 vtype: Type = None,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model)
+                         info=info, vtype=vtype)
         self.u = u
 
 
@@ -212,7 +208,6 @@ class NumOp(ROperationService):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 model: str = None,
                  rfun: Callable = None,
                  rargs: dict = {},
                  expand_dims: int = None):
@@ -220,8 +215,7 @@ class NumOp(ROperationService):
         unit = unit if unit is not None else u.unit
         info = info if info is not None else u.info
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model,
-                         u=u,)
+                         info=info, vtype=vtype, u=u,)
         self.fun = fun
         self.args = args
         self.rfun = rfun
@@ -286,10 +280,9 @@ class NumExpandDim(NumOp):
                  tex_name: str = None,
                  unit: str = None,
                  info: str = None,
-                 vtype: Type = None,
-                 model: str = None,):
+                 vtype: Type = None,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model,
+                         info=info, vtype=vtype,
                          u=u, fun=np.expand_dims, args=args)
         self.axis = axis
 
@@ -343,7 +336,6 @@ class NumOpDual(NumOp):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 model: str = None,
                  rfun: Callable = None,
                  rargs: dict = {},
                  expand_dims: int = None):
@@ -351,7 +343,7 @@ class NumOpDual(NumOp):
         unit = unit if unit is not None else u.unit
         info = info if info is not None else u.info
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model,
+                         info=info, vtype=vtype,
                          u=u, fun=fun, args=args,
                          rfun=rfun, rargs=rargs,
                          expand_dims=expand_dims)
@@ -401,11 +393,10 @@ class NumHstack(NumOp):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 model: str = None,
                  rfun: Callable = None,
                  rargs: dict = {}):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model,
+                         info=info, vtype=vtype,
                          u=u, fun=np.hstack, args=args,
                          rfun=rfun, rargs=rargs)
         self.ref = ref
@@ -483,12 +474,11 @@ class ZonalSum(NumOp):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 model: str = None,
                  rfun: Callable = None,
                  rargs: dict = {},
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model,
+                         info=info, vtype=vtype,
                          u=u, fun=None, args={},
                          rfun=rfun, rargs=rargs)
         self.zone = zone
@@ -548,13 +538,12 @@ class VarReduction(NumOp):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 model: str = None,
                  rfun: Callable = None,
                  rargs: dict = {},
                  **kwargs
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model,
+                         info=info, vtype=vtype,
                          u=u, fun=None, rfun=rfun, rargs=rargs,
                          **kwargs)
         self.fun = fun
@@ -602,12 +591,11 @@ class RampSub(NumOp):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 model: str = None,
                  rfun: Callable = None,
                  rargs: dict = {},
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model,
+                         info=info, vtype=vtype,
                          u=u, fun=None, rfun=rfun, rargs=rargs,)
 
     @property
