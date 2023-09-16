@@ -6,7 +6,7 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
-from ams.core.service import ZonalSum
+from ams.core.service import ZonalSum, VarSelect, NumOp
 from ams.routines.dcopf import DCOPFData, DCOPFModel
 
 from ams.opt.omodel import Var, Constraint, Objective
@@ -48,7 +48,7 @@ class RTEDData(DCOPFData):
                          model='StaticGen',)
         # 2. generator
         self.pg0 = RParam(info='generator active power start point (system base)',
-                          name='pg0', src='pg0',
+                          name='pg0', src='p0',
                           tex_name=r'p_{g0}', unit='p.u.',
                           model='StaticGen',)
         self.R10 = RParam(info='10-min ramp rate (system base)',
@@ -207,3 +207,104 @@ class RTED(RTEDData, RTEDModel):
             delattr(self, 'vBus')
             self.is_ac = False
         return super().run(**kwargs)
+
+
+class RTED2Data(RTEDData):
+    """
+    Data for real-time economic dispatch, with ESD1.
+    """
+
+    def __init__(self):
+        RTEDData.__init__(self)
+        self.En = RParam(info='Rated energy capacity',
+                         name='En', src='En',
+                         tex_name='E_n', unit='MWh',
+                         model='ESD1',)
+        self.SOCmin = RParam(info='Minimum required value for SOC in limiter',
+                             name='SOCmin', src='SOCmin',
+                             tex_name='SOC_{min}', unit='%',
+                             model='ESD1',)
+        self.SOCmax = RParam(info='Maximum allowed value for SOC in limiter',
+                             name='SOCmax', src='SOCmax',
+                             tex_name='SOC_{max}', unit='%',
+                             model='ESD1',)
+        self.SOCinit = RParam(info='Initial state of charge',
+                              name='SOCinit', src='SOCinit',
+                              tex_name=r'SOC_{init}', unit='%',
+                              model='ESD1',)
+        self.EtaC = RParam(info='Efficiency during charging',
+                           name='EtaC', src='EtaC',
+                           tex_name='Eta_C', unit='%',
+                           model='ESD1',)
+        self.EtaD = RParam(info='Efficiency during discharging',
+                           name='EtaD', src='EtaD',
+                           tex_name='Eta_D', unit='%',
+                           model='ESD1',)
+        self.ge1 = RParam(info='gen of ESD1',
+                          name='grg1', tex_name=r'g_{ESD1}',
+                          model='ESD1', src='gen',)
+
+
+class RTED2Model(RTEDModel):
+    """
+    RTED model with ESD1.
+    """
+
+    def __init__(self, system, config):
+        RTEDModel.__init__(self, system, config)
+        self.e1s = VarSelect(u=self.pg, indexer='ge1',
+                             name='e1s', tex_name=r'\S_{ESD1}',
+                             info='Select ESD1 pg from StaticGen',)
+        self.pge = Var(info='Gen active power of ESD1 (system base)',
+                       unit='p.u.', name='pge', tex_name=r'p_{g,ESD1}',
+                       model='ESD1',)
+        self.SOC = Var(info='ESD1 SOC', unit='%',
+                       name='SOC', tex_name=r'SOC',
+                       model='ESD1',)
+        self.uc = Var(info='ESD1 charging decision',
+                      name='uc', tex_name=r'u_{c}',
+                      model='ESD1', boolean=True,)
+        self.z = Var(info='Auxiliary variable for ESD1 charging decision',
+                     name='z', tex_name=r'z_{u_c}',
+                     model='ESD1', pos=True,)
+        self.Mb = NumOp(info='10 times of max of pmax as big M',
+                        name='Mb', tex_name=r'M_{big}',
+                        u=self.pmax, fun=np.max,
+                        rfun=np.dot, rargs=dict(b=10),)
+        self.REtaD = NumOp(info='1/EtaD',
+                           name='REtaD', tex_name=r'1/{Eta_D}',
+                           u=self.EtaD, fun=np.reciprocal,)
+
+        # --- constraints ---
+        self.pges = Constraint(name='pges', type='eq',
+                               info='Select ESD1 pg from StaticGen',
+                               e_str='e1s@pg - pge',)
+        self.SOClb = Constraint(name='SOClb', type='uq',
+                                info='ESD1 SOC lower bound',
+                                e_str='SOC - SOCmin',)
+        self.SOCub = Constraint(name='SOCub', type='uq',
+                                info='ESD1 SOC upper bound',
+                                e_str='SOC - SOCmax',)
+        self.zb1 = Constraint(name='zb1', type='uq',
+                              info='z bound 1',
+                              e_str='-z + pge',)
+        self.zb2 = Constraint(name='zb2', type='uq',
+                              info='z bound 2',
+                              e_str='z - pge - Mb@(1-uc)',)
+        self.zb3 = Constraint(name='zb3', type='uq',
+                              info='z bound 3',
+                              e_str='z - Mb@uc',)
+        # FIXME: considering RTED time interval here
+        self.SOCb = Constraint(name='SOCb', type='uq',
+                               info='ESD1 SOC balance',
+                               e_str='SOCinit + EtaC*z + REtaD*pge - REtaD*z - SOC',)
+
+
+class RTED2(RTED2Data, RTED2Model):
+    """
+    RTED with energy storage :ref:`ESD1`.
+    """
+
+    def __init__(self, system, config):
+        RTED2Data.__init__(self)
+        RTED2Model.__init__(self, system, config)
