@@ -150,7 +150,7 @@ class Var(Algeb, OptzBase):
         Negative semi-definite variable
     hermitian : bool, optional
         Hermitian variable
-    bool : bool, optional
+    boolean : bool, optional
         Boolean variable
     integer : bool, optional
         Integer variable
@@ -189,7 +189,7 @@ class Var(Algeb, OptzBase):
                  psd: Optional[bool] = False,
                  nsd: Optional[bool] = False,
                  hermitian: Optional[bool] = False,
-                 bool: Optional[bool] = False,
+                 boolean: Optional[bool] = False,
                  integer: Optional[bool] = False,
                  pos: Optional[bool] = False,
                  neg: Optional[bool] = False,
@@ -224,7 +224,7 @@ class Var(Algeb, OptzBase):
                                      ('psd', psd),
                                      ('nsd', nsd),
                                      ('hermitian', hermitian),
-                                     ('bool', bool),
+                                     ('boolean', boolean),
                                      ('integer', integer),
                                      ('pos', pos),
                                      ('neg', neg),
@@ -396,7 +396,11 @@ class Constraint(OptzBase):
         om = self.om
         code_constr = self.e_str
         for pattern, replacement in sub_map.items():
-            code_constr = re.sub(pattern, replacement, code_constr)
+            try:
+                code_constr = re.sub(pattern, replacement, code_constr)
+            except TypeError as e:
+                logger.error(f"Error in parsing constr <{self.name}>.")
+                raise e
         if self.type == 'uq':
             code_constr = f'{code_constr} <= 0'
         elif self.type == 'eq':
