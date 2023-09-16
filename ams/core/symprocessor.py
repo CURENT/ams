@@ -68,6 +68,9 @@ class SymProcessor:
             (r'\bmultiply\b', f'{lang}.multiply'),
             (r'\bvstack\b', f'{lang}.vstack'),
             (r'\bnorm\b', f'{lang}.norm'),
+            (r'\bpos\b', f'{lang}.pos'),
+            (r'\bpower\b', f'{lang}.power'),
+            (r'\bsign\b', f'{lang}.sign'),
         ])
         self.tex_map = OrderedDict([
             (r'\*\*(\d+)', '^{\\1}'),
