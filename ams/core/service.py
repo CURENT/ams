@@ -505,6 +505,77 @@ class ZonalSum(NumOp):
         return result
 
 
+class VarSelect(NumOp):
+    """
+    A numerical matrix to select a subset of a 2D variable,
+    ``u.v[:, idx]``.
+
+    Parameters
+    ----------
+    u : Callable
+        The input matrix variable.
+    idx : list
+        The index of the subset.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 indexer: str,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 rfun: Callable = None,
+                 rargs: dict = {},
+                 **kwargs
+                 ):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype, u=u, fun=None,
+                         rfun=rfun, rargs=rargs, **kwargs)
+        self.indexer = indexer
+
+    @property
+    def v0(self):
+        # FIXME: what if reference source has no idx?
+        # data consistency check
+        indexer = getattr(self.rtn, self.indexer)
+        err_msg = f'Indexer source {indexer.model} has no {indexer.src}.'
+        group = model = None
+        if indexer.model in self.rtn.system.groups.keys():
+            group = self.rtn.system.groups[indexer.model]
+            group_idx = group.get_idx()
+            try:
+                ref = group.get(src=indexer.src, attr='v', idx=group_idx)
+            except AttributeError:
+                raise AttributeError(err_msg)
+        elif indexer.model in self.rtn.system.models.keys():
+            model = self.rtn.system.models[indexer.model]
+            try:
+                ref = model.get(src=indexer.src, attr='v', idx=model.idx.v)
+            except AttributeError:
+                raise AttributeError(err_msg)
+        else:
+            raise AttributeError(f'Indexer source model {indexer.model} has no ref.')
+
+        try:
+            uidx = self.u.get_idx()
+        except AttributeError:
+            raise AttributeError(f'Input {self.u.name} has no idx, likey a modeling error.')
+
+        is_empty = len(ref) == 0
+        if is_empty:
+            raise ValueError(f'{indexer.model} contains no input, likey a data error.')
+
+        is_subset = set(ref).issubset(set(uidx))
+        if not is_subset:
+            raise ValueError(f'{indexer.model} contains undefined {indexer.src}, likey a data error.')
+
+        out = [1 if item in ref else 0 for item in uidx]
+
+        return np.array(out)
+
+
 class VarReduction(NumOp):
     """
     A numerical matrix to reduce a 2D variable to 1D,
