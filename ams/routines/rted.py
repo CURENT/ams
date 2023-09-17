@@ -21,6 +21,12 @@ class RTEDData(DCOPFData):
 
     def __init__(self):
         DCOPFData.__init__(self)
+
+        self.dt = RParam(info='time interval',
+                         name='dt', src='dt',
+                         tex_name=r'\Delta t', unit='min',
+                         model='RTEDCFG',)
+
         # 1. reserve
         # 1.1. reserve cost
         self.cru = RParam(info='RegUp reserve coefficient',
@@ -151,6 +157,10 @@ class RTED(RTEDData, RTEDModel):
     The function ``dc2ac`` sets the ``vBus`` value from solved ACOPF.
     Without this conversion, dynamic simulation might fail due to the gap between
     DC-based dispatch results and AC-based dynamic initialization.
+
+    Known issues:
+
+    1. objective function and param R10 are not adjusted for time interval
     """
 
     def __init__(self, system, config):
@@ -252,52 +262,87 @@ class RTED2Model(RTEDModel):
 
     def __init__(self, system, config):
         RTEDModel.__init__(self, system, config)
-        self.e1s = VarSelect(u=self.pg, indexer='ge1',
-                             name='e1s', tex_name=r'\S_{ESD1}',
-                             info='Select ESD1 pg from StaticGen',)
-        self.pge = Var(info='Gen active power of ESD1 (system base)',
-                       unit='p.u.', name='pge', tex_name=r'p_{g,ESD1}',
-                       model='ESD1',)
-        self.SOC = Var(info='ESD1 SOC', unit='%',
-                       name='SOC', tex_name=r'SOC',
-                       model='ESD1',)
-        self.uc = Var(info='ESD1 charging decision',
-                      name='uc', tex_name=r'u_{c}',
-                      model='ESD1', boolean=True,)
-        self.z = Var(info='Auxiliary variable for ESD1 charging decision',
-                     name='z', tex_name=r'z_{u_c}',
-                     model='ESD1', pos=True,)
+        # --- service ---
+        self.REtaD = NumOp(info='1/EtaD',
+                           name='REtaD', tex_name=r'1/{Eta_D}',
+                           u=self.EtaD, fun=np.reciprocal,)
+        self.REn = NumOp(info='1/En',
+                         name='REn', tex_name=r'1/{E_n}',
+                         u=self.En, fun=np.reciprocal,)
+        self.dth = NumOp(info='time interval in hours',
+                         name='dth', tex_name=r'\Delta t_h',
+                         u=self.dt, fun=lambda x: x / 60,)
         self.Mb = NumOp(info='10 times of max of pmax as big M',
                         name='Mb', tex_name=r'M_{big}',
                         u=self.pmax, fun=np.max,
                         rfun=np.dot, rargs=dict(b=10),)
-        self.REtaD = NumOp(info='1/EtaD',
-                           name='REtaD', tex_name=r'1/{Eta_D}',
-                           u=self.EtaD, fun=np.reciprocal,)
+
+        # --- vars ---
+        self.SOC = Var(info='ESD1 SOC', unit='%',
+                       name='SOC', tex_name=r'SOC',
+                       model='ESD1', pos=True,)
+        self.e1s = VarSelect(u=self.pg, indexer='ge1',
+                             name='e1s', tex_name=r'\S_{ESD1}',
+                             info='Select ESD1 pg from StaticGen',)
+        self.pec = Var(info='ESD1 charging power (system base)',
+                       unit='p.u.', name='pec', tex_name=r'p_{c,ESD1}',
+                       model='ESD1',)
+        self.ped = Var(info='ESD1 discharging power (system base)',
+                       unit='p.u.', name='ped', tex_name=r'p_{d,ESD1}',
+                       model='ESD1',)
+        self.uc = Var(info='ESD1 charging decision',
+                      name='uc', tex_name=r'u_{c}',
+                      model='ESD1', boolean=True,)
+        self.ud = Var(info='ESD1 discharging decision',
+                      name='ud', tex_name=r'u_{d}',
+                      model='ESD1', boolean=True,)
+        self.zc = Var(info='Aux var for ESD1 charging',
+                      name='zc', tex_name=r'z_{c}',
+                      model='ESD1', pos=True,)
+        self.zd = Var(info='Aux var for ESD1 discharging',
+                      name='zd', tex_name=r'z_{d}',
+                      model='ESD1', pos=True,)
 
         # --- constraints ---
-        self.pges = Constraint(name='pges', type='eq',
-                               info='Select ESD1 pg from StaticGen',
-                               e_str='e1s@pg - pge',)
+        self.peb = Constraint(name='pges', type='eq',
+                              info='Select ESD1 power from StaticGen',
+                              e_str='e1s@pg - zc + zd',)
+        self.eb = Constraint(name='eb', type='eq',
+                             info='ESD1 charging decision',
+                             e_str='uc + ud - 1',)
+
         self.SOClb = Constraint(name='SOClb', type='uq',
                                 info='ESD1 SOC lower bound',
-                                e_str='SOC - SOCmin',)
+                                e_str='-SOC + SOCmin',)
         self.SOCub = Constraint(name='SOCub', type='uq',
                                 info='ESD1 SOC upper bound',
                                 e_str='SOC - SOCmax',)
-        self.zb1 = Constraint(name='zb1', type='uq',
-                              info='z bound 1',
-                              e_str='-z + pge',)
-        self.zb2 = Constraint(name='zb2', type='uq',
-                              info='z bound 2',
-                              e_str='z - pge - Mb@(1-uc)',)
-        self.zb3 = Constraint(name='zb3', type='uq',
-                              info='z bound 3',
-                              e_str='z - Mb@uc',)
+
+        self.zclb = Constraint(name='zclb', type='uq', info='zc lower bound',
+                               e_str='- zc + pec',)
+        self.zcub = Constraint(name='zcub', type='uq', info='zc upper bound',
+                               e_str='zc - pec - Mb@(1-uc)',)
+        self.zcub2 = Constraint(name='zcub2', type='uq', info='zc upper bound',
+                                e_str='zc - Mb@uc',)
+
+        self.zdlb = Constraint(name='zdlb', type='uq', info='zd lower bound',
+                               e_str='- zd + ped',)
+        self.zdub = Constraint(name='zdub', type='uq', info='zd upper bound',
+                               e_str='zd - ped - Mb@(1-ud)',)
+        self.zdub2 = Constraint(name='zdub2', type='uq', info='zd upper bound',
+                                e_str='zd - Mb@ud',)
+
         # FIXME: considering RTED time interval here
-        self.SOCb = Constraint(name='SOCb', type='uq',
-                               info='ESD1 SOC balance',
-                               e_str='SOCinit + EtaC*z + REtaD*pge - REtaD*z - SOC',)
+        # self.SOCb = Constraint(name='SOCb', type='eq', info='ESD1 SOC balance',
+        #                        e_str='-SOC + SOCinit + dth*REn*EtaC*z + dth*REn*REtaD*pge - dth*REn*REtaD*z',
+        #                        )
+        # NOTE: DEBUG ONLY
+        self.SOCb = Constraint(name='SOCb', type='eq', info='ESD1 SOC balance',
+                               e_str='SOC - SOCinit - dth*REn*EtaC*zc - dth*REn*REtaD*zd',
+                               )
+        # self.SOCb2 = Constraint(name='SOCb2', type='uq', info='ESD1 SOC balance',
+        #                         e_str='- SOC + SOCinit + dth*REn*EtaC*z + dth*REn*REtaD*pge - dth*REn*REtaD*z',
+        #                         )
 
 
 class RTED2(RTED2Data, RTED2Model):

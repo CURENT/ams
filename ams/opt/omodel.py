@@ -408,7 +408,7 @@ class Constraint(OptzBase):
         else:
             raise ValueError(f'Constraint type {self.type} is not supported.')
         code_constr = f'om.constrs["{self.name}"]=' + code_constr
-        logger.debug(f"Set constrs {self.name}: {self.e_str}")
+        logger.debug(f"Set constrs {self.name}: {self.e_str} {'<= 0' if self.type == 'uq' else '== 0'}")
         if show_code:
             logger.info(f"Code Constr: {code_constr}")
         exec(code_constr)
