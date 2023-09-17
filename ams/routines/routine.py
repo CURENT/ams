@@ -423,7 +423,7 @@ class RoutineModel:
                   indexer: Optional[str] = None,
                   imodel: Optional[str] = None,):
         """
-        Add :ref:`RParam` to the routine.
+        Add `RParam` to the routine.
 
         Parameters
         ----------
@@ -482,7 +482,7 @@ class RoutineModel:
                    vtype: Type = None,
                    model: str = None,):
         """
-        Add :ref:`ValueService` to the routine.
+        Add `ValueService` to the routine.
 
         Parameters
         ----------
@@ -517,7 +517,7 @@ class RoutineModel:
                    type: Optional[str] = 'uq',
                    ):
         """
-        Add :ref:`Constraint` to the routine. to the routine.
+        Add `Constraint` to the routine. to the routine.
 
         Parameters
         ----------
