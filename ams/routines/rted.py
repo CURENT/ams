@@ -284,29 +284,17 @@ class RTED2Model(RTEDModel):
         self.pec = Var(info='ESD1 charging power (system base)',
                        unit='p.u.', name='pec', tex_name=r'p_{c,ESD1}',
                        model='ESD1',)
-        self.ped = Var(info='ESD1 discharging power (system base)',
-                       unit='p.u.', name='ped', tex_name=r'p_{d,ESD1}',
-                       model='ESD1',)
         self.uc = Var(info='ESD1 charging decision',
                       name='uc', tex_name=r'u_{c}',
                       model='ESD1', boolean=True,)
-        self.ud = Var(info='ESD1 discharging decision',
-                      name='ud', tex_name=r'u_{d}',
-                      model='ESD1', boolean=True,)
         self.zc = Var(info='Aux var for ESD1 charging',
                       name='zc', tex_name=r'z_{c}',
-                      model='ESD1', pos=True,)
-        self.zd = Var(info='Aux var for ESD1 discharging',
-                      name='zd', tex_name=r'z_{d}',
                       model='ESD1', pos=True,)
 
         # --- constraints ---
         self.peb = Constraint(name='pges', type='eq',
                               info='Select ESD1 power from StaticGen',
-                              e_str='e1s@pg - zc + zd',)
-        self.eb = Constraint(name='eb', type='eq',
-                             info='ESD1 charging decision',
-                             e_str='uc + ud - 1',)
+                              e_str='e1s@pg - zc',)
 
         self.SOClb = Constraint(name='SOClb', type='uq',
                                 info='ESD1 SOC lower bound',
@@ -322,16 +310,9 @@ class RTED2Model(RTEDModel):
         self.zcub2 = Constraint(name='zcub2', type='uq', info='zc upper bound',
                                 e_str='zc - Mb@uc',)
 
-        self.zdlb = Constraint(name='zdlb', type='uq', info='zd lower bound',
-                               e_str='- zd + ped',)
-        self.zdub = Constraint(name='zdub', type='uq', info='zd upper bound',
-                               e_str='zd - ped - Mb@(1-ud)',)
-        self.zdub2 = Constraint(name='zdub2', type='uq', info='zd upper bound',
-                                e_str='zd - Mb@ud',)
-
-        SOCb = 'SOC - SOCinit - power(dth, 1)*REn*EtaC*zc - power(dth, 1)*REn*REtaD*zd'
-        self.SOCb = Constraint(name='SOCb', type='eq', info='ESD1 SOC balance',
-                               e_str=SOCb,)
+        SOCb = 'SOC - SOCinit - power(dth, 1)*REn*EtaC*zc - power(dth, 1)*REn*REtaD*(pec - zc)'
+        self.SOCb = Constraint(name='SOCb', type='eq',
+                               info='ESD1 SOC balance', e_str=SOCb,)
 
 
 class RTED2(RTED2Data, RTED2Model):
