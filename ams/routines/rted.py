@@ -24,7 +24,7 @@ class RTEDData(DCOPFData):
 
         self.dt = RParam(info='time interval',
                          name='dt', src='dt',
-                         tex_name=r'\Delta t', unit='min',
+                         tex_name=r't_{d}', unit='min',
                          model='RTEDCFG',)
 
         # 1. reserve
@@ -98,7 +98,7 @@ class RTEDModel(DCOPFModel):
 
         # NOTE: here ``dth`` is expected to have only one value
         self.dth = NumOp(info='time interval in hours',
-                         name='dth', tex_name=r'\Delta t_h',
+                         name='dth', tex_name=r't_{d,h}',
                          u=self.dt, fun=lambda x: x / 60,
                          rfun=np.max,)
         self.R10h = NumOp(info='10-min ramp rate in hours',
@@ -279,7 +279,7 @@ class RTED2Model(RTEDModel):
                        name='SOC', tex_name=r'SOC',
                        model='ESD1', pos=True,)
         self.e1s = VarSelect(u=self.pg, indexer='ge1',
-                             name='e1s', tex_name=r'\S_{ESD1}',
+                             name='e1s', tex_name=r'S_{ESD1}',
                              info='Select ESD1 pg from StaticGen',)
         self.pec = Var(info='ESD1 charging power (system base)',
                        unit='p.u.', name='pec', tex_name=r'p_{c,ESD1}',
