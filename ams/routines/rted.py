@@ -92,50 +92,50 @@ class RTEDModel(DCOPFModel):
         self.info = 'Economic dispatch'
         self.type = 'DCED'
         # --- service ---
-        self.gs = ZonalSum(u=self.zg,
-                           zone='Region',
+        self.gs = ZonalSum(u=self.zg, zone='Region',
                            name='gs', tex_name=r'\sum_{g}')
         self.gs.info = 'Sum Gen vars vector in shape of zone'
+
+        # NOTE: here ``dth`` is expected to have only one value
+        self.dth = NumOp(info='time interval in hours',
+                         name='dth', tex_name=r'\Delta t_h',
+                         u=self.dt, fun=lambda x: x / 60,
+                         rfun=np.max,)
+        self.R10h = NumOp(info='10-min ramp rate in hours',
+                          name='R10h', tex_name=r'R_{10,h}',
+                          u=self.R10, fun=lambda x: x / 60,)
 
         # --- vars ---
         self.pru = Var(info='RegUp reserve (system base)',
                        unit='p.u.', name='pru', tex_name=r'p_{r,u}',
-                       model='StaticGen',
-                       nonneg=True,
-                       )
+                       model='StaticGen', nonneg=True,)
         self.prd = Var(info='RegDn reserve (system base)',
                        unit='p.u.', name='prd', tex_name=r'p_{r,d}',
-                       model='StaticGen',
-                       nonneg=True,
-                       )
+                       model='StaticGen', nonneg=True,)
         # --- constraints ---
-        self.rbu = Constraint(name='rbu',
+        self.rbu = Constraint(name='rbu', type='eq',
                               info='RegUp reserve balance',
-                              e_str='gs @ pru - du',
-                              type='eq',)
-        self.rbd = Constraint(name='rbd',
+                              e_str='gs @ pru - du',)
+        self.rbd = Constraint(name='rbd', type='eq',
                               info='RegDn reserve balance',
-                              e_str='gs @ prd - dd',
-                              type='eq',)
-        self.rru = Constraint(name='rru',
+                              e_str='gs @ prd - dd',)
+        self.rru = Constraint(name='rru', type='uq',
                               info='RegUp reserve ramp',
-                              e_str='pg + pru - pmax',
-                              type='uq',)
-        self.rrd = Constraint(name='rrd',
+                              e_str='pg + pru - pmax',)
+        self.rrd = Constraint(name='rrd', type='uq',
                               info='RegDn reserve ramp',
-                              e_str='-pg + prd - pmin',
-                              type='uq',)
-        self.rgu = Constraint(name='rgu',
+                              e_str='-pg + prd - pmin',)
+        self.rgu = Constraint(name='rgu', type='uq',
                               info='ramp up limit of generator output',
-                              e_str='pg - pg0 - R10',
-                              type='uq',)
-        self.rgd = Constraint(name='rgd',
+                              e_str='pg - pg0 - R10h',)
+        self.rgd = Constraint(name='rgd', type='uq',
                               info='ramp down limit of generator output',
-                              e_str='-pg + pg0 - R10',
-                              type='uq',)
+                              e_str='-pg + pg0 - R10h',)
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
-        self.obj.e_str = 'sum(c2 * pg**2 + c1 * pg + ug * c0 + cru * pru + crd * prd)'
+        self.obj.e_str = 'power(dth, 2) * sum(c2 @ pg**2) ' + \
+                         '+ power(dth, 1) * sum(c1 @ pg) + ug * c0 ' + \
+                         '+ sum(cru * pru + crd * prd)'
 
 
 class RTED(RTEDData, RTEDModel):
@@ -158,9 +158,9 @@ class RTED(RTEDData, RTEDModel):
     Without this conversion, dynamic simulation might fail due to the gap between
     DC-based dispatch results and AC-based dynamic initialization.
 
-    Known issues:
-
-    1. objective function and param R10 are not adjusted for time interval
+    Notes
+    -----
+    1. objective function values has been adjusted for RTED interval ``dt``
     """
 
     def __init__(self, system, config):
@@ -269,9 +269,6 @@ class RTED2Model(RTEDModel):
         self.REn = NumOp(info='1/En',
                          name='REn', tex_name=r'1/{E_n}',
                          u=self.En, fun=np.reciprocal,)
-        self.dth = NumOp(info='time interval in hours',
-                         name='dth', tex_name=r'\Delta t_h',
-                         u=self.dt, fun=lambda x: x / 60,)
         self.Mb = NumOp(info='10 times of max of pmax as big M',
                         name='Mb', tex_name=r'M_{big}',
                         u=self.pmax, fun=np.max,
@@ -332,22 +329,16 @@ class RTED2Model(RTEDModel):
         self.zdub2 = Constraint(name='zdub2', type='uq', info='zd upper bound',
                                 e_str='zd - Mb@ud',)
 
-        # FIXME: considering RTED time interval here
-        # self.SOCb = Constraint(name='SOCb', type='eq', info='ESD1 SOC balance',
-        #                        e_str='-SOC + SOCinit + dth*REn*EtaC*z + dth*REn*REtaD*pge - dth*REn*REtaD*z',
-        #                        )
-        # NOTE: DEBUG ONLY
+        SOCb = 'SOC - SOCinit - power(dth, 1)*REn*EtaC*zc - power(dth, 1)*REn*REtaD*zd'
         self.SOCb = Constraint(name='SOCb', type='eq', info='ESD1 SOC balance',
-                               e_str='SOC - SOCinit - dth*REn*EtaC*zc - dth*REn*REtaD*zd',
-                               )
-        # self.SOCb2 = Constraint(name='SOCb2', type='uq', info='ESD1 SOC balance',
-        #                         e_str='- SOC + SOCinit + dth*REn*EtaC*z + dth*REn*REtaD*pge - dth*REn*REtaD*z',
-        #                         )
+                               e_str=SOCb,)
 
 
 class RTED2(RTED2Data, RTED2Model):
     """
     RTED with energy storage :ref:`ESD1`.
+
+    The bilinear term in the formulation is linearized with big-M method.
     """
 
     def __init__(self, system, config):
