@@ -12,12 +12,6 @@ class ReserveData(ModelData):
         super().__init__()
         self.zone = IdxParam(model='Zone',
                              default=None, info="Zone code",)
-        self.du = NumParam(default=0,
-                           info='Zonal RegUp reserve demand (system base)',
-                           tex_name=r'd_{u}', unit=r'p.u.',)
-        self.dd = NumParam(default=0,
-                           info='Zonal RegDown reserve demand (system base)',
-                           tex_name=r'd_{d}', unit=r'p.u.',)
 
 
 class SFR(ReserveData, Model):
@@ -33,6 +27,12 @@ class SFR(ReserveData, Model):
         ReserveData.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'Reserve'
+        self.du = NumParam(default=0,
+                           info='Zonal RegUp reserve demand (system base)',
+                           tex_name=r'd_{u}', unit=r'p.u.',)
+        self.dd = NumParam(default=0,
+                           info='Zonal RegDown reserve demand (system base)',
+                           tex_name=r'd_{d}', unit=r'p.u.',)
 
 
 class SR(ReserveData, Model):
@@ -42,12 +42,16 @@ class SR(ReserveData, Model):
     Notes
     -----
     - ``Zone`` model is required for this model, and zone is defined by Param ``Bus.zone``.
+    - ``demand`` is multiplied to online unused generation capacity.
     """
 
     def __init__(self, system, config):
         ReserveData.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'Reserve'
+        self.demand = NumParam(default=0.1, unit='%',
+                               info='Zonal spinning reserve demand',
+                               tex_name=r'd_{SR}')
 
 
 class NSR(ReserveData, Model):
@@ -57,9 +61,13 @@ class NSR(ReserveData, Model):
     Notes
     -----
     - ``Zone`` model is required for this model, and zone is defined by Param ``Bus.zone``.
+    - ``demand`` is multiplied to offline generation capacity.
     """
 
     def __init__(self, system, config):
         ReserveData.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'Reserve'
+        self.demand = NumParam(default=0.1, unit='%',
+                               info='Zonal non-spinning reserve demand',
+                               tex_name=r'd_{NSR}')
