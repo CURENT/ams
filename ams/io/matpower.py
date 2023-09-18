@@ -212,6 +212,8 @@ def mpc2system(mpc: dict, system) -> bool:
                    csu=startup, csd=shutdown,
                    c2=c2, c1=c1, c0=c0
                    )
+        # FIXME: temporary fix for the value type issue
+        system.GCost.gen.v = np.array(system.GCost.gen.v).astype(int)
         gcost_idx += 1
 
     return True
