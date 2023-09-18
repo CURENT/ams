@@ -6,6 +6,7 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
+from ams.core.service import NumOp
 from ams.routines.ed import EDData, EDModel
 
 from ams.opt.omodel import Var, Constraint, Objective
@@ -21,54 +22,45 @@ class UCData(EDData):
     def __init__(self):
         EDData.__init__(self)
         self.ug0 = RParam(info='initial gen connection status',
-                          name='ug0',
-                          src='u',
-                          tex_name=r'u_{g,0}',
-                          model='StaticGen',
-                          )
+                          name='ug0', tex_name=r'u_{g,0}',
+                          model='StaticGen', src='u',)
         self.csu = RParam(info='startup cost',
-                          name='csu',
-                          src='csu',
-                          tex_name=r'c_{su}',
-                          unit='$',
-                          model='GCost',
-                          )
+                          name='csu', tex_name=r'c_{su}',
+                          model='GCost', src='csu',
+                          unit='$',)
         self.csd = RParam(info='shutdown cost',
-                          name='csd',
-                          src='csd',
-                          tex_name=r'c_{sd}',
-                          unit='$',
-                          model='GCost',
-                          )
-
+                          name='csd', tex_name=r'c_{sd}',
+                          model='GCost', src='csd',
+                          unit='$',)
         self.td1 = RParam(info='minimum ON duration',
-                          name='td1',
-                          src='td1',
-                          tex_name=r't_{d1}',
-                          unit='min',
-                          model='StaticGen',
-                          )
+                          name='td1', tex_name=r't_{d1}',
+                          model='StaticGen', src='td1',
+                          unit='min',)
         self.td2 = RParam(info='minimum OFF duration',
-                          name='td2',
-                          src='td2',
-                          tex_name=r't_{d2}',
-                          unit='min',
-                          model='StaticGen',
-                          )
+                          name='td2', tex_name=r't_{d2}',
+                          model='StaticGen', src='td2',
+                          unit='min',)
 
-        self.scale.info = 'zonal load factor for UC'
-        self.scale.model = 'UCTSlot'
+        self.sd.info = 'zonal load factor for UC'
+        self.sd.model = 'UCTSlot'
 
         self.timeslot.info = 'Time slot for multi-period UC'
         self.timeslot.model = 'UCTSlot'
 
         self.dt = RParam(info='UC interval',
-                         name='dt',
-                         src='dt',
-                         tex_name=r'\Delta t',
-                         unit='min',
-                         model='UCTSlot',
-                         )
+                         name='dt', tex_name=r't{d}',
+                         model='UCTSlot', src='dt',
+                         unit='min',)
+
+        self.dsr = RParam(info='spinning reserve requirement',
+                          name='dsr', tex_name=r'd_{sr}',
+                          model='SR', src='demand',
+                          unit='%',)
+
+        self.dnsr = RParam(info='non-spinning reserve requirement',
+                           name='dnsr', tex_name=r'd_{nsr}',
+                           model='NSR', src='demand',
+                           unit='%',)
 
 
 class UCModel(EDModel):
@@ -80,63 +72,64 @@ class UCModel(EDModel):
         EDModel.__init__(self, system, config)
         self.info = 'unit commitment'
         self.type = 'DCUC'
-        for ele in ['pb', 'lub', 'llb', 'rgu', 'rgd']:
-            try:
-                delattr(self, ele)
-            except AttributeError:
-                pass
         # --- vars ---
         self.ugd = Var(info='commitment decision',
-                       name='ugd',
                        horizon=self.timeslot,
-                       tex_name=r'u_{g,d}',
-                       model='StaticGen',
-                       bool=True,
-                       src='u',
-                       )
+                       name='ugd', tex_name=r'u_{g,d}',
+                       model='StaticGen', src='u',
+                       boolean=True,)
         self.vgd = Var(info='startup action',
-                       name='vgd',
                        horizon=self.timeslot,
-                       tex_name=r'v_{g,d}',
-                       model='StaticGen',
-                       bool=True,
-                       src='u',
-                       )
+                       name='vgd', tex_name=r'v_{g,d}',
+                       model='StaticGen', src='u',
+                       boolean=True,)
         self.wgd = Var(info='shutdown action',
-                       name='wgd',
                        horizon=self.timeslot,
-                       tex_name=r'w_{g,d}',
-                       model='StaticGen',
-                       bool=True,
-                       src='u',
-                       )
-        # NOTE: add action constraints by two parts
-        self.actv = Constraint(name='actv',
-                               info='startup action',
-                               e_str='ugd @ Mr - vgd[:, 1:]',
-                               type='uq',
-                               )
-        self.actv0 = Constraint(name='actv0',
-                                info='initial startup action',
-                                e_str='ugd[:, 0] - ug0  - vgd[:, 0]',
-                                type='uq',
-                                )
-        self.actw = Constraint(name='actw',
-                               info='shutdown action',
-                                    e_str='-ugd @ Mr - wgd[:, 1:]',
-                                    type='uq',
-                               )
-        self.actw0 = Constraint(name='actw0',
-                                info='initial shutdown action',
-                                e_str='-ugd[:, 0] + ug0 - wgd[:, 0]',
-                                type='uq',
-                                )
+                       name='wgd', tex_name=r'w_{g,d}',
+                       model='StaticGen', src='u',
+                       boolean=True,)
 
-        # TODO: add variable "reserve"
-        # NOTE: spinning reserve or non-spinning reserve?
-        # NOTE: is spinning reserve and AGC reserve the same? seems True
+        self.zug = Var(info='Aux var for ugd',
+                       horizon=self.timeslot,
+                       name='zug', tex_name=r'z_{ug}',
+                       model='StaticGen', pos=True,)
+
+        self.psr = Var(info='spinning reserve (system base)',
+                       unit='p.u.', name='psr', tex_name=r'p_{sr}',
+                       model='StaticGen', nonneg=True,)
+        self.pnsr = Var(info='non-spinning reserve (system base)',
+                        unit='p.u.', name='pnsr', tex_name=r'p_{nsr}',
+                        model='StaticGen', nonneg=True,)
+
+        # NOTE: add action constraints by two parts
+        self.actv = Constraint(name='actv', info='startup action',
+                               e_str='ugd @ Mr - vgd[:, 1:]',
+                               type='uq',)
+        self.actv0 = Constraint(name='actv0', info='initial startup action',
+                                e_str='ugd[:, 0] - ug0  - vgd[:, 0]',
+                                type='uq',)
+        self.actw = Constraint(name='actw', info='shutdown action',
+                               e_str='-ugd @ Mr - wgd[:, 1:]',
+                               type='uq',)
+        self.actw0 = Constraint(name='actw0', info='initial shutdown action',
+                                e_str='-ugd[:, 0] + ug0 - wgd[:, 0]',
+                                type='uq',)
+
         # --- constraints ---
-        # self.pb.e_str = 'pds - Spg @ multiply(ugd, pg)'  # power balance
+        self.pb.e_str = 'pds - Spg @ zug'  # power balance
+
+        self.Mzug = NumOp(info='10 times of max of pmax as big M for zug',
+                        name='Mzug', tex_name=r'M_{zug}',
+                        u=self.pmax, fun=np.max,
+                        rfun=np.dot, rargs=dict(b=10),)
+
+        self.zuglb = Constraint(name='zuglb', info='zug lower bound',
+                                type='uq', e_str='- zug + pg')
+        self.zugub = Constraint(name='zugub', info='zug upper bound',
+                                type='uq', e_str='zug - pg - Mzug[0] * (1 - ugd)')
+        self.zugub2 = Constraint(name='zugub2', info='zug upper bound',
+                                    type='uq', e_str='zug - Mzug[0] * ugd')
+
         # TODO: add reserve balance, 3% or 5%
         # TODO: constrs: minimum ON/OFF time for conventional units
         # TODO: add data prameters: minimum ON/OFF time for conventional units
@@ -156,19 +149,15 @@ class UCModel(EDModel):
         #                       type='uq',
         #                       )
         # --- objective ---
-        # self.obj.e_str = 'sum(ugd * c2 * pg**2 + ugd * c1 * pg + c0 * ugd + csu * ugd + csd * (1 - ud))'
-        # self.obj.e_str = 'sum(c2 * multiply(ugd, pg**2) +  c1 * multiply(ugd * pg) + c0 * ugd + csu * ugd)'  # DEBUG only
-        # self.obj.e_str = 'sum(c2 * multiply(ugd, pg**2))'  # DEBUG only
-        # self.obj = Objective(name='tc',
-        #                      info='total generation and reserve cost',
-        #                      e_str='sum(pg**2 * ug + c1 * pg * ug+ c0 * ug + csu * ug + csd * (1 - ug))',
-        #                      sense='min',
-        #                      )
+        # NOTE: havn't adjust time duration
+        gcost = 'sum(c2 * zug**2 + c1 * zug + c0 * ugd + csu * vgd + csd * wgd)'
+        rcost = ''
+        self.obj.e_str = gcost + rcost
 
 
 class UC(UCData, UCModel):
     """
-    DC-based unit commitment (UC).
+    DC-based unit commitment (UC), wherew.
 
     References
     ----------
