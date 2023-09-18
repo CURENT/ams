@@ -21,6 +21,9 @@ class RTEDData(DCOPFData):
 
     def __init__(self):
         DCOPFData.__init__(self)
+        self.ug0 = RParam(info='initial gen connection status',
+                          name='ug0', tex_name=r'u_{g,0}',
+                          model='StaticGen', src='u',)
 
         # 1. reserve
         # 1.1. reserve cost
@@ -106,22 +109,22 @@ class RTEDModel(DCOPFModel):
         # --- constraints ---
         self.rbu = Constraint(name='rbu', type='eq',
                               info='RegUp reserve balance',
-                              e_str='gs @ pru - du',)
+                              e_str='gs @ multiply(ug0, pru) - du',)
         self.rbd = Constraint(name='rbd', type='eq',
                               info='RegDn reserve balance',
-                              e_str='gs @ prd - dd',)
+                              e_str='gs @ multiply(ug0, prd) - dd',)
         self.rru = Constraint(name='rru', type='uq',
                               info='RegUp reserve ramp',
-                              e_str='pg + pru - pmax',)
+                              e_str='multiply(ug0, pg + pru) - pmax',)
         self.rrd = Constraint(name='rrd', type='uq',
                               info='RegDn reserve ramp',
-                              e_str='-pg + prd - pmin',)
+                              e_str='multiply(ug0, -pg + prd) - pmin',)
         self.rgu = Constraint(name='rgu', type='uq',
                               info='ramp up limit of generator output',
-                              e_str='pg - pg0 - R10h',)
+                              e_str='multiply(ug0, pg-pg0) - R10h',)
         self.rgd = Constraint(name='rgd', type='uq',
                               info='ramp down limit of generator output',
-                              e_str='-pg + pg0 - R10h',)
+                              e_str='multiply(ug0, -pg+pg0) - R10h',)
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
         # NOTE: the product of dt and pg is processed using ``dot``, because dt is a numnber
