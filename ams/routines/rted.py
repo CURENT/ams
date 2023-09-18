@@ -65,6 +65,7 @@ class RTEDModel(DCOPFModel):
 
     def __init__(self, system, config):
         DCOPFModel.__init__(self, system, config)
+        self.config.dth = 5/60  # time interval in hours
         self.map1 = OrderedDict([
             ('StaticGen', {
                 'pg0': 'p',
@@ -123,8 +124,9 @@ class RTEDModel(DCOPFModel):
                               e_str='-pg + pg0 - R10h',)
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
-        self.obj.e_str = 'power(dt, 2) * sum(c2 @ pg**2) ' + \
-                         '+ power(dt, 1) * sum(c1 @ pg) + ug * c0 ' + \
+        # NOTE: the product of dt and pg is processed using ``dot``, because dt is a numnber
+        self.obj.e_str = 'sum(c2 @ (dth dot pg)**2) ' + \
+                         '+ sum(c1 @ (dth dot pg)) + ug * c0 ' + \
                          '+ sum(cru * pru + crd * prd)'
 
 
@@ -150,7 +152,7 @@ class RTED(RTEDData, RTEDModel):
 
     Notes
     -----
-    1. objective function values has been adjusted for RTED interval ``dt``
+    1. objective function has been adjusted for RTED interval ``config.dth``, 5/60 [Hour] by default.
     """
 
     def __init__(self, system, config):
@@ -300,7 +302,7 @@ class RTED2Model(RTEDModel):
         self.zcub2 = Constraint(name='zcub2', type='uq', info='zc upper bound',
                                 e_str='zc - Mb@uc',)
 
-        SOCb = 'SOC - SOCinit - power(dt, 1)*REn*EtaC*zc - power(dt, 1)*REn*REtaD*(pec - zc)'
+        SOCb = 'SOC - SOCinit - dth dot REn*EtaC*zc - dth dot REn*REtaD*(pec - zc)'
         self.SOCb = Constraint(name='SOCb', type='eq',
                                info='ESD1 SOC balance', e_str=SOCb,)
 

@@ -60,8 +60,8 @@ class SymProcessor:
         lang = "cp"  # TODO: might need to be generalized to other solvers
         # only used for CVXPY
         self.sub_map = OrderedDict([
-            (r'\b(\w+)\s* dot \s*(\w+)\b', r'\1 * \2'),
             (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 @ \2'),
+            (r'\b(\w+)\s* dot \s*(\w+)\b', r'\1 * \2'),
             (r'\bsum\b', f'{lang}.sum'),  
             (r'\bvar\b', f'{lang}.Variable'),
             (r'\bproblem\b', f'{lang}.Problem'),
