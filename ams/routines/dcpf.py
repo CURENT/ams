@@ -115,7 +115,10 @@ class DCPFlowBase(RoutineModel):
                 msg += f"{self.class_name}.{raname}, skip unpacking."
                 logger.warning(msg)
                 continue
-            var.v = owner.get(src=var.src, attr='v', idx=idx)
+            try:
+                var.v = owner.get(src=var.src, attr='v', idx=idx)
+            except AttributeError:
+                continue
         self.system.recent = self.system.routines[self.class_name]
         return True
 
