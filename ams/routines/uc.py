@@ -6,7 +6,7 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
-from ams.core.service import NumOp, ZonalSum, NumHstack
+from ams.core.service import NumOp, ZonalSum, NumHstack, NumOpDual
 from ams.routines.ed import EDData, EDModel
 
 from ams.opt.omodel import Var, Constraint, Objective
@@ -57,15 +57,15 @@ class UCData(EDData):
                          model='UCTSlot', src='dt',
                          unit='min',)
 
-        self.dsr = RParam(info='spinning reserve requirement',
-                          name='dsr', tex_name=r'd_{sr}',
-                          model='SR', src='demand',
-                          unit='%',)
-
-        self.dnsr = RParam(info='non-spinning reserve requirement',
-                           name='dnsr', tex_name=r'd_{nsr}',
-                           model='NSR', src='demand',
+        self.dsrp = RParam(info='spinning reserve requirement in percentage',
+                           name='dsr', tex_name=r'd_{sr}',
+                           model='SR', src='demand',
                            unit='%',)
+
+        self.dnsrp = RParam(info='non-spinning reserve requirement in percentage',
+                            name='dnsr', tex_name=r'd_{nsr}',
+                            model='NSR', src='demand',
+                            unit='%',)
 
         self.Sn = RParam(info='generator capacity',
                          name='Sn', src='Sn',
@@ -104,26 +104,19 @@ class UCModel(EDModel):
                        name='zug', tex_name=r'z_{ug}',
                        model='StaticGen', pos=True,)
 
-        self.psr = Var(info='spinning reserve (system base)',
-                       unit='p.u.', name='psr', tex_name=r'p_{sr}',
-                       model='StaticGen', nonneg=True,)
-        self.pnsr = Var(info='non-spinning reserve (system base)',
-                        unit='p.u.', name='pnsr', tex_name=r'p_{nsr}',
-                        model='StaticGen', nonneg=True,)
-
-        # NOTE: add action constraints by two parts
-        self.actv = Constraint(name='actv', info='startup action',
-                               e_str='ugd @ Mr - vgd[:, 1:]',
-                               type='uq',)
-        self.actv0 = Constraint(name='actv0', info='initial startup action',
-                                e_str='ugd[:, 0] - ug0  - vgd[:, 0]',
-                                type='uq',)
-        self.actw = Constraint(name='actw', info='shutdown action',
-                               e_str='-ugd @ Mr - wgd[:, 1:]',
-                               type='uq',)
-        self.actw0 = Constraint(name='actw0', info='initial shutdown action',
-                                e_str='-ugd[:, 0] + ug0 - wgd[:, 0]',
-                                type='uq',)
+        # NOTE: actions have two parts, one for initial status, another for the rest
+        self.actv = Constraint(name='actv', type='eq',
+                               info='startup action',
+                               e_str='ugd @ Mr - vgd[:, 1:]',)
+        self.actv0 = Constraint(name='actv0', type='eq',
+                                info='initial startup action',
+                                e_str='ugd[:, 0] - ug0  - vgd[:, 0]',)
+        self.actw = Constraint(name='actw', type='eq',
+                               info='shutdown action',
+                               e_str='-ugd @ Mr - wgd[:, 1:]',)
+        self.actw0 = Constraint(name='actw0', type='eq',
+                                info='initial shutdown action',
+                                e_str='-ugd[:, 0] + ug0 - wgd[:, 0]',)
 
         # --- constraints ---
         self.pb.e_str = 'pds - Spg @ zug'  # power balance
@@ -133,7 +126,6 @@ class UCModel(EDModel):
                           name='Mzug', tex_name=r'M_{zug}',
                           u=self.pmax, fun=np.max,
                           rfun=np.dot, rargs=dict(b=10),)
-
         self.zuglb = Constraint(name='zuglb', info='zug lower bound',
                                 type='uq', e_str='- zug + pg')
         self.zugub = Constraint(name='zugub', info='zug upper bound',
@@ -149,20 +141,26 @@ class UCModel(EDModel):
                          name='tsn', tex_name=r'\sum_{S_n}',
                          u=self.Sn, fun=np.sum,)
         # 1) non-spinning reserve
-        self.Rdnsr = NumHstack(u=self.dnsr, ref=self.timeslot,
-                               name='Rdnsr', tex_name=r'd_{nsr, R}',
-                               info='Repetated non-spinning reserve requirement',)
+        self.Rdnsrp = NumHstack(u=self.dnsrp, ref=self.timeslot,
+                                name='Rdnsr', tex_name=r'd_{nsr, R}',
+                                info='Repetated non-spinning reserve',)
+        self.dnsr = NumOpDual(u=self.pdz, u2=self.Rdnsrp, fun=np.matmul,
+                              name='dnsr', tex_name=r'd_{nsr}',
+                              info='non-spinning reserve in p.u.',)
         self.nsr = Constraint(name='nsr', info='non-spinning reserve',
-                              type='uq', e_str='gs@(-pg + zug) + Rdnsr')
+                              type='uq', e_str='gs@(-pg + zug) + dnsr')
         # 2) spinning reserve
-        self.Rdsr = NumHstack(u=self.dsr, ref=self.timeslot,
-                              name='Rdsr', tex_name=r'd_{sr, R}',
-                              info='Repetated spinning reserve requirement',)
         self.Rpmax = NumHstack(u=self.pmax, ref=self.timeslot,
                                name='Rpmax', tex_name=r'p_{max, R}',
                                info='Repetated pmax',)
+        self.Rdsrp = NumHstack(u=self.dsrp, ref=self.timeslot,
+                               name='Rdsr', tex_name=r'd_{sr, R}',
+                               info='Repetated spinning reserve',)
+        self.dsr = NumOpDual(u=self.pdz, u2=self.Rdsrp, fun=np.matmul,
+                             name='dsr', tex_name=r'd_{sr}',
+                             info='spinning reserve in p.u.',)
         self.sr = Constraint(name='sr', info='spinning reserve', type='uq',
-                             e_str='gs@(zug - multiply(Rpmax, ugd)) + Rdsr')
+                             e_str='gs@(zug - multiply(Rpmax, ugd)) + dsr')
 
         # TODO: constrs: minimum ON/OFF time for conventional units
         # TODO: add data prameters: minimum ON/OFF time for conventional units
