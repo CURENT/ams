@@ -191,7 +191,7 @@ def mpc2system(mpc: dict, system) -> bool:
         system.Bus.name.v[:] = mpc['bus_name']
 
     gcost_idx = 0
-    gen_idx = system.StaticGen.find_idx(keys='bus', values=mpc['gen'][:, 0])
+    gen_idx = system.PV.idx.v + system.Slack.idx.v
     for data, gen in zip(mpc['gencost'], gen_idx):
         # NOTE: only type 2 costs are supported for now
         # type  startup shutdown	n	c2  c1  c0
@@ -205,15 +205,12 @@ def mpc2system(mpc: dict, system) -> bool:
         c2 = data[4] * base_mva ** 2
         c1 = data[5] * base_mva
         c0 = data[6] * base_mva
-
-        system.add('GCost', gen=str(gen),
+        system.add('GCost', gen=int(gen),
                    u=1, name=f'GCost_{gcost_idx}',
                    type=type,
                    csu=startup, csd=shutdown,
                    c2=c2, c1=c1, c0=c0
                    )
-        # FIXME: temporary fix for the value type issue
-        system.GCost.gen.v = np.array(system.GCost.gen.v).astype(int)
         gcost_idx += 1
 
     return True
