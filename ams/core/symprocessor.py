@@ -91,10 +91,12 @@ class SymProcessor:
             'unknown': 9
         }
 
-    def generate_symbols(self):
+    def generate_symbols(self, force_generate=False):
         """
         Generate symbols for all variables.
         """
+        if force_generate is False and self.parent._syms == True:
+            return True
         logger.debug(f'- Generating symbols for {self.parent.class_name}')
         # process tex_names defined in routines
         # -----------------------------------------------------------
@@ -144,6 +146,10 @@ class SymProcessor:
         self.inputs_dict['sys_mva'] = sp.symbols('sys_mva')
 
         self.vars_list = list(self.vars_dict.values())  # useful for ``.jacobian()``
+
+        self.parent._syms = True
+
+        return True
 
     def _check_expr_symbols(self, expr):
         """

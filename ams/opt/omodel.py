@@ -552,7 +552,7 @@ class OModel:
         self.m = 0  # number of constraints
 
     @timer
-    def setup(self, show_code=False):
+    def setup(self, show_code=False, force_generate=False):
         """
         Setup the optimziation model from symbolic description.
 
@@ -567,9 +567,11 @@ class OModel:
         ----------
         show_code : bool, optional
             Flag indicating if the code should be shown, False by default.
+        force : bool, optional
+            True to force generating symbols, False by default.
         """
         rtn = self.rtn
-        rtn.syms.generate_symbols()
+        rtn.syms.generate_symbols(force_generate=force_generate)
         # --- add decision variables ---
         for ovar in rtn.vars.values():
             ovar.parse()

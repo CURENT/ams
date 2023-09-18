@@ -47,6 +47,7 @@ class RoutineModel:
                                       ('sys_mva', 'S_{b,sys}'),
                                       ))
         self.syms = SymProcessor(self)  # symbolic processor
+        self._syms = False  # flag if symbols has been generated
 
         self.services = OrderedDict()  # list out services in a routine
 
