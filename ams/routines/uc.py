@@ -6,7 +6,7 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
-from ams.core.service import NumOp
+from ams.core.service import NumOp, ZonalSum, NumHstack
 from ams.routines.ed import EDData, EDModel
 
 from ams.opt.omodel import Var, Constraint, Objective
@@ -47,6 +47,11 @@ class UCData(EDData):
         self.timeslot.info = 'Time slot for multi-period UC'
         self.timeslot.model = 'UCTSlot'
 
+        self.zg = RParam(info='generator zone data',
+                         name='zg', src='zone',
+                         tex_name='z_{one,g}',
+                         model='StaticGen',)
+
         self.dt = RParam(info='UC interval',
                          name='dt', tex_name=r't{d}',
                          model='UCTSlot', src='dt',
@@ -61,6 +66,11 @@ class UCData(EDData):
                            name='dnsr', tex_name=r'd_{nsr}',
                            model='NSR', src='demand',
                            unit='%',)
+
+        self.Sn = RParam(info='generator capacity',
+                         name='Sn', src='Sn',
+                         tex_name=r'S_{n}', unit='MW',
+                         model='StaticGen',)
 
 
 class UCModel(EDModel):
@@ -118,25 +128,46 @@ class UCModel(EDModel):
         # --- constraints ---
         self.pb.e_str = 'pds - Spg @ zug'  # power balance
 
+        # --- big M for ugd*pg ---
         self.Mzug = NumOp(info='10 times of max of pmax as big M for zug',
-                        name='Mzug', tex_name=r'M_{zug}',
-                        u=self.pmax, fun=np.max,
-                        rfun=np.dot, rargs=dict(b=10),)
+                          name='Mzug', tex_name=r'M_{zug}',
+                          u=self.pmax, fun=np.max,
+                          rfun=np.dot, rargs=dict(b=10),)
 
         self.zuglb = Constraint(name='zuglb', info='zug lower bound',
                                 type='uq', e_str='- zug + pg')
         self.zugub = Constraint(name='zugub', info='zug upper bound',
                                 type='uq', e_str='zug - pg - Mzug[0] * (1 - ugd)')
         self.zugub2 = Constraint(name='zugub2', info='zug upper bound',
-                                    type='uq', e_str='zug - Mzug[0] * ugd')
+                                 type='uq', e_str='zug - Mzug[0] * ugd')
 
-        # TODO: add reserve balance, 3% or 5%
+        # --- reserve ---
+        self.gs = ZonalSum(u=self.zg, zone='Region',
+                           name='gs', tex_name=r'\sum_{g}',
+                           info='Sum Gen vars vector in shape of zone')
+        self.tsn = NumOp(info='Total installed capacity',
+                         name='tsn', tex_name=r'\sum_{S_n}',
+                         u=self.Sn, fun=np.sum,)
+        # 1) non-spinning reserve
+        self.Rdnsr = NumHstack(u=self.dnsr, ref=self.timeslot,
+                               name='Rdnsr', tex_name=r'd_{nsr, R}',
+                               info='Repetated non-spinning reserve requirement',)
+        self.nsr = Constraint(name='nsr', info='non-spinning reserve',
+                              type='uq', e_str='gs@(-pg + zug) + Rdnsr')
+        # 2) spinning reserve
+        self.Rdsr = NumHstack(u=self.dsr, ref=self.timeslot,
+                              name='Rdsr', tex_name=r'd_{sr, R}',
+                              info='Repetated spinning reserve requirement',)
+        self.Rpmax = NumHstack(u=self.pmax, ref=self.timeslot,
+                               name='Rpmax', tex_name=r'p_{max, R}',
+                               info='Repetated pmax',)
+        self.sr = Constraint(name='sr', info='spinning reserve', type='uq',
+                             e_str='gs@(zug - multiply(Rpmax, ugd)) + Rdsr')
+
         # TODO: constrs: minimum ON/OFF time for conventional units
         # TODO: add data prameters: minimum ON/OFF time for conventional units
 
         # TODO: constrs: unserved energy constraint
-
-        # TODO: Energy storage?
 
         # self.rgu = Constraint(name='rgu',
         #                       info='ramp up limit of generator output',
