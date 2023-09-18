@@ -128,6 +128,8 @@ class SymProcessor:
         # store tex names defined in `self.config`
         for key in self.config.as_dict():
             tmp = sp.symbols(key)
+            self.sub_map[rf"\b{key}\b"] = f'self.rtn.config.{key}'
+            self.tex_map[rf"\b{key}\b"] = f'self.rtn.config.{key}'
             self.inputs_dict[key] = tmp
             if key in self.config.tex_names:
                 self.tex_names[tmp] = sp.Symbol(self.config.tex_names[key])

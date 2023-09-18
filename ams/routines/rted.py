@@ -22,11 +22,6 @@ class RTEDData(DCOPFData):
     def __init__(self):
         DCOPFData.__init__(self)
 
-        self.dt = RParam(info='time interval',
-                         name='dt', src='dt',
-                         tex_name=r't_{d}', unit='min',
-                         model='RTEDCFG',)
-
         # 1. reserve
         # 1.1. reserve cost
         self.cru = RParam(info='RegUp reserve coefficient',
@@ -96,11 +91,6 @@ class RTEDModel(DCOPFModel):
                            name='gs', tex_name=r'\sum_{g}')
         self.gs.info = 'Sum Gen vars vector in shape of zone'
 
-        # NOTE: here ``dth`` is expected to have only one value
-        self.dth = NumOp(info='time interval in hours',
-                         name='dth', tex_name=r't_{d,h}',
-                         u=self.dt, fun=lambda x: x / 60,
-                         rfun=np.max,)
         self.R10h = NumOp(info='10-min ramp rate in hours',
                           name='R10h', tex_name=r'R_{10,h}',
                           u=self.R10, fun=lambda x: x / 60,)
@@ -133,8 +123,8 @@ class RTEDModel(DCOPFModel):
                               e_str='-pg + pg0 - R10h',)
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
-        self.obj.e_str = 'power(dth, 2) * sum(c2 @ pg**2) ' + \
-                         '+ power(dth, 1) * sum(c1 @ pg) + ug * c0 ' + \
+        self.obj.e_str = 'power(dt, 2) * sum(c2 @ pg**2) ' + \
+                         '+ power(dt, 1) * sum(c1 @ pg) + ug * c0 ' + \
                          '+ sum(cru * pru + crd * prd)'
 
 
@@ -310,7 +300,7 @@ class RTED2Model(RTEDModel):
         self.zcub2 = Constraint(name='zcub2', type='uq', info='zc upper bound',
                                 e_str='zc - Mb@uc',)
 
-        SOCb = 'SOC - SOCinit - power(dth, 1)*REn*EtaC*zc - power(dth, 1)*REn*REtaD*(pec - zc)'
+        SOCb = 'SOC - SOCinit - power(dt, 1)*REn*EtaC*zc - power(dt, 1)*REn*REtaD*(pec - zc)'
         self.SOCb = Constraint(name='SOCb', type='eq',
                                info='ESD1 SOC balance', e_str=SOCb,)
 
