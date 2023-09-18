@@ -59,8 +59,7 @@ class EDModel(DCOPFModel):
 
     def __init__(self, system, config):
         DCOPFModel.__init__(self, system, config)
-        # delattr(self, 'lub')  # TODO: debug
-        # delattr(self, 'llb')  # TODO: debug
+        self.config.dth = 1  # dispatch interval in hour
 
         self.info = 'Economic dispatch'
         self.type = 'DCED'
@@ -137,6 +136,8 @@ class EDModel(DCOPFModel):
 
         # --- objective ---
         # NOTE: no need to fix objective function
+        self.obj.e_str = 'sum(c2 @ (dth dot pg)**2 + c1 @ (dth dot pg) + ug * c0)'
+        
 
     def unpack(self, **kwargs):
         """
@@ -160,6 +161,10 @@ class ED(EDData, EDModel):
 
     Ramping limits ``rgu`` and ``rgd`` are introduced as 2D matrices to
     represent the upward and downward ramping limits for each generator.
+
+    Notes
+    -----
+    1. The objective has been adjusted with the dispatch interval ``dth``, 1 hour by default.
     """
 
     def __init__(self, system, config):
