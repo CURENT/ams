@@ -54,7 +54,7 @@ class RoutineModel:
         self.vars = OrderedDict()  # list out Vars in a routine
         self.constrs = OrderedDict()
         self.obj = None
-        self.is_setup = False
+        self.initialized = False
         self.type = 'UndefinedType'
         self.docum = RDocumenter(self)
 
@@ -70,7 +70,7 @@ class RoutineModel:
         # TODO: these default configs might to be revised
         self.config.add(OrderedDict((('sparselib', 'klu'),
                                      ('linsolve', 0),
-                                     ('dth', 1),  #  time interval in hours
+                                     ('dth', 1),  # time interval in hours
                                      )))
         self.config.add_extra("_help",
                               sparselib="linear sparse solver name",
@@ -171,7 +171,7 @@ class RoutineModel:
         # TODO: add data validation for RParam, typical range, etc.
         return True
 
-    def setup(self, **kwargs):
+    def init(self, **kwargs):
         """
         Setup optimization model.
 
@@ -186,6 +186,9 @@ class RoutineModel:
             Whether to show generated code, passed to `om.setup()`.
         """
         # TODO: add input check, e.g., if GCost exists
+        if self.initialized:
+            logger.warning(f'{self.class_name} has already been initialized.')
+            return True
         if self._data_check():
             logger.debug(f'{self.class_name} data check passed.')
         else:
@@ -195,7 +198,7 @@ class RoutineModel:
         common_info = f"{self.class_name} model set up "
         if results:
             info = f"in {elapsed_time}."
-            self.is_setup = True
+            self.initialized = True
         else:
             info = "failed!"
         logger.info(common_info + info)
@@ -229,15 +232,14 @@ class RoutineModel:
         if 'show_code' in kwargs:
             del kwargs['show_code']
         # --- setup check ---
-        if not self.is_setup:
-            logger.info(f"Setup model of {self.class_name}")
-            self.setup(show_code=show_code)
+        if not self.initialized:
+            self.init(show_code=show_code)
         # NOTE: if the model data is altered, we need to re-setup the model
         # this implementation if not efficient at large-scale
         # FIXME: find a more efficient way to update the OModel values if
         # the system data is altered
         elif self.exec_time > 0:
-            self.setup(show_code=show_code)
+            self.init(show_code=show_code)
         # --- solve optimization ---
         t0, _ = elapsed()
         result = self.solve(**kwargs)
@@ -391,7 +393,7 @@ class RoutineModel:
                     logger.warning(f"Constraint <{n}> has already been disabled.")
                     continue
                 self.constrs[n].is_disabled = True
-                self.is_setup = False
+                self.initialized = False
                 logger.warning(f"Disable constraint <{n}>.")
             return True
 
@@ -400,7 +402,7 @@ class RoutineModel:
                 logger.warning(f"Constraint <{name}> has already been disabled.")
             else:
                 self.constrs[name].is_disabled = True
-                self.is_setup = False
+                self.initialized = False
                 logger.warning(f"Disable constraint <{name}>.")
             return True
 
@@ -410,7 +412,7 @@ class RoutineModel:
         """
         Post-addition check.
         """
-        self.is_setup = False
+        self.initialized = False
         self.exec_time = 0.0
         self.exit_code = 0
 

@@ -110,9 +110,9 @@ class ACOPFBase(RoutineModel):
         """
         Run the routine.
         """
-        if not self.is_setup:
-            logger.info(f"Setup model for {self.class_name}")
-            self.setup()
+        if not self.initialized:
+            logger.info(f"Initialize routine {self.class_name}")
+            self.init()
         t0, _ = elapsed()
         res = self.solve(**kwargs)
         self.exit_code = int(1 - res['success'])
