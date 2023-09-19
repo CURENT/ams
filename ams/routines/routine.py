@@ -171,30 +171,26 @@ class RoutineModel:
         # TODO: add data validation for RParam, typical range, etc.
         return True
 
-    def init(self, **kwargs):
+    def init(self, force=False, disable_showcode=True, **kwargs):
         """
         Setup optimization model.
 
         Parameters
         ----------
-        show_code: bool
+        force: bool
+            Whether to force initialization.
+        disable_showcode: bool
             Whether to show generated code.
-
-        Other Parameters
-        ----------------
-        show_code: bool
-            Whether to show generated code, passed to `om.setup()`.
         """
         # TODO: add input check, e.g., if GCost exists
-        if self.initialized:
-            logger.warning(f'{self.class_name} has already been initialized.')
+        if not force and self.initialized:
+            logger.debug(f'{self.class_name} has already been initialized.')
             return True
         if self._data_check():
             logger.debug(f'{self.class_name} data check passed.')
         else:
-            logger.error(f'{self.class_name} data check failed, setup may run into error!')
-        show_code = kwargs.get('show_code', False)
-        results, elapsed_time = self.om.setup(show_code=show_code)
+            logger.warning(f'{self.class_name} data check failed, setup may run into error!')
+        results, elapsed_time = self.om.setup(disable_showcode=disable_showcode)
         common_info = f"{self.class_name} model set up "
         if results:
             info = f"in {elapsed_time}."
@@ -224,22 +220,25 @@ class RoutineModel:
         """
         return None
 
-    def run(self, **kwargs):
+    def run(self, force_init=False, disable_showcode=True, **kwargs):
         """
         Run the routine.
+
+        Parameters
+        ----------
+        force_init: bool
+            Whether to force initialization.
+        disable_showcode: bool
+            Whether to show generated code.
         """
-        show_code = kwargs.get('show_code', False)
-        if 'show_code' in kwargs:
-            del kwargs['show_code']
         # --- setup check ---
-        if not self.initialized:
-            self.init(show_code=show_code)
+        self.init(force=force_init, disable_showcode=disable_showcode)
         # NOTE: if the model data is altered, we need to re-setup the model
         # this implementation if not efficient at large-scale
         # FIXME: find a more efficient way to update the OModel values if
         # the system data is altered
-        elif self.exec_time > 0:
-            self.init(show_code=show_code)
+        # elif self.exec_time > 0:
+        #     self.init(disable_showcode=disable_showcode)
         # --- solve optimization ---
         t0, _ = elapsed()
         result = self.solve(**kwargs)

@@ -381,14 +381,14 @@ class Constraint(OptzBase):
         self.is_disabled = False
         # TODO: add constraint info from solver
 
-    def parse(self, show_code=False):
+    def parse(self, disable_showcode=True):
         """
         Parse the constraint.
 
         Parameters
         ----------
-        show_code : bool, optional
-            Flag indicating if the code should be shown, False by default.
+        disable_showcode : bool, optional
+            Flag indicating if the code should be shown, True by default.
         """
         sub_map = self.om.rtn.syms.sub_map
         if self.is_disabled:
@@ -409,7 +409,7 @@ class Constraint(OptzBase):
             raise ValueError(f'Constraint type {self.type} is not supported.')
         code_constr = f'om.constrs["{self.name}"]=' + code_constr
         logger.debug(f"Set constrs {self.name}: {self.e_str} {'<= 0' if self.type == 'uq' else '== 0'}")
-        if show_code:
+        if not disable_showcode:
             logger.info(f"Code Constr: {code_constr}")
         exec(code_constr)
         exec(f'setattr(om, self.name, om.constrs["{self.name}"])')
@@ -474,14 +474,14 @@ class Objective(OptzBase):
         """
         return self.om.obj.value
 
-    def parse(self, show_code=False):
+    def parse(self, disable_showcode=True):
         """
         Parse the objective function.
 
         Parameters
         ----------
-        show_code : bool, optional
-            Flag indicating if the code should be shown, False by default.
+        disable_showcode : bool, optional
+            Flag indicating if the code should be shown, True by default.
         """
         om = self.om
         sub_map = self.om.rtn.syms.sub_map
@@ -495,7 +495,7 @@ class Objective(OptzBase):
         else:
             raise ValueError(f'Objective sense {self.sense} is not supported.')
         code_obj = 'om.obj=' + code_obj
-        if show_code:
+        if not disable_showcode:
             logger.info(f"Code Obj: {code_obj}")
         exec(code_obj)
         return True
@@ -552,7 +552,7 @@ class OModel:
         self.m = 0  # number of constraints
 
     @timer
-    def setup(self, show_code=False, force_generate=False):
+    def setup(self, disable_showcode=True, force_generate=False):
         """
         Setup the optimziation model from symbolic description.
 
@@ -565,8 +565,8 @@ class OModel:
 
         Parameters
         ----------
-        show_code : bool, optional
-            Flag indicating if the code should be shown, False by default.
+        disable_showcode : bool, optional
+            Flag indicating if the code should be shown, True by default.
         force : bool, optional
             True to force generating symbols, False by default.
         """
@@ -577,13 +577,13 @@ class OModel:
             ovar.parse()
         # --- add constraints ---
         for constr in rtn.constrs.values():
-            constr.parse(show_code=show_code)
+            constr.parse(disable_showcode=disable_showcode)
         # --- parse objective functions ---
         if rtn.type == 'PF':
             # NOTE: power flow type has no objective function
             pass
         elif rtn.obj is not None:
-            rtn.obj.parse(show_code=show_code)
+            rtn.obj.parse(disable_showcode=disable_showcode)
             # --- finalize the optimziation formulation ---
             code_mdl = f"problem(self.obj, [constr for constr in self.constrs.values()])"
             for pattern, replacement in self.rtn.syms.sub_map.items():

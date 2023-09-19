@@ -122,7 +122,7 @@ class DCPFlowBase(RoutineModel):
         self.system.recent = self.system.routines[self.class_name]
         return True
 
-    def run(self, **kwargs):
+    def run(self, force_init=False, disable_showcode=True, **kwargs):
         """
         Run the DC Power Flow.
 
@@ -130,6 +130,13 @@ class DCPFlowBase(RoutineModel):
         --------
         >>> ss = ams.load(ams.get_case('matpower/case14.m'))
         >>> ss.DCOPF.run()
+
+        Parameters
+        ----------
+        force_init : bool
+            Force initialization.
+        disable_showcode : bool
+            Disable showing code.
 
         Other Parameters
         ----------------
@@ -143,9 +150,8 @@ class DCPFlowBase(RoutineModel):
 
         # TODO: fix the kwargs input.
         """
-        if not self.is_setup:
-            logger.info(f"Setup model for {self.class_name}")
-            self.setup()
+        if not self.initialized:
+            self.init(force=force_init, disable_showcode=disable_showcode)
         t0, _ = elapsed()
         res, success = self.solve(**kwargs)
         self.exit_code = 0 if success else 1
