@@ -88,7 +88,8 @@ class SymProcessor:
             'solver_error': 6,
             'time_limit': 7,
             'interrupted': 8,
-            'unknown': 9
+            'unknown': 9,
+            'infeasible_or_unbounded': 1.5,
         }
 
     def generate_symbols(self, force_generate=False):
