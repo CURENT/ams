@@ -184,6 +184,15 @@ class UCModel(EDModel):
         self.obj.e_str = gcost + rcost
 
 
+    def _initial_guess(self):
+        """
+        Make initial guess for commitment decision.
+        """
+        # NOTE: make guess for commitment decision
+        logger.debug('Make initial guess for commitment decision...')
+        return None
+
+
 class UC(UCData, UCModel):
     """
     DC-based unit commitment (UC), wherew.

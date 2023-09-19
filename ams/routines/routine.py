@@ -650,3 +650,9 @@ class RoutineModel:
         self._post_add_check()
 
         return True
+
+    def _initial_guess(self):
+        """
+        Generate initial guess for the optimization model.
+        """
+        raise NotImplementedError
