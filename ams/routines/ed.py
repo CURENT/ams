@@ -135,11 +135,11 @@ class EDModel(DCOPFModel):
                               name='RR30', tex_name=r'R_{30,R}',
                               info='Repeated ramp rate as 2D matrix, (ng, ng-1)',)
         self.rgu = Constraint(name='rgu', info='Gen ramping up',
-                              e_str='pg @ Mr - RR30',
+                              e_str='pg @ Mr - dth dot RR30',
                               type='uq',)
         self.rgd = Constraint(name='rgd',
                               info='Gen ramping down',
-                              e_str='-pg @ Mr - RR30',
+                              e_str='-pg @ Mr - dth dot RR30',
                               type='uq',)
         self.rgu0 = Constraint(name='rgu0',
                                info='Initial gen ramping up',
