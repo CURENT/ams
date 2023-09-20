@@ -43,15 +43,15 @@ class GenParam:
         self.Ragc = NumParam(default=999.0,
                              info="ramp rate for load following/AGC",
                              tex_name=r'R_{agc}',
-                             unit='p.u./min')
+                             unit='p.u./h')
         self.R10 = NumParam(default=999.0,
                             info="ramp rate for 10 minute reserves",
                             tex_name=r'R_{10}',
-                            unit='p.u./min')
+                            unit='p.u./h')
         self.R30 = NumParam(default=999.0,
                             info="30 minute ramp rate",
                             tex_name=r'R_{30}',
-                            unit='p.u./min')
+                            unit='p.u./h')
         self.Rq = NumParam(default=999.0,
                            info="ramp rate for reactive power (2 sec timescale)",
                            tex_name=r'R_{q}',

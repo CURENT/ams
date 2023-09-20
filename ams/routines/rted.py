@@ -54,7 +54,7 @@ class RTEDData(DCOPFData):
                           model='StaticGen',)
         self.R10 = RParam(info='10-min ramp rate (system base)',
                           name='R10', src='R10',
-                          tex_name=r'R_{10}', unit='p.u./min',
+                          tex_name=r'R_{10}', unit='p.u./h',
                           model='StaticGen',)
 
 
@@ -92,10 +92,6 @@ class RTEDModel(DCOPFModel):
                            name='gs', tex_name=r'\sum_{g}')
         self.gs.info = 'Sum Gen vars vector in shape of zone'
 
-        self.R10h = NumOp(info='10-min ramp rate in hours',
-                          name='R10h', tex_name=r'R_{10,h}',
-                          u=self.R10, fun=lambda x: x / 60,)
-
         # --- vars ---
         self.pru = Var(info='RegUp reserve (system base)',
                        unit='p.u.', name='pru', tex_name=r'p_{r,u}',
@@ -118,10 +114,10 @@ class RTEDModel(DCOPFModel):
                               e_str='multiply(ug, -pg + prd) - pmin',)
         self.rgu = Constraint(name='rgu', type='uq',
                               info='ramp up limit of generator output',
-                              e_str='multiply(ug, pg-pg0) - R10h',)
+                              e_str='multiply(ug, pg-pg0-R10)',)
         self.rgd = Constraint(name='rgd', type='uq',
                               info='ramp down limit of generator output',
-                              e_str='multiply(ug, -pg+pg0) - R10h',)
+                              e_str='multiply(ug, -pg+pg0-R10)',)
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
         # NOTE: the product of dt and pg is processed using ``dot``, because dt is a numnber
