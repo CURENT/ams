@@ -6,7 +6,7 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
-from ams.core.service import ZonalSum, VarSelect, NumOp
+from ams.core.service import ZonalSum, VarSelect, NumOp, NumOpDual
 from ams.routines.dcopf import DCOPFData, DCOPFModel
 
 from ams.opt.omodel import Var, Constraint, Objective
@@ -35,23 +35,25 @@ class RTEDData(DCOPFData):
                           unit=r'$/(p.u.)',
                           model='SFRCost',)
         # 1.2. reserve requirement
-        self.du = RParam(info='RegUp reserve requirement (system base)',
+        self.du = RParam(info='RegUp reserve requirement in percentage',
                          name='du', src='du',
-                         tex_name=r'd_{u}', unit='p.u.',
+                         tex_name=r'd_{u}', unit='%',
                          model='SFR',)
-        self.dd = RParam(info='RegDown reserve requirement (system base)',
+        self.dd = RParam(info='RegDown reserve requirement in percentage',
                          name='dd', src='dd',
-                         tex_name=r'd_{d}', unit='p.u.',
+                         tex_name=r'd_{d}', unit='%',
                          model='SFR',)
+        self.zb = RParam(info='Bus zone',
+                         name='zb', tex_name='z_{one,bus}',
+                         src='zone', model='Bus')
         self.zg = RParam(info='generator zone data',
                          name='zg', src='zone',
                          tex_name='z_{one,g}',
                          model='StaticGen',)
         # 2. generator
         self.pg0 = RParam(info='generator active power start point (system base)',
-                          name='pg0', src='p0',
-                          tex_name=r'p_{g0}', unit='p.u.',
-                          model='StaticGen',)
+                          name='pg0', tex_name=r'p_{g0}',
+                          model='StaticGen', src='p0', unit='p.u.',)
         self.R10 = RParam(info='10-min ramp rate (system base)',
                           name='R10', src='R10',
                           tex_name=r'R_{10}', unit='p.u./h',
@@ -89,8 +91,8 @@ class RTEDModel(DCOPFModel):
         self.type = 'DCED'
         # --- service ---
         self.gs = ZonalSum(u=self.zg, zone='Region',
-                           name='gs', tex_name=r'\sum_{g}')
-        self.gs.info = 'Sum Gen vars vector in shape of zone'
+                           name='gs', tex_name=r'\sum_{g}',
+                           info='Sum Gen vars vector in shape of zone')
 
         # --- vars ---
         self.pru = Var(info='RegUp reserve (system base)',
@@ -100,12 +102,29 @@ class RTEDModel(DCOPFModel):
                        unit='p.u.', name='prd', tex_name=r'p_{r,d}',
                        model='StaticGen', nonneg=True,)
         # --- constraints ---
+        self.ls = ZonalSum(u=self.zb, zone='Region',
+                           name='ls', tex_name=r'\sum_{l}',
+                           info='Sum pd vector in shape of zone',)
+        self.pdz = NumOpDual(u=self.ls, u2=self.pd,
+                             fun=np.multiply,
+                             rfun=np.sum, rargs=dict(axis=1),
+                             expand_dims=0,
+                             name='pdz', tex_name=r'p_{d,z}',
+                             unit='p.u.', info='zonal load')
+        self.dud = NumOpDual(u=self.pdz, u2=self.du, fun=np.multiply,
+                             rfun=np.reshape, rargs=dict(newshape=(-1,)),
+                             name='dud', tex_name=r'd_{u, d}',
+                             info='zonal RegUp reserve requirement',)
+        self.ddd = NumOpDual(u=self.pdz, u2=self.dd, fun=np.multiply,
+                             rfun=np.reshape, rargs=dict(newshape=(-1,)),
+                             name='ddd', tex_name=r'd_{d, d}',
+                             info='zonal RegDn reserve requirement',)
         self.rbu = Constraint(name='rbu', type='eq',
                               info='RegUp reserve balance',
-                              e_str='gs @ multiply(ug, pru) - du',)
+                              e_str='gs @ multiply(ug, pru) - dud',)
         self.rbd = Constraint(name='rbd', type='eq',
                               info='RegDn reserve balance',
-                              e_str='gs @ multiply(ug, prd) - dd',)
+                              e_str='gs @ multiply(ug, prd) - ddd',)
         self.rru = Constraint(name='rru', type='uq',
                               info='RegUp reserve ramp',
                               e_str='multiply(ug, pg + pru) - pmax',)

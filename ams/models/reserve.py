@@ -28,11 +28,11 @@ class SFR(ReserveData, Model):
         Model.__init__(self, system, config)
         self.group = 'Reserve'
         self.du = NumParam(default=0,
-                           info='Zonal RegUp reserve demand (system base)',
-                           tex_name=r'd_{u}', unit=r'p.u.',)
+                           info='Zonal RegUp reserve demand',
+                           tex_name=r'd_{u}', unit='%',)
         self.dd = NumParam(default=0,
-                           info='Zonal RegDown reserve demand (system base)',
-                           tex_name=r'd_{d}', unit=r'p.u.',)
+                           info='Zonal RegDown reserve demand',
+                           tex_name=r'd_{d}', unit='%',)
 
 
 class SR(ReserveData, Model):
