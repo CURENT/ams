@@ -60,6 +60,20 @@ class UCData(EDData):
                             model='NSR', src='demand',
                             unit='%',)
 
+        self.cd = RParam(info='penalty for shadding load',
+                         name='cd', tex_name=r'c_{d}',
+                         model='DCost', src='cd',
+                         unit=r'$/(p.u.*h)',
+                         indexer='load', imodel='StaticLoad',)
+
+        self.p0 = RParam(info='initial load',
+                         name='p0', tex_name=r'p_{0}',
+                         model='PQ', src='p0',
+                         unit='p.u.',)
+
+        self.Cl = RParam(info='connection matrix for Load and Bus',
+                         name='Cl', tex_name=r'C_{l}',)
+
 
 class UCModel(EDModel):
     """
@@ -92,6 +106,11 @@ class UCModel(EDModel):
                        name='zug', tex_name=r'z_{ug}',
                        model='StaticGen', pos=True,)
 
+        self.pdu = Var(info='Unserved load',
+                       horizon=self.timeslot,
+                       name='pdu', tex_name=r'p_{d,u}',
+                       model='StaticLoad', pos=True,)
+
         # NOTE: actions have two parts, one for initial status, another for the rest
         self.actv = Constraint(name='actv', type='eq',
                                info='startup action',
@@ -107,7 +126,8 @@ class UCModel(EDModel):
                                 e_str='-ugd[:, 0] + ug - wgd[:, 0]',)
 
         # --- constraints ---
-        self.pb.e_str = 'pds - gs @ zug'  # power balance
+        self.pb.e_str = '- gs @ zug + pds'  # power balance
+        self.pb.type = 'uq'
 
         # --- big M for ugd*pg ---
         self.Mzug = NumOp(info='10 times of max of pmax as big M for zug',
@@ -144,30 +164,29 @@ class UCModel(EDModel):
         # TODO: constrs: minimum ON/OFF time for conventional units
         # TODO: add data prameters: minimum ON/OFF time for conventional units
 
-        # TODO: constrs: unserved energy constraint
+        self.ppdu = Constraint(name='ppdu', info='unserved load', type='eq',
+                               e_str='Rp0 - Cl @ (pn - np.linalg.pinv(Cg) @ pg) - pdu')
 
-        # self.rgu = Constraint(name='rgu',
-        #                       info='ramp up limit of generator output',
-        #                       e_str='pg - pg0 - R10',
-        #                       type='uq',
-        #                       )
-        # self.rgd = Constraint(name='rgd',
-        #                       info='ramp down limit of generator output',
-        #                       e_str='-pg + pg0 - R10',
-        #                       type='uq',
-        #                       )
+        self.Rp0 = NumHstack(u=self.p0, ref=self.timeslot,
+                             name='Rp0', tex_name=r'p_{0, R}',
+                             info='Repetated initial load',)
+
         # --- objective ---
         gcost = 'sum(c2 @ (dth dot zug)**2 + c1 @ (dth dot zug) + c0 * ugd)'
         acost = ' + sum(csu * vgd + csd * wgd)'
         srcost = ' + sum(csr @ (multiply(Rpmax, ugd) - zug))'
         nsrcost = ' + sum(cnsr @ multiply((1 - ugd), Rpmax))'
-        self.obj.e_str = gcost + acost + srcost + nsrcost
+        dcost = ' + sum(cd @ pdu)'
+        self.obj.e_str = gcost + acost + srcost + nsrcost + dcost
 
     def _initial_guess(self):
         """
-        Make initial guess for commitment decision.
+        Make initial guess for commitment decision with a priority list
+        defined by the weighted sum of generation cost and generator capacity.
+
+        If there are no offline generators, turn off the first 30% of the generators
+        on the priority list as initial guess.
         """
-        # NOTE: make guess for commitment decision
         # check trigger condition
         ug0 = self.system.PV.get(src='u', attr='v', idx=self.system.PV.idx.v)
         if (ug0 == 0).any():
@@ -202,7 +221,11 @@ class UCModel(EDModel):
 
 class UC(UCData, UCModel):
     """
-    DC-based unit commitment (UC), wherew.
+    DC-based unit commitment (UC) with linearizing bilinear term using big M theory.
+    Constraints include power balance, ramping, spinning reserve, non-spinning reserve,
+    minimum ON/OFF duration.
+    The cost inludes generation cost, startup cost, shutdown cost, spinning reserve cost,
+    non-spinning reserve cost, and unserved energy penalty.
 
     References
     ----------
