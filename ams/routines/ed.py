@@ -41,14 +41,15 @@ class EDData(RTEDData):
                           name='R30', tex_name=r'R_{30}',
                           src='R30', unit='p.u./min',
                           model='StaticGen')
-        self.zg = RParam(info='generator zone data',
-                         name='zg', src='zone',
-                         tex_name='z_{one,g}',
-                         model='StaticGen',)
         self.dsrp = RParam(info='spinning reserve requirement in percentage',
                            name='dsr', tex_name=r'd_{sr}',
                            model='SR', src='demand',
                            unit='%',)
+        self.csr = RParam(info='cost for spinning reserve',
+                          name='csr', tex_name=r'c_{sr}',
+                          model='SRCost', src='csr',
+                          unit=r'$/(p.u.*h)',
+                          indexer='gen', imodel='StaticGen',)
 
 
 class EDModel(DCOPFModel):
@@ -151,7 +152,9 @@ class EDModel(DCOPFModel):
 
         # --- objective ---
         # NOTE: no need to fix objective function
-        self.obj.e_str = 'sum(c2 @ (dth dot pg)**2 + c1 @ (dth dot pg) + ug * c0)'
+        gcost = 'sum(c2 @ (dth dot pg)**2 + c1 @ (dth dot pg) + ug * c0)'
+        rcost = ' + sum(csr * ug * (Rpmax - pg))'
+        self.obj.e_str = gcost + rcost
 
     def unpack(self, **kwargs):
         """

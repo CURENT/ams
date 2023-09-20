@@ -50,15 +50,15 @@ class UCData(EDData):
                          model='UCTSlot', src='dt',
                          unit='min',)
 
+        self.cnsr = RParam(info='cost for spinning reserve',
+                           name='cnsr', tex_name=r'c_{nsr}',
+                           model='NSRCost', src='cnsr',
+                           unit=r'$/(p.u.*h)',
+                           indexer='gen', imodel='StaticGen',)
         self.dnsrp = RParam(info='non-spinning reserve requirement in percentage',
                             name='dnsr', tex_name=r'd_{nsr}',
                             model='NSR', src='demand',
                             unit='%',)
-
-        self.Sn = RParam(info='generator capacity',
-                         name='Sn', src='Sn',
-                         tex_name=r'S_{n}', unit='MW',
-                         model='StaticGen',)
 
 
 class UCModel(EDModel):
@@ -140,8 +140,6 @@ class UCModel(EDModel):
                              rfun=np.transpose,
                              name='dsr', tex_name=r'd_{sr}',
                              info='zonal spinning reserve requirement',)
-        self.sr = Constraint(name='sr', info='spinning reserve', type='uq',
-                             e_str='gs@(zug - multiply(Rpmax, ugd)) + dsr')
 
         # TODO: constrs: minimum ON/OFF time for conventional units
         # TODO: add data prameters: minimum ON/OFF time for conventional units
@@ -159,10 +157,11 @@ class UCModel(EDModel):
         #                       type='uq',
         #                       )
         # --- objective ---
-        # NOTE: havn't adjust time duration
-        gcost = 'sum(c2 * zug**2 + c1 * zug + c0 * ugd + csu * vgd + csd * wgd)'
-        rcost = ''
-        self.obj.e_str = gcost + rcost
+        gcost = 'sum(c2 @ (dth dot zug)**2 + c1 @ (dth dot zug) + c0 * ugd)'
+        acost = ' + sum(csu * vgd + csd * wgd)'
+        srcost = ' + sum(csr @ (multiply(Rpmax, ugd) - zug))'
+        nsrcost = ' + sum(cnsr @ multiply((1 - ugd), Rpmax))'
+        self.obj.e_str = gcost + acost + srcost + nsrcost
 
     def _initial_guess(self):
         """
