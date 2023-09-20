@@ -87,10 +87,10 @@ class OptzBase:
         """
         Return the shape.
         """
-        if self.rtn.is_setup:
+        if self.rtn.initialized:
             return self.om.__dict__[self.name].shape
         else:
-            logger.warning(f'<{self.rtn.class_name}> is not setup yet.')
+            logger.warning(f'<{self.rtn.class_name}> is not initialized yet.')
             return None
 
     @property
@@ -98,10 +98,10 @@ class OptzBase:
         """
         Return the size.
         """
-        if self.rtn.is_setup:
+        if self.rtn.initialized:
             return self.om.__dict__[self.name].size
         else:
-            logger.warning(f'<{self.rtn.class_name}> is not setup yet.')
+            logger.warning(f'<{self.rtn.class_name}> is not initialized yet.')
             return None
 
 

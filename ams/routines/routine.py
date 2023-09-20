@@ -291,7 +291,10 @@ class RoutineModel:
         This function assigns `owner` to the model itself, assigns the name and tex_name.
         """
         if key in self.__dict__:
-            existing_keys = list(self.constrs.keys()) + list(self.vars.keys()) + list(self.rparams.keys())
+            existing_keys = []
+            for type in ['constrs', 'vars', 'rparams']:
+                if type in self.__dict__:
+                    existing_keys += list(self.__dict__[type].keys())
             if key in existing_keys:
                 logger.warning(f"{self.class_name}: redefinition of member <{key}>. Likely a modeling error.")
 
