@@ -124,6 +124,23 @@ class NSRCost(ModelData, Model):
                              info='cost for non-spinning reserve',)
 
 
+class DCost(ModelData, Model):
+    """
+    Linear penalty model for shadding load.
+    """
+
+    def __init__(self, system, config):
+        ModelData.__init__(self)
+        Model.__init__(self, system, config)
+        self.group = 'Cost'
+        self.load = IdxParam(info="static load index",
+                             model='StaticLoad',
+                             mandatory=True,)
+        self.cd = NumParam(default=1000, power=False,
+                           tex_name=r'c_{d}', unit=r'$/(p.u.*h)',
+                           info='penalty for shadding load',)
+
+
 class REGCV1CostData(ModelData):
     def __init__(self):
         super().__init__()
