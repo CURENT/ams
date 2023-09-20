@@ -191,7 +191,7 @@ class RoutineModel:
         else:
             logger.warning(f'{self.class_name} data check failed, setup may run into error!')
         results, elapsed_time = self.om.setup(disable_showcode=disable_showcode)
-        common_info = f"{self.class_name} model set up "
+        common_info = f"Routine <{self.class_name}> initialized "
         if results:
             info = f"in {elapsed_time}."
             self.initialized = True
