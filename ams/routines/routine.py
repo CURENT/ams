@@ -377,6 +377,39 @@ class RoutineModel:
         elif name in self.services:
             del self.services[name]
 
+    def enable(self, name):
+        """
+        Enable a constraint by name.
+
+        Parameters
+        ----------
+        name: str or list
+            name of the constraint to be enabled
+        """
+        if isinstance(name, list):
+            constr = []
+            for n in name:
+                if n not in self.constrs:
+                    logger.warning(f"Constraint <{n}> not found.")
+                    continue
+                if not self.constrs[n].is_disabled:
+                    logger.warning(f"Constraint <{n}> has already been enabled.")
+                    continue
+                self.constrs[n].is_disabled = False
+                self.initialized = False
+                constr.append(n)
+            logger.warning(f"Enable constraints: {n}")
+            return True
+
+        if name in self.constrs:
+            if not self.constrs[name].is_disabled:
+                logger.warning(f"Constraint <{name}> has already been enabled.")
+            else:
+                self.constrs[name].is_disabled = False
+                self.initialized = False
+                logger.warning(f"Enable constraint <{name}>.")
+            return True
+
     def disable(self, name):
         """
         Disable a constraint by name.
@@ -387,6 +420,7 @@ class RoutineModel:
             name of the constraint to be disabled
         """
         if isinstance(name, list):
+            constr = []
             for n in name:
                 if n not in self.constrs:
                     logger.warning(f"Constraint <{n}> not found.")
@@ -396,7 +430,8 @@ class RoutineModel:
                     continue
                 self.constrs[n].is_disabled = True
                 self.initialized = False
-                logger.warning(f"Disable constraint <{n}>.")
+                constr.append(n)
+            logger.warning(f"Disable constraints: {n}")
             return True
 
         if name in self.constrs:
