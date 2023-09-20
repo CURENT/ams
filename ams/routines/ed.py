@@ -10,24 +10,21 @@ from ams.core.service import (ZonalSum, VarReduction, NumOp,
                               NumOpDual, NumExpandDim, NumHstack,
                               RampSub)
 
-from ams.routines.dcopf import DCOPFData, DCOPFModel
+from ams.routines.rted import RTEDData
+from ams.routines.dcopf import DCOPFModel
 
 from ams.opt.omodel import Var, Constraint, Objective
 
 logger = logging.getLogger(__name__)
 
 
-class EDData(DCOPFData):
+class EDData(RTEDData):
     """
     Economic dispatch data.
     """
 
     def __init__(self):
-        DCOPFData.__init__(self)
-        self.pg0 = RParam(info='active power start point (system base)',
-                          name='pg0', tex_name=r'p_{g0}',
-                          unit='p.u.', src='pg0',
-                          model='StaticGen')
+        RTEDData.__init__(self)
         # NOTE: Setting `ED.scale.owner` to `Horizon` will cause an error when calling `ED.scale.v`.
         # This is because `Horizon` is a group that only contains the model `TimeSlot`.
         # The `get` method of `Horizon` calls `andes.models.group.GroupBase.get` and results in an error.
@@ -37,12 +34,6 @@ class EDData(DCOPFData):
         self.ts = RParam(info='time slot',
                          name='ts', tex_name=r't_{s,idx}',
                          src='idx', model='EDTSlot')
-        self.zb = RParam(info='Bus zone',
-                         name='zb', tex_name='z_{one,bus}',
-                         src='zone', model='Bus')
-        self.zl = RParam(info='load zone',
-                         name='zl', tex_name='z_{one,l}',
-                         src='zone', model='PQ')
         self.timeslot = RParam(info='Time slot for multi-period ED',
                                name='timeslot', tex_name=r't_{s,idx}',
                                src='idx', model='EDTSlot')
@@ -50,6 +41,14 @@ class EDData(DCOPFData):
                           name='R30', tex_name=r'R_{30}',
                           src='R30', unit='p.u./min',
                           model='StaticGen')
+        self.zg = RParam(info='generator zone data',
+                         name='zg', src='zone',
+                         tex_name='z_{one,g}',
+                         model='StaticGen',)
+        self.dsrp = RParam(info='spinning reserve requirement in percentage',
+                           name='dsr', tex_name=r'd_{sr}',
+                           model='SR', src='demand',
+                           unit='%',)
 
 
 class EDModel(DCOPFModel):
@@ -84,15 +83,31 @@ class EDModel(DCOPFModel):
                              name='pdz', tex_name=r'p_{d,z}',
                              unit='p.u.', info='zonal load')
         self.pds = NumOpDual(u=self.sd, u2=self.pdz,
-                             fun=np.multiply, rfun=np.sum,
-                             rargs=dict(axis=1), expand_dims=0,
+                             fun=np.multiply, rfun=np.transpose,
                              name='pds', tex_name=r'p_{d,s,t}',
                              unit='p.u.', info='Scaled total load as row vector')
-        self.Spg = VarReduction(u=self.pg, fun=np.ones,
-                                name='Spg', tex_name=r'\sum_{pg}',
-                                info='Sum pg as row vector')
+        self.gs = ZonalSum(u=self.zg, zone='Region',
+                           name='gs', tex_name=r'\sum_{g}',
+                           info='Sum Gen vars vector in shape of zone')
         # NOTE: Spg @ pg returns a row vector
-        self.pb.e_str = 'pds - Spg @ pg'  # power balance
+        self.pb.e_str = 'pds - gs @ pg'  # power balance
+
+        # spinning reserve
+        self.Rpmax = NumHstack(u=self.pmax, ref=self.timeslot,
+                               name='Rpmax', tex_name=r'p_{max, R}',
+                               info='Repetated pmax',)
+        self.Rug = NumHstack(u=self.ug, ref=self.timeslot,
+                             name='Rug', tex_name=r'u_{g, R}',
+                             info='Repetated ug',)
+        self.dsrpz = NumOpDual(u=self.pdz, u2=self.dsrp, fun=np.multiply,
+                               name='dsrpz', tex_name=r'd_{sr, p, z}',
+                               info='zonal spinning reserve requirement in percentage',)
+        self.dsr = NumOpDual(u=self.dsrpz, u2=self.sd, fun=np.multiply,
+                             rfun=np.transpose,
+                             name='dsr', tex_name=r'd_{sr}',
+                             info='zonal spinning reserve requirement',)
+        self.sr = Constraint(name='sr', info='spinning reserve', type='uq',
+                             e_str='-gs@multiply(Rpmax - pg, Rug) + dsr')
 
         # --- bus power injection ---
         self.pdR = NumHstack(u=self.pd, ref=self.timeslot,
@@ -137,7 +152,6 @@ class EDModel(DCOPFModel):
         # --- objective ---
         # NOTE: no need to fix objective function
         self.obj.e_str = 'sum(c2 @ (dth dot pg)**2 + c1 @ (dth dot pg) + ug * c0)'
-        
 
     def unpack(self, **kwargs):
         """
