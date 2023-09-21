@@ -31,9 +31,6 @@ class EDData(RTEDData):
         self.sd = RParam(info='zonal load factor for ED',
                          name='sd', tex_name=r's_{d}',
                          src='sd', model='EDTSlot')
-        self.ts = RParam(info='time slot',
-                         name='ts', tex_name=r't_{s,idx}',
-                         src='idx', model='EDTSlot')
         self.timeslot = RParam(info='Time slot for multi-period ED',
                                name='timeslot', tex_name=r't_{s,idx}',
                                src='idx', model='EDTSlot')
@@ -117,16 +114,11 @@ class EDModel(DCOPFModel):
         self.pinj.e_str = 'Cg @ (pn - pdR) - pg'  # power injection
 
         # --- line limits ---
-        self.cdup = NumOp(u=self.ts,
-                          fun=np.ones_like, args=dict(dtype=int),
-                          expand_dims=0,
-                          name='cdup', tex_name=r'c_{dup}',
-                          info='row vector of 1s to duplicate column vector')
-        self.RAr = NumExpandDim(u=self.rate_a, axis=1,
-                                name='RAr', tex_name=r'R_{ATEA,c}',
-                                info='rate_a as column vector',)
-        self.lub.e_str = 'PTDF @ (pn - pdR) - RAr@cdup'
-        self.llb.e_str = '-PTDF @ (pn - pdR) - RAr@cdup'
+        self.RRA = NumHstack(u=self.rate_a, ref=self.timeslot,
+                             name='RRA', tex_name=r'R_{ATEA,R}',
+                             info='Repeated rate_a',)
+        self.lub.e_str = 'PTDF @ (pn - pdR) - RRA'
+        self.llb.e_str = '-PTDF @ (pn - pdR) - RRA'
 
         # --- ramping ---
         self.Mr = RampSub(u=self.pg, name='Mr', tex_name=r'M_{r}',
