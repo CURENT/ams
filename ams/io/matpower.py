@@ -112,10 +112,10 @@ def mpc2system(mpc: dict, system) -> bool:
         qc1max = data[13] / mbase
         qc2min = data[14] / mbase
         qc2max = data[15] / mbase
-        ramp_agc = data[16] / mbase
-        ramp_10 = data[17] / mbase
-        ramp_30 = data[18] / mbase
-        ramp_q = data[19] / mbase
+        ramp_agc = 60 * data[16] / mbase  # from MW/min to MW/h
+        ramp_10 = 6 * data[17] / mbase  # from MW/10min to MW/h
+        ramp_30 = 2 * data[18] / mbase  # from MW/30min to MW/h
+        ramp_q = 60 * data[19] / mbase  # from MVAr/min to MVAr/h
         apf = data[20]
 
         uid = system.Bus.idx2uid(bus_idx)

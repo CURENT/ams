@@ -55,7 +55,7 @@ class GenParam:
         self.Rq = NumParam(default=999.0,
                            info="ramp rate for reactive power (2 sec timescale)",
                            tex_name=r'R_{q}',
-                           unit='p.u./min')
+                           unit='p.u./h')
         self.apf = NumParam(default=0.0,
                             info="area participation factor",
                             tex_name=r'a_{pf}')
@@ -64,15 +64,15 @@ class GenParam:
                             tex_name=r'p_{g0}',
                             unit='p.u.',
                             )
-        self.td1 = NumParam(default=30,
+        self.td1 = NumParam(default=0,
                             info='minimum ON duration',
                             tex_name=r't_{d1}',
-                            unit='min',
+                            unit='h',
                             )
-        self.td2 = NumParam(default=30,
+        self.td2 = NumParam(default=0,
                             info='minimum OFF duration',
                             tex_name=r't_{d2}',
-                            unit='min',
+                            unit='h',
                             )
 
 
