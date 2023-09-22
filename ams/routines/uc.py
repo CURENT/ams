@@ -179,8 +179,11 @@ class UCModel(EDModel):
         self.Rp0 = NumHstack(u=self.p0, ref=self.timeslot,
                              name='Rp0', tex_name=r'p_{0, R}',
                              info='Repetated initial load',)
+        self.Cgi = NumOp(u=self.Cg, fun=np.linalg.pinv,
+                         name='Cgi', tex_name=r'C_{g}^{-1}',
+                         info='inverse of Cg',)
         self.ppdu = Constraint(name='ppdu', info='unserved load', type='eq',
-                               e_str='Rp0 - Cl @ (pn - np.linalg.pinv(Cg) @ pg) - pdu')
+                               e_str='Rp0 - Cl @ (pn - Cgi @ pg) - pdu')
 
         # --- objective ---
         gcost = 'sum(c2 @ (dth dot zug)**2 + c1 @ (dth dot zug) + c0 * ugd)'

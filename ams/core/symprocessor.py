@@ -62,7 +62,7 @@ class SymProcessor:
         self.sub_map = OrderedDict([
             (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 @ \2'),
             (r'\b(\w+)\s* dot \s*(\w+)\b', r'\1 * \2'),
-            (r'\bsum\b', f'{lang}.sum'),  
+            (r'\bsum\b', f'{lang}.sum'),
             (r'\bvar\b', f'{lang}.Variable'),
             (r'\bproblem\b', f'{lang}.Problem'),
             (r'\bmultiply\b', f'{lang}.multiply'),
@@ -72,10 +72,14 @@ class SymProcessor:
             (r'\bpower\b', f'{lang}.power'),
             (r'\bsign\b', f'{lang}.sign'),
         ])
+        # FIXME: the replacement for multiply is a bad design, but it works for now
         self.tex_map = OrderedDict([
             (r'\*\*(\d+)', '^{\\1}'),
             (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 \2'),
-            (r'\@', r' '),
+            (r'\@', r'*'),
+            (r'dot', r'*'),
+            (r'multiply', r''), (r', ', r'*'),
+            (r'\bnp.linalg.pinv(\d+)', r'\1^{\-1}'),
         ])
 
         self.status = {
@@ -132,7 +136,7 @@ class SymProcessor:
         for key in self.config.as_dict():
             tmp = sp.symbols(key)
             self.sub_map[rf"\b{key}\b"] = f'self.rtn.config.{key}'
-            self.tex_map[rf"\b{key}\b"] = f'self.rtn.config.{key}'
+            self.tex_map[rf"\b{key}\b"] = f'{key}'
             self.inputs_dict[key] = tmp
             if key in self.config.tex_names:
                 self.tex_names[tmp] = sp.Symbol(self.config.tex_names[key])
