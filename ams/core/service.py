@@ -402,15 +402,18 @@ class MinDur(NumOpDual):
     def v(self):
         n_gen = self.u.n
         n_ts = self.u.horizon.n
-        ton = np.zeros((n_gen, n_ts))
+        tout = np.zeros((n_gen, n_ts))
+        dth = self.rtn.config.dth  # dispatch interval
 
-        td1 = np.ceil(self.u2.v).astype(int)
+        # minimum online/offline duration
+        td = np.ceil(self.u2.v/dth).astype(int)
 
-        for i in range(n_gen):
-            for t in range(n_ts):
-                if t + td1[i] <= n_ts:
-                    ton[i, t:t + td1[i]] = 1
-        return ton
+        # Create index arrays for generators and time periods
+        i, t = np.meshgrid(np.arange(n_gen), np.arange(n_ts), indexing='ij')
+        # Create a mask for valid time periods based on minimum duration
+        valid_mask = (t + td[i] <= n_ts)
+        tout[i[valid_mask], t[valid_mask]] = 1
+        return tout
 
 
 class NumHstack(NumOp):
