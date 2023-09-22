@@ -17,6 +17,7 @@ v0.7.0 (2023-09-22)
 - Add cost models: ``SRCost``, ``NSRCost``, ``DCost``
 - Add reserve models: ``SR``, ``NSR``
 - Add routine ``UC``
+- Add routine ``RTED2`` to include energy storage
 
 v0.6.7 (2023-08-02)
 -------------------
