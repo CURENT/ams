@@ -357,6 +357,62 @@ class NumOpDual(NumOp):
         return out
 
 
+class MinDur(NumOpDual):
+    """
+    Defined to form minimum on matrix for minimum online/offline
+    time constraints used in UC.
+
+    Parameters
+    ----------
+    u : Callable
+        Input, should be a ``Var`` with horizon.
+    u2 : Callable
+        Input2, should be a ``RParam``.
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 u2: Callable,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,):
+        tex_name = tex_name if tex_name is not None else u.tex_name
+        unit = unit if unit is not None else u.unit
+        info = info if info is not None else u.info
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype,
+                         u=u, u2=u2, fun=None, args=None,
+                         rfun=None, rargs=None,
+                         expand_dims=None)
+        if self.u.horizon is None:
+            msg = f'{self.class_name} {self.name}.u {self.u.name} has no horizon, likely a modeling error.'
+            logger.error(msg)
+
+    @property
+    def v(self):
+        n_gen = self.u.n
+        n_ts = self.u.horizon.n
+        ton = np.zeros((n_gen, n_ts))
+
+        td1 = np.ceil(self.u2.v).astype(int)
+
+        for i in range(n_gen):
+            for t in range(n_ts):
+                if t + td1[i] <= n_ts:
+                    ton[i, t:t + td1[i]] = 1
+        return ton
+
+
 class NumHstack(NumOp):
     """
     Repeat an array along the second axis nc times

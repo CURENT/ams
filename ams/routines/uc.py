@@ -7,10 +7,12 @@ import numpy as np
 import pandas as pd
 
 from ams.core.param import RParam
-from ams.core.service import NumOp, ZonalSum, NumHstack, NumOpDual
+from ams.core.service import NumOp, ZonalSum, NumHstack, NumOpDual, MinDur
 from ams.routines.ed import EDData, EDModel
 
 from ams.opt.omodel import Var, Constraint, Objective
+
+import cvxpy as cp
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,7 @@ class UCData(EDData):
 
     def __init__(self):
         EDData.__init__(self)
+        self.timeslot.model = 'UCTSlot'
         self.csu = RParam(info='startup cost',
                           name='csu', tex_name=r'c_{su}',
                           model='GCost', src='csu',
@@ -33,22 +36,17 @@ class UCData(EDData):
         self.td1 = RParam(info='minimum ON duration',
                           name='td1', tex_name=r't_{d1}',
                           model='StaticGen', src='td1',
-                          unit='min',)
+                          unit='h',)
         self.td2 = RParam(info='minimum OFF duration',
                           name='td2', tex_name=r't_{d2}',
                           model='StaticGen', src='td2',
-                          unit='min',)
+                          unit='h',)
 
         self.sd.info = 'zonal load factor for UC'
         self.sd.model = 'UCTSlot'
 
         self.timeslot.info = 'Time slot for multi-period UC'
         self.timeslot.model = 'UCTSlot'
-
-        self.dt = RParam(info='UC interval',
-                         name='dt', tex_name=r't{d}',
-                         model='UCTSlot', src='dt',
-                         unit='min',)
 
         self.cnsr = RParam(info='cost for spinning reserve',
                            name='cnsr', tex_name=r'c_{nsr}',
@@ -82,8 +80,10 @@ class UCModel(EDModel):
 
     def __init__(self, system, config):
         EDModel.__init__(self, system, config)
+        self.config.dth = 1  # dispatch interval in hour
         self.info = 'unit commitment'
         self.type = 'DCUC'
+
         # --- vars ---
         self.ugd = Var(info='commitment decision',
                        horizon=self.timeslot,
@@ -161,15 +161,26 @@ class UCModel(EDModel):
                              name='dsr', tex_name=r'd_{sr}',
                              info='zonal spinning reserve requirement',)
 
-        # TODO: constrs: minimum ON/OFF time for conventional units
-        # TODO: add data prameters: minimum ON/OFF time for conventional units
+        # --- minimum ON/OFF duration ---
+        self.Con = MinDur(u=self.pg, u2=self.td1,
+                          name='Con', tex_name=r'T_{on}',
+                          info='minimum ON coefficient',)
+        self.don = Constraint(info='minimum online duration',
+                              name='don', type='uq',
+                              e_str='multiply(Con, vgd) - ugd')
+        self.Coff = MinDur(u=self.pg, u2=self.td2,
+                           name='Coff', tex_name=r'T_{off}',
+                           info='minimum OFF coefficient',)
+        self.doff = Constraint(info='minimum offline duration',
+                               name='doff', type='uq',
+                               e_str='multiply(Coff, wgd) - (1 - ugd)')
 
-        self.ppdu = Constraint(name='ppdu', info='unserved load', type='eq',
-                               e_str='Rp0 - Cl @ (pn - np.linalg.pinv(Cg) @ pg) - pdu')
-
+        # --- penalty for unserved load ---
         self.Rp0 = NumHstack(u=self.p0, ref=self.timeslot,
                              name='Rp0', tex_name=r'p_{0, R}',
                              info='Repetated initial load',)
+        self.ppdu = Constraint(name='ppdu', info='unserved load', type='eq',
+                               e_str='Rp0 - Cl @ (pn - np.linalg.pinv(Cg) @ pg) - pdu')
 
         # --- objective ---
         gcost = 'sum(c2 @ (dth dot zug)**2 + c1 @ (dth dot zug) + c0 * ugd)'
