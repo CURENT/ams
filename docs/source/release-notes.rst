@@ -9,11 +9,14 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v0.6.8 (2023-09-xx)
+v0.7.0 (2023-09-22)
 -------------------
 
-- Add interfaces for customizing optimization models
-- Add model ``REGCV1`` and ``REGCV1Cost`` for virtual inertia scheduling
+- Add interfaces for customizing optimization
+- Add models ``REGCV1`` and ``REGCV1Cost`` for virtual inertia scheduling
+- Add cost models: ``SRCost``, ``NSRCost``, ``DCost``
+- Add reserve models: ``SR``, ``NSR``
+- Add routine ``UC``
 
 v0.6.7 (2023-08-02)
 -------------------
