@@ -60,19 +60,26 @@ class SymProcessor:
         lang = "cp"  # TODO: might need to be generalized to other solvers
         # only used for CVXPY
         self.sub_map = OrderedDict([
-            (r'\b(\w+)\s* dot \s*(\w+)\b', r'\1 * \2'),
             (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 @ \2'),
-            (r'\bsum\b', f'{lang}.sum'),  
+            (r'\b(\w+)\s* dot \s*(\w+)\b', r'\1 * \2'),
+            (r'\bsum\b', f'{lang}.sum'),
             (r'\bvar\b', f'{lang}.Variable'),
             (r'\bproblem\b', f'{lang}.Problem'),
             (r'\bmultiply\b', f'{lang}.multiply'),
             (r'\bvstack\b', f'{lang}.vstack'),
             (r'\bnorm\b', f'{lang}.norm'),
+            (r'\bpos\b', f'{lang}.pos'),
+            (r'\bpower\b', f'{lang}.power'),
+            (r'\bsign\b', f'{lang}.sign'),
         ])
+        # FIXME: the replacement for multiply is a bad design, but it works for now
         self.tex_map = OrderedDict([
             (r'\*\*(\d+)', '^{\\1}'),
             (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 \2'),
-            (r'\@', r' '),
+            (r'\@', r'*'),
+            (r'dot', r'*'),
+            (r'multiply', r''), (r', ', r'*'),
+            (r'\bnp.linalg.pinv(\d+)', r'\1^{\-1}'),
         ])
 
         self.status = {
@@ -85,13 +92,16 @@ class SymProcessor:
             'solver_error': 6,
             'time_limit': 7,
             'interrupted': 8,
-            'unknown': 9
+            'unknown': 9,
+            'infeasible_or_unbounded': 1.5,
         }
 
-    def generate_symbols(self):
+    def generate_symbols(self, force_generate=False):
         """
         Generate symbols for all variables.
         """
+        if force_generate is False and self.parent._syms == True:
+            return True
         logger.debug(f'- Generating symbols for {self.parent.class_name}')
         # process tex_names defined in routines
         # -----------------------------------------------------------
@@ -125,6 +135,8 @@ class SymProcessor:
         # store tex names defined in `self.config`
         for key in self.config.as_dict():
             tmp = sp.symbols(key)
+            self.sub_map[rf"\b{key}\b"] = f'self.rtn.config.{key}'
+            self.tex_map[rf"\b{key}\b"] = f'{key}'
             self.inputs_dict[key] = tmp
             if key in self.config.tex_names:
                 self.tex_names[tmp] = sp.Symbol(self.config.tex_names[key])
@@ -139,6 +151,10 @@ class SymProcessor:
         self.inputs_dict['sys_mva'] = sp.symbols('sys_mva')
 
         self.vars_list = list(self.vars_dict.values())  # useful for ``.jacobian()``
+
+        self.parent._syms = True
+
+        return True
 
     def _check_expr_symbols(self, expr):
         """

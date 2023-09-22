@@ -236,7 +236,7 @@ class System(andes_System):
         """
         Set the owner for routine attributes: ``RParam``, ``Var``, and ``RBaseService``.
         """
-        mat_name = ['PTDF', 'Cft', 'Cg', 'pd', 'qd']
+        mat_name = ['PTDF', 'Cft', 'Cg', 'pd', 'qd', 'Cl']
         for item_name, item in items.items():
             if item.model in self.groups.keys():
                 item.is_group = True
@@ -428,6 +428,8 @@ class System(andes_System):
         gen_bus = self.StaticGen.get(src='bus', attr='v',
                                      idx=self.StaticGen.get_idx())
         all_bus = self.Bus.idx.v
+        load_bus = self.StaticLoad.get(src='bus', attr='v',
+                                       idx=self.StaticLoad.get_idx())
 
         # Restrucrue PQ load value to match gen bus pattern
 
@@ -442,11 +444,13 @@ class System(andes_System):
         row, col = np.meshgrid(all_bus, gen_bus)
         # TODO: sparsity?
         Cg = (row == col).astype(int)
+        row, col = np.meshgrid(all_bus, load_bus)
+        Cl = (row == col).astype(int)
 
         self.mat = OrderedDict([
             ('pd', PD), ('qd', QD),
             ('PTDF', PTDF),
-            ('Cft', Cft), ('Cg', Cg),
+            ('Cft', Cft), ('Cg', Cg), ('Cl', Cl),
         ])
 
         # NOTE: initialize om for all routines

@@ -10,39 +10,27 @@ from ams.core.service import (ZonalSum, VarReduction, NumOp,
                               NumOpDual, NumExpandDim, NumHstack,
                               RampSub)
 
-from ams.routines.dcopf import DCOPFData, DCOPFModel
+from ams.routines.rted import RTEDData
+from ams.routines.dcopf import DCOPFModel
 
 from ams.opt.omodel import Var, Constraint, Objective
 
 logger = logging.getLogger(__name__)
 
 
-class EDData(DCOPFData):
+class EDData(RTEDData):
     """
     Economic dispatch data.
     """
 
     def __init__(self):
-        DCOPFData.__init__(self)
-        self.pg0 = RParam(info='active power start point (system base)',
-                          name='pg0', tex_name=r'p_{g0}',
-                          unit='p.u.', src='pg0',
-                          model='StaticGen')
+        RTEDData.__init__(self)
         # NOTE: Setting `ED.scale.owner` to `Horizon` will cause an error when calling `ED.scale.v`.
         # This is because `Horizon` is a group that only contains the model `TimeSlot`.
         # The `get` method of `Horizon` calls `andes.models.group.GroupBase.get` and results in an error.
-        self.scale = RParam(info='zonal load factor for ED',
-                            name='scale', tex_name=r's_{pd}',
-                            src='scale', model='EDTSlot')
-        self.ts = RParam(info='time slot',
-                         name='ts', tex_name=r't_{s,idx}',
-                         src='idx', model='EDTSlot')
-        self.zb = RParam(info='Bus zone',
-                         name='zb', tex_name='z_{one,bus}',
-                         src='zone', model='Bus')
-        self.zl = RParam(info='load zone',
-                         name='zl', tex_name='z_{one,l}',
-                         src='zone', model='PQ')
+        self.sd = RParam(info='zonal load factor for ED',
+                         name='sd', tex_name=r's_{d}',
+                         src='sd', model='EDTSlot')
         self.timeslot = RParam(info='Time slot for multi-period ED',
                                name='timeslot', tex_name=r't_{s,idx}',
                                src='idx', model='EDTSlot')
@@ -50,6 +38,15 @@ class EDData(DCOPFData):
                           name='R30', tex_name=r'R_{30}',
                           src='R30', unit='p.u./min',
                           model='StaticGen')
+        self.dsrp = RParam(info='spinning reserve requirement in percentage',
+                           name='dsr', tex_name=r'd_{sr}',
+                           model='SR', src='demand',
+                           unit='%',)
+        self.csr = RParam(info='cost for spinning reserve',
+                          name='csr', tex_name=r'c_{sr}',
+                          model='SRCost', src='csr',
+                          unit=r'$/(p.u.*h)',
+                          indexer='gen', imodel='StaticGen',)
 
 
 class EDModel(DCOPFModel):
@@ -59,8 +56,7 @@ class EDModel(DCOPFModel):
 
     def __init__(self, system, config):
         DCOPFModel.__init__(self, system, config)
-        # delattr(self, 'lub')  # TODO: debug
-        # delattr(self, 'llb')  # TODO: debug
+        self.config.dth = 1  # dispatch interval in hour
 
         self.info = 'Economic dispatch'
         self.type = 'DCED'
@@ -84,16 +80,32 @@ class EDModel(DCOPFModel):
                              expand_dims=0,
                              name='pdz', tex_name=r'p_{d,z}',
                              unit='p.u.', info='zonal load')
-        self.pds = NumOpDual(u=self.scale, u2=self.pdz,
-                             fun=np.multiply, rfun=np.sum,
-                             rargs=dict(axis=1), expand_dims=0,
+        self.pds = NumOpDual(u=self.sd, u2=self.pdz,
+                             fun=np.multiply, rfun=np.transpose,
                              name='pds', tex_name=r'p_{d,s,t}',
                              unit='p.u.', info='Scaled total load as row vector')
-        self.Spg = VarReduction(u=self.pg, fun=np.ones,
-                                name='Spg', tex_name=r'\sum_{pg}',
-                                info='Sum pg as row vector')
+        self.gs = ZonalSum(u=self.zg, zone='Region',
+                           name='gs', tex_name=r'\sum_{g}',
+                           info='Sum Gen vars vector in shape of zone')
         # NOTE: Spg @ pg returns a row vector
-        self.pb.e_str = 'pds - Spg @ pg'  # power balance
+        self.pb.e_str = 'pds - gs @ pg'  # power balance
+
+        # spinning reserve
+        self.Rpmax = NumHstack(u=self.pmax, ref=self.timeslot,
+                               name='Rpmax', tex_name=r'p_{max, R}',
+                               info='Repetated pmax',)
+        self.Rug = NumHstack(u=self.ug, ref=self.timeslot,
+                             name='Rug', tex_name=r'u_{g, R}',
+                             info='Repetated ug',)
+        self.dsrpz = NumOpDual(u=self.pdz, u2=self.dsrp, fun=np.multiply,
+                               name='dsrpz', tex_name=r'd_{sr, p, z}',
+                               info='zonal spinning reserve requirement in percentage',)
+        self.dsr = NumOpDual(u=self.dsrpz, u2=self.sd, fun=np.multiply,
+                             rfun=np.transpose,
+                             name='dsr', tex_name=r'd_{sr}',
+                             info='zonal spinning reserve requirement',)
+        self.sr = Constraint(name='sr', info='spinning reserve', type='uq',
+                             e_str='-gs@multiply(Rpmax - pg, Rug) + dsr')
 
         # --- bus power injection ---
         self.pdR = NumHstack(u=self.pd, ref=self.timeslot,
@@ -102,16 +114,11 @@ class EDModel(DCOPFModel):
         self.pinj.e_str = 'Cg @ (pn - pdR) - pg'  # power injection
 
         # --- line limits ---
-        self.cdup = NumOp(u=self.ts,
-                          fun=np.ones_like, args=dict(dtype=int),
-                          expand_dims=0,
-                          name='cdup', tex_name=r'c_{dup}',
-                          info='row vector of 1s to duplicate column vector')
-        self.RAr = NumExpandDim(u=self.rate_a, axis=1,
-                                name='RAr', tex_name=r'R_{ATEA,c}',
-                                info='rate_a as column vector',)
-        self.lub.e_str = 'PTDF @ (pn - pdR) - RAr@cdup'
-        self.llb.e_str = '-PTDF @ (pn - pdR) - RAr@cdup'
+        self.RRA = NumHstack(u=self.rate_a, ref=self.timeslot,
+                             name='RRA', tex_name=r'R_{ATEA,R}',
+                             info='Repeated rate_a',)
+        self.lub.e_str = 'PTDF @ (pn - pdR) - RRA'
+        self.llb.e_str = '-PTDF @ (pn - pdR) - RRA'
 
         # --- ramping ---
         self.Mr = RampSub(u=self.pg, name='Mr', tex_name=r'M_{r}',
@@ -120,11 +127,11 @@ class EDModel(DCOPFModel):
                               name='RR30', tex_name=r'R_{30,R}',
                               info='Repeated ramp rate as 2D matrix, (ng, ng-1)',)
         self.rgu = Constraint(name='rgu', info='Gen ramping up',
-                              e_str='pg @ Mr - RR30',
+                              e_str='pg @ Mr - dth dot RR30',
                               type='uq',)
         self.rgd = Constraint(name='rgd',
                               info='Gen ramping down',
-                              e_str='-pg @ Mr - RR30',
+                              e_str='-pg @ Mr - dth dot RR30',
                               type='uq',)
         self.rgu0 = Constraint(name='rgu0',
                                info='Initial gen ramping up',
@@ -137,6 +144,16 @@ class EDModel(DCOPFModel):
 
         # --- objective ---
         # NOTE: no need to fix objective function
+        gcost = 'sum(c2 @ (dth dot pg)**2 + c1 @ (dth dot pg) + ug * c0)'
+        rcost = ' + sum(csr * ug * (Rpmax - pg))'
+        self.obj.e_str = gcost + rcost
+
+    def unpack(self, **kwargs):
+        """
+        ED will not unpack results from solver into devices
+        because the resutls are multi-time-period.
+        """
+        return None
 
 
 class ED(EDData, EDModel):
@@ -153,6 +170,10 @@ class ED(EDData, EDModel):
 
     Ramping limits ``rgu`` and ``rgd`` are introduced as 2D matrices to
     represent the upward and downward ramping limits for each generator.
+
+    Notes
+    -----
+    1. The objective has been adjusted with the dispatch interval ``dth``, 1 hour by default.
     """
 
     def __init__(self, system, config):

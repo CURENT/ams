@@ -98,7 +98,7 @@ def system2ppc(system) -> dict:
     # adjust the bus index to start from 0
     BUS_I = mpc['bus'][:, 0].astype(int)
     if np.max(mpc['bus'][:, 0]) > mpc['bus'].shape[0]:
-        logger.warning('The bus index is not continuous, adjusted automatically.')
+        logger.warning('The bus index is discontinuous, adjusted automatically.')
         # Find the unique indices in busi
         old_bus = np.unique(BUS_I)
         # Generate a mapping dictionary to map the unique indices to consecutive values

@@ -39,7 +39,7 @@ class GroupBase(andes_GroupBase):
         This function sorts the idx values using a custom sorting key,
         which handles varying length strings with letters and numbers.
         """
-        all = [mdl.idx.v for _, mdl in self.models.items()]
+        all_idx = [mdl.idx.v for mdl in self.models.values()]
 
         # Custom sorting function to handle varying length strings with letters and numbers
         def custom_sort_key(item):
@@ -52,7 +52,8 @@ class GroupBase(andes_GroupBase):
                 except ValueError:
                     return item  # Return as is if not numeric
 
-        flat_list = sorted([val for sublist in all for val in sublist], key=custom_sort_key)
+        group_idx = [sorted(mdl_idx, key=custom_sort_key) for mdl_idx in all_idx]
+        flat_list = [item for sublist in group_idx for item in sublist]
         return flat_list
 
     def _check_src(self, src: str):

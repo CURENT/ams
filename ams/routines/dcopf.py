@@ -26,59 +26,39 @@ class DCOPFData(RoutineData):
         RoutineData.__init__(self)
         # --- generator cost ---
         self.ug = RParam(info='Gen connection status',
-                         name='ug',
-                         src='u',
-                         tex_name=r'u_{g}',
-                         model='StaticGen',)
+                         name='ug', tex_name=r'u_{g}',
+                         model='StaticGen', src='u',)
         self.c2 = RParam(info='Gen cost coefficient 2',
-                         name='c2',
-                         tex_name=r'c_{2}',
-                         unit=r'$/(p.u.^2)',
-                         model='GCost',
-                         indexer='gen',
-                         imodel='StaticGen',)
+                         name='c2', tex_name=r'c_{2}',
+                         unit=r'$/(p.u.^2)', model='GCost',
+                         indexer='gen', imodel='StaticGen',)
         self.c1 = RParam(info='Gen cost coefficient 1',
-                         name='c1',
-                         tex_name=r'c_{1}',
-                         unit=r'$/(p.u.)',
-                         model='GCost',
-                         indexer='gen',
-                         imodel='StaticGen',)
+                         name='c1', tex_name=r'c_{1}',
+                         unit=r'$/(p.u.)', model='GCost',
+                         indexer='gen', imodel='StaticGen',)
         self.c0 = RParam(info='Gen cost coefficient 0',
-                         name='c0',
-                         tex_name=r'c_{0}',
-                         unit=r'$',
-                         model='GCost',
-                         indexer='gen',
-                         imodel='StaticGen',)
+                         name='c0', tex_name=r'c_{0}',
+                         unit=r'$', model='GCost',
+                         indexer='gen', imodel='StaticGen',)
         # --- generator limit ---
         self.pmax = RParam(info='Gen maximum active power (system base)',
-                           name='pmax',
-                           tex_name=r'p_{max}',
-                           unit='p.u.',
-                           model='StaticGen',)
+                           name='pmax', tex_name=r'p_{max}',
+                           unit='p.u.', model='StaticGen',)
         self.pmin = RParam(info='Gen minimum active power (system base)',
-                           name='pmin',
-                           tex_name=r'p_{min}',
-                           unit='p.u.',
-                           model='StaticGen',)
+                           name='pmin', tex_name=r'p_{min}',
+                           unit='p.u.', model='StaticGen',)
         self.Cg = RParam(info='connection matrix for Gen and Bus',
-                         name='Cg',
-                         tex_name=r'C_{g}',)
+                         name='Cg', tex_name=r'C_{g}',)
         # --- load ---
         self.pd = RParam(info='active power demand (system base)',
-                         name='pd',
-                         tex_name=r'p_{d}',
+                         name='pd', tex_name=r'p_{d}',
                          unit='p.u.',)
         # --- line ---
-        self.rate_a = RParam(info='long-term flow limit flow limit',
-                             name='rate_a',
-                             tex_name=r'R_{ATEA}',
-                             unit='MVA',
-                             model='Line',)
+        self.rate_a = RParam(info='long-term flow limit',
+                             name='rate_a', tex_name=r'R_{ATEA}',
+                             unit='MVA', model='Line',)
         self.PTDF = RParam(info='Power transfer distribution factor matrix',
-                           name='PTDF',
-                           tex_name=r'P_{TDF}',)
+                           name='PTDF', tex_name=r'P_{TDF}',)
 
 
 class DCOPFBase(RoutineModel):
@@ -98,9 +78,14 @@ class DCOPFBase(RoutineModel):
         res = self.om.mdl.solve(**kwargs)
         return res
 
-    def run(self, **kwargs):
+    def run(self, disable_showcode=True, **kwargs):
         """
         Run the routine.
+
+        Parameters
+        ----------
+        disable_showcode : bool, optional
+            If True, print the generated CVXPY code. Defaults to False.
 
         Other Parameters
         ----------------
@@ -127,7 +112,7 @@ class DCOPFBase(RoutineModel):
         kwargs : keywords, optional
             Additional solver specific arguments. See CVXPY documentation for details.
         """
-        return RoutineModel.run(self, **kwargs)
+        return RoutineModel.run(self, disable_showcode=disable_showcode, **kwargs)
 
     def unpack(self, **kwargs):
         """

@@ -17,16 +17,11 @@ class TimeSlot(ModelData, Model):
         Model.__init__(self, system, config)
         self.group = 'Horizon'
 
-        self.scale = NumParam(info='zonal load scaling factor',
-                              tex_name=r's_{load}',
-                              iconvert=str_list_iconv,
-                              oconvert=str_list_oconv,
-                              vtype=float,
-                              )
-        self.dt = NumParam(default=60,
-                           info='time slot duration',
-                           tex_name=r'Delta t',
-                           unit='min',
+        self.sd = NumParam(info='zonal load scaling factor',
+                           tex_name=r's_{d}',
+                           iconvert=str_list_iconv,
+                           oconvert=str_list_oconv,
+                           vtype=float,
                            )
 
 

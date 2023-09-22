@@ -72,36 +72,73 @@ class GCost(GCostData, Model):
         self.group = 'Cost'
 
 
-class SFRCostData(ModelData):
-    def __init__(self):
-        super().__init__()
-        self.gen = IdxParam(info="static generator index",
-                            model='StaticGen',
-                            mandatory=True,
-                            )
-        self.cru = NumParam(default=0,
-                            info='coefficient for RegUp reserve',
-                            power=False,
-                            tex_name=r'c_{r}',
-                            unit=r'$/p.u.*h',
-                            )
-        self.crd = NumParam(default=0,
-                            info='coefficient for RegDn reserve',
-                            power=False,
-                            tex_name=r'c_{r}',
-                            unit=r'$/p.u.*h',
-                            )
-
-
-class SFRCost(SFRCostData, Model):
+class SFRCost(ModelData, Model):
     """
     Linear SFR cost model.
     """
 
     def __init__(self, system, config):
-        SFRCostData.__init__(self)
+        ModelData.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'Cost'
+        self.gen = IdxParam(info="static generator index",
+                            model='StaticGen',
+                            mandatory=True,)
+        self.cru = NumParam(default=0, power=False,
+                            tex_name=r'c_{r}', unit=r'$/(p.u.*h)',
+                            info='cost for RegUp reserve',)
+        self.crd = NumParam(default=0,  power=False,
+                            tex_name=r'c_{r}', unit=r'$/(p.u.*h)',
+                            info='cost for RegDn reserve',)
+
+
+class SRCost(ModelData, Model):
+    """
+    Linear spinning reserve cost model.
+    """
+
+    def __init__(self, system, config):
+        ModelData.__init__(self)
+        Model.__init__(self, system, config)
+        self.gen = IdxParam(info="static generator index",
+                            model='StaticGen',
+                            mandatory=True,)
+        self.csr = NumParam(default=0, power=False,
+                            tex_name=r'c_{sr}', unit=r'$/(p.u.*h)',
+                            info='cost for spinning reserve',)
+
+
+class NSRCost(ModelData, Model):
+    """
+    Linear non-spinning reserve cost model.
+    """
+
+    def __init__(self, system, config):
+        ModelData.__init__(self)
+        Model.__init__(self, system, config)
+        self.gen = IdxParam(info="static generator index",
+                            model='StaticGen',
+                            mandatory=True,)
+        self.cnsr = NumParam(default=0, power=False,
+                             tex_name=r'c_{nsr}', unit=r'$/(p.u.*h)',
+                             info='cost for non-spinning reserve',)
+
+
+class DCost(ModelData, Model):
+    """
+    Linear penalty model for shadding load.
+    """
+
+    def __init__(self, system, config):
+        ModelData.__init__(self)
+        Model.__init__(self, system, config)
+        self.group = 'Cost'
+        self.load = IdxParam(info="static load index",
+                             model='StaticLoad',
+                             mandatory=True,)
+        self.cd = NumParam(default=1000, power=False,
+                           tex_name=r'c_{d}', unit=r'$/(p.u.*h)',
+                           info='penalty for shadding load',)
 
 
 class REGCV1CostData(ModelData):

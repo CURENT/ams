@@ -6,7 +6,7 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
-from ams.core.service import ZonalSum
+from ams.core.service import ZonalSum, VarSelect, NumOp, NumOpDual
 from ams.routines.dcopf import DCOPFData, DCOPFModel
 
 from ams.opt.omodel import Var, Constraint, Objective
@@ -21,6 +21,7 @@ class RTEDData(DCOPFData):
 
     def __init__(self):
         DCOPFData.__init__(self)
+
         # 1. reserve
         # 1.1. reserve cost
         self.cru = RParam(info='RegUp reserve coefficient',
@@ -34,26 +35,28 @@ class RTEDData(DCOPFData):
                           unit=r'$/(p.u.)',
                           model='SFRCost',)
         # 1.2. reserve requirement
-        self.du = RParam(info='RegUp reserve requirement (system base)',
+        self.du = RParam(info='RegUp reserve requirement in percentage',
                          name='du', src='du',
-                         tex_name=r'd_{u}', unit='p.u.',
+                         tex_name=r'd_{u}', unit='%',
                          model='SFR',)
-        self.dd = RParam(info='RegDown reserve requirement (system base)',
+        self.dd = RParam(info='RegDown reserve requirement in percentage',
                          name='dd', src='dd',
-                         tex_name=r'd_{d}', unit='p.u.',
+                         tex_name=r'd_{d}', unit='%',
                          model='SFR',)
+        self.zb = RParam(info='Bus zone',
+                         name='zb', tex_name='z_{one,bus}',
+                         src='zone', model='Bus')
         self.zg = RParam(info='generator zone data',
                          name='zg', src='zone',
                          tex_name='z_{one,g}',
                          model='StaticGen',)
         # 2. generator
         self.pg0 = RParam(info='generator active power start point (system base)',
-                          name='pg0', src='pg0',
-                          tex_name=r'p_{g0}', unit='p.u.',
-                          model='StaticGen',)
+                          name='pg0', tex_name=r'p_{g0}',
+                          model='StaticGen', src='p0', unit='p.u.',)
         self.R10 = RParam(info='10-min ramp rate (system base)',
                           name='R10', src='R10',
-                          tex_name=r'R_{10}', unit='p.u./min',
+                          tex_name=r'R_{10}', unit='p.u./h',
                           model='StaticGen',)
 
 
@@ -64,6 +67,7 @@ class RTEDModel(DCOPFModel):
 
     def __init__(self, system, config):
         DCOPFModel.__init__(self, system, config)
+        self.config.dth = 5/60  # time interval in hours
         self.map1 = OrderedDict([
             ('StaticGen', {
                 'pg0': 'p',
@@ -86,50 +90,59 @@ class RTEDModel(DCOPFModel):
         self.info = 'Economic dispatch'
         self.type = 'DCED'
         # --- service ---
-        self.gs = ZonalSum(u=self.zg,
-                           zone='Region',
-                           name='gs', tex_name=r'\sum_{g}')
-        self.gs.info = 'Sum Gen vars vector in shape of zone'
+        self.gs = ZonalSum(u=self.zg, zone='Region',
+                           name='gs', tex_name=r'\sum_{g}',
+                           info='Sum Gen vars vector in shape of zone')
 
         # --- vars ---
         self.pru = Var(info='RegUp reserve (system base)',
                        unit='p.u.', name='pru', tex_name=r'p_{r,u}',
-                       model='StaticGen',
-                       nonneg=True,
-                       )
+                       model='StaticGen', nonneg=True,)
         self.prd = Var(info='RegDn reserve (system base)',
                        unit='p.u.', name='prd', tex_name=r'p_{r,d}',
-                       model='StaticGen',
-                       nonneg=True,
-                       )
+                       model='StaticGen', nonneg=True,)
         # --- constraints ---
-        self.rbu = Constraint(name='rbu',
+        self.ls = ZonalSum(u=self.zb, zone='Region',
+                           name='ls', tex_name=r'\sum_{l}',
+                           info='Sum pd vector in shape of zone',)
+        self.pdz = NumOpDual(u=self.ls, u2=self.pd,
+                             fun=np.multiply,
+                             rfun=np.sum, rargs=dict(axis=1),
+                             expand_dims=0,
+                             name='pdz', tex_name=r'p_{d,z}',
+                             unit='p.u.', info='zonal load')
+        self.dud = NumOpDual(u=self.pdz, u2=self.du, fun=np.multiply,
+                             rfun=np.reshape, rargs=dict(newshape=(-1,)),
+                             name='dud', tex_name=r'd_{u, d}',
+                             info='zonal RegUp reserve requirement',)
+        self.ddd = NumOpDual(u=self.pdz, u2=self.dd, fun=np.multiply,
+                             rfun=np.reshape, rargs=dict(newshape=(-1,)),
+                             name='ddd', tex_name=r'd_{d, d}',
+                             info='zonal RegDn reserve requirement',)
+        self.rbu = Constraint(name='rbu', type='eq',
                               info='RegUp reserve balance',
-                              e_str='gs @ pru - du',
-                              type='eq',)
-        self.rbd = Constraint(name='rbd',
+                              e_str='gs @ multiply(ug, pru) - dud',)
+        self.rbd = Constraint(name='rbd', type='eq',
                               info='RegDn reserve balance',
-                              e_str='gs @ prd - dd',
-                              type='eq',)
-        self.rru = Constraint(name='rru',
+                              e_str='gs @ multiply(ug, prd) - ddd',)
+        self.rru = Constraint(name='rru', type='uq',
                               info='RegUp reserve ramp',
-                              e_str='pg + pru - pmax',
-                              type='uq',)
-        self.rrd = Constraint(name='rrd',
+                              e_str='multiply(ug, pg + pru) - pmax',)
+        self.rrd = Constraint(name='rrd', type='uq',
                               info='RegDn reserve ramp',
-                              e_str='-pg + prd - pmin',
-                              type='uq',)
-        self.rgu = Constraint(name='rgu',
+                              e_str='multiply(ug, -pg + prd) - pmin',)
+        self.rgu = Constraint(name='rgu', type='uq',
                               info='ramp up limit of generator output',
-                              e_str='pg - pg0 - R10',
-                              type='uq',)
-        self.rgd = Constraint(name='rgd',
+                              e_str='multiply(ug, pg-pg0-R10)',)
+        self.rgd = Constraint(name='rgd', type='uq',
                               info='ramp down limit of generator output',
-                              e_str='-pg + pg0 - R10',
-                              type='uq',)
+                              e_str='multiply(ug, -pg+pg0-R10)',)
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
-        self.obj.e_str = 'sum(c2 * pg**2 + c1 * pg + ug * c0 + cru * pru + crd * prd)'
+        # NOTE: the product of dt and pg is processed using ``dot``, because dt is a numnber
+        self.obj.e_str = 'sum(c2 @ (dth dot pg)**2) ' + \
+                         '+ sum(c1 @ (dth dot pg)) + ug * c0 ' + \
+                         '+ sum(cru * pru + crd * prd)'
 
 
 class RTED(RTEDData, RTEDModel):
@@ -151,6 +164,10 @@ class RTED(RTEDData, RTEDModel):
     The function ``dc2ac`` sets the ``vBus`` value from solved ACOPF.
     Without this conversion, dynamic simulation might fail due to the gap between
     DC-based dispatch results and AC-based dynamic initialization.
+
+    Notes
+    -----
+    1. objective function has been adjusted for RTED interval ``config.dth``, 5/60 [Hour] by default.
     """
 
     def __init__(self, system, config):
@@ -207,3 +224,111 @@ class RTED(RTEDData, RTEDModel):
             delattr(self, 'vBus')
             self.is_ac = False
         return super().run(**kwargs)
+
+
+class RTED2Data(RTEDData):
+    """
+    Data for real-time economic dispatch, with ESD1.
+    """
+
+    def __init__(self):
+        RTEDData.__init__(self)
+        self.En = RParam(info='Rated energy capacity',
+                         name='En', src='En',
+                         tex_name='E_n', unit='MWh',
+                         model='ESD1',)
+        self.SOCmin = RParam(info='Minimum required value for SOC in limiter',
+                             name='SOCmin', src='SOCmin',
+                             tex_name='SOC_{min}', unit='%',
+                             model='ESD1',)
+        self.SOCmax = RParam(info='Maximum allowed value for SOC in limiter',
+                             name='SOCmax', src='SOCmax',
+                             tex_name='SOC_{max}', unit='%',
+                             model='ESD1',)
+        self.SOCinit = RParam(info='Initial state of charge',
+                              name='SOCinit', src='SOCinit',
+                              tex_name=r'SOC_{init}', unit='%',
+                              model='ESD1',)
+        self.EtaC = RParam(info='Efficiency during charging',
+                           name='EtaC', src='EtaC',
+                           tex_name='Eta_C', unit='%',
+                           model='ESD1',)
+        self.EtaD = RParam(info='Efficiency during discharging',
+                           name='EtaD', src='EtaD',
+                           tex_name='Eta_D', unit='%',
+                           model='ESD1',)
+        self.ge1 = RParam(info='gen of ESD1',
+                          name='grg1', tex_name=r'g_{ESD1}',
+                          model='ESD1', src='gen',)
+
+
+class RTED2Model(RTEDModel):
+    """
+    RTED model with ESD1.
+    """
+
+    def __init__(self, system, config):
+        RTEDModel.__init__(self, system, config)
+        # --- service ---
+        self.REtaD = NumOp(info='1/EtaD',
+                           name='REtaD', tex_name=r'1/{Eta_D}',
+                           u=self.EtaD, fun=np.reciprocal,)
+        self.REn = NumOp(info='1/En',
+                         name='REn', tex_name=r'1/{E_n}',
+                         u=self.En, fun=np.reciprocal,)
+        self.Mb = NumOp(info='10 times of max of pmax as big M',
+                        name='Mb', tex_name=r'M_{big}',
+                        u=self.pmax, fun=np.max,
+                        rfun=np.dot, rargs=dict(b=10),)
+
+        # --- vars ---
+        self.SOC = Var(info='ESD1 SOC', unit='%',
+                       name='SOC', tex_name=r'SOC',
+                       model='ESD1', pos=True,)
+        self.e1s = VarSelect(u=self.pg, indexer='ge1',
+                             name='e1s', tex_name=r'S_{ESD1}',
+                             info='Select ESD1 pg from StaticGen',)
+        self.pec = Var(info='ESD1 charging power (system base)',
+                       unit='p.u.', name='pec', tex_name=r'p_{c,ESD1}',
+                       model='ESD1',)
+        self.uc = Var(info='ESD1 charging decision',
+                      name='uc', tex_name=r'u_{c}',
+                      model='ESD1', boolean=True,)
+        self.zc = Var(info='Aux var for ESD1 charging',
+                      name='zc', tex_name=r'z_{c}',
+                      model='ESD1', pos=True,)
+
+        # --- constraints ---
+        self.peb = Constraint(name='pges', type='eq',
+                              info='Select ESD1 power from StaticGen',
+                              e_str='e1s@pg - zc',)
+
+        self.SOClb = Constraint(name='SOClb', type='uq',
+                                info='ESD1 SOC lower bound',
+                                e_str='-SOC + SOCmin',)
+        self.SOCub = Constraint(name='SOCub', type='uq',
+                                info='ESD1 SOC upper bound',
+                                e_str='SOC - SOCmax',)
+
+        self.zclb = Constraint(name='zclb', type='uq', info='zc lower bound',
+                               e_str='- zc + pec',)
+        self.zcub = Constraint(name='zcub', type='uq', info='zc upper bound',
+                               e_str='zc - pec - Mb@(1-uc)',)
+        self.zcub2 = Constraint(name='zcub2', type='uq', info='zc upper bound',
+                                e_str='zc - Mb@uc',)
+
+        SOCb = 'SOC - SOCinit - dth dot REn*EtaC*zc - dth dot REn*REtaD*(pec - zc)'
+        self.SOCb = Constraint(name='SOCb', type='eq',
+                               info='ESD1 SOC balance', e_str=SOCb,)
+
+
+class RTED2(RTED2Data, RTED2Model):
+    """
+    RTED with energy storage :ref:`ESD1`.
+
+    The bilinear term in the formulation is linearized with big-M method.
+    """
+
+    def __init__(self, system, config):
+        RTED2Data.__init__(self)
+        RTED2Model.__init__(self, system, config)

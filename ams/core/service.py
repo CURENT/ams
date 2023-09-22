@@ -40,11 +40,9 @@ class RBaseService(BaseService):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 model: str = None,
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype)
-        self.model = model
         self.export = False
         self.is_group = False
         self.rtn = None
@@ -121,10 +119,9 @@ class ValueService(RBaseService):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 model: str = None,
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model)
+                         info=info, vtype=vtype)
         self._v = value
 
     @property
@@ -163,10 +160,9 @@ class ROperationService(RBaseService):
                  tex_name: str = None,
                  unit: str = None,
                  info: str = None,
-                 vtype: Type = None,
-                 model: str = None):
+                 vtype: Type = None,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model)
+                         info=info, vtype=vtype)
         self.u = u
 
 
@@ -212,7 +208,6 @@ class NumOp(ROperationService):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 model: str = None,
                  rfun: Callable = None,
                  rargs: dict = {},
                  expand_dims: int = None):
@@ -220,8 +215,7 @@ class NumOp(ROperationService):
         unit = unit if unit is not None else u.unit
         info = info if info is not None else u.info
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model,
-                         u=u,)
+                         info=info, vtype=vtype, u=u,)
         self.fun = fun
         self.args = args
         self.rfun = rfun
@@ -286,10 +280,9 @@ class NumExpandDim(NumOp):
                  tex_name: str = None,
                  unit: str = None,
                  info: str = None,
-                 vtype: Type = None,
-                 model: str = None,):
+                 vtype: Type = None,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model,
+                         info=info, vtype=vtype,
                          u=u, fun=np.expand_dims, args=args)
         self.axis = axis
 
@@ -343,7 +336,6 @@ class NumOpDual(NumOp):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 model: str = None,
                  rfun: Callable = None,
                  rargs: dict = {},
                  expand_dims: int = None):
@@ -351,7 +343,7 @@ class NumOpDual(NumOp):
         unit = unit if unit is not None else u.unit
         info = info if info is not None else u.info
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model,
+                         info=info, vtype=vtype,
                          u=u, fun=fun, args=args,
                          rfun=rfun, rargs=rargs,
                          expand_dims=expand_dims)
@@ -363,6 +355,62 @@ class NumOpDual(NumOp):
         if not isinstance(out, np.ndarray):
             out = np.array([out])
         return out
+
+
+class MinDur(NumOpDual):
+    """
+    Defined to form minimum on matrix for minimum online/offline
+    time constraints used in UC.
+
+    Parameters
+    ----------
+    u : Callable
+        Input, should be a ``Var`` with horizon.
+    u2 : Callable
+        Input2, should be a ``RParam``.
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 u2: Callable,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,):
+        tex_name = tex_name if tex_name is not None else u.tex_name
+        unit = unit if unit is not None else u.unit
+        info = info if info is not None else u.info
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype,
+                         u=u, u2=u2, fun=None, args=None,
+                         rfun=None, rargs=None,
+                         expand_dims=None)
+        if self.u.horizon is None:
+            msg = f'{self.class_name} {self.name}.u {self.u.name} has no horizon, likely a modeling error.'
+            logger.error(msg)
+
+    @property
+    def v(self):
+        n_gen = self.u.n
+        n_ts = self.u.horizon.n
+        ton = np.zeros((n_gen, n_ts))
+
+        td1 = np.ceil(self.u2.v).astype(int)
+
+        for i in range(n_gen):
+            for t in range(n_ts):
+                if t + td1[i] <= n_ts:
+                    ton[i, t:t + td1[i]] = 1
+        return ton
 
 
 class NumHstack(NumOp):
@@ -401,11 +449,10 @@ class NumHstack(NumOp):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 model: str = None,
                  rfun: Callable = None,
                  rargs: dict = {}):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model,
+                         info=info, vtype=vtype,
                          u=u, fun=np.hstack, args=args,
                          rfun=rfun, rargs=rargs)
         self.ref = ref
@@ -483,12 +530,11 @@ class ZonalSum(NumOp):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 model: str = None,
                  rfun: Callable = None,
                  rargs: dict = {},
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model,
+                         info=info, vtype=vtype,
                          u=u, fun=None, args={},
                          rfun=rfun, rargs=rargs)
         self.zone = zone
@@ -506,9 +552,84 @@ class ZonalSum(NumOp):
             ridx = zone_mdl.get_idx()
 
         row, col = np.meshgrid(self.u.v, ridx)
+        # consistency check
+        is_subset = set(self.u.v).issubset(set(ridx))
+        if not is_subset:
+            raise ValueError(f'{self.u.model} contains undefined zone, likey a data error.')
         result = (row == col).astype(int)
 
         return result
+
+
+class VarSelect(NumOp):
+    """
+    A numerical matrix to select a subset of a 2D variable,
+    ``u.v[:, idx]``.
+
+    Parameters
+    ----------
+    u : Callable
+        The input matrix variable.
+    idx : list
+        The index of the subset.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 indexer: str,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 rfun: Callable = None,
+                 rargs: dict = {},
+                 **kwargs
+                 ):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype, u=u, fun=None,
+                         rfun=rfun, rargs=rargs, **kwargs)
+        self.indexer = indexer
+
+    @property
+    def v0(self):
+        # FIXME: what if reference source has no idx?
+        # data consistency check
+        indexer = getattr(self.rtn, self.indexer)
+        err_msg = f'Indexer source {indexer.model} has no {indexer.src}.'
+        group = model = None
+        if indexer.model in self.rtn.system.groups.keys():
+            group = self.rtn.system.groups[indexer.model]
+            group_idx = group.get_idx()
+            try:
+                ref = group.get(src=indexer.src, attr='v', idx=group_idx)
+            except AttributeError:
+                raise AttributeError(err_msg)
+        elif indexer.model in self.rtn.system.models.keys():
+            model = self.rtn.system.models[indexer.model]
+            try:
+                ref = model.get(src=indexer.src, attr='v', idx=model.idx.v)
+            except AttributeError:
+                raise AttributeError(err_msg)
+        else:
+            raise AttributeError(f'Indexer source model {indexer.model} has no ref.')
+
+        try:
+            uidx = self.u.get_idx()
+        except AttributeError:
+            raise AttributeError(f'Input {self.u.name} has no idx, likey a modeling error.')
+
+        is_empty = len(ref) == 0
+        if is_empty:
+            raise ValueError(f'{indexer.model} contains no input, likey a data error.')
+
+        is_subset = set(ref).issubset(set(uidx))
+        if not is_subset:
+            raise ValueError(f'{indexer.model} contains undefined {indexer.src}, likey a data error.')
+
+        out = [1 if item in ref else 0 for item in uidx]
+
+        return np.array(out)
 
 
 class VarReduction(NumOp):
@@ -544,13 +665,12 @@ class VarReduction(NumOp):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 model: str = None,
                  rfun: Callable = None,
                  rargs: dict = {},
                  **kwargs
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model,
+                         info=info, vtype=vtype,
                          u=u, fun=None, rfun=rfun, rargs=rargs,
                          **kwargs)
         self.fun = fun
@@ -598,12 +718,11 @@ class RampSub(NumOp):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 model: str = None,
                  rfun: Callable = None,
                  rargs: dict = {},
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, model=model,
+                         info=info, vtype=vtype,
                          u=u, fun=None, rfun=rfun, rargs=rargs,)
 
     @property

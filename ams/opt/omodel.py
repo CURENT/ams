@@ -87,10 +87,10 @@ class OptzBase:
         """
         Return the shape.
         """
-        if self.rtn.is_setup:
+        if self.rtn.initialized:
             return self.om.__dict__[self.name].shape
         else:
-            logger.warning(f'<{self.rtn.class_name}> is not setup yet.')
+            logger.warning(f'<{self.rtn.class_name}> is not initialized yet.')
             return None
 
     @property
@@ -98,10 +98,10 @@ class OptzBase:
         """
         Return the size.
         """
-        if self.rtn.is_setup:
+        if self.rtn.initialized:
             return self.om.__dict__[self.name].size
         else:
-            logger.warning(f'<{self.rtn.class_name}> is not setup yet.')
+            logger.warning(f'<{self.rtn.class_name}> is not initialized yet.')
             return None
 
 
@@ -150,7 +150,7 @@ class Var(Algeb, OptzBase):
         Negative semi-definite variable
     hermitian : bool, optional
         Hermitian variable
-    bool : bool, optional
+    boolean : bool, optional
         Boolean variable
     integer : bool, optional
         Integer variable
@@ -189,7 +189,7 @@ class Var(Algeb, OptzBase):
                  psd: Optional[bool] = False,
                  nsd: Optional[bool] = False,
                  hermitian: Optional[bool] = False,
-                 bool: Optional[bool] = False,
+                 boolean: Optional[bool] = False,
                  integer: Optional[bool] = False,
                  pos: Optional[bool] = False,
                  neg: Optional[bool] = False,
@@ -224,7 +224,7 @@ class Var(Algeb, OptzBase):
                                      ('psd', psd),
                                      ('nsd', nsd),
                                      ('hermitian', hermitian),
-                                     ('bool', bool),
+                                     ('boolean', boolean),
                                      ('integer', integer),
                                      ('pos', pos),
                                      ('neg', neg),
@@ -381,14 +381,14 @@ class Constraint(OptzBase):
         self.is_disabled = False
         # TODO: add constraint info from solver
 
-    def parse(self, show_code=False):
+    def parse(self, disable_showcode=True):
         """
         Parse the constraint.
 
         Parameters
         ----------
-        show_code : bool, optional
-            Flag indicating if the code should be shown, False by default.
+        disable_showcode : bool, optional
+            Flag indicating if the code should be shown, True by default.
         """
         sub_map = self.om.rtn.syms.sub_map
         if self.is_disabled:
@@ -396,7 +396,11 @@ class Constraint(OptzBase):
         om = self.om
         code_constr = self.e_str
         for pattern, replacement in sub_map.items():
-            code_constr = re.sub(pattern, replacement, code_constr)
+            try:
+                code_constr = re.sub(pattern, replacement, code_constr)
+            except TypeError as e:
+                logger.error(f"Error in parsing constr <{self.name}>.")
+                raise e
         if self.type == 'uq':
             code_constr = f'{code_constr} <= 0'
         elif self.type == 'eq':
@@ -404,8 +408,8 @@ class Constraint(OptzBase):
         else:
             raise ValueError(f'Constraint type {self.type} is not supported.')
         code_constr = f'om.constrs["{self.name}"]=' + code_constr
-        logger.debug(f"Set constrs {self.name}: {self.e_str}")
-        if show_code:
+        logger.debug(f"Set constrs {self.name}: {self.e_str} {'<= 0' if self.type == 'uq' else '== 0'}")
+        if not disable_showcode:
             logger.info(f"Code Constr: {code_constr}")
         exec(code_constr)
         exec(f'setattr(om, self.name, om.constrs["{self.name}"])')
@@ -470,14 +474,14 @@ class Objective(OptzBase):
         """
         return self.om.obj.value
 
-    def parse(self, show_code=False):
+    def parse(self, disable_showcode=True):
         """
         Parse the objective function.
 
         Parameters
         ----------
-        show_code : bool, optional
-            Flag indicating if the code should be shown, False by default.
+        disable_showcode : bool, optional
+            Flag indicating if the code should be shown, True by default.
         """
         om = self.om
         sub_map = self.om.rtn.syms.sub_map
@@ -491,7 +495,7 @@ class Objective(OptzBase):
         else:
             raise ValueError(f'Objective sense {self.sense} is not supported.')
         code_obj = 'om.obj=' + code_obj
-        if show_code:
+        if not disable_showcode:
             logger.info(f"Code Obj: {code_obj}")
         exec(code_obj)
         return True
@@ -548,7 +552,7 @@ class OModel:
         self.m = 0  # number of constraints
 
     @timer
-    def setup(self, show_code=False):
+    def setup(self, disable_showcode=True, force_generate=False):
         """
         Setup the optimziation model from symbolic description.
 
@@ -561,23 +565,25 @@ class OModel:
 
         Parameters
         ----------
-        show_code : bool, optional
-            Flag indicating if the code should be shown, False by default.
+        disable_showcode : bool, optional
+            Flag indicating if the code should be shown, True by default.
+        force : bool, optional
+            True to force generating symbols, False by default.
         """
         rtn = self.rtn
-        rtn.syms.generate_symbols()
+        rtn.syms.generate_symbols(force_generate=force_generate)
         # --- add decision variables ---
         for ovar in rtn.vars.values():
             ovar.parse()
         # --- add constraints ---
         for constr in rtn.constrs.values():
-            constr.parse(show_code=show_code)
+            constr.parse(disable_showcode=disable_showcode)
         # --- parse objective functions ---
         if rtn.type == 'PF':
             # NOTE: power flow type has no objective function
             pass
         elif rtn.obj is not None:
-            rtn.obj.parse(show_code=show_code)
+            rtn.obj.parse(disable_showcode=disable_showcode)
             # --- finalize the optimziation formulation ---
             code_mdl = f"problem(self.obj, [constr for constr in self.constrs.values()])"
             for pattern, replacement in self.rtn.syms.sub_map.items():

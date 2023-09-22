@@ -106,13 +106,19 @@ class ACOPFBase(RoutineModel):
         self.system.recent = self.system.routines[self.class_name]
         return True
 
-    def run(self, **kwargs):
+    def run(self, force_init=False, disable_showcode=True, **kwargs):
         """
         Run the routine.
+
+        Parameters
+        ----------
+        force_init : bool
+            Force initialization.
+        disable_showcode : bool
+            Disable showing code.
         """
-        if not self.is_setup:
-            logger.info(f"Setup model for {self.class_name}")
-            self.setup()
+        if not self.initialized:
+            self.init(force=force_init, disable_showcode=disable_showcode)
         t0, _ = elapsed()
         res = self.solve(**kwargs)
         self.exit_code = int(1 - res['success'])

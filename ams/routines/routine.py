@@ -47,13 +47,14 @@ class RoutineModel:
                                       ('sys_mva', 'S_{b,sys}'),
                                       ))
         self.syms = SymProcessor(self)  # symbolic processor
+        self._syms = False  # flag if symbols has been generated
 
         self.services = OrderedDict()  # list out services in a routine
 
         self.vars = OrderedDict()  # list out Vars in a routine
         self.constrs = OrderedDict()
         self.obj = None
-        self.is_setup = False
+        self.initialized = False
         self.type = 'UndefinedType'
         self.docum = RDocumenter(self)
 
@@ -69,6 +70,7 @@ class RoutineModel:
         # TODO: these default configs might to be revised
         self.config.add(OrderedDict((('sparselib', 'klu'),
                                      ('linsolve', 0),
+                                     ('dth', 1),  # time interval in hours
                                      )))
         self.config.add_extra("_help",
                               sparselib="linear sparse solver name",
@@ -169,31 +171,30 @@ class RoutineModel:
         # TODO: add data validation for RParam, typical range, etc.
         return True
 
-    def setup(self, **kwargs):
+    def init(self, force=False, disable_showcode=True, **kwargs):
         """
         Setup optimization model.
 
         Parameters
         ----------
-        show_code: bool
+        force: bool
+            Whether to force initialization.
+        disable_showcode: bool
             Whether to show generated code.
-
-        Other Parameters
-        ----------------
-        show_code: bool
-            Whether to show generated code, passed to `om.setup()`.
         """
         # TODO: add input check, e.g., if GCost exists
+        if not force and self.initialized:
+            logger.debug(f'{self.class_name} has already been initialized.')
+            return True
         if self._data_check():
             logger.debug(f'{self.class_name} data check passed.')
         else:
-            logger.error(f'{self.class_name} data check failed, setup may run into error!')
-        show_code = kwargs.get('show_code', False)
-        results, elapsed_time = self.om.setup(show_code=show_code)
-        common_info = f"{self.class_name} model set up "
+            logger.warning(f'{self.class_name} data check failed, setup may run into error!')
+        results, elapsed_time = self.om.setup(disable_showcode=disable_showcode)
+        common_info = f"Routine <{self.class_name}> initialized "
         if results:
             info = f"in {elapsed_time}."
-            self.is_setup = True
+            self.initialized = True
         else:
             info = "failed!"
         logger.info(common_info + info)
@@ -219,23 +220,25 @@ class RoutineModel:
         """
         return None
 
-    def run(self, **kwargs):
+    def run(self, force_init=False, disable_showcode=True, **kwargs):
         """
         Run the routine.
+
+        Parameters
+        ----------
+        force_init: bool
+            Whether to force initialization.
+        disable_showcode: bool
+            Whether to show generated code.
         """
-        show_code = kwargs.get('show_code', False)
-        if 'show_code' in kwargs:
-            del kwargs['show_code']
         # --- setup check ---
-        if not self.is_setup:
-            logger.info(f"Setup model of {self.class_name}")
-            self.setup(show_code=show_code)
+        self.init(force=force_init, disable_showcode=disable_showcode)
         # NOTE: if the model data is altered, we need to re-setup the model
         # this implementation if not efficient at large-scale
         # FIXME: find a more efficient way to update the OModel values if
         # the system data is altered
-        elif self.exec_time > 0:
-            self.setup(show_code=show_code)
+        # elif self.exec_time > 0:
+        #     self.init(disable_showcode=disable_showcode)
         # --- solve optimization ---
         t0, _ = elapsed()
         result = self.solve(**kwargs)
@@ -288,7 +291,10 @@ class RoutineModel:
         This function assigns `owner` to the model itself, assigns the name and tex_name.
         """
         if key in self.__dict__:
-            existing_keys = list(self.constrs.keys()) + list(self.vars.keys()) + list(self.rparams.keys())
+            existing_keys = []
+            for type in ['constrs', 'vars', 'rparams']:
+                if type in self.__dict__:
+                    existing_keys += list(self.__dict__[type].keys())
             if key in existing_keys:
                 logger.warning(f"{self.class_name}: redefinition of member <{key}>. Likely a modeling error.")
 
@@ -371,6 +377,39 @@ class RoutineModel:
         elif name in self.services:
             del self.services[name]
 
+    def enable(self, name):
+        """
+        Enable a constraint by name.
+
+        Parameters
+        ----------
+        name: str or list
+            name of the constraint to be enabled
+        """
+        if isinstance(name, list):
+            constr = []
+            for n in name:
+                if n not in self.constrs:
+                    logger.warning(f"Constraint <{n}> not found.")
+                    continue
+                if not self.constrs[n].is_disabled:
+                    logger.warning(f"Constraint <{n}> has already been enabled.")
+                    continue
+                self.constrs[n].is_disabled = False
+                self.initialized = False
+                constr.append(n)
+            logger.warning(f"Enable constraints: {n}")
+            return True
+
+        if name in self.constrs:
+            if not self.constrs[name].is_disabled:
+                logger.warning(f"Constraint <{name}> has already been enabled.")
+            else:
+                self.constrs[name].is_disabled = False
+                self.initialized = False
+                logger.warning(f"Enable constraint <{name}>.")
+            return True
+
     def disable(self, name):
         """
         Disable a constraint by name.
@@ -381,6 +420,7 @@ class RoutineModel:
             name of the constraint to be disabled
         """
         if isinstance(name, list):
+            constr = []
             for n in name:
                 if n not in self.constrs:
                     logger.warning(f"Constraint <{n}> not found.")
@@ -389,8 +429,9 @@ class RoutineModel:
                     logger.warning(f"Constraint <{n}> has already been disabled.")
                     continue
                 self.constrs[n].is_disabled = True
-                self.is_setup = False
-                logger.warning(f"Disable constraint <{n}>.")
+                self.initialized = False
+                constr.append(n)
+            logger.warning(f"Disable constraints: {n}")
             return True
 
         if name in self.constrs:
@@ -398,7 +439,7 @@ class RoutineModel:
                 logger.warning(f"Constraint <{name}> has already been disabled.")
             else:
                 self.constrs[name].is_disabled = True
-                self.is_setup = False
+                self.initialized = False
                 logger.warning(f"Disable constraint <{name}>.")
             return True
 
@@ -408,7 +449,7 @@ class RoutineModel:
         """
         Post-addition check.
         """
-        self.is_setup = False
+        self.initialized = False
         self.exec_time = 0.0
         self.exit_code = 0
 
@@ -423,7 +464,7 @@ class RoutineModel:
                   indexer: Optional[str] = None,
                   imodel: Optional[str] = None,):
         """
-        Add :ref:`RParam` to the routine.
+        Add `RParam` to the routine.
 
         Parameters
         ----------
@@ -482,7 +523,7 @@ class RoutineModel:
                    vtype: Type = None,
                    model: str = None,):
         """
-        Add :ref:`ValueService` to the routine.
+        Add `ValueService` to the routine.
 
         Parameters
         ----------
@@ -517,7 +558,7 @@ class RoutineModel:
                    type: Optional[str] = 'uq',
                    ):
         """
-        Add :ref:`Constraint` to the routine. to the routine.
+        Add `Constraint` to the routine. to the routine.
 
         Parameters
         ----------
@@ -647,3 +688,9 @@ class RoutineModel:
         self._post_add_check()
 
         return True
+
+    def _initial_guess(self):
+        """
+        Generate initial guess for the optimization model.
+        """
+        raise NotImplementedError

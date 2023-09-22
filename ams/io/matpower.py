@@ -112,10 +112,10 @@ def mpc2system(mpc: dict, system) -> bool:
         qc1max = data[13] / mbase
         qc2min = data[14] / mbase
         qc2max = data[15] / mbase
-        ramp_agc = data[16] / mbase
-        ramp_10 = data[17] / mbase
-        ramp_30 = data[18] / mbase
-        ramp_q = data[19] / mbase
+        ramp_agc = 60 * data[16] / mbase  # from MW/min to MW/h
+        ramp_10 = 6 * data[17] / mbase  # from MW/10min to MW/h
+        ramp_30 = 2 * data[18] / mbase  # from MW/30min to MW/h
+        ramp_q = 60 * data[19] / mbase  # from MVAr/min to MVAr/h
         apf = data[20]
 
         uid = system.Bus.idx2uid(bus_idx)
@@ -191,7 +191,7 @@ def mpc2system(mpc: dict, system) -> bool:
         system.Bus.name.v[:] = mpc['bus_name']
 
     gcost_idx = 0
-    gen_idx = system.StaticGen.find_idx(keys='bus', values=mpc['gen'][:, 0])
+    gen_idx = system.PV.idx.v + system.Slack.idx.v
     for data, gen in zip(mpc['gencost'], gen_idx):
         # NOTE: only type 2 costs are supported for now
         # type  startup shutdown	n	c2  c1  c0
@@ -205,8 +205,7 @@ def mpc2system(mpc: dict, system) -> bool:
         c2 = data[4] * base_mva ** 2
         c1 = data[5] * base_mva
         c0 = data[6] * base_mva
-
-        system.add('GCost', gen=str(gen),
+        system.add('GCost', gen=int(gen),
                    u=1, name=f'GCost_{gcost_idx}',
                    type=type,
                    csu=startup, csd=shutdown,
