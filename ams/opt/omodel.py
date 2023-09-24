@@ -466,13 +466,21 @@ class Objective(OptzBase):
         OptzBase.__init__(self, name=name, info=info, unit=unit)
         self.e_str = e_str
         self.sense = sense
+        self._v = None
 
     @property
     def v(self):
         """
         Return the CVXPY objective value.
         """
-        return self.om.obj.value
+        out = self.om.obj.value
+        out = self._v if out is None else out
+        return out
+
+    @v.setter
+    def v(self, value):
+        print(f"Set obj {self.name} to {value:.4f}")
+        self._v = value
 
     def parse(self, disable_showcode=True):
         """
