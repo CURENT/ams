@@ -213,6 +213,14 @@ def mpc2system(mpc: dict, system) -> bool:
                    )
         gcost_idx += 1
 
+    # --- region ---
+    zone_id = np.unique(system.Bus.zone.v).astype(int)
+    for zone in zone_id:
+        zone_idx = f'ZONE_{zone}'
+        system.add('Region', idx=zone_idx, name=zone_idx)
+    bus_zone = system.Bus.zone.v
+    bus_zone = [f'ZONE_{int(zone)}' for zone in bus_zone]
+    system.Bus.zone.v = bus_zone
     return True
 
 
