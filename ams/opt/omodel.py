@@ -509,16 +509,9 @@ class Objective(OptzBase):
         return True
 
     def __repr__(self):
-        if self.name is not None:
-            if self.v is not None:
-                return f"{self.name}: {self.e_str}, {self.name}={self.v:.4f}"
-            else:
-                return f"{self.name}: {self.e_str}"
-        else:
-            if self.v is not None:
-                return f"{self.e_str}={self.v:.4f}"
-            else:
-                return f"Unnamed obj: {self.e_str}"
+        name_str = f"{self.name}=" if self.name is not None else "obj="
+        value_str = f"{self.v:.4f}, " if self.v is not None else ""
+        return f"{name_str}{value_str}{self.e_str}"
 
 
 class OModel:
