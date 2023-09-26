@@ -16,6 +16,10 @@ class GenParam:
     """
 
     def __init__(self) -> None:
+        self.ctrl = NumParam(default=1,
+                             info="generator controllability",
+                             tex_name=r'c_{trl}',
+                             unit='boolean')
         self.Pc1 = NumParam(default=0.0,
                             info="lower real power output of PQ capability curve",
                             tex_name=r'P_{c1}',

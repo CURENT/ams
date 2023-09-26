@@ -130,6 +130,8 @@ class Var(Algeb, OptzBase):
         Lower bound
     ub : str, optional
         Upper bound
+    ctrl : str, optional
+        Controllability
     horizon : ams.routines.RParam, optional
         Horizon idx.
     nonneg : bool, optional
@@ -179,6 +181,8 @@ class Var(Algeb, OptzBase):
                  shape: Optional[Union[tuple, int]] = None,
                  lb: Optional[str] = None,
                  ub: Optional[str] = None,
+                 ctrl: Optional[str] = None,
+                 v0: Optional[str] = None,
                  horizon: Optional[RParam] = None,
                  nonneg: Optional[bool] = False,
                  nonpos: Optional[bool] = False,
@@ -210,6 +214,8 @@ class Var(Algeb, OptzBase):
         self.owner = None  # instance of the owner model or group
         self.lb = lb
         self.ub = ub
+        self.ctrl = ctrl
+        self.v0 = v0
         self.horizon = horizon
         self._shape = shape
 
@@ -294,17 +300,21 @@ class Var(Algeb, OptzBase):
         exec(code_var)
         exec(f"om.vars[self.name] = tmp")
         exec(f'setattr(om, self.name, om.vars["{self.name}"])')
+        u_ctrl = self.ctrl.v if self.ctrl else np.ones(nr)
+        v0 = self.v0.v if self.v0 else np.zeros(nr)
         if self.lb:
             lv = self.lb.owner.get(src=self.lb.name, idx=self.get_idx(), attr='v')
             u = self.lb.owner.get(src='u', idx=self.get_idx(), attr='v')
-            elv = u * lv  # element-wise lower bound considering online status
+            # element-wise lower bound considering online status
+            elv = u_ctrl * u * lv + (1 - u_ctrl) * v0
             # fit variable shape if horizon exists
             elv = np.tile(elv, (nc, 1)).T if nc > 0 else elv
             exec("om.constrs[self.lb.name] = tmp >= elv")
         if self.ub:
             uv = self.ub.owner.get(src=self.ub.name, idx=self.get_idx(), attr='v')
             u = self.lb.owner.get(src='u', idx=self.get_idx(), attr='v')
-            euv = u * uv  # element-wise upper bound considering online status
+            # element-wise upper bound considering online status
+            euv = u_ctrl * u * uv + (1 - u_ctrl) * v0
             # fit variable shape if horizon exists
             euv = np.tile(euv, (nc, 1)).T if nc > 0 else euv
             exec("om.constrs[self.ub.name] = tmp <= euv")

@@ -28,6 +28,9 @@ class DCOPFData(RoutineData):
         self.ug = RParam(info='Gen connection status',
                          name='ug', tex_name=r'u_{g}',
                          model='StaticGen', src='u',)
+        self.ctrl = RParam(info='Gen controllability',
+                           name='ctrl', tex_name=r'c_{trl}',
+                           model='StaticGen', src='ctrl',)
         self.c2 = RParam(info='Gen cost coefficient 2',
                          name='c2', tex_name=r'c_{2}',
                          unit=r'$/(p.u.^2)', model='GCost',
@@ -47,6 +50,9 @@ class DCOPFData(RoutineData):
         self.pmin = RParam(info='Gen minimum active power (system base)',
                            name='pmin', tex_name=r'p_{min}',
                            unit='p.u.', model='StaticGen',)
+        self.p0 = RParam(info='Gen initial active power (system base)',
+                         name='p0', tex_name=r'p_{0}',
+                         unit='p.u.', model='StaticGen',)
         self.Cg = RParam(info='connection matrix for Gen and Bus',
                          name='Cg', tex_name=r'C_{g}',)
         # --- load ---
@@ -157,7 +163,8 @@ class DCOPFModel(DCOPFBase):
                       unit='p.u.', name='pg', src='p',
                       tex_name=r'p_{g}',
                       model='StaticGen',
-                      lb=self.pmin, ub=self.pmax,)
+                      lb=self.pmin, ub=self.pmax,
+                      ctrl=self.ctrl, v0=self.p0)
         self.pn = Var(info='Bus active power injection (system base)',
                       unit='p.u.', name='pn', tex_name=r'p_{n}',
                       model='Bus',)
