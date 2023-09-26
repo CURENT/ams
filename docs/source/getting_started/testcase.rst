@@ -16,11 +16,15 @@ Below is a summary of the folders and the corresponding test cases. Some folders
 contain a README file with notes. When viewing the case folder on GitHub, one
 can conveniently read the README file below the file listing.
 
+- ``5bus``: a small PJM 5-bus test case for power flow study [PJM5]_.
 - ``ieee14`` and ``ieee39``: the IEEE 14-bus and 39-bus test cases [IEEE]_.
 - ``ieee123``: the IEEE 123-bus test case [Wang]_.
 - ``matpower``: a subset of test cases from [MATPOWER]_.
 - ``npcc`` and ``wecc``: NPCC 140-bus and WECC 179-bus test cases [GridEcon]_.
 
+.. [PJM5] F. Li and R. Bo, "Small test systems for power system economic
+        studies," IEEE PES General Meeting, 2010, pp. 1-4, doi:
+        10.1109/PES.2010.5589973.
 .. [IEEE] University of Washington, "Power Systems Test Case Archive", [Online]. Available:
         https://labs.ece.uw.edu/pstca/
 .. [Wang] X. Wang, F. Li, Q. Zhang, Q. Shi and J. Wang, "Profit-Oriented BESS Siting
