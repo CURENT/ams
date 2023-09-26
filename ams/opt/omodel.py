@@ -218,6 +218,7 @@ class Var(Algeb, OptzBase):
         self.v0 = v0
         self.horizon = horizon
         self._shape = shape
+        self._v = None
 
         self.config = Config(name=self.class_name)  # `config` that can be exported
 
@@ -245,7 +246,12 @@ class Var(Algeb, OptzBase):
         """
         Return the CVXPY variable value.
         """
-        return self.om.vars[self.name].value
+        out = self.om.vars[self.name].value if self._v is None else self._v
+        return out
+
+    @v.setter
+    def v(self, value):
+        self._v = value
 
     def get_idx(self):
         if self.is_group:
@@ -489,7 +495,6 @@ class Objective(OptzBase):
 
     @v.setter
     def v(self, value):
-        print(f"Set obj {self.name} to {value:.4f}")
         self._v = value
 
     def parse(self, disable_showcode=True):
