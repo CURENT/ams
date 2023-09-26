@@ -154,6 +154,18 @@ class RoutineModel:
         """
         return self.docum.get(max_width=max_width, export=export)
 
+    def _constr_check(self):
+        """
+        Chcek if constraints are in-use.
+        """
+        disabled = []
+        for cname, c in self.constrs.items():
+            if c.is_disabled:
+                disabled.append(cname)
+        if len(disabled) > 0:
+            logger.warning(f"Disabled constraints: {disabled}")
+        return True
+
     def _data_check(self):
         """
         Check if data is valid for a routine.
@@ -190,6 +202,7 @@ class RoutineModel:
             logger.debug(f'{self.class_name} data check passed.')
         else:
             logger.warning(f'{self.class_name} data check failed, setup may run into error!')
+        self._constr_check()
         results, elapsed_time = self.om.setup(disable_showcode=disable_showcode)
         common_info = f"Routine <{self.class_name}> initialized "
         if results:
@@ -387,7 +400,6 @@ class RoutineModel:
             name of the constraint to be enabled
         """
         if isinstance(name, list):
-            constr = []
             for n in name:
                 if n not in self.constrs:
                     logger.warning(f"Constraint <{n}> not found.")
@@ -397,8 +409,6 @@ class RoutineModel:
                     continue
                 self.constrs[n].is_disabled = False
                 self.initialized = False
-                constr.append(n)
-            logger.warning(f"Enable constraints: {n}")
             return True
 
         if name in self.constrs:
@@ -420,7 +430,6 @@ class RoutineModel:
             name of the constraint to be disabled
         """
         if isinstance(name, list):
-            constr = []
             for n in name:
                 if n not in self.constrs:
                     logger.warning(f"Constraint <{n}> not found.")
@@ -430,8 +439,6 @@ class RoutineModel:
                     continue
                 self.constrs[n].is_disabled = True
                 self.initialized = False
-                constr.append(n)
-            logger.warning(f"Disable constraints: {n}")
             return True
 
         if name in self.constrs:
