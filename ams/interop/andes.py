@@ -18,7 +18,7 @@ from ams.models.static import PV, Slack
 logger = logging.getLogger(__name__)
 
 
-def to_andes(system, setup=True, addfile=None,
+def to_andes(system, setup=False, addfile=None,
              overwrite=None, no_keep=True,
              **kwargs):
     """
@@ -143,6 +143,10 @@ def parse_addfile(adsys, amsys, addfile):
     # FIXME: this might be a problem in the future once we add more models
     # FIXME: find a better way to handle this, e.g. REGCV1, or ESD1
     pflow_mdl = ['Bus', 'PQ', 'PV', 'Slack', 'Shunt', 'Line', 'Area']
+    for mdl in pflow_mdl:
+        am_mdl = getattr(amsys, mdl)
+        if am_mdl.n == 0:
+            pflow_mdl.remove(mdl)
     idx_map = OrderedDict([])
 
     reader = pd.ExcelFile(addfile)
@@ -201,6 +205,8 @@ def parse_addfile(adsys, amsys, addfile):
                     except KeyError:  # set the most frequent string as the model name
                         split_list = []
                         for item in df[idxn].values:
+                            if item is None or np.nan:
+                                continue
                             try:
                                 split_list.append(item.split('_'))
                                 # Flatten the nested list and filter non-numerical strings
