@@ -64,11 +64,6 @@ class UCData(EDData):
                          unit=r'$/(p.u.*h)',
                          indexer='load', imodel='StaticLoad',)
 
-        self.p0 = RParam(info='initial load',
-                         name='p0', tex_name=r'p_{0}',
-                         model='PQ', src='p0',
-                         unit='p.u.',)
-
         self.Cl = RParam(info='connection matrix for Load and Bus',
                          name='Cl', tex_name=r'C_{l}',)
 
