@@ -103,10 +103,65 @@ class RoutineModel:
             idx_none = [idxe for idxe in idx if idxe not in src_idx]
             raise ValueError(f'Var <{self.class_name}.{src}> does not contain value with idx={idx_none[0]}')
 
+    def get_load(self, horizon: Union[int, str],
+                 src: str, attr: str = 'v',
+                 idx=None, model: str = 'EDTSlot', factor: str = 'sd',):
+        """
+        Get the load value by applying zonal scaling factor defined in ``Horizon``.
+
+        Parameters
+        ----------
+        idx: int, str, or list
+            Index of the desired load.
+        attr: str
+            Attribute name.
+        model: str
+            Scaling factor owner, ``EDTSlot`` or ``UCTSlot``.
+        factor: str
+            Scaling factor name, usually ``sd``.
+        horizon: int or str
+            Horizon single index.
+        """
+        all_zone = self.system.Region.idx.v
+        if idx is None:
+            pq_zone = self.system.PQ.zone.v
+            pq0 = self.system.PQ.get(src=src, attr=attr, idx=idx)
+        else:
+            pq_zone = self.system.PQ.get(src='zone', attr='v', idx=idx)
+            pq0 = self.system.PQ.get(src=src, attr=attr, idx=idx)
+        col = [all_zone.index(pq_z) for pq_z in pq_zone]
+
+        mdl = self.system.__dict__[model]
+        if mdl.n == 0:
+            raise ValueError(f'<{model}> does not have data, check input file.')
+        if factor not in mdl.__dict__.keys():
+            raise ValueError(f'<{model}> does not have <{factor}>.')
+        sdv = mdl.__dict__[factor].v
+
+        horizon_all = mdl.idx.v
+        try:
+            row = horizon_all.index(horizon)
+        except ValueError:
+            raise ValueError(f'<{model}> does not have horizon with idx=<{horizon}>.')
+        pq_factor = np.array(sdv[:, col][row, :])
+        pqv = np.multiply(pq0, pq_factor)
+        return pqv
+
     def get(self, src: str, idx, attr: str = 'v',
             horizon: Optional[Union[int, str, Iterable]] = None):
         """
         Get the value of a variable or parameter.
+
+        Parameters
+        ----------
+        src: str
+            Name of the variable or parameter.
+        idx: int, str, or list
+            Index of the variable or parameter.
+        attr: str
+            Attribute name.
+        horizon: int, str, or list, optional
+            Horizon index.
         """
         if src not in self.__dict__.keys():
             raise ValueError(f'<{src}> does not exist in <<{self.class_name}>.')
