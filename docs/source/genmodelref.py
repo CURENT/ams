@@ -7,7 +7,7 @@ import ams
 
 if not (os.path.isfile('modelref.rst') and os.path.isfile('configref.rst')):
 
-    ss = ams.load(ams.get_case('ieee14/ieee14_opf.xlsx'))
+    ss = ams.load(ams.get_case('ieee14/ieee14_uced.xlsx'))
 
     # write the top-level index file
 
