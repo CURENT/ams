@@ -50,9 +50,9 @@ class DCOPFData(RoutineData):
         self.pmin = RParam(info='Gen minimum active power (system base)',
                            name='pmin', tex_name=r'p_{min}',
                            unit='p.u.', model='StaticGen',)
-        self.p0 = RParam(info='Gen initial active power (system base)',
-                         name='p0', tex_name=r'p_{0}',
-                         unit='p.u.', model='StaticGen',)
+        self.pg0 = RParam(info='Gen initial active power (system base)',
+                          name='p0', tex_name=r'p_{g,0}',
+                          unit='p.u.', model='StaticGen',)
         self.Cg = RParam(info='connection matrix for Gen and Bus',
                          name='Cg', tex_name=r'C_{g}',)
         # --- load ---
@@ -164,7 +164,7 @@ class DCOPFModel(DCOPFBase):
                       tex_name=r'p_{g}',
                       model='StaticGen',
                       lb=self.pmin, ub=self.pmax,
-                      ctrl=self.ctrl, v0=self.p0)
+                      ctrl=self.ctrl, v0=self.pg0)
         self.pn = Var(info='Bus active power injection (system base)',
                       unit='p.u.', name='pn', tex_name=r'p_{n}',
                       model='Bus',)

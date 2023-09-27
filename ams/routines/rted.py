@@ -51,9 +51,6 @@ class RTEDData(DCOPFData):
                          tex_name='z_{one,g}',
                          model='StaticGen',)
         # 2. generator
-        self.pg0 = RParam(info='generator active power start point (system base)',
-                          name='pg0', tex_name=r'p_{g0}',
-                          model='StaticGen', src='p0', unit='p.u.',)
         self.R10 = RParam(info='10-min ramp rate (system base)',
                           name='R10', src='R10',
                           tex_name=r'R_{10}', unit='p.u./h',
