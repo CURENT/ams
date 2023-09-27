@@ -3,7 +3,7 @@ Module for routine data.
 """
 
 import logging  # NOQA
-from typing import Optional, Union, Type  # NOQA
+from typing import Optional, Union, Type, Iterable  # NOQA
 from collections import OrderedDict  # NOQA
 
 import numpy as np  # NOQA
@@ -103,32 +103,51 @@ class RoutineModel:
             idx_none = [idxe for idxe in idx if idxe not in src_idx]
             raise ValueError(f'Var <{self.class_name}.{src}> does not contain value with idx={idx_none[0]}')
 
-    def get(self, src: str, idx, attr: str = 'v', allow_none=False, default=0.0):
+    def get(self, src: str, idx, attr: str = 'v',
+            horizon: Optional[Union[int, str, Iterable]] = None):
         """
         Get the value of a variable or parameter.
         """
-        if self.__dict__[src].owner is not None:
-            owner = self.__dict__[src].owner
-            if src in self.map2[owner.class_name].keys():
-                src_map = self.map2[owner.class_name][src]
-                logger.debug(f'Var <{self.class_name}.{src}> is mapped from <{owner.class_name}.{src_map}>.')
-                try:
-                    out = owner.get(src=src_map, idx=idx, attr=attr,
-                                    allow_none=allow_none, default=default)
-                    return out
-                except ValueError:
-                    raise ValueError(f'Failed to get value of <{src_map}> from {owner.class_name}.')
-            else:
-                logger.warning(
-                    f'Var {self.class_name}.{src} has no mapping to a model or group, try search in routine {self.class_name}.')
-                loc = self._loc(src=src, idx=idx, allow_none=allow_none)
-                src_v = self.__dict__[src].v
-                out = [src_v[l] for l in loc]
-                return np.array(out)
-        else:
-            logger.info(f'Var {self.class_name}.{src} has no owner.')
-            # FIXME: add idx for non-grouped variables
-            return None
+        if src not in self.__dict__.keys():
+            raise ValueError(f'<{src}> does not exist in <<{self.class_name}>.')
+        item = self.__dict__[src]
+
+        if not hasattr(item, attr):
+            raise ValueError(f'{attr} does not exist in {self.class_name}.{src}.')
+
+        idx_all = item.get_idx()
+
+        if isinstance(idx, (str, int)):
+            idx = [idx]
+
+        if isinstance(idx, np.ndarray):
+            idx = idx.tolist()
+
+        loc = [idx_all.index(idxe) if idxe in idx_all else None for idxe in idx]
+        if None in loc:
+            idx_none = [idxe for idxe in idx if idxe not in idx_all]
+            raise ValueError(f'Var <{self.class_name}.{src}> does not contain value with idx={idx_none}')
+        out = getattr(item, attr)[loc]
+
+        if horizon is not None:
+            if item.horizon is None:
+                raise ValueError(f'horizon is not defined for {self.class_name}.{src}.')
+            horizon_all = item.horizon.get_idx()
+            if isinstance(horizon, int):
+                horizon = [horizon]
+            if isinstance(horizon, str):
+                horizon = [int(horizon)]
+            if isinstance(horizon, np.ndarray):
+                horizon = horizon.tolist()
+            if isinstance(horizon, list):
+                loc_h = [horizon_all.index(idxe) if idxe in horizon_all else None for idxe in horizon]
+                if None in loc_h:
+                    idx_none = [idxe for idxe in horizon if idxe not in horizon_all]
+                    raise ValueError(f'Var <{self.class_name}.{src}> does not contain horizon with idx={idx_none}')
+                out = out[:, loc_h]
+                if out.shape[1] == 1:
+                    out = out[:, 0]
+        return out
 
     def set(self, src: str, idx, attr: str = 'v', value=0.0):
         """
