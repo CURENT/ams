@@ -2,18 +2,16 @@
 Real-time economic dispatch.
 """
 import logging  # NOQA
-from collections import OrderedDict  # NOQA
 import numpy as np  # NOQA
 
-from ams.core.param import RParam
-from ams.core.service import (ZonalSum, VarReduction, NumOp,
-                              NumOpDual, NumExpandDim, NumHstack,
-                              RampSub)
+from ams.core.param import RParam  # NOQA
+from ams.core.service import (ZonalSum, NumOpDual, NumHstack,
+                              RampSub, NumOp, LoadScale)  # NOQA
 
-from ams.routines.rted import RTEDData
-from ams.routines.dcopf import DCOPFModel
+from ams.routines.rted import RTEDData  # NOQA
+from ams.routines.dcopf import DCOPFModel  # NOQA
 
-from ams.opt.omodel import Var, Constraint, Objective
+from ams.opt.omodel import Constraint  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +45,11 @@ class EDData(RTEDData):
                           model='SRCost', src='csr',
                           unit=r'$/(p.u.*h)',
                           indexer='gen', imodel='StaticGen',)
+        self.Cl = RParam(info='connection matrix for Load and Bus',
+                         name='Cl', tex_name=r'C_{l}',)
+        self.zl = RParam(info='zone of load',
+                         name='zl', tex_name=r'z_{l}',
+                         model='StaticLoad', src='zone',)
 
 
 class EDModel(DCOPFModel):
@@ -108,9 +111,12 @@ class EDModel(DCOPFModel):
                              e_str='-gs@multiply(Rpmax - pg, Rug) + dsr')
 
         # --- bus power injection ---
-        self.pdR = NumHstack(u=self.pd, ref=self.timeslot,
+        self.Cli = NumOp(u=self.Cl, fun=np.linalg.pinv,
+                         name='Cli', tex_name=r'C_{l}^{-1}',
+                         info='inverse of Cl',)
+        self.pdR = LoadScale(u=self.zl, sd=self.sd, Cl=self.Cl,
                              name='pdR', tex_name=r'p_{d,R}',
-                             info='Repeated power demand as 2D matrix',)
+                             info='Scaled nodal load',)
         self.pinj.e_str = 'Cg @ (pn - pdR) - pg'  # power injection
 
         # --- line limits ---
@@ -162,13 +168,14 @@ class ED(EDData, EDModel):
 
     ED extends DCOPF as follows:
 
-    Power generation ``pg`` is extended to 2D matrix using argument
+    1. Power generation ``pg`` is extended to 2D matrix using argument
     ``horizon`` to represent the power generation of each generator in
     each time period (horizon).
-    The rows correspond to generators and the columns correspond to time
+
+    2. The rows correspond to generators and the columns correspond to time
     periods (horizons).
 
-    Ramping limits ``rgu`` and ``rgd`` are introduced as 2D matrices to
+    3. Ramping limits ``rgu`` and ``rgd`` are introduced as 2D matrices to
     represent the upward and downward ramping limits for each generator.
 
     Notes

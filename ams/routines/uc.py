@@ -1,18 +1,15 @@
 """
 Real-time economic dispatch.
 """
-import logging
-from collections import OrderedDict
-import numpy as np
-import pandas as pd
+import logging  # NOQA
+import numpy as np  # NOQA
+import pandas as pd  # NOQA
 
-from ams.core.param import RParam
-from ams.core.service import NumOp, ZonalSum, NumHstack, NumOpDual, MinDur
-from ams.routines.ed import EDData, EDModel
+from ams.core.param import RParam  # NOQA
+from ams.core.service import NumOp, NumHstack, NumOpDual, MinDur  # NOQA
+from ams.routines.ed import EDData, EDModel  # NOQA
 
-from ams.opt.omodel import Var, Constraint, Objective
-
-import cvxpy as cp
+from ams.opt.omodel import Var, Constraint  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -63,9 +60,6 @@ class UCData(EDData):
                          model='DCost', src='cd',
                          unit=r'$/(p.u.*h)',
                          indexer='load', imodel='StaticLoad',)
-
-        self.Cl = RParam(info='connection matrix for Load and Bus',
-                         name='Cl', tex_name=r'C_{l}',)
 
 
 class UCModel(EDModel):
@@ -231,8 +225,10 @@ class UCModel(EDModel):
 class UC(UCData, UCModel):
     """
     DC-based unit commitment (UC) with linearizing bilinear term using big M theory.
+
     Constraints include power balance, ramping, spinning reserve, non-spinning reserve,
     minimum ON/OFF duration.
+
     The cost inludes generation cost, startup cost, shutdown cost, spinning reserve cost,
     non-spinning reserve cost, and unserved energy penalty.
 
