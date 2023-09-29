@@ -328,7 +328,7 @@ class RoutineModel:
         #     self.init(disable_showcode=disable_showcode)
         # --- solve optimization ---
         t0, _ = elapsed()
-        result = self.solve(**kwargs)
+        _ = self.solve(**kwargs)
         status = self.om.mdl.status
         self.exit_code = self.syms.status[status]
         self.system.exit_code = self.exit_code
@@ -589,7 +589,7 @@ class RoutineModel:
                 item.owner = self.system.models[item.model]
             else:
                 msg = f'Model indicator \'{item.model}\' of <{item.rtn.class_name}.{name}>'
-                msg += f' is not a model or group. Likely a modeling error.'
+                msg += ' is not a model or group. Likely a modeling error.'
                 logger.warning(msg)
 
         self._post_add_check()
@@ -763,7 +763,7 @@ class RoutineModel:
                 item.owner = self.system.models[item.model]
             else:
                 msg = f'Model indicator \'{item.model}\' of <{item.rtn.class_name}.{name}>'
-                msg += f' is not a model or group. Likely a modeling error.'
+                msg += ' is not a model or group. Likely a modeling error.'
                 logger.warning(msg)
 
         self._post_add_check()

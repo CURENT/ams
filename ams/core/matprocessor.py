@@ -2,12 +2,10 @@
 Module for system matrix make.
 """
 
-import logging
+import logging  # NOQA
 
-from andes.shared import np
-
-from ams.solver.pypower.makePTDF import makePTDF, makeBdc
-from ams.io.pypower import system2ppc
+from ams.solver.pypower.makePTDF import makePTDF, makeBdc  # NOQA
+from ams.io.pypower import system2ppc  # NOQA
 
 logger = logging.getLogger(__name__)
 

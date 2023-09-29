@@ -1,17 +1,13 @@
 """
 OPF routines.
 """
-import logging
+import logging  # NOQA
 
-from collections import OrderedDict
-import numpy as np
-from scipy.optimize import linprog
+from ams.core.param import RParam  # NOQA
 
-from ams.core.param import RParam
+from ams.routines.routine import RoutineData, RoutineModel  # NOQA
 
-from ams.routines.routine import RoutineData, RoutineModel
-
-from ams.opt.omodel import Var, Constraint, Objective
+from ams.opt.omodel import Var, Constraint, Objective  # NOQA
 
 
 logger = logging.getLogger(__name__)
@@ -98,18 +94,23 @@ class DCOPFBase(RoutineModel):
         solver: str, optional
             The solver to use. For example, 'GUROBI', 'ECOS', 'SCS', or 'OSQP'.
         verbose : bool, optional
-            Overrides the default of hiding solver output and prints logging information describing CVXPY's compilation process.
+            Overrides the default of hiding solver output and prints logging
+            information describing CVXPY's compilation process.
         gp : bool, optional
-            If True, parses the problem as a disciplined geometric program instead of a disciplined convex program.
+            If True, parses the problem as a disciplined geometric program
+            instead of a disciplined convex program.
         qcp : bool, optional
-            If True, parses the problem as a disciplined quasiconvex program instead of a disciplined convex program.
+            If True, parses the problem as a disciplined quasiconvex program
+            instead of a disciplined convex program.
         requires_grad : bool, optional
-            Makes it possible to compute gradients of a solution with respect to Parameters by calling problem.backward()
-            after solving, or to compute perturbations to the variables given perturbations to Parameters by calling problem.derivative().
-            Gradients are only supported for DCP and DGP problems, not quasiconvex problems. When computing gradients
-            (i.e., when this argument is True), the problem must satisfy the DPP rules.
+            Makes it possible to compute gradients of a solution with respect to Parameters
+            by calling problem.backward() after solving, or to compute perturbations to the variables
+            given perturbations to Parameters by calling problem.derivative().
+            Gradients are only supported for DCP and DGP problems, not quasiconvex problems.
+            When computing gradients (i.e., when this argument is True), the problem must satisfy the DPP rules.
         enforce_dpp : bool, optional
-            When True, a DPPError will be thrown when trying to solve a non-DPP problem (instead of just a warning).
+            When True, a DPPError will be thrown when trying to solve a
+            non-DPP problem (instead of just a warning).
             Only relevant for problems involving Parameters. Defaults to False.
         ignore_dpp : bool, optional
             When True, DPP problems will be treated as non-DPP, which may speed up compilation. Defaults to False.

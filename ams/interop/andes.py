@@ -2,18 +2,18 @@
 Interface with ANDES
 """
 
-import os
-import logging
-from collections import OrderedDict, Counter
+import os  # NOQA
+import logging  # NOQA
+from collections import OrderedDict, Counter  # NOQA
 
-from andes.shared import pd, np
-from andes.utils.misc import elapsed
-from andes import load as andes_load
-from andes.interop.pandapower import make_link_table
+from andes.shared import pd, np  # NOQA
+from andes.utils.misc import elapsed  # NOQA
+from andes import load as andes_load  # NOQA
+from andes.interop.pandapower import make_link_table  # NOQA
 
-from ams.io import input_formats, xlsx, json
-from ams.models.group import StaticGen
-from ams.models.static import PV, Slack
+from ams.io import input_formats, json  # NOQA
+from ams.models.group import StaticGen  # NOQA
+from ams.models.static import PV, Slack  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ def to_andes(system, setup=False, addfile=None,
     adsys = andes_load(andes_file, setup=False, **kwargs)
 
     if no_keep:
-        logger.info(f'Converted file is removed. Set "no_keep=False" to keep it.')
+        logger.info('Converted file is removed. Set "no_keep=False" to keep it.')
         os.remove(andes_file)
 
     # 1. additonal file for dynamic simulation
@@ -332,6 +332,7 @@ class Dynamic:
             The target ANDES dynamic system instance. If not provided, use the
             linked ANDES system instance (`sp.dyn.adsys`).
         """
+
         def wrapper(self, adsys=None):
             if self.link is None:
                 logger.warning("System has not been linked with dynamic. Unable to sync with ANDES.")
@@ -468,8 +469,8 @@ class Dynamic:
             if sp.recent.is_ac:
                 logger.debug(f'{sp.recent.class_name} results has been converted to AC.')
             else:
-                logger.warning(
-                    f'{sp.recent.class_name} has not been converted to AC, error might be introduced in dynamic simulation.')
+                logger.warning(f'{sp.recent.class_name} has not been converted \
+                               to AC, error might be introduced in dynamic simulation.')
 
         try:
             logger.debug(f'Sending {sp.recent.class_name} results to ANDES <{hex(id(sa))}>...')
@@ -489,7 +490,7 @@ class Dynamic:
 
         # 2. sync dynamic results if dynamic is initialized
         if self.is_tds:
-            logger.debug(f'Sending results to <tds> models...')
+            logger.debug('Sending results to <tds> models...')
             # 1) send models online status
             # TODO:
             is_dgu_set = False
@@ -541,7 +542,7 @@ class Dynamic:
             return True
         # 3. sync static results if dynamic is not initialized
         else:
-            logger.debug(f'Sending results to <pflow> models...')
+            logger.debug('Sending results to <pflow> models...')
             for mname, mdl in sp.models.items():
                 # NOTE: skip models without idx: ``Summary``
                 if not hasattr(mdl, 'idx'):

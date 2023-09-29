@@ -1,24 +1,17 @@
 """
 Power flow routines.
 """
-import logging
-from collections import OrderedDict
+import logging  # NOQA
+from collections import OrderedDict  # NOQA
 
-import numpy as np
+from ams.solver.pypower.runopf import runopf  # NOQA
 
-from andes.shared import deg2rad
-from andes.utils.misc import elapsed
+from ams.io.pypower import system2ppc  # NOQA
+from ams.core.param import RParam  # NOQA
 
-from ams.solver.pypower.runopf import runopf
-
-from ams.io.pypower import system2ppc
-from ams.core.param import RParam
-
-from ams.routines.pflow import PFlowData, PFlowModel
-from ams.routines.dcopf import DCOPFData
-from ams.routines.dcpf import DCPFlowBase
-from ams.routines.routine import RoutineModel
-from ams.opt.omodel import Var, Constraint, Objective
+from ams.routines.dcopf import DCOPFData  # NOQA
+from ams.routines.dcpf import DCPFlowBase  # NOQA
+from ams.opt.omodel import Var, Constraint, Objective  # NOQA
 
 logger = logging.getLogger(__name__)
 

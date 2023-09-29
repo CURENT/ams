@@ -1,17 +1,14 @@
 """
 Distributional optimal power flow (DOPF).
 """
-from collections import OrderedDict
-import numpy as np
-from scipy.optimize import linprog
+import numpy as np  # NOQA
 
-from ams.core.param import RParam
-from ams.core.service import NumOp
+from ams.core.param import RParam  # NOQA
+from ams.core.service import NumOp  # NOQA
 
-from ams.routines.routine import RoutineData, RoutineModel
-from ams.routines.dcopf import DCOPFData, DCOPFBase, DCOPFModel
+from ams.routines.dcopf import DCOPFData, DCOPFModel  # NOQA
 
-from ams.opt.omodel import Var, Constraint, Objective
+from ams.opt.omodel import Var, Constraint, Objective  # NOQA
 
 
 class DOPFData(DCOPFData):

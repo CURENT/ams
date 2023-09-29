@@ -1,15 +1,15 @@
 """
 Real-time economic dispatch.
 """
-import logging
-from collections import OrderedDict
-import numpy as np
+import logging  # NOQA
+from collections import OrderedDict  # NOQA
+import numpy as np  # NOQA
 
-from ams.core.param import RParam
-from ams.core.service import ZonalSum, VarSelect, NumOp, NumOpDual
-from ams.routines.dcopf import DCOPFData, DCOPFModel
+from ams.core.param import RParam  # NOQA
+from ams.core.service import ZonalSum, VarSelect, NumOp, NumOpDual  # NOQA
+from ams.routines.dcopf import DCOPFData, DCOPFModel  # NOQA
 
-from ams.opt.omodel import Var, Constraint, Objective
+from ams.opt.omodel import Var, Constraint  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -154,9 +154,13 @@ class RTED(RTEDData, RTEDModel):
 
     3. RTED routine adds a function ``dc2ac`` to do the AC conversion using ACOPF
 
-    4. zonal SFR reserve: decision variables ``pru`` and ``prd``; linear cost ``cru`` and ``crd``; requirement ``du`` and ``dd``
+    4. Variables for zonal SFR reserve: ``pru`` and ``prd``;
+    
+    5. Parameters for linear cost of zonal SFR reserve ``cru`` and ``crd``;
 
-    5. generator ramping: start point ``pg0``; ramping limit ``R10``
+    6. Parameters for SFR requirement ``du`` and ``dd``;
+
+    7. Parameters fpr generator ramping: start point ``pg0`` and ramping limit ``R10``;
 
     The function ``dc2ac`` sets the ``vBus`` value from solved ACOPF.
     Without this conversion, dynamic simulation might fail due to the gap between

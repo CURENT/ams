@@ -2,24 +2,22 @@
 Module for optimization models.
 """
 
-import logging
+import logging  # NOQA
 
-from typing import Optional, Union
-from collections import OrderedDict
-import re
+from typing import Optional, Union  # NOQA
+from collections import OrderedDict  # NOQA
+import re  # NOQA
 
-import numpy as np
+import numpy as np  # NOQA
 
-from andes.core.common import Config
-from andes.core import BaseParam, DataParam, IdxParam, NumParam
-from andes.models.group import GroupBase
+from andes.core.common import Config  # NOQA
 
-from ams.core.param import RParam
-from ams.core.var import Algeb
+from ams.core.param import RParam  # NOQA
+from ams.core.var import Algeb  # NOQA
 
-from ams.utils import timer
+from ams.utils import timer  # NOQA
 
-import cvxpy as cp
+import cvxpy as cp  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -266,7 +264,7 @@ class Var(Algeb, OptzBase):
         """
         Parse the variable.
         """
-        om = self.om
+        om = self.om  # NOQA
         sub_map = self.om.rtn.syms.sub_map
         # only used for CVXPY
         # NOTE: Config only allow lower case letters, do a conversion here
@@ -304,7 +302,7 @@ class Var(Algeb, OptzBase):
         for pattern, replacement, in sub_map.items():
             code_var = re.sub(pattern, replacement, code_var)
         exec(code_var)
-        exec(f"om.vars[self.name] = tmp")
+        exec("om.vars[self.name] = tmp")
         exec(f'setattr(om, self.name, om.vars["{self.name}"])')
         u_ctrl = self.ctrl.v if self.ctrl else np.ones(nr)
         v0 = self.v0.v if self.v0 else np.zeros(nr)
@@ -409,7 +407,7 @@ class Constraint(OptzBase):
         sub_map = self.om.rtn.syms.sub_map
         if self.is_disabled:
             return True
-        om = self.om
+        om = self.om  # NOQA
         code_constr = self.e_str
         for pattern, replacement in sub_map.items():
             try:
@@ -506,7 +504,7 @@ class Objective(OptzBase):
         disable_showcode : bool, optional
             Flag indicating if the code should be shown, True by default.
         """
-        om = self.om
+        om = self.om  # NOQA
         sub_map = self.om.rtn.syms.sub_map
         code_obj = self.e_str
         for pattern, replacement, in sub_map.items():
@@ -601,7 +599,7 @@ class OModel:
         elif rtn.obj is not None:
             rtn.obj.parse(disable_showcode=disable_showcode)
             # --- finalize the optimziation formulation ---
-            code_mdl = f"problem(self.obj, [constr for constr in self.constrs.values()])"
+            code_mdl = "problem(self.obj, [constr for constr in self.constrs.values()])"
             for pattern, replacement in self.rtn.syms.sub_map.items():
                 code_mdl = re.sub(pattern, replacement, code_mdl)
             code_mdl = "self.mdl=" + code_mdl

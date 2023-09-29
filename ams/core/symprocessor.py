@@ -4,10 +4,10 @@ Symbolic processor class for AMS routines.
 This module is revised from ``andes.core.symprocessor``.
 """
 
-import logging
-from collections import OrderedDict
+import logging  # NOQA
+from collections import OrderedDict  # NOQA
 
-import sympy as sp
+import sympy as sp  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +100,7 @@ class SymProcessor:
         """
         Generate symbols for all variables.
         """
-        if force_generate is False and self.parent._syms == True:
+        if not force_generate and self.parent._syms:
             return True
         logger.debug(f'- Generating symbols for {self.parent.class_name}')
         # process tex_names defined in routines

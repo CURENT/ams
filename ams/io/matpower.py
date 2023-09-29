@@ -322,8 +322,8 @@ def system2mpc(system) -> dict:
         gen[system.Slack.n:, 5] = PV.v0.v
         gen[system.Slack.n:, 6] = base_mva
         gen[system.Slack.n:, 7] = PV.u.v
-        gen[system.Slack.n:, 8] = (PV.ctrl.v * PV.pmax.v + (1 - PV.ctrl.v) * PV.pmax.v)* base_mva
-        gen[system.Slack.n:, 9] = (PV.ctrl.v * PV.pmin.v + (1 - PV.ctrl.v) * PV.pmin.v)* base_mva
+        gen[system.Slack.n:, 8] = (PV.ctrl.v * PV.pmax.v + (1 - PV.ctrl.v) * PV.pmax.v) * base_mva
+        gen[system.Slack.n:, 9] = (PV.ctrl.v * PV.pmin.v + (1 - PV.ctrl.v) * PV.pmin.v) * base_mva
 
     # --- Slack ---
     if system.Slack.n > 0:

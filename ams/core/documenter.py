@@ -1,13 +1,13 @@
 """
 Documenter class for AMS models.
 """
-import inspect
-import re
+import inspect  # NOQA
+import re  # NOQA
 
-import logging
-from collections import OrderedDict
-from andes.core.documenter import Documenter as andes_Documenter
-from andes.utils.tab import make_doc_table, math_wrap
+import logging  # NOQA
+from collections import OrderedDict  # NOQA
+from andes.core.documenter import Documenter as andes_Documenter  # NOQA
+from andes.utils.tab import make_doc_table, math_wrap  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -282,7 +282,7 @@ class RDocumenter:
 
         # NOTE: in the future, there might occur special math symbols
         special_map = OrderedDict([
-            ('SUMSYMBOL', '\sum'),
+            ('SUMSYMBOL', r'\sum'),
         ])
 
         # expressions based on output format
@@ -291,20 +291,20 @@ class RDocumenter:
             logger.debug(f'tex_map: {self.parent.syms.tex_map}')
             for p in self.constrs.values():
                 expr = p.e_str
-                skip_list = []
                 for pattern, replacement in self.parent.syms.tex_map.items():
-                    if '\sum' in replacement:
-                        replacement = replacement.replace('\sum', 'SUMSYMBOL')
-                    if '\p' in replacement:
+                    if r'\sum' in replacement:
+                        replacement = replacement.replace(r'\sum', 'SUMSYMBOL')
+                    if r'\p' in replacement:
                         continue
-                    if 'sum' in expr:
+                    if r'sum' in expr:
                         expr = expr.replace('sum', 'SUMSYMBOL')
                     else:
                         try:
                             expr = re.sub(pattern, replacement, expr)
                         except re.error:
                             expr_pattern = pattern.removeprefix('\\b').removesuffix('\\b')
-                            logger.error(f'Faild parse Element <{expr_pattern}> in {p.class_name}, check its tex_name.')
+                            logger.error(f'Faild parse Element <{expr_pattern}> \
+                                         in {p.class_name}, check its tex_name.')
                             expr = ''
                 for pattern, replacement in special_map.items():
                     expr = expr.replace(pattern, replacement)
@@ -366,7 +366,7 @@ class RDocumenter:
                     expr_pattern = pattern.removeprefix('\\b').removesuffix('\\b')
                     logger.error(f'Faild parse Element {expr_pattern} in {p.class_name}, check its tex_name.')
                     return ''
-        expr = expr.replace('sum', '\sum')
+        expr = expr.replace('sum', r'\sum')
         expr = p.sense + '. ' + expr  # minimize or maximize
         expr = [expr]
         if export == 'rest':

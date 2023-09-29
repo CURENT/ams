@@ -1,20 +1,17 @@
 """
 Power flow routines.
 """
-import logging
-from collections import OrderedDict
+import logging  # NOQA
 
-import numpy as np
+from andes.shared import deg2rad  # NOQA
+from andes.utils.misc import elapsed  # NOQA
 
-from andes.shared import deg2rad
-from andes.utils.misc import elapsed
+from ams.routines.routine import RoutineData, RoutineModel  # NOQA
+from ams.opt.omodel import Var  # NOQA
+from ams.solver.pypower.runpf import rundcpf  # NOQA
 
-from ams.routines.routine import RoutineData, RoutineModel
-from ams.opt.omodel import Var, Constraint, Objective
-from ams.solver.pypower.runpf import rundcpf
-
-from ams.io.pypower import system2ppc
-from ams.core.param import RParam
+from ams.io.pypower import system2ppc  # NOQA
+from ams.core.param import RParam  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -28,26 +25,17 @@ class DCPFlowData(RoutineData):
         RoutineData.__init__(self)
         # --- line ---
         self.x = RParam(info="line reactance",
-                        name='x',
-                        tex_name='x',
-                        src='x',
+                        name='x', tex_name='x',
                         unit='p.u.',
-                        model='Line',
-                        )
+                        model='Line', src='x',)
         self.tap = RParam(info="transformer branch tap ratio",
-                          name='tap',
-                          src='tap',
-                          tex_name='t_{ap}',
-                          unit='float',
-                          model='Line',
-                          )
+                          name='tap', tex_name=r't_{ap}',
+                          model='Line', src='tap',
+                          unit='float',)
         self.phi = RParam(info="transformer branch phase shift in rad",
-                          name='phi',
-                          src='phi',
-                          tex_name='\phi',
-                          unit='radian',
-                          model='Line',
-                          )
+                          name='phi', tex_name=r'\phi',
+                          model='Line', src='phi',
+                          unit='radian',)
 
         # --- load ---
         self.pd = RParam(info='active power load in system base',
@@ -107,9 +95,9 @@ class DCPFlowBase(RoutineModel):
                 continue
             elif hasattr(owner, 'group'):   # if owner is a Model instance
                 grp = getattr(system, owner.group)
-                idx=grp.get_idx()
-            elif hasattr(owner, 'get_idx'): # if owner is a Group instance
-                idx=owner.get_idx()
+                idx = grp.get_idx()
+            elif hasattr(owner, 'get_idx'):  # if owner is a Group instance
+                idx = owner.get_idx()
             else:
                 msg = f"Failed to find valid source variable `{owner.class_name}.{var.src}` for "
                 msg += f"{self.class_name}.{raname}, skip unpacking."
@@ -193,20 +181,14 @@ class DCPFlowModel(DCPFlowBase):
 
         # --- bus ---
         self.aBus = Var(info='bus voltage angle',
-                           unit='rad',
-                           name='aBus',
-                           src='a',
-                           tex_name=r'a_{Bus}',
-                           model='Bus',
-                           )
+                        unit='rad',
+                        name='aBus', tex_name=r'a_{Bus}',
+                        model='Bus', src='a',)
         # --- gen ---
         self.pg = Var(info='actual active power generation',
-                         unit='p.u.',
-                         name='pg',
-                         src='p',
-                         tex_name=r'p_{g}',
-                         model='StaticGen',
-                         )
+                      unit='p.u.',
+                      name='pg', tex_name=r'p_{g}',
+                      model='StaticGen', src='p',)
 
 
 class DCPF(DCPFlowData, DCPFlowModel):

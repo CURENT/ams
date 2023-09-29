@@ -1,35 +1,30 @@
 """
 Module for system.
 """
-import configparser
-import copy
-import importlib
-import inspect
-import logging
-from collections import OrderedDict
-from typing import Dict, Optional, Tuple, Union
+import importlib  # NOQA
+import inspect  # NOQA
+import logging  # NOQA
+from collections import OrderedDict  # NOQA
+from typing import Dict, Optional, Tuple, Union  # NOQA
 
-import numpy as np
-import sympy as sp
+import numpy as np  # NOQA
 
-from andes.core import Config
-from andes.system import System as andes_System
-from andes.system import (_config_numpy, load_config_rc)
-from andes.variables import FileMan
+from andes.core import Config  # NOQA
+from andes.system import System as andes_System  # NOQA
+from andes.system import (_config_numpy, load_config_rc)  # NOQA
+from andes.variables import FileMan  # NOQA
 
-from andes.utils.misc import elapsed
-from andes.utils.tab import Tab
-from andes.shared import pd
+from andes.utils.misc import elapsed  # NOQA
+from andes.utils.tab import Tab  # NOQA
+from andes.shared import pd  # NOQA
 
-from ams.models.group import GroupBase
-from ams.routines.type import TypeBase
-from ams.models import file_classes
-from ams.routines import all_routines
-from ams.utils.paths import get_config_path
-from ams.core import Algeb
-from ams.core.service import RBaseService
-from ams.core.matprocessor import MatProcessor
-from ams.interop.andes import to_andes
+from ams.models.group import GroupBase  # NOQA
+from ams.routines.type import TypeBase  # NOQA
+from ams.models import file_classes  # NOQA
+from ams.routines import all_routines   # NOQA
+from ams.utils.paths import get_config_path  # NOQA
+from ams.core.matprocessor import MatProcessor  # NOQA
+from ams.interop.andes import to_andes  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +43,7 @@ def disable_methods(methods):
 
 class System(andes_System):
     """
-    A subclass of ``andes.system.System``, this class encapsulates data, models, 
+    A subclass of ``andes.system.System``, this class encapsulates data, models,
     and routines for dispatch modeling and analysis in power systems.
     Some methods  inherited from the parent class are intentionally disabled.
 
@@ -249,7 +244,7 @@ class System(andes_System):
             else:
                 logger.debug(f'item_name: {item_name}')
                 msg = f'Model indicator \'{item.model}\' of <{item.rtn.class_name}.{item_name}>'
-                msg += f' is not a model or group. Likely a modeling error.'
+                msg += ' is not a model or group. Likely a modeling error.'
                 logger.warning(msg)
 
     def import_routines(self):
