@@ -52,7 +52,7 @@ class DCOPFData(RoutineData):
         self.Cg = RParam(info='connection matrix for Gen and Bus',
                          name='Cg', tex_name=r'C_{g}',)
         # --- load ---
-        self.pd = RParam(info='active power demand (system base)',
+        self.pd = RParam(info='active nodal power demand (system base)',
                          name='pd', tex_name=r'p_{d}',
                          unit='p.u.',)
         # --- line ---
