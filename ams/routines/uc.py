@@ -187,21 +187,25 @@ class UCModel(EDModel):
 
         gen = pd.DataFrame()
         gen['idx'] = self.system.PV.idx.v
-        gen['Sn'] = self.system.PV.get(src='Sn', attr='v', idx=gen['idx'])
+        gen['pmax'] = self.system.PV.get(src='pmax', attr='v', idx=gen['idx'])
         gen['bus'] = self.system.PV.get(src='bus', attr='v', idx=gen['idx'])
         gen['zone'] = self.system.PV.get(src='zone', attr='v', idx=gen['idx'])
         gcost_idx = self.system.GCost.find_idx(keys='gen', values=gen['idx'])
         gen['c2'] = self.system.GCost.get(src='c2', attr='v', idx=gcost_idx)
         gen['c1'] = self.system.GCost.get(src='c1', attr='v', idx=gcost_idx)
         gen['c0'] = self.system.GCost.get(src='c0', attr='v', idx=gcost_idx)
-        gen['wsum'] = 0.4*gen['c2'] + 0.3*gen['c1'] + 0.2*gen['c0'] + 0.1*gen['Sn']
+        gen['wsum'] = 0.8*gen['pmax'] + 0.05*gen['c2'] + 0.1*gen['c1'] + 0.05*gen['c0']
         gen = gen.sort_values(by='wsum', ascending=True)
 
         # Turn off 30% of the generators as initial guess
         priority = gen['idx'].values
         g_idx = priority[0:int(0.3*len(priority))]
-        self.system.StaticGen.set(src='u', attr='v', idx=g_idx,
-                                  value=np.zeros_like(g_idx))
+        ug0 = np.zeros_like(g_idx)
+        # NOTE: if number of generators is too small, turn off the first one
+        if len(g_idx) == 0:
+            g_idx = priority[0]
+            ug0 = 0
+        self.system.StaticGen.set(src='u', attr='v', idx=g_idx, value=ug0)
         logger.warning(f'Turn off StaticGen {g_idx} as initial guess for commitment.')
         return True
 
