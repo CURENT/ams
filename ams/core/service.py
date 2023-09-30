@@ -403,10 +403,10 @@ class MinDur(NumOpDual):
         n_gen = self.u.n
         n_ts = self.u.horizon.n
         tout = np.zeros((n_gen, n_ts))
-        dth = self.rtn.config.dth  # dispatch interval
+        T = self.rtn.config.T  # dispatch interval
 
         # minimum online/offline duration
-        td = np.ceil(self.u2.v/dth).astype(int)
+        td = np.ceil(self.u2.v/T).astype(int)
 
         # Create index arrays for generators and time periods
         i, t = np.meshgrid(np.arange(n_gen), np.arange(n_ts), indexing='ij')

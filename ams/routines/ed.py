@@ -59,7 +59,7 @@ class EDModel(DCOPFModel):
 
     def __init__(self, system, config):
         DCOPFModel.__init__(self, system, config)
-        self.config.dth = 1  # dispatch interval in hour
+        self.config.T = 1  # dispatch interval in hour
 
         self.info = 'Economic dispatch'
         self.type = 'DCED'
@@ -133,11 +133,11 @@ class EDModel(DCOPFModel):
                               name='RR30', tex_name=r'R_{30,R}',
                               info='Repeated ramp rate as 2D matrix, (ng, ng-1)',)
         self.rgu = Constraint(name='rgu', info='Gen ramping up',
-                              e_str='pg @ Mr - dth dot RR30',
+                              e_str='pg @ Mr - T dot RR30',
                               type='uq',)
         self.rgd = Constraint(name='rgd',
                               info='Gen ramping down',
-                              e_str='-pg @ Mr - dth dot RR30',
+                              e_str='-pg @ Mr - T dot RR30',
                               type='uq',)
         self.rgu0 = Constraint(name='rgu0',
                                info='Initial gen ramping up',
@@ -150,7 +150,7 @@ class EDModel(DCOPFModel):
 
         # --- objective ---
         # NOTE: no need to fix objective function
-        gcost = 'sum(c2 @ (dth dot pg)**2 + c1 @ (dth dot pg) + ug * c0)'
+        gcost = 'sum(c2 @ (T dot pg)**2 + c1 @ (T dot pg) + ug * c0)'
         rcost = ' + sum(csr * ug * (Rpmax - pg))'
         self.obj.e_str = gcost + rcost
 
@@ -180,7 +180,7 @@ class ED(EDData, EDModel):
 
     Notes
     -----
-    1. The objective has been adjusted with the dispatch interval ``dth``, 1 hour by default.
+    1. The objective has been adjusted with the dispatch interval ``T``, 1 hour by default.
     """
 
     def __init__(self, system, config):
