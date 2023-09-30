@@ -114,17 +114,17 @@ class EDModel(DCOPFModel):
         self.Cli = NumOp(u=self.Cl, fun=np.linalg.pinv,
                          name='Cli', tex_name=r'C_{l}^{-1}',
                          info='inverse of Cl',)
-        self.pdR = LoadScale(u=self.zl, sd=self.sd, Cl=self.Cl,
-                             name='pdR', tex_name=r'p_{d,R}',
+        self.Rpd = LoadScale(u=self.zl, sd=self.sd, Cl=self.Cl,
+                             name='Rpd', tex_name=r'p_{d,R}',
                              info='Scaled nodal load',)
-        self.pinj.e_str = 'Cg @ (pn - pdR) - pg'  # power injection
+        self.pinj.e_str = 'Cg @ (pn - Rpd) - pg'  # power injection
 
         # --- line limits ---
         self.RRA = NumHstack(u=self.rate_a, ref=self.timeslot,
                              name='RRA', tex_name=r'R_{ATEA,R}',
                              info='Repeated rate_a',)
-        self.lub.e_str = 'PTDF @ (pn - pdR) - RRA'
-        self.llb.e_str = '-PTDF @ (pn - pdR) - RRA'
+        self.lub.e_str = 'PTDF @ (pn - Rpd) - RRA'
+        self.llb.e_str = '-PTDF @ (pn - Rpd) - RRA'
 
         # --- ramping ---
         self.Mr = RampSub(u=self.pg, name='Mr', tex_name=r'M_{r}',
