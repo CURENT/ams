@@ -2,6 +2,7 @@
 Real-time economic dispatch.
 """
 import logging  # NOQA
+from collections import OrderedDict  # NOQA
 import numpy as np  # NOQA
 import pandas as pd  # NOQA
 
@@ -65,6 +66,8 @@ class UCModel(EDModel):
     def __init__(self, system, config):
         EDModel.__init__(self, system, config)
         self.config.t = 1  # dispatch interval in hour
+        self.config.add(OrderedDict((('dp', 1000), # penalty for unserved load, $/p.u.
+                                     )))
         self.info = 'unit commitment'
         self.type = 'DCUC'
 
@@ -164,8 +167,7 @@ class UCModel(EDModel):
         acost = ' + sum(csu * vgd + csd * wgd)'
         srcost = ' + sum(csr @ (multiply(Rpmax, ugd) - zug))'
         nsrcost = ' + sum(cnsr @ multiply((1 - ugd), Rpmax))'
-        dcost = ' + sum(cl @ pos(pdu))'
-        dcost = ''
+        dcost = ' + sum(dp dot pos(gs @ pg - pds))'
         self.obj.e_str = gcost + acost + srcost + nsrcost + dcost
 
     def _initial_guess(self):
@@ -217,6 +219,9 @@ class UC(UCData, UCModel):
 
     The cost inludes generation cost, startup cost, shutdown cost, spinning reserve cost,
     non-spinning reserve cost, and unserved energy penalty.
+
+    Method ``_initial_guess`` is used to make initial guess for commitment decision if all
+    generators are online at initial.
 
     References
     ----------
