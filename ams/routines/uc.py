@@ -64,7 +64,7 @@ class UCModel(EDModel):
 
     def __init__(self, system, config):
         EDModel.__init__(self, system, config)
-        self.config.T = 1  # dispatch interval in hour
+        self.config.t = 1  # dispatch interval in hour
         self.info = 'unit commitment'
         self.type = 'DCUC'
 
@@ -160,7 +160,7 @@ class UCModel(EDModel):
                          info='inverse of Cg',)
 
         # --- objective ---
-        gcost = 'sum(c2 @ (T dot zug)**2 + c1 @ (T dot zug) + c0 * ugd)'
+        gcost = 'sum(c2 @ (t dot zug)**2 + c1 @ (t dot zug) + c0 * ugd)'
         acost = ' + sum(csu * vgd + csd * wgd)'
         srcost = ' + sum(csr @ (multiply(Rpmax, ugd) - zug))'
         nsrcost = ' + sum(cnsr @ multiply((1 - ugd), Rpmax))'
