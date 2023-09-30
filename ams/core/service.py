@@ -166,56 +166,6 @@ class ROperationService(RBaseService):
         self.u = u
 
 
-class LoadScale(ROperationService):
-    """
-    Return load 
-
-    Parameters
-    ----------
-    u : Callable
-        nodal load.
-    sd : Callable
-        zonal load factor.
-    Cl: Callable
-        Connection matrix for Load and Bus.
-    name : str, optional
-        Instance name.
-    tex_name : str, optional
-        TeX name.
-    unit : str, optional
-        Unit.
-    info : str, optional
-        Description.
-    """
-
-    def __init__(self,
-                 u: Callable,
-                 sd: Callable,
-                 Cl: Callable,
-                 name: str = None,
-                 tex_name: str = None,
-                 unit: str = None,
-                 info: str = None,
-                 ):
-        tex_name = tex_name if tex_name is not None else u.tex_name
-        unit = unit if unit is not None else u.unit
-        info = info if info is not None else u.info
-        super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, u=u,)
-        self.sd = sd
-        self.Cl = Cl
-
-    @property
-    def v(self):
-        Region = self.rtn.system.Region
-        yloc_zl = np.array(Region.idx2uid(self.u.v))
-        PQ = self.rtn.system.PQ
-        p0 = PQ.get(src='p0', attr='v', idx=PQ.idx.v)
-        p0s = np.multiply(self.sd.v[:, yloc_zl].transpose(),
-                          p0[:, np.newaxis])
-        return np.matmul(np.linalg.pinv(self.Cl.v), p0s)
-
-
 class NumOp(ROperationService):
     """
     Perform an operation on a numerical array using the

@@ -74,10 +74,10 @@ class EDModel(DCOPFModel):
 
         # --- constraints ---
         # --- power balance ---
-        self.ls = ZonalSum(u=self.zb, zone='Region',
-                           name='ls', tex_name=r'\sum_{l}',
+        self.ds = ZonalSum(u=self.zb, zone='Region',
+                           name='ds', tex_name=r'\sum_{d}',
                            info='Sum pd vector in shape of zone',)
-        self.pdz = NumOpDual(u=self.ls, u2=self.pd,
+        self.pdz = NumOpDual(u=self.ds, u2=self.pd,
                              fun=np.multiply,
                              rfun=np.sum, rargs=dict(axis=1),
                              expand_dims=0,
@@ -91,7 +91,7 @@ class EDModel(DCOPFModel):
                            name='gs', tex_name=r'\sum_{g}',
                            info='Sum Gen vars vector in shape of zone')
         # NOTE: Spg @ pg returns a row vector
-        self.pb.e_str = 'pds - gs @ pg'  # power balance
+        self.pb.e_str = '- gs @ pg + pds'  # power balance
 
         # spinning reserve
         self.Rpmax = NumHstack(u=self.pmax, ref=self.timeslot,

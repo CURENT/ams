@@ -99,10 +99,10 @@ class RTEDModel(DCOPFModel):
                        unit='p.u.', name='prd', tex_name=r'p_{r,d}',
                        model='StaticGen', nonneg=True,)
         # --- constraints ---
-        self.ls = ZonalSum(u=self.zb, zone='Region',
-                           name='ls', tex_name=r'\sum_{l}',
+        self.ds = ZonalSum(u=self.zb, zone='Region',
+                           name='ds', tex_name=r'\sum_{d}',
                            info='Sum pd vector in shape of zone',)
-        self.pdz = NumOpDual(u=self.ls, u2=self.pd,
+        self.pdz = NumOpDual(u=self.ds, u2=self.pd,
                              fun=np.multiply,
                              rfun=np.sum, rargs=dict(axis=1),
                              expand_dims=0,

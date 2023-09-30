@@ -6,7 +6,8 @@ import numpy as np  # NOQA
 import pandas as pd  # NOQA
 
 from ams.core.param import RParam  # NOQA
-from ams.core.service import NumOp, NumHstack, NumOpDual, MinDur  # NOQA
+from ams.core.service import (NumOp, NumHstack,
+                              NumOpDual, MinDur, ZonalSum)  # NOQA
 from ams.routines.ed import EDData, EDModel  # NOQA
 
 from ams.opt.omodel import Var, Constraint  # NOQA
@@ -55,12 +56,6 @@ class UCData(EDData):
                             model='NSR', src='demand',
                             unit='%',)
 
-        self.cd = RParam(info='penalty for shadding load',
-                         name='cd', tex_name=r'c_{d}',
-                         model='DCost', src='cd',
-                         unit=r'$/(p.u.*h)',
-                         indexer='load', imodel='StaticLoad',)
-
 
 class UCModel(EDModel):
     """
@@ -94,11 +89,6 @@ class UCModel(EDModel):
                        horizon=self.timeslot,
                        name='zug', tex_name=r'z_{ug}',
                        model='StaticGen', pos=True,)
-
-        self.pdu = Var(info='Unserved load',
-                       horizon=self.timeslot,
-                       name='pdu', tex_name=r'p_{d,u}',
-                       model='StaticLoad', pos=True,)
 
         # NOTE: actions have two parts, one for initial status, another for the rest
         self.actv = Constraint(name='actv', type='eq',
@@ -165,21 +155,17 @@ class UCModel(EDModel):
                                e_str='multiply(Coff, wgd) - (1 - ugd)')
 
         # --- penalty for unserved load ---
-        self.Rp0 = NumHstack(u=self.pg0, ref=self.timeslot,
-                             name='Rp0', tex_name=r'p_{g0, R}',
-                             info='Repetated initial load',)
         self.Cgi = NumOp(u=self.Cg, fun=np.linalg.pinv,
                          name='Cgi', tex_name=r'C_{g}^{-1}',
                          info='inverse of Cg',)
-        self.ppdu = Constraint(name='ppdu', info='unserved load', type='eq',
-                               e_str='Rp0 - Cl @ (pn - Cgi @ pg) - pdu')
 
         # --- objective ---
         gcost = 'sum(c2 @ (dth dot zug)**2 + c1 @ (dth dot zug) + c0 * ugd)'
         acost = ' + sum(csu * vgd + csd * wgd)'
         srcost = ' + sum(csr @ (multiply(Rpmax, ugd) - zug))'
         nsrcost = ' + sum(cnsr @ multiply((1 - ugd), Rpmax))'
-        dcost = ' + sum(cd @ pdu)'
+        dcost = ' + sum(cl @ pos(pdu))'
+        dcost = ''
         self.obj.e_str = gcost + acost + srcost + nsrcost + dcost
 
     def _initial_guess(self):
