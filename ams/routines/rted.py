@@ -168,7 +168,9 @@ class RTED(RTEDData, RTEDModel):
 
     Notes
     -----
-    1. objective function has been adjusted for RTED interval ``config.t``, 5/60 [Hour] by default.
+    1. Formulations has been adjusted with interval ``config.t``, 5/60 [Hour] by default.
+
+    2. The tie-line flow has not been implemented in formulations.
     """
 
     def __init__(self, system, config):

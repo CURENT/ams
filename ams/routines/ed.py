@@ -180,7 +180,9 @@ class ED(EDData, EDModel):
 
     Notes
     -----
-    1. The objective has been adjusted with the dispatch interval ``t``, 1 hour by default.
+    1. Formulations has been adjusted with interval ``config.t``, 1 [Hour] by default.
+
+    2. The tie-line flow has not been implemented in formulations
     """
 
     def __init__(self, system, config):

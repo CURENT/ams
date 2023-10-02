@@ -224,8 +224,14 @@ class UC(UCData, UCModel):
     The cost inludes generation cost, startup cost, shutdown cost, spinning reserve cost,
     non-spinning reserve cost, and unserved energy penalty.
 
-    Method ``_initial_guess`` is used to make initial guess for commitment decision if all
-    generators are online at initial.
+    Notes
+    -----
+    1. Formulations has been adjusted with interval ``config.t``, 1 [Hour] by default.
+
+    2. Method ``_initial_guess`` is used to make initial guess for commitment decision if all
+    generators are online at initial. It is a simple heuristic method, which may not be optimal.
+
+    3. The tie-line flow has not been implemented in formulations.
 
     References
     ----------
