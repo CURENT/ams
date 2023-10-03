@@ -462,7 +462,7 @@ class Dynamic:
         return True
 
     @require_link
-    def send(self, adsys=None):
+    def send(self, adsys=None, routine=None):
         """
         Send results of the recent sovled AMS dispatch (``sp.recent``) to the
         target ANDES system.
@@ -476,27 +476,29 @@ class Dynamic:
         adsys : adsys.System.system, optional
             The target ANDES dynamic system instance. If not provided, use the
             linked ANDES system isntance (``sp.dyn.adsys``).
-
+        routine : str, optional
+            The routine to be sent to ANDES. If None, ``recent`` will be used.
         """
         sa = adsys if adsys is not None else self.adsys
         sp = self.amsys
         # 1. information
-        if sp.recent.exit_code != 0:
+        rtn = sp.recent if routine is None else getattr(sp, routine)
+        if rtn.exit_code != 0:
             logger.warning(f'{sp.recent.class_name} is not solved optimally.')
             return False
         # NOTE:if DC types, check if results are converted
-        if sp.recent.type != 'ACED':
-            if sp.recent.is_ac:
-                logger.debug(f'{sp.recent.class_name} results has been converted to AC.')
+        if rtn.type != 'ACED':
+            if rtn.is_ac:
+                logger.debug(f'{rtn.class_name} results has been converted to AC.')
             else:
-                msg = f'{sp.recent.class_name} has not been converted'
+                msg = f'{rtn.class_name} has not been converted'
                 msg += ' to AC, error might occur!'
                 logger.error(msg)
 
         try:
-            logger.debug(f'Sending {sp.recent.class_name} results to ANDES <{hex(id(sa))}>...')
+            logger.debug(f'Sending {rtn.class_name} results to ANDES <{hex(id(sa))}>...')
         except AttributeError:
-            logger.warning('No solved AMS routine found. Unable to sync with ANDES.')
+            logger.warning('No solved routine found. Unable to sync with ANDES.')
             return False
 
         # mapping dict
@@ -511,7 +513,7 @@ class Dynamic:
 
         # 2. sync dynamic results if dynamic is initialized
         if self.is_tds:
-            logger.debug('Sending results to <tds> models...')
+            logger.info('Sending results to <tds> models...')
             # 1) send models online status
             # TODO:
             is_dgu_set = False
@@ -563,7 +565,7 @@ class Dynamic:
             return True
         # 3. sync static results if dynamic is not initialized
         else:
-            logger.debug('Sending results to <pflow> models...')
+            logger.info('Sending results to <pflow> models...')
             for mname, mdl in sp.models.items():
                 # NOTE: skip models without idx: ``Summary``
                 if not hasattr(mdl, 'idx'):
@@ -571,7 +573,9 @@ class Dynamic:
                 if mdl.n == 0:
                     continue
                 idx = mdl.idx.v
-                if mname in sa.models:
+                admdls = list(sa.models.keys()) + list(sa.model_aliases.keys())
+                admdls += list(sa.groups.keys())
+                if mname in admdls:
                     mdl_andes = getattr(sa, mname)
                     # 1) send models online status
                     u_ams = mdl.get(src='u', idx=idx, attr='v')
@@ -579,17 +583,29 @@ class Dynamic:
                     # 2) send other results
                     # NOTE: send power reference to dynamic device
                     if mname in map2.keys():
+                        logger.debug(f'Sending {mname} results to ANDES...')
                         for ams_vname, andes_pname in map2[mname].items():
+                            logger.debug(f'Sending {ams_vname} to {andes_pname}...')
                             # a. voltage reference
                             if ams_vname in ['qg']:
                                 logger.warning('Setting `qg` to ANDES dynamic does not take effect.')
                             # b. others, if any
                             ams_var = getattr(sp.recent, ams_vname)
-                            v_ams = sp.recent.get(src=ams_vname, attr='v',
-                                                  idx=ams_var.get_idx())
+                            # NOTE: here we stick with ANDES device idx
+                            v_ams = sp.recent.get(src=ams_vname, attr='v', idx=idx)
                             mdl_andes.set(src=andes_pname, idx=idx, attr='v', value=v_ams)
                     else:
                         pass
+            # correct StaticGen v0 with Bus v0 if any
+            try:
+                rtn.map2['Bus']['vBus'] == 'v0'
+                logger.info('Correcting StaticGen v0 with Bus v0...')
+                stg_idx = sa.PV.idx.v + sa.Slack.idx.v
+                stg_bus = sa.PV.bus.v + sa.Slack.bus.v
+                vBus = sp.Bus.get(src='v0', attr='v', idx=stg_bus)
+                sa.StaticGen.set(src='v0', attr='v', idx=stg_idx, value=vBus)
+            except KeyError:
+                logger.debug('Bus v0 is not found in map2.')
             return True
 
     @require_link
