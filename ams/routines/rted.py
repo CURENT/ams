@@ -25,36 +25,33 @@ class RTEDData(DCOPFData):
         # 1. reserve
         # 1.1. reserve cost
         self.cru = RParam(info='RegUp reserve coefficient',
-                          name='cru', src='cru',
-                          tex_name=r'c_{r,u}', unit=r'$/(p.u.)',
-                          model='SFRCost')
+                          name='cru', tex_name=r'c_{r,u}',
+                          model='SFRCost', src='cru',
+                          unit=r'$/(p.u.)',)
         self.crd = RParam(info='RegDown reserve coefficient',
-                          name='crd',
-                          src='crd',
-                          tex_name=r'c_{r,d}',
-                          unit=r'$/(p.u.)',
-                          model='SFRCost',)
+                          name='crd', tex_name=r'c_{r,d}',
+                          model='SFRCost', src='crd',
+                          unit=r'$/(p.u.)',)
         # 1.2. reserve requirement
         self.du = RParam(info='RegUp reserve requirement in percentage',
-                         name='du', src='du',
-                         tex_name=r'd_{u}', unit='%',
-                         model='SFR',)
+                         name='du', tex_name=r'd_{u}',
+                         model='SFR', src='du',
+                         unit='%',)
         self.dd = RParam(info='RegDown reserve requirement in percentage',
-                         name='dd', src='dd',
-                         tex_name=r'd_{d}', unit='%',
-                         model='SFR',)
+                         name='dd', tex_name=r'd_{d}',
+                         model='SFR', src='dd',
+                         unit='%',)
         self.zb = RParam(info='Bus zone',
                          name='zb', tex_name='z_{one,bus}',
-                         src='zone', model='Bus')
+                         model='Bus', src='zone', )
         self.zg = RParam(info='generator zone data',
-                         name='zg', src='zone',
-                         tex_name='z_{one,g}',
-                         model='StaticGen',)
+                         name='zg', tex_name='z_{one,g}',
+                         model='StaticGen', src='zone',)
         # 2. generator
         self.R10 = RParam(info='10-min ramp rate (system base)',
-                          name='R10', src='R10',
-                          tex_name=r'R_{10}', unit='p.u./h',
-                          model='StaticGen',)
+                          name='R10', tex_name=r'R_{10}',
+                          model='StaticGen', src='R10',
+                          unit='p.u./h',)
 
 
 class RTEDModel(DCOPFModel):
@@ -155,7 +152,7 @@ class RTED(RTEDData, RTEDModel):
     3. RTED routine adds a function ``dc2ac`` to do the AC conversion using ACOPF
 
     4. Variables for zonal SFR reserve: ``pru`` and ``prd``;
-    
+
     5. Parameters for linear cost of zonal SFR reserve ``cru`` and ``crd``;
 
     6. Parameters for SFR requirement ``du`` and ``dd``;
