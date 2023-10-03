@@ -25,9 +25,13 @@ def to_andes(system, setup=False, addfile=None,
     Convert the AMS system to an ANDES system.
 
     This function is wrapped as the ``System`` class method ``to_andes()``.
-    Using the file conversion ``sp.to_andes()`` will automatically
+    Using the file conversion ``to_andes()`` will automatically
     link the AMS system instance to the converted ANDES system instance
-    in the AMS system attribute ``sp.dyn``.
+    in the AMS system attribute ``dyn``.
+
+    It should be noted that detailed dynamic simualtion requires extra
+    dynamic models to be added to the ANDES system, which can be passed
+    through the ``addfile`` argument.
 
     Parameters
     ----------
@@ -152,7 +156,9 @@ def parse_addfile(adsys, amsys, addfile):
     reader = pd.ExcelFile(addfile)
     common_elements = set(reader.sheet_names) & set(pflow_mdl)
     if common_elements:
-        logger.warning('Power flow models exist in the addfile. Only dynamic models will be used.')
+        msg = 'Power flow models exist in the addfile.'
+        msg += ' Only dynamic models will be used.'
+        logger.warning(msg)
 
     pflow_df_models = pd.read_excel(addfile,
                                     sheet_name=pflow_mdl,
@@ -243,6 +249,15 @@ def parse_addfile(adsys, amsys, addfile):
         for row in df.to_dict(orient='records'):
             adsys.add(name, row)
 
+    # --- adjust SynGen Vn with Bus Vn ---
+    syg_idx = []
+    for _, syg in adsys.SynGen.models.items():
+        if syg.n > 0:
+            syg_idx += syg.idx.v
+    syg_bus_idx = adsys.SynGen.get(src='bus', attr='v', idx=syg_idx)
+    syg_bus_vn = adsys.Bus.get(src='Vn', idx=syg_bus_idx)
+    adsys.SynGen.set(src='Vn', attr='v', idx=syg_idx, value=syg_bus_vn)
+
     # --- for debugging ---
     adsys.df_in = df_models
 
@@ -267,9 +282,9 @@ class Dynamic:
 
     Notes
     -----
-    1. Using the file conversion ``sp.to_andes()`` will automatically
+    1. Using the file conversion ``to_andes()`` will automatically
        link the AMS system to the converted ANDES system in the
-       attribute ``sp.dyn``.
+       attribute ``dyn``.
 
     Examples
     --------
@@ -357,7 +372,7 @@ class Dynamic:
                 ]
         self.link = self.link[cols]
 
-    def send_tgr(self, sa, sp):
+    def _send_tgr(self, sa, sp):
         """
         Sned to generator power refrence.
 
@@ -406,7 +421,7 @@ class Dynamic:
 
         return True
 
-    def send_dgu(self, sa, sp):
+    def _send_dgu(self, sa, sp):
         """
         Send to ANDES the dynamic generator online status.
         """
@@ -452,11 +467,16 @@ class Dynamic:
         Send results of the recent sovled AMS dispatch (``sp.recent``) to the
         target ANDES system.
 
+        Note that converged AC conversion DOES NOT guarantee successful dynamic
+        initialization ``TDS.init()``.
+        Failed initialization is usually caused by limiter violation.
+
         Parameters
         ----------
         adsys : adsys.System.system, optional
             The target ANDES dynamic system instance. If not provided, use the
             linked ANDES system isntance (``sp.dyn.adsys``).
+
         """
         sa = adsys if adsys is not None else self.adsys
         sp = self.amsys
@@ -469,8 +489,9 @@ class Dynamic:
             if sp.recent.is_ac:
                 logger.debug(f'{sp.recent.class_name} results has been converted to AC.')
             else:
-                logger.warning(f'{sp.recent.class_name} has not been converted \
-                               to AC, error might be introduced in dynamic simulation.')
+                msg = f'{sp.recent.class_name} has not been converted'
+                msg += ' to AC, error might occur!'
+                logger.error(msg)
 
         try:
             logger.debug(f'Sending {sp.recent.class_name} results to ANDES <{hex(id(sa))}>...')
@@ -502,7 +523,7 @@ class Dynamic:
                     continue
                 # a. dynamic generator online status
                 if not is_dgu_set and mdl.group in ['StaticGen']:
-                    self.send_dgu(sa=sa, sp=sp)
+                    self._send_dgu(sa=sa, sp=sp)
                     is_dgu_set = True
                     logger.warning('Generator online status are sent to dynamic generators.')
                     continue
@@ -525,7 +546,7 @@ class Dynamic:
                     # FIXME: in this implementation, PV and Slack are only sync once, this might
                     # cause problem if PV and Slack are mapped separately
                     if not is_tgr_set and isinstance(mdl, (StaticGen, PV, Slack)):
-                        self.send_tgr(sa=sa, sp=sp)
+                        self._send_tgr(sa=sa, sp=sp)
                         is_tgr_set = True
                         logger.warning('Generator power reference are sent to dynamic devices.')
                         continue
@@ -612,7 +633,7 @@ class Dynamic:
                     continue
                 # a. dynamic generator online status
                 if not is_dgu_set and mdl.group in ['StaticGen']:
-                    self.receive_dgu(sa=sa, sp=sp)
+                    self._receive_dgu(sa=sa, sp=sp)
                     is_dgu_set = True
                     logger.warning('Generator online status are received from dynamic generators.')
                     continue
@@ -630,7 +651,7 @@ class Dynamic:
                 for ams_vname, andes_pname in pmap.items():
                     # a. output power
                     if not is_pe_set and andes_pname == 'p' and mname == 'StaticGen':
-                        Pe, idx = self.receive_pe(sa=sa, sp=sp)
+                        Pe, idx = self._receive_pe(sa=sa, sp=sp)
                         sp.recent.set(src=ams_vname, idx=idx, attr='v', value=Pe)
                         is_pe_set = True
                         logger.warning('Generator output power are received from dynamic generators.')
@@ -675,7 +696,7 @@ class Dynamic:
                         sp.recent.set(src=ams_vname, idx=idx, attr='v', value=v_andes)
             return True
 
-    def receive_pe(self, sa, sp):
+    def _receive_pe(self, sa, sp):
         """
         Get the dynamic generator output power.
         """
@@ -704,7 +725,7 @@ class Dynamic:
         idx = sp.dyn.link['stg_idx'].replace(np.NaN, None).to_list()
         return Pe, idx
 
-    def receive_dgu(self, sa, sp):
+    def _receive_dgu(self, sa, sp):
         """
         Get the dynamic generator online status.
         """
