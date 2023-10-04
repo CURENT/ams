@@ -239,6 +239,7 @@ def parse_addfile(adsys, amsys, addfile):
             if mdl_guess not in idx_map.keys():
                 continue  # no index consistency issue, skip
             else:
+                logger.debug(f'Replace map for {mdl_guess} is {idx_map[mdl_guess]}')
                 df[idxn] = df[idxn].replace(idx_map[mdl_guess])
                 logger.debug(f'Adjust {idxp.class_name} <{name}.{idxp.name}>')
 
@@ -565,41 +566,28 @@ class Dynamic:
             return True
         # 3. sync static results if dynamic is not initialized
         else:
+            if sa.PFlow.exec_time > 0:
+                msg = 'ANDES PFlow has been run, please re-run ANDES PFlow'
+                msg += ' before running TDS to avoid failed TDS initialization.'
+                logger.info(msg)
             logger.info('Sending results to <pflow> models...')
-            for mname, mdl in sp.models.items():
-                # NOTE: skip models without idx: ``Summary``
-                if not hasattr(mdl, 'idx'):
-                    continue
-                if mdl.n == 0:
-                    continue
-                idx = mdl.idx.v
-                admdls = list(sa.models.keys()) + list(sa.model_aliases.keys())
-                admdls += list(sa.groups.keys())
-                if mname in admdls:
-                    mdl_andes = getattr(sa, mname)
-                    # 1) send models online status
-                    u_ams = mdl.get(src='u', idx=idx, attr='v')
-                    mdl_andes.set(src='u', idx=idx, attr='v', value=u_ams)
-                    # 2) send other results
-                    # NOTE: send power reference to dynamic device
-                    if mname in map2.keys():
-                        logger.debug(f'Sending {mname} results to ANDES...')
-                        for ams_vname, andes_pname in map2[mname].items():
-                            logger.debug(f'Sending {ams_vname} to {andes_pname}...')
-                            # a. voltage reference
-                            if ams_vname in ['qg']:
-                                logger.warning('Setting `qg` to ANDES dynamic does not take effect.')
-                            # b. others, if any
-                            ams_var = getattr(sp.recent, ams_vname)
-                            # NOTE: here we stick with ANDES device idx
-                            v_ams = sp.recent.get(src=ams_vname, attr='v', idx=idx)
-                            mdl_andes.set(src=andes_pname, idx=idx, attr='v', value=v_ams)
-                    else:
-                        pass
+            for mdl_name, pmap in map2.items():
+                for ams_vname, andes_pname in map2[mdl_name].items():
+                    # a. voltage reference
+                    if ams_vname in ['qg']:
+                        logger.warning('Setting `qg` to ANDES dynamic does not take effect.')
+                    # b. others, if any
+                    ams_var = getattr(sp.recent, ams_vname)
+                    # NOTE: here we stick with ANDES device idx
+                    idx = ams_var.get_idx()
+                    v_ams = sp.recent.get(src=ams_vname, attr='v', idx=idx)
+                    mdl_andes = getattr(sa, mdl_name)
+                    mdl_andes.set(src=andes_pname, idx=idx, attr='v', value=v_ams)
+                    logger.debug(f'Send {ams_vname} to <{mdl_andes.class_name}>{andes_pname}')
             # correct StaticGen v0 with Bus v0 if any
             try:
                 rtn.map2['Bus']['vBus'] == 'v0'
-                logger.info('Correcting StaticGen v0 with Bus v0...')
+                logger.info('Adjust <StaticGen>v0 with <Bus>v0...')
                 stg_idx = sa.PV.idx.v + sa.Slack.idx.v
                 stg_bus = sa.PV.bus.v + sa.Slack.bus.v
                 vBus = sp.Bus.get(src='v0', attr='v', idx=stg_bus)
