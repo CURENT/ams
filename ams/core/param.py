@@ -211,8 +211,11 @@ class RParam:
             elif self.owner is None:
                 logger.info(f'Param <{self.name}> has no owner.')
                 return None
-            else:
+            elif hasattr(self.owner, 'idx'):
                 return self.owner.idx.v
+            else:
+                logger.info(f'Param <{self.name}> owner <{self.owner.class_name}> has no idx.')
+                return None
         else:
             try:
                 imodel = getattr(self.rtn.system, self.imodel)

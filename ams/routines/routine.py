@@ -172,6 +172,9 @@ class RoutineModel:
 
         idx_all = item.get_idx()
 
+        if idx_all is None:
+            raise ValueError(f'<{self.class_name}> item <{src}> has no idx.')
+
         if isinstance(idx, (str, int)):
             idx = [idx]
 
