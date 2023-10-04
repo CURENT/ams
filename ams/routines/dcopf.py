@@ -50,17 +50,20 @@ class DCOPFData(RoutineData):
                           name='p0', tex_name=r'p_{g,0}',
                           unit='p.u.', model='StaticGen',)
         self.Cg = RParam(info='connection matrix for Gen and Bus',
-                         name='Cg', tex_name=r'C_{g}',)
+                         name='Cg', tex_name=r'C_{g}',
+                         model='mats', src='Cg',)
         # --- load ---
-        self.pd = RParam(info='active nodal power demand (system base)',
-                         name='pd', tex_name=r'p_{d}',
+        self.pl = RParam(info='nodal active load (system base)',
+                         name='pl', tex_name=r'p_{l}',
+                         model='mats', src='pl',
                          unit='p.u.',)
         # --- line ---
         self.rate_a = RParam(info='long-term flow limit',
                              name='rate_a', tex_name=r'R_{ATEA}',
                              unit='MVA', model='Line',)
         self.PTDF = RParam(info='Power transfer distribution factor matrix',
-                           name='PTDF', tex_name=r'P_{TDF}',)
+                           name='PTDF', tex_name=r'P_{TDF}',
+                           model='mats', src='PTDF',)
 
 
 class DCOPFBase(RoutineModel):
@@ -171,17 +174,17 @@ class DCOPFModel(DCOPFBase):
                       model='Bus',)
         # --- constraints ---
         self.pb = Constraint(name='pb', info='power balance',
-                             e_str='sum(pd) - sum(pg)',
+                             e_str='sum(pl) - sum(pg)',
                              type='eq',)
         self.pinj = Constraint(name='pinj',
                                info='nodal power injection',
-                               e_str='Cg@(pn - pd) - pg',
+                               e_str='Cg@(pn - pl) - pg',
                                type='eq',)
         self.lub = Constraint(name='lub', info='Line limits upper bound',
-                              e_str='PTDF @ (pn - pd) - rate_a',
+                              e_str='PTDF @ (pn - pl) - rate_a',
                               type='uq',)
         self.llb = Constraint(name='llb', info='Line limits lower bound',
-                              e_str='- PTDF @ (pn - pd) - rate_a',
+                              e_str='- PTDF @ (pn - pl) - rate_a',
                               type='uq',)
         # --- objective ---
         self.obj = Objective(name='tc',

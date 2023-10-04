@@ -38,9 +38,10 @@ class DCPFlowData(RoutineData):
                           unit='radian',)
 
         # --- load ---
-        self.pd = RParam(info='active nodal power demand (system base)',
-                         name='pd', tex_name=r'p_{d}',
-                         unit='p.u.',)
+        self.pl = RParam(info='nodal active load (system base)',
+                         name='pl', tex_name=r'p_{l}',
+                         unit='p.u.',
+                         model='mats', src='pl')
 
 
 class DCPFlowBase(RoutineModel):

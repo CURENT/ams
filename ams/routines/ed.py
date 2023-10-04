@@ -46,7 +46,8 @@ class EDData(RTEDData):
                           unit=r'$/(p.u.*h)',
                           indexer='gen', imodel='StaticGen',)
         self.Cl = RParam(info='connection matrix for Load and Bus',
-                         name='Cl', tex_name=r'C_{l}',)
+                         name='Cl', tex_name=r'C_{l}',
+                         model='mats', src='Cl',)
         self.zl = RParam(info='zone of load',
                          name='zl', tex_name=r'z_{l}',
                          model='StaticLoad', src='zone',)
@@ -76,8 +77,8 @@ class EDModel(DCOPFModel):
         # --- power balance ---
         self.ds = ZonalSum(u=self.zb, zone='Region',
                            name='ds', tex_name=r'\sum_{d}',
-                           info='Sum pd vector in shape of zone',)
-        self.pdz = NumOpDual(u=self.ds, u2=self.pd,
+                           info='Sum pl vector in shape of zone',)
+        self.pdz = NumOpDual(u=self.ds, u2=self.pl,
                              fun=np.multiply,
                              rfun=np.sum, rargs=dict(axis=1),
                              expand_dims=0,

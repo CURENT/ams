@@ -277,6 +277,8 @@ class RoutineModel:
         else:
             logger.warning(f'{self.class_name} data check failed, setup may run into error!')
         self._constr_check()
+        # FIXME: build the system matrices every init might slow down the process
+        self.system.mats.make()
         results, elapsed_time = self.om.setup(disable_showcode=disable_showcode)
         common_info = f"Routine <{self.class_name}> initialized "
         if results:

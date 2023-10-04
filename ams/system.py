@@ -143,8 +143,7 @@ class System(andes_System):
         self.groups = OrderedDict()          # group names and instances
         self.routines = OrderedDict()        # routine names and instances
         self.types = OrderedDict()           # type names and instances
-        self.mats = None                     # matrix processor
-        self.mat = OrderedDict()             # common matrices
+        self.mats = MatProcessor(self)       # matrix processor
         # TODO: there should be an exit_code for each routine
         self.exit_code = 0                   # command-line exit code, 0 - normal, others - error.
         self.recent = None                   # recent solved routines
@@ -231,16 +230,14 @@ class System(andes_System):
         """
         Set the owner for routine attributes: ``RParam``, ``Var``, and ``RBaseService``.
         """
-        mat_name = ['PTDF', 'Cft', 'Cg', 'pd', 'qd', 'Cl']
         for item_name, item in items.items():
             if item.model in self.groups.keys():
                 item.is_group = True
                 item.owner = self.groups[item.model]
             elif item.model in self.models.keys():
                 item.owner = self.models[item.model]
-            elif item_name in mat_name:
-                # FIXME: hard-coded, should be improved
-                pass
+            elif item.model == 'mats':
+                item.owner = self.mats
             else:
                 logger.debug(f'item_name: {item_name}')
                 msg = f'Model indicator \'{item.model}\' of <{item.rtn.class_name}.{item_name}>'
@@ -415,38 +412,8 @@ class System(andes_System):
                 algeb.a = np.arange(a0, a0 + algeb.owner.n)
                 a0 += algeb.owner.n
 
-        # set up common matrix
-        self.mats = MatProcessor(self)       # matrix processor
-
-        # FIXME: hard coded here
-        # Set nuemerical values for special params
-        gen_bus = self.StaticGen.get(src='bus', attr='v',
-                                     idx=self.StaticGen.get_idx())
-        all_bus = self.Bus.idx.v
-        load_bus = self.StaticLoad.get(src='bus', attr='v',
-                                       idx=self.StaticLoad.get_idx())
-
-        # Restrucrue PQ load value to match gen bus pattern
-
-        # PTDF matrix
-        PTDF, Cft = self.mats.make()
-
-        # node load
-        idx_PD = self.PQ.find_idx(keys="bus", values=all_bus, allow_none=True, default=None)
-        PD = np.array(self.PQ.get(src='p0', attr='v', idx=idx_PD))
-        QD = np.array(self.PQ.get(src='q0', attr='v', idx=idx_PD))
-
-        row, col = np.meshgrid(all_bus, gen_bus)
-        # TODO: sparsity?
-        Cg = (row == col).astype(int)
-        row, col = np.meshgrid(all_bus, load_bus)
-        Cl = (row == col).astype(int)
-
-        self.mat = OrderedDict([
-            ('pd', PD), ('qd', QD),
-            ('PTDF', PTDF),
-            ('Cft', Cft), ('Cg', Cg), ('Cl', Cl),
-        ])
+        # set up matrix processor
+        self.mats.make()
 
         # NOTE: initialize om for all routines
         for _, rtn in self.routines.items():
@@ -457,13 +424,6 @@ class System(andes_System):
                 a0 += var.owner.n
             for rpname, rparam in rtn.rparams.items():
                 rparam.rtn = rtn
-                if rpname in self.mat.keys():
-                    # NOTE: set numerical values for rparams that are defined in system.mat
-                    rparam.is_ext = True
-                    rparam._v = self.mat[rpname]
-                elif rparam.is_ext is True:
-                    # NOTE: register user-defined rparams to system.mat
-                    self.mat[rpname] = rparam._v
 
         _, s = elapsed(t0)
         logger.info('System set up in %s.', s)

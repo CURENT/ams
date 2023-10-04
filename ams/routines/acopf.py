@@ -23,13 +23,10 @@ class ACOPFData(DCOPFData):
 
     def __init__(self):
         DCOPFData.__init__(self)
-        self.qd = RParam(info='reactive power demand (system base)',
-                         name='qd',
-                         src='q0',
-                         tex_name=r'q_{d}',
-                         unit='p.u.',
-                         model='PQ',
-                         )
+        self.ql = RParam(info='reactive power demand (system base)',
+                         name='ql', tex_name=r'q_{l}',
+                         model='mats', src='ql',
+                         unit='p.u.',)
 
 
 class ACOPFBase(DCPFlowBase):
@@ -85,37 +82,25 @@ class ACOPFModel(ACOPFBase):
         # --- bus ---
         self.aBus = Var(info='Bus voltage angle',
                         unit='rad',
-                        name='aBus',
-                        src='a',
-                        tex_name=r'a_{Bus}',
-                        model='Bus',
-                        )
+                        name='aBus', tex_name=r'a_{Bus}',
+                        model='Bus', src='a',)
         self.vBus = Var(info='Bus voltage magnitude',
                         unit='p.u.',
-                        name='vBus',
-                        src='v',
-                        tex_name=r'v_{Bus}',
-                        model='Bus',
-                        )
+                        name='vBus', tex_name=r'v_{Bus}',
+                        src='v', model='Bus',)
         # --- gen ---
         self.pg = Var(info='Gen active power',
                       unit='p.u.',
-                      name='pg',
-                      src='p',
-                      tex_name=r'p_{g}',
-                      model='StaticGen',
-                      )
+                      name='pg', tex_name=r'p_{g}',
+                      model='StaticGen', src='p',)
         self.qg = Var(info='Gen reactive power',
                       unit='p.u.',
-                      name='qg',
-                      src='q',
-                      tex_name=r'q_{g}',
-                      model='StaticGen',
-                      )
+                      name='qg', tex_name=r'q_{g}',
+                      model='StaticGen', src='q',)
         # --- constraints ---
         self.pb = Constraint(name='pb',
                              info='power balance',
-                             e_str='sum(pd) - sum(pg)',
+                             e_str='sum(pl) - sum(pg)',
                              type='eq',
                              )
         # TODO: ACOPF formulation

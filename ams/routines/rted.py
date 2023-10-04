@@ -99,7 +99,7 @@ class RTEDModel(DCOPFModel):
         self.ds = ZonalSum(u=self.zb, zone='Region',
                            name='ds', tex_name=r'\sum_{d}',
                            info='Sum pd vector in shape of zone',)
-        self.pdz = NumOpDual(u=self.ds, u2=self.pd,
+        self.pdz = NumOpDual(u=self.ds, u2=self.pl,
                              fun=np.multiply,
                              rfun=np.sum, rargs=dict(axis=1),
                              expand_dims=0,

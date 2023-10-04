@@ -18,8 +18,9 @@ class DOPFData(DCOPFData):
 
     def __init__(self):
         DCOPFData.__init__(self)
-        self.qd = RParam(info='reactive power demand connected to Bus (system base)',
-                         name='qd', tex_name=r'q_{d}', unit='p.u.')
+        self.ql = RParam(info='reactive power demand connected to Bus (system base)',
+                         name='ql', tex_name=r'q_{l}', unit='p.u.',
+                         model='mats', src='ql',)
         self.vmax = RParam(info="Bus voltage upper limit",
                            name='vmax', tex_name=r'v_{max}', unit='p.u.',
                            model='Bus', src='vmax',
@@ -40,7 +41,8 @@ class DOPFData(DCOPFData):
                            name='qmin', tex_name=r'q_{min}', unit='p.u.',
                            model='StaticGen', src='qmin',)
         self.Cft = RParam(info='connection matrix for Line and Bus',
-                          name='Cft', tex_name=r'C_{ft}',)
+                          name='Cft', tex_name=r'C_{ft}',
+                          model='mats', src='Cft',)
 
 
 class LDOPFModel(DCOPFModel):
@@ -73,12 +75,12 @@ class LDOPFModel(DCOPFModel):
                              e_str='-vsq + vmin**2',
                              type='uq',)
 
-        self.pl = Var(info='line active power',
-                      name='pl', tex_name=r'p_{l}', unit='p.u.',
-                      model='Line',)
-        self.ql = Var(info='line reactive power',
-                      name='ql', tex_name=r'q_{l}', unit='p.u.',
-                      model='Line',)
+        self.plf = Var(info='line active power',
+                       name='plf', tex_name=r'p_{lf}', unit='p.u.',
+                       model='Line',)
+        self.qlf = Var(info='line reactive power',
+                       name='qlf', tex_name=r'q_{lf}', unit='p.u.',
+                       model='Line',)
 
         # --- constraints ---
         self.CftT = NumOp(u=self.Cft,
@@ -86,19 +88,19 @@ class LDOPFModel(DCOPFModel):
                           name='CftT',
                           tex_name=r'C_{ft}^{T}',
                           info='transpose of connection matrix',)
-        self.pinj.e_str = 'CftT@pl - pd - pn'
+        self.pinj.e_str = 'CftT@plf - pl - pn'
         self.qinj = Constraint(name='qinj',
                                info='node reactive power injection',
-                               e_str='CftT@ql - qd - qn',
+                               e_str='CftT@qlf - ql - qn',
                                type='eq',)
 
         self.qb = Constraint(name='qb', info='reactive power balance',
-                             e_str='sum(qd) - sum(qg)',
+                             e_str='sum(ql) - sum(qg)',
                              type='eq',)
 
         self.lvd = Constraint(name='lvd',
                               info='line voltage drop',
-                              e_str='Cft@vsq - (r * pl + x * ql)',
+                              e_str='Cft@vsq - (r * pl + x * qlf)',
                               type='eq',)
 
         # --- objective ---
