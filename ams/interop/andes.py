@@ -337,7 +337,7 @@ class Dynamic:
         """
         return bool(self.adsys.TDS.initialized)
 
-    def require_link(func):
+    def require_link(func, **kwargs):
         """
         Wrapper function to check if the link table is available before calling
         ``send()`` and ``receive()``.
@@ -349,12 +349,12 @@ class Dynamic:
             linked ANDES system instance (`sp.dyn.adsys`).
         """
 
-        def wrapper(self, adsys=None):
+        def wrapper(self, **kwargs):
             if self.link is None:
                 logger.warning("System has not been linked with dynamic. Unable to sync with ANDES.")
                 return False
             else:
-                return func(self, adsys)
+                return func(self, **kwargs)
         return wrapper
 
     def make_link(self):
