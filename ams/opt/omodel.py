@@ -206,7 +206,7 @@ class Var(Algeb, OptzBase):
         self.owner = None  # instance of the owner Model
         self.id = None     # variable internal index inside a model (assigned in run time)
         OptzBase.__init__(self, name=name, info=info, unit=unit)
-        self.src = name if (src is None) else src
+        self.src = src
         self.is_group = False
         self.model = model  # indicate if this variable is a group variable
         self.owner = None  # instance of the owner model or group
@@ -395,13 +395,13 @@ class Constraint(OptzBase):
         self.is_disabled = False
         # TODO: add constraint info from solver
 
-    def parse(self, disable_showcode=True):
+    def parse(self, no_code=True):
         """
         Parse the constraint.
 
         Parameters
         ----------
-        disable_showcode : bool, optional
+        no_code : bool, optional
             Flag indicating if the code should be shown, True by default.
         """
         sub_map = self.om.rtn.syms.sub_map
@@ -423,7 +423,7 @@ class Constraint(OptzBase):
             raise ValueError(f'Constraint type {self.type} is not supported.')
         code_constr = f'om.constrs["{self.name}"]=' + code_constr
         logger.debug(f"Set constrs {self.name}: {self.e_str} {'<= 0' if self.type == 'uq' else '== 0'}")
-        if not disable_showcode:
+        if not no_code:
             logger.info(f"Code Constr: {code_constr}")
         exec(code_constr)
         exec(f'setattr(om, self.name, om.constrs["{self.name}"])')
@@ -495,13 +495,13 @@ class Objective(OptzBase):
     def v(self, value):
         self._v = value
 
-    def parse(self, disable_showcode=True):
+    def parse(self, no_code=True):
         """
         Parse the objective function.
 
         Parameters
         ----------
-        disable_showcode : bool, optional
+        no_code : bool, optional
             Flag indicating if the code should be shown, True by default.
         """
         om = self.om  # NOQA
@@ -516,7 +516,7 @@ class Objective(OptzBase):
         else:
             raise ValueError(f'Objective sense {self.sense} is not supported.')
         code_obj = 'om.obj=' + code_obj
-        if not disable_showcode:
+        if not no_code:
             logger.info(f"Code Obj: {code_obj}")
         exec(code_obj)
         return True
@@ -566,7 +566,7 @@ class OModel:
         self.m = 0  # number of constraints
 
     @timer
-    def setup(self, disable_showcode=True, force_generate=False):
+    def setup(self, no_code=True, force_generate=False):
         """
         Setup the optimziation model from symbolic description.
 
@@ -579,7 +579,7 @@ class OModel:
 
         Parameters
         ----------
-        disable_showcode : bool, optional
+        no_code : bool, optional
             Flag indicating if the code should be shown, True by default.
         force : bool, optional
             True to force generating symbols, False by default.
@@ -591,13 +591,13 @@ class OModel:
             ovar.parse()
         # --- add constraints ---
         for constr in rtn.constrs.values():
-            constr.parse(disable_showcode=disable_showcode)
+            constr.parse(no_code=no_code)
         # --- parse objective functions ---
         if rtn.type == 'PF':
             # NOTE: power flow type has no objective function
             pass
         elif rtn.obj is not None:
-            rtn.obj.parse(disable_showcode=disable_showcode)
+            rtn.obj.parse(no_code=no_code)
             # --- finalize the optimziation formulation ---
             code_mdl = "problem(self.obj, [constr for constr in self.constrs.values()])"
             for pattern, replacement in self.rtn.syms.sub_map.items():

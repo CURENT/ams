@@ -115,13 +115,14 @@ class UCModel(EDModel):
         self.Mzug = NumOp(info='10 times of max of pmax as big M for zug',
                           name='Mzug', tex_name=r'M_{zug}',
                           u=self.pmax, fun=np.max,
-                          rfun=np.dot, rargs=dict(b=10),)
+                          rfun=np.dot, rargs=dict(b=10),
+                          array_out=False,)
         self.zuglb = Constraint(name='zuglb', info='zug lower bound',
                                 type='uq', e_str='- zug + pg')
         self.zugub = Constraint(name='zugub', info='zug upper bound',
-                                type='uq', e_str='zug - pg - Mzug[0] * (1 - ugd)')
+                                type='uq', e_str='zug - pg - Mzug dot (1 - ugd)')
         self.zugub2 = Constraint(name='zugub2', info='zug upper bound',
-                                 type='uq', e_str='zug - Mzug[0] * ugd')
+                                 type='uq', e_str='zug - Mzug dot ugd')
 
         # --- reserve ---
         # 1) non-spinning reserve
@@ -224,14 +225,14 @@ class UC(UCData, UCModel):
     The cost inludes generation cost, startup cost, shutdown cost, spinning reserve cost,
     non-spinning reserve cost, and unserved energy penalty.
 
+    Method ``_initial_guess`` is used to make initial guess for commitment decision if all
+    generators are online at initial. It is a simple heuristic method, which may not be optimal.
+
     Notes
     -----
     1. Formulations has been adjusted with interval ``config.t``, 1 [Hour] by default.
 
-    2. Method ``_initial_guess`` is used to make initial guess for commitment decision if all
-    generators are online at initial. It is a simple heuristic method, which may not be optimal.
-
-    3. The tie-line flow has not been implemented in formulations.
+    2. The tie-line flow has not been implemented in formulations.
 
     References
     ----------

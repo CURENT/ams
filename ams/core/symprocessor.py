@@ -61,7 +61,8 @@ class SymProcessor:
         # only used for CVXPY
         self.sub_map = OrderedDict([
             (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 @ \2'),
-            (r'\b(\w+)\s* dot \s*(\w+)\b', r'\1 * \2'),
+            (r'\b(\w+)\s+dot\s+(\w+)\b', r'\1 * \2'),
+            (r' dot ', r' * '),
             (r'\bsum\b', f'{lang}.sum'),
             (r'\bvar\b', f'{lang}.Variable'),
             (r'\bproblem\b', f'{lang}.Problem'),
@@ -75,10 +76,10 @@ class SymProcessor:
         # FIXME: the replacement for multiply is a bad design, but it works for now
         self.tex_map = OrderedDict([
             (r'\*\*(\d+)', '^{\\1}'),
-            (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 \2'),
+            (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1*\2'),
             (r'\@', r'*'),
             (r'dot', r'*'),
-            (r'multiply', r''), (r', ', r'*'),
+            (r'multiply', r''),
             (r'\bnp.linalg.pinv(\d+)', r'\1^{\-1}'),
         ])
 

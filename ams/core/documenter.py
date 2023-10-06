@@ -421,7 +421,7 @@ class RDocumenter:
 
             slist = []
             if p.owner is not None and p.src is not None:
-                slist.append(f'{p.src}<{p.owner.class_name}>')
+                slist.append(f'{p.owner.class_name}.{p.src}')
             sources.append(','.join(slist))
 
         # symbols based on output format
@@ -488,7 +488,7 @@ class RDocumenter:
 
             slist = []
             if p.owner is not None and p.src is not None:
-                slist.append(f'{p.src}<{p.owner.class_name}>')
+                slist.append(f'{p.owner.class_name}.{p.src}')
             sources.append(','.join(slist))
 
         # symbols based on output format

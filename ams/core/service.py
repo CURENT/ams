@@ -168,7 +168,8 @@ class ROperationService(RBaseService):
 
 class LoadScale(ROperationService):
     """
-    Return load 
+    Return load.
+
     Parameters
     ----------
     u : Callable
@@ -197,8 +198,6 @@ class LoadScale(ROperationService):
                  info: str = None,
                  ):
         tex_name = tex_name if tex_name is not None else u.tex_name
-        unit = unit if unit is not None else u.unit
-        info = info if info is not None else u.info
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, u=u,)
         self.sd = sd
@@ -259,10 +258,9 @@ class NumOp(ROperationService):
                  vtype: Type = None,
                  rfun: Callable = None,
                  rargs: dict = {},
-                 expand_dims: int = None):
+                 expand_dims: int = None,
+                 array_out=True):
         tex_name = tex_name if tex_name is not None else u.tex_name
-        unit = unit if unit is not None else u.unit
-        info = info if info is not None else u.info
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, u=u,)
         self.fun = fun
@@ -270,6 +268,7 @@ class NumOp(ROperationService):
         self.rfun = rfun
         self.rargs = rargs
         self.expand_dims = expand_dims
+        self.array_out = array_out
 
     @property
     def v0(self):
@@ -277,8 +276,9 @@ class NumOp(ROperationService):
             out = self.fun([u.v for u in self.u], **self.args)
         else:
             out = self.fun(self.u.v, **self.args)
-        if not isinstance(out, np.ndarray):
-            out = np.array([out])
+        if self.array_out:
+            if not isinstance(out, np.ndarray):
+                out = np.array([out])
         return out
 
     @property
@@ -329,10 +329,12 @@ class NumExpandDim(NumOp):
                  tex_name: str = None,
                  unit: str = None,
                  info: str = None,
-                 vtype: Type = None,):
+                 vtype: Type = None,
+                 array_out: bool = True,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
-                         u=u, fun=np.expand_dims, args=args)
+                         u=u, fun=np.expand_dims, args=args,
+                         array_out=array_out)
         self.axis = axis
 
     @property
@@ -387,22 +389,23 @@ class NumOpDual(NumOp):
                  vtype: Type = None,
                  rfun: Callable = None,
                  rargs: dict = {},
-                 expand_dims: int = None):
+                 expand_dims: int = None,
+                 array_out=True):
         tex_name = tex_name if tex_name is not None else u.tex_name
-        unit = unit if unit is not None else u.unit
-        info = info if info is not None else u.info
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=fun, args=args,
                          rfun=rfun, rargs=rargs,
-                         expand_dims=expand_dims)
+                         expand_dims=expand_dims,
+                         array_out=array_out)
         self.u2 = u2
 
     @property
     def v0(self):
         out = self.fun(self.u.v, self.u2.v, **self.args)
-        if not isinstance(out, np.ndarray):
-            out = np.array([out])
+        if self.array_out:
+            if not isinstance(out, np.ndarray):
+                out = np.array([out])
         return out
 
 
@@ -436,8 +439,6 @@ class MinDur(NumOpDual):
                  info: str = None,
                  vtype: Type = None,):
         tex_name = tex_name if tex_name is not None else u.tex_name
-        unit = unit if unit is not None else u.unit
-        info = info if info is not None else u.info
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, u2=u2, fun=None, args=None,

@@ -260,7 +260,7 @@ class RoutineModel:
         # TODO: add data validation for RParam, typical range, etc.
         return True
 
-    def init(self, force=False, disable_showcode=True, **kwargs):
+    def init(self, force=False, no_code=True, **kwargs):
         """
         Setup optimization model.
 
@@ -268,7 +268,7 @@ class RoutineModel:
         ----------
         force: bool
             Whether to force initialization.
-        disable_showcode: bool
+        no_code: bool
             Whether to show generated code.
         """
         # TODO: add input check, e.g., if GCost exists
@@ -282,7 +282,7 @@ class RoutineModel:
         self._constr_check()
         # FIXME: build the system matrices every init might slow down the process
         self.system.mats.make()
-        results, elapsed_time = self.om.setup(disable_showcode=disable_showcode)
+        results, elapsed_time = self.om.setup(no_code=no_code)
         common_info = f"Routine <{self.class_name}> initialized "
         if results:
             info = f"in {elapsed_time}."
@@ -312,7 +312,7 @@ class RoutineModel:
         """
         return None
 
-    def run(self, force_init=False, disable_showcode=True, **kwargs):
+    def run(self, force_init=False, no_code=True, **kwargs):
         """
         Run the routine.
 
@@ -320,17 +320,17 @@ class RoutineModel:
         ----------
         force_init: bool
             Whether to force initialization.
-        disable_showcode: bool
+        no_code: bool
             Whether to show generated code.
         """
         # --- setup check ---
-        self.init(force=force_init, disable_showcode=disable_showcode)
+        self.init(force=force_init, no_code=no_code)
         # NOTE: if the model data is altered, we need to re-setup the model
         # this implementation if not efficient at large-scale
         # FIXME: find a more efficient way to update the OModel values if
         # the system data is altered
         # elif self.exec_time > 0:
-        #     self.init(disable_showcode=disable_showcode)
+        #     self.init(no_code=no_code)
         # --- solve optimization ---
         t0, _ = elapsed()
         _ = self.solve(**kwargs)
