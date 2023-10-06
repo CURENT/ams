@@ -164,6 +164,12 @@ class DCPFlowBase(RoutineModel):
         """
         pass
 
+    def enable(self, name):
+        raise NotImplementedError
+
+    def disable(self, name):
+        raise NotImplementedError
+
 
 class DCPFlowModel(DCPFlowBase):
     """
