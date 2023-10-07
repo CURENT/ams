@@ -516,6 +516,7 @@ class Objective(OptzBase):
         else:
             raise ValueError(f'Objective sense {self.sense} is not supported.')
         code_obj = 'om.obj=' + code_obj
+        logger.debug(f"Set obj {self.name}: {self.sense}. {self.e_str}")
         if not no_code:
             logger.info(f"Code Obj: {code_obj}")
         exec(code_obj)
