@@ -83,13 +83,13 @@ class DCOPFBase(RoutineModel):
         res = self.om.mdl.solve(**kwargs)
         return res
 
-    def run(self, disable_showcode=True, **kwargs):
+    def run(self, no_code=True, **kwargs):
         """
         Run the routine.
 
         Parameters
         ----------
-        disable_showcode : bool, optional
+        no_code : bool, optional
             If True, print the generated CVXPY code. Defaults to False.
 
         Other Parameters
@@ -122,7 +122,7 @@ class DCOPFBase(RoutineModel):
         kwargs : keywords, optional
             Additional solver specific arguments. See CVXPY documentation for details.
         """
-        return RoutineModel.run(self, disable_showcode=disable_showcode, **kwargs)
+        return RoutineModel.run(self, no_code=no_code, **kwargs)
 
     def unpack(self, **kwargs):
         """

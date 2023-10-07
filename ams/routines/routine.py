@@ -339,9 +339,11 @@ class RoutineModel:
         self.system.exit_code = self.exit_code
         _, s = elapsed(t0)
         self.exec_time = float(s.split(' ')[0])
+        info = self.om.mdl.solver_stats
         if self.exit_code == 0:
-            info = f"{self.class_name} solved as {status} in {s} with exit code {self.exit_code}."
-            logger.warning(info)
+            msg = f"{self.class_name} solved as {status} in {s}, converged in "
+            msg += f"{int(info.num_iters)} iterations using solver {info.solver_name}."
+            logger.warning(msg)
             self.unpack(**kwargs)
             return True
         else:
