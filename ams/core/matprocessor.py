@@ -6,7 +6,7 @@ import logging  # NOQA
 from typing import Optional  # NOQA
 
 import numpy as np  # NOQA
-from ams.solver.pypower.makePTDF import makePTDF, makeBdc  # NOQA
+from ams.pypower.makePTDF import makePTDF, makeBdc  # NOQA
 from ams.io.pypower import system2ppc  # NOQA
 
 logger = logging.getLogger(__name__)

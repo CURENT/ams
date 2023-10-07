@@ -3,11 +3,10 @@ Power flow routines.
 """
 import logging  # NOQA
 
-from ams.solver.pypower.runpf import runpf  # NOQA
+from ams.pypower.routines.pflow.solve import runpf  # NOQA
 
 from ams.io.pypower import system2ppc  # NOQA
 from ams.core.param import RParam  # NOQA
-from ams.solver.pypower.runpf import runpf  # NOQA
 
 from ams.routines.dcpf import DCPFlowData, DCPFlowBase  # NOQA
 from ams.opt.omodel import Var, Constraint  # NOQA
@@ -84,8 +83,8 @@ class PFlowModel(DCPFlowBase):
         Solve the AC Power Flow with PYPOWER.
         """
         ppc = system2ppc(self.system)
-        res, success = runpf(ppc, **kwargs)
-        return res, success
+        res, success, info = runpf(ppc, **kwargs)
+        return res, success, info
 
 
 class PFlow(PFlowData, PFlowModel):

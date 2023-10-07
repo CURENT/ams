@@ -4,7 +4,7 @@ Power flow routines.
 import logging  # NOQA
 from collections import OrderedDict  # NOQA
 
-from ams.solver.pypower.runopf import runopf  # NOQA
+from ams.pypower.routines.opf.solve import runopf  # NOQA
 
 from ams.io.pypower import system2ppc  # NOQA
 from ams.core.param import RParam  # NOQA
@@ -53,9 +53,9 @@ class ACOPFBase(DCPFlowBase):
 
     def solve(self, **kwargs):
         ppc = system2ppc(self.system)
-        res = runopf(ppc, **kwargs)
+        res, info = runopf(ppc, **kwargs)
         success = res['success']
-        return res, success
+        return res, success, info
 
     def unpack(self, res):
         """

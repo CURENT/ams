@@ -8,7 +8,7 @@ from andes.utils.misc import elapsed  # NOQA
 
 from ams.routines.routine import RoutineData, RoutineModel  # NOQA
 from ams.opt.omodel import Var  # NOQA
-from ams.solver.pypower.runpf import rundcpf  # NOQA
+from ams.pypower.routines.pflow.solve import rundcpf  # NOQA
 
 from ams.io.pypower import system2ppc  # NOQA
 from ams.core.param import RParam  # NOQA
@@ -61,8 +61,8 @@ class DCPFlowBase(RoutineModel):
         Solve the DC Power Flow with PYPOWER.
         """
         ppc = system2ppc(self.system)
-        res, success = rundcpf(ppc, **kwargs)
-        return res, success
+        res, success, info = rundcpf(ppc, **kwargs)
+        return res, success, info
 
     def unpack(self, res):
         """
@@ -138,14 +138,14 @@ class DCPFlowBase(RoutineModel):
         if not self.initialized:
             self.init(force=force_init, disable_showcode=disable_showcode)
         t0, _ = elapsed()
-        res, success = self.solve(**kwargs)
+        res, success, info = self.solve(**kwargs)
         self.exit_code = 0 if success else 1
         _, s = elapsed(t0)
         self.exec_time = float(s.split(' ')[0])
         self.unpack(res)
         if self.exit_code == 0:
-            info = f"{self.class_name} completed in {s} with exit code {self.exit_code}."
-            logger.info(info)
+            msg = f"{self.class_name} solved in {s}, using solver {info['name']}."
+            logger.info(msg)
             return True
         else:
             info = f"{self.class_name} failed!"
