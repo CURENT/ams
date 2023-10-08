@@ -108,7 +108,7 @@ def runpf(casedata, ppopt):
         Va0 = bus[:, pidx.bus['VA']] * deg2rad
 
         # build B matrices and phase shift injections
-        B, Bf, Pbusinj, Pfinj = makeBdc(baseMVA, bus, branch)
+        B, Bf, Pbusinj, Pfinj, _ = makeBdc(baseMVA, bus, branch)
 
         # compute complex bus power injections [generation - load]
         # adjusted for phase shifters and real shunts

@@ -433,7 +433,7 @@ def makeBdc(baseMVA, bus, branch):
     # Ptinj = -Pfinj                            ## and extracted at the to bus
     Pbusinj = Cft.T * Pfinj  # Pbusinj = Cf * Pfinj + Ct * Ptinj
 
-    return Bbus, Bf, Pbusinj, Pfinj
+    return Bbus, Bf, Pbusinj, Pfinj, Cft
 
 
 def makeLODF(branch, PTDF):
@@ -506,7 +506,7 @@ def makePTDF(baseMVA, bus, branch, slack=None):
     """
     # use reference bus for slack by default
     if slack is None:
-        slack = find(bus[:, pidx.branch['BUS_TYPE']] == pidx.bus['REF'])
+        slack = find(bus[:, pidx.bus['BUS_TYPE']] == pidx.bus['REF'])
         slack = slack[0]
 
     # set the slack bus to be used to compute initial PTDF
@@ -525,10 +525,10 @@ def makePTDF(baseMVA, bus, branch, slack=None):
         logger.debug('makePTDF: buses must be numbered consecutively')
 
     # compute PTDF for single slack_bus
-    Bbus, Bf, _, _ = makeBdc(baseMVA, bus, branch)
+    Bbus, Bf, _, _, _ = makeBdc(baseMVA, bus, branch)
     Bbus, Bf = Bbus.todense(), Bf.todense()
     H = np.zeros((nbr, nb))
-    H[:, noslack] = np.linalg(Bbus[np.ix_(noslack, noref)].T, Bf[:, noref].T).T
+    H[:, noslack] = np.linalg.solve(Bbus[np.ix_(noslack, noref)].T, Bf[:, noref].T).T
     #             = Bf[:, noref] * inv(Bbus[np.ix_(noslack, noref)])
 
     # distribute slack, if requested
