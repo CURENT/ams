@@ -12,7 +12,7 @@ from scipy.sparse.linalg import spsolve
 
 from andes.shared import deg2rad, rad2deg
 
-import ams.pypower.idx as idx
+import ams.pypower.idx as pidx
 from ams.pypower.make import makeYbus
 from ams.pypower.opf_costfcn import opf_costfcn
 from ams.pypower.opf_consfcn import opf_consfcn
@@ -362,24 +362,22 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
                  'compcond': compcond, 'costcond': costcond, 'gamma': gamma,
                  'stepsize': 0, 'obj': f / opt["cost_mult"], 'alphap': 0, 'alphad': 0})
 
-    if opt["verbose"]:
-        s = '-sc' if opt["step_control"] else ''
-        v = pipsver('all')['Version']
-        logger.debug(f'Solver-PIPS v{v}')
-        if opt['verbose'] > 1:
-            print(" it    objective   step size   feascond     gradcond     "
-                  "compcond     costcond  ")
-            print("----  ------------ --------- ------------ ------------ "
-                  "------------ ------------")
-            print("%3d  %12.8g %10s %12g %12g %12g %12g" %
-                  (i, (f / opt["cost_mult"]), "",
-                   feascond, gradcond, compcond, costcond))
+    s = '-sc' if opt["step_control"] else ''
+    headers = '  n     objective     step size'
+    headers += '    feascond    gradcond'
+    headers += '    compcond    costcond'
+    head_line = "=== ========  ======  "
+    head_line += "   =======  ======="
+    head_line += "   =======  ======="
+    logger.debug(headers)
+    logger.debug(head_line)
+    logger.debug("%3d  %12.8g %12g %12g %12g %12g %12g" %
+                 (i, (f / opt["cost_mult"]), 0, feascond, gradcond,
+                     compcond, costcond))
 
     if feascond < opt["feastol"] and gradcond < opt["gradtol"] and \
             compcond < opt["comptol"] and costcond < opt["costtol"]:
         converged = True
-        if opt["verbose"]:
-            print("Converged!")
 
     # do Newton iterations
     while (not converged) and (i < opt["max_it"]):
@@ -391,9 +389,9 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
                  "ineqnonlin": mu[range(niqnln)]}
         if nonlinear:
             if hess_fcn is None:
-                print("pips: Hessian evaluation via finite differences "
-                      "not yet implemented.\nPlease provide "
-                      "your own hessian evaluation function.")
+                logger.error("pips: Hessian evaluation via finite differences "
+                             "not yet implemented.\nPlease provide "
+                             "your own hessian evaluation function.")
             Lxx = hess_fcn(x, lmbda, opt["cost_mult"])
         else:
             _, _, d2f = f_fcn(x, True)      # cost
@@ -415,8 +413,7 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
         dxdlam = spsolve(Ab.tocsr(), bb)
 
         if np.any(np.isnan(dxdlam)):
-            if opt["verbose"]:
-                print('\nNumerically Failed\n')
+            print('\nNumerically Failed\n')
             eflag = -1
             break
 
@@ -501,8 +498,7 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
 
                 L1 = f1 + np.dot(lam, g1) + np.dot(mu, h1 + z) - gamma * sum(np.log(z))
 
-                if opt["verbose"] > 2:
-                    print("   %3d            %10.5f" % (-j, np.linalg.norm(dx1)))
+                logger.info("   %3d            %10.5f" % (-j, np.linalg.norm(dx1)))
 
                 rho = (L1 - L) / (np.dot(Lx, dx1) + 0.5 * np.dot(dx1, Lxx * dx1))
 
@@ -583,10 +579,9 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
                      'stepsize': np.linalg.norm(dx), 'obj': f / opt["cost_mult"],
                      'alphap': alphap, 'alphad': alphad})
 
-        if opt["verbose"] > 1:
-            print("%3d  %12.8g %10.5g %12g %12g %12g %12g" %
-                  (i, (f / opt["cost_mult"]), np.linalg.norm(dx), feascond, gradcond,
-                   compcond, costcond))
+        logger.debug("%3d  %12.8g %10.5g %12g %12g %12g %12g" %
+                     (i, (f / opt["cost_mult"]), np.linalg.norm(dx), feascond, gradcond,
+                      compcond, costcond))
 
         if feascond < opt["feastol"] and gradcond < opt["gradtol"] and \
                 compcond < opt["comptol"] and costcond < opt["costtol"]:
@@ -601,9 +596,8 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
             if opt["step_control"]:
                 L = f + np.dot(lam, g) + np.dot(mu, (h + z)) - gamma * sum(np.log(z))
 
-    if opt["verbose"]:
-        if not converged:
-            print("Did not converge in %d iterations." % i)
+    if not converged:
+        logger.debug("Did not converge in %d iterations." % i)
 
     # package results
     if eflag != -1:
@@ -787,20 +781,20 @@ def pipsopf_solver(om, ppopt, out_opt=None):
     ll[xmin == -np.Inf] = -1e10  # replace Inf with numerical proxies
     uu[xmax == np.Inf] = 1e10
     x0 = (ll + uu) / 2
-    Varefs = bus[bus[:, idx.bus['BUS_TYPE']] == idx.bus['REF'], idx.bus['VA']] * deg2rad
+    Varefs = bus[bus[:, pidx.bus['BUS_TYPE']] == pidx.bus['REF'], pidx.bus['VA']] * deg2rad
     # angles set to first reference angle
     x0[vv["i1"]["Va"]:vv["iN"]["Va"]] = Varefs[0]
     if ny > 0:
-        ipwl = find(gencost[:, idx.cost['MODEL']] == idx.cost['PW_LINEAR'])
+        ipwl = find(gencost[:, pidx.cost['MODEL']] == pidx.cost['PW_LINEAR'])
 #         PQ = np.r_[gen[:, PMAX], gen[:, QMAX]]
 #         c = totcost(gencost[ipwl, :], PQ[ipwl])
-        c = gencost.flatten('F')[sub2ind(gencost.shape, ipwl, idx.cost['NCOST']+2*gencost[ipwl,
-                                                                                          idx.cost['NCOST']])]  # largest y-value in CCV data
+        # largest y-value in CCV data
+        c = gencost.flatten('F')[sub2ind(gencost.shape, ipwl, pidx.cost['NCOST']+2*gencost[ipwl, pidx.cost['NCOST']])]
         x0[vv["i1"]["y"]:vv["iN"]["y"]] = max(c) + 0.1 * abs(max(c))
 #        x0[vv["i1"]["y"]:vv["iN"]["y"]] = c + 0.1 * abs(c)
 
     # find branches with flow limits
-    il = find((branch[:, idx.branch['RATE_A']] != 0) & (branch[:, idx.branch['RATE_A']] < 1e10))
+    il = find((branch[:, pidx.branch['RATE_A']] != 0) & (branch[:, pidx.branch['RATE_A']] < 1e10))
     nl2 = len(il)  # number of constrained lines
 
     # -----  run opf  -----
@@ -829,20 +823,20 @@ def pipsopf_solver(om, ppopt, out_opt=None):
 
     # -----  calculate return values  -----
     # update voltages & generator outputs
-    bus[:, idx.bus['VA']] = Va * rad2deg
+    bus[:, pidx.bus['VA']] = Va * rad2deg
 
-    bus[:, idx.bus['VM']] = Vm
-    gen[:, idx.gen['PG']] = Pg * baseMVA
-    gen[:, idx.gen['QG']] = Qg * baseMVA
-    gen[:, idx.gen['VG']] = Vm[gen[:, idx.gen['GEN_BUS']].astype(int)]
+    bus[:, pidx.bus['VM']] = Vm
+    gen[:, pidx.gen['PG']] = Pg * baseMVA
+    gen[:, pidx.gen['QG']] = Qg * baseMVA
+    gen[:, pidx.gen['VG']] = Vm[gen[:, pidx.gen['GEN_BUS']].astype(int)]
 
     # compute branch flows
-    Sf = V[branch[:, idx.branch['F_BUS']].astype(int)] * np.conj(Yf * V)  # cplx pwr at "from" bus, p["u"].
-    St = V[branch[:, idx.branch['T_BUS']].astype(int)] * np.conj(Yt * V)  # cplx pwr at "to" bus, p["u"].
-    branch[:, idx.branch['PF']] = Sf.real * baseMVA
-    branch[:, idx.branch['QF']] = Sf.imag * baseMVA
-    branch[:, idx.branch['PT']] = St.real * baseMVA
-    branch[:, idx.branch['QT']] = St.imag * baseMVA
+    Sf = V[branch[:, pidx.branch['F_BUS']].astype(int)] * np.conj(Yf * V)  # cplx pwr at "from" bus, p["u"].
+    St = V[branch[:, pidx.branch['T_BUS']].astype(int)] * np.conj(Yt * V)  # cplx pwr at "to" bus, p["u"].
+    branch[:, pidx.branch['PF']] = Sf.real * baseMVA
+    branch[:, pidx.branch['QF']] = Sf.imag * baseMVA
+    branch[:, pidx.branch['PT']] = St.real * baseMVA
+    branch[:, pidx.branch['QT']] = St.imag * baseMVA
 
     # line constraint is actually on square of limit
     # so we must fix multipliers
@@ -850,24 +844,24 @@ def pipsopf_solver(om, ppopt, out_opt=None):
     muSt = np.zeros(nl)
     if len(il) > 0:
         muSf[il] = \
-            2 * lmbda["ineqnonlin"][:nl2] * branch[il, idx.branch['RATE_A']] / baseMVA
+            2 * lmbda["ineqnonlin"][:nl2] * branch[il, pidx.branch['RATE_A']] / baseMVA
         muSt[il] = \
-            2 * lmbda["ineqnonlin"][nl2:nl2+nl2] * branch[il, idx.branch['RATE_A']] / baseMVA
+            2 * lmbda["ineqnonlin"][nl2:nl2+nl2] * branch[il, pidx.branch['RATE_A']] / baseMVA
 
     # update Lagrange multipliers
-    bus[:, idx.bus['MU_VMAX']] = lmbda["upper"][vv["i1"]["Vm"]:vv["iN"]["Vm"]]
-    bus[:, idx.bus['MU_VMIN']] = lmbda["lower"][vv["i1"]["Vm"]:vv["iN"]["Vm"]]
-    gen[:, idx.gen['MU_PMAX']] = lmbda["upper"][vv["i1"]["Pg"]:vv["iN"]["Pg"]] / baseMVA
-    gen[:, idx.gen['MU_PMIN']] = lmbda["lower"][vv["i1"]["Pg"]:vv["iN"]["Pg"]] / baseMVA
-    gen[:, idx.gen['MU_QMAX']] = lmbda["upper"][vv["i1"]["Qg"]:vv["iN"]["Qg"]] / baseMVA
-    gen[:, idx.gen['MU_QMIN']] = lmbda["lower"][vv["i1"]["Qg"]:vv["iN"]["Qg"]] / baseMVA
+    bus[:, pidx.bus['MU_VMAX']] = lmbda["upper"][vv["i1"]["Vm"]:vv["iN"]["Vm"]]
+    bus[:, pidx.bus['MU_VMIN']] = lmbda["lower"][vv["i1"]["Vm"]:vv["iN"]["Vm"]]
+    gen[:, pidx.gen['MU_PMAX']] = lmbda["upper"][vv["i1"]["Pg"]:vv["iN"]["Pg"]] / baseMVA
+    gen[:, pidx.gen['MU_PMIN']] = lmbda["lower"][vv["i1"]["Pg"]:vv["iN"]["Pg"]] / baseMVA
+    gen[:, pidx.gen['MU_QMAX']] = lmbda["upper"][vv["i1"]["Qg"]:vv["iN"]["Qg"]] / baseMVA
+    gen[:, pidx.gen['MU_QMIN']] = lmbda["lower"][vv["i1"]["Qg"]:vv["iN"]["Qg"]] / baseMVA
 
-    bus[:, idx.bus['LAM_P']] = \
+    bus[:, pidx.bus['LAM_P']] = \
         lmbda["eqnonlin"][nn["i1"]["Pmis"]:nn["iN"]["Pmis"]] / baseMVA
-    bus[:, idx.bus['LAM_Q']] = \
+    bus[:, pidx.bus['LAM_Q']] = \
         lmbda["eqnonlin"][nn["i1"]["Qmis"]:nn["iN"]["Qmis"]] / baseMVA
-    branch[:, idx.branch['MU_SF']] = muSf / baseMVA
-    branch[:, idx.branch['MU_ST']] = muSt / baseMVA
+    branch[:, pidx.branch['MU_SF']] = muSf / baseMVA
+    branch[:, pidx.branch['MU_ST']] = muSt / baseMVA
 
     # package up results
     nlnN = om.getN('nln')

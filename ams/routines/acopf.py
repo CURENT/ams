@@ -1,10 +1,11 @@
 """
-Power flow routines.
+ACOPF routines.
 """
 import logging  # NOQA
 from collections import OrderedDict  # NOQA
 
-from ams.pypower.routines.opf.solve import runopf  # NOQA
+from ams.pypower import runopf  # NOQA
+from ams.pypower.core import ppoption  # NOQA
 
 from ams.io.pypower import system2ppc  # NOQA
 from ams.core.param import RParam  # NOQA
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class ACOPFData(DCOPFData):
     """
-    AC Power Flow routine.
+    ACOPF data.
     """
 
     def __init__(self):
@@ -31,7 +32,7 @@ class ACOPFData(DCOPFData):
 
 class ACOPFBase(DCPFlowBase):
     """
-    Base class for AC Power Flow model.
+    Base class for ACOPF model.
     """
 
     def __init__(self, system, config):
@@ -51,11 +52,14 @@ class ACOPFBase(DCPFlowBase):
             }),
         ])
 
-    def solve(self, **kwargs):
+    def solve(self, method=None, **kwargs):
+        """
+        Solve ACOPF using PYPOWER.
+        """
         ppc = system2ppc(self.system)
-        res, info = runopf(ppc, **kwargs)
-        success = res['success']
-        return res, success, info
+        ppopt = ppoption()
+        res, sstats = runopf(casedata=ppc, ppopt=ppopt, **kwargs)
+        return res, res['success'], sstats
 
     def unpack(self, res):
         """
@@ -68,6 +72,37 @@ class ACOPFBase(DCPFlowBase):
 
         self.system.recent = self.system.routines[self.class_name]
         return True
+
+    def run(self, force_init=False, no_code=True,
+            method=None, **kwargs):
+        """
+        Run ACOPF.
+
+        Note that gauss method is not recommended because it seems to be much
+        more slower than the other three methods and not fully tested yet.
+
+        Examples
+        --------
+        >>> ss = ams.load(ams.get_case('matpower/case14.m'))
+        >>> ss.PFlow.run()
+
+        Parameters
+        ----------
+        force_init : bool
+            Force initialization.
+        no_code : bool
+            Disable showing code.
+        method : str
+            Placeholder for future use.
+
+        Returns
+        -------
+        exit_code : int
+            Exit code of the routine.
+        """
+        super().run(force_init=force_init,
+                    no_code=no_code, method=method,
+                    **kwargs, )
 
 
 class ACOPFModel(ACOPFBase):

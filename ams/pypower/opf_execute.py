@@ -61,6 +61,7 @@ def opf_execute(om, ppopt):
         # -----  run AC OPF solver  -----
         if verbose > 0:
             logger.info(' -- AC Optimal Power Flow\n')
+            logger.info('WRONG WAY!')
 
         # if OPF_ALG not set, choose best available option
         if alg == 0:

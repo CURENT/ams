@@ -3,9 +3,10 @@ Power flow routines.
 """
 import logging  # NOQA
 
-from ams.pypower.routines.pflow.solve import runpf  # NOQA
+from ams.pypower import runpf  # NOQA
 
 from ams.io.pypower import system2ppc  # NOQA
+from ams.pypower.core import ppoption  # NOQA
 from ams.core.param import RParam  # NOQA
 
 from ams.routines.dcpf import DCPFlowData, DCPFlowBase  # NOQA
@@ -78,13 +79,59 @@ class PFlowModel(DCPFlowBase):
                              )
         # TODO: AC power flow formulation
 
-    def solve(self, **kwargs):
+    def solve(self, method='newton', **kwargs):
         """
-        Solve the AC Power Flow with PYPOWER.
+        Solve the AC power flow using PYPOWER.
         """
         ppc = system2ppc(self.system)
-        res, success, info = runpf(ppc, **kwargs)
+
+        method_map = dict(newton=1, fdxb=2, fdbx=3, gauss=4)
+        alg = method_map.get(method)
+        if alg == 4:
+            msg = "Gauss method is not fully tested yet, not recommended!"
+            logger.warning(msg)
+        if alg is None:
+            msg = f"Invalid method `{method}` for PFlow."
+            raise ValueError(msg)
+        ppopt = ppoption(PF_ALG=alg)
+
+        res, success, info = runpf(casedata=ppc, ppopt=ppopt, **kwargs)
         return res, success, info
+
+    def run(self, force_init=False, no_code=True,
+            method='newton', **kwargs):
+        """
+        Run AC power flow.
+
+        Currently, four methods are supported: 'newton', 'fdxb', 'fdbx', 'gauss',
+        for Newton's method, fast-decoupled, XB, fast-decoupled, BX, and Gauss-Seidel,
+        respectively.
+
+        Note that gauss method is not recommended because it seems to be much
+        more slower than the other three methods and not fully tested yet.
+
+        Examples
+        --------
+        >>> ss = ams.load(ams.get_case('matpower/case14.m'))
+        >>> ss.PFlow.run()
+
+        Parameters
+        ----------
+        force_init : bool
+            Force initialization.
+        no_code : bool
+            Disable showing code.
+        method : str
+            Method for solving the power flow.
+
+        Returns
+        -------
+        exit_code : int
+            Exit code of the routine.
+        """
+        super().run(force_init=force_init,
+                    no_code=no_code, method=method,
+                    **kwargs, )
 
 
 class PFlow(PFlowData, PFlowModel):

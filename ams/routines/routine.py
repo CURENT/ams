@@ -283,13 +283,13 @@ class RoutineModel:
         # FIXME: build the system matrices every init might slow down the process
         self.system.mats.make()
         results, elapsed_time = self.om.setup(no_code=no_code)
-        common_info = f"Routine <{self.class_name}> initialized "
+        common_msg = f"Routine <{self.class_name}> initialized "
         if results:
-            info = f"in {elapsed_time}."
+            msg = f"in {elapsed_time}."
             self.initialized = True
         else:
-            info = "failed!"
-        logger.info(common_info + info)
+            msg = "failed!"
+        logger.info(common_msg + msg)
         return results
 
     def prepare(self):
@@ -339,16 +339,19 @@ class RoutineModel:
         self.system.exit_code = self.exit_code
         _, s = elapsed(t0)
         self.exec_time = float(s.split(' ')[0])
-        info = self.om.mdl.solver_stats
+        sstats = self.om.mdl.solver_stats  # solver stats
+        n_iter = int(sstats.num_iters)
+        n_iter_str = f"{n_iter} iterations " if n_iter > 1 else f"{n_iter} iteration "
         if self.exit_code == 0:
-            msg = f"{self.class_name} solved as {status} in {s}, converged in "
-            msg += f"{int(info.num_iters)} iterations using solver {info.solver_name}."
+            msg = f"{self.class_name} solved as {status} in {s}, converged after "
+            msg += n_iter_str + f"using solver {sstats.solver_name}."
             logger.warning(msg)
             self.unpack(**kwargs)
             return True
         else:
-            info = f"{self.class_name} failed as {status} with exit code {self.exit_code}!"
-            logger.warning(info)
+            msg = f"{self.class_name} failed after "
+            msg += n_iter_str + f"using solver {sstats.solver_name}!"
+            logger.warning(msg)
             return False
 
     def summary(self, **kwargs):
