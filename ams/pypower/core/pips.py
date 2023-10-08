@@ -12,7 +12,8 @@ from scipy.sparse.linalg import spsolve
 
 from andes.shared import deg2rad, rad2deg
 
-import ams.pypower.utils.constants as pidx
+import ams.pypower.utils.const as IDX
+
 from ams.pypower.make import makeYbus
 from ams.pypower.opf_costfcn import opf_costfcn
 from ams.pypower.opf_consfcn import opf_consfcn
@@ -781,20 +782,20 @@ def pipsopf_solver(om, ppopt, out_opt=None):
     ll[xmin == -np.Inf] = -1e10  # replace Inf with numerical proxies
     uu[xmax == np.Inf] = 1e10
     x0 = (ll + uu) / 2
-    Varefs = bus[bus[:, pidx.bus['BUS_TYPE']] == pidx.bus['REF'], pidx.bus['VA']] * deg2rad
+    Varefs = bus[bus[:, IDX.bus.BUS_TYPE] == IDX.bus.REF, IDX.bus.VA] * deg2rad
     # angles set to first reference angle
     x0[vv["i1"]["Va"]:vv["iN"]["Va"]] = Varefs[0]
     if ny > 0:
-        ipwl = find(gencost[:, pidx.cost['MODEL']] == pidx.cost['PW_LINEAR'])
+        ipwl = find(gencost[:, IDX.cost.MODEL] == IDX.cost.PW_LINEAR)
 #         PQ = np.r_[gen[:, PMAX], gen[:, QMAX]]
 #         c = totcost(gencost[ipwl, :], PQ[ipwl])
         # largest y-value in CCV data
-        c = gencost.flatten('F')[sub2ind(gencost.shape, ipwl, pidx.cost['NCOST']+2*gencost[ipwl, pidx.cost['NCOST']])]
+        c = gencost.flatten('F')[sub2ind(gencost.shape, ipwl, IDX.cost.NCOST+2*gencost[ipwl, IDX.cost.NCOST])]
         x0[vv["i1"]["y"]:vv["iN"]["y"]] = max(c) + 0.1 * abs(max(c))
 #        x0[vv["i1"]["y"]:vv["iN"]["y"]] = c + 0.1 * abs(c)
 
     # find branches with flow limits
-    il = find((branch[:, pidx.branch['RATE_A']] != 0) & (branch[:, pidx.branch['RATE_A']] < 1e10))
+    il = find((branch[:, IDX.branch.RATE_A] != 0) & (branch[:, IDX.branch.RATE_A] < 1e10))
     nl2 = len(il)  # number of constrained lines
 
     # -----  run opf  -----
@@ -823,20 +824,20 @@ def pipsopf_solver(om, ppopt, out_opt=None):
 
     # -----  calculate return values  -----
     # update voltages & generator outputs
-    bus[:, pidx.bus['VA']] = Va * rad2deg
+    bus[:, IDX.bus.VA] = Va * rad2deg
 
-    bus[:, pidx.bus['VM']] = Vm
-    gen[:, pidx.gen['PG']] = Pg * baseMVA
-    gen[:, pidx.gen['QG']] = Qg * baseMVA
-    gen[:, pidx.gen['VG']] = Vm[gen[:, pidx.gen['GEN_BUS']].astype(int)]
+    bus[:, IDX.bus.VM] = Vm
+    gen[:, IDX.gen.PG] = Pg * baseMVA
+    gen[:, IDX.gen.QG] = Qg * baseMVA
+    gen[:, IDX.gen.VG] = Vm[gen[:, IDX.gen.GEN_BUS].astype(int)]
 
     # compute branch flows
-    Sf = V[branch[:, pidx.branch['F_BUS']].astype(int)] * np.conj(Yf * V)  # cplx pwr at "from" bus, p["u"].
-    St = V[branch[:, pidx.branch['T_BUS']].astype(int)] * np.conj(Yt * V)  # cplx pwr at "to" bus, p["u"].
-    branch[:, pidx.branch['PF']] = Sf.real * baseMVA
-    branch[:, pidx.branch['QF']] = Sf.imag * baseMVA
-    branch[:, pidx.branch['PT']] = St.real * baseMVA
-    branch[:, pidx.branch['QT']] = St.imag * baseMVA
+    Sf = V[branch[:, IDX.branch.F_BUS].astype(int)] * np.conj(Yf * V)  # cplx pwr at "from" bus, p["u"].
+    St = V[branch[:, IDX.branch.T_BUS].astype(int)] * np.conj(Yt * V)  # cplx pwr at "to" bus, p["u"].
+    branch[:, IDX.branch.PF] = Sf.real * baseMVA
+    branch[:, IDX.branch.QF] = Sf.imag * baseMVA
+    branch[:, IDX.branch.PT] = St.real * baseMVA
+    branch[:, IDX.branch.QT] = St.imag * baseMVA
 
     # line constraint is actually on square of limit
     # so we must fix multipliers
@@ -844,24 +845,24 @@ def pipsopf_solver(om, ppopt, out_opt=None):
     muSt = np.zeros(nl)
     if len(il) > 0:
         muSf[il] = \
-            2 * lmbda["ineqnonlin"][:nl2] * branch[il, pidx.branch['RATE_A']] / baseMVA
+            2 * lmbda["ineqnonlin"][:nl2] * branch[il, IDX.branch.RATE_A] / baseMVA
         muSt[il] = \
-            2 * lmbda["ineqnonlin"][nl2:nl2+nl2] * branch[il, pidx.branch['RATE_A']] / baseMVA
+            2 * lmbda["ineqnonlin"][nl2:nl2+nl2] * branch[il, IDX.branch.RATE_A] / baseMVA
 
     # update Lagrange multipliers
-    bus[:, pidx.bus['MU_VMAX']] = lmbda["upper"][vv["i1"]["Vm"]:vv["iN"]["Vm"]]
-    bus[:, pidx.bus['MU_VMIN']] = lmbda["lower"][vv["i1"]["Vm"]:vv["iN"]["Vm"]]
-    gen[:, pidx.gen['MU_PMAX']] = lmbda["upper"][vv["i1"]["Pg"]:vv["iN"]["Pg"]] / baseMVA
-    gen[:, pidx.gen['MU_PMIN']] = lmbda["lower"][vv["i1"]["Pg"]:vv["iN"]["Pg"]] / baseMVA
-    gen[:, pidx.gen['MU_QMAX']] = lmbda["upper"][vv["i1"]["Qg"]:vv["iN"]["Qg"]] / baseMVA
-    gen[:, pidx.gen['MU_QMIN']] = lmbda["lower"][vv["i1"]["Qg"]:vv["iN"]["Qg"]] / baseMVA
+    bus[:, IDX.bus.MU_VMAX] = lmbda["upper"][vv["i1"]["Vm"]:vv["iN"]["Vm"]]
+    bus[:, IDX.bus.MU_VMIN] = lmbda["lower"][vv["i1"]["Vm"]:vv["iN"]["Vm"]]
+    gen[:, IDX.gen.MU_PMAX] = lmbda["upper"][vv["i1"]["Pg"]:vv["iN"]["Pg"]] / baseMVA
+    gen[:, IDX.gen.MU_PMIN] = lmbda["lower"][vv["i1"]["Pg"]:vv["iN"]["Pg"]] / baseMVA
+    gen[:, IDX.gen.MU_QMAX] = lmbda["upper"][vv["i1"]["Qg"]:vv["iN"]["Qg"]] / baseMVA
+    gen[:, IDX.gen.MU_QMIN] = lmbda["lower"][vv["i1"]["Qg"]:vv["iN"]["Qg"]] / baseMVA
 
-    bus[:, pidx.bus['LAM_P']] = \
+    bus[:, IDX.bus.LAM_P] = \
         lmbda["eqnonlin"][nn["i1"]["Pmis"]:nn["iN"]["Pmis"]] / baseMVA
-    bus[:, pidx.bus['LAM_Q']] = \
+    bus[:, IDX.bus.LAM_Q] = \
         lmbda["eqnonlin"][nn["i1"]["Qmis"]:nn["iN"]["Qmis"]] / baseMVA
-    branch[:, pidx.branch['MU_SF']] = muSf / baseMVA
-    branch[:, pidx.branch['MU_ST']] = muSt / baseMVA
+    branch[:, IDX.branch.MU_SF] = muSf / baseMVA
+    branch[:, IDX.branch.MU_ST] = muSt / baseMVA
 
     # package up results
     nlnN = om.getN('nln')

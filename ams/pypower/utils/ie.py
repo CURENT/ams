@@ -13,7 +13,7 @@ from scipy.sparse import csr_matrix as sparse
 from ams.pypower.get_reorder import get_reorder
 from ams.pypower.set_reorder import set_reorder
 from ams.pypower.run_userfcn import run_userfcn
-import ams.pypower.utils.constants as pidx
+import ams.pypower.utils.const as IDX  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -262,17 +262,17 @@ def int2ext(ppc, val_or_field=None, oldval=None, ordering=None, dim=0):
                     o["int"]["areas"]
 
             # revert to original bus numbers
-            ppc["bus"][o["bus"]["status"]["on"], pidx.bus['BUS_I']] = \
-                o["bus"]["i2e"][ppc["bus"][o["bus"]["status"]["on"], pidx.bus['BUS_I']].astype(int)]
-            ppc["branch"][o["branch"]["status"]["on"], pidx.branch['F_BUS']] = \
+            ppc["bus"][o["bus"]["status"]["on"], IDX.bus.BUS_I] = \
+                o["bus"]["i2e"][ppc["bus"][o["bus"]["status"]["on"], IDX.bus.BUS_I].astype(int)]
+            ppc["branch"][o["branch"]["status"]["on"], IDX.branch.F_BUS] = \
                 o["bus"]["i2e"][ppc["branch"]
-                                [o["branch"]["status"]["on"], pidx.branch['F_BUS']].astype(int)]
-            ppc["branch"][o["branch"]["status"]["on"], pidx.branch['T_BUS']] = \
+                                [o["branch"]["status"]["on"], IDX.branch.F_BUS].astype(int)]
+            ppc["branch"][o["branch"]["status"]["on"], IDX.branch.T_BUS] = \
                 o["bus"]["i2e"][ppc["branch"]
-                                [o["branch"]["status"]["on"], pidx.branch['T_BUS']].astype(int)]
-            ppc["gen"][o["gen"]["status"]["on"], pidx.gen['GEN_BUS']] = \
+                                [o["branch"]["status"]["on"], IDX.branch.T_BUS].astype(int)]
+            ppc["gen"][o["gen"]["status"]["on"], IDX.gen.GEN_BUS] = \
                 o["bus"]["i2e"][ppc["gen"]
-                                [o["gen"]["status"]["on"], pidx.gen['GEN_BUS']].astype(int)]
+                                [o["gen"]["status"]["on"], IDX.gen.GEN_BUS].astype(int)]
             if 'areas' in ppc:
                 ppc["areas"][o["areas"]["status"]["on"], idx.area['PRICE_REF_BUS']] = \
                     o["bus"]["i2e"][ppc["areas"]
@@ -313,10 +313,10 @@ def int2ext1(i2e, bus, gen, branch, areas):
     @see: L{ext2int}
     @see: U{http://www.pserc.cornell.edu/matpower/}
     """
-    bus[:, pidx.bus['BUS_I']] = i2e[bus[:, pidx.bus['BUS_I']].astype(int)]
-    gen[:, pidx.gen['GEN_BUS']] = i2e[gen[:, pidx.gen['GEN_BUS']].astype(int)]
-    branch[:, pidx.branch['F_BUS']] = i2e[branch[:, pidx.branch['F_BUS']].astype(int)]
-    branch[:, pidx.branch['T_BUS']] = i2e[branch[:, pidx.branch['T_BUS']].astype(int)]
+    bus[:, IDX.bus.BUS_I] = i2e[bus[:, IDX.bus.BUS_I].astype(int)]
+    gen[:, IDX.gen.GEN_BUS] = i2e[gen[:, IDX.gen.GEN_BUS].astype(int)]
+    branch[:, IDX.branch.F_BUS] = i2e[branch[:, IDX.branch.F_BUS].astype(int)]
+    branch[:, IDX.branch.T_BUS] = i2e[branch[:, IDX.branch.T_BUS].astype(int)]
 
     if areas != None and len(areas) > 0:
         areas[:, idx.area['PRICE_REF_BUS']] = i2e[areas[:, idx.area['PRICE_REF_BUS']].astype(int)]
@@ -536,27 +536,27 @@ def ext2int(ppc, val_or_field=None, ordering=None, dim=0):
                     o["ext"]["areas"] = ppc["areas"].copy()  # save it
 
             # check that all buses have a valid BUS_TYPE
-            bt = ppc["bus"][:, pidx.bus['BUS_TYPE']]
-            err = find(~((bt == pidx.bus['PQ']) | (bt == pidx.bus['PV']) |
-                       (bt == pidx.bus['REF']) | (bt == pidx.bus['NONE'])))
+            bt = ppc["bus"][:, IDX.bus.BUS_TYPE]
+            err = find(~((bt == IDX.bus.PQ) | (bt == IDX.bus.PV) |
+                       (bt == IDX.bus.REF) | (bt == IDX.bus.NONE)))
             if len(err) > 0:
                 logger.debug('ext2int: bus %d has an invalid BUS_TYPE\n' % err)
 
             # determine which buses, branches, gens are connected and
             # in-service
-            n2i = sparse((range(nb), (ppc["bus"][:, pidx.bus['BUS_I']], np.zeros(nb))),
-                         shape=(max(ppc["bus"][:, pidx.bus['BUS_I']].astype(int)) + 1, 1))
+            n2i = sparse((range(nb), (ppc["bus"][:, IDX.bus.BUS_I], np.zeros(nb))),
+                         shape=(max(ppc["bus"][:, IDX.bus.BUS_I].astype(int)) + 1, 1))
             n2i = (np.array(n2i.todense().flatten())[0, :]).astype(int)  # as 1D array
-            bs = (bt != pidx.bus['NONE'])  # bus status
+            bs = (bt != IDX.bus.NONE)  # bus status
             o["bus"]["status"]["on"] = find(bs)  # connected
             o["bus"]["status"]["off"] = find(~bs)  # isolated
-            gs = ((ppc["gen"][:, pidx.gen['GEN_STATUS']] > 0) &  # gen status
-                  bs[n2i[ppc["gen"][:, pidx.gen['GEN_BUS']].astype(int)]])
+            gs = ((ppc["gen"][:, IDX.gen.GEN_STATUS] > 0) &  # gen status
+                  bs[n2i[ppc["gen"][:, IDX.gen.GEN_BUS].astype(int)]])
             o["gen"]["status"]["on"] = find(gs)  # on and connected
             o["gen"]["status"]["off"] = find(~gs)  # off or isolated
-            brs = (ppc["branch"][:, pidx.branch['BR_STATUS']].astype(int) &  # branch status
-                   bs[n2i[ppc["branch"][:, pidx.branch['F_BUS']].astype(int)]] &
-                   bs[n2i[ppc["branch"][:, pidx.branch['T_BUS']].astype(int)]]).astype(bool)
+            brs = (ppc["branch"][:, IDX.branch.BR_STATUS].astype(int) &  # branch status
+                   bs[n2i[ppc["branch"][:, IDX.branch.F_BUS].astype(int)]] &
+                   bs[n2i[ppc["branch"][:, IDX.branch.T_BUS].astype(int)]]).astype(bool)
             o["branch"]["status"]["on"] = find(brs)  # on and conn
             o["branch"]["status"]["off"] = find(~brs)
             if 'areas' in ppc:
@@ -583,24 +583,24 @@ def ext2int(ppc, val_or_field=None, ordering=None, dim=0):
             nb = ppc["bus"].shape[0]
 
             # apply consecutive bus numbering
-            o["bus"]["i2e"] = ppc["bus"][:, pidx.bus['BUS_I']].copy()
+            o["bus"]["i2e"] = ppc["bus"][:, IDX.bus.BUS_I].copy()
             o["bus"]["e2i"] = np.zeros(max(o["bus"]["i2e"]).astype(int) + 1)
             o["bus"]["e2i"][o["bus"]["i2e"].astype(int)] = np.arange(nb)
-            ppc["bus"][:, pidx.bus['BUS_I']] = \
-                o["bus"]["e2i"][ppc["bus"][:, pidx.bus['BUS_I']].astype(int)].copy()
-            ppc["gen"][:, pidx.gen['GEN_BUS']] = \
-                o["bus"]["e2i"][ppc["gen"][:, pidx.gen['GEN_BUS']].astype(int)].copy()
-            ppc["branch"][:, pidx.branch['F_BUS']] = \
-                o["bus"]["e2i"][ppc["branch"][:, pidx.branch['F_BUS']].astype(int)].copy()
-            ppc["branch"][:, pidx.branch['T_BUS']] = \
-                o["bus"]["e2i"][ppc["branch"][:, pidx.branch['T_BUS']].astype(int)].copy()
+            ppc["bus"][:, IDX.bus.BUS_I] = \
+                o["bus"]["e2i"][ppc["bus"][:, IDX.bus.BUS_I].astype(int)].copy()
+            ppc["gen"][:, IDX.gen.GEN_BUS] = \
+                o["bus"]["e2i"][ppc["gen"][:, IDX.gen.GEN_BUS].astype(int)].copy()
+            ppc["branch"][:, IDX.branch.F_BUS] = \
+                o["bus"]["e2i"][ppc["branch"][:, IDX.branch.F_BUS].astype(int)].copy()
+            ppc["branch"][:, IDX.branch.T_BUS] = \
+                o["bus"]["e2i"][ppc["branch"][:, IDX.branch.T_BUS].astype(int)].copy()
             if 'areas' in ppc:
                 ppc["areas"][:, idx.area['PRICE_REF_BUS']] = \
                     o["bus"]["e2i"][ppc["areas"][:,
                                                  idx.area['PRICE_REF_BUS']].astype(int)].copy()
 
             # reorder gens in order of increasing bus number
-            o["gen"]["e2i"] = argsort(ppc["gen"][:, pidx.gen['GEN_BUS']])
+            o["gen"]["e2i"] = argsort(ppc["gen"][:, IDX.gen.GEN_BUS])
             o["gen"]["i2e"] = argsort(o["gen"]["e2i"])
 
             ppc["gen"] = ppc["gen"][o["gen"]["e2i"].astype(int), :]
@@ -660,14 +660,14 @@ def ext2int1(bus, gen, branch, areas=None):
     @see: L{int2ext}
     @see: U{http://www.pserc.cornell.edu/matpower/}
     """
-    i2e = bus[:, pidx.bus['BUS_I']].astype(int)
+    i2e = bus[:, IDX.bus.BUS_I].astype(int)
     e2i = np.zeros(max(i2e) + 1)
     e2i[i2e] = np.arange(bus.shape[0])
 
-    bus[:, pidx.bus['BUS_I']] = e2i[bus[:, pidx.bus['BUS_I']].astype(int)]
-    gen[:, pidx.gen['GEN_BUS']] = e2i[gen[:, pidx.gen['GEN_BUS']].astype(int)]
-    branch[:, pidx.branch['F_BUS']] = e2i[branch[:, pidx.branch['F_BUS']].astype(int)]
-    branch[:, pidx.branch['T_BUS']] = e2i[branch[:, pidx.branch['T_BUS']].astype(int)]
+    bus[:, IDX.bus.BUS_I] = e2i[bus[:, IDX.bus.BUS_I].astype(int)]
+    gen[:, IDX.gen.GEN_BUS] = e2i[gen[:, IDX.gen.GEN_BUS].astype(int)]
+    branch[:, IDX.branch.F_BUS] = e2i[branch[:, IDX.branch.F_BUS].astype(int)]
+    branch[:, IDX.branch.T_BUS] = e2i[branch[:, IDX.branch.T_BUS].astype(int)]
     if areas is not None and len(areas) > 0:
         areas[:, idx.area['PRICE_REF_BUS']] = e2i[areas[:, idx.area['PRICE_REF_BUS']].astype(int)]
 

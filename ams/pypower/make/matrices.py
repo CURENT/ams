@@ -10,7 +10,7 @@ from scipy.sparse import csr_matrix as c_sparse  # NOQA
 from scipy.sparse import lil_matrix as l_sparse  # NOQA
 
 from andes.shared import deg2rad  # NOQA
-import ams.pypower.utils.constants as pidx  # NOQA
+import ams.pypower.utils.const as IDX  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ def isload(gen):
         C{Pmin < 0 and Pmax == 0}. This may need to be revised to allow sensible
         specification of both elastic demand and pumped storage units.
     """
-    return (gen[:, pidx.gen['PMIN']] < 0) & (gen[:, pidx.gen['PMAX']] == 0)
+    return (gen[:, IDX.gen.PMIN] < 0) & (gen[:, IDX.gen.PMAX] == 0)
 
 
 def hasPQcap(gen, hilo='B'):
@@ -71,26 +71,26 @@ def hasPQcap(gen, hilo='B'):
         constraint is not redundant w.r.t the box constraints.
     """
     # check for errors capability curve data
-    if np.any(gen[:, pidx.gen['PC1']] > gen[:, pidx.gen['PC2']]):
+    if np.any(gen[:, IDX.gen.PC1] > gen[:, IDX.gen.PC2]):
         logger.debug('hasPQcap: Pc1 > Pc2')
-    if np.any(gen[:, pidx.gen['QC2MAX']] > gen[:, pidx.gen['QC1MAX']]):
+    if np.any(gen[:, IDX.gen.QC2MAX] > gen[:, IDX.gen.QC1MAX]):
         logger.debug('hasPQcap: Qc2max > Qc1max')
-    if np.any(gen[:, pidx.gen['QC2MIN']] < gen[:, pidx.gen['QC1MIN']]):
+    if np.any(gen[:, IDX.gen.QC2MIN] < gen[:, IDX.gen.QC1MIN]):
         logger.debug('hasPQcap: Qc2min < Qc1min')
 
     L = np.zeros(gen.shape[0], bool)
     U = np.zeros(gen.shape[0], bool)
-    k = np.nonzero(gen[:, pidx.gen['PC1']] != gen[:, pidx.gen['PC2']])
+    k = np.nonzero(gen[:, IDX.gen.PC1] != gen[:, IDX.gen.PC2])
 
     if hilo != 'U':  # include lower constraint
-        Qmin_at_Pmax = gen[k, pidx.gen['QC1MIN']] + (gen[k, pidx.gen['PMAX']] - gen[k, pidx.gen['PC1']]) * (
-            gen[k, pidx.gen['QC2MIN']] - gen[k, pidx.gen['QC1MIN']]) / (gen[k, pidx.gen['PC2']] - gen[k, pidx.gen['PC1']])
-        L[k] = Qmin_at_Pmax > gen[k, pidx.gen['QMIN']]
+        Qmin_at_Pmax = gen[k, IDX.gen.QC1MIN] + (gen[k, IDX.gen.PMAX] - gen[k, IDX.gen.PC1]) * (
+            gen[k, IDX.gen.QC2MIN] - gen[k, IDX.gen.QC1MIN]) / (gen[k, IDX.gen.PC2] - gen[k, IDX.gen.PC1])
+        L[k] = Qmin_at_Pmax > gen[k, IDX.gen.QMIN]
 
     if hilo != 'L':  # include upper constraint
-        Qmax_at_Pmax = gen[k, pidx.gen['QC1MAX']] + (gen[k, pidx.gen['PMAX']] - gen[k, pidx.gen['PC1']]) * (
-            gen[k, pidx.gen['QC2MAX']] - gen[k, pidx.gen['QC1MAX']]) / (gen[k, pidx.gen['PC2']] - gen[k, pidx.gen['PC1']])
-        U[k] = Qmax_at_Pmax < gen[k, pidx.gen['QMAX']]
+        Qmax_at_Pmax = gen[k, IDX.gen.QC1MAX] + (gen[k, IDX.gen.PMAX] - gen[k, IDX.gen.PC1]) * (
+            gen[k, IDX.gen.QC2MAX] - gen[k, IDX.gen.QC1MAX]) / (gen[k, IDX.gen.PC2] - gen[k, IDX.gen.PC1])
+        U[k] = Qmax_at_Pmax < gen[k, IDX.gen.QMAX]
 
     return L | U
 
@@ -132,21 +132,21 @@ def makeAang(baseMVA, branch, nb, ppopt):
         uang = np.array([])
         iang = np.array([])
     else:
-        iang = find(((branch[:, pidx.branch['ANGMIN']] != 0) & (branch[:, pidx.branch['ANGMIN']] > -360)) |
-                    ((branch[:, pidx.branch['ANGMAX']] != 0) & (branch[:, pidx.branch['ANGMAX']] < 360)))
-        iangl = find(branch[iang, pidx.branch['ANGMIN']])
-        iangh = find(branch[iang, pidx.branch['ANGMAX']])
+        iang = find(((branch[:, IDX.branch.ANGMIN] != 0) & (branch[:, IDX.branch.ANGMIN] > -360)) |
+                    ((branch[:, IDX.branch.ANGMAX] != 0) & (branch[:, IDX.branch.ANGMAX] < 360)))
+        iangl = find(branch[iang, IDX.branch.ANGMIN])
+        iangh = find(branch[iang, IDX.branch.ANGMAX])
         nang = len(iang)
 
         if nang > 0:
             ii = np.r_[np.arange(nang), np.arange(nang)]
-            jj = np.r_[branch[iang, pidx.branch['F_BUS']], branch[iang, pidx.branch['T_BUS']]]
+            jj = np.r_[branch[iang, IDX.branch.F_BUS], branch[iang, IDX.branch.T_BUS]]
             Aang = c_sparse((np.r_[np.ones(nang), -np.ones(nang)],
                              (ii, jj)), (nang, nb))
             uang = np.Inf * np.ones(nang)
             lang = -uang
-            lang[iangl] = branch[iang[iangl], pidx.branch['ANGMIN']] * deg2rad
-            uang[iangh] = branch[iang[iangh], pidx.branch['ANGMAX']] * deg2rad
+            lang[iangl] = branch[iang[iangl], IDX.branch.ANGMIN] * deg2rad
+            uang[iangh] = branch[iang[iangh], IDX.branch.ANGMAX] * deg2rad
         else:
             Aang = np.zeros((0, nb))
             lang = np.array([])
@@ -200,10 +200,10 @@ def makeApq(baseMVA, gen):
     # use normalized coefficient rows so multipliers have right scaling
     # in $$/pu
     if npqh > 0:
-        data["h"] = np.c_[gen[ipqh, pidx.gen['QC1MAX']] - gen[ipqh, pidx.gen['QC2MAX']],
-                          gen[ipqh, pidx.gen['PC2']] - gen[ipqh, pidx.gen['PC1']]]
-        ubpqh = data["h"][:, 0] * gen[ipqh, pidx.gen['PC1']] + \
-            data["h"][:, 1] * gen[ipqh, pidx.gen['QC1MAX']]
+        data["h"] = np.c_[gen[ipqh, IDX.gen.QC1MAX] - gen[ipqh, IDX.gen.QC2MAX],
+                          gen[ipqh, IDX.gen.PC2] - gen[ipqh, IDX.gen.PC1]]
+        ubpqh = data["h"][:, 0] * gen[ipqh, IDX.gen.PC1] + \
+            data["h"][:, 1] * gen[ipqh, IDX.gen.QC1MAX]
         for i in range(npqh):
             tmp = np.linalg.norm(data["h"][i, :])
             data["h"][i, :] = data["h"][i, :] / tmp
@@ -219,10 +219,10 @@ def makeApq(baseMVA, gen):
 
     # similarly Apql
     if npql > 0:
-        data["l"] = np.c_[gen[ipql, pidx.gen['QC2MIN']] - gen[ipql, pidx.gen['QC1MIN']],
-                          gen[ipql, pidx.gen['PC1']] - gen[ipql, pidx.gen['PC2']]]
-        ubpql = data["l"][:, 0] * gen[ipql, pidx.gen['PC1']] + \
-            data["l"][:, 1] * gen[ipql, pidx.gen['QC1MIN']]
+        data["l"] = np.c_[gen[ipql, IDX.gen.QC2MIN] - gen[ipql, IDX.gen.QC1MIN],
+                          gen[ipql, IDX.gen.PC1] - gen[ipql, IDX.gen.PC2]]
+        ubpql = data["l"][:, 0] * gen[ipql, IDX.gen.PC1] + \
+            data["l"][:, 1] * gen[ipql, IDX.gen.QC1MIN]
         for i in range(npql):
             tmp = np.linalg.norm(data["l"][i, :])
             data["l"][i, :] = data["l"][i, :] / tmp
@@ -258,11 +258,11 @@ def makeAvl(baseMVA, gen):
     """
     # data dimensions
     ng = gen.shape[0]  # number of dispatchable injections
-    Pg = gen[:, pidx.gen['PG']] / baseMVA
-    Qg = gen[:, pidx.gen['QG']] / baseMVA
-    Pmin = gen[:, pidx.gen['PMIN']] / baseMVA
-    Qmin = gen[:, pidx.gen['QMIN']] / baseMVA
-    Qmax = gen[:, pidx.gen['QMAX']] / baseMVA
+    Pg = gen[:, IDX.gen.PG] / baseMVA
+    Qg = gen[:, IDX.gen.QG] / baseMVA
+    Pmin = gen[:, IDX.gen.PMIN] / baseMVA
+    Qmin = gen[:, IDX.gen.QMIN] / baseMVA
+    Qmax = gen[:, IDX.gen.QMAX] / baseMVA
 
     # Find out if any of these "generators" are actually dispatchable loads.
     # (see 'help isload' for details on what constitutes a dispatchable load)
@@ -280,10 +280,10 @@ def makeAvl(baseMVA, gen):
         logger.debug('makeAvl: either Qmin or Qmax must be equal to zero for '
                      'each dispatchable load.\n')
 
-    # Initial values of pidx.gen['PG'] and pidx.gen['QG'] must be consistent with specified power
+    # Initial values of IDX.gen.PG and IDX.gen.QG must be consistent with specified power
     # factor This is to prevent a user from unknowingly using a case file which
     # would have defined a different power factor constraint under a previous
-    # version which used pidx.gen['PG'] and pidx.gen['QG'] to define the power factor.
+    # version which used IDX.gen.PG and IDX.gen.QG to define the power factor.
     Qlim = (Qmin[ivl] == 0) * Qmax[ivl] + (Qmax[ivl] == 0) * Qmin[ivl]
     if np.any(abs(Qg[ivl] - Pg[ivl] * Qlim / Pmin[ivl]) > 1e-6):
         logger.debug('makeAvl: For a dispatchable load, PG and QG must be '
@@ -339,18 +339,18 @@ def makeB(baseMVA, bus, branch, alg):
     # -----  form Bp (B prime)  -----
     temp_branch = np.copy(branch)  # modify a copy of branch
     temp_bus = np.copy(bus)  # modify a copy of bus
-    temp_bus[:, pidx.bus['BS']] = np.zeros(nb)  # zero out shunts at buses
-    temp_branch[:, pidx.branch['BR_B']] = np.zeros(nl)  # zero out line charging shunts
-    temp_branch[:, pidx.branch['TAP']] = np.ones(nl)  # cancel out taps
+    temp_bus[:, IDX.bus.BS] = np.zeros(nb)  # zero out shunts at buses
+    temp_branch[:, IDX.branch.BR_B] = np.zeros(nl)  # zero out line charging shunts
+    temp_branch[:, IDX.branch.TAP] = np.ones(nl)  # cancel out taps
     if alg == 2:  # if XB method
-        temp_branch[:, pidx.branch['BR_R']] = np.zeros(nl)  # zero out line resistance
+        temp_branch[:, IDX.branch.BR_R] = np.zeros(nl)  # zero out line resistance
     Bp = -1 * makeYbus(baseMVA, temp_bus, temp_branch)[0].imag
 
     # -----  form Bpp (B double prime)  -----
     temp_branch = np.copy(branch)  # modify a copy of branch
-    temp_branch[:, pidx.branch['SHIFT']] = np.zeros(nl)  # zero out phase shifters
+    temp_branch[:, IDX.branch.SHIFT] = np.zeros(nl)  # zero out phase shifters
     if alg == 3:  # if BX method
-        temp_branch[:, pidx.branch['BR_R']] = np.zeros(nl)  # zero out line resistance
+        temp_branch[:, IDX.branch.BR_R] = np.zeros(nl)  # zero out line resistance
     Bpp = -1 * makeYbus(baseMVA, bus, temp_branch)[0].imag
 
     return Bp, Bpp
@@ -396,7 +396,7 @@ def makeBdc(baseMVA, bus, branch):
     nl = branch.shape[0]  # number of lines
 
     # check that bus numbers are equal to indices to bus (one set of bus nums)
-    if np.any(bus[:, pidx.bus['BUS_I']] != list(range(nb))):
+    if np.any(bus[:, IDX.bus.BUS_I] != list(range(nb))):
         logger.debug('makeBdc: buses must be numbered consecutively in '
                      'bus matrix\n')
 
@@ -407,16 +407,16 @@ def makeBdc(baseMVA, bus, branch):
     # |    | = |          | * |     | + |       |
     # | Pt |   | Btf  Btt |   | Vat |   | Ptinj |
     ##
-    stat = branch[:, pidx.branch['BR_STATUS']]  # ones at in-service branches
-    b = stat / branch[:, pidx.branch['BR_X']]  # series susceptance
+    stat = branch[:, IDX.branch.BR_STATUS]  # ones at in-service branches
+    b = stat / branch[:, IDX.branch.BR_X]  # series susceptance
     tap = np.ones(nl)  # default tap ratio = 1
-    i = find(branch[:, pidx.branch['TAP']])  # indices of non-zero tap ratios
-    tap[i] = branch[i, pidx.branch['TAP']]  # assign non-zero tap ratios
+    i = find(branch[:, IDX.branch.TAP])  # indices of non-zero tap ratios
+    tap[i] = branch[i, IDX.branch.TAP]  # assign non-zero tap ratios
     b = b / tap
 
     # build connection matrix Cft = Cf - Ct for line and from - to buses
-    f = branch[:, pidx.branch['F_BUS']]  # list of "from" buses
-    t = branch[:, pidx.branch['T_BUS']]  # list of "to" buses
+    f = branch[:, IDX.branch.F_BUS]  # list of "from" buses
+    t = branch[:, IDX.branch.T_BUS]  # list of "to" buses
     i = np.r_[range(nl), range(nl)]  # double set of row indices
     # connection matrix
     Cft = c_sparse((np.r_[np.ones(nl), -np.ones(nl)], (i, np.r_[f, t])), (nl, nb))
@@ -429,7 +429,7 @@ def makeBdc(baseMVA, bus, branch):
     Bbus = Cft.T * Bf
 
     # build phase shift injection vectors
-    Pfinj = b * (-branch[:, pidx.branch['SHIFT']] * deg2rad)  # injected at the from bus ...
+    Pfinj = b * (-branch[:, IDX.branch.SHIFT] * deg2rad)  # injected at the from bus ...
     # Ptinj = -Pfinj                            ## and extracted at the to bus
     Pbusinj = Cft.T * Pfinj  # Pbusinj = Cf * Pfinj + Ct * Ptinj
 
@@ -459,8 +459,8 @@ def makeLODF(branch, PTDF):
     >>> LODF = makeLODF(branch, H)
     """
     nl, nb = PTDF.shape
-    f = branch[:, pidx.branch['F_BUS']]
-    t = branch[:, pidx.branch['T_BUS']]
+    f = branch[:, IDX.branch.F_BUS]
+    t = branch[:, IDX.branch.T_BUS]
     Cft = c_sparse((np.r_[np.ones(nl), -np.ones(nl)],
                     (np.r_[f, t], np.r_[np.arange(nl), np.arange(nl)])), (nb, nl))
 
@@ -506,7 +506,7 @@ def makePTDF(baseMVA, bus, branch, slack=None):
     """
     # use reference bus for slack by default
     if slack is None:
-        slack = find(bus[:, pidx.bus['BUS_TYPE']] == pidx.bus['REF'])
+        slack = find(bus[:, IDX.bus.BUS_TYPE] == IDX.bus.REF)
         slack = slack[0]
 
     # set the slack bus to be used to compute initial PTDF
@@ -521,7 +521,7 @@ def makePTDF(baseMVA, bus, branch, slack=None):
     noslack = find(np.arange(nb) != slack_bus)
 
     # check that bus numbers are equal to indices to bus (one set of bus numbers)
-    if np.any(bus[:, pidx.bus['BUS_I']] != np.arange(nb)):
+    if np.any(bus[:, IDX.bus.BUS_I] != np.arange(nb)):
         logger.debug('makePTDF: buses must be numbered consecutively')
 
     # compute PTDF for single slack_bus
@@ -567,8 +567,8 @@ def makeSbus(baseMVA, bus, gen):
         Complex bus power injections.
     """
     # generator info
-    on = find(gen[:, pidx.gen['GEN_STATUS']] > 0)  # which generators are on?
-    gbus = gen[on, pidx.gen['GEN_BUS']]  # what buses are they at?
+    on = find(gen[:, IDX.gen.GEN_STATUS] > 0)  # which generators are on?
+    gbus = gen[on, IDX.gen.GEN_BUS]  # what buses are they at?
 
     # form net complex bus power injection vector
     nb = bus.shape[0]
@@ -577,8 +577,8 @@ def makeSbus(baseMVA, bus, gen):
     Cg = c_sparse((np.ones(ngon), (gbus, range(ngon))), (nb, ngon))
 
     # power injected by gens plus power injected by loads converted to p.u.
-    Sbus = (Cg * (gen[on, pidx.gen['PG']] + 1j * gen[on, pidx.gen['QG']]) -
-            (bus[:, pidx.bus['PD']] + 1j * bus[:, pidx.bus['QD']])) / baseMVA
+    Sbus = (Cg * (gen[on, IDX.gen.PG] + 1j * gen[on, IDX.gen.QG]) -
+            (bus[:, IDX.bus.PD] + 1j * bus[:, IDX.bus.QD])) / baseMVA
 
     return Sbus
 
@@ -601,7 +601,7 @@ def makeYbus(baseMVA, bus, branch):
     nl = branch.shape[0]  # number of lines
 
     # check that bus numbers are equal to indices to bus (one set of bus nums)
-    if np.any(bus[:, pidx.bus['BUS_I']] != list(range(nb))):
+    if np.any(bus[:, IDX.bus.BUS_I] != list(range(nb))):
         logger.debug('buses must appear in order by bus number\n')
 
     # for each branch, compute the elements of the branch admittance matrix where
@@ -610,13 +610,13 @@ def makeYbus(baseMVA, bus, branch):
     # |    | = |          | * |    |
     # | It |   | Ytf  Ytt |   | Vt |
     ##
-    stat = branch[:, pidx.branch['BR_STATUS']]  # ones at in-service branches
-    Ys = stat / (branch[:, pidx.branch['BR_R']] + 1j * branch[:, pidx.branch['BR_X']])  # series admittance
-    Bc = stat * branch[:, pidx.branch['BR_B']]  # line charging susceptance
+    stat = branch[:, IDX.branch.BR_STATUS]  # ones at in-service branches
+    Ys = stat / (branch[:, IDX.branch.BR_R] + 1j * branch[:, IDX.branch.BR_X])  # series admittance
+    Bc = stat * branch[:, IDX.branch.BR_B]  # line charging susceptance
     tap = np.ones(nl)  # default tap ratio = 1
-    i = np.nonzero(branch[:, pidx.branch['TAP']])  # indices of non-zero tap ratios
-    tap[i] = branch[i, pidx.branch['TAP']]  # assign non-zero tap ratios
-    tap = tap * np.exp(1j * deg2rad * branch[:, pidx.branch['SHIFT']])  # add phase shifters
+    i = np.nonzero(branch[:, IDX.branch.TAP])  # indices of non-zero tap ratios
+    tap[i] = branch[i, IDX.branch.TAP]  # assign non-zero tap ratios
+    tap = tap * np.exp(1j * deg2rad * branch[:, IDX.branch.SHIFT])  # add phase shifters
 
     Ytt = Ys + 1j * Bc / 2
     Yff = Ytt / (tap * np.conj(tap))
@@ -629,11 +629,11 @@ def makeYbus(baseMVA, bus, branch):
     # then Psh - j Qsh = V * conj(Ysh * V) = conj(Ysh) = Gs - j Bs,
     # i.e. Ysh = Psh + j Qsh, so ...
     # vector of shunt admittances
-    Ysh = (bus[:, pidx.bus['GS']] + 1j * bus[:, pidx.bus['BS']]) / baseMVA
+    Ysh = (bus[:, IDX.bus.GS] + 1j * bus[:, IDX.bus.BS]) / baseMVA
 
     # build connection matrices
-    f = branch[:, pidx.branch['F_BUS']]  # list of "from" buses
-    t = branch[:, pidx.branch['T_BUS']]  # list of "to" buses
+    f = branch[:, IDX.branch.F_BUS]  # list of "from" buses
+    t = branch[:, IDX.branch.T_BUS]  # list of "to" buses
     # connection matrix for line & from buses
     Cf = c_sparse((np.ones(nl), (range(nl), f)), (nl, nb))
     # connection matrix for line & to buses
@@ -678,7 +678,7 @@ def makeAy(baseMVA, ng, gencost, pgbas, qgbas, ybas):
     Autonoma de Manizales)
     """
     # find all pwl cost rows in gencost, either real or reactive
-    iycost = find(gencost[:, pidx.cost['MODEL']] == pidx.cost['PW_LINEAR'])
+    iycost = find(gencost[:, IDX.cost.MODEL] == IDX.cost.PW_LINEAR)
 
     # this is the number of extra "y" variables needed to model those costs
     ny = iycost.shape[0]
@@ -701,16 +701,16 @@ def makeAy(baseMVA, ng, gencost, pgbas, qgbas, ybas):
     # same order as the compressed column sparse format used by matlab
     # this should be the quickest.
 
-    m = sum(gencost[iycost, pidx.cost['NCOST']].astype(int))  # total number of cost points
+    m = sum(gencost[iycost, IDX.cost.NCOST].astype(int))  # total number of cost points
     Ay = l_sparse((m - ny, ybas + ny - 1))
     by = np.array([])
     # First fill the Pg or Qg coefficients (since their columns come first)
     # and the rhs
     k = 0
     for i in iycost:
-        ns = gencost[i, pidx.cost['NCOST']].astype(int)  # of cost points segments = ns-1
-        p = gencost[i, pidx.cost['COST']:pidx.cost['COST'] + 2 * ns - 1:2] / baseMVA
-        c = gencost[i, pidx.cost['COST'] + 1:pidx.cost['COST'] + 2 * ns:2]
+        ns = gencost[i, IDX.cost.NCOST].astype(int)  # of cost points segments = ns-1
+        p = gencost[i, IDX.cost.COST:IDX.cost.COST + 2 * ns - 1:2] / baseMVA
+        c = gencost[i, IDX.cost.COST + 1:IDX.cost.COST + 2 * ns:2]
         m = np.diff(c) / np.diff(p)  # slopes for Pg (or Qg)
         if np.any(np.diff(p) == 0):
             print('makeAy: bad x axis data in row ##i of gencost matrix' % i)
@@ -731,7 +731,7 @@ def makeAy(baseMVA, ng, gencost, pgbas, qgbas, ybas):
     k = 0
     j = 0
     for i in iycost:
-        ns = gencost[i, pidx.cost['NCOST']].astype(int)
+        ns = gencost[i, IDX.cost.NCOST].astype(int)
         # FIXME: Bug in SciPy 0.7.2 prevents setting with a sequence
 #        Ay[k:k + ns - 1, ybas + j - 1] = -ones(ns - 1)
         for kk in range(k, k + ns - 1):

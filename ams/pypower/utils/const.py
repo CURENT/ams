@@ -2,9 +2,10 @@
 Defines constants used in PYPOWER case.
 """
 
-from collections import OrderedDict
+from collections import OrderedDict  # NOQA
 
-gen = OrderedDict([
+
+gen_src = OrderedDict([
     ('GEN_BUS', 0),     # bus number
     ('PG', 1),          # Pg, real power output (MW)
     ('QG', 2),          # Qg, reactive power output (MVAr)
@@ -26,7 +27,6 @@ gen = OrderedDict([
     ('RAMP_30', 18),    # ramp rate for 30 minute reserves (MW)
     ('RAMP_Q', 19),     # ramp rate for reactive power (2 sec timescale) (MVAr/min)
     ('APF', 20),        # area participation factor
-
     # -----  OPF Data  -----
     # NOTE: included in opf solution, not necessarily in input
     # NOTE: assume objective function has units, u
@@ -36,7 +36,7 @@ gen = OrderedDict([
     ('MU_QMIN', 24),       # Kuhn-Tucker multiplier on lower Qg limit (u/MVAr)
 ])
 
-dcline = OrderedDict([
+dcline_src = OrderedDict([
     ('F_BUS', 0),     # f, "from" bus number
     ('T_BUS', 1),     # t,  "to"  bus number
     ('BR_STATUS', 2),  # initial branch status, 1 - in service, 0 - out of service
@@ -62,7 +62,7 @@ dcline = OrderedDict([
     ('MU_QMAXT', 22),  # Kuhn-Tucker multiplier on upper Q limit at  "to"  bus (u/MVAr)
 ])
 
-cost = OrderedDict([
+cost_src = OrderedDict([
     ('PW_LINEAR', 1),   # cost model, 1 - piecewise linear, 2 - polynomial
     ('POLYNOMIAL', 2),  # cost model, 1 - piecewise linear, 2 - polynomial
     ('MODEL', 0),       # cost model, 1 - piecewise linear, 2 - polynomial
@@ -72,7 +72,7 @@ cost = OrderedDict([
     ('COST', 4),        # cost coefficients, see below
 ])
 
-bus = OrderedDict([
+bus_src = OrderedDict([
     # --- bus types ---
     ('PQ', 1),          # PQ bus
     ('PV', 2),          # PV bus
@@ -100,8 +100,7 @@ bus = OrderedDict([
     ('MU_VMIN', 16),    # Kuhn-Tucker multiplier on lower voltage limit (u/p.u.)
 ])
 
-branch = OrderedDict([
-    # --- indices ---
+branch_src = OrderedDict([
     ('F_BUS', 0),       # f, from bus number
     ('T_BUS', 1),       # t, to bus number
     ('BR_R', 2),        # r, resistance (p.u.)
@@ -128,8 +127,34 @@ branch = OrderedDict([
     ('MU_ANGMAX', 20),  # Kuhn-Tucker multiplier on upper angle difference limit (u/degree)
 ])
 
-area = OrderedDict([
-    # --- indices ---
+area_src = OrderedDict([
     ('AREA_I', 0),    # area number
     ('PRICE_REF_BUS', 1),    # price reference bus for this area
 ])
+
+
+class Consts:
+    """
+    Base class for constants collection.
+    """
+
+    def __init__(self, source):
+        """
+        Parameters
+        ----------
+        source : OrderedDict
+            Dictionary of constants.
+        """
+        self.init(source)
+
+    def init(self, source):
+        for key, value in source.items():
+            setattr(self, key, value)
+
+
+gen = Consts(gen_src)
+dcline = Consts(dcline_src)
+cost = Consts(cost_src)
+bus = Consts(bus_src)
+branch = Consts(branch_src)
+area = Consts(area_src)

@@ -17,7 +17,7 @@ from andes.shared import deg2rad, rad2deg  # NOQA
 
 from ams.pypower.core import ppoption  # NOQA
 import ams.pypower.utils as putils  # NOQA
-import ams.pypower.utils.constants as pidx  # NOQA
+import ams.pypower.utils.const as IDX  # NOQA
 
 from ams.pypower.make import (makeB, makeBdc, makeSbus, makeYbus, dSbus_dV)
 
@@ -61,10 +61,10 @@ def runpf(casedata, ppopt):
     -----
     If the ENFORCE_Q_LIMS option is set to True (default is False), then if any
     generator reactive power limit is violated after running the AC power flow,
-    the corresponding bus is converted to a pidx.bus['PQ'] bus, with Qg at the limit, and
+    the corresponding bus is converted to a IDX.bus.PQ bus, with Qg at the limit, and
     the case is re-run. The voltage magnitude at the bus will deviate from the
     specified value in order to satisfy the reactive power limit. If the reference
-    bus is converted to pidx.bus['PQ'], the first remaining pidx.bus['PV'] bus will be used as the slack
+    bus is converted to IDX.bus.PQ, the first remaining IDX.bus.PV bus will be used as the slack
     bus for the next iteration. This may result in the real power output at this
     generator being slightly off from the specified values.
 
@@ -83,10 +83,10 @@ def runpf(casedata, ppopt):
     ppc = putils.loadcase(casedata)
 
     # add zero columns to branch for flows if needed
-    if ppc["branch"].shape[1] < pidx.branch['QT']:
+    if ppc["branch"].shape[1] < IDX.branch.QT:
         ppc["branch"] = np.c_[ppc["branch"],
                               np.zeros((ppc["branch"].shape[0],
-                                        pidx.branch['QT'] - ppc["branch"].shape[1] + 1))]
+                                        IDX.branch.QT - ppc["branch"].shape[1] + 1))]
 
     # convert to internal indexing
     ppc = putils.ie.ext2int(ppc)
@@ -97,32 +97,32 @@ def runpf(casedata, ppopt):
     ref, pv, pq = putils.bustypes(bus, gen)
 
     # generator info
-    on = find(gen[:, pidx.gen['GEN_STATUS']] > 0)  # which generators are on?
-    gbus = gen[on, pidx.gen['GEN_BUS']].astype(int)  # what buses are they at?
+    on = find(gen[:, IDX.gen.GEN_STATUS] > 0)  # which generators are on?
+    gbus = gen[on, IDX.gen.GEN_BUS].astype(int)  # what buses are they at?
 
     # -----  run the power flow  -----
     t0 = time()
 
     if ppopt["PF_DC"]:                               # DC formulation
         # initial state
-        Va0 = bus[:, pidx.bus['VA']] * deg2rad
+        Va0 = bus[:, IDX.bus.VA] * deg2rad
 
         # build B matrices and phase shift injections
         B, Bf, Pbusinj, Pfinj, _ = makeBdc(baseMVA, bus, branch)
 
         # compute complex bus power injections [generation - load]
         # adjusted for phase shifters and real shunts
-        Pbus = makeSbus(baseMVA, bus, gen).real - Pbusinj - bus[:, pidx.bus['GS']] / baseMVA
+        Pbus = makeSbus(baseMVA, bus, gen).real - Pbusinj - bus[:, IDX.bus.GS] / baseMVA
 
         # "run" the power flow
         Va = dcpf(B, Pbus, Va0, ref, pv, pq)
 
         # update data matrices with solution
-        branch[:, [pidx.branch['QF'], pidx.branch['QT']]] = np.zeros((branch.shape[0], 2))
-        branch[:, pidx.branch['PF']] = (Bf * Va + Pfinj) * baseMVA
-        branch[:, pidx.branch['PT']] = -branch[:, pidx.branch['PF']]
-        bus[:, pidx.bus['VM']] = np.ones(bus.shape[0])
-        bus[:, pidx.bus['VA']] = Va * rad2deg
+        branch[:, [IDX.branch.QF, IDX.branch.QT]] = np.zeros((branch.shape[0], 2))
+        branch[:, IDX.branch.PF] = (Bf * Va + Pfinj) * baseMVA
+        branch[:, IDX.branch.PT] = -branch[:, IDX.branch.PF]
+        bus[:, IDX.bus.VM] = np.ones(bus.shape[0])
+        bus[:, IDX.bus.VA] = Va * rad2deg
         # update Pg for slack generator (1st gen at ref bus)
         # (note: other gens at ref bus are accounted for in Pbus)
         # Pg = Pinj + Pload + Gs
@@ -131,7 +131,7 @@ def runpf(casedata, ppopt):
         for k in range(len(ref)):
             temp = find(gbus == ref[k])
             refgen[k] = on[temp[0]]
-        gen[refgen, pidx.gen['PG']] = gen[refgen, pidx.gen['PG']] + (B[ref, :] * Va - Pbus[ref]) * baseMVA
+        gen[refgen, IDX.gen.PG] = gen[refgen, IDX.gen.PG] + (B[ref, :] * Va - Pbus[ref]) * baseMVA
 
         success = 1
     else:  # AC formulation
@@ -147,15 +147,15 @@ def runpf(casedata, ppopt):
 
         # initial state
         # V0    = np.ones(bus.shape[0])            ## flat start
-        V0 = bus[:, pidx.bus['VM']] * np.exp(1j * deg2rad * bus[:, pidx.bus['VA']])
+        V0 = bus[:, IDX.bus.VM] * np.exp(1j * deg2rad * bus[:, IDX.bus.VA])
         vcb = np.ones(V0.shape)    # create mask of voltage-controlled buses
-        vcb[pq] = 0     # exclude pidx.bus['PQ'] buses
+        vcb[pq] = 0     # exclude IDX.bus.PQ buses
         k = find(vcb[gbus])     # in-service gens at v-c buses
-        V0[gbus[k]] = gen[on[k], pidx.gen['VG']] / abs(V0[gbus[k]]) * V0[gbus[k]]
+        V0[gbus[k]] = gen[on[k], IDX.gen.VG] / abs(V0[gbus[k]]) * V0[gbus[k]]
 
         if ppopt["ENFORCE_Q_LIMS"]:
             ref0 = ref  # save index and angle of
-            Varef0 = bus[ref0, pidx.bus['VA']]  # original reference bus(es)
+            Varef0 = bus[ref0, IDX.bus.VA]  # original reference bus(es)
             limited = []  # list of indices of gens @ Q lims
             fixedQg = np.zeros(gen.shape[0])  # Qg of gens at Q limits
 
@@ -182,9 +182,9 @@ def runpf(casedata, ppopt):
 
             if ppopt["ENFORCE_Q_LIMS"]:  # enforce generator Q limits
                 # find gens with violated Q constraints
-                gen_status = gen[:, pidx.gen['GEN_STATUS']] > 0
-                qg_max_lim = gen[:, pidx.gen['QG']] > gen[:, pidx.gen['QMAX']] + ppopt["OPF_VIOLATION"]
-                qg_min_lim = gen[:, pidx.gen['QG']] < gen[:, pidx.gen['QMIN']] - ppopt["OPF_VIOLATION"]
+                gen_status = gen[:, IDX.gen.GEN_STATUS] > 0
+                qg_max_lim = gen[:, IDX.gen.QG] > gen[:, IDX.gen.QMAX] + ppopt["OPF_VIOLATION"]
+                qg_min_lim = gen[:, IDX.gen.QG] < gen[:, IDX.gen.QMIN] - ppopt["OPF_VIOLATION"]
 
                 mx = find(gen_status & qg_max_lim)
                 mn = find(gen_status & qg_min_lim)
@@ -193,8 +193,8 @@ def runpf(casedata, ppopt):
                     # first check for INFEASIBILITY (all remaining gens violating)
                     infeas = np.union1d(mx, mn)
                     remaining = find(gen_status &
-                                     (bus[gen[:, pidx.gen['GEN_BUS']], pidx.bus['BUS_TYPE']] == pidx.bus['PV'] |
-                                      bus[gen[:, pidx.gen['GEN_BUS']], pidx.bus['BUS_TYPE']] == pidx.bus['REF']))
+                                     (bus[gen[:, IDX.gen.GEN_BUS], IDX.bus.BUS_TYPE] == IDX.bus.PV |
+                                      bus[gen[:, IDX.gen.GEN_BUS], IDX.bus.BUS_TYPE] == IDX.bus.REF))
                     if len(infeas) == len(remaining) or all(infeas == remaining):
                         logger.warning(
                             'All %d remaining gens exceed to their Q limits: INFEASIBLE PROBLEM\n' % len(infeas))
@@ -204,8 +204,8 @@ def runpf(casedata, ppopt):
 
                     # one at a time?
                     if ppopt["ENFORCE_Q_LIMS"] == 2:  # fix largest violation, ignore the rest
-                        k = np.argmax(np.r_[gen[mx, pidx.gen['QG']] - gen[mx, pidx.gen['QMAX']],
-                                      gen[mn, pidx.gen['QMIN']] - gen[mn, pidx.gen['QG']]])
+                        k = np.argmax(np.r_[gen[mx, IDX.gen.QG] - gen[mx, IDX.gen.QMAX],
+                                      gen[mn, IDX.gen.QMIN] - gen[mn, IDX.gen.QG]])
                         if k > len(mx):
                             mn = mn[k - len(mx)]
                             mx = []
@@ -220,37 +220,37 @@ def runpf(casedata, ppopt):
                                      for i in mn) + ' at lower Q limit, converting to PQ bus')
 
                     # save corresponding limit values
-                    fixedQg[mx] = gen[mx, pidx.gen['QMAX']]
-                    fixedQg[mn] = gen[mn, pidx.gen['QMIN']]
+                    fixedQg[mx] = gen[mx, IDX.gen.QMAX]
+                    fixedQg[mn] = gen[mn, IDX.gen.QMIN]
                     mx = np.r_[mx, mn].astype(int)
 
-                    # convert to pidx.bus['PQ'] bus
-                    # Convert generators to pidx.bus['PQ'] bus
+                    # convert to IDX.bus.PQ bus
+                    # Convert generators to IDX.bus.PQ bus
                     for i in range(len(mx)):
                         idx = mx[i]
-                        gen[idx, pidx.gen['QG']] = fixedQg[idx]  # Set Qg to binding
-                        gen[idx, pidx.gen['GEN_STATUS']] = 0  # Temporarily turn off generator
-                        bi = int(gen[idx, pidx.gen['GEN_BUS']])  # Get the bus index
-                        bus[bi, [pidx.bus['PD'], pidx.bus['QD']]] -= gen[idx,
-                                                                         [pidx.gen['PG'], pidx.gen['QG']]]  # Adjust load
+                        gen[idx, IDX.gen.QG] = fixedQg[idx]  # Set Qg to binding
+                        gen[idx, IDX.gen.GEN_STATUS] = 0  # Temporarily turn off generator
+                        bi = int(gen[idx, IDX.gen.GEN_BUS])  # Get the bus index
+                        bus[bi, [IDX.bus.PD, IDX.bus.QD]] -= gen[idx,
+                                                                         [IDX.gen.PG, IDX.gen.QG]]  # Adjust load
 
-                    if len(ref) > 1 and any(bus[gen[mx, pidx.gen['GEN_BUS']], pidx.bus['BUS_TYPE']] == pidx.bus['REF']):
+                    if len(ref) > 1 and any(bus[gen[mx, IDX.gen.GEN_BUS], IDX.bus.BUS_TYPE] == IDX.bus.REF):
                         raise ValueError("PYPOWER cannot enforce Q limits for systems with multiple slack buses. "
                                          "Please ensure there is only one slack bus in the system.")
 
-                    # & set bus type to pidx.bus['PQ']
-                    bus[gen[mx, pidx.gen['GEN_BUS']].astype(int), pidx.bus['BUS_TYPE']] = pidx.bus['PQ']
+                    # & set bus type to IDX.bus.PQ
+                    bus[gen[mx, IDX.gen.GEN_BUS].astype(int), IDX.bus.BUS_TYPE] = IDX.bus.PQ
 
                     # update bus index lists of each type of bus
                     ref_temp = ref
                     ref, pv, pq = putils.bustypes(bus, gen)
 
-                    # previous line can modify lists to select new pidx.bus['REF'] bus
+                    # previous line can modify lists to select new IDX.bus.REF bus
                     # if there was none, so we should update bus with these
                     # just to keep them consistent
                     if ref != ref_temp:
-                        bus[ref, pidx.bus['BUS_TYPE']] = pidx.bus['REF']
-                        bus[pv, pidx.bus['BUS_TYPE']] = pv
+                        bus[ref, IDX.bus.BUS_TYPE] = IDX.bus.REF
+                        bus[pv, IDX.bus.BUS_TYPE] = pv
                         logger.debug('Bus %d is new slack bus\n' % ref)
 
                     limited = np.r_[limited, mx].astype(int)
@@ -263,15 +263,15 @@ def runpf(casedata, ppopt):
                 # Restore injections from limited gens [those at Q limits]
                 for i in range(len(limited)):
                     idx = limited[i]
-                    gen[idx, pidx.gen['QG']] = fixedQg[idx]  # Restore Qg value
-                    bi = int(gen[idx, pidx.gen['GEN_BUS']])  # Get the bus index
-                    bus[bi, [pidx.bus['PD'], pidx.bus['QD']]] += gen[idx,
-                                                                     [pidx.gen['PG'], pidx.gen['QG']]]  # Re-adjust load
-                    gen[idx, pidx.gen['GEN_STATUS']] = 1  # Turn generator back on
+                    gen[idx, IDX.gen.QG] = fixedQg[idx]  # Restore Qg value
+                    bi = int(gen[idx, IDX.gen.GEN_BUS])  # Get the bus index
+                    bus[bi, [IDX.bus.PD, IDX.bus.QD]] += gen[idx,
+                                                                     [IDX.gen.PG, IDX.gen.QG]]  # Re-adjust load
+                    gen[idx, IDX.gen.GEN_STATUS] = 1  # Turn generator back on
 
                 if ref != ref0:
                     # adjust voltage angles to make original ref bus correct
-                    bus[:, pidx.bus['VA']] = bus[:, pidx.bus['VA']] - bus[ref0, pidx.bus['VA']] + Varef0
+                    bus[:, IDX.bus.VA] = bus[:, IDX.bus.VA] - bus[ref0, IDX.bus.VA] + Varef0
 
     ppc["et"] = time() - t0
     ppc["success"] = success
@@ -283,16 +283,16 @@ def runpf(casedata, ppopt):
 
     # zero out result fields of out-of-service gens & branches
     if len(results["order"]["gen"]["status"]["off"]) > 0:
-        results["gen"][np.ix_(results["order"]["gen"]["status"]["off"], [pidx.gen['PG'], pidx.gen['QG']])] = 0
+        results["gen"][np.ix_(results["order"]["gen"]["status"]["off"], [IDX.gen.PG, IDX.gen.QG])] = 0
 
     if len(results["order"]["branch"]["status"]["off"]) > 0:
         results["branch"][
             np.ix_(
                 results["order"]["branch"]["status"]["off"],
-                [pidx.branch['PF'],
-                 pidx.branch['QF'],
-                 pidx.branch['PT'],
-                 pidx.branch['QT']])] = 0
+                [IDX.branch.PF,
+                 IDX.branch.QF,
+                 IDX.branch.PT,
+                 IDX.branch.QT])] = 0
 
     return results, success, sstats
 
@@ -318,9 +318,9 @@ def dcpf(B, Pbus, Va0, ref, pv, pq):
     ref : int
         Index of the reference bus.
     pv : ndarray
-        List of bus indices for pidx.bus['PV'] buses.
+        List of bus indices for IDX.bus.PV buses.
     pq : ndarray
-        List of bus indices for pidx.bus['PQ'] buses.
+        List of bus indices for IDX.bus.PQ buses.
 
     Returns
     -------
@@ -521,20 +521,20 @@ def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, pv, pq):
     branch = branch0
 
     # ----- update bus voltages -----
-    bus[:, pidx.bus['VM']] = abs(V)
-    bus[:, pidx.bus['VA']] = np.angle(V) * rad2deg
+    bus[:, IDX.bus.VM] = abs(V)
+    bus[:, IDX.bus.VA] = np.angle(V) * rad2deg
 
     # ----- update Qg for all gens and Pg for slack bus(es) -----
     # generator info
-    on = find(gen[:, pidx.gen['GEN_STATUS']] > 0)  # which generators are on?
-    gbus = gen[on, pidx.gen['GEN_BUS']].astype(int)  # what buses are they at?
+    on = find(gen[:, IDX.gen.GEN_STATUS] > 0)  # which generators are on?
+    gbus = gen[on, IDX.gen.GEN_BUS].astype(int)  # what buses are they at?
 
     # compute total injected bus powers
     Sbus = V[gbus] * np.conj(Ybus[gbus, :] * V)
 
     # update Qg for all generators
-    gen[:, pidx.gen['QG']] = np.zeros(gen.shape[0])  # zero out all Qg
-    gen[on, pidx.gen['QG']] = Sbus.imag * baseMVA + bus[gbus, pidx.bus['QD']]  # inj Q + local Qd
+    gen[:, IDX.gen.QG] = np.zeros(gen.shape[0])  # zero out all Qg
+    gen[on, IDX.gen.QG] = Sbus.imag * baseMVA + bus[gbus, IDX.bus.QD]  # inj Q + local Qd
     # ... at this point any buses with more than one generator will have
     # the total Q dispatch for the bus assigned to each generator. This
     # must be split between them. We do it first equally, then in proportion
@@ -549,46 +549,46 @@ def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, pv, pq):
         # divide Qg by number of generators at the bus to distribute equally
         ngg = Cg * Cg.sum(0).T  # ngon x 1, number of gens at this gen's bus
         ngg = np.asarray(ngg).flatten()  # 1D array
-        gen[on, pidx.gen['QG']] = gen[on, pidx.gen['QG']] / ngg
+        gen[on, IDX.gen.QG] = gen[on, IDX.gen.QG] / ngg
 
         # divide proportionally
-        Cmin = c_sparse((gen[on, pidx.gen['QMIN']], (range(ngon), gbus)), (ngon, nb))
-        Cmax = c_sparse((gen[on, pidx.gen['QMAX']], (range(ngon), gbus)), (ngon, nb))
-        Qg_tot = Cg.T * gen[on, pidx.gen['QG']]  # nb x 1 vector of total Qg at each bus
+        Cmin = c_sparse((gen[on, IDX.gen.QMIN], (range(ngon), gbus)), (ngon, nb))
+        Cmax = c_sparse((gen[on, IDX.gen.QMAX], (range(ngon), gbus)), (ngon, nb))
+        Qg_tot = Cg.T * gen[on, IDX.gen.QG]  # nb x 1 vector of total Qg at each bus
         Qg_min = Cmin.sum(0).T  # nb x 1 vector of min total Qg at each bus
         Qg_max = Cmax.sum(0).T  # nb x 1 vector of max total Qg at each bus
         Qg_min = np.asarray(Qg_min).flatten()  # 1D array
         Qg_max = np.asarray(Qg_max).flatten()  # 1D array
         # gens at buses with Qg range = 0
         ig = find(Cg * Qg_min == Cg * Qg_max)
-        Qg_save = gen[on[ig], pidx.gen['QG']]
-        gen[on, pidx.gen['QG']] = gen[on, pidx.gen['QMIN']] + \
+        Qg_save = gen[on[ig], IDX.gen.QG]
+        gen[on, IDX.gen.QG] = gen[on, IDX.gen.QMIN] + \
             (Cg * ((Qg_tot - Qg_min) / (Qg_max - Qg_min + EPS))) * \
-            (gen[on, pidx.gen['QMAX']] - gen[on, pidx.gen['QMIN']])  # ^ avoid div by 0
-        gen[on[ig], pidx.gen['QG']] = Qg_save  # (terms are mult by 0 anyway)
+            (gen[on, IDX.gen.QMAX] - gen[on, IDX.gen.QMIN])  # ^ avoid div by 0
+        gen[on[ig], IDX.gen.QG] = Qg_save  # (terms are mult by 0 anyway)
 
     # update Pg for slack bus(es)
     # inj P + local Pd
     for k in range(len(ref)):
         refgen = find(gbus == ref[k])  # which is(are) the reference gen(s)?
-        gen[on[refgen[0]], pidx.gen['PG']] = \
-            Sbus[refgen[0]].real * baseMVA + bus[ref[k], pidx.bus['PD']]
+        gen[on[refgen[0]], IDX.gen.PG] = \
+            Sbus[refgen[0]].real * baseMVA + bus[ref[k], IDX.bus.PD]
         if len(refgen) > 1:  # more than one generator at this ref bus
             # subtract off what is generated by other gens at this bus
-            gen[on[refgen[0]], pidx.gen['PG']] = \
-                gen[on[refgen[0]], pidx.gen['PG']] - sum(gen[on[refgen[1:len(refgen)]], pidx.gen['PG']])
+            gen[on[refgen[0]], IDX.gen.PG] = \
+                gen[on[refgen[0]], IDX.gen.PG] - sum(gen[on[refgen[1:len(refgen)]], IDX.gen.PG])
 
     # ----- update/compute branch power flows -----
-    out = find(branch[:, pidx.branch['BR_STATUS']] == 0)  # out-of-service branches
-    br = find(branch[:, pidx.branch['BR_STATUS']]).astype(int)  # in-service branches
+    out = find(branch[:, IDX.branch.BR_STATUS] == 0)  # out-of-service branches
+    br = find(branch[:, IDX.branch.BR_STATUS]).astype(int)  # in-service branches
 
     # complex power at "from" bus
-    Sf = V[branch[br, pidx.branch['F_BUS']].astype(int)] * np.conj(Yf[br, :] * V) * baseMVA
+    Sf = V[branch[br, IDX.branch.F_BUS].astype(int)] * np.conj(Yf[br, :] * V) * baseMVA
     # complex power injected at "to" bus
-    St = V[branch[br, pidx.branch['T_BUS']].astype(int)] * np.conj(Yt[br, :] * V) * baseMVA
-    branch[np.ix_(br, [pidx.branch['PF'], pidx.branch['QF'], pidx.branch['PT'], pidx.branch['QT']])
+    St = V[branch[br, IDX.branch.T_BUS].astype(int)] * np.conj(Yt[br, :] * V) * baseMVA
+    branch[np.ix_(br, [IDX.branch.PF, IDX.branch.QF, IDX.branch.PT, IDX.branch.QT])
            ] = np.c_[Sf.real, Sf.imag, St.real, St.imag]
-    branch[np.ix_(out, [pidx.branch['PF'], pidx.branch['QF'], pidx.branch['PT'], pidx.branch['QT']])
+    branch[np.ix_(out, [IDX.branch.PF, IDX.branch.QF, IDX.branch.PT, IDX.branch.QT])
            ] = np.zeros((len(out), 4))
 
     return bus, gen, branch

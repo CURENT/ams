@@ -3,7 +3,7 @@ Module for build matrices.
 """
 import numpy as np  # NOQA
 from random import random  # NOQA
-from ams.pypower.make.makemtx import (isload, hasPQcap,
+from ams.pypower.make.matrices import (isload, hasPQcap,
                                       makeAang, makeApq, makeAvl, makeAy,
                                       makeB, makeBdc,
                                       makeLODF, makePTDF,

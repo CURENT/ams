@@ -24,7 +24,7 @@ from andes.shared import deg2rad  # NOQA
 from andes.utils.misc import elapsed  # NOQA
 
 from ams.pypower.core import ppoption, pipsopf_solver, ipoptopf_solver  # NOQA
-from ams.pypower.utils import isload, loadcase, constants as pidx  # NOQA
+from ams.pypower.utils import isload, loadcase, const as IDX  # NOQA
 import ams.pypower.utils as putil  # NOQA
 from ams.pypower.make import (makeYbus, fairmax,
                               makeAvl, makeApq, makeAang, makeAy,
@@ -278,14 +278,14 @@ def fopf(*args):
     nb = np.shape(ppc['bus'])[0]  # number of buses
     nl = np.shape(ppc['branch'])[0]  # number of branches
     ng = np.shape(ppc['gen'])[0]  # number of dispatchable injections
-    if np.shape(ppc['bus'])[1] < pidx.bus['MU_VMIN'] + 1:
-        ppc['bus'] = np.c_[ppc['bus'], np.zeros((nb, pidx.bus['MU_VMIN'] + 1 - np.shape(ppc['bus'])[1]))]
+    if np.shape(ppc['bus'])[1] < IDX.bus.MU_VMIN + 1:
+        ppc['bus'] = np.c_[ppc['bus'], np.zeros((nb, IDX.bus.MU_VMIN + 1 - np.shape(ppc['bus'])[1]))]
 
-    if np.shape(ppc['gen'])[1] < pidx.gen['MU_QMIN'] + 1:
-        ppc['gen'] = np.c_[ppc['gen'], np.zeros((ng, pidx.gen['MU_QMIN'] + 1 - np.shape(ppc['gen'])[1]))]
+    if np.shape(ppc['gen'])[1] < IDX.gen.MU_QMIN + 1:
+        ppc['gen'] = np.c_[ppc['gen'], np.zeros((ng, IDX.gen.MU_QMIN + 1 - np.shape(ppc['gen'])[1]))]
 
-    if np.shape(ppc['branch'])[1] < pidx.branch['MU_ANGMAX'] + 1:
-        ppc['branch'] = np.c_[ppc['branch'], np.zeros((nl, pidx.branch['MU_ANGMAX'] + 1 - np.shape(ppc['branch'])[1]))]
+    if np.shape(ppc['branch'])[1] < IDX.branch.MU_ANGMAX + 1:
+        ppc['branch'] = np.c_[ppc['branch'], np.zeros((nl, IDX.branch.MU_ANGMAX + 1 - np.shape(ppc['branch'])[1]))]
 
     # -----  convert to internal numbering, remove out-of-service stuff  -----
     ppc = putil.ie.ext2int(ppc)
@@ -304,23 +304,23 @@ def fopf(*args):
         results['gen'][
             np.ix_(
                 results['order']['gen']['status']['off'],
-                [pidx.gen['PG'],
-                 pidx.gen['QG'],
-                 pidx.gen['MU_PMAX'],
-                 pidx.gen['MU_PMIN']])] = 0
+                [IDX.gen.PG,
+                 IDX.gen.QG,
+                 IDX.gen.MU_PMAX,
+                 IDX.gen.MU_PMIN])] = 0
 
     if len(results['order']['branch']['status']['off']) > 0:
         results['branch'][
             np.ix_(
                 results['order']['branch']['status']['off'],
-                [pidx.branch['PF'],
-                 pidx.branch['QF'],
-                 pidx.branch['PT'],
-                 pidx.branch['QT'],
-                 pidx.branch['MU_SF'],
-                 pidx.branch['MU_ST'],
-                 pidx.branch['MU_ANGMIN'],
-                 pidx.branch['MU_ANGMAX']])] = 0
+                [IDX.branch.PF,
+                 IDX.branch.QF,
+                 IDX.branch.PT,
+                 IDX.branch.QT,
+                 IDX.branch.MU_SF,
+                 IDX.branch.MU_ST,
+                 IDX.branch.MU_ANGMIN,
+                 IDX.branch.MU_ANGMAX])] = 0
 
     # -----  finish preparing output  -----
     _, results['et'] = elapsed(t0)
@@ -361,26 +361,26 @@ def opf_setup(ppc, ppopt):
         nw = 0
 
     # convert single-block piecewise-linear costs into linear polynomial cost
-    pwl1 = find((ppc['gencost'][:, pidx.cost['MODEL']] == pidx.cost['PW_LINEAR'])
-                & (ppc['gencost'][:, pidx.cost['NCOST']] == 2))
+    pwl1 = find((ppc['gencost'][:, IDX.cost.MODEL] == IDX.cost.PW_LINEAR)
+                & (ppc['gencost'][:, IDX.cost.NCOST] == 2))
     # p1 = np.array([])
     if len(pwl1) > 0:
-        x0 = ppc['gencost'][pwl1, pidx.cost['COST']]
-        y0 = ppc['gencost'][pwl1, pidx.cost['COST'] + 1]
-        x1 = ppc['gencost'][pwl1, pidx.cost['COST'] + 2]
-        y1 = ppc['gencost'][pwl1, pidx.cost['COST'] + 3]
+        x0 = ppc['gencost'][pwl1, IDX.cost.COST]
+        y0 = ppc['gencost'][pwl1, IDX.cost.COST + 1]
+        x1 = ppc['gencost'][pwl1, IDX.cost.COST + 2]
+        y1 = ppc['gencost'][pwl1, IDX.cost.COST + 3]
         m = (y1 - y0) / (x1 - x0)
         b = y0 - m * x0
-        ppc['gencost'][pwl1, pidx.cost['MODEL']] = pidx.cost['POLYNOMIAL']
-        ppc['gencost'][pwl1, pidx.cost['NCOST']] = 2
-        ppc['gencost'][pwl1, pidx.cost['COST']:pidx.cost['COST'] + 2] = np.r_[m, b]
+        ppc['gencost'][pwl1, IDX.cost.MODEL] = IDX.cost.POLYNOMIAL
+        ppc['gencost'][pwl1, IDX.cost.NCOST] = 2
+        ppc['gencost'][pwl1, IDX.cost.COST:IDX.cost.COST + 2] = np.r_[m, b]
 
     # create (read-only) copies of individual fields for convenience
     baseMVA, bus, gen, branch, gencost, _, lbu, ubu, ppopt, \
         _, fparm, H, Cw, z0, zl, zu, userfcn, _ = opf_args(ppc, ppopt)
 
     # warn if there is more than one reference bus
-    refs = find(bus[:, pidx.bus['BUS_TYPE']] == pidx.bus['REF'])
+    refs = find(bus[:, IDX.bus.BUS_TYPE] == IDX.bus.REF)
     if len(refs) > 1:
         errstr = 'opf_setup: Warning: Multiple reference buses.\n' + \
             '           For a system with islands, a reference bus in each island\n' + \
@@ -389,16 +389,16 @@ def opf_setup(ppc, ppopt):
         logger.info(errstr)
 
     # set up initial variables and bounds
-    gbus = gen[:, pidx.gen['GEN_BUS']].astype(int)
-    Va = bus[:, pidx.bus['VA']] * deg2rad
-    Vm = bus[:, pidx.bus['VM']].copy()
-    Vm[gbus] = gen[:, pidx.gen['VG']]  # buses with gens, init Vm from gen data
-    Pg = gen[:, pidx.gen['PG']] / baseMVA
-    Qg = gen[:, pidx.gen['QG']] / baseMVA
-    Pmin = gen[:, pidx.gen['PMIN']] / baseMVA
-    Pmax = gen[:, pidx.gen['PMAX']] / baseMVA
-    Qmin = gen[:, pidx.gen['QMIN']] / baseMVA
-    Qmax = gen[:, pidx.gen['QMAX']] / baseMVA
+    gbus = gen[:, IDX.gen.GEN_BUS].astype(int)
+    Va = bus[:, IDX.bus.VA] * deg2rad
+    Vm = bus[:, IDX.bus.VM].copy()
+    Vm[gbus] = gen[:, IDX.gen.VG]  # buses with gens, init Vm from gen data
+    Pg = gen[:, IDX.gen.PG] / baseMVA
+    Qg = gen[:, IDX.gen.QG] / baseMVA
+    Pmin = gen[:, IDX.gen.PMIN] / baseMVA
+    Pmax = gen[:, IDX.gen.PMAX] / baseMVA
+    Qmin = gen[:, IDX.gen.QMIN] / baseMVA
+    Qmax = gen[:, IDX.gen.QMAX] / baseMVA
 
     # AC model with more problem dimensions
     nv = nb  # number of voltage magnitude vars
@@ -429,12 +429,12 @@ def opf_setup(ppc, ppopt):
         Ay = None
         by = np.array([])
     else:
-        ipwl = find(gencost[:, pidx.cost['MODEL']] == pidx.cost['PW_LINEAR'])  # piece-wise linear costs
+        ipwl = find(gencost[:, IDX.cost.MODEL] == IDX.cost.PW_LINEAR)  # piece-wise linear costs
         ny = ipwl.shape[0]  # number of piece-wise linear cost vars
         Ay, by = makeAy(baseMVA, ng, gencost, 1, q1, 1+ng+nq)
 
-    if np.any((gencost[:, pidx.cost['MODEL']] != pidx.cost['POLYNOMIAL']) &
-              (gencost[:, pidx.cost['MODEL']] != pidx.cost['PW_LINEAR'])):
+    if np.any((gencost[:, IDX.cost.MODEL] != IDX.cost.POLYNOMIAL) &
+              (gencost[:, IDX.cost.MODEL] != IDX.cost.PW_LINEAR)):
         logger.debug('opf_setup: some generator cost rows have invalid MODEL value\n')
 
     # more problem dimensions
@@ -457,7 +457,7 @@ def opf_setup(ppc, ppopt):
     om.userdata('Apqdata', Apqdata)
     om.userdata('iang', iang)
     om.add_vars('Va', nb, Va, Val, Vau)
-    om.add_vars('Vm', nb, Vm, bus[:, pidx.bus['VMIN']], bus[:, pidx.bus['VMAX']])
+    om.add_vars('Vm', nb, Vm, bus[:, IDX.bus.VMIN], bus[:, IDX.bus.VMAX])
     om.add_vars('Pg', ng, Pg, Pmin, Pmax)
     om.add_vars('Qg', ng, Qg, Qmin, Qmax)
     om.add_constraints('Pmis', nb, 'nonlinear')
@@ -1266,222 +1266,9 @@ class opf_model(object):
                 return np.array([])
 
 
-def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
-    """Evaluates Hessian of Lagrangian for AC OPF.
-
-    Hessian evaluation function for AC optimal power flow, suitable
-    for use with L{pips}.
-
-    Examples::
-        Lxx = opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt)
-        Lxx = opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il)
-        Lxx = opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il, cost_mult)
-
-    @param x: optimization vector
-    @param lmbda: C{eqnonlin} - Lagrange multipliers on power balance
-    equations. C{ineqnonlin} - Kuhn-Tucker multipliers on constrained
-    branch flows.
-    @param om: OPF model object
-    @param Ybus: bus admittance matrix
-    @param Yf: admittance matrix for "from" end of constrained branches
-    @param Yt: admittance matrix for "to" end of constrained branches
-    @param ppopt: PYPOWER options vector
-    @param il: (optional) vector of branch indices corresponding to
-    branches with flow limits (all others are assumed to be unconstrained).
-    The default is C{range(nl)} (all branches). C{Yf} and C{Yt} contain
-    only the rows corresponding to C{il}.
-    @param cost_mult: (optional) Scale factor to be applied to the cost
-    (default = 1).
-
-    @return: Hessian of the Lagrangian.
-
-    @see: L{opf_costfcn}, L{opf_consfcn}
-
-    @author: Ray Zimmerman (PSERC Cornell)
-    @author: Carlos E. Murillo-Sanchez (PSERC Cornell & Universidad
-    Autonoma de Manizales)
-    """
-    # ----- initialize -----
-    # unpack data
-    ppc = om.get_ppc()
-    baseMVA, bus, gen, branch, gencost = \
-        ppc["baseMVA"], ppc["bus"], ppc["gen"], ppc["branch"], ppc["gencost"]
-    cp = om.get_cost_params()
-    N, Cw, H, dd, rh, kk, mm = \
-        cp["N"], cp["Cw"], cp["H"], cp["dd"], cp["rh"], cp["kk"], cp["mm"]
-    vv, _, _, _ = om.get_idx()
-
-    # unpack needed parameters
-    nb = bus.shape[0]  # number of buses
-    nl = branch.shape[0]  # number of branches
-    ng = gen.shape[0]  # number of dispatchable injections
-    nxyz = len(x)  # total number of control vars of all types
-
-    # set default constrained lines
-    if il is None:
-        il = np.arange(nl)  # all lines have limits by default
-    nl2 = len(il)  # number of constrained lines
-
-    # grab Pg & Qg
-    Pg = x[vv["i1"]["Pg"]:vv["iN"]["Pg"]]  # active generation in p.u.
-    Qg = x[vv["i1"]["Qg"]:vv["iN"]["Qg"]]  # reactive generation in p.u.
-
-    # put Pg & Qg back in gen
-    gen[:, pidx.gen['PG']] = Pg * baseMVA  # active generation in MW
-    gen[:, pidx.gen['QG']] = Qg * baseMVA  # reactive generation in MVAr
-
-    # reconstruct V
-    Va = x[vv["i1"]["Va"]:vv["iN"]["Va"]]
-    Vm = x[vv["i1"]["Vm"]:vv["iN"]["Vm"]]
-    V = Vm * np.exp(1j * Va)
-    nxtra = nxyz - 2 * nb
-    pcost = gencost[np.arange(ng), :]
-    if gencost.shape[0] > ng:
-        qcost = gencost[np.arange(ng, 2 * ng), :]
-    else:
-        qcost = np.array([])
-
-    # ----- evaluate d2f -----
-    d2f_dPg2 = np.zeros(ng)  # c_sparse((ng, 1))               ## w.r.t. p.u. Pg
-    d2f_dQg2 = np.zeros(ng)  # c_sparse((ng, 1))               ## w.r.t. p.u. Qg
-    ipolp = find(pcost[:, pidx.cost['MODEL']] == pidx.cost['POLYNOMIAL'])
-    d2f_dPg2[ipolp] = \
-        baseMVA**2 * polycost(pcost[ipolp, :], Pg[ipolp] * baseMVA, 2)
-    if np.any(qcost):  # Qg is not free
-        ipolq = find(qcost[:, pidx.cost['MODEL']] == pidx.cost['POLYNOMIAL'])
-        d2f_dQg2[ipolq] = \
-            baseMVA**2 * polycost(qcost[ipolq, :], Qg[ipolq] * baseMVA, 2)
-    i = np.r_[np.arange(vv["i1"]["Pg"], vv["iN"]["Pg"]),
-              np.arange(vv["i1"]["Qg"], vv["iN"]["Qg"])]
-#    d2f = c_sparse((vstack([d2f_dPg2, d2f_dQg2]).toarray().flatten(),
-#                  (i, i)), shape=(nxyz, nxyz))
-    d2f = c_sparse((np.r_[d2f_dPg2, d2f_dQg2], (i, i)), (nxyz, nxyz))
-
-    # generalized cost
-    if issparse(N) and N.nnz > 0:
-        nw = N.shape[0]
-        r = N * x - rh  # Nx - rhat
-        iLT = find(r < -kk)  # below dead zone
-        iEQ = find((r == 0) & (kk == 0))  # dead zone doesn't exist
-        iGT = find(r > kk)  # above dead zone
-        iND = np.r_[iLT, iEQ, iGT]  # rows that are Not in the Dead region
-        iL = find(dd == 1)  # rows using linear function
-        iQ = find(dd == 2)  # rows using quadratic function
-        LL = c_sparse((np.ones(len(iL)), (iL, iL)), (nw, nw))
-        QQ = c_sparse((np.ones(len(iQ)), (iQ, iQ)), (nw, nw))
-        kbar = c_sparse((np.r_[np.ones(len(iLT)), np.zeros(len(iEQ)), -np.ones(len(iGT))],
-                         (iND, iND)), (nw, nw)) * kk
-        rr = r + kbar  # apply non-dead zone shift
-        M = c_sparse((mm[iND], (iND, iND)), (nw, nw))  # dead zone or scale
-        diagrr = c_sparse((rr, (np.arange(nw), np.arange(nw))), (nw, nw))
-
-        # linear rows multiplied by rr(i), quadratic rows by rr(i)^2
-        w = M * (LL + QQ * diagrr) * rr
-        HwC = H * w + Cw
-        AA = N.T * M * (LL + 2 * QQ * diagrr)
-
-        d2f = d2f + AA * H * AA.T + 2 * N.T * M * QQ * \
-            c_sparse((HwC, (np.arange(nw), np.arange(nw))), (nw, nw)) * N
-    d2f = d2f * cost_mult
-
-    # ----- evaluate Hessian of power balance constraints -----
-    nlam = int(len(lmbda["eqnonlin"]) / 2)
-    lamP = lmbda["eqnonlin"][:nlam]
-    lamQ = lmbda["eqnonlin"][nlam:nlam + nlam]
-    Gpaa, Gpav, Gpva, Gpvv = d2Sbus_dV2(Ybus, V, lamP)
-    Gqaa, Gqav, Gqva, Gqvv = d2Sbus_dV2(Ybus, V, lamQ)
-
-    d2G = vstack([
-        hstack([
-            vstack([hstack([Gpaa, Gpav]),
-                    hstack([Gpva, Gpvv])]).real +
-            vstack([hstack([Gqaa, Gqav]),
-                    hstack([Gqva, Gqvv])]).imag,
-            c_sparse((2 * nb, nxtra))]),
-        hstack([
-            c_sparse((nxtra, 2 * nb)),
-            c_sparse((nxtra, nxtra))
-        ])
-    ], "csr")
-
-    # ----- evaluate Hessian of flow constraints -----
-    nmu = int(len(lmbda["ineqnonlin"]) / 2)
-    muF = lmbda["ineqnonlin"][:nmu]
-    muT = lmbda["ineqnonlin"][nmu:nmu + nmu]
-    if ppopt['OPF_FLOW_LIM'] == 2:  # current
-        dIf_dVa, dIf_dVm, dIt_dVa, dIt_dVm, If, It = dIbr_dV(branch, Yf, Yt, V)
-        Hfaa, Hfav, Hfva, Hfvv = d2AIbr_dV2(dIf_dVa, dIf_dVm, If, Yf, V, muF)
-        Htaa, Htav, Htva, Htvv = d2AIbr_dV2(dIt_dVa, dIt_dVm, It, Yt, V, muT)
-    else:
-        f = branch[il, pidx.branch['F_BUS']].astype(int)  # list of "from" buses
-        t = branch[il, pidx.branch['T_BUS']].astype(int)  # list of "to" buses
-        # connection matrix for line & from buses
-        Cf = c_sparse((np.ones(nl2), (np.arange(nl2), f)), (nl2, nb))
-        # connection matrix for line & to buses
-        Ct = c_sparse((np.ones(nl2), (np.arange(nl2), t)), (nl2, nb))
-        dSf_dVa, dSf_dVm, dSt_dVa, dSt_dVm, Sf, St = \
-            dSbr_dV(branch[il, :], Yf, Yt, V)
-        if ppopt['OPF_FLOW_LIM'] == 1:  # real power
-            Hfaa, Hfav, Hfva, Hfvv = d2ASbr_dV2(dSf_dVa.real, dSf_dVm.real,
-                                                Sf.real, Cf, Yf, V, muF)
-            Htaa, Htav, Htva, Htvv = d2ASbr_dV2(dSt_dVa.real, dSt_dVm.real,
-                                                St.real, Ct, Yt, V, muT)
-        else:  # apparent power
-            Hfaa, Hfav, Hfva, Hfvv = \
-                d2ASbr_dV2(dSf_dVa, dSf_dVm, Sf, Cf, Yf, V, muF)
-            Htaa, Htav, Htva, Htvv = \
-                d2ASbr_dV2(dSt_dVa, dSt_dVm, St, Ct, Yt, V, muT)
-
-    d2H = vstack([
-        hstack([
-            vstack([hstack([Hfaa, Hfav]),
-                    hstack([Hfva, Hfvv])]) +
-            vstack([hstack([Htaa, Htav]),
-                    hstack([Htva, Htvv])]),
-            c_sparse((2 * nb, nxtra))
-        ]),
-        hstack([
-            c_sparse((nxtra, 2 * nb)),
-            c_sparse((nxtra, nxtra))
-        ])
-    ], "csr")
-
-    # -----  do numerical check using (central) finite differences  -----
-    if 0:
-        nx = len(x)
-        step = 1e-5
-        num_d2f = c_sparse((nx, nx))
-        num_d2G = c_sparse((nx, nx))
-        num_d2H = c_sparse((nx, nx))
-        for i in range(nx):
-            xp = x
-            xm = x
-            xp[i] = x[i] + step / 2
-            xm[i] = x[i] - step / 2
-            # evaluate cost & gradients
-            _, dfp = opf_costfcn(xp, om)
-            _, dfm = opf_costfcn(xm, om)
-            # evaluate constraints & gradients
-            _, _, dHp, dGp = opf_consfcn(xp, om, Ybus, Yf, Yt, ppopt, il)
-            _, _, dHm, dGm = opf_consfcn(xm, om, Ybus, Yf, Yt, ppopt, il)
-            num_d2f[:, i] = cost_mult * (dfp - dfm) / step
-            num_d2G[:, i] = (dGp - dGm) * lmbda["eqnonlin"] / step
-            num_d2H[:, i] = (dHp - dHm) * lmbda["ineqnonlin"] / step
-        d2f_err = max(max(abs(d2f - num_d2f)))
-        d2G_err = max(max(abs(d2G - num_d2G)))
-        d2H_err = max(max(abs(d2H - num_d2H)))
-        if d2f_err > 1e-6:
-            print('Max difference in d2f: %g' % d2f_err)
-        if d2G_err > 1e-5:
-            print('Max difference in d2G: %g' % d2G_err)
-        if d2H_err > 1e-6:
-            print('Max difference in d2H: %g' % d2H_err)
-
-    return d2f + d2G + d2H
-
-
 def opf_execute(om, ppopt):
-    """Executes the OPF specified by an OPF model object.
+    """
+    Executes the OPF specified by an OPF model object.
 
     C{results} are returned with internal indexing, all equipment
     in-service, etc.
@@ -1536,9 +1323,9 @@ def opf_execute(om, ppopt):
 
     if success:
         # copy bus voltages back to gen matrix
-        results['gen'][:, pidx.gen['VG']] = results['bus'][
-            results['gen'][:, pidx.gen['GEN_BUS']].astype(int),
-            pidx.bus['VM']]
+        results['gen'][:, IDX.gen.VG] = results['bus'][
+            results['gen'][:, IDX.gen.GEN_BUS].astype(int),
+            IDX.bus.VM]
 
         # gen PQ capability curve multipliers
         if (ll['N']['PQh'] > 0) | (ll['N']['PQl'] > 0):
@@ -1579,10 +1366,10 @@ def opf_execute(om, ppopt):
         if ll['N']['ang'] > 0:
             iang = om.userdata('iang')
             results['branch'][
-                iang, pidx.branch['MU_ANGMIN']] = results['mu']['lin']['l'][
+                iang, IDX.branch.MU_ANGMIN] = results['mu']['lin']['l'][
                 ll['i1']['ang']: ll['iN']['ang']] * deg2rad
             results['branch'][
-                iang, pidx.branch['MU_ANGMAX']] = results['mu']['lin']['u'][
+                iang, IDX.branch.MU_ANGMAX] = results['mu']['lin']['u'][
                 ll['i1']['ang']: ll['iN']['ang']] * deg2rad
     else:
         # assign empty g, dg, f, df, d2f if requested by RETURN_RAW_DER = 1
@@ -1951,10 +1738,10 @@ def uopf(*args):
     # -----  do combined unit commitment/optimal power flow  -----
 
     # check for sum(Pmin) > total load, decommit as necessary
-    on = find((ppc["gen"][:, pidx.gen['GEN_STATUS']] > 0) & ~isload(ppc["gen"]))  # gens in service
-    onld = find((ppc["gen"][:, pidx.gen['GEN_STATUS']] > 0) & isload(ppc["gen"]))  # disp loads in serv
-    load_capacity = sum(ppc["bus"][:, pidx.bus['PD']]) - sum(ppc["gen"][onld, pidx.gen['PMIN']])  # total load capacity
-    Pmin = ppc["gen"][on, pidx.gen['PMIN']]
+    on = find((ppc["gen"][:, IDX.gen.GEN_STATUS] > 0) & ~isload(ppc["gen"]))  # gens in service
+    onld = find((ppc["gen"][:, IDX.gen.GEN_STATUS] > 0) & isload(ppc["gen"]))  # disp loads in serv
+    load_capacity = sum(ppc["bus"][:, IDX.bus.PD]) - sum(ppc["gen"][onld, IDX.gen.PMIN])  # total load capacity
+    Pmin = ppc["gen"][on, IDX.gen.PMIN]
     while sum(Pmin) > load_capacity:
         # shut down most expensive unit
         avgPmincost = totcost(ppc["gencost"][on, :], Pmin) / Pmin
@@ -1965,11 +1752,11 @@ def uopf(*args):
             print('Shutting down generator %d so all Pmin limits can be satisfied.\n' % i)
 
         # set generation to zero
-        ppc["gen"][i, [pidx.gen['PG'], pidx.gen['QG'], pidx.gen['GEN_STATUS']]] = 0
+        ppc["gen"][i, [IDX.gen.PG, IDX.gen.QG, IDX.gen.GEN_STATUS]] = 0
 
         # update minimum gen capacity
-        on = find((ppc["gen"][:, pidx.gen['GEN_STATUS']] > 0) & ~isload(ppc["gen"]))  # gens in service
-        Pmin = ppc["gen"][on, pidx.gen['PMIN']]
+        on = find((ppc["gen"][:, IDX.gen.GEN_STATUS] > 0) & ~isload(ppc["gen"]))  # gens in service
+        Pmin = ppc["gen"][on, IDX.gen.PMIN]
 
     # run initial opf
     results = fopf(ppc, ppopt)
@@ -1983,7 +1770,7 @@ def uopf(*args):
 
     while True:
         # get candidates for shutdown
-        candidates = find((results0["gen"][:, pidx.gen['MU_PMIN']] > 0) & (results0["gen"][:, pidx.gen['PMIN']] > 0))
+        candidates = find((results0["gen"][:, IDX.gen.MU_PMIN] > 0) & (results0["gen"][:, IDX.gen.PMIN] > 0))
         if len(candidates) == 0:
             break
 
@@ -1996,7 +1783,7 @@ def uopf(*args):
             ppc["gen"] = results0["gen"].copy()
 
             # shut down gen k
-            ppc["gen"][k, [pidx.gen['PG'], pidx.gen['QG'], pidx.gen['GEN_STATUS']]] = 0
+            ppc["gen"][k, [IDX.gen.PG, IDX.gen.QG, IDX.gen.GEN_STATUS]] = 0
 
             # run opf
             results = fopf(ppc, ppopt)

@@ -8,7 +8,7 @@ import numpy as np
 import scipy
 from scipy.sparse import csr_matrix as c_sparse
 
-import ams.pypower.utils.constants as pidx
+import ams.pypower.utils.const as IDX
 
 logger = logging.getLogger(__name__)
 
@@ -180,8 +180,8 @@ def dSbr_dV(branch, Yf, Yt, V):
     @author: Ray Zimmerman (PSERC Cornell)
     """
     # define
-    f = branch[:, pidx.branch['F_BUS']].astype(int)  # list of "from" buses
-    t = branch[:, pidx.branch['T_BUS']].astype(int)  # list of "to" buses
+    f = branch[:, IDX.branch.F_BUS].astype(int)  # list of "from" buses
+    t = branch[:, IDX.branch.T_BUS].astype(int)  # list of "to" buses
     nl = len(f)
     nb = len(V)
     il = np.arange(nl)
