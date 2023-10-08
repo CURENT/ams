@@ -101,7 +101,7 @@ class PFlowModel(DCPFlowBase):
     def run(self, force_init=False, no_code=True,
             method='newton', **kwargs):
         """
-        Run AC power flow.
+        Run AC power flow using PYPOWER.
 
         Currently, four methods are supported: 'newton', 'fdxb', 'fdbx', 'gauss',
         for Newton's method, fast-decoupled, XB, fast-decoupled, BX, and Gauss-Seidel,

@@ -54,7 +54,7 @@ class ACOPFBase(DCPFlowBase):
 
     def solve(self, method=None, **kwargs):
         """
-        Solve ACOPF using PYPOWER.
+        Solve ACOPF using PYPOWER with PIPS.
         """
         ppc = system2ppc(self.system)
         ppopt = ppoption()
@@ -76,15 +76,12 @@ class ACOPFBase(DCPFlowBase):
     def run(self, force_init=False, no_code=True,
             method=None, **kwargs):
         """
-        Run ACOPF.
-
-        Note that gauss method is not recommended because it seems to be much
-        more slower than the other three methods and not fully tested yet.
+        Run ACOPF using PYPOWER with PIPS.
 
         Examples
         --------
         >>> ss = ams.load(ams.get_case('matpower/case14.m'))
-        >>> ss.PFlow.run()
+        >>> ss.ACOPF.run()
 
         Parameters
         ----------
