@@ -12,11 +12,8 @@ from scipy.sparse import lil_matrix, vstack, hstack, csr_matrix as sparse
 from ams.pypower.idx_gen import GEN_BUS, PG, QG
 from ams.pypower.idx_brch import F_BUS, T_BUS, RATE_A
 
-from ams.pypower.makeSbus import makeSbus
-from ams.pypower.dSbus_dV import dSbus_dV
-from ams.pypower.dIbr_dV import dIbr_dV
-from ams.pypower.dSbr_dV import dSbr_dV
-from ams.pypower.dAbr_dV import dAbr_dV
+from ams.pypower.make import (makeSbus, dSbus_dV, dIbr_dV,
+                              dSbr_dV, dAbr_dV)
 
 
 def opf_consfcn(x, om, Ybus, Yf, Yt, ppopt, il=None, *args):

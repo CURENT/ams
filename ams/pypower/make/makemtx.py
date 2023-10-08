@@ -10,7 +10,7 @@ from scipy.sparse import csr_matrix as c_sparse  # NOQA
 from scipy.sparse import lil_matrix as l_sparse  # NOQA
 
 from andes.shared import deg2rad  # NOQA
-import ams.pypower.idx as pidx  # NOQA
+import ams.pypower.utils.constants as pidx  # NOQA
 
 logger = logging.getLogger(__name__)
 

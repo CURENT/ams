@@ -13,11 +13,9 @@ from ams.pypower.idx_brch import F_BUS, T_BUS
 from ams.pypower.idx_cost import MODEL, POLYNOMIAL
 
 from ams.pypower.polycost import polycost
-from ams.pypower.d2Sbus_dV2 import d2Sbus_dV2
-from ams.pypower.dSbr_dV import dSbr_dV
-from ams.pypower.dIbr_dV import dIbr_dV
-from ams.pypower.d2AIbr_dV2 import d2AIbr_dV2
-from ams.pypower.d2ASbr_dV2 import d2ASbr_dV2
+
+from ams.pypower.make import (d2Sbus_dV2, dSbus_dV, dIbr_dV,
+                              d2AIbr_dV2, d2ASbr_dV2, dSbr_dV)
 from ams.pypower.opf_costfcn import opf_costfcn
 from ams.pypower.opf_consfcn import opf_consfcn
 

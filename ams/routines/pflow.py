@@ -33,7 +33,7 @@ class PFlowData(DCPFlowData):
 
 class PFlowModel(DCPFlowBase):
     """
-    AC Power Flow model.
+    AC power flow model.
     """
 
     def __init__(self, system, config):

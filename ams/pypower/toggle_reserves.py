@@ -1,11 +1,5 @@
-# Copyright (c) 1996-2015 PSERC. All rights reserved.
-# Use of this source code is governed by a BSD-style
-# license that can be found in the LICENSE file.
-from ams.pypower.e2i_field import e2i_field
-from ams.pypower.i2e_field import i2e_field
-from ams.pypower.i2e_data import i2e_data
-
-"""Enable or disable fixed reserve requirements.
+"""
+Enable or disable fixed reserve requirements.
 """
 
 from sys import stderr
@@ -20,8 +14,7 @@ from scipy.sparse import hstack
 
 from ams.pypower.add_userfcn import add_userfcn
 from ams.pypower.remove_userfcn import remove_userfcn
-from ams.pypower.ext2int import ext2int
-from ams.pypower.int2ext import int2ext
+from ams.pypower.utils import ext2int, int2ext, e2i_field, i2e_field, i2e_data
 from ams.pypower.idx_gen import RAMP_10, PMAX, GEN_STATUS, GEN_BUS
 
 

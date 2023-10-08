@@ -1,43 +1,155 @@
 """
-Formulations of optimal power flow.
+Module to solve OPF.
 """
 
-from ams.pypower.loadcase import loadcase
-from ams.pypower.core import ppoption
-from ams.pypower.totcost import totcost
-from ams.pypower.update_mupq import update_mupq
-from ams.pypower.ipoptopf_solver import ipoptopf_solver
-from ams.pypower.core import pipsopf_solver
-from ams.pypower.dcopf_solver import dcopf_solver
-from ams.pypower.opf_consfcn import opf_consfcn
-from ams.pypower.opf_costfcn import opf_costfcn
-from ams.pypower.polycost import polycost
-from ams.pypower.run_userfcn import run_userfcn
-from ams.pypower.pqcost import pqcost
-from time import time
 import logging
+from copy import deepcopy
 
 import numpy as np
 from numpy import flatnonzero as find
 
+from scipy.sparse import hstack, vstack, issparse
 from scipy.sparse import csr_matrix as c_sparse
-from scipy.sparse import hstack, vstack
 
-from andes.shared import deg2rad
+from ams.pypower.toggle_reserves import toggle_reserves
+from ams.pypower.update_mupq import update_mupq
+from ams.pypower.opf_consfcn import opf_consfcn
+from ams.pypower.opf_costfcn import opf_costfcn
+from ams.pypower.polycost import polycost
+from ams.pypower.run_userfcn import run_userfcn
+from ams.pypower.totcost import totcost
+from ams.pypower.fairmax import fairmax
 
-import ams.pypower.idx as pidx
-from ams.pypower.make import (makeBdc, makeYbus,
+from andes.shared import deg2rad  # NOQA
+from andes.utils.misc import elapsed  # NOQA
+
+from ams.pypower.core import ppoption, pipsopf_solver, ipoptopf_solver  # NOQA
+from ams.pypower.utils import isload, loadcase, constants as pidx  # NOQA
+import ams.pypower.utils as putil  # NOQA
+from ams.pypower.make import (makeYbus, fairmax,
                               makeAvl, makeApq, makeAang, makeAy,
-                              dSbus_dV, dIbr_dV, dSbr_dV,
-                              d2Sbus_dV2, d2AIbr_dV2, d2ASbr_dV2,
-                              )
+                              dIbr_dV, dSbr_dV,
+                              d2Sbus_dV2, d2AIbr_dV2, d2ASbr_dV2)  # NOQA
+
 
 logger = logging.getLogger(__name__)
 
 
+def runopf(casedata, ppopt):
+    """
+    Runs an optimal power flow.
+
+    @see: L{rundcopf}, L{runuopf}
+
+    @author: Ray Zimmerman (PSERC Cornell)
+    """
+    sstats = dict(solver_name='PYPOWER',
+                  num_iters=1)  # solver stats
+    ppopt = ppoption(ppopt)
+
+    # -----  run the optimal power flow  -----
+    r = fopf(casedata, ppopt)
+    sstats['solver_name'] = 'PYPOWER-PIPS'
+    sstats['num_iters'] = r['raw']['output']['iterations']
+    return r, sstats
+
+
+def runuopf(casedata, ppopt):
+    """
+    Runs an optimal power flow with unit-decommitment heuristic.
+
+    @see: L{rundcopf}, L{runuopf}
+
+    @author: Ray Zimmerman (PSERC Cornell)
+    """
+    # default arguments
+    ppopt = ppoption(ppopt)
+
+    # -----  run the unit de-commitment / optimal power flow  -----
+    r = uopf(casedata, ppopt)
+
+    return r
+
+
+def runduopf(casedata, ppopt):
+    """
+    Runs a DC optimal power flow with unit-decommitment heuristic.
+
+    @see: L{rundcopf}, L{runuopf}
+
+    @author: Ray Zimmerman (PSERC Cornell)
+    """
+    # default arguments
+    ppopt = ppoption(ppopt, PF_DC=True)
+
+    return runuopf(casedata, ppopt)
+
+
+def runopf_w_res(*args):
+    """
+    Runs an optimal power flow with fixed zonal reserves.
+
+    Runs an optimal power flow with the addition of reserve requirements
+    specified as a set of fixed zonal reserves. See L{runopf} for a
+    description of the input and output arguments, which are the same,
+    with the exception that the case file or dict C{casedata} must define
+    a 'reserves' field, which is a dict with the following fields:
+        - C{zones}   C{nrz x ng}, C{zone(i, j) = 1}, if gen C{j} belongs
+        to zone C{i} 0, otherwise
+        - C{req}     C{nrz x 1}, zonal reserve requirement in MW
+        - C{cost}    (C{ng} or C{ngr}) C{x 1}, cost of reserves in $/MW
+        - C{qty}     (C{ng} or C{ngr}) C{x 1}, max quantity of reserves
+        in MW (optional)
+    where C{nrz} is the number of reserve zones and C{ngr} is the number of
+    generators belonging to at least one reserve zone and C{ng} is the total
+    number of generators.
+
+    In addition to the normal OPF output, the C{results} dict contains a
+    new 'reserves' field with the following fields, in addition to those
+    provided in the input:
+        - C{R}       - C{ng x 1}, reserves provided by each gen in MW
+        - C{Rmin}    - C{ng x 1}, lower limit on reserves provided by
+        each gen, (MW)
+        - C{Rmax}    - C{ng x 1}, upper limit on reserves provided by
+        each gen, (MW)
+        - C{mu.l}    - C{ng x 1}, shadow price on reserve lower limit, ($/MW)
+        - C{mu.u}    - C{ng x 1}, shadow price on reserve upper limit, ($/MW)
+        - C{mu.Pmax} - C{ng x 1}, shadow price on C{Pg + R <= Pmax}
+        constraint, ($/MW)
+        - C{prc}     - C{ng x 1}, reserve price for each gen equal to
+        maximum of the shadow prices on the zonal requirement constraint
+        for each zone the generator belongs to
+
+    See L{t.t_case30_userfcns} for an example case file with fixed reserves,
+    and L{toggle_reserves} for the implementation.
+
+    Calling syntax options::
+        results = runopf_w_res(casedata)
+        results = runopf_w_res(casedata, ppopt)
+        results = runopf_w_res(casedata, ppopt, fname)
+        results = runopf_w_res(casedata, [popt, fname, solvedcase)
+        results, success = runopf_w_res(...)
+
+    Example::
+        results = runopf_w_res('t_case30_userfcns')
+
+    @see: L{runopf}, L{toggle_reserves}, L{t.t_case30_userfcns}
+
+    @author: Ray Zimmerman (PSERC Cornell)
+    """
+    ppc = loadcase(args[0])
+    ppc = toggle_reserves(ppc, 'on')
+
+    r = runopf(ppc, *args[1:])
+    r = toggle_reserves(r, 'off')
+
+    return r
+
+
 def fopf(*args):
     """
-    Solve an optimal power flow, return a `results` dict.
+    Solve an optimal power flow, return a `results` dict,
+    previously named ``opf``.
 
     The data for the problem can be specified in one of three ways:
       1. a string (ppc) containing the file name of a PYPOWER case
@@ -157,7 +269,7 @@ def fopf(*args):
     Carlos E. Murillo-Sanchez (PSERC Cornell & Universidad Autonoma de Manizales)
     """
     # ----- initialization -----
-    t0 = time()  # start timer
+    t0, _ = elapsed()  # start timer
 
     # process input arguments
     ppc, ppopt = opf_args2(*args)
@@ -176,7 +288,7 @@ def fopf(*args):
         ppc['branch'] = np.c_[ppc['branch'], np.zeros((nl, pidx.branch['MU_ANGMAX'] + 1 - np.shape(ppc['branch'])[1]))]
 
     # -----  convert to internal numbering, remove out-of-service stuff  -----
-    ppc = pidx.ext2int(ppc)
+    ppc = putil.ie.ext2int(ppc)
 
     # -----  construct OPF model object  -----
     om = opf_setup(ppc, ppopt)
@@ -185,7 +297,7 @@ def fopf(*args):
     results, success, raw = opf_execute(om, ppopt)
 
     # -----  revert to original ordering, including out-of-service stuff  -----
-    results = pidx.int2ext(results)
+    results = putil.ie.int2ext(results)
 
     # zero out result fields of out-of-service gens & branches
     if len(results['order']['gen']['status']['off']) > 0:
@@ -211,9 +323,8 @@ def fopf(*args):
                  pidx.branch['MU_ANGMAX']])] = 0
 
     # -----  finish preparing output  -----
-    et = time() - t0  # compute elapsed time
+    _, results['et'] = elapsed(t0)
 
-    results['et'] = et
     results['success'] = success
     results['raw'] = raw
 
@@ -234,7 +345,6 @@ def opf_setup(ppc, ppopt):
     """
     # options
     alg = ppopt['OPF_ALG']
-    verbose = ppopt['VERBOSE']
 
     # data dimensions
     nb = ppc['bus'].shape[0]  # number of buses
@@ -1248,7 +1358,7 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
     d2f = c_sparse((np.r_[d2f_dPg2, d2f_dQg2], (i, i)), (nxyz, nxyz))
 
     # generalized cost
-    if scipy.sparse.issparse(N) and N.nnz > 0:
+    if issparse(N) and N.nnz > 0:
         nw = N.shape[0]
         r = N * x - rh  # Nx - rhat
         iLT = find(r < -kk)  # below dead zone
@@ -1382,9 +1492,7 @@ def opf_execute(om, ppopt):
     """
     # -----  setup  -----
     # options
-    dc = ppopt['PF_DC']  # 1 = DC OPF, 0 = AC OPF
     alg = ppopt['OPF_ALG']
-    verbose = ppopt['VERBOSE']
 
     # build user-defined costs
     om.build_cost_params()
@@ -1392,81 +1500,75 @@ def opf_execute(om, ppopt):
     # get indexing
     vv, ll, nn, _ = om.get_idx()
 
-    # -----  run DC OPF solver  -----
-    if dc:
-        results, success, raw = dcopf_solver(om, ppopt)
+    # -----  run AC OPF solver  -----
+    # if OPF_ALG not set, choose best available option
+    if alg == 0:
+        alg = 560  # MIPS
+
+    # update deprecated algorithm codes to new, generalized formulation equivalents
+    if alg == 100 | alg == 200:  # CONSTR
+        alg = 300
+    elif alg == 120 | alg == 220:  # dense LP
+        alg = 320
+    elif alg == 140 | alg == 240:  # sparse (relaxed) LP
+        alg = 340
+    elif alg == 160 | alg == 260:  # sparse (full) LP
+        alg = 360
+
+    ppopt['OPF_ALG_POLY'] = alg
+
+    # run specific AC OPF solver
+    if alg == 560 or alg == 565:  # PIPS
+        results, success, raw = pipsopf_solver(om, ppopt)
+    elif alg == 580:  # IPOPT
+        try:
+            __import__('pyipopt')
+            results, success, raw = ipoptopf_solver(om, ppopt)
+        except ImportError:
+            raise ImportError('OPF_ALG %d requires IPOPT '
+                              '(see https://projects.coin-or.org/Ipopt/)' %
+                              alg)
     else:
-        # -----  run AC OPF solver  -----
-        # if OPF_ALG not set, choose best available option
-        if alg == 0:
-            alg = 560  # MIPS
-
-        # update deprecated algorithm codes to new, generalized formulation equivalents
-        if alg == 100 | alg == 200:  # CONSTR
-            alg = 300
-        elif alg == 120 | alg == 220:  # dense LP
-            alg = 320
-        elif alg == 140 | alg == 240:  # sparse (relaxed) LP
-            alg = 340
-        elif alg == 160 | alg == 260:  # sparse (full) LP
-            alg = 360
-
-        ppopt['OPF_ALG_POLY'] = alg
-
-        # run specific AC OPF solver
-        if alg == 560 or alg == 565:  # PIPS
-            results, success, raw = pipsopf_solver(om, ppopt)
-        elif alg == 580:  # IPOPT
-            try:
-                __import__('pyipopt')
-                results, success, raw = ipoptopf_solver(om, ppopt)
-            except ImportError:
-                raise ImportError('OPF_ALG %d requires IPOPT '
-                                  '(see https://projects.coin-or.org/Ipopt/)' %
-                                  alg)
-        else:
-            logger.debug('opf_execute: OPF_ALG %d is not a valid algorithm code\n' % alg)
+        logger.debug('opf_execute: OPF_ALG %d is not a valid algorithm code\n' % alg)
 
     if ('output' not in raw) or ('alg' not in raw['output']):
         raw['output']['alg'] = alg
 
     if success:
-        if not dc:
-            # copy bus voltages back to gen matrix
-            results['gen'][
-                :, pidx.gen['VG']] = results['bus'][
-                results['gen'][:, pidx.gen['GEN_BUS']].astype(int),
-                pidx.bus['VM']]
+        # copy bus voltages back to gen matrix
+        results['gen'][:, pidx.gen['VG']] = results['bus'][
+            results['gen'][:, pidx.gen['GEN_BUS']].astype(int),
+            pidx.bus['VM']]
 
-            # gen PQ capability curve multipliers
-            if (ll['N']['PQh'] > 0) | (ll['N']['PQl'] > 0):
-                mu_PQh = results['mu']['lin']['l'][ll['i1']['PQh']:ll['iN']['PQh']
-                                                   ] - results['mu']['lin']['u'][ll['i1']['PQh']:ll['iN']['PQh']]
-                mu_PQl = results['mu']['lin']['l'][ll['i1']['PQl']:ll['iN']['PQl']
-                                                   ] - results['mu']['lin']['u'][ll['i1']['PQl']:ll['iN']['PQl']]
-                Apqdata = om.userdata('Apqdata')
-                results['gen'] = update_mupq(results['baseMVA'], results['gen'], mu_PQh, mu_PQl, Apqdata)
+        # gen PQ capability curve multipliers
+        if (ll['N']['PQh'] > 0) | (ll['N']['PQl'] > 0):
+            mu_PQh = results['mu']['lin']['l'][ll['i1']['PQh']:ll['iN']['PQh']
+                                               ] - results['mu']['lin']['u'][ll['i1']['PQh']:ll['iN']['PQh']]
+            mu_PQl = results['mu']['lin']['l'][ll['i1']['PQl']:ll['iN']['PQl']
+                                               ] - results['mu']['lin']['u'][ll['i1']['PQl']:ll['iN']['PQl']]
+            Apqdata = om.userdata('Apqdata')
+            results['gen'] = update_mupq(results['baseMVA'], results['gen'], mu_PQh, mu_PQl, Apqdata)
 
-            # compute g, dg, f, df, d2f if requested by RETURN_RAW_DER = 1
-            if ppopt['RETURN_RAW_DER']:
-                # move from results to raw if using v4.0 of MINOPF or TSPOPF
-                if 'dg' in results:
-                    raw = {}
-                    raw['dg'] = results['dg']
-                    raw['g'] = results['g']
+        # compute g, dg, f, df, d2f if requested by RETURN_RAW_DER = 1
+        if ppopt['RETURN_RAW_DER']:
+            # move from results to raw if using v4.0 of MINOPF or TSPOPF
+            if 'dg' in results:
+                raw = {}
+                raw['dg'] = results['dg']
+                raw['g'] = results['g']
 
-                # compute g, dg, unless already done by post-v4.0 MINOPF or TSPOPF
-                if 'dg' not in raw:
-                    ppc = om.get_ppc()
-                    Ybus, Yf, Yt = makeYbus(ppc['baseMVA'], ppc['bus'], ppc['branch'])
-                    g, geq, dg, dgeq = opf_consfcn(results['x'], om, Ybus, Yf, Yt, ppopt)
-                    raw['g'] = np.r_[geq, g]
-                    raw['dg'] = np.r_[dgeq.T, dg.T]  # true Jacobian organization
+            # compute g, dg, unless already done by post-v4.0 MINOPF or TSPOPF
+            if 'dg' not in raw:
+                ppc = om.get_ppc()
+                Ybus, Yf, Yt = makeYbus(ppc['baseMVA'], ppc['bus'], ppc['branch'])
+                g, geq, dg, dgeq = opf_consfcn(results['x'], om, Ybus, Yf, Yt, ppopt)
+                raw['g'] = np.r_[geq, g]
+                raw['dg'] = np.r_[dgeq.T, dg.T]  # true Jacobian organization
 
-                # compute df, d2f
-                _, df, d2f = opf_costfcn(results['x'], om, True)
-                raw['df'] = df
-                raw['d2f'] = d2f
+            # compute df, d2f
+            _, df, d2f = opf_costfcn(results['x'], om, True)
+            raw['df'] = df
+            raw['d2f'] = d2f
 
         # delete g and dg fieldsfrom results if using v4.0 of MINOPF or TSPOPF
         if 'dg' in results:
@@ -1484,11 +1586,10 @@ def opf_execute(om, ppopt):
                 ll['i1']['ang']: ll['iN']['ang']] * deg2rad
     else:
         # assign empty g, dg, f, df, d2f if requested by RETURN_RAW_DER = 1
-        if not dc and ppopt['RETURN_RAW_DER']:
-            raw['dg'] = np.array([])
-            raw['g'] = np.array([])
-            raw['df'] = np.array([])
-            raw['d2f'] = np.array([])
+        raw['dg'] = np.array([])
+        raw['g'] = np.array([])
+        raw['df'] = np.array([])
+        raw['d2f'] = np.array([])
 
     # assign values and limit shadow prices for variables
     if om.var['order']:
@@ -1510,14 +1611,13 @@ def opf_execute(om, ppopt):
             results['lin']['mu']['u'][name] = results['mu']['lin']['u'][idx]
 
     # assign shadow prices for nonlinear constraints
-    if not dc:
-        if om.nln['order']:
-            results['nln'] = {'mu': {'l': {}, 'u': {}}}
-        for name in om.nln['order']:
-            if om.getN('nln', name):
-                idx = np.arange(nn['i1'][name], nn['iN'][name])
-                results['nln']['mu']['l'][name] = results['mu']['nln']['l'][idx]
-                results['nln']['mu']['u'][name] = results['mu']['nln']['u'][idx]
+    if om.nln['order']:
+        results['nln'] = {'mu': {'l': {}, 'u': {}}}
+    for name in om.nln['order']:
+        if om.getN('nln', name):
+            idx = np.arange(nn['i1'][name], nn['iN'][name])
+            results['nln']['mu']['l'][name] = results['mu']['nln']['l'][idx]
+            results['nln']['mu']['u'][name] = results['mu']['nln']['u'][idx]
 
     # assign values for components of user cost
     if om.cost['order']:
@@ -1533,10 +1633,7 @@ def opf_execute(om, ppopt):
     if (len(pwl1) > 0) and (alg != 545) and (alg != 550):
         # get indexing
         vv, _, _, _ = om.get_idx()
-        if dc:
-            nx = vv['iN']['Pg']
-        else:
-            nx = vv['iN']['Qg']
+        nx = vv['iN']['Qg']
 
         y = np.zeros(len(pwl1))
         raw['xr'] = np.r_[raw['xr'][:nx], y, raw['xr'][nx:]]
@@ -1612,115 +1709,46 @@ def opf_args(*args):
 #                                  Au, lbu, ubu, ppopt, N, fparm, H, Cw,
 #                                  z0, zl, zu] if arg is not None])
     nargin = len(args)
-
     userfcn = np.array([])
-    # passing filename or dict
+
+    # parsing filename or dict
     if isinstance(args[0], str) or isinstance(args[0], dict):
-        # ----opf( baseMVA,     bus,   gen, branch, areas, gencost,    Au, lbu,  ubu, ppopt,  N, fparm, H, Cw, z0, zl, zu)
-        # 12  opf(casefile,      Au,   lbu,    ubu, ppopt,       N, fparm,    H,  Cw,    z0, zl,    zu)
-        # 9   opf(casefile,      Au,   lbu,    ubu, ppopt,       N, fparm,    H,  Cw)
-        # 5   opf(casefile,      Au,   lbu,    ubu, ppopt)
-        # 4   opf(casefile,      Au,   lbu,    ubu)
-        # 3   opf(casefile, userfcn, ppopt)
-        # 2   opf(casefile,   ppopt)
-        # 1   opf(casefile)
         if nargin in [1, 2, 3, 4, 5, 9, 12]:
             casefile = args[0]
             if nargin == 12:
-                baseMVA, bus, gen, branch, areas, gencost, Au, lbu,  ubu, ppopt,  N, fparm = args
-                zu = fparm
-                zl = N
-                z0 = ppopt
-                Cw = ubu
-                H = lbu
-                fparm = Au
-                N = gencost
-                ppopt = areas
-                ubu = branch
-                lbu = gen
-                Au = bus
+                baseMVA, bus, gen, branch, areas, gencost, Au, lbu, ubu, ppopt, N, fparm = args
             elif nargin == 9:
                 baseMVA, bus, gen, branch, areas, gencost, Au, lbu, ubu = args
-                zu = np.array([])
-                zl = np.array([])
-                z0 = np.array([])
-                Cw = ubu
-                H = lbu
-                fparm = Au
-                N = gencost
-                ppopt = areas
-                ubu = branch
-                lbu = gen
-                Au = bus
             elif nargin == 5:
                 baseMVA, bus, gen, branch, areas = args
-                zu = np.array([])
-                zl = np.array([])
-                z0 = np.array([])
-                Cw = np.array([])
-                H = None
-                fparm = np.array([])
-                N = None
-                ppopt = areas
-                ubu = branch
-                lbu = gen
-                Au = bus
             elif nargin == 4:
                 baseMVA, bus, gen, branch = args
-                zu = np.array([])
-                zl = np.array([])
-                z0 = np.array([])
-                Cw = np.array([])
-                H = None
-                fparm = np.array([])
-                N = None
-                ppopt = ppoption()
-                ubu = branch
-                lbu = gen
-                Au = bus
             elif nargin == 3:
                 baseMVA, bus, gen = args
                 userfcn = bus
-                zu = np.array([])
-                zl = np.array([])
-                z0 = np.array([])
-                Cw = np.array([])
-                H = None
-                fparm = np.array([])
-                N = None
-                ppopt = gen
-                ubu = np.array([])
-                lbu = np.array([])
-                Au = None
             elif nargin == 2:
                 baseMVA, bus = args
-                zu = np.array([])
-                zl = np.array([])
-                z0 = np.array([])
-                Cw = np.array([])
-                H = None
-                fparm = np.array([])
-                N = None
-                ppopt = bus
-                ubu = np.array([])
-                lbu = np.array([])
-                Au = None
             elif nargin == 1:
-                zu = np.array([])
-                zl = np.array([])
-                z0 = np.array([])
-                Cw = np.array([])
-                H = None
-                fparm = np.array([])
-                N = None
-                ppopt = ppoption()
-                ubu = np.array([])
-                lbu = np.array([])
-                Au = None
+                pass  # Use default values for all variables
+            else:
+                logger.debug('opf_args: Incorrect input arg order, number or type\n')
+
+            # Set default values for variables if they are not provided
+            zu = np.array([]) if nargin in [1, 2, 3, 4, 5, 9, 12] else zu
+            zl = np.array([]) if nargin in [1, 2, 3, 4, 5, 9, 12] else zl
+            z0 = np.array([]) if nargin in [1, 2, 3, 4, 5, 9, 12] else z0
+            Cw = np.array([]) if nargin in [1, 2, 3, 4, 5, 9, 12] else Cw
+            H = None if nargin in [1, 2, 3, 4, 5, 9, 12] else H
+            fparm = np.array([]) if nargin in [1, 2, 3, 4, 5, 9, 12] else fparm
+            N = None if nargin in [1, 2, 3, 4, 5, 9, 12] else N
+            ppopt = ppoption() if nargin in [1, 2, 3, 4, 5, 9, 12] else ppopt
+            ubu = np.array([]) if nargin in [1, 2, 3, 4, 5, 9, 12] else ubu
+            lbu = np.array([]) if nargin in [1, 2, 3, 4, 5, 9, 12] else lbu
+            Au = None if nargin in [1, 2, 3, 4, 5, 9, 12] else Au
         else:
             logger.debug('opf_args: Incorrect input arg order, number or type\n')
 
-        ppc = loadcase(casefile)
+        ppc = putil.loadcase(casefile)
         baseMVA, bus, gen, branch, gencost = \
             ppc['baseMVA'], ppc['bus'], ppc['gen'], ppc['branch'], ppc['gencost']
         if 'areas' in ppc:
@@ -1839,13 +1867,13 @@ def opf_args(*args):
                 logger.debug('opf_args.m: A and N must have the same number '
                              'of columns\n')
         # make sure N and H are sparse
-        if not scipy.sparse.issparse(N):
+        if not issparse(N):
             logger.debug('opf_args.m: N must be sparse in generalized cost '
                          'parameters\n')
-        if not scipy.sparse.issparse(H):
+        if not issparse(H):
             logger.debug('opf_args.m: H must be sparse in generalized cost parameters\n')
 
-    if Au is not None and not scipy.sparse.issparse(Au):
+    if Au is not None and not issparse(Au):
         logger.debug('opf_args.m: Au must be sparse\n')
     if ppopt == None or len(ppopt) == 0:
         ppopt = ppoption()
@@ -1855,7 +1883,8 @@ def opf_args(*args):
 
 
 def opf_args2(*args):
-    """Parses and initializes OPF input arguments.
+    """
+    Parses and initializes OPF input arguments.
     """
     baseMVA, bus, gen, branch, gencost, Au, lbu, ubu, \
         ppopt, N, fparm, H, Cw, z0, zl, zu, userfcn, areas = opf_args(*args)
@@ -1888,3 +1917,108 @@ def opf_args2(*args):
         ppc["userfcn"] = userfcn
 
     return ppc, ppopt
+
+
+def uopf(*args):
+    """Solves combined unit decommitment / optimal power flow.
+
+    Solves a combined unit decommitment and optimal power flow for a single
+    time period. Uses an algorithm similar to dynamic programming. It proceeds
+    through a sequence of stages, where stage C{N} has C{N} generators shut
+    down, starting with C{N=0}. In each stage, it forms a list of candidates
+    (gens at their C{Pmin} limits) and computes the cost with each one of them
+    shut down. It selects the least cost case as the starting point for the
+    next stage, continuing until there are no more candidates to be shut down
+    or no more improvement can be gained by shutting something down.
+    If C{verbose} in ppopt (see L{ppoption} is C{true}, it prints progress
+    info, if it is > 1 it prints the output of each individual opf.
+
+    @see: L{opf}, L{runuopf}
+
+    @author: Ray Zimmerman (PSERC Cornell)
+    """
+    # ----- initialization -----
+    t0, _ = elapsed()  # start timer
+
+    # process input arguments
+    ppc, ppopt = opf_args2(*args)
+
+    # options
+    verbose = ppopt["VERBOSE"]
+    if verbose:  # turn down verbosity one level for calls to opf
+        ppopt = ppoption(ppopt, VERBOSE=verbose - 1)
+
+    # -----  do combined unit commitment/optimal power flow  -----
+
+    # check for sum(Pmin) > total load, decommit as necessary
+    on = find((ppc["gen"][:, pidx.gen['GEN_STATUS']] > 0) & ~isload(ppc["gen"]))  # gens in service
+    onld = find((ppc["gen"][:, pidx.gen['GEN_STATUS']] > 0) & isload(ppc["gen"]))  # disp loads in serv
+    load_capacity = sum(ppc["bus"][:, pidx.bus['PD']]) - sum(ppc["gen"][onld, pidx.gen['PMIN']])  # total load capacity
+    Pmin = ppc["gen"][on, pidx.gen['PMIN']]
+    while sum(Pmin) > load_capacity:
+        # shut down most expensive unit
+        avgPmincost = totcost(ppc["gencost"][on, :], Pmin) / Pmin
+        _, i = fairmax(avgPmincost)  # pick one with max avg cost at Pmin
+        i = on[i]  # convert to generator index
+
+        if verbose:
+            print('Shutting down generator %d so all Pmin limits can be satisfied.\n' % i)
+
+        # set generation to zero
+        ppc["gen"][i, [pidx.gen['PG'], pidx.gen['QG'], pidx.gen['GEN_STATUS']]] = 0
+
+        # update minimum gen capacity
+        on = find((ppc["gen"][:, pidx.gen['GEN_STATUS']] > 0) & ~isload(ppc["gen"]))  # gens in service
+        Pmin = ppc["gen"][on, pidx.gen['PMIN']]
+
+    # run initial opf
+    results = fopf(ppc, ppopt)
+
+    # best case so far
+    results1 = deepcopy(results)
+
+    # best case for this stage (ie. with n gens shut down, n=0,1,2 ...)
+    results0 = deepcopy(results1)
+    ppc["bus"] = results0["bus"].copy()  # use these V as starting point for OPF
+
+    while True:
+        # get candidates for shutdown
+        candidates = find((results0["gen"][:, pidx.gen['MU_PMIN']] > 0) & (results0["gen"][:, pidx.gen['PMIN']] > 0))
+        if len(candidates) == 0:
+            break
+
+        # do not check for further decommitment unless we
+        # see something better during this stage
+        done = True
+
+        for k in candidates:
+            # start with best for this stage
+            ppc["gen"] = results0["gen"].copy()
+
+            # shut down gen k
+            ppc["gen"][k, [pidx.gen['PG'], pidx.gen['QG'], pidx.gen['GEN_STATUS']]] = 0
+
+            # run opf
+            results = fopf(ppc, ppopt)
+
+            # something better?
+            if results['success'] and (results["f"] < results1["f"]):
+                results1 = deepcopy(results)
+                k1 = k
+                done = False  # make sure we check for further decommitment
+
+        if done:
+            # decommits at this stage did not help, so let's quit
+            break
+        else:
+            # shutting something else down helps, so let's keep going
+            if verbose:
+                print('Shutting down generator %d.\n' % k1)
+
+            results0 = deepcopy(results1)
+            ppc["bus"] = results0["bus"].copy()  # use these V as starting point for OPF
+
+    # compute elapsed time
+    _, results0['et'] = elapsed(t0)
+
+    return results0

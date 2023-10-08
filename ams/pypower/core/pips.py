@@ -12,7 +12,7 @@ from scipy.sparse.linalg import spsolve
 
 from andes.shared import deg2rad, rad2deg
 
-import ams.pypower.idx as pidx
+import ams.pypower.utils.constants as pidx
 from ams.pypower.make import makeYbus
 from ams.pypower.opf_costfcn import opf_costfcn
 from ams.pypower.opf_consfcn import opf_consfcn

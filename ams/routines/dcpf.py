@@ -47,7 +47,7 @@ class DCPFlowData(RoutineData):
 
 class DCPFlowBase(RoutineModel):
     """
-    Base class for Power Flow model.
+    Base class for power flow.
 
     Overload the ``solve``, ``unpack``, and ``run`` methods.
     """
@@ -63,7 +63,6 @@ class DCPFlowBase(RoutineModel):
         """
         system = self.system
         mva = res['baseMVA']
-        # mva = self.system.config.mva
 
         # --- copy results from routine algeb into system algeb ---
         # --- Bus ---
@@ -176,9 +175,7 @@ class DCPFlowBase(RoutineModel):
 
 class DCPFlowModel(DCPFlowBase):
     """
-    Base class for Power Flow model.
-
-    Overload the ``solve``, ``unpack``, and ``run`` methods.
+    Base class for power flow model.
     """
 
     def __init__(self, system, config):
@@ -203,7 +200,7 @@ class DCPF(DCPFlowData, DCPFlowModel):
 
     Notes
     -----
-    1. DCPF is solved with PYPOWER ``rundcpf`` function.
+    1. DCPF is solved with PYPOWER ``runpf`` function.
     2. DCPF formulation is not complete yet, but this does not affect the
        results because the data are passed to PYPOWER for solving.
     """

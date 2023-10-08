@@ -1,31 +1,25 @@
 """
-Module to solve power flow.
+PYPOWER module to solve power flow.
 """
 
-import logging
-import os
+import logging  # NOQA
 
-from time import time
+from time import time  # NOQA
 
-import numpy as np
+import numpy as np  # NOQA
 
-from numpy import flatnonzero as find
-from scipy.sparse.linalg import spsolve, splu
-from scipy.sparse import hstack, vstack
-from scipy.sparse import csr_matrix as c_sparse
+from numpy import flatnonzero as find  # NOQA
+from scipy.sparse.linalg import spsolve, splu  # NOQA
+from scipy.sparse import hstack, vstack  # NOQA
+from scipy.sparse import csr_matrix as c_sparse  # NOQA
 
-from andes.shared import deg2rad, rad2deg
+from andes.shared import deg2rad, rad2deg  # NOQA
 
-from ams.pypower.core import ppoption, ppver
-from ams.pypower.bustypes import bustypes
-from ams.pypower.loadcase import loadcase
+from ams.pypower.core import ppoption  # NOQA
+import ams.pypower.utils as putils  # NOQA
+import ams.pypower.utils.constants as pidx  # NOQA
 
-from ams.pypower.printpf import printpf
-from ams.pypower.savecase import savecase
-
-import ams.pypower.idx as pidx
-from ams.pypower.make import (makeB, makeBdc, makeSbus, makeYbus,
-                              dSbus_dV, dIbr_dV, dSbr_dV)
+from ams.pypower.make import (makeB, makeBdc, makeSbus, makeYbus, dSbus_dV)
 
 
 logger = logging.getLogger(__name__)
@@ -34,7 +28,7 @@ logger = logging.getLogger(__name__)
 EPS = np.finfo(float).eps
 
 
-def runpf(casedata, ppopt, fname='', solvedcase=''):
+def runpf(casedata, ppopt):
     """
     Runs a power flow.
 
@@ -53,13 +47,6 @@ def runpf(casedata, ppopt, fname='', solvedcase=''):
     ppopt : dict, optional
         PYPOWER options vector. It can be used to specify the solution algorithm
         and output options among other things. Default is None.
-    fname : str, optional
-        The name of the file to which the pretty printed output will be appended.
-        Default is an empty string.
-    solvedcase : str, optional
-        The name of the solved case file. If it ends with '.mat', it saves the case
-        as a MAT-file; otherwise, it saves it as a Python-file. Default is an empty
-        string.
 
     Returns
     -------
@@ -93,7 +80,7 @@ def runpf(casedata, ppopt, fname='', solvedcase=''):
     ppopt = ppoption(ppopt)
 
     # read data
-    ppc = loadcase(casedata)
+    ppc = putils.loadcase(casedata)
 
     # add zero columns to branch for flows if needed
     if ppc["branch"].shape[1] < pidx.branch['QT']:
@@ -102,12 +89,12 @@ def runpf(casedata, ppopt, fname='', solvedcase=''):
                                         pidx.branch['QT'] - ppc["branch"].shape[1] + 1))]
 
     # convert to internal indexing
-    ppc = pidx.ext2int(ppc)
+    ppc = putils.ie.ext2int(ppc)
     baseMVA, bus, gen, branch = \
         ppc["baseMVA"], ppc["bus"], ppc["gen"], ppc["branch"]
 
     # get bus index lists of each type of bus
-    ref, pv, pq = bustypes(bus, gen)
+    ref, pv, pq = putils.bustypes(bus, gen)
 
     # generator info
     on = find(gen[:, pidx.gen['GEN_STATUS']] > 0)  # which generators are on?
@@ -256,7 +243,7 @@ def runpf(casedata, ppopt, fname='', solvedcase=''):
 
                     # update bus index lists of each type of bus
                     ref_temp = ref
-                    ref, pv, pq = bustypes(bus, gen)
+                    ref, pv, pq = putils.bustypes(bus, gen)
 
                     # previous line can modify lists to select new pidx.bus['REF'] bus
                     # if there was none, so we should update bus with these
@@ -292,7 +279,7 @@ def runpf(casedata, ppopt, fname='', solvedcase=''):
     # -----  output results  -----
     # convert back to original bus numbering & print results
     ppc["bus"], ppc["gen"], ppc["branch"] = bus, gen, branch
-    results = pidx.int2ext(ppc)
+    results = putils.ie.int2ext(ppc)
 
     # zero out result fields of out-of-service gens & branches
     if len(results["order"]["gen"]["status"]["off"]) > 0:
@@ -306,24 +293,6 @@ def runpf(casedata, ppopt, fname='', solvedcase=''):
                  pidx.branch['QF'],
                  pidx.branch['PT'],
                  pidx.branch['QT']])] = 0
-
-    if fname:
-        fd = None
-        try:
-            fd = open(fname, "a")
-        except Exception as detail:
-            logger.debug("Error opening %s: %s.\n" % (fname, detail))
-        finally:
-            if fd is not None:
-                printpf(results, fd, ppopt)
-                fd.close()
-    else:
-        # printpf(results, stdout, ppopt)
-        pass
-
-    # save solved case
-    if solvedcase:
-        savecase(solvedcase, results)
 
     return results, success, sstats
 
@@ -503,9 +472,48 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt):
 
 
 def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, pv, pq):
-    """Updates bus, gen, branch data structures to match power flow soln.
+    """
+    Updates bus, gen, and branch data structures to match power flow solution.
 
-    @author: Ray Zimmerman (PSERC Cornell)
+    This function takes the following inputs and updates the input data structures:
+
+    Parameters
+    ----------
+    baseMVA : float
+        Base power in MVA.
+    bus0 : ndarray
+        Initial bus data structure.
+    gen0 : ndarray
+        Initial gen data structure.
+    branch0 : ndarray
+        Initial branch data structure.
+    Ybus : sparse matrix
+        Admittance matrix.
+    Yf : sparse matrix
+        Admittance matrix for "from" end of branches.
+    Yt : sparse matrix
+        Admittance matrix for "to" end of branches.
+    V : ndarray
+        Bus voltage magnitude in per unit.
+    ref : int
+        Reference bus index.
+    pv : ndarray
+        PV bus indices.
+    pq : ndarray
+        PQ bus indices.
+
+    Returns
+    -------
+    bus : ndarray
+        Updated bus data structure.
+    gen : ndarray
+        Updated gen data structure.
+    branch : ndarray
+        Updated branch data structure.
+
+    Author
+    ------
+    Ray Zimmerman (PSERC Cornell)
     """
     # initialize return values
     bus = bus0
