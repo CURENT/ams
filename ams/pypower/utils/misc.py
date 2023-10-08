@@ -2,6 +2,8 @@
 PYPOWER utilities.
 """
 
+import numpy as np
+
 from numpy import ones, flatnonzero as find
 from numpy import zeros
 from scipy.sparse import csr_matrix as sparse
@@ -9,6 +11,9 @@ from scipy.sparse import csr_matrix as sparse
 from ams.pypower.idx_bus import BUS_TYPE, REF, PV, PQ
 from ams.pypower.idx_gen import GEN_BUS, GEN_STATUS
 from ams.pypower.idx_gen import PMAX, PMIN
+
+
+EPS = np.finfo(float).eps
 
 
 def bustypes(bus, gen):

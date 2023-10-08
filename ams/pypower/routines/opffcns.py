@@ -1,5 +1,5 @@
 """
-Modules for OPF additional functions.
+Module for OPF functions.
 """
 
 # --- hessfcn ---

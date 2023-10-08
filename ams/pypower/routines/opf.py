@@ -8,17 +8,8 @@ from copy import deepcopy
 import numpy as np
 from numpy import flatnonzero as find
 
-from scipy.sparse import hstack, vstack, issparse
+import scipy.sparse as sp
 from scipy.sparse import csr_matrix as c_sparse
-
-from ams.pypower.toggle_reserves import toggle_reserves
-from ams.pypower.update_mupq import update_mupq
-from ams.pypower.opf_consfcn import opf_consfcn
-from ams.pypower.opf_costfcn import opf_costfcn
-from ams.pypower.polycost import polycost
-from ams.pypower.run_userfcn import run_userfcn
-from ams.pypower.totcost import totcost
-from ams.pypower.fairmax import fairmax
 
 from andes.shared import deg2rad  # NOQA
 from andes.utils.misc import elapsed  # NOQA
@@ -27,10 +18,15 @@ from ams.pypower.core import ppoption, pipsopf_solver, ipoptopf_solver  # NOQA
 from ams.pypower.utils import isload, loadcase, const as IDX  # NOQA
 import ams.pypower.utils as putil  # NOQA
 from ams.pypower.make import (makeYbus, fairmax,
-                              makeAvl, makeApq, makeAang, makeAy,
-                              dIbr_dV, dSbr_dV,
-                              d2Sbus_dV2, d2AIbr_dV2, d2ASbr_dV2)  # NOQA
+                              makeAvl, makeApq, makeAang, makeAy)  # NOQA
 
+from ams.pypower.toggle_reserves import toggle_reserves
+from ams.pypower.update_mupq import update_mupq
+from ams.pypower.opf_consfcn import opf_consfcn
+from ams.pypower.opf_costfcn import opf_costfcn
+from ams.pypower.polycost import polycost
+from ams.pypower.run_userfcn import run_userfcn
+from ams.pypower.totcost import totcost
 
 logger = logging.getLogger(__name__)
 
@@ -288,7 +284,7 @@ def fopf(*args):
         ppc['branch'] = np.c_[ppc['branch'], np.zeros((nl, IDX.branch.MU_ANGMAX + 1 - np.shape(ppc['branch'])[1]))]
 
     # -----  convert to internal numbering, remove out-of-service stuff  -----
-    ppc = putil.ie.ext2int(ppc)
+    ppc = putil.ext2int(ppc)
 
     # -----  construct OPF model object  -----
     om = opf_setup(ppc, ppopt)
@@ -297,7 +293,7 @@ def fopf(*args):
     results, success, raw = opf_execute(om, ppopt)
 
     # -----  revert to original ordering, including out-of-service stuff  -----
-    results = putil.ie.int2ext(results)
+    results = putil.int2ext(results)
 
     # zero out result fields of out-of-service gens & branches
     if len(results['order']['gen']['status']['off']) > 0:
@@ -1654,13 +1650,13 @@ def opf_args(*args):
                 logger.debug('opf_args.m: A and N must have the same number '
                              'of columns\n')
         # make sure N and H are sparse
-        if not issparse(N):
+        if not sp.issparse(N):
             logger.debug('opf_args.m: N must be sparse in generalized cost '
                          'parameters\n')
-        if not issparse(H):
+        if not sp.issparse(H):
             logger.debug('opf_args.m: H must be sparse in generalized cost parameters\n')
 
-    if Au is not None and not issparse(Au):
+    if Au is not None and not sp.issparse(Au):
         logger.debug('opf_args.m: Au must be sparse\n')
     if ppopt == None or len(ppopt) == 0:
         ppopt = ppoption()

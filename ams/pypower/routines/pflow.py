@@ -19,13 +19,10 @@ from ams.pypower.core import ppoption  # NOQA
 import ams.pypower.utils as putils  # NOQA
 import ams.pypower.utils.const as IDX  # NOQA
 
-from ams.pypower.make import (makeB, makeBdc, makeSbus, makeYbus, dSbus_dV)
+from ams.pypower.make import (makeB, makeBdc, makeSbus, makeYbus, dSbus_dV)  # NOQA
 
 
 logger = logging.getLogger(__name__)
-
-
-EPS = np.finfo(float).eps
 
 
 def runpf(casedata, ppopt):
@@ -232,7 +229,7 @@ def runpf(casedata, ppopt):
                         gen[idx, IDX.gen.GEN_STATUS] = 0  # Temporarily turn off generator
                         bi = int(gen[idx, IDX.gen.GEN_BUS])  # Get the bus index
                         bus[bi, [IDX.bus.PD, IDX.bus.QD]] -= gen[idx,
-                                                                         [IDX.gen.PG, IDX.gen.QG]]  # Adjust load
+                                                                 [IDX.gen.PG, IDX.gen.QG]]  # Adjust load
 
                     if len(ref) > 1 and any(bus[gen[mx, IDX.gen.GEN_BUS], IDX.bus.BUS_TYPE] == IDX.bus.REF):
                         raise ValueError("PYPOWER cannot enforce Q limits for systems with multiple slack buses. "
@@ -266,7 +263,7 @@ def runpf(casedata, ppopt):
                     gen[idx, IDX.gen.QG] = fixedQg[idx]  # Restore Qg value
                     bi = int(gen[idx, IDX.gen.GEN_BUS])  # Get the bus index
                     bus[bi, [IDX.bus.PD, IDX.bus.QD]] += gen[idx,
-                                                                     [IDX.gen.PG, IDX.gen.QG]]  # Re-adjust load
+                                                             [IDX.gen.PG, IDX.gen.QG]]  # Re-adjust load
                     gen[idx, IDX.gen.GEN_STATUS] = 1  # Turn generator back on
 
                 if ref != ref0:
@@ -563,7 +560,7 @@ def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, pv, pq):
         ig = find(Cg * Qg_min == Cg * Qg_max)
         Qg_save = gen[on[ig], IDX.gen.QG]
         gen[on, IDX.gen.QG] = gen[on, IDX.gen.QMIN] + \
-            (Cg * ((Qg_tot - Qg_min) / (Qg_max - Qg_min + EPS))) * \
+            (Cg * ((Qg_tot - Qg_min) / (Qg_max - Qg_min + putils.EPS))) * \
             (gen[on, IDX.gen.QMAX] - gen[on, IDX.gen.QMIN])  # ^ avoid div by 0
         gen[on[ig], IDX.gen.QG] = Qg_save  # (terms are mult by 0 anyway)
 
