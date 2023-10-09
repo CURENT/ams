@@ -23,9 +23,9 @@ from ams.pypower.make import (makeYbus, makeAvl, makeApq,
                               makeAang, makeAy)  # NOQA
 
 import ams.pypower.routines.opffcns as opfcn  # NOQA
-from ams.pypower.routines.opffcns import polycost, totcost, run_userfcn, update_mupq  # NOQA
+from ams.pypower.routines.opffcns import totcost, run_userfcn, update_mupq  # NOQA
 
-from ams.pypower.toggle_reserves import toggle_reserves
+from ams.pypower.toggle import toggle_reserves  # NOQA
 
 logger = logging.getLogger(__name__)
 
