@@ -8,13 +8,14 @@ import numpy as np  # NOQA
 import scipy.sparse as sp  # NOQA
 from scipy.sparse import csr_matrix as c_sparse  # NOQA
 
-from ams.pypower.utils import IDX  # NOQA
+from ams.pypower.idx import IDX  # NOQA
 
 logger = logging.getLogger(__name__)
 
 
 def dSbus_dV(Ybus, V):
-    """Computes partial derivatives of power injection w.r.t. voltage.
+    """
+    Computes partial derivatives of power injection w.r.t. voltage.
 
     Returns two matrices containing partial derivatives of the complex bus
     power injections w.r.t voltage magnitude and voltage angle respectively

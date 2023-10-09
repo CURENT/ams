@@ -10,89 +10,11 @@ from scipy.sparse import csr_matrix as c_sparse  # NOQA
 from scipy.sparse import lil_matrix as l_sparse  # NOQA
 
 from andes.shared import deg2rad  # NOQA
-from ams.pypower.utils import IDX  # NOQA
+from ams.pypower.idx import IDX  # NOQA
+
+import ams.pypower.utils as putil  # NOQA
 
 logger = logging.getLogger(__name__)
-
-
-def isload(gen):
-    """
-    Checks for dispatchable loads.
-
-    Parameters
-    ----------
-    gen: np.ndarray
-        The generator matrix.
-
-    Returns
-    -------
-    array
-        A column vector of 1's and 0's. The 1's correspond to rows of the
-        C{gen} matrix which represent dispatchable loads. The current test is
-        C{Pmin < 0 and Pmax == 0}. This may need to be revised to allow sensible
-        specification of both elastic demand and pumped storage units.
-    """
-    return (gen[:, IDX.gen.PMIN] < 0) & (gen[:, IDX.gen.PMAX] == 0)
-
-
-def hasPQcap(gen, hilo='B'):
-    """
-    Checks for P-Q capability curve constraints.
-
-    Parameters
-    ----------
-    gen: np.ndarray
-        The generator matrix.
-    hilo : str, optional
-        If 'U' this function returns C{True} only for rows corresponding to
-        generators that require the upper constraint on Q.
-        If 'L', only for those requiring the lower constraint.
-        If not specified or has any other value it returns true for rows
-        corresponding to gens that require either or both of the constraints.
-
-    Returns
-    -------
-    array
-        A column vector of 1's and 0's. The 1's correspond to rows of the
-        C{gen} matrix which correspond to generators which have defined a
-        capability curve (with sloped upper and/or lower bound on Q) and require
-        that additional linear constraints be added to the OPF.
-
-    Notes
-    -----
-        The C{gen} matrix in version 2 of the PYPOWER case format includes columns
-        for specifying a P-Q capability curve for a generator defined as the
-        intersection of two half-planes and the box constraints on P and Q.
-        The two half planes are defined respectively as the area below the line
-        connecting (Pc1, Qc1max) and (Pc2, Qc2max) and the area above the line
-        connecting (Pc1, Qc1min) and (Pc2, Qc2min).
-
-        It is smart enough to return C{True} only if the corresponding linear
-        constraint is not redundant w.r.t the box constraints.
-    """
-    # check for errors capability curve data
-    if np.any(gen[:, IDX.gen.PC1] > gen[:, IDX.gen.PC2]):
-        logger.debug('hasPQcap: Pc1 > Pc2')
-    if np.any(gen[:, IDX.gen.QC2MAX] > gen[:, IDX.gen.QC1MAX]):
-        logger.debug('hasPQcap: Qc2max > Qc1max')
-    if np.any(gen[:, IDX.gen.QC2MIN] < gen[:, IDX.gen.QC1MIN]):
-        logger.debug('hasPQcap: Qc2min < Qc1min')
-
-    L = np.zeros(gen.shape[0], bool)
-    U = np.zeros(gen.shape[0], bool)
-    k = np.nonzero(gen[:, IDX.gen.PC1] != gen[:, IDX.gen.PC2])
-
-    if hilo != 'U':  # include lower constraint
-        Qmin_at_Pmax = gen[k, IDX.gen.QC1MIN] + (gen[k, IDX.gen.PMAX] - gen[k, IDX.gen.PC1]) * (
-            gen[k, IDX.gen.QC2MIN] - gen[k, IDX.gen.QC1MIN]) / (gen[k, IDX.gen.PC2] - gen[k, IDX.gen.PC1])
-        L[k] = Qmin_at_Pmax > gen[k, IDX.gen.QMIN]
-
-    if hilo != 'L':  # include upper constraint
-        Qmax_at_Pmax = gen[k, IDX.gen.QC1MAX] + (gen[k, IDX.gen.PMAX] - gen[k, IDX.gen.PC1]) * (
-            gen[k, IDX.gen.QC2MAX] - gen[k, IDX.gen.QC1MAX]) / (gen[k, IDX.gen.PC2] - gen[k, IDX.gen.PC1])
-        U[k] = Qmax_at_Pmax < gen[k, IDX.gen.QMAX]
-
-    return L | U
 
 
 def makeAang(baseMVA, branch, nb, ppopt):
@@ -191,8 +113,8 @@ def makeApq(baseMVA, gen):
     # which generators require additional linear constraints
     # (in addition to simple box constraints) on (Pg,Qg) to correctly
     # model their PQ capability curves
-    ipqh = find(hasPQcap(gen, 'U'))
-    ipql = find(hasPQcap(gen, 'L'))
+    ipqh = find(putil.hasPQcap(gen, 'U'))
+    ipql = find(putil.hasPQcap(gen, 'L'))
     npqh = ipqh.shape[0]  # number of general PQ capability curves (upper)
     npql = ipql.shape[0]  # number of general PQ capability curves (lower)
 
@@ -272,7 +194,7 @@ def makeAvl(baseMVA, gen):
     # capacitive loads). If both Qmin and Qmax are zero, this implies a unity
     # power factor without the need for an additional constraint.
     # NOTE: C{ivl} is the vector of indices of generators representing variable loads.
-    ivl = find(isload(gen) & ((Qmin != 0) | (Qmax != 0)))
+    ivl = find(putil.isload(gen) & ((Qmin != 0) | (Qmax != 0)))
     nvl = ivl.shape[0]  # number of dispatchable loads
 
     # at least one of the Q limits must be zero (corresponding to Pmax == 0)

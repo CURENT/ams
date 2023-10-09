@@ -12,9 +12,9 @@ from scipy.sparse import eye as speye
 from scipy.sparse import csr_matrix as sparse
 from scipy.sparse import hstack
 
-from ams.pypower.add_userfcn import add_userfcn
-from ams.pypower.remove_userfcn import remove_userfcn
-from ams.pypower.utils import ext2int, int2ext, e2i_field, i2e_field, i2e_data
+from ams.pypower.routines.opffcns import (add_userfcn, remove_userfcn,
+                                          ext2int, int2ext, e2i_field,
+                                          i2e_field, i2e_data)
 from ams.pypower.idx_gen import RAMP_10, PMAX, GEN_STATUS, GEN_BUS
 
 

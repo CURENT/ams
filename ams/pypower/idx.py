@@ -1,5 +1,5 @@
 """
-Defines constants used in PYPOWER case.
+Column indices.
 """
 
 from collections import OrderedDict  # NOQA
@@ -152,9 +152,23 @@ class Consts:
             setattr(self, key, value)
 
 
-gen = Consts(gen_src)
-dcline = Consts(dcline_src)
-cost = Consts(cost_src)
-bus = Consts(bus_src)
-branch = Consts(branch_src)
-area = Consts(area_src)
+class IDXClass:
+    """
+    Column indices for named columns.
+    """
+
+    def __init__(self):
+        """
+        Parameters
+        ----------
+        source : OrderedDict
+            Dictionary of column indices.
+        """
+        self.gen = Consts(gen_src)
+        self.dcline = Consts(dcline_src)
+        self.cost = Consts(cost_src)
+        self.bus = Consts(bus_src)
+        self.branch = Consts(branch_src)
+        self.area = Consts(area_src)
+
+IDX = IDXClass()

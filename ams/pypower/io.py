@@ -3,49 +3,27 @@ Save and load PYPOWER cases.
 """
 
 import logging
-
-import sys
+from copy import deepcopy
 
 from os.path import basename, splitext, exists
 
-from copy import deepcopy
-
 from numpy import array, zeros, ones, c_
 
-from scipy.io import loadmat
+from scipy.io import loadmat, savemat
 
-from ams.pypower._compat import PY2
-from ams.pypower.idx_gen import PMIN, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN, APF
-from ams.pypower.idx_brch import PF, QF, PT, QT, MU_SF, MU_ST, BR_STATUS
 
 from sys import stderr
 
 from os.path import basename
 
 from numpy import array, c_, r_, any
-from scipy.io import savemat
 
-from ams.pypower._compat import PY2
-from ams.pypower.run_userfcn import run_userfcn
+from ams.pypower.routines.opffcns import run_userfcn
 
-from ams.pypower.idx_bus import MU_VMIN, VMIN
-from ams.pypower.idx_gen import PMIN, MU_PMAX, MU_PMIN, MU_QMIN, MU_QMAX, APF
-from ams.pypower.idx_brch import \
-    MU_ST, MU_SF, BR_STATUS, PF, PT, QT, QF, ANGMAX, MU_ANGMAX
-from ams.pypower.idx_area import PRICE_REF_BUS
-from ams.pypower.idx_cost import MODEL, NCOST, PW_LINEAR, POLYNOMIAL
+from ams.pypower.idx import IDX
 
-
-if not PY2:
-    basestring = str
-    writemode = "w"
-else:
-    writemode = "wb"
 
 logger = logging.getLogger(__name__)
-
-if not PY2:
-    basestring = str
 
 
 def loadcase(casefile,
@@ -84,7 +62,7 @@ def loadcase(casefile,
     info = 0
 
     # read data into case object
-    if isinstance(casefile, basestring):
+    if isinstance(casefile, str):
         lasterr = ''
         # check for explicit extension
         if casefile.endswith(('.py', '.mat')):
@@ -246,37 +224,38 @@ def loadcase(casefile,
 def ppc_1to2(gen, branch):
     # -----  gen  -----
     # use the version 1 values for column names
-    if gen.shape[1] >= APF:
+    if gen.shape[1] >= IDX.gen.APF:
         logger.debug('ppc_1to2: gen matrix appears to already be in '
                      'version 2 format\n')
         return gen, branch
 
-    shift = MU_PMAX - PMIN - 1
-    tmp = array([MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN]) - shift
+    shift = IDX.gen.MU_PMAX - IDX.gen.PMIN - 1
+    tmp = array([IDX.gen.MU_PMAX, IDX.gen.MU_PMIN, IDX.gen.MU_QMAX, IDX.gen.MU_QMIN]) - shift
     mu_Pmax, mu_Pmin, mu_Qmax, mu_Qmin = tmp
 
     # add extra columns to gen
     tmp = zeros((gen.shape[0], shift))
     if gen.shape[1] >= mu_Qmin:
-        gen = c_[gen[:, 0:PMIN + 1], tmp, gen[:, mu_Pmax:mu_Qmin]]
+        gen = c_[gen[:, 0:IDX.gen.PMIN + 1], tmp, gen[:, mu_Pmax:mu_Qmin]]
     else:
-        gen = c_[gen[:, 0:PMIN + 1], tmp]
+        gen = c_[gen[:, 0:IDX.gen.PMIN + 1], tmp]
 
     # -----  branch  -----
     # use the version 1 values for column names
-    shift = PF - BR_STATUS - 1
-    tmp = array([PF, QF, PT, QT, MU_SF, MU_ST]) - shift
+    shift = IDX.branch.PF - IDX.branch.BR_STATUS - 1
+    tmp = array([IDX.branch.PF, IDX.branch.QF, IDX.branch.PT,
+                IDX.branch.QT, IDX.branch.MU_SF, IDX.branch.MU_ST]) - shift
     Pf, Qf, Pt, Qt, mu_Sf, mu_St = tmp
 
     # add extra columns to branch
     tmp = ones((branch.shape[0], 1)) * array([-360, 360])
     tmp2 = zeros((branch.shape[0], 2))
     if branch.shape[1] >= mu_St - 1:
-        branch = c_[branch[:, 0:BR_STATUS + 1], tmp, branch[:, PF - 1:MU_ST + 1], tmp2]
-    elif branch.shape[1] >= QT - 1:
-        branch = c_[branch[:, 0:BR_STATUS + 1], tmp, branch[:, PF - 1:QT + 1]]
+        branch = c_[branch[:, 0:IDX.branch.BR_STATUS + 1], tmp, branch[:, IDX.branch.PF - 1:IDX.branch.MU_ST + 1], tmp2]
+    elif branch.shape[1] >= IDX.branch.QT - 1:
+        branch = c_[branch[:, 0:IDX.branch.BR_STATUS + 1], tmp, branch[:, IDX.branch.PF - 1:IDX.branch.QT + 1]]
     else:
-        branch = c_[branch[:, 0:BR_STATUS + 1], tmp]
+        branch = c_[branch[:, 0:IDX.branch.BR_STATUS + 1], tmp]
 
     return gen, branch
 
@@ -305,27 +284,6 @@ def savecase(fname, ppc, comment=None, version='2'):
     # modifications for version 1 format
     if ppc_ver == "1":
         raise NotImplementedError
-#        ## remove extra columns of gen
-#        if gen.shape[1] >= MU_QMIN:
-#            gen = c_[gen[:, :PMIN], gen[:, MU_PMAX:MU_QMIN]]
-#        else:
-#            gen = gen[:, :PMIN]
-#        ## use the version 1 values for column names
-#        shift = MU_PMAX - PMIN - 1
-#        tmp = array([MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN]) - shift
-#        MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN = tmp
-#
-#        ## remove extra columns of branch
-#        if branch.shape[1] >= MU_ST:
-#            branch = c_[branch[:, :BR_STATUS], branch[:, PF:MU_ST]]
-#        elif branch.shape[1] >= QT:
-#            branch = c_[branch[:, :BR_STATUS], branch[:, PF:QT]]
-#        else:
-#            branch = branch[:, :BR_STATUS]
-#        ## use the version 1 values for column names
-#        shift = PF - BR_STATUS - 1
-#        tmp = array([PF, QF, PT, QT, MU_SF, MU_ST]) - shift
-#        PF, QF, PT, QT, MU_SF, MU_ST = tmp
 
     # verify valid filename
     l = len(fname)
@@ -394,7 +352,7 @@ def savecase(fname, ppc, comment=None, version='2'):
         savemat(fname, ppc_mat)
     else:  # Python file
         try:
-            fd = open(fname, writemode)
+            fd = open(fname, "wb")
         except Exception as detail:
             logger.debug("savecase: %s.\n" % detail)
             return fname
@@ -411,7 +369,7 @@ def savecase(fname, ppc, comment=None, version='2'):
             fd.write('def %s():\n' % basename(rootname))
             prefix = 'ppc'
         if comment:
-            if isinstance(comment, basestring):
+            if isinstance(comment, str):
                 fd.write('#%s\n' % comment)
             elif isinstance(comment, list):
                 for c in comment:
@@ -427,17 +385,17 @@ def savecase(fname, ppc, comment=None, version='2'):
         ncols = bus.shape[1]
         fd.write('\n%s## bus data\n' % indent)
         fd.write('%s# bus_i type Pd Qd Gs Bs area Vm Va baseKV zone Vmax Vmin' % indent)
-        if ncols >= MU_VMIN + 1:  # opf SOLVED, save with lambda's & mu's
+        if ncols >= IDX.bus.MU_VMIN + 1:  # opf SOLVED, save with lambda's & mu's
             fd.write('lam_P lam_Q mu_Vmax mu_Vmin')
         fd.write("\n%s%s['bus'] = array([\n" % (indent, prefix))
-        if ncols < MU_VMIN + 1:  # opf NOT SOLVED, save without lambda's & mu's
+        if ncols < IDX.bus.MU_VMIN + 1:  # opf NOT SOLVED, save without lambda's & mu's
             for i in range(bus.shape[0]):
                 fd.write('%s[%d, %d, %.9g, %.9g, %.9g, %.9g, %d, %.9g, %.9g, %.9g, %d, %.9g, %.9g],\n' %
-                         ((indent2,) + tuple(bus[i, :VMIN + 1])))
+                         ((indent2,) + tuple(bus[i, :IDX.bus.VMIN + 1])))
         else:  # opf SOLVED, save with lambda's & mu's
             for i in range(bus.shape[0]):
                 fd.write('%s[%d, %d, %.9g, %.9g, %.9g, %.9g, %d, %.9g, %.9g, %.9g, %d, %.9g, %.9g, %.4f, %.4f, %.4f, %.4f],\n' % (
-                    (indent2,) + tuple(bus[i, :MU_VMIN + 1])))
+                    (indent2,) + tuple(bus[i, :IDX.bus.MU_VMIN + 1])))
         fd.write('%s])\n' % indent)
 
         # generator data
@@ -446,28 +404,28 @@ def savecase(fname, ppc, comment=None, version='2'):
         fd.write('%s# bus Pg Qg Qmax Qmin Vg mBase status Pmax Pmin' % indent)
         if ppc_ver != "1":
             fd.write(' Pc1 Pc2 Qc1min Qc1max Qc2min Qc2max ramp_agc ramp_10 ramp_30 ramp_q apf')
-        if ncols >= MU_QMIN + 1:             # opf SOLVED, save with mu's
+        if ncols >= IDX.gen.MU_QMIN + 1:             # opf SOLVED, save with mu's
             fd.write(' mu_Pmax mu_Pmin mu_Qmax mu_Qmin')
         fd.write("\n%s%s['gen'] = array([\n" % (indent, prefix))
-        if ncols < MU_QMIN + 1:  # opf NOT SOLVED, save without mu's
+        if ncols < IDX.gen.MU_QMIN + 1:  # opf NOT SOLVED, save without mu's
             if ppc_ver == "1":
                 for i in range(gen.shape[0]):
                     fd.write('%s[%d, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %d, %.9g, %.9g],\n' %
-                             ((indent2,) + tuple(gen[i, :PMIN + 1])))
+                             ((indent2,) + tuple(gen[i, :IDX.gen.PMIN + 1])))
             else:
                 for i in range(gen.shape[0]):
                     fd.write('%s[%d, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %d, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g],\n' % (
-                        (indent2,) + tuple(gen[i, :APF + 1])))
+                        (indent2,) + tuple(gen[i, :IDX.gen.APF + 1])))
         else:
             if ppc_ver == "1":
                 for i in range(gen.shape[0]):
                     fd.write(
                         '%s[%d, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %d, %.9g, %.9g, %.4f, %.4f, %.4f, %.4f],\n' %
-                        ((indent2,) + tuple(gen[i, : MU_QMIN + 1])))
+                        ((indent2,) + tuple(gen[i, : IDX.gen.MU_QMIN + 1])))
             else:
                 for i in range(gen.shape[0]):
                     fd.write('%s[%d, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %d, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.4f, %.4f, %.4f, %.4f],\n' % (
-                        (indent2,) + tuple(gen[i, :MU_QMIN + 1])))
+                        (indent2,) + tuple(gen[i, :IDX.gen.MU_QMIN + 1])))
         fd.write('%s])\n' % indent)
 
         # branch data
@@ -476,42 +434,42 @@ def savecase(fname, ppc, comment=None, version='2'):
         fd.write('%s# fbus tbus r x b rateA rateB rateC ratio angle status' % indent)
         if ppc_ver != "1":
             fd.write(' angmin angmax')
-        if ncols >= QT + 1:  # power flow SOLVED, save with line flows
+        if ncols >= IDX.branch.QT + 1:  # power flow SOLVED, save with line flows
             fd.write(' Pf Qf Pt Qt')
-        if ncols >= MU_ST + 1:  # opf SOLVED, save with mu's
+        if ncols >= IDX.branch.MU_ST + 1:  # opf SOLVED, save with mu's
             fd.write(' mu_Sf mu_St')
             if ppc_ver != "1":
                 fd.write(' mu_angmin mu_angmax')
         fd.write('\n%s%s[\'branch\'] = array([\n' % (indent, prefix))
-        if ncols < QT + 1:  # power flow NOT SOLVED, save without line flows or mu's
+        if ncols < IDX.branch.QT + 1:  # power flow NOT SOLVED, save without line flows or mu's
             if ppc_ver == "1":
                 for i in range(branch.shape[0]):
                     fd.write('%s[%d, %d, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %d],\n' %
-                             ((indent2,) + tuple(branch[i, :BR_STATUS + 1])))
+                             ((indent2,) + tuple(branch[i, :IDX.branch.BR_STATUS + 1])))
             else:
                 for i in range(branch.shape[0]):
                     fd.write(
                         '%s[%d, %d, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %d, %.9g, %.9g],\n' %
-                        ((indent2,) + tuple(branch[i, : ANGMAX + 1])))
-        elif ncols < MU_ST + 1:  # power flow SOLVED, save with line flows but without mu's
+                        ((indent2,) + tuple(branch[i, : IDX.branch.ANGMAX + 1])))
+        elif ncols < IDX.branch.MU_ST + 1:  # power flow SOLVED, save with line flows but without mu's
             if ppc_ver == "1":
                 for i in range(branch.shape[0]):
                     fd.write(
                         '%s[%d, %d, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %d, %.4f, %.4f, %.4f, %.4f],\n' %
-                        ((indent2,) + tuple(branch[i, : QT + 1])))
+                        ((indent2,) + tuple(branch[i, : IDX.branch.QT + 1])))
             else:
                 for i in range(branch.shape[0]):
                     fd.write('%s[%d, %d, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %d, %.9g, %.9g, %.4f, %.4f, %.4f, %.4f],\n' % (
-                        (indent2,) + tuple(branch[i, :QT + 1])))
+                        (indent2,) + tuple(branch[i, :IDX.branch.QT + 1])))
         else:  # opf SOLVED, save with lineflows & mu's
             if ppc_ver == "1":
                 for i in range(branch.shape[0]):
                     fd.write('%s[%d, %d, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %d, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f],\n' % (
-                        (indent2,) + tuple(branch[i, :MU_ST + 1])))
+                        (indent2,) + tuple(branch[i, :IDX.branch.MU_ST + 1])))
             else:
                 for i in range(branch.shape[0]):
                     fd.write('%s[%d, %d, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %.9g, %d, %.9g, %.9g, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f],\n' % (
-                        (indent2,) + tuple(branch[i, :MU_ANGMAX + 1])))
+                        (indent2,) + tuple(branch[i, :IDX.branch.MU_ANGMAX + 1])))
         fd.write('%s])\n' % indent)
 
         # OPF data
@@ -524,7 +482,7 @@ def savecase(fname, ppc, comment=None, version='2'):
             fd.write("%s%s['areas'] = array([\n" % (indent, prefix))
             if len(areas) > 0:
                 for i in range(areas.shape[0]):
-                    fd.write('%s[%d, %d],\n' % ((indent2,) + tuple(areas[i, :PRICE_REF_BUS + 1])))
+                    fd.write('%s[%d, %d],\n' % ((indent2,) + tuple(areas[i, :IDX.area.PRICE_REF_BUS + 1])))
             fd.write('%s])\n' % indent)
         if gencost is not None and len(gencost) > 0:
             # generator cost data
@@ -533,12 +491,12 @@ def savecase(fname, ppc, comment=None, version='2'):
             fd.write('%s# 2 startup shutdown n c(n-1) ... c0\n' % indent)
             fd.write('%s%s[\'gencost\'] = array([\n' % (indent, prefix))
             if len(gencost > 0):
-                if any(gencost[:, MODEL] == PW_LINEAR):
-                    n1 = 2 * max(gencost[gencost[:, MODEL] == PW_LINEAR,  NCOST])
+                if any(gencost[:, IDX.cost.MODEL] == IDX.cost.PW_LINEAR):
+                    n1 = 2 * max(gencost[gencost[:, IDX.cost.MODEL] == IDX.cost.PW_LINEAR,  IDX.cost.NCOST])
                 else:
                     n1 = 0
-                if any(gencost[:, MODEL] == POLYNOMIAL):
-                    n2 = max(gencost[gencost[:, MODEL] == POLYNOMIAL, NCOST])
+                if any(gencost[:, IDX.cost.MODEL] == IDX.cost.POLYNOMIAL):
+                    n2 = max(gencost[gencost[:, IDX.cost.MODEL] == IDX.cost.POLYNOMIAL, IDX.cost.NCOST])
                 else:
                     n2 = 0
                 n = int(max([n1, n2]))

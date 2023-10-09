@@ -17,7 +17,10 @@ from andes.shared import deg2rad, rad2deg  # NOQA
 
 from ams.pypower.core import ppoption  # NOQA
 import ams.pypower.utils as putils  # NOQA
-import ams.pypower.utils.const as IDX  # NOQA
+from ams.pypower.idx import IDX  # NOQA
+from ams.pypower.io import loadcase  # NOQA
+from ams.pypower.eps import EPS  # NOQA
+import ams.pypower.routines.opffcns as opfcn  # NOQA
 
 from ams.pypower.make import (makeB, makeBdc, makeSbus, makeYbus, dSbus_dV)  # NOQA
 
@@ -77,7 +80,7 @@ def runpf(casedata, ppopt):
     ppopt = ppoption(ppopt)
 
     # read data
-    ppc = putils.loadcase(casedata)
+    ppc = loadcase(casedata)
 
     # add zero columns to branch for flows if needed
     if ppc["branch"].shape[1] < IDX.branch.QT:
@@ -86,7 +89,7 @@ def runpf(casedata, ppopt):
                                         IDX.branch.QT - ppc["branch"].shape[1] + 1))]
 
     # convert to internal indexing
-    ppc = putils.ie.ext2int(ppc)
+    ppc = opfcn.ext2int(ppc)
     baseMVA, bus, gen, branch = \
         ppc["baseMVA"], ppc["bus"], ppc["gen"], ppc["branch"]
 
@@ -276,7 +279,7 @@ def runpf(casedata, ppopt):
     # -----  output results  -----
     # convert back to original bus numbering & print results
     ppc["bus"], ppc["gen"], ppc["branch"] = bus, gen, branch
-    results = putils.ie.int2ext(ppc)
+    results = opfcn.int2ext(ppc)
 
     # zero out result fields of out-of-service gens & branches
     if len(results["order"]["gen"]["status"]["off"]) > 0:
@@ -560,7 +563,7 @@ def pfsoln(baseMVA, bus0, gen0, branch0, Ybus, Yf, Yt, V, ref, pv, pq):
         ig = find(Cg * Qg_min == Cg * Qg_max)
         Qg_save = gen[on[ig], IDX.gen.QG]
         gen[on, IDX.gen.QG] = gen[on, IDX.gen.QMIN] + \
-            (Cg * ((Qg_tot - Qg_min) / (Qg_max - Qg_min + putils.EPS))) * \
+            (Cg * ((Qg_tot - Qg_min) / (Qg_max - Qg_min + EPS))) * \
             (gen[on, IDX.gen.QMAX] - gen[on, IDX.gen.QMIN])  # ^ avoid div by 0
         gen[on[ig], IDX.gen.QG] = Qg_save  # (terms are mult by 0 anyway)
 

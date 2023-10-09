@@ -11,9 +11,12 @@ from scipy.sparse import csr_matrix as c_sparse  # NOQA
 
 from andes.shared import deg2rad, rad2deg  # NOQA
 
+from ams.pypower.eps import EPS  # NOQA
+from ams.pypower.idx import IDX  # NOQA
+from ams.pypower.utils import sub2ind  # NOQA
 from ams.pypower.make import makeYbus  # NOQA
-from ams.pypower.routines.opffcns import opf_costfcn, opf_consfcn, opf_hessfcn  # NOQA
-from ams.pypower.utils import sub2ind, IDX, EPS  # NOQA
+from ams.pypower.routines.opffcns import (opf_costfcn, opf_consfcn,
+                                          opf_hessfcn,)  # NOQA
 
 
 logger = logging.getLogger(__name__)

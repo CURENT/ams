@@ -15,14 +15,17 @@ from andes.shared import deg2rad  # NOQA
 from andes.utils.misc import elapsed  # NOQA
 
 from ams.pypower.core import ppoption, pipsopf_solver, ipoptopf_solver  # NOQA
-from ams.pypower.utils import isload, loadcase, IDX  # NOQA
+from ams.pypower.utils import isload, fairmax  # NOQA
+from ams.pypower.idx import IDX  # NOQA
+from ams.pypower.io import loadcase  # NOQA
 import ams.pypower.utils as putil  # NOQA
-from ams.pypower.make import (makeYbus, fairmax,
-                              makeAvl, makeApq, makeAang, makeAy)  # NOQA
-from ams.pypower.routines.opffcns import polycost, totcost, run_userfcn
+from ams.pypower.make import (makeYbus, makeAvl, makeApq,
+                              makeAang, makeAy)  # NOQA
+
+import ams.pypower.routines.opffcns as opfcn  # NOQA
+from ams.pypower.routines.opffcns import polycost, totcost, run_userfcn, update_mupq  # NOQA
 
 from ams.pypower.toggle_reserves import toggle_reserves
-from ams.pypower.update_mupq import update_mupq
 
 logger = logging.getLogger(__name__)
 
@@ -280,7 +283,7 @@ def fopf(*args):
         ppc['branch'] = np.c_[ppc['branch'], np.zeros((nl, IDX.branch.MU_ANGMAX + 1 - np.shape(ppc['branch'])[1]))]
 
     # -----  convert to internal numbering, remove out-of-service stuff  -----
-    ppc = putil.ext2int(ppc)
+    ppc = opfcn.ext2int(ppc)
 
     # -----  construct OPF model object  -----
     om = opf_setup(ppc, ppopt)
@@ -289,7 +292,7 @@ def fopf(*args):
     results, success, raw = opf_execute(om, ppopt)
 
     # -----  revert to original ordering, including out-of-service stuff  -----
-    results = putil.int2ext(results)
+    results = opfcn.int2ext(results)
 
     # zero out result fields of out-of-service gens & branches
     if len(results['order']['gen']['status']['off']) > 0:
@@ -1527,7 +1530,7 @@ def opf_args(*args):
         else:
             logger.debug('opf_args: Incorrect input arg order, number or type\n')
 
-        ppc = putil.loadcase(casefile)
+        ppc = loadcase(casefile)
         baseMVA, bus, gen, branch, gencost = \
             ppc['baseMVA'], ppc['bus'], ppc['gen'], ppc['branch'], ppc['gencost']
         if 'areas' in ppc:
