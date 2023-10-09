@@ -1,51 +1,28 @@
 """
 Module for OPF functions.
 """
+import logging
 
-# --- hessfcn ---
+import numpy as np  # NOQA
+from numpy import flatnonzero as find  # NOQA
 
-from numpy import array, zeros, ones, exp, arange, r_, flatnonzero as find
-from scipy.sparse import vstack, hstack, issparse, csr_matrix as sparse
+import scipy.sparse as sp  # NOQA
+from scipy.sparse import csr_matrix as c_sparse  # NOQA
+from scipy.sparse import lil_matrix as l_sparse  # NOQA
 
-
-from ams.pypower.polycost import polycost
 
 from ams.pypower.make import (d2Sbus_dV2, dSbus_dV, dIbr_dV,
-                              d2AIbr_dV2, d2ASbr_dV2, dSbr_dV)
-from ams.pypower.opf_costfcn import opf_costfcn
-from ams.pypower.opf_consfcn import opf_consfcn
-
-# --- consfcn ---
-from numpy import zeros, ones, conj, exp, r_, Inf, arange
-
-from scipy.sparse import lil_matrix, vstack, hstack, csr_matrix as sparse
+                              d2AIbr_dV2, d2ASbr_dV2, dSbr_dV,
+                              makeSbus, dAbr_dV)  # NOQA
+from ams.pypower.utils import IDX  # NOQA
 
 
-from ams.pypower.make import (makeSbus, dSbus_dV, dIbr_dV,
-                              dSbr_dV, dAbr_dV)
-
-# --- costfcn ---
-from numpy import array, ones, zeros, arange, r_, dot, flatnonzero as find
-from scipy.sparse import issparse, csr_matrix as sparse
-
-
-from ams.pypower.totcost import totcost
-from ams.pypower.polycost import polycost
-
-# --- run_userfcn ---
-from ams.pypower.util import feval
-
-
-from ams.pypower.idx_gen import PG, QG
-from ams.pypower.idx_brch import F_BUS, T_BUS
-from ams.pypower.idx_cost import MODEL, POLYNOMIAL
-from ams.pypower.idx_cost import MODEL, POLYNOMIAL
-from ams.pypower.idx_gen import GEN_BUS, PG, QG
-from ams.pypower.idx_brch import F_BUS, T_BUS, RATE_A
+logger = logging.getLogger(__name__)
 
 
 def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
-    """Evaluates Hessian of Lagrangian for AC OPF.
+    """
+    Evaluates Hessian of Lagrangian for AC OPF.
 
     Hessian evaluation function for AC optimal power flow, suitable
     for use with L{pips}.
@@ -131,12 +108,12 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
             baseMVA**2 * polycost(qcost[ipolq, :], Qg[ipolq] * baseMVA, 2)
     i = np.r_[np.arange(vv["i1"]["Pg"], vv["iN"]["Pg"]),
               np.arange(vv["i1"]["Qg"], vv["iN"]["Qg"])]
-#    d2f = c_sparse((vstack([d2f_dPg2, d2f_dQg2]).toarray().flatten(),
+#    d2f = c_sparse((sp.vstack([d2f_dPg2, d2f_dQg2]).toarray().flatten(),
 #                  (i, i)), shape=(nxyz, nxyz))
     d2f = c_sparse((np.r_[d2f_dPg2, d2f_dQg2], (i, i)), (nxyz, nxyz))
 
     # generalized cost
-    if issparse(N) and N.nnz > 0:
+    if sp.issparse(N) and N.nnz > 0:
         nw = N.shape[0]
         r = N * x - rh  # Nx - rhat
         iLT = find(r < -kk)  # below dead zone
@@ -169,14 +146,14 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
     Gpaa, Gpav, Gpva, Gpvv = d2Sbus_dV2(Ybus, V, lamP)
     Gqaa, Gqav, Gqva, Gqvv = d2Sbus_dV2(Ybus, V, lamQ)
 
-    d2G = vstack([
-        hstack([
-            vstack([hstack([Gpaa, Gpav]),
-                    hstack([Gpva, Gpvv])]).real +
-            vstack([hstack([Gqaa, Gqav]),
-                    hstack([Gqva, Gqvv])]).imag,
+    d2G = sp.vstack([
+        sp.hstack([
+            sp.vstack([sp.hstack([Gpaa, Gpav]),
+                    sp.hstack([Gpva, Gpvv])]).real +
+            sp.vstack([sp.hstack([Gqaa, Gqav]),
+                    sp.hstack([Gqva, Gqvv])]).imag,
             c_sparse((2 * nb, nxtra))]),
-        hstack([
+        sp.hstack([
             c_sparse((nxtra, 2 * nb)),
             c_sparse((nxtra, nxtra))
         ])
@@ -210,15 +187,15 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
             Htaa, Htav, Htva, Htvv = \
                 d2ASbr_dV2(dSt_dVa, dSt_dVm, St, Ct, Yt, V, muT)
 
-    d2H = vstack([
-        hstack([
-            vstack([hstack([Hfaa, Hfav]),
-                    hstack([Hfva, Hfvv])]) +
-            vstack([hstack([Htaa, Htav]),
-                    hstack([Htva, Htvv])]),
+    d2H = sp.vstack([
+        sp.hstack([
+            sp.vstack([sp.hstack([Hfaa, Hfav]),
+                    sp.hstack([Hfva, Hfvv])]) +
+            sp.vstack([sp.hstack([Htaa, Htav]),
+                    sp.hstack([Htva, Htvv])]),
             c_sparse((2 * nb, nxtra))
         ]),
-        hstack([
+        sp.hstack([
             c_sparse((nxtra, 2 * nb)),
             c_sparse((nxtra, nxtra))
         ])
@@ -259,7 +236,8 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
 
 
 def opf_consfcn(x, om, Ybus, Yf, Yt, ppopt, il=None, *args):
-    """Evaluates nonlinear constraints and their Jacobian for OPF.
+    """
+    Evaluates nonlinear constraints and their Jacobian for OPF.
 
     Constraint evaluation function for AC optimal power flow, suitable
     for use with L{pips}. Computes constraint vectors and their gradients.
@@ -288,107 +266,107 @@ def opf_consfcn(x, om, Ybus, Yf, Yt, ppopt, il=None, *args):
     Autonoma de Manizales)
     @author: Ray Zimmerman (PSERC Cornell)
     """
-    ##----- initialize -----
+    # ----- initialize -----
 
-    ## unpack data
+    # unpack data
     ppc = om.get_ppc()
     baseMVA, bus, gen, branch = \
         ppc["baseMVA"], ppc["bus"], ppc["gen"], ppc["branch"]
     vv, _, _, _ = om.get_idx()
 
-    ## problem dimensions
-    nb = bus.shape[0]          ## number of buses
-    nl = branch.shape[0]       ## number of branches
-    ng = gen.shape[0]          ## number of dispatchable injections
-    nxyz = len(x)              ## total number of control vars of all types
+    # problem dimensions
+    nb = bus.shape[0]  # number of buses
+    nl = branch.shape[0]  # number of branches
+    ng = gen.shape[0]  # number of dispatchable injections
+    nxyz = len(x)  # total number of control vars of all types
 
-    ## set default constrained lines
+    # set default constrained lines
     if il is None:
-        il = arange(nl)         ## all lines have limits by default
-    nl2 = len(il)              ## number of constrained lines
+        il = np.arange(nl)  # all lines have limits by default
+    nl2 = len(il)  # number of constrained lines
 
-    ## grab Pg & Qg
-    Pg = x[vv["i1"]["Pg"]:vv["iN"]["Pg"]]  ## active generation in p.u.
-    Qg = x[vv["i1"]["Qg"]:vv["iN"]["Qg"]]  ## reactive generation in p.u.
+    # grab Pg & Qg
+    Pg = x[vv["i1"]["Pg"]:vv["iN"]["Pg"]]  # active generation in p.u.
+    Qg = x[vv["i1"]["Qg"]:vv["iN"]["Qg"]]  # reactive generation in p.u.
 
-    ## put Pg & Qg back in gen
-    gen[:, PG] = Pg * baseMVA  ## active generation in MW
-    gen[:, QG] = Qg * baseMVA  ## reactive generation in MVAr
+    # put Pg & Qg back in gen
+    gen[:, IDX.gen.PG] = Pg * baseMVA  # active generation in MW
+    gen[:, IDX.gen.QG] = Qg * baseMVA  # reactive generation in MVAr
 
-    ## rebuild Sbus
-    Sbus = makeSbus(baseMVA, bus, gen) ## net injected power in p.u.
+    # rebuild Sbus
+    Sbus = makeSbus(baseMVA, bus, gen)  # net injected power in p.u.
 
-    ## ----- evaluate constraints -----
-    ## reconstruct V
+    # ----- evaluate constraints -----
+    # reconstruct V
     Va = x[vv["i1"]["Va"]:vv["iN"]["Va"]]
     Vm = x[vv["i1"]["Vm"]:vv["iN"]["Vm"]]
-    V = Vm * exp(1j * Va)
+    V = Vm * np.exp(1j * Va)
 
-    ## evaluate power flow equations
-    mis = V * conj(Ybus * V) - Sbus
+    # evaluate power flow equations
+    mis = V * np.conj(Ybus * V) - Sbus
 
-    ##----- evaluate constraint function values -----
-    ## first, the equality constraints (power flow)
-    g = r_[ mis.real,            ## active power mismatch for all buses
-            mis.imag ]           ## reactive power mismatch for all buses
+    # ----- evaluate constraint function values -----
+    # first, the equality constraints (power flow)
+    g = np.r_[mis.real,  # active power mismatch for all buses
+              mis.imag]  # reactive power mismatch for all buses
 
-    ## then, the inequality constraints (branch flow limits)
+    # then, the inequality constraints (branch flow limits)
     if nl2 > 0:
-        flow_max = (branch[il, RATE_A] / baseMVA)**2
-        flow_max[flow_max == 0] = Inf
-        if ppopt['OPF_FLOW_LIM'] == 2:       ## current magnitude limit, |I|
+        flow_max = (branch[il, IDX.branch.RATE_A] / baseMVA)**2
+        flow_max[flow_max == 0] = np.Inf
+        if ppopt['OPF_FLOW_LIM'] == 2:  # current magnitude limit, |I|
             If = Yf * V
             It = Yt * V
-            h = r_[ If * conj(If) - flow_max,     ## branch I limits (from bus)
-                    It * conj(It) - flow_max ].real    ## branch I limits (to bus)
+            h = np.r_[If * np.conj(If) - flow_max,  # branch I limits (from bus)
+                      It * np.conj(It) - flow_max].real  # branch I limits (to bus)
         else:
-            ## compute branch power flows
-            ## complex power injected at "from" bus (p.u.)
-            Sf = V[ branch[il, F_BUS].astype(int) ] * conj(Yf * V)
-            ## complex power injected at "to" bus (p.u.)
-            St = V[ branch[il, T_BUS].astype(int) ] * conj(Yt * V)
-            if ppopt['OPF_FLOW_LIM'] == 1:   ## active power limit, P (Pan Wei)
-                h = r_[ Sf.real**2 - flow_max,   ## branch P limits (from bus)
-                        St.real**2 - flow_max ]  ## branch P limits (to bus)
-            else:                ## apparent power limit, |S|
-                h = r_[ Sf * conj(Sf) - flow_max, ## branch S limits (from bus)
-                        St * conj(St) - flow_max ].real  ## branch S limits (to bus)
+            # compute branch power flows
+            # complex power injected at "from" bus (p.u.)
+            Sf = V[branch[il, IDX.branch.F_BUS].astype(int)] * np.conj(Yf * V)
+            # complex power injected at "to" bus (p.u.)
+            St = V[branch[il, IDX.branch.F_BUS].astype(int)] * np.conj(Yt * V)
+            if ppopt['OPF_FLOW_LIM'] == 1:  # active power limit, P (Pan Wei)
+                h = np.r_[Sf.real**2 - flow_max,  # branch P limits (from bus)
+                          St.real**2 - flow_max]  # branch P limits (to bus)
+            else:  # apparent power limit, |S|
+                h = np.r_[Sf * np.conj(Sf) - flow_max,  # branch S limits (from bus)
+                          St * np.conj(St) - flow_max].real  # branch S limits (to bus)
     else:
-        h = zeros((0,1))
+        h = np.zeros((0, 1))
 
-    ##----- evaluate partials of constraints -----
-    ## index ranges
-    iVa = arange(vv["i1"]["Va"], vv["iN"]["Va"])
-    iVm = arange(vv["i1"]["Vm"], vv["iN"]["Vm"])
-    iPg = arange(vv["i1"]["Pg"], vv["iN"]["Pg"])
-    iQg = arange(vv["i1"]["Qg"], vv["iN"]["Qg"])
-    iVaVmPgQg = r_[iVa, iVm, iPg, iQg].T
+    # ----- evaluate partials of constraints -----
+    # index ranges
+    iVa = np.arange(vv["i1"]["Va"], vv["iN"]["Va"])
+    iVm = np.arange(vv["i1"]["Vm"], vv["iN"]["Vm"])
+    iPg = np.arange(vv["i1"]["Pg"], vv["iN"]["Pg"])
+    iQg = np.arange(vv["i1"]["Qg"], vv["iN"]["Qg"])
+    iVaVmPgQg = np.r_[iVa, iVm, iPg, iQg].T
 
-    ## compute partials of injected bus powers
-    dSbus_dVm, dSbus_dVa = dSbus_dV(Ybus, V)           ## w.r.t. V
-    ## Pbus w.r.t. Pg, Qbus w.r.t. Qg
-    neg_Cg = sparse((-ones(ng), (gen[:, GEN_BUS], range(ng))), (nb, ng))
+    # compute partials of injected bus powers
+    dSbus_dVm, dSbus_dVa = dSbus_dV(Ybus, V)  # w.r.t. V
+    # Pbus w.r.t. Pg, Qbus w.r.t. Qg
+    neg_Cg = c_sparse((-np.ones(ng), (gen[:, IDX.gen.GEN_BUS], range(ng))), (nb, ng))
 
-    ## construct Jacobian of equality constraints (power flow) and transpose it
-    dg = lil_matrix((2 * nb, nxyz))
-    blank = sparse((nb, ng))
-    dg[:, iVaVmPgQg] = vstack([
-            ## P mismatch w.r.t Va, Vm, Pg, Qg
-            hstack([dSbus_dVa.real, dSbus_dVm.real, neg_Cg, blank]),
-            ## Q mismatch w.r.t Va, Vm, Pg, Qg
-            hstack([dSbus_dVa.imag, dSbus_dVm.imag, blank, neg_Cg])
-        ], "csr")
+    # construct Jacobian of equality constraints (power flow) and transpose it
+    dg = l_sparse((2 * nb, nxyz))
+    blank = c_sparse((nb, ng))
+    dg[:, iVaVmPgQg] = sp.vstack([
+        # P mismatch w.r.t Va, Vm, Pg, Qg
+        sp.hstack([dSbus_dVa.real, dSbus_dVm.real, neg_Cg, blank]),
+        # Q mismatch w.r.t Va, Vm, Pg, Qg
+        sp.hstack([dSbus_dVa.imag, dSbus_dVm.imag, blank, neg_Cg])
+    ], "csr")
     dg = dg.T
 
     if nl2 > 0:
-        ## compute partials of Flows w.r.t. V
-        if ppopt['OPF_FLOW_LIM'] == 2:     ## current
+        # compute partials of Flows w.r.t. V
+        if ppopt['OPF_FLOW_LIM'] == 2:  # current
             dFf_dVa, dFf_dVm, dFt_dVa, dFt_dVm, Ff, Ft = \
-                    dIbr_dV(branch[il, :], Yf, Yt, V)
-        else:                  ## power
+                dIbr_dV(branch[il, :], Yf, Yt, V)
+        else:  # power
             dFf_dVa, dFf_dVm, dFt_dVa, dFt_dVm, Ff, Ft = \
-                    dSbr_dV(branch[il, :], Yf, Yt, V)
-        if ppopt['OPF_FLOW_LIM'] == 1:     ## real part of flow (active power)
+                dSbr_dV(branch[il, :], Yf, Yt, V)
+        if ppopt['OPF_FLOW_LIM'] == 1:  # real part of flow (active power)
             dFf_dVa = dFf_dVa.real
             dFf_dVm = dFf_dVm.real
             dFt_dVa = dFt_dVa.real
@@ -396,17 +374,17 @@ def opf_consfcn(x, om, Ybus, Yf, Yt, ppopt, il=None, *args):
             Ff = Ff.real
             Ft = Ft.real
 
-        ## squared magnitude of flow (of complex power or current, or real power)
+        # squared magnitude of flow (of complex power or current, or real power)
         df_dVa, df_dVm, dt_dVa, dt_dVm = \
-                dAbr_dV(dFf_dVa, dFf_dVm, dFt_dVa, dFt_dVm, Ff, Ft)
+            dAbr_dV(dFf_dVa, dFf_dVm, dFt_dVa, dFt_dVm, Ff, Ft)
 
-        ## construct Jacobian of inequality constraints (branch limits)
-        ## and transpose it.
-        dh = lil_matrix((2 * nl2, nxyz))
-        dh[:, r_[iVa, iVm].T] = vstack([
-                hstack([df_dVa, df_dVm]),    ## "from" flow limit
-                hstack([dt_dVa, dt_dVm])     ## "to" flow limit
-            ], "csr")
+        # construct Jacobian of inequality constraints (branch limits)
+        # and transpose it.
+        dh = l_sparse((2 * nl2, nxyz))
+        dh[:, np.r_[iVa, iVm].T] = sp.vstack([
+            sp.hstack([df_dVa, df_dVm]),  # "from" flow limit
+            sp.hstack([dt_dVa, dt_dVm])  # "to" flow limit
+        ], "csr")
         dh = dh.T
     else:
         dh = None
@@ -414,9 +392,9 @@ def opf_consfcn(x, om, Ybus, Yf, Yt, ppopt, il=None, *args):
     return h, g, dh, dg
 
 
-
 def opf_costfcn(x, om, return_hessian=False):
-    """Evaluates objective function, gradient and Hessian for OPF.
+    """
+    Evaluates objective function, gradient and Hessian for OPF.
 
     Objective function evaluation routine for AC optimal power flow,
     suitable for use with L{pips}. Computes objective function value,
@@ -435,8 +413,8 @@ def opf_costfcn(x, om, return_hessian=False):
     Autonoma de Manizales)
     @author: Ray Zimmerman (PSERC Cornell)
     """
-    ##----- initialize -----
-    ## unpack data
+    # ----- initialize -----
+    # unpack data
     ppc = om.get_ppc()
     baseMVA, gen, gencost = ppc["baseMVA"], ppc["gen"], ppc["gencost"]
     cp = om.get_cost_params()
@@ -444,84 +422,84 @@ def opf_costfcn(x, om, return_hessian=False):
         cp["N"], cp["Cw"], cp["H"], cp["dd"], cp["rh"], cp["kk"], cp["mm"]
     vv, _, _, _ = om.get_idx()
 
-    ## problem dimensions
-    ng = gen.shape[0]          ## number of dispatchable injections
-    ny = om.getN('var', 'y')   ## number of piece-wise linear costs
-    nxyz = len(x)              ## total number of control vars of all types
+    # problem dimensions
+    ng = gen.shape[0]  # number of dispatchable injections
+    ny = om.getN('var', 'y')  # number of piece-wise linear costs
+    nxyz = len(x)  # total number of control vars of all types
 
-    ## grab Pg & Qg
-    Pg = x[vv["i1"]["Pg"]:vv["iN"]["Pg"]]  ## active generation in p.u.
-    Qg = x[vv["i1"]["Qg"]:vv["iN"]["Qg"]]  ## reactive generation in p.u.
+    # grab Pg & Qg
+    Pg = x[vv["i1"]["Pg"]:vv["iN"]["Pg"]]  # active generation in p.u.
+    Qg = x[vv["i1"]["Qg"]:vv["iN"]["Qg"]]  # reactive generation in p.u.
 
-    ##----- evaluate objective function -----
-    ## polynomial cost of P and Q
+    # ----- evaluate objective function -----
+    # polynomial cost of P and Q
     # use totcost only on polynomial cost in the minimization problem
     # formulation, pwl cost is the sum of the y variables.
-    ipol = find(gencost[:, MODEL] == POLYNOMIAL)   ## poly MW and MVAr costs
-    xx = r_[ Pg, Qg ] * baseMVA
+    ipol = find(gencost[:, IDX.cost.MODEL] == IDX.cost.POLYNOMIAL)  # poly MW and MVAr costs
+    xx = np.r_[Pg, Qg] * baseMVA
     if any(ipol):
-        f = sum( totcost(gencost[ipol, :], xx[ipol]) )  ## cost of poly P or Q
+        f = sum(totcost(gencost[ipol, :], xx[ipol]))  # cost of poly P or Q
     else:
         f = 0
 
-    ## piecewise linear cost of P and Q
+    # piecewise linear cost of P and Q
     if ny > 0:
-        ccost = sparse((ones(ny),
-                        (zeros(ny), arange(vv["i1"]["y"], vv["iN"]["y"]))),
-                       (1, nxyz)).toarray().flatten()
-        f = f + dot(ccost, x)
+        ccost = c_sparse((np.ones(ny),
+                          (np.zeros(ny), np.arange(vv["i1"]["y"], vv["iN"]["y"]))),
+                         (1, nxyz)).toarray().flatten()
+        f = f + np.dot(ccost, x)
     else:
-        ccost = zeros(nxyz)
+        ccost = np.zeros(nxyz)
 
-    ## generalized cost term
-    if issparse(N) and N.nnz > 0:
+    # generalized cost term
+    if sp.issparse(N) and N.nnz > 0:
         nw = N.shape[0]
-        r = N * x - rh                   ## Nx - rhat
-        iLT = find(r < -kk)              ## below dead zone
-        iEQ = find((r == 0) & (kk == 0)) ## dead zone doesn't exist
-        iGT = find(r > kk)               ## above dead zone
-        iND = r_[iLT, iEQ, iGT]          ## rows that are Not in the Dead region
-        iL = find(dd == 1)           ## rows using linear function
-        iQ = find(dd == 2)           ## rows using quadratic function
-        LL = sparse((ones(len(iL)), (iL, iL)), (nw, nw))
-        QQ = sparse((ones(len(iQ)), (iQ, iQ)), (nw, nw))
-        kbar = sparse((r_[ones(len(iLT)), zeros(len(iEQ)), -ones(len(iGT))],
-                       (iND, iND)), (nw, nw)) * kk
-        rr = r + kbar                  ## apply non-dead zone shift
-        M = sparse((mm[iND], (iND, iND)), (nw, nw))  ## dead zone or scale
-        diagrr = sparse((rr, (arange(nw), arange(nw))), (nw, nw))
+        r = N * x - rh  # Nx - rhat
+        iLT = find(r < -kk)  # below dead zone
+        iEQ = find((r == 0) & (kk == 0))  # dead zone doesn't exist
+        iGT = find(r > kk)  # above dead zone
+        iND = np.r_[iLT, iEQ, iGT]  # rows that are Not in the Dead region
+        iL = find(dd == 1)  # rows using linear function
+        iQ = find(dd == 2)  # rows using quadratic function
+        LL = c_sparse((np.ones(len(iL)), (iL, iL)), (nw, nw))
+        QQ = c_sparse((np.ones(len(iQ)), (iQ, iQ)), (nw, nw))
+        kbar = c_sparse((np.r_[np.ones(len(iLT)), np.zeros(len(iEQ)), -np.ones(len(iGT))],
+                         (iND, iND)), (nw, nw)) * kk
+        rr = r + kbar  # apply non-dead zone shift
+        M = c_sparse((mm[iND], (iND, iND)), (nw, nw))  # dead zone or scale
+        diagrr = c_sparse((rr, (np.arange(nw), np.arange(nw))), (nw, nw))
 
-        ## linear rows multiplied by rr(i), quadratic rows by rr(i)^2
+        # linear rows multiplied by rr(i), quadratic rows by rr(i)^2
         w = M * (LL + QQ * diagrr) * rr
 
-        f = f + dot(w * H, w) / 2 + dot(Cw, w)
+        f = f + np.dot(w * H, w) / 2 + np.dot(Cw, w)
 
-    ##----- evaluate cost gradient -----
-    ## index ranges
+    # ----- evaluate cost gradient -----
+    # index ranges
     iPg = range(vv["i1"]["Pg"], vv["iN"]["Pg"])
     iQg = range(vv["i1"]["Qg"], vv["iN"]["Qg"])
 
-    ## polynomial cost of P and Q
-    df_dPgQg = zeros(2 * ng)        ## w.r.t p.u. Pg and Qg
+    # polynomial cost of P and Q
+    df_dPgQg = np.zeros(2 * ng)  # w.r.t p.u. Pg and Qg
     df_dPgQg[ipol] = baseMVA * polycost(gencost[ipol, :], xx[ipol], 1)
-    df = zeros(nxyz)
+    df = np.zeros(nxyz)
     df[iPg] = df_dPgQg[:ng]
     df[iQg] = df_dPgQg[ng:ng + ng]
 
-    ## piecewise linear cost of P and Q
+    # piecewise linear cost of P and Q
     df = df + ccost  # The linear cost row is additive wrt any nonlinear cost.
 
-    ## generalized cost term
-    if issparse(N) and N.nnz > 0:
+    # generalized cost term
+    if sp.issparse(N) and N.nnz > 0:
         HwC = H * w + Cw
         AA = N.T * M * (LL + 2 * QQ * diagrr)
         df = df + AA * HwC
 
-        ## numerical check
-        if 0:    ## 1 to check, 0 to skip check
-            ddff = zeros(df.shape)
+        # numerical check
+        if 0:  # 1 to check, 0 to skip check
+            ddff = np.zeros(df.shape)
             step = 1e-7
-            tol  = 1e-3
+            tol = 1e-3
             for k in range(len(x)):
                 xx = x
                 xx[k] = xx[k] + step
@@ -540,36 +518,37 @@ def opf_costfcn(x, om, return_hessian=False):
     if not return_hessian:
         return f, df
 
-    ## ---- evaluate cost Hessian -----
+    # ---- evaluate cost Hessian -----
     pcost = gencost[range(ng), :]
     if gencost.shape[0] > ng:
         qcost = gencost[ng + 1:2 * ng, :]
     else:
-        qcost = array([])
+        qcost = np.array([])
 
-    ## polynomial generator costs
-    d2f_dPg2 = zeros(ng)               ## w.r.t. p.u. Pg
-    d2f_dQg2 = zeros(ng)               ## w.r.t. p.u. Qg
-    ipolp = find(pcost[:, MODEL] == POLYNOMIAL)
+    # polynomial generator costs
+    d2f_dPg2 = np.zeros(ng)  # w.r.t. p.u. Pg
+    d2f_dQg2 = np.zeros(ng)  # w.r.t. p.u. Qg
+    ipolp = find(pcost[:, IDX.cost.MODEL] == IDX.cost.POLYNOMIAL)
     d2f_dPg2[ipolp] = \
-            baseMVA**2 * polycost(pcost[ipolp, :], Pg[ipolp]*baseMVA, 2)
-    if any(qcost):          ## Qg is not free
-        ipolq = find(qcost[:, MODEL] == POLYNOMIAL)
+        baseMVA**2 * polycost(pcost[ipolp, :], Pg[ipolp]*baseMVA, 2)
+    if any(qcost):  # Qg is not free
+        ipolq = find(qcost[:, IDX.cost.MODEL] == IDX.cost.POLYNOMIAL)
         d2f_dQg2[ipolq] = \
-                baseMVA**2 * polycost(qcost[ipolq, :], Qg[ipolq] * baseMVA, 2)
-    i = r_[iPg, iQg].T
-    d2f = sparse((r_[d2f_dPg2, d2f_dQg2], (i, i)), (nxyz, nxyz))
+            baseMVA**2 * polycost(qcost[ipolq, :], Qg[ipolq] * baseMVA, 2)
+    i = np.r_[iPg, iQg].T
+    d2f = c_sparse((np.r_[d2f_dPg2, d2f_dQg2], (i, i)), (nxyz, nxyz))
 
-    ## generalized cost
-    if N is not None and issparse(N):
+    # generalized cost
+    if N is not None and sp.issparse(N):
         d2f = d2f + AA * H * AA.T + 2 * N.T * M * QQ * \
-                sparse((HwC, (range(nw), range(nw))), (nw, nw)) * N
+            c_sparse((HwC, (range(nw), range(nw))), (nw, nw)) * N
 
     return f, df, d2f
 
 
 def run_userfcn(userfcn, stage, *args2):
-    """Runs the userfcn callbacks for a given stage.
+    """
+    Runs the userfcn callbacks for a given stage.
 
     Example::
         ppc = om.get_mpc()
@@ -607,9 +586,9 @@ def run_userfcn(userfcn, stage, *args2):
     return rv
 
 
-
 def add_userfcn(ppc, stage, fcn, args=None, allow_multiple=False):
-    """Appends a userfcn to the list to be called for a case.
+    """
+    Appends a userfcn to the list to be called for a case.
 
     A userfcn is a callback function that can be called automatically by
     PYPOWER at one of various stages in a simulation.
@@ -713,8 +692,10 @@ def add_userfcn(ppc, stage, fcn, args=None, allow_multiple=False):
 
     return ppc
 
+
 def remove_userfcn(ppc, stage, fcn):
-    """Removes a userfcn from the list to be called for a case.
+    """
+    Removes a userfcn from the list to be called for a case.
 
     A userfcn is a callback function that can be called automatically by
     PYPOWER at one of various stages in a simulation. This function removes
@@ -735,3 +716,178 @@ def remove_userfcn(ppc, stage, fcn):
 
     return ppc
 
+
+def totcost(gencost, Pg):
+    """
+    Computes total cost for generators at given output level.
+
+    Computes total cost for generators given a matrix in gencost format and
+    a column vector or matrix of generation levels. The return value has the
+    same dimensions as PG. Each row of C{gencost} is used to evaluate the
+    cost at the points specified in the corresponding row of C{Pg}.
+
+    @author: Ray Zimmerman (PSERC Cornell)
+    @author: Carlos E. Murillo-Sanchez (PSERC Cornell & Universidad
+    Autonoma de Manizales)
+    """
+    ng, m = gencost.shape
+    totalcost = np.zeros(ng)
+
+    if len(gencost) > 0:
+        ipwl = find(gencost[:, IDX.cost.MODEL] == IDX.cost.PW_LINEAR)
+        ipol = find(gencost[:, IDX.cost.MODEL] == IDX.cost.POLYNOMIAL)
+        if len(ipwl) > 0:
+            p = gencost[:, IDX.cost.COST:(m-1):2]
+            c = gencost[:, (IDX.cost.COST+1):m:2]
+
+            for i in ipwl:
+                ncost = gencost[i, IDX.cost.NCOST]
+                for k in np.arange(ncost - 1, dtype=int):
+                    p1, p2 = p[i, k], p[i, k+1]
+                    c1, c2 = c[i, k], c[i, k+1]
+                    m = (c2 - c1) / (p2 - p1)
+                    b = c1 - m * p1
+                    Pgen = Pg[i]
+                    if Pgen < p2:
+                        totalcost[i] = m * Pgen + b
+                        break
+                    totalcost[i] = m * Pgen + b
+
+        if len(ipol) > 0:
+            totalcost[ipol] = polycost(gencost[ipol, :], Pg[ipol])
+
+    return totalcost
+
+
+def modcost(gencost, alpha, modtype='SCALE_F'):
+    """Modifies generator costs by shifting or scaling (F or X).
+
+    For each generator cost F(X) (for real or reactive power) in
+    C{gencost}, this function modifies the cost by scaling or shifting
+    the function by C{alpha}, depending on the value of C{modtype}, and
+    and returns the modified C{gencost}. Rows of C{gencost} can be a mix
+    of polynomial or piecewise linear costs.
+
+    C{modtype} takes one of the 4 possible values (let F_alpha(X) denote the
+    the modified function)::
+        SCALE_F (default) : F_alpha(X)         == F(X) * ALPHA
+        SCALE_X           : F_alpha(X * ALPHA) == F(X)
+        SHIFT_F           : F_alpha(X)         == F(X) + ALPHA
+        SHIFT_X           : F_alpha(X + ALPHA) == F(X)
+
+    @author: Ray Zimmerman (PSERC Cornell)
+    """
+    gencost = gencost.copy()
+
+    ng, m = gencost.shape
+    if ng != 0:
+        ipwl = find(gencost[:, IDX.cost.MODEL] == IDX.cost.PW_LINEAR)
+        ipol = find(gencost[:, IDX.cost.MODEL] == IDX.cost.POLYNOMIAL)
+        c = gencost[ipol, IDX.cost.COST:m]
+
+        if modtype == 'SCALE_F':
+            gencost[ipol, IDX.cost.COST:m] = alpha * c
+            gencost[ipwl, IDX.cost.COST+1:m:2] = alpha * gencost[ipwl, IDX.cost.COST + 1:m:2]
+        elif modtype == 'SCALE_X':
+            for k in range(len(ipol)):
+                n = gencost[ipol[k], IDX.cost.NCOST].astype(int)
+                for i in range(n):
+                    gencost[ipol[k], IDX.cost.COST + i] = c[k, i] / alpha**(n - i - 1)
+            gencost[ipwl, IDX.cost.COST:m - 1:2] = alpha * gencost[ipwl, IDX.cost.COST:m - 1:2]
+        elif modtype == 'SHIFT_F':
+            for k in range(len(ipol)):
+                n = gencost[ipol[k], IDX.cost.NCOST].astype(int)
+                gencost[ipol[k], IDX.cost.COST + n - 1] = alpha + c[k, n - 1]
+            gencost[ipwl, IDX.cost.COST+1:m:2] = alpha + gencost[ipwl, IDX.cost.COST + 1:m:2]
+        elif modtype == 'SHIFT_X':
+            for k in range(len(ipol)):
+                n = gencost[ipol[k], IDX.cost.NCOST].astype(int)
+                gencost[ipol[k], IDX.cost.COST:IDX.cost.COST + n] = \
+                    polyshift(c[k, :n].T, alpha).T
+            gencost[ipwl, IDX.cost.COST:m - 1:2] = alpha + gencost[ipwl, IDX.cost.COST:m - 1:2]
+        else:
+            logger.debug('modcost: "%s" is not a valid modtype\n' % modtype)
+
+    return gencost
+
+
+def polyshift(c, a):
+    """
+    Returns the coefficients of a horizontally shifted polynomial.
+
+    C{d = polyshift(c, a)} shifts to the right by C{a}, the polynomial whose
+    coefficients are given in the column vector C{c}.
+
+    Example: For any polynomial with C{n} coefficients in C{c}, and any values
+    for C{x} and shift C{a}, the C{f - f0} should be zero::
+        x = rand
+        a = rand
+        c = rand(n, 1);
+        f0 = polyval(c, x)
+        f  = polyval(polyshift(c, a), x+a)
+    """
+    n = len(c)
+    d = np.zeros(c.shape)
+    A = pow(-a * np.ones(n), np.arange(n))
+    b = np.ones(n)
+    for k in range(n):
+        d[n - k - 1] = np.dot(b, c[n - k - 1::-1] * A[:n - k])
+        b = np.cumsum(b[:n - k - 1])
+
+    return d
+
+
+def polycost(gencost, Pg, der=0):
+    """
+    Evaluates polynomial generator cost & derivatives.
+
+    C{f = polycost(gencost, Pg)} returns the vector of costs evaluated at C{Pg}
+
+    C{df = polycost(gencost, Pg, 1)} returns the vector of first derivatives
+    of costs evaluated at C{Pg}
+
+    C{d2f = polycost(gencost, Pg, 2)} returns the vector of second derivatives
+    of costs evaluated at C{Pg}
+
+    C{gencost} must contain only polynomial costs
+    C{Pg} is in MW, not p.u. (works for C{Qg} too)
+
+    @author: Ray Zimmerman (PSERC Cornell)
+    """
+    if gencost.size == 0:
+        # User has a purely linear piecewise problem, exit early with empty array
+        return []
+
+    if any(gencost[:, IDX.cost.MODEL] == IDX.cost.PW_LINEAR):
+        logger.debug('polycost: all costs must be polynomial\n')
+
+    ng = len(Pg)
+    maxN = max(gencost[:, IDX.cost.NCOST].astype(int))
+    minN = min(gencost[:, IDX.cost.NCOST].astype(int))
+
+    # form coefficient matrix where 1st column is constant term, 2nd linear, etc.
+    c = np.zeros((ng, maxN))
+    for n in np.arange(minN, maxN + 1):
+        k = find(gencost[:, IDX.cost.NCOST] == n)  # cost with n coefficients
+        c[k, :n] = gencost[k, (IDX.cost.COST + n - 1):IDX.cost.COST - 1:-1]
+
+    # do derivatives
+    for d in range(1, der + 1):
+        if c.shape[1] >= 2:
+            c = c[:, 1:maxN - d + 1]
+        else:
+            c = np.zeros((ng, 1))
+            break
+
+        for k in range(2, maxN - d + 1):
+            c[:, k-1] = c[:, k-1] * k
+
+    # evaluate polynomial
+    if len(c) == 0:
+        f = np.zeros(Pg.shape)
+    else:
+        f = c[:, :1].flatten()  # constant term
+        for k in range(1, c.shape[1]):
+            f = f + c[:, k] * Pg**k
+
+    return f

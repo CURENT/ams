@@ -16,7 +16,7 @@ from andes.shared import rad2deg, deg2rad  # NOQA
 from ams.pypower.core.pips import pips  # NOQA
 from ams.pypower.make import makeYbus  # NOQA
 import ams.pypower.utils as putils  # NOQA
-import ams.pypower.utils.const as IDX  # NOQA
+from ams.pypower.utils import IDX  # NOQA
 from ams.pypower.routines.opffcns import opf_costfcn, opf_consfcn, opf_hessfcn  # NOQA
 
 

@@ -2,13 +2,13 @@
 Make partial derivatives matrices w.r.t. voltage.
 """
 
-import logging
+import logging  # NOQA
 
-import numpy as np
-import scipy
-from scipy.sparse import csr_matrix as c_sparse
+import numpy as np  # NOQA
+import scipy.sparse as sp  # NOQA
+from scipy.sparse import csr_matrix as c_sparse  # NOQA
 
-import ams.pypower.utils.const as IDX
+from ams.pypower.utils import IDX  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ def dSbus_dV(Ybus, V):
     """
     ib = range(len(V))
 
-    if scipy.sparse.issparse(Ybus):
+    if sp.issparse(Ybus):
         Ibus = Ybus * V
 
         diagV = c_sparse((V, (ib, ib)))
@@ -105,7 +105,7 @@ def dIbr_dV(branch, Yf, Yt, V):
 
     Vnorm = V / abs(V)
 
-    if scipy.sparse.issparse(Yf):
+    if sp.issparse(Yf):
         diagV = c_sparse((V, (i, i)))
         diagVnorm = c_sparse((Vnorm, (i, i)))
     else:
@@ -118,7 +118,7 @@ def dIbr_dV(branch, Yf, Yt, V):
     dIt_dVm = Yt * diagVnorm
 
     # Compute currents.
-    if scipy.sparse.issparse(Yf):
+    if sp.issparse(Yf):
         If = Yf * V
         It = Yt * V
     else:
@@ -189,7 +189,7 @@ def dSbr_dV(branch, Yf, Yt, V):
 
     Vnorm = V / abs(V)
 
-    if scipy.sparse.issparse(Yf):
+    if sp.issparse(Yf):
         # compute currents
         If = Yf * V
         It = Yt * V

@@ -1,29 +1,22 @@
 """
 Python Interior Point Solver (PIPS).
 """
-import logging
+import logging  # NOQA
 
-import numpy as np
-from numpy import flatnonzero as find
+import numpy as np  # NOQA
+from numpy import flatnonzero as find  # NOQA
 
-from scipy.sparse import vstack, hstack, eye
-from scipy.sparse import csr_matrix as c_sparse
-from scipy.sparse.linalg import spsolve
+import scipy.sparse as sp  # NOQA
+from scipy.sparse import csr_matrix as c_sparse  # NOQA
 
-from andes.shared import deg2rad, rad2deg
+from andes.shared import deg2rad, rad2deg  # NOQA
 
-import ams.pypower.utils.const as IDX
-
-from ams.pypower.make import makeYbus
-from ams.pypower.opf_costfcn import opf_costfcn
-from ams.pypower.opf_consfcn import opf_consfcn
-from ams.pypower.opf_hessfcn import opf_hessfcn
-from ams.pypower.util import sub2ind
+from ams.pypower.make import makeYbus  # NOQA
+from ams.pypower.routines.opffcns import opf_costfcn, opf_consfcn, opf_hessfcn  # NOQA
+from ams.pypower.utils import sub2ind, IDX, EPS  # NOQA
 
 
 logger = logging.getLogger(__name__)
-
-EPS = np.finfo(float).eps
 
 
 def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
@@ -263,8 +256,8 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
     eflag = False               # exit flag
 
     # add var limits to linear constraints
-    eyex = eye(nx, nx, format="csr")
-    AA = eyex if A is None else vstack([eyex, A], "csr")
+    eyex = sp.eye(nx, nx, format="csr")
+    AA = eyex if A is None else sp.vstack([eyex, A], "csr")
     ll = np.r_[xmin, l]
     uu = np.r_[xmax, u]
 
@@ -277,7 +270,7 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
     Ae = AA[ieq, :] if len(ieq) else None
     if len(ilt) or len(igt) or len(ibx):
         idxs = [(1, ilt), (-1, igt), (1, ibx), (-1, ibx)]
-        Ai = vstack([sig * AA[idx, :] for sig, idx in idxs if len(idx)], 'csr')
+        Ai = sp.vstack([sig * AA[idx, :] for sig, idx in idxs if len(idx)], 'csr')
     else:
         Ai = None
     be = uu[ieq]
@@ -300,7 +293,7 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
         elif Ai is None:
             dh = dhn
         else:
-            dh = hstack([dhn, Ai.T])
+            dh = sp.hstack([dhn, Ai.T])
 
         if (dgn is None) and (Ae is None):
             dg = None
@@ -309,7 +302,7 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
         elif Ae is None:
             dg = dgn
         else:
-            dg = hstack([dgn, Ae.T])
+            dg = sp.hstack([dgn, Ae.T])
     else:
         h = -bi if Ai is None else Ai * x - bi        # inequality constraints
         g = -be if Ae is None else Ae * x - be        # equality constraints
@@ -405,13 +398,13 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
         M = Lxx if dh is None else Lxx + dh_zinv * mudiag * dh.T
         N = Lx if dh is None else Lx + dh_zinv * (mudiag * h + gamma * e)
 
-        Ab = c_sparse(M) if dg is None else vstack([
-            hstack([M, dg]),
-            hstack([dg.T, c_sparse((neq, neq))])
+        Ab = c_sparse(M) if dg is None else sp.vstack([
+            sp.hstack([M, dg]),
+            sp.hstack([dg.T, c_sparse((neq, neq))])
         ])
         bb = np.r_[-N, -g]
 
-        dxdlam = spsolve(Ab.tocsr(), bb)
+        dxdlam = sp.linalg.spsolve(Ab.tocsr(), bb)
 
         if np.any(np.isnan(dxdlam)):
             print('\nNumerically Failed\n')
@@ -446,7 +439,7 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
                 elif Ai is None:
                     dh1 = dhn1
                 else:
-                    dh1 = hstack([dhn1, Ai.T])
+                    dh1 = sp.hstack([dhn1, Ai.T])
 
                 # 1st der of eqs
                 if (dgn1 is None) and (Ae is None):
@@ -456,7 +449,7 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
                 elif Ae is None:
                     dg1 = dgn1
                 else:
-                    dg1 = hstack([dgn1, Ae.T])
+                    dg1 = sp.hstack([dgn1, Ae.T])
             else:
                 h1 = -bi if Ai is None else Ai * x1 - bi    # inequality constraints
                 g1 = -be if Ae is None else Ae * x1 - be    # equality constraints
@@ -540,7 +533,7 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
             elif Ai is None:
                 dh = dhn
             else:
-                dh = hstack([dhn, Ai.T])
+                dh = sp.hstack([dhn, Ai.T])
 
             if (dgn is None) and (Ae is None):
                 dg = None
@@ -549,7 +542,7 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
             elif Ae is None:
                 dg = dgn
             else:
-                dg = hstack([dgn, Ae.T])
+                dg = sp.hstack([dgn, Ae.T])
         else:
             h = -bi if Ai is None else Ai * x - bi    # inequality constraints
             g = -be if Ae is None else Ae * x - be    # equality constraints

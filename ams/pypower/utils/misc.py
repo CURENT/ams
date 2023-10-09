@@ -2,17 +2,13 @@
 PYPOWER utilities.
 """
 
-import numpy as np
+import numpy as np  # NOQA
+from numpy import flatnonzero as find  # NOQA
+from scipy.sparse import csr_matrix as c_sparse  # NOQA
 
-from numpy import ones, flatnonzero as find
-from numpy import zeros
-from scipy.sparse import csr_matrix as sparse
+import ams.pypower.utils.const as IDX  # NOQA
 
-from ams.pypower.idx_bus import BUS_TYPE, REF, PV, PQ
-from ams.pypower.idx_gen import GEN_BUS, GEN_STATUS
-from ams.pypower.idx_gen import PMAX, PMIN
-
-
+# define EPS as commonly used small number
 EPS = np.finfo(float).eps
 
 
@@ -48,20 +44,20 @@ def bustypes(bus, gen):
     nb = bus.shape[0]
     ng = gen.shape[0]
     # gen connection matrix, element i, j is 1 if, generator j at bus i is ON
-    Cg = sparse((gen[:, GEN_STATUS] > 0,
-                 (gen[:, GEN_BUS], range(ng))), (nb, ng))
+    Cg = c_sparse((gen[:, IDX.gen.GEN_STATUS] > 0,
+                   (gen[:, IDX.gen.GEN_BUS], range(ng))), (nb, ng))
     # number of generators at each bus that are ON
-    bus_gen_status = (Cg * ones(ng, int)).astype(bool)
+    bus_gen_status = (Cg * np.ones(ng, int)).astype(bool)
 
     # form index lists for slack, PV, and PQ buses
-    ref = find((bus[:, BUS_TYPE] == REF) & bus_gen_status)  # ref bus index
-    pv = find((bus[:, BUS_TYPE] == PV) & bus_gen_status)  # PV bus indices
-    pq = find((bus[:, BUS_TYPE] == PQ) | ~bus_gen_status)  # PQ bus indices
+    ref = find((bus[:, IDX.bus.BUS_TYPE] == IDX.bus.REF) & bus_gen_status)  # ref bus index
+    pv = find((bus[:, IDX.bus.BUS_TYPE] == IDX.bus.PV) & bus_gen_status)  # PV bus indices
+    pq = find((bus[:, IDX.bus.BUS_TYPE] == IDX.bus.PQ) | ~bus_gen_status)  # PQ bus indices
 
     # pick a new reference bus if for some reason there is none (may have been
     # shut down)
     if len(ref) == 0:
-        ref = zeros(1, dtype=int)
+        ref = np.zeros(1, dtype=int)
         ref[0] = pv[0]      # use the first PV bus
         pv = pv[1:]      # take it off PV list
 
@@ -91,7 +87,7 @@ def isload(gen):
     ------
     Ray Zimmerman (PSERC Cornell)
     """
-    return (gen[:, PMIN] < 0) & (gen[:, PMAX] == 0)
+    return (gen[:, IDX.gen.PMIN] < 0) & (gen[:, IDX.gen.PMAX] == 0)
 
 
 def sub2ind(shape, I, J, row_major=False):

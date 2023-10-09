@@ -2,31 +2,27 @@
 Module to solve OPF.
 """
 
-import logging
-from copy import deepcopy
+import logging  # NOQA
+from copy import deepcopy  # NOQA
 
-import numpy as np
-from numpy import flatnonzero as find
+import numpy as np  # NOQA
+from numpy import flatnonzero as find  # NOQA
 
-import scipy.sparse as sp
-from scipy.sparse import csr_matrix as c_sparse
+import scipy.sparse as sp  # NOQA
+from scipy.sparse import csr_matrix as c_sparse  # NOQA
 
 from andes.shared import deg2rad  # NOQA
 from andes.utils.misc import elapsed  # NOQA
 
 from ams.pypower.core import ppoption, pipsopf_solver, ipoptopf_solver  # NOQA
-from ams.pypower.utils import isload, loadcase, const as IDX  # NOQA
+from ams.pypower.utils import isload, loadcase, IDX  # NOQA
 import ams.pypower.utils as putil  # NOQA
 from ams.pypower.make import (makeYbus, fairmax,
                               makeAvl, makeApq, makeAang, makeAy)  # NOQA
+from ams.pypower.routines.opffcns import polycost, totcost, run_userfcn
 
 from ams.pypower.toggle_reserves import toggle_reserves
 from ams.pypower.update_mupq import update_mupq
-from ams.pypower.opf_consfcn import opf_consfcn
-from ams.pypower.opf_costfcn import opf_costfcn
-from ams.pypower.polycost import polycost
-from ams.pypower.run_userfcn import run_userfcn
-from ams.pypower.totcost import totcost
 
 logger = logging.getLogger(__name__)
 
