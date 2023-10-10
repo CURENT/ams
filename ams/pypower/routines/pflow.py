@@ -423,7 +423,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt):
 
     # check tolerance
     normF = np.linalg.norm(F, np.Inf)
-    logger.info('%d: |F(x)| = %.10g', i, normF)
+    logger.info('%2d: |F(x)| = %.10g', i, normF)
     converged = normF < tol
 
     # do Newton iterations
@@ -465,7 +465,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt):
 
         # check for convergence
         normF = np.linalg.norm(F, np.Inf)
-        logger.info('%d: |F(x)| = %.10g', i, normF)
+        logger.info('%2d: |F(x)| = %.10g', i, normF)
         converged = normF < tol
 
     return V, converged, i

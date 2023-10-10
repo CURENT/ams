@@ -11,7 +11,7 @@ import scipy.sparse as sp  # NOQA
 from scipy.sparse import csr_matrix as c_sparse  # NOQA
 from scipy.sparse import lil_matrix as l_sparse  # NOQA
 
-from ams.pypower.utils import isload, get_reorder  # NOQA
+from ams.pypower.utils import isload, get_reorder, set_reorder  # NOQA
 from ams.pypower.idx import IDX  # NOQA
 from ams.pypower.make import (d2Sbus_dV2, dSbus_dV, dIbr_dV,
                               d2AIbr_dV2, d2ASbr_dV2, dSbr_dV,
@@ -1255,9 +1255,9 @@ def int2ext(ppc, val_or_field=None, oldval=None, ordering=None, dim=0):
                 o["bus"]["i2e"][ppc["gen"]
                                 [o["gen"]["status"]["on"], IDX.gen.GEN_BUS].astype(int)]
             if 'areas' in ppc:
-                ppc["areas"][o["areas"]["status"]["on"], idx.area['PRICE_REF_BUS']] = \
+                ppc["areas"][o["areas"]["status"]["on"], IDX.area.PRICE_REF_BUS] = \
                     o["bus"]["i2e"][ppc["areas"]
-                                    [o["areas"]["status"]["on"], idx.area['PRICE_REF_BUS']].astype(int)]
+                                    [o["areas"]["status"]["on"], IDX.area.PRICE_REF_BUS].astype(int)]
 
             if 'ext' in o:
                 del o['ext']
@@ -1301,7 +1301,7 @@ def int2ext1(i2e, bus, gen, branch, areas):
     branch[:, IDX.branch.T_BUS] = i2e[branch[:, IDX.branch.T_BUS].astype(int)]
 
     if areas != None and len(areas) > 0:
-        areas[:, idx.area['PRICE_REF_BUS']] = i2e[areas[:, idx.area['PRICE_REF_BUS']].astype(int)]
+        areas[:, IDX.area.PRICE_REF_BUS] = i2e[areas[:, IDX.area.PRICE_REF_BUS].astype(int)]
         return bus, gen, branch, areas
 
     return bus, gen, branch
@@ -1542,7 +1542,7 @@ def ext2int(ppc, val_or_field=None, ordering=None, dim=0):
             o["branch"]["status"]["on"] = find(brs)  # on and conn
             o["branch"]["status"]["off"] = find(~brs)
             if 'areas' in ppc:
-                ar = bs[n2i[ppc["areas"][:, idx.area['PRICE_REF_BUS']].astype(int)]]
+                ar = bs[n2i[ppc["areas"][:, IDX.area.PRICE_REF_BUS].astype(int)]]
                 o["areas"] = {"status": {}}
                 o["areas"]["status"]["on"] = find(ar)
                 o["areas"]["status"]["off"] = find(~ar)
@@ -1577,9 +1577,9 @@ def ext2int(ppc, val_or_field=None, ordering=None, dim=0):
             ppc["branch"][:, IDX.branch.T_BUS] = \
                 o["bus"]["e2i"][ppc["branch"][:, IDX.branch.T_BUS].astype(int)].copy()
             if 'areas' in ppc:
-                ppc["areas"][:, idx.area['PRICE_REF_BUS']] = \
+                ppc["areas"][:, IDX.area.PRICE_REF_BUS] = \
                     o["bus"]["e2i"][ppc["areas"][:,
-                                                 idx.area['PRICE_REF_BUS']].astype(int)].copy()
+                                                 IDX.area.PRICE_REF_BUS].astype(int)].copy()
 
             # reorder gens in order of increasing bus number
             o["gen"]["e2i"] = np.argsort(ppc["gen"][:, IDX.gen.GEN_BUS])
@@ -1651,7 +1651,7 @@ def ext2int1(bus, gen, branch, areas=None):
     branch[:, IDX.branch.F_BUS] = e2i[branch[:, IDX.branch.F_BUS].astype(int)]
     branch[:, IDX.branch.T_BUS] = e2i[branch[:, IDX.branch.T_BUS].astype(int)]
     if areas is not None and len(areas) > 0:
-        areas[:, idx.area['PRICE_REF_BUS']] = e2i[areas[:, idx.area['PRICE_REF_BUS']].astype(int)]
+        areas[:, IDX.area.PRICE_REF_BUS] = e2i[areas[:, IDX.area.PRICE_REF_BUS].astype(int)]
 
         return i2e, bus, gen, branch, areas
 
@@ -1725,8 +1725,6 @@ def i2e_data(ppc, val, oldval, ordering, dim=0):
 
     @see: L{e2i_data}, L{i2e_field}, L{int2ext}.
     """
-    from ams.pypower.int2ext import int2ext
-
     if 'order' not in ppc:
         logger.debug('i2e_data: ppc does not have the \'order\' field '
                      'required for conversion back to external numbering.\n')

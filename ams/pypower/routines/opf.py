@@ -23,7 +23,6 @@ from ams.pypower.make import (makeYbus, makeAvl, makeApq,
                               makeAang, makeAy)  # NOQA
 
 import ams.pypower.routines.opffcns as opfcn  # NOQA
-from ams.pypower.routines.opffcns import totcost, run_userfcn, update_mupq  # NOQA
 
 from ams.pypower.toggle import toggle_reserves  # NOQA
 
@@ -493,7 +492,7 @@ def opf_setup(ppc, ppopt):
         om.add_costs('usr', user_cost, user_vars)
 
     # execute userfcn callbacks for 'formulation' stage
-    run_userfcn(userfcn, 'formulation', om)
+    opfcn.run_userfcn(userfcn, 'formulation', om)
 
     return om
 
@@ -1329,7 +1328,7 @@ def opf_execute(om, ppopt):
             mu_PQl = results['mu']['lin']['l'][ll['i1']['PQl']:ll['iN']['PQl']
                                                ] - results['mu']['lin']['u'][ll['i1']['PQl']:ll['iN']['PQl']]
             Apqdata = om.userdata('Apqdata')
-            results['gen'] = update_mupq(results['baseMVA'], results['gen'], mu_PQh, mu_PQl, Apqdata)
+            results['gen'] = opfcn.update_mupq(results['baseMVA'], results['gen'], mu_PQh, mu_PQl, Apqdata)
 
         # compute g, dg, f, df, d2f if requested by RETURN_RAW_DER = 1
         if ppopt['RETURN_RAW_DER']:
@@ -1739,7 +1738,7 @@ def uopf(*args):
     Pmin = ppc["gen"][on, IDX.gen.PMIN]
     while sum(Pmin) > load_capacity:
         # shut down most expensive unit
-        avgPmincost = totcost(ppc["gencost"][on, :], Pmin) / Pmin
+        avgPmincost = opfcn.totcost(ppc["gencost"][on, :], Pmin) / Pmin
         _, i = fairmax(avgPmincost)  # pick one with max avg cost at Pmin
         i = on[i]  # convert to generator index
 
