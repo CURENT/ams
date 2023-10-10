@@ -9,6 +9,7 @@ from ams.routines.routine import RoutineData, RoutineModel  # NOQA
 all_routines = OrderedDict([
     ('dcpf', ['DCPF']),
     ('pflow', ['PFlow']),
+    ('cpf', ['CPF']),
     ('acopf', ['ACOPF']),
     ('dcopf', ['DCOPF']),
     ('ed', ['ED']),

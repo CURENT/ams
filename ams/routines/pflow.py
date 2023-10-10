@@ -95,8 +95,8 @@ class PFlowModel(DCPFlowBase):
             raise ValueError(msg)
         ppopt = ppoption(PF_ALG=alg)
 
-        res, success, info = runpf(casedata=ppc, ppopt=ppopt, **kwargs)
-        return res, success, info
+        res, success, sstats = runpf(casedata=ppc, ppopt=ppopt, **kwargs)
+        return res, success, sstats
 
     def run(self, force_init=False, no_code=True,
             method='newton', **kwargs):

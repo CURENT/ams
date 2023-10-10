@@ -24,7 +24,7 @@ import ams.pypower.routines.cpf_callbacks as cpf_callbacks  # NOQA
 logger = logging.getLogger(__name__)
 
 
-def runcpf(basecasedata, ppopt=None, scale=1.2):
+def runcpf(casedata, ppopt=None, scale=1.2):
     """
     Runs a full AC continuation power flow.
     """
@@ -49,7 +49,7 @@ def runcpf(basecasedata, ppopt=None, scale=1.2):
         callbacks.append(getattr(cpf_callbacks, callback_name))
 
     # read base case data
-    ppcbase = pio.loadcase(basecasedata)
+    ppcbase = pio.loadcase(casedata)
     nb = ppcbase["bus"].shape[0]
 
     # add zero columns to branch for flows if needed
@@ -71,7 +71,7 @@ def runcpf(basecasedata, ppopt=None, scale=1.2):
     gbusb = genb[onb, IDX.gen.GEN_BUS].astype(int)  # what buses are they at?
 
     # scale the load and generation of base case as target case
-    ppctarget = pio.loadcase(basecasedata)
+    ppctarget = pio.loadcase(casedata)
     ppctarget["bus"][:, IDX.bus.PD] *= scale
     ppctarget["bus"][:, IDX.bus.QD] *= scale
     ppctarget["gen"][:, IDX.gen.PG] *= scale
@@ -272,8 +272,8 @@ def runcpf(basecasedata, ppopt=None, scale=1.2):
     if ppopt["CPF_PLOT_LEVEL"]:
         import matplotlib.pyplot as plt
         plt.show()
-
-    return results, success
+    sstats = dict(solver_name='PYPOWER', num_iters=cpf_results["iterations"])
+    return results, success, sstats
 
 
 def cpf_predictor(V, lam, Ybus, Sxfr, pv, pq,
