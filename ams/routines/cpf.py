@@ -45,13 +45,6 @@ class CPFModel(PFlowModel):
         """
         Run continuous power flow using PYPOWER.
 
-        Currently, four methods are supported: 'newton', 'fdxb', 'fdbx', 'gauss',
-        for Newton's method, fast-decoupled, XB, fast-decoupled, BX, and Gauss-Seidel,
-        respectively.
-
-        Note that gauss method is not recommended because it seems to be much
-        more slower than the other three methods and not fully tested yet.
-
         Examples
         --------
         >>> ss = ams.load(ams.get_case('matpower/case14.m'))
