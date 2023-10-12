@@ -9,6 +9,12 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.7.1 (2023-10-12)
+-------------------
+
+- Add function ``_initial_guess`` to routine ``UC``
+- Refactor PYPOWER
+
 v0.7.0 (2023-09-22)
 -------------------
 
@@ -17,7 +23,7 @@ v0.7.0 (2023-09-22)
 - Add cost models: ``SRCost``, ``NSRCost``, ``DCost``
 - Add reserve models: ``SR``, ``NSR``
 - Add routine ``UC``
-- Add routine ``RTED2`` to include energy storage
+- Add routine ``RTED2`` to include energy storage model
 
 v0.6.7 (2023-08-02)
 -------------------
