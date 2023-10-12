@@ -11,10 +11,13 @@ ams_file_classes = list([
     ('static', ['PQ', 'PV', 'Slack']),
     ('shunt', ['Shunt']),
     ('line', ['Line']),
+    ('distributed', ['ESD1']),
+    ('renewable', ['REGCV1']),
     ('area', ['Area']),
     ('region', ['Region']),
-    ('reserve', ['SFR']),
-    ('cost', ['GCost', 'SFRCost']),
+    ('reserve', ['SFR', 'SR', 'NSR']),
+    ('cost', ['GCost', 'SFRCost', 'SRCost', 'NSRCost', 'REGCV1Cost']),
+    ('timeslot', ['TimeSlot', 'EDTSlot', 'UCTSlot']),
 ])
 
 file_classes = ams_file_classes

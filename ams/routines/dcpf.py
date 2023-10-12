@@ -1,20 +1,18 @@
 """
 Power flow routines.
 """
-import logging
-from collections import OrderedDict
+import logging  # NOQA
 
-import numpy as np
+from andes.shared import deg2rad  # NOQA
+from andes.utils.misc import elapsed  # NOQA
 
-from andes.shared import deg2rad
-from andes.utils.misc import elapsed
+from ams.routines.routine import RoutineData, RoutineModel  # NOQA
+from ams.opt.omodel import Var  # NOQA
+from ams.pypower import runpf  # NOQA
+from ams.pypower.core import ppoption  # NOQA
 
-from ams.routines.routine import RoutineData, RoutineModel
-from ams.opt.omodel import Var, Constraint, Objective
-from ams.solver.pypower.runpf import runpf, rundcpf
-
-from ams.io.pypower import system2ppc
-from ams.core.param import RParam
+from ams.io.pypower import system2ppc  # NOQA
+from ams.core.param import RParam  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -28,40 +26,28 @@ class DCPFlowData(RoutineData):
         RoutineData.__init__(self)
         # --- line ---
         self.x = RParam(info="line reactance",
-                        name='x',
-                        tex_name='x',
-                        src='x',
+                        name='x', tex_name='x',
                         unit='p.u.',
-                        owner_name='Line',
-                        )
+                        model='Line', src='x',)
         self.tap = RParam(info="transformer branch tap ratio",
-                          name='tap',
-                          src='tap',
-                          tex_name='t_{ap}',
-                          unit='float',
-                          owner_name='Line',
-                          )
+                          name='tap', tex_name=r't_{ap}',
+                          model='Line', src='tap',
+                          unit='float',)
         self.phi = RParam(info="transformer branch phase shift in rad",
-                          name='phi',
-                          src='phi',
-                          tex_name='\phi',
-                          unit='radian',
-                          owner_name='Line',
-                          )
+                          name='phi', tex_name=r'\phi',
+                          model='Line', src='phi',
+                          unit='radian',)
 
         # --- load ---
-        self.pd = RParam(info='active power load in system base',
-                         name='pd',
-                         src='p0',
-                         tex_name=r'p_{d}',
+        self.pl = RParam(info='nodal active load (system base)',
+                         name='pl', tex_name=r'p_{l}',
                          unit='p.u.',
-                         owner_name='PQ',
-                         )
+                         model='mats', src='pl')
 
 
 class DCPFlowBase(RoutineModel):
     """
-    Base class for Power Flow model.
+    Base class for power flow.
 
     Overload the ``solve``, ``unpack``, and ``run`` methods.
     """
@@ -71,21 +57,12 @@ class DCPFlowBase(RoutineModel):
         self.info = 'DC Power Flow'
         self.type = 'PF'
 
-    def solve(self, **kwargs):
-        """
-        Solve the DC Power Flow with PYPOWER.
-        """
-        ppc = system2ppc(self.system)
-        res, success = rundcpf(ppc, **kwargs)
-        return res, success
-
     def unpack(self, res):
         """
         Unpack results from PYPOWER.
         """
         system = self.system
         mva = res['baseMVA']
-        # mva = self.system.config.mva
 
         # --- copy results from routine algeb into system algeb ---
         # --- Bus ---
@@ -102,56 +79,80 @@ class DCPFlowBase(RoutineModel):
 
         # --- copy results from system algeb into routine algeb ---
         for raname, var in self.vars.items():
-            owner = getattr(system, var.owner_name)  # instance of owner, Model or Group
+            owner = getattr(system, var.model)  # instance of owner, Model or Group
             if var.src is None:          # skip if no source variable is specified
                 continue
             elif hasattr(owner, 'group'):   # if owner is a Model instance
                 grp = getattr(system, owner.group)
-                idx=grp.get_idx()
-            elif hasattr(owner, 'get_idx'): # if owner is a Group instance
-                idx=owner.get_idx()
+                idx = grp.get_idx()
+            elif hasattr(owner, 'get_idx'):  # if owner is a Group instance
+                idx = owner.get_idx()
             else:
                 msg = f"Failed to find valid source variable `{owner.class_name}.{var.src}` for "
                 msg += f"{self.class_name}.{raname}, skip unpacking."
                 logger.warning(msg)
                 continue
-            var.v = owner.get(src=var.src, attr='v', idx=idx)
+            try:
+                var.v = owner.get(src=var.src, attr='v', idx=idx)
+            except AttributeError:
+                continue
         self.system.recent = self.system.routines[self.class_name]
         return True
 
-    def run(self, **kwargs):
+    def solve(self, method=None, **kwargs):
         """
-        Run the DC Power Flow.
+        Solve DC power flow using PYPOWER.
+        """
+        ppc = system2ppc(self.system)
+        ppopt = ppoption(PF_DC=True)
+        res, success, sstats = runpf(casedata=ppc, ppopt=ppopt, **kwargs)
+        return res, success, sstats
+
+    def run(self, force_init=False, no_code=True,
+            method=None, **kwargs):
+        """
+        Run DC pwoer flow.
 
         Examples
         --------
         >>> ss = ams.load(ams.get_case('matpower/case14.m'))
-        >>> ss.DCOPF.run()
+        >>> ss.DCPF.run()
 
-        Other Parameters
-        ----------------
-        ppopt : dict
-            PYPOWER options.
+        Parameters
+        ----------
+        force_init : bool
+            Force initialization.
+        no_code : bool
+            Disable showing code.
+        method : str
+            Placeholder for future use.
 
         Returns
         -------
         exit_code : int
             Exit code of the routine.
-
-        # TODO: fix the kwargs input.
         """
-        if not self.is_setup:
-            logger.info(f"Setup model for {self.class_name}")
-            self.setup()
+        if not self.initialized:
+            self.init(force=force_init, no_code=no_code)
         t0, _ = elapsed()
-        res, success = self.solve(**kwargs)
+        res, success, sstats = self.solve(method=method, **kwargs)
         self.exit_code = 0 if success else 1
         _, s = elapsed(t0)
         self.exec_time = float(s.split(' ')[0])
         self.unpack(res)
-        info = f"{self.class_name} completed in {s} with exit code {self.exit_code}."
-        logger.info(info)
-        return self.exit_code
+        n_iter = int(sstats['num_iters'])
+        n_iter_str = f"{n_iter} iterations " if n_iter > 1 else f"{n_iter} iteration "
+        if self.exit_code == 0:
+            msg = f"{self.class_name} solved in {s}, converged after "
+            msg += n_iter_str + f"using solver {sstats['solver_name']}."
+            logger.info(msg)
+            return True
+        else:
+            msg = f"{self.class_name} failed after "
+            msg += f"{int(sstats['num_iters'])} iterations using solver "
+            msg += f"{sstats['solver_name']}!"
+            logger.warning(msg)
+            return False
 
     def summary(self, **kwargs):
         """
@@ -165,12 +166,16 @@ class DCPFlowBase(RoutineModel):
         """
         pass
 
+    def enable(self, name):
+        raise NotImplementedError
+
+    def disable(self, name):
+        raise NotImplementedError
+
 
 class DCPFlowModel(DCPFlowBase):
     """
-    Base class for Power Flow model.
-
-    Overload the ``solve``, ``unpack``, and ``run`` methods.
+    Base class for power flow model.
     """
 
     def __init__(self, system, config):
@@ -179,20 +184,14 @@ class DCPFlowModel(DCPFlowBase):
 
         # --- bus ---
         self.aBus = Var(info='bus voltage angle',
-                           unit='rad',
-                           name='aBus',
-                           src='a',
-                           tex_name=r'a_{Bus}',
-                           owner_name='Bus',
-                           )
+                        unit='rad',
+                        name='aBus', tex_name=r'a_{Bus}',
+                        model='Bus', src='a',)
         # --- gen ---
         self.pg = Var(info='actual active power generation',
-                         unit='p.u.',
-                         name='pg',
-                         src='p',
-                         tex_name=r'p_{g}',
-                         owner_name='StaticGen',
-                         )
+                      unit='p.u.',
+                      name='pg', tex_name=r'p_{g}',
+                      model='StaticGen', src='p',)
 
 
 class DCPF(DCPFlowData, DCPFlowModel):

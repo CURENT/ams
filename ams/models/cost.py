@@ -36,13 +36,13 @@ class GCostData(ModelData):
                            info='coefficient 2',
                            power=False,
                            tex_name=r'c_{2}',
-                           unit=r'$/(p.u.^2)',
+                           unit=r'$/(p.u.*h)^2',
                            )
         self.c1 = NumParam(default=0,
                            info='coefficient 1',
                            power=False,
                            tex_name=r'c_{1}',
-                           unit=r'$/p.u.',
+                           unit=r'$/p.u.*h',
                            )
         self.c0 = NumParam(default=0,
                            info='coefficient 0',
@@ -72,33 +72,85 @@ class GCost(GCostData, Model):
         self.group = 'Cost'
 
 
-class SFRCostData(ModelData):
-    def __init__(self):
-        super().__init__()
-        self.gen = IdxParam(info="static generator index",
-                            model='StaticGen',
-                            mandatory=True,
-                            )
-        self.cru = NumParam(default=0,
-                            info='coefficient for RegUp reserve',
-                            power=False,
-                            tex_name=r'c_{r}',
-                            unit=r'$/p.u.',
-                            )
-        self.crd = NumParam(default=0,
-                            info='coefficient for RegDn reserve',
-                            power=False,
-                            tex_name=r'c_{r}',
-                            unit=r'$/p.u.',
-                            )
-
-
-class SFRCost(SFRCostData, Model):
+class SFRCost(ModelData, Model):
     """
     Linear SFR cost model.
     """
 
     def __init__(self, system, config):
-        SFRCostData.__init__(self)
+        ModelData.__init__(self)
+        Model.__init__(self, system, config)
+        self.group = 'Cost'
+        self.gen = IdxParam(info="static generator index",
+                            model='StaticGen',
+                            mandatory=True,)
+        self.cru = NumParam(default=0, power=False,
+                            tex_name=r'c_{r}', unit=r'$/(p.u.*h)',
+                            info='cost for RegUp reserve',)
+        self.crd = NumParam(default=0,  power=False,
+                            tex_name=r'c_{r}', unit=r'$/(p.u.*h)',
+                            info='cost for RegDn reserve',)
+
+
+class SRCost(ModelData, Model):
+    """
+    Linear spinning reserve cost model.
+    """
+
+    def __init__(self, system, config):
+        ModelData.__init__(self)
+        Model.__init__(self, system, config)
+        self.gen = IdxParam(info="static generator index",
+                            model='StaticGen',
+                            mandatory=True,)
+        self.csr = NumParam(default=0, power=False,
+                            tex_name=r'c_{sr}', unit=r'$/(p.u.*h)',
+                            info='cost for spinning reserve',)
+
+
+class NSRCost(ModelData, Model):
+    """
+    Linear non-spinning reserve cost model.
+    """
+
+    def __init__(self, system, config):
+        ModelData.__init__(self)
+        Model.__init__(self, system, config)
+        self.gen = IdxParam(info="static generator index",
+                            model='StaticGen',
+                            mandatory=True,)
+        self.cnsr = NumParam(default=0, power=False,
+                             tex_name=r'c_{nsr}', unit=r'$/(p.u.*h)',
+                             info='cost for non-spinning reserve',)
+
+
+class REGCV1CostData(ModelData):
+    def __init__(self):
+        super().__init__()
+        self.reg = IdxParam(info="Renewable generator idx",
+                            model='RenGen',
+                            mandatory=True,
+                            )
+        self.cm = NumParam(default=0,
+                           info='cost for emulated inertia (M)',
+                           power=False,
+                           tex_name=r'c_{r}',
+                           unit=r'$/s',
+                           )
+        self.cd = NumParam(default=0,
+                           info='cost for emulated damping (D)',
+                           power=False,
+                           tex_name=r'c_{r}',
+                           unit=r'$/p.u.',
+                           )
+
+
+class REGCV1Cost(REGCV1CostData, Model):
+    """
+    Linear cost model for :ref:`REGCV1` emulated inertia (M) and damping (D).
+    """
+
+    def __init__(self, system, config):
+        REGCV1CostData.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'Cost'

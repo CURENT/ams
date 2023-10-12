@@ -1,14 +1,8 @@
-import logging
-import importlib
-import inspect
-import copy
-from collections import OrderedDict
+import logging  # NOQA
 
-import numpy as np
+from andes.models.group import GroupBase as andes_GroupBase  # NOQA
 
-from andes.models.group import GroupBase as andes_GroupBase
-
-from ams.core.service import BackRef
+from ams.core.service import BackRef  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -32,10 +26,28 @@ class GroupBase(andes_GroupBase):
 
     def get_idx(self):
         """
-        Return the value of group idx.
+        Return the value of group idx sorted in a human-readable style.
+
+        Notes
+        -----
+        This function sorts the idx values using a custom sorting key,
+        which handles varying length strings with letters and numbers.
         """
-        all = [mdl.idx.v for _, mdl in self.models.items()]
-        flat_list = sorted([val for sublist in all for val in sublist])
+        all_idx = [mdl.idx.v for mdl in self.models.values()]
+
+        # Custom sorting function to handle varying length strings with letters and numbers
+        def custom_sort_key(item):
+            try:
+                return int(item)  # Try to convert to integer for pure numeric strings
+            except ValueError:
+                try:
+                    # Extract numeric part for strings with letters and numbers
+                    return int(''.join(filter(str.isdigit, item)))
+                except ValueError:
+                    return item  # Return as is if not numeric
+
+        group_idx = [sorted(mdl_idx, key=custom_sort_key) for mdl_idx in all_idx]
+        flat_list = [item for sublist in group_idx for item in sublist]
         return flat_list
 
     def _check_src(self, src: str):
@@ -92,6 +104,49 @@ class ACTopology(GroupBase):
         self.common_vars.extend(('a', 'v'))
 
 
+class RenGen(GroupBase):
+    """
+    Renewable generator (converter) group.
+
+    See ANDES Documentation SynGen here for the notes on replacing StaticGen and setting the power
+    ratio parameters.
+
+    Reference:
+
+    [1] ANDES Documentation, RenGen, [Online]
+
+    Available:
+
+    https://docs.andes.app/en/latest/groupdoc/RenGen.html#rengen
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.common_params.extend(('bus', 'gen', 'Sn'))
+        self.common_vars.extend(('Pe', 'Qe'))
+
+
+class DG(GroupBase):
+    """
+    Distributed generation (small-scale).
+
+    See ANDES Documentation SynGen here for the notes on replacing StaticGen and setting the power
+    ratio parameters.
+
+    Reference:
+
+    [1] ANDES Documentation, SynGen, [Online]
+
+    Available:
+
+    https://docs.andes.app/en/latest/groupdoc/SynGen.html#syngen
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.common_params.extend(('bus', 'fn'))
+
+
 class Cost(GroupBase):
     def __init__(self):
         super().__init__()
@@ -103,6 +158,15 @@ class Collection(GroupBase):
     Collection of topology models
     """
     pass
+
+
+class Horizon(GroupBase):
+    """
+    Time horizon group.
+    """
+
+    def __init__(self):
+        super().__init__()
 
 
 class Reserve(GroupBase):

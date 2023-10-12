@@ -112,10 +112,10 @@ def mpc2system(mpc: dict, system) -> bool:
         qc1max = data[13] / mbase
         qc2min = data[14] / mbase
         qc2max = data[15] / mbase
-        ramp_agc = data[16] / mbase
-        ramp_10 = data[17] / mbase
-        ramp_30 = data[18] / mbase
-        ramp_q = data[19] / mbase
+        ramp_agc = 60 * data[16] / mbase  # from MW/min to MW/h
+        ramp_10 = 6 * data[17] / mbase  # from MW/10min to MW/h
+        ramp_30 = 2 * data[18] / mbase  # from MW/30min to MW/h
+        ramp_q = 60 * data[19] / mbase  # from MVAr/min to MVAr/h
         apf = data[20]
 
         uid = system.Bus.idx2uid(bus_idx)
@@ -191,7 +191,7 @@ def mpc2system(mpc: dict, system) -> bool:
         system.Bus.name.v[:] = mpc['bus_name']
 
     gcost_idx = 0
-    gen_idx = system.StaticGen.find_idx(keys='bus', values=mpc['gen'][:, 0])
+    gen_idx = system.PV.idx.v + system.Slack.idx.v
     for data, gen in zip(mpc['gencost'], gen_idx):
         # NOTE: only type 2 costs are supported for now
         # type  startup shutdown	n	c2  c1  c0
@@ -205,8 +205,7 @@ def mpc2system(mpc: dict, system) -> bool:
         c2 = data[4] * base_mva ** 2
         c1 = data[5] * base_mva
         c0 = data[6] * base_mva
-
-        system.add('GCost', gen=str(gen),
+        system.add('GCost', gen=int(gen),
                    u=1, name=f'GCost_{gcost_idx}',
                    type=type,
                    csu=startup, csd=shutdown,
@@ -214,6 +213,14 @@ def mpc2system(mpc: dict, system) -> bool:
                    )
         gcost_idx += 1
 
+    # --- region ---
+    zone_id = np.unique(system.Bus.zone.v).astype(int)
+    for zone in zone_id:
+        zone_idx = f'ZONE_{zone}'
+        system.add('Region', idx=zone_idx, name=zone_idx)
+    bus_zone = system.Bus.zone.v
+    bus_zone = [f'ZONE_{int(zone)}' for zone in bus_zone]
+    system.Bus.zone.v = bus_zone
     return True
 
 
@@ -285,7 +292,10 @@ def system2mpc(system) -> dict:
     bus[:, 11] = system.Bus.vmax.v
     bus[:, 12] = system.Bus.vmin.v
 
-    # area and zone not supported
+    # --- zone ---
+    ZONE_I = system.Region.idx.v
+    mapping = {busi0: i for i, busi0 in enumerate(ZONE_I)}
+    bus[:, 10] = np.array([mapping[busi0] for busi0 in system.Bus.zone.v])
 
     # --- PQ ---
     if system.PQ.n > 0:
@@ -301,18 +311,19 @@ def system2mpc(system) -> dict:
 
     # --- PV ---
     if system.PV.n > 0:
-        pv_pos = system.Bus.idx2uid(system.PV.bus.v)
+        PV = system.PV
+        pv_pos = system.Bus.idx2uid(PV.bus.v)
         bus[pv_pos, 1] = 2
-        gen[system.Slack.n:, 0] = to_busid(system.PV.bus.v)
-        gen[system.Slack.n:, 1] = system.PV.p0.v * base_mva
-        gen[system.Slack.n:, 2] = system.PV.q0.v * base_mva
-        gen[system.Slack.n:, 3] = system.PV.qmax.v * base_mva
-        gen[system.Slack.n:, 4] = system.PV.qmin.v * base_mva
-        gen[system.Slack.n:, 5] = system.PV.v0.v
+        gen[system.Slack.n:, 0] = to_busid(PV.bus.v)
+        gen[system.Slack.n:, 1] = PV.p0.v * base_mva
+        gen[system.Slack.n:, 2] = PV.q0.v * base_mva
+        gen[system.Slack.n:, 3] = PV.qmax.v * base_mva
+        gen[system.Slack.n:, 4] = PV.qmin.v * base_mva
+        gen[system.Slack.n:, 5] = PV.v0.v
         gen[system.Slack.n:, 6] = base_mva
-        gen[system.Slack.n:, 7] = system.PV.u.v
-        gen[system.Slack.n:, 8] = system.PV.pmax.v * base_mva
-        gen[system.Slack.n:, 9] = system.PV.pmin.v * base_mva
+        gen[system.Slack.n:, 7] = PV.u.v
+        gen[system.Slack.n:, 8] = (PV.ctrl.v * PV.pmax.v + (1 - PV.ctrl.v) * PV.pmax.v) * base_mva
+        gen[system.Slack.n:, 9] = (PV.ctrl.v * PV.pmin.v + (1 - PV.ctrl.v) * PV.pmin.v) * base_mva
 
     # --- Slack ---
     if system.Slack.n > 0:

@@ -1,14 +1,6 @@
-import logging
-import importlib
-import inspect
-import copy
-from collections import OrderedDict
-
-import numpy as np
-
-from andes.models.group import GroupBase as andes_GroupBase
-
-from ams.core.var import Algeb
+import logging  # NOQA
+import inspect  # NOQA
+from collections import OrderedDict  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +75,6 @@ class TypeBase:
 
         return out
 
-
     def doc_all(self, export='plain'):
         """
         Return documentation of the type and its routines.
@@ -136,6 +127,26 @@ class DCED(TypeBase):
         self.common_constrs.extend(('pb', 'lub', 'llb'))
 
 
+class DCUC(TypeBase):
+    """
+    Type for DC-based unit commitment.
+    """
+
+    def __init__(self):
+        TypeBase.__init__(self)
+        # TODO: add common parameters and variables
+
+
+class DED(TypeBase):
+    """
+    Type for Distributional economic dispatch.
+    """
+
+    def __init__(self):
+        TypeBase.__init__(self)
+        # TODO: add common parameters and variables
+
+
 class ACED(DCED):
     """
     Type for AC-based economic dispatch.
@@ -145,13 +156,3 @@ class ACED(DCED):
         DCED.__init__(self)
         self.common_rparams.extend(('qd',))
         self.common_vars.extend(('aBus', 'vBus', 'qg',))
-
-
-class DCUC(TypeBase):
-    """
-    Type for DC-based unit commitment.
-    """
-
-    def __init__(self):
-        TypeBase.__init__(self)
-        # TODO: add common parameters and variables

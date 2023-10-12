@@ -1,15 +1,15 @@
 """
 AMS command-line interface and argument parsers.
 """
-import logging
-import argparse
-import importlib
-import platform
-import sys
-from time import strftime
+import logging  # NOQA
+import argparse  # NOQA
+import importlib  # NOQA
+import platform  # NOQA
+import sys  # NOQA
+from time import strftime  # NOQA
 
-from ams.main import config_logger, find_log_path
-from ams.utils.paths import get_log_dir
+from ams.main import config_logger, find_log_path  # NOQA
+from ams.utils.paths import get_log_dir  # NOQA
 
 logger = logging.getLogger(__name__)
 

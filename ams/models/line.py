@@ -5,6 +5,7 @@ from andes.shared import deg2rad  # NOQA
 from ams.core.model import Model  # NOQA
 from ams.core.var import Algeb  # NOQA
 
+
 class Line(LineData, Model):
     """
     AC transmission line model.

@@ -1,11 +1,12 @@
-import logging
+import logging  # NOQA
 
-from andes.core.model import ModelData
-from andes.utils.tab import Tab
-from ams.core.model import Model
-from ams.core.service import BackRef
+from andes.core.model import ModelData  # NOQA
+from andes.utils.tab import Tab  # NOQA
+from ams.core.model import Model  # NOQA
+from ams.core.service import BackRef  # NOQA
 
 logger = logging.getLogger(__name__)
+
 
 class RegionData(ModelData):
     def __init__(self):
@@ -14,14 +15,15 @@ class RegionData(ModelData):
 
 class Region(RegionData, Model):
     """
-    Region model for zonal resource dispatch.
+    Region model for zonal vars.
 
     Notes
     -----
-    1. Region is a collection of buses and can be used for zonal reserve dispatch.
+    1. Region is a collection of buses.
     2. Model ``Region`` is not actually defined in ANDES.
-    
+
     """
+
     def __init__(self, system, config):
         RegionData.__init__(self)
         Model.__init__(self, system, config)

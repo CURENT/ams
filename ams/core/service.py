@@ -2,52 +2,791 @@
 Service.
 """
 
-import logging
-from typing import Callable, Optional, Type, Union
+import logging  # NOQA
+from typing import Callable, Optional, Type, Union, Iterable  # NOQA
 
-import numpy as np
+import numpy as np  # NOQA
 
-from andes.core.service import BaseService, BackRef, RefFlatten
+from andes.core.service import BaseService, BackRef, RefFlatten  # NOQA
 
 
 logger = logging.getLogger(__name__)
 
 
-class VarSum(BaseService):
+class RBaseService(BaseService):
     """
-    Build sum matrix for a variable.
+    Base class for services that are used in a routine.
+    Revised from module `andes.core.service.BaseService`.
 
-    #TODO: add example
+    Parameters
+    ----------
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    vtype : Type, optional
+        Variable type.
+    model : str, optional
+        Model name.
     """
 
-    def __init__(self, name: str = None, tex_name: str = None, unit: str = None,
-                 info: str = None, vtype: Type = None,
-                 indexer: Callable = None,
-                 model: str = None,
+    def __init__(self,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype)
-        self.indexer = indexer
-        self.model = model
         self.export = False
+        self.is_group = False
+        self.rtn = None
+
+    @property
+    def shape(self):
+        """
+        Return the shape of the service.
+        """
+        if isinstance(self.v, np.ndarray):
+            return self.v.shape
+        else:
+            raise TypeError(f'{self.class_name}: {self.name} is not an array.')
 
     @property
     def v(self):
-        nr = self.indexer.n
-        mdl_or_grp = self.owner.system.__dict__[self.model]
-        nc = mdl_or_grp.n
+        """
+        Value of the service.
+        """
+        return None
 
-        idx = None
+    @property
+    def class_name(self):
+        """
+        Return the class name
+        """
+        return self.__class__.__name__
+
+    def __repr__(self):
+        val_str = ''
+
+        v = self.v
+
+        if v is None:
+            return f'{self.class_name}: {self.owner.class_name}.{self.name}'
+        elif isinstance(v, np.ndarray):
+            if v.shape[0] == 1:
+                if len(self.v) <= 20:
+                    val_str = f', v={self.v}'
+                else:
+                    val_str = f', v in shape of {self.v.shape}'
+            else:
+                val_str = f', v in shape of {self.v.shape}'
+
+            return f'{self.class_name}: {self.rtn.class_name}.{self.name}{val_str}'
+        else:
+            return f'{self.class_name}: {self.rtn.class_name}.{self.name}'
+
+
+class ValueService(RBaseService):
+    """
+    Service to store given numeric values.
+
+    Parameters
+    ----------
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    vtype : Type, optional
+        Variable type.
+    model : str, optional
+        Model name.
+    """
+
+    def __init__(self,
+                 name: str,
+                 value: np.ndarray,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 ):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype)
+        self._v = value
+
+    @property
+    def v(self):
+        """
+        Value of the service.
+        """
+        return self._v
+
+
+class ROperationService(RBaseService):
+    """
+    Base calss for operational services used in routine.
+
+    Parameters
+    ----------
+    u : Callable
+        Input.
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    vtype : Type, optional
+        Variable type.
+    model : str, optional
+        Model name.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype)
+        self.u = u
+
+
+class LoadScale(ROperationService):
+    """
+    Return load.
+
+    Parameters
+    ----------
+    u : Callable
+        nodal load.
+    sd : Callable
+        zonal load factor.
+    Cl: Callable
+        Connection matrix for Load and Bus.
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 sd: Callable,
+                 Cl: Callable,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 ):
+        tex_name = tex_name if tex_name is not None else u.tex_name
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, u=u,)
+        self.sd = sd
+        self.Cl = Cl
+
+    @property
+    def v(self):
+        Region = self.rtn.system.Region
+        yloc_zl = np.array(Region.idx2uid(self.u.v))
+        PQ = self.rtn.system.PQ
+        p0 = PQ.get(src='p0', attr='v', idx=PQ.idx.v)
+        p0s = np.multiply(self.sd.v[:, yloc_zl].transpose(),
+                          p0[:, np.newaxis])
+        return np.matmul(np.linalg.pinv(self.Cl.v), p0s)
+
+
+class NumOp(ROperationService):
+    """
+    Perform an operation on a numerical array using the
+    function ``fun(u.v, **args)``.
+
+    Note that the scalar output is converted to a 1D array.
+
+    The optional kwargs are passed to the input function.
+
+    Parameters
+    ----------
+    u : Callable
+        Input.
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    vtype : Type, optional
+        Variable type.
+    model : str, optional
+        Model name.
+    rfun : Callable, optional
+        Function to apply to the output of ``fun``.
+    rargs : dict, optional
+        Keyword arguments to pass to ``rfun``.
+    expand_dims : int, optional
+        Expand the dimensions of the output array along a specified axis.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 fun: Callable,
+                 args: dict = {},
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 rfun: Callable = None,
+                 rargs: dict = {},
+                 expand_dims: int = None,
+                 array_out=True):
+        tex_name = tex_name if tex_name is not None else u.tex_name
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype, u=u,)
+        self.fun = fun
+        self.args = args
+        self.rfun = rfun
+        self.rargs = rargs
+        self.expand_dims = expand_dims
+        self.array_out = array_out
+
+    @property
+    def v0(self):
+        if isinstance(self.u, Iterable):
+            out = self.fun([u.v for u in self.u], **self.args)
+        else:
+            out = self.fun(self.u.v, **self.args)
+        if self.array_out:
+            if not isinstance(out, np.ndarray):
+                out = np.array([out])
+        return out
+
+    @property
+    def v1(self):
+        if self.rfun is not None:
+            return self.rfun(self.v0, **self.rargs)
+        else:
+            return self.v0
+
+    @property
+    def v(self):
+        if self.expand_dims is not None:
+            return np.expand_dims(self.v1, axis=int(self.expand_dims))
+        else:
+            return self.v1
+
+
+class NumExpandDim(NumOp):
+    """
+    Expand the dimensions of the input array along a specified axis
+    using NumPy's ``np.expand_dims(u.v, axis=axis)``.
+
+    Parameters
+    ----------
+    u : Callable
+        Input.
+    axis : int
+        Axis along which to expand the dimensions (default is 0).
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    vtype : Type, optional
+        Variable type.
+    model : str, optional
+        Model name.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 axis: int = 0,
+                 args: dict = {},
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 array_out: bool = True,):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype,
+                         u=u, fun=np.expand_dims, args=args,
+                         array_out=array_out)
+        self.axis = axis
+
+    @property
+    def v(self):
+        return self.fun(self.u.v, axis=self.axis, **self.args)
+
+
+class NumOpDual(NumOp):
+    """
+    Performan an operation on two numerical arrays using the
+    function ``fun(u.v, u2.v, **args)``.
+
+    Note that the scalar output is converted to a 1D array.
+
+    The optional kwargs are passed to the input function.
+
+    Parameters
+    ----------
+    u : Callable
+        Input.
+    u2 : Callable
+        Input2.
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    vtype : Type, optional
+        Variable type.
+    model : str, optional
+        Model name.
+    rfun : Callable, optional
+        Function to apply to the output of ``fun``.
+    rargs : dict, optional
+        Keyword arguments to pass to ``rfun``.
+    expand_dims : int, optional
+        Expand the dimensions of the output array along a specified axis.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 u2: Callable,
+                 fun: Callable,
+                 args: dict = {},
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 rfun: Callable = None,
+                 rargs: dict = {},
+                 expand_dims: int = None,
+                 array_out=True):
+        tex_name = tex_name if tex_name is not None else u.tex_name
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype,
+                         u=u, fun=fun, args=args,
+                         rfun=rfun, rargs=rargs,
+                         expand_dims=expand_dims,
+                         array_out=array_out)
+        self.u2 = u2
+
+    @property
+    def v0(self):
+        out = self.fun(self.u.v, self.u2.v, **self.args)
+        if self.array_out:
+            if not isinstance(out, np.ndarray):
+                out = np.array([out])
+        return out
+
+
+class MinDur(NumOpDual):
+    """
+    Defined to form minimum on matrix for minimum online/offline
+    time constraints used in UC.
+
+    Parameters
+    ----------
+    u : Callable
+        Input, should be a ``Var`` with horizon.
+    u2 : Callable
+        Input2, should be a ``RParam``.
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 u2: Callable,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,):
+        tex_name = tex_name if tex_name is not None else u.tex_name
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype,
+                         u=u, u2=u2, fun=None, args=None,
+                         rfun=None, rargs=None,
+                         expand_dims=None)
+        if self.u.horizon is None:
+            msg = f'{self.class_name} {self.name}.u {self.u.name} has no horizon, likely a modeling error.'
+            logger.error(msg)
+
+    @property
+    def v(self):
+        n_gen = self.u.n
+        n_ts = self.u.horizon.n
+        tout = np.zeros((n_gen, n_ts))
+        t = self.rtn.config.t  # dispatch interval
+
+        # minimum online/offline duration
+        td = np.ceil(self.u2.v/t).astype(int)
+
+        # Create index arrays for generators and time periods
+        i, t = np.meshgrid(np.arange(n_gen), np.arange(n_ts), indexing='ij')
+        # Create a mask for valid time periods based on minimum duration
+        valid_mask = (t + td[i] <= n_ts)
+        tout[i[valid_mask], t[valid_mask]] = 1
+        return tout
+
+
+class NumHstack(NumOp):
+    """
+    Repeat an array along the second axis nc times
+    using NumPy's hstack function, where nc is the column number of the
+    reference array,
+    ``np.hstack([u.v[:, np.newaxis] * ref.shape[1]], **kwargs)``.
+
+    Parameters
+    ----------
+    u : Callable
+        Input array.
+    ref : Callable
+        Reference array used to determine the number of repetitions.
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    vtype : Type, optional
+        Variable type.
+    model : str, optional
+        Model name.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 ref: Callable,
+                 args: dict = {},
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 rfun: Callable = None,
+                 rargs: dict = {}):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype,
+                         u=u, fun=np.hstack, args=args,
+                         rfun=rfun, rargs=rargs)
+        self.ref = ref
+
+    @property
+    def v0(self):
+        nc = 1
+        if hasattr(self.ref, "shape"):
+            nc = self.ref.shape[1]
+        elif isinstance(self.ref.v, (list, tuple)):
+            nc = len(self.ref.v)
+        else:
+            raise AttributeError(f"{self.rtn.class_name}: ref {self.ref.name} has no attribute shape nor length.")
+        return self.fun([self.u.v[:, np.newaxis]] * nc,
+                        **self.args)
+
+
+class ZonalSum(NumOp):
+    """
+    Build zonal sum matrix for a vector in the shape of collection model,
+    ``Area`` or ``Region``.
+    The value array is in the shape of (nr, nc), where nr is the length of
+    rid instance idx, and nc is the length of the cid value.
+
+    In an IEEE-14 Bus system, we have the zonal definition by the
+    ``Region`` model. Suppose in it we have two regions, "ZONE1" and
+    "ZONE2".
+
+    Follwing it, we have a zonal SFR requirement model ``SFR`` that
+    defines the zonal reserve requirements for each zone.
+
+    All 14 buses are classified to a zone by the `IdxParam` ``zone``,
+    and the 5 generators are connected to buses
+    (idx): [2, 3, 1, 6, 8], and the zone of these generators are thereby:
+    ['ZONE1', 'ZONE1', 'ZONE2', 'ZONE2', 'ZONE1'].
+
+    In the `RTED` model, we have the Vars ``pru`` and ``prd`` in the
+    shape of generators.
+
+    Then, the Region model has idx ['ZONE1', 'ZONE2'], and the ``gsm`` value
+    will be [[1, 1, 0, 0, 1], [0, 0, 1, 1, 0]].
+
+    Finally, the zonal reserve requirements can be formulated as
+    constraints in the optimization problem: "gsm @ pru <= du" and
+    "gsm @ prd <= dd".
+
+    See ``gsm`` definition in :py:mod:`ams.routines.rted.RTEDModel` for
+    more details.
+
+    Parameters
+    ----------
+    u : Callable
+        Input.
+    zone : str
+        Zonal model name, e.g., "Area" or "Region".
+    name : str
+        Instance name.
+    tex_name : str
+        TeX name.
+    unit : str
+        Unit.
+    info : str
+        Description.
+    vtype : Type
+        Variable type.
+    model : str
+        Model name.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 zone: str,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 rfun: Callable = None,
+                 rargs: dict = {},
+                 ):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype,
+                         u=u, fun=None, args={},
+                         rfun=rfun, rargs=rargs)
+        self.zone = zone
+
+    @property
+    def v0(self):
         try:
-            idx = mdl_or_grp.idx.v
+            zone_mdl = getattr(self.rtn.system, self.zone)
         except AttributeError:
-            idx = mdl_or_grp.get_idx()
+            raise AttributeError(f'Zonal model <{self.zone}> not found.')
+        ridx = None
         try:
-            mdl_indexer_val = mdl_or_grp.get(src=self.indexer.name, attr='v',
-                                             idx=idx, allow_none=True, default=None)
-        except KeyError:
-            raise KeyError(f'Indexer {self.indexer.name} not found in model {self.model}')
-        row, col = np.meshgrid(mdl_indexer_val, self.indexer.v)
+            ridx = zone_mdl.idx.v
+        except AttributeError:
+            ridx = zone_mdl.get_idx()
+
+        row, col = np.meshgrid(self.u.v, ridx)
+        # consistency check
+        is_subset = set(self.u.v).issubset(set(ridx))
+        if not is_subset:
+            raise ValueError(f'{self.u.model} contains undefined zone, likey a data error.')
         result = (row == col).astype(int)
 
         return result
+
+
+class VarSelect(NumOp):
+    """
+    A numerical matrix to select a subset of a 2D variable,
+    ``u.v[:, idx]``.
+
+    Parameters
+    ----------
+    u : Callable
+        The input matrix variable.
+    idx : list
+        The index of the subset.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 indexer: str,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 rfun: Callable = None,
+                 rargs: dict = {},
+                 **kwargs
+                 ):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype, u=u, fun=None,
+                         rfun=rfun, rargs=rargs, **kwargs)
+        self.indexer = indexer
+
+    @property
+    def v0(self):
+        # FIXME: what if reference source has no idx?
+        # data consistency check
+        indexer = getattr(self.rtn, self.indexer)
+        err_msg = f'Indexer source {indexer.model} has no {indexer.src}.'
+        group = model = None
+        if indexer.model in self.rtn.system.groups.keys():
+            group = self.rtn.system.groups[indexer.model]
+            group_idx = group.get_idx()
+            try:
+                ref = group.get(src=indexer.src, attr='v', idx=group_idx)
+            except AttributeError:
+                raise AttributeError(err_msg)
+        elif indexer.model in self.rtn.system.models.keys():
+            model = self.rtn.system.models[indexer.model]
+            try:
+                ref = model.get(src=indexer.src, attr='v', idx=model.idx.v)
+            except AttributeError:
+                raise AttributeError(err_msg)
+        else:
+            raise AttributeError(f'Indexer source model {indexer.model} has no ref.')
+
+        try:
+            uidx = self.u.get_idx()
+        except AttributeError:
+            raise AttributeError(f'Input {self.u.name} has no idx, likey a modeling error.')
+
+        is_empty = len(ref) == 0
+        if is_empty:
+            raise ValueError(f'{indexer.model} contains no input, likey a data error.')
+
+        is_subset = set(ref).issubset(set(uidx))
+        if not is_subset:
+            raise ValueError(f'{indexer.model} contains undefined {indexer.src}, likey a data error.')
+
+        out = [1 if item in ref else 0 for item in uidx]
+
+        return np.array(out)
+
+
+class VarReduction(NumOp):
+    """
+    A numerical matrix to reduce a 2D variable to 1D,
+    ``np.fun(shape=(1, u.n))``.
+
+    Parameters
+    ----------
+    u : Callable
+        The input matrix variable.
+    fun : Callable
+        The reduction function that takes a shape parameter (1D shape) as input.
+    name : str, optional
+        The name of the instance.
+    tex_name : str, optional
+        The TeX name for the instance.
+    unit : str, optional
+        The unit of the output.
+    info : str, optional
+        A description of the operation.
+    vtype : Type, optional
+        The variable type.
+    model : str, optional
+        The model name associated with the operation.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 fun: Callable,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 rfun: Callable = None,
+                 rargs: dict = {},
+                 **kwargs
+                 ):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype,
+                         u=u, fun=None, rfun=rfun, rargs=rargs,
+                         **kwargs)
+        self.fun = fun
+
+    @property
+    def v0(self):
+        return self.fun(shape=(1, self.u.n))
+
+
+class RampSub(NumOp):
+    """
+    Build a substraction matrix for a 2D variable in the shape (nr, nr-1),
+    where nr is the rows of the input.
+
+    This can be used for generator ramping constraints in multi-period
+    optimization problems.
+
+    The subtraction matrix is constructed as follows:
+    ``np.eye(nr, nc, k=-1) - np.eye(nr, nc, k=0)``.
+
+    Parameters
+    ----------
+    u : Callable
+        Input.
+    horizon : Callable
+        Horizon reference.
+    name : str
+        Instance name.
+    tex_name : str
+        TeX name.
+    unit : str
+        Unit.
+    info : str
+        Description.
+    vtype : Type
+        Variable type.
+    model : str
+        Model name.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 rfun: Callable = None,
+                 rargs: dict = {},
+                 ):
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, vtype=vtype,
+                         u=u, fun=None, rfun=rfun, rargs=rargs,)
+
+    @property
+    def v0(self):
+        return self.v
+
+    @property
+    def v1(self):
+        return self.v
+
+    @property
+    def v(self):
+        nr = self.u.horizon.n
+        return np.eye(nr, nr-1, k=-1) - np.eye(nr, nr-1, k=0)

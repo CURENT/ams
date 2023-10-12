@@ -2,17 +2,20 @@
 Dispatch routines.
 """
 
-from collections import OrderedDict
-from andes.utils.func import list_flatten
-from ams.routines.routine import RoutineData, RoutineModel
+from collections import OrderedDict  # NOQA
+from andes.utils.func import list_flatten  # NOQA
+from ams.routines.routine import RoutineData, RoutineModel  # NOQA
 
 all_routines = OrderedDict([
     ('dcpf', ['DCPF']),
     ('pflow', ['PFlow']),
-    ('dcopf', ['DCOPF']),
-    ('ed', ['ED', 'RTED']),
-    ('uc', ['UC']),
+    ('cpf', ['CPF']),
     ('acopf', ['ACOPF']),
+    ('dcopf', ['DCOPF']),
+    ('ed', ['ED']),
+    ('rted', ['RTED', 'RTED2']),
+    ('uc', ['UC']),
+    ('dopf', ['LDOPF', 'LDOPF2']),
 ])
 
 class_names = list_flatten(list(all_routines.values()))
