@@ -73,13 +73,13 @@ class SymProcessor:
             (r'\bpower\b', f'{lang}.power'),
             (r'\bsign\b', f'{lang}.sign'),
         ])
-        # FIXME: the replacement for multiply is a bad design, but it works for now
+
         self.tex_map = OrderedDict([
             (r'\*\*(\d+)', '^{\\1}'),
             (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1*\2'),
             (r'\@', r'*'),
             (r'dot', r'*'),
-            (r'multiply', r''),
+            (r'multiply\(([^,]+), ([^)]+)\)', r'\1 * \2'),
             (r'\bnp.linalg.pinv(\d+)', r'\1^{\-1}'),
         ])
 
