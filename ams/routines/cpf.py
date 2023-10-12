@@ -72,6 +72,8 @@ class CPFModel(PFlowModel):
 class CPF(PFlowData, CPFModel):
     """
     Continuous power flow.
+
+    Still under development, not ready for use.
     """
 
     def __init__(self, system=None, config=None):
