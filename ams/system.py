@@ -1,35 +1,30 @@
 """
 Module for system.
 """
-import configparser
-import copy
-import importlib
-import inspect
-import logging
-from collections import OrderedDict
-from typing import Dict, Optional, Tuple, Union
+import importlib  # NOQA
+import inspect  # NOQA
+import logging  # NOQA
+from collections import OrderedDict  # NOQA
+from typing import Dict, Optional, Tuple, Union  # NOQA
 
-import numpy as np
-import sympy as sp
+import numpy as np  # NOQA
 
-from andes.core import Config
-from andes.system import System as andes_System
-from andes.system import (_config_numpy, load_config_rc)
-from andes.variables import FileMan
+from andes.core import Config  # NOQA
+from andes.system import System as andes_System  # NOQA
+from andes.system import (_config_numpy, load_config_rc)  # NOQA
+from andes.variables import FileMan  # NOQA
 
-from andes.utils.misc import elapsed
-from andes.utils.tab import Tab
-from andes.shared import pd
+from andes.utils.misc import elapsed  # NOQA
+from andes.utils.tab import Tab  # NOQA
+from andes.shared import pd  # NOQA
 
-from ams.models.group import GroupBase
-from ams.routines.type import TypeBase
-from ams.models import file_classes
-from ams.routines import all_routines
-from ams.utils.paths import get_config_path
-from ams.core import Algeb
-from ams.core.service import RBaseService
-from ams.core.matprocessor import MatProcessor
-from ams.interop.andes import to_andes
+from ams.models.group import GroupBase  # NOQA
+from ams.routines.type import TypeBase  # NOQA
+from ams.models import file_classes  # NOQA
+from ams.routines import all_routines   # NOQA
+from ams.utils.paths import get_config_path  # NOQA
+from ams.core.matprocessor import MatProcessor  # NOQA
+from ams.interop.andes import to_andes  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +43,7 @@ def disable_methods(methods):
 
 class System(andes_System):
     """
-    A subclass of ``andes.system.System``, this class encapsulates data, models, 
+    A subclass of ``andes.system.System``, this class encapsulates data, models,
     and routines for dispatch modeling and analysis in power systems.
     Some methods  inherited from the parent class are intentionally disabled.
 
@@ -148,8 +143,7 @@ class System(andes_System):
         self.groups = OrderedDict()          # group names and instances
         self.routines = OrderedDict()        # routine names and instances
         self.types = OrderedDict()           # type names and instances
-        self.mats = None                     # matrix processor
-        self.mat = OrderedDict()             # common matrices
+        self.mats = MatProcessor(self)       # matrix processor
         # TODO: there should be an exit_code for each routine
         self.exit_code = 0                   # command-line exit code, 0 - normal, others - error.
         self.recent = None                   # recent solved routines
@@ -236,20 +230,18 @@ class System(andes_System):
         """
         Set the owner for routine attributes: ``RParam``, ``Var``, and ``RBaseService``.
         """
-        mat_name = ['PTDF', 'Cft', 'Cg', 'pd', 'qd', 'Cl']
         for item_name, item in items.items():
             if item.model in self.groups.keys():
                 item.is_group = True
                 item.owner = self.groups[item.model]
             elif item.model in self.models.keys():
                 item.owner = self.models[item.model]
-            elif item_name in mat_name:
-                # FIXME: hard-coded, should be improved
-                pass
+            elif item.model == 'mats':
+                item.owner = self.mats
             else:
                 logger.debug(f'item_name: {item_name}')
                 msg = f'Model indicator \'{item.model}\' of <{item.rtn.class_name}.{item_name}>'
-                msg += f' is not a model or group. Likely a modeling error.'
+                msg += ' is not a model or group. Likely a modeling error.'
                 logger.warning(msg)
 
     def import_routines(self):
@@ -420,38 +412,8 @@ class System(andes_System):
                 algeb.a = np.arange(a0, a0 + algeb.owner.n)
                 a0 += algeb.owner.n
 
-        # set up common matrix
-        self.mats = MatProcessor(self)       # matrix processor
-
-        # FIXME: hard coded here
-        # Set nuemerical values for special params
-        gen_bus = self.StaticGen.get(src='bus', attr='v',
-                                     idx=self.StaticGen.get_idx())
-        all_bus = self.Bus.idx.v
-        load_bus = self.StaticLoad.get(src='bus', attr='v',
-                                       idx=self.StaticLoad.get_idx())
-
-        # Restrucrue PQ load value to match gen bus pattern
-
-        # PTDF matrix
-        PTDF, Cft = self.mats.make()
-
-        # node load
-        idx_PD = self.PQ.find_idx(keys="bus", values=all_bus, allow_none=True, default=None)
-        PD = np.array(self.PQ.get(src='p0', attr='v', idx=idx_PD))
-        QD = np.array(self.PQ.get(src='q0', attr='v', idx=idx_PD))
-
-        row, col = np.meshgrid(all_bus, gen_bus)
-        # TODO: sparsity?
-        Cg = (row == col).astype(int)
-        row, col = np.meshgrid(all_bus, load_bus)
-        Cl = (row == col).astype(int)
-
-        self.mat = OrderedDict([
-            ('pd', PD), ('qd', QD),
-            ('PTDF', PTDF),
-            ('Cft', Cft), ('Cg', Cg), ('Cl', Cl),
-        ])
+        # set up matrix processor
+        self.mats.make()
 
         # NOTE: initialize om for all routines
         for _, rtn in self.routines.items():
@@ -462,13 +424,6 @@ class System(andes_System):
                 a0 += var.owner.n
             for rpname, rparam in rtn.rparams.items():
                 rparam.rtn = rtn
-                if rpname in self.mat.keys():
-                    # NOTE: set numerical values for rparams that are defined in system.mat
-                    rparam.is_ext = True
-                    rparam._v = self.mat[rpname]
-                elif rparam.is_ext is True:
-                    # NOTE: register user-defined rparams to system.mat
-                    self.mat[rpname] = rparam._v
 
         _, s = elapsed(t0)
         logger.info('System set up in %s.', s)

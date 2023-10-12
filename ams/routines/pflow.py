@@ -1,21 +1,16 @@
 """
 Power flow routines.
 """
-import logging
-from collections import OrderedDict
+import logging  # NOQA
 
-import numpy as np
+from ams.pypower import runpf  # NOQA
 
-from andes.shared import deg2rad
+from ams.io.pypower import system2ppc  # NOQA
+from ams.pypower.core import ppoption  # NOQA
+from ams.core.param import RParam  # NOQA
 
-from ams.solver.pypower.runpf import runpf, rundcpf
-
-from ams.io.pypower import system2ppc
-from ams.core.param import RParam
-from ams.solver.pypower.runpf import runpf
-
-from ams.routines.dcpf import DCPFlowData, DCPFlowBase
-from ams.opt.omodel import Var, Constraint, Objective
+from ams.routines.dcpf import DCPFlowData, DCPFlowBase  # NOQA
+from ams.opt.omodel import Var, Constraint  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +33,7 @@ class PFlowData(DCPFlowData):
 
 class PFlowModel(DCPFlowBase):
     """
-    AC Power Flow model.
+    AC power flow model.
     """
 
     def __init__(self, system, config):
@@ -79,18 +74,64 @@ class PFlowModel(DCPFlowBase):
         # --- constraints ---
         self.pb = Constraint(name='pb',
                              info='power balance',
-                             e_str='sum(pd) - sum(pg)',
+                             e_str='sum(pl) - sum(pg)',
                              type='eq',
                              )
         # TODO: AC power flow formulation
 
-    def solve(self, **kwargs):
+    def solve(self, method='newton', **kwargs):
         """
-        Solve the AC Power Flow with PYPOWER.
+        Solve the AC power flow using PYPOWER.
         """
         ppc = system2ppc(self.system)
-        res, success = runpf(ppc, **kwargs)
-        return res, success
+
+        method_map = dict(newton=1, fdxb=2, fdbx=3, gauss=4)
+        alg = method_map.get(method)
+        if alg == 4:
+            msg = "Gauss method is not fully tested yet, not recommended!"
+            logger.warning(msg)
+        if alg is None:
+            msg = f"Invalid method `{method}` for PFlow."
+            raise ValueError(msg)
+        ppopt = ppoption(PF_ALG=alg)
+
+        res, success, sstats = runpf(casedata=ppc, ppopt=ppopt, **kwargs)
+        return res, success, sstats
+
+    def run(self, force_init=False, no_code=True,
+            method='newton', **kwargs):
+        """
+        Run AC power flow using PYPOWER.
+
+        Currently, four methods are supported: 'newton', 'fdxb', 'fdbx', 'gauss',
+        for Newton's method, fast-decoupled, XB, fast-decoupled, BX, and Gauss-Seidel,
+        respectively.
+
+        Note that gauss method is not recommended because it seems to be much
+        more slower than the other three methods and not fully tested yet.
+
+        Examples
+        --------
+        >>> ss = ams.load(ams.get_case('matpower/case14.m'))
+        >>> ss.PFlow.run()
+
+        Parameters
+        ----------
+        force_init : bool
+            Force initialization.
+        no_code : bool
+            Disable showing code.
+        method : str
+            Method for solving the power flow.
+
+        Returns
+        -------
+        exit_code : int
+            Exit code of the routine.
+        """
+        super().run(force_init=force_init,
+                    no_code=no_code, method=method,
+                    **kwargs, )
 
 
 class PFlow(PFlowData, PFlowModel):

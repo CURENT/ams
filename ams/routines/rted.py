@@ -1,15 +1,15 @@
 """
 Real-time economic dispatch.
 """
-import logging
-from collections import OrderedDict
-import numpy as np
+import logging  # NOQA
+from collections import OrderedDict  # NOQA
+import numpy as np  # NOQA
 
-from ams.core.param import RParam
-from ams.core.service import ZonalSum, VarSelect, NumOp, NumOpDual
-from ams.routines.dcopf import DCOPFData, DCOPFModel
+from ams.core.param import RParam  # NOQA
+from ams.core.service import ZonalSum, VarSelect, NumOp, NumOpDual  # NOQA
+from ams.routines.dcopf import DCOPFData, DCOPFModel  # NOQA
 
-from ams.opt.omodel import Var, Constraint, Objective
+from ams.opt.omodel import Var, Constraint  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -25,39 +25,33 @@ class RTEDData(DCOPFData):
         # 1. reserve
         # 1.1. reserve cost
         self.cru = RParam(info='RegUp reserve coefficient',
-                          name='cru', src='cru',
-                          tex_name=r'c_{r,u}', unit=r'$/(p.u.)',
-                          model='SFRCost')
+                          name='cru', tex_name=r'c_{r,u}',
+                          model='SFRCost', src='cru',
+                          unit=r'$/(p.u.)',)
         self.crd = RParam(info='RegDown reserve coefficient',
-                          name='crd',
-                          src='crd',
-                          tex_name=r'c_{r,d}',
-                          unit=r'$/(p.u.)',
-                          model='SFRCost',)
+                          name='crd', tex_name=r'c_{r,d}',
+                          model='SFRCost', src='crd',
+                          unit=r'$/(p.u.)',)
         # 1.2. reserve requirement
         self.du = RParam(info='RegUp reserve requirement in percentage',
-                         name='du', src='du',
-                         tex_name=r'd_{u}', unit='%',
-                         model='SFR',)
+                         name='du', tex_name=r'd_{u}',
+                         model='SFR', src='du',
+                         unit='%',)
         self.dd = RParam(info='RegDown reserve requirement in percentage',
-                         name='dd', src='dd',
-                         tex_name=r'd_{d}', unit='%',
-                         model='SFR',)
+                         name='dd', tex_name=r'd_{d}',
+                         model='SFR', src='dd',
+                         unit='%',)
         self.zb = RParam(info='Bus zone',
                          name='zb', tex_name='z_{one,bus}',
-                         src='zone', model='Bus')
+                         model='Bus', src='zone', )
         self.zg = RParam(info='generator zone data',
-                         name='zg', src='zone',
-                         tex_name='z_{one,g}',
-                         model='StaticGen',)
+                         name='zg', tex_name='z_{one,g}',
+                         model='StaticGen', src='zone',)
         # 2. generator
-        self.pg0 = RParam(info='generator active power start point (system base)',
-                          name='pg0', tex_name=r'p_{g0}',
-                          model='StaticGen', src='p0', unit='p.u.',)
         self.R10 = RParam(info='10-min ramp rate (system base)',
-                          name='R10', src='R10',
-                          tex_name=r'R_{10}', unit='p.u./h',
-                          model='StaticGen',)
+                          name='R10', tex_name=r'R_{10}',
+                          model='StaticGen', src='R10',
+                          unit='p.u./h',)
 
 
 class RTEDModel(DCOPFModel):
@@ -67,7 +61,7 @@ class RTEDModel(DCOPFModel):
 
     def __init__(self, system, config):
         DCOPFModel.__init__(self, system, config)
-        self.config.dth = 5/60  # time interval in hours
+        self.config.t = 5/60  # time interval in hours
         self.map1 = OrderedDict([
             ('StaticGen', {
                 'pg0': 'p',
@@ -102,10 +96,10 @@ class RTEDModel(DCOPFModel):
                        unit='p.u.', name='prd', tex_name=r'p_{r,d}',
                        model='StaticGen', nonneg=True,)
         # --- constraints ---
-        self.ls = ZonalSum(u=self.zb, zone='Region',
-                           name='ls', tex_name=r'\sum_{l}',
+        self.ds = ZonalSum(u=self.zb, zone='Region',
+                           name='ds', tex_name=r'\sum_{d}',
                            info='Sum pd vector in shape of zone',)
-        self.pdz = NumOpDual(u=self.ls, u2=self.pd,
+        self.pdz = NumOpDual(u=self.ds, u2=self.pl,
                              fun=np.multiply,
                              rfun=np.sum, rargs=dict(axis=1),
                              expand_dims=0,
@@ -140,8 +134,8 @@ class RTEDModel(DCOPFModel):
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
         # NOTE: the product of dt and pg is processed using ``dot``, because dt is a numnber
-        self.obj.e_str = 'sum(c2 @ (dth dot pg)**2) ' + \
-                         '+ sum(c1 @ (dth dot pg)) + ug * c0 ' + \
+        self.obj.e_str = 'sum(c2 @ (t dot pg)**2) ' + \
+                         '+ sum(c1 @ (t dot pg)) + ug * c0 ' + \
                          '+ sum(cru * pru + crd * prd)'
 
 
@@ -157,9 +151,13 @@ class RTED(RTEDData, RTEDModel):
 
     3. RTED routine adds a function ``dc2ac`` to do the AC conversion using ACOPF
 
-    4. zonal SFR reserve: decision variables ``pru`` and ``prd``; linear cost ``cru`` and ``crd``; requirement ``du`` and ``dd``
+    4. Variables for zonal SFR reserve: ``pru`` and ``prd``;
 
-    5. generator ramping: start point ``pg0``; ramping limit ``R10``
+    5. Parameters for linear cost of zonal SFR reserve ``cru`` and ``crd``;
+
+    6. Parameters for SFR requirement ``du`` and ``dd``;
+
+    7. Parameters fpr generator ramping: start point ``pg0`` and ramping limit ``R10``;
 
     The function ``dc2ac`` sets the ``vBus`` value from solved ACOPF.
     Without this conversion, dynamic simulation might fail due to the gap between
@@ -167,7 +165,9 @@ class RTED(RTEDData, RTEDModel):
 
     Notes
     -----
-    1. objective function has been adjusted for RTED interval ``config.dth``, 5/60 [Hour] by default.
+    1. Formulations has been adjusted with interval ``config.t``, 5/60 [Hour] by default.
+
+    2. The tie-line flow has not been implemented in formulations.
     """
 
     def __init__(self, system, config):
@@ -317,7 +317,7 @@ class RTED2Model(RTEDModel):
         self.zcub2 = Constraint(name='zcub2', type='uq', info='zc upper bound',
                                 e_str='zc - Mb@uc',)
 
-        SOCb = 'SOC - SOCinit - dth dot REn*EtaC*zc - dth dot REn*REtaD*(pec - zc)'
+        SOCb = 'SOC - SOCinit - t dot REn*EtaC*zc - t dot REn*REtaD*(pec - zc)'
         self.SOCb = Constraint(name='SOCb', type='eq',
                                info='ESD1 SOC balance', e_str=SOCb,)
 

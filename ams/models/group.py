@@ -1,14 +1,8 @@
-import logging
-import importlib
-import inspect
-import copy
-from collections import OrderedDict
+import logging  # NOQA
 
-import numpy as np
+from andes.models.group import GroupBase as andes_GroupBase  # NOQA
 
-from andes.models.group import GroupBase as andes_GroupBase
-
-from ams.core.service import BackRef
+from ams.core.service import BackRef  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +103,7 @@ class ACTopology(GroupBase):
         super().__init__()
         self.common_vars.extend(('a', 'v'))
 
+
 class RenGen(GroupBase):
     """
     Renewable generator (converter) group.
@@ -129,6 +124,7 @@ class RenGen(GroupBase):
         super().__init__()
         self.common_params.extend(('bus', 'gen', 'Sn'))
         self.common_vars.extend(('Pe', 'Qe'))
+
 
 class DG(GroupBase):
     """
@@ -168,6 +164,7 @@ class Horizon(GroupBase):
     """
     Time horizon group.
     """
+
     def __init__(self):
         super().__init__()
 

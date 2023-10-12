@@ -3,19 +3,18 @@ Base class for parameters.
 """
 
 
-import logging
+import logging  # NOQA
 
-from typing import Callable, Iterable, List, Optional, Tuple, Type, Union
-from collections import OrderedDict
+from typing import Optional  # NOQA
 
-import numpy as np
-from scipy.sparse import issparse
+import numpy as np  # NOQA
+from scipy.sparse import issparse  # NOQA
 
-from andes.core.common import Config
-from andes.core import BaseParam, DataParam, IdxParam, NumParam, ExtParam
-from andes.models.group import GroupBase
+from andes.core.common import Config  # NOQA
+from andes.core import BaseParam, DataParam, IdxParam, NumParam, ExtParam  # NOQA
+from andes.models.group import GroupBase  # NOQA
 
-from ams.core.var import Algeb
+from ams.core.var import Algeb  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -212,8 +211,11 @@ class RParam:
             elif self.owner is None:
                 logger.info(f'Param <{self.name}> has no owner.')
                 return None
-            else:
+            elif hasattr(self.owner, 'idx'):
                 return self.owner.idx.v
+            else:
+                logger.info(f'Param <{self.name}> owner <{self.owner.class_name}> has no idx.')
+                return None
         else:
             try:
                 imodel = getattr(self.rtn.system, self.imodel)
@@ -222,5 +224,6 @@ class RParam:
             try:
                 sorted_idx = self.owner.find_idx(keys=self.indexer, values=imodel.get_idx())
             except AttributeError:
-                raise AttributeError(f'Indexer <{self.indexer}> not found in <{self.imodel}>, likely a modeling error.')
+                raise AttributeError(f'Indexer <{self.indexer}> not found in <{self.imodel}>, \
+                                     likely a modeling error.')
             return sorted_idx

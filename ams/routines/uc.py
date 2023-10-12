@@ -1,18 +1,17 @@
 """
 Real-time economic dispatch.
 """
-import logging
-from collections import OrderedDict
-import numpy as np
-import pandas as pd
+import logging  # NOQA
+from collections import OrderedDict  # NOQA
+import numpy as np  # NOQA
+import pandas as pd  # NOQA
 
-from ams.core.param import RParam
-from ams.core.service import NumOp, ZonalSum, NumHstack, NumOpDual, MinDur
-from ams.routines.ed import EDData, EDModel
+from ams.core.param import RParam  # NOQA
+from ams.core.service import (NumOp, NumHstack,
+                              NumOpDual, MinDur, ZonalSum)  # NOQA
+from ams.routines.ed import EDData, EDModel  # NOQA
 
-from ams.opt.omodel import Var, Constraint, Objective
-
-import cvxpy as cp
+from ams.opt.omodel import Var, Constraint  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -58,20 +57,6 @@ class UCData(EDData):
                             model='NSR', src='demand',
                             unit='%',)
 
-        self.cd = RParam(info='penalty for shadding load',
-                         name='cd', tex_name=r'c_{d}',
-                         model='DCost', src='cd',
-                         unit=r'$/(p.u.*h)',
-                         indexer='load', imodel='StaticLoad',)
-
-        self.p0 = RParam(info='initial load',
-                         name='p0', tex_name=r'p_{0}',
-                         model='PQ', src='p0',
-                         unit='p.u.',)
-
-        self.Cl = RParam(info='connection matrix for Load and Bus',
-                         name='Cl', tex_name=r'C_{l}',)
-
 
 class UCModel(EDModel):
     """
@@ -80,7 +65,9 @@ class UCModel(EDModel):
 
     def __init__(self, system, config):
         EDModel.__init__(self, system, config)
-        self.config.dth = 1  # dispatch interval in hour
+        self.config.t = 1  # dispatch interval in hour
+        self.config.add(OrderedDict((('dp', 1000), # penalty for unserved load, $/p.u.
+                                     )))
         self.info = 'unit commitment'
         self.type = 'DCUC'
 
@@ -106,11 +93,6 @@ class UCModel(EDModel):
                        name='zug', tex_name=r'z_{ug}',
                        model='StaticGen', pos=True,)
 
-        self.pdu = Var(info='Unserved load',
-                       horizon=self.timeslot,
-                       name='pdu', tex_name=r'p_{d,u}',
-                       model='StaticLoad', pos=True,)
-
         # NOTE: actions have two parts, one for initial status, another for the rest
         self.actv = Constraint(name='actv', type='eq',
                                info='startup action',
@@ -133,13 +115,14 @@ class UCModel(EDModel):
         self.Mzug = NumOp(info='10 times of max of pmax as big M for zug',
                           name='Mzug', tex_name=r'M_{zug}',
                           u=self.pmax, fun=np.max,
-                          rfun=np.dot, rargs=dict(b=10),)
+                          rfun=np.dot, rargs=dict(b=10),
+                          array_out=False,)
         self.zuglb = Constraint(name='zuglb', info='zug lower bound',
                                 type='uq', e_str='- zug + pg')
         self.zugub = Constraint(name='zugub', info='zug upper bound',
-                                type='uq', e_str='zug - pg - Mzug[0] * (1 - ugd)')
+                                type='uq', e_str='zug - pg - Mzug dot (1 - ugd)')
         self.zugub2 = Constraint(name='zugub2', info='zug upper bound',
-                                 type='uq', e_str='zug - Mzug[0] * ugd')
+                                 type='uq', e_str='zug - Mzug dot ugd')
 
         # --- reserve ---
         # 1) non-spinning reserve
@@ -176,21 +159,16 @@ class UCModel(EDModel):
                                e_str='multiply(Coff, wgd) - (1 - ugd)')
 
         # --- penalty for unserved load ---
-        self.Rp0 = NumHstack(u=self.p0, ref=self.timeslot,
-                             name='Rp0', tex_name=r'p_{0, R}',
-                             info='Repetated initial load',)
         self.Cgi = NumOp(u=self.Cg, fun=np.linalg.pinv,
                          name='Cgi', tex_name=r'C_{g}^{-1}',
                          info='inverse of Cg',)
-        self.ppdu = Constraint(name='ppdu', info='unserved load', type='eq',
-                               e_str='Rp0 - Cl @ (pn - Cgi @ pg) - pdu')
 
         # --- objective ---
-        gcost = 'sum(c2 @ (dth dot zug)**2 + c1 @ (dth dot zug) + c0 * ugd)'
+        gcost = 'sum(c2 @ (t dot zug)**2 + c1 @ (t dot zug) + c0 * ugd)'
         acost = ' + sum(csu * vgd + csd * wgd)'
         srcost = ' + sum(csr @ (multiply(Rpmax, ugd) - zug))'
         nsrcost = ' + sum(cnsr @ multiply((1 - ugd), Rpmax))'
-        dcost = ' + sum(cd @ pdu)'
+        dcost = ' + sum(dp dot pos(gs @ pg - pds))'
         self.obj.e_str = gcost + acost + srcost + nsrcost + dcost
 
     def _initial_guess(self):
@@ -210,21 +188,25 @@ class UCModel(EDModel):
 
         gen = pd.DataFrame()
         gen['idx'] = self.system.PV.idx.v
-        gen['Sn'] = self.system.PV.get(src='Sn', attr='v', idx=gen['idx'])
+        gen['pmax'] = self.system.PV.get(src='pmax', attr='v', idx=gen['idx'])
         gen['bus'] = self.system.PV.get(src='bus', attr='v', idx=gen['idx'])
         gen['zone'] = self.system.PV.get(src='zone', attr='v', idx=gen['idx'])
         gcost_idx = self.system.GCost.find_idx(keys='gen', values=gen['idx'])
         gen['c2'] = self.system.GCost.get(src='c2', attr='v', idx=gcost_idx)
         gen['c1'] = self.system.GCost.get(src='c1', attr='v', idx=gcost_idx)
         gen['c0'] = self.system.GCost.get(src='c0', attr='v', idx=gcost_idx)
-        gen['wsum'] = 0.4*gen['c2'] + 0.3*gen['c1'] + 0.2*gen['c0'] + 0.1*gen['Sn']
+        gen['wsum'] = 0.8*gen['pmax'] + 0.05*gen['c2'] + 0.1*gen['c1'] + 0.05*gen['c0']
         gen = gen.sort_values(by='wsum', ascending=True)
 
         # Turn off 30% of the generators as initial guess
         priority = gen['idx'].values
         g_idx = priority[0:int(0.3*len(priority))]
-        self.system.StaticGen.set(src='u', attr='v', idx=g_idx,
-                                  value=np.zeros_like(g_idx))
+        ug0 = np.zeros_like(g_idx)
+        # NOTE: if number of generators is too small, turn off the first one
+        if len(g_idx) == 0:
+            g_idx = priority[0]
+            ug0 = 0
+        self.system.StaticGen.set(src='u', attr='v', idx=g_idx, value=ug0)
         logger.warning(f'Turn off StaticGen {g_idx} as initial guess for commitment.')
         return True
 
@@ -236,10 +218,21 @@ class UCModel(EDModel):
 class UC(UCData, UCModel):
     """
     DC-based unit commitment (UC) with linearizing bilinear term using big M theory.
+
     Constraints include power balance, ramping, spinning reserve, non-spinning reserve,
     minimum ON/OFF duration.
+
     The cost inludes generation cost, startup cost, shutdown cost, spinning reserve cost,
     non-spinning reserve cost, and unserved energy penalty.
+
+    Method ``_initial_guess`` is used to make initial guess for commitment decision if all
+    generators are online at initial. It is a simple heuristic method, which may not be optimal.
+
+    Notes
+    -----
+    1. Formulations has been adjusted with interval ``config.t``, 1 [Hour] by default.
+
+    2. The tie-line flow has not been implemented in formulations.
 
     References
     ----------

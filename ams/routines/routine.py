@@ -3,7 +3,7 @@ Module for routine data.
 """
 
 import logging  # NOQA
-from typing import Optional, Union, Type  # NOQA
+from typing import Optional, Union, Type, Iterable  # NOQA
 from collections import OrderedDict  # NOQA
 
 import numpy as np  # NOQA
@@ -70,7 +70,7 @@ class RoutineModel:
         # TODO: these default configs might to be revised
         self.config.add(OrderedDict((('sparselib', 'klu'),
                                      ('linsolve', 0),
-                                     ('dth', 1),  # time interval in hours
+                                     ('t', 1),  # time interval in hours
                                      )))
         self.config.add_extra("_help",
                               sparselib="linear sparse solver name",
@@ -103,32 +103,109 @@ class RoutineModel:
             idx_none = [idxe for idxe in idx if idxe not in src_idx]
             raise ValueError(f'Var <{self.class_name}.{src}> does not contain value with idx={idx_none[0]}')
 
-    def get(self, src: str, idx, attr: str = 'v', allow_none=False, default=0.0):
+    def get_load(self, horizon: Union[int, str],
+                 src: str, attr: str = 'v',
+                 idx=None, model: str = 'EDTSlot', factor: str = 'sd',):
+        """
+        Get the load value by applying zonal scaling factor defined in ``Horizon``.
+
+        Parameters
+        ----------
+        idx: int, str, or list
+            Index of the desired load.
+        attr: str
+            Attribute name.
+        model: str
+            Scaling factor owner, ``EDTSlot`` or ``UCTSlot``.
+        factor: str
+            Scaling factor name, usually ``sd``.
+        horizon: int or str
+            Horizon single index.
+        """
+        all_zone = self.system.Region.idx.v
+        if idx is None:
+            pq_zone = self.system.PQ.zone.v
+            pq0 = self.system.PQ.get(src=src, attr=attr, idx=idx)
+        else:
+            pq_zone = self.system.PQ.get(src='zone', attr='v', idx=idx)
+            pq0 = self.system.PQ.get(src=src, attr=attr, idx=idx)
+        col = [all_zone.index(pq_z) for pq_z in pq_zone]
+
+        mdl = self.system.__dict__[model]
+        if mdl.n == 0:
+            raise ValueError(f'<{model}> does not have data, check input file.')
+        if factor not in mdl.__dict__.keys():
+            raise ValueError(f'<{model}> does not have <{factor}>.')
+        sdv = mdl.__dict__[factor].v
+
+        horizon_all = mdl.idx.v
+        try:
+            row = horizon_all.index(horizon)
+        except ValueError:
+            raise ValueError(f'<{model}> does not have horizon with idx=<{horizon}>.')
+        pq_factor = np.array(sdv[:, col][row, :])
+        pqv = np.multiply(pq0, pq_factor)
+        return pqv
+
+    def get(self, src: str, idx, attr: str = 'v',
+            horizon: Optional[Union[int, str, Iterable]] = None):
         """
         Get the value of a variable or parameter.
+
+        Parameters
+        ----------
+        src: str
+            Name of the variable or parameter.
+        idx: int, str, or list
+            Index of the variable or parameter.
+        attr: str
+            Attribute name.
+        horizon: int, str, or list, optional
+            Horizon index.
         """
-        if self.__dict__[src].owner is not None:
-            owner = self.__dict__[src].owner
-            if src in self.map2[owner.class_name].keys():
-                src_map = self.map2[owner.class_name][src]
-                logger.debug(f'Var <{self.class_name}.{src}> is mapped from <{owner.class_name}.{src_map}>.')
-                try:
-                    out = owner.get(src=src_map, idx=idx, attr=attr,
-                                    allow_none=allow_none, default=default)
-                    return out
-                except ValueError:
-                    raise ValueError(f'Failed to get value of <{src_map}> from {owner.class_name}.')
-            else:
-                logger.warning(
-                    f'Var {self.class_name}.{src} has no mapping to a model or group, try search in routine {self.class_name}.')
-                loc = self._loc(src=src, idx=idx, allow_none=allow_none)
-                src_v = self.__dict__[src].v
-                out = [src_v[l] for l in loc]
-                return np.array(out)
-        else:
-            logger.info(f'Var {self.class_name}.{src} has no owner.')
-            # FIXME: add idx for non-grouped variables
-            return None
+        if src not in self.__dict__.keys():
+            raise ValueError(f'<{src}> does not exist in <<{self.class_name}>.')
+        item = self.__dict__[src]
+
+        if not hasattr(item, attr):
+            raise ValueError(f'{attr} does not exist in {self.class_name}.{src}.')
+
+        idx_all = item.get_idx()
+
+        if idx_all is None:
+            raise ValueError(f'<{self.class_name}> item <{src}> has no idx.')
+
+        if isinstance(idx, (str, int)):
+            idx = [idx]
+
+        if isinstance(idx, np.ndarray):
+            idx = idx.tolist()
+
+        loc = [idx_all.index(idxe) if idxe in idx_all else None for idxe in idx]
+        if None in loc:
+            idx_none = [idxe for idxe in idx if idxe not in idx_all]
+            raise ValueError(f'Var <{self.class_name}.{src}> does not contain value with idx={idx_none}')
+        out = getattr(item, attr)[loc]
+
+        if horizon is not None:
+            if item.horizon is None:
+                raise ValueError(f'horizon is not defined for {self.class_name}.{src}.')
+            horizon_all = item.horizon.get_idx()
+            if isinstance(horizon, int):
+                horizon = [horizon]
+            if isinstance(horizon, str):
+                horizon = [int(horizon)]
+            if isinstance(horizon, np.ndarray):
+                horizon = horizon.tolist()
+            if isinstance(horizon, list):
+                loc_h = [horizon_all.index(idxe) if idxe in horizon_all else None for idxe in horizon]
+                if None in loc_h:
+                    idx_none = [idxe for idxe in horizon if idxe not in horizon_all]
+                    raise ValueError(f'Var <{self.class_name}.{src}> does not contain horizon with idx={idx_none}')
+                out = out[:, loc_h]
+                if out.shape[1] == 1:
+                    out = out[:, 0]
+        return out
 
     def set(self, src: str, idx, attr: str = 'v', value=0.0):
         """
@@ -154,6 +231,18 @@ class RoutineModel:
         """
         return self.docum.get(max_width=max_width, export=export)
 
+    def _constr_check(self):
+        """
+        Chcek if constraints are in-use.
+        """
+        disabled = []
+        for cname, c in self.constrs.items():
+            if c.is_disabled:
+                disabled.append(cname)
+        if len(disabled) > 0:
+            logger.warning(f"Disabled constraints: {disabled}")
+        return True
+
     def _data_check(self):
         """
         Check if data is valid for a routine.
@@ -171,7 +260,7 @@ class RoutineModel:
         # TODO: add data validation for RParam, typical range, etc.
         return True
 
-    def init(self, force=False, disable_showcode=True, **kwargs):
+    def init(self, force=False, no_code=True, **kwargs):
         """
         Setup optimization model.
 
@@ -179,7 +268,7 @@ class RoutineModel:
         ----------
         force: bool
             Whether to force initialization.
-        disable_showcode: bool
+        no_code: bool
             Whether to show generated code.
         """
         # TODO: add input check, e.g., if GCost exists
@@ -190,14 +279,17 @@ class RoutineModel:
             logger.debug(f'{self.class_name} data check passed.')
         else:
             logger.warning(f'{self.class_name} data check failed, setup may run into error!')
-        results, elapsed_time = self.om.setup(disable_showcode=disable_showcode)
-        common_info = f"Routine <{self.class_name}> initialized "
+        self._constr_check()
+        # FIXME: build the system matrices every init might slow down the process
+        self.system.mats.make()
+        results, elapsed_time = self.om.setup(no_code=no_code)
+        common_msg = f"Routine <{self.class_name}> initialized "
         if results:
-            info = f"in {elapsed_time}."
+            msg = f"in {elapsed_time}."
             self.initialized = True
         else:
-            info = "failed!"
-        logger.info(common_info + info)
+            msg = "failed!"
+        logger.info(common_msg + msg)
         return results
 
     def prepare(self):
@@ -220,7 +312,7 @@ class RoutineModel:
         """
         return None
 
-    def run(self, force_init=False, disable_showcode=True, **kwargs):
+    def run(self, force_init=False, no_code=True, **kwargs):
         """
         Run the routine.
 
@@ -228,33 +320,38 @@ class RoutineModel:
         ----------
         force_init: bool
             Whether to force initialization.
-        disable_showcode: bool
+        no_code: bool
             Whether to show generated code.
         """
         # --- setup check ---
-        self.init(force=force_init, disable_showcode=disable_showcode)
+        self.init(force=force_init, no_code=no_code)
         # NOTE: if the model data is altered, we need to re-setup the model
         # this implementation if not efficient at large-scale
         # FIXME: find a more efficient way to update the OModel values if
         # the system data is altered
         # elif self.exec_time > 0:
-        #     self.init(disable_showcode=disable_showcode)
+        #     self.init(no_code=no_code)
         # --- solve optimization ---
         t0, _ = elapsed()
-        result = self.solve(**kwargs)
+        _ = self.solve(**kwargs)
         status = self.om.mdl.status
         self.exit_code = self.syms.status[status]
         self.system.exit_code = self.exit_code
         _, s = elapsed(t0)
         self.exec_time = float(s.split(' ')[0])
+        sstats = self.om.mdl.solver_stats  # solver stats
+        n_iter = int(sstats.num_iters)
+        n_iter_str = f"{n_iter} iterations " if n_iter > 1 else f"{n_iter} iteration "
         if self.exit_code == 0:
-            info = f"{self.class_name} solved as {status} in {s} with exit code {self.exit_code}."
-            logger.warning(info)
+            msg = f"{self.class_name} solved as {status} in {s}, converged after "
+            msg += n_iter_str + f"using solver {sstats.solver_name}."
+            logger.warning(msg)
             self.unpack(**kwargs)
             return True
         else:
-            info = f"{self.class_name} failed as {status} with exit code {self.exit_code}!"
-            logger.warning(info)
+            msg = f"{self.class_name} failed after "
+            msg += n_iter_str + f"using solver {sstats.solver_name}!"
+            logger.warning(msg)
             return False
 
     def summary(self, **kwargs):
@@ -387,7 +484,6 @@ class RoutineModel:
             name of the constraint to be enabled
         """
         if isinstance(name, list):
-            constr = []
             for n in name:
                 if n not in self.constrs:
                     logger.warning(f"Constraint <{n}> not found.")
@@ -397,8 +493,6 @@ class RoutineModel:
                     continue
                 self.constrs[n].is_disabled = False
                 self.initialized = False
-                constr.append(n)
-            logger.warning(f"Enable constraints: {n}")
             return True
 
         if name in self.constrs:
@@ -420,7 +514,6 @@ class RoutineModel:
             name of the constraint to be disabled
         """
         if isinstance(name, list):
-            constr = []
             for n in name:
                 if n not in self.constrs:
                     logger.warning(f"Constraint <{n}> not found.")
@@ -430,8 +523,6 @@ class RoutineModel:
                     continue
                 self.constrs[n].is_disabled = True
                 self.initialized = False
-                constr.append(n)
-            logger.warning(f"Disable constraints: {n}")
             return True
 
         if name in self.constrs:
@@ -508,7 +599,7 @@ class RoutineModel:
                 item.owner = self.system.models[item.model]
             else:
                 msg = f'Model indicator \'{item.model}\' of <{item.rtn.class_name}.{name}>'
-                msg += f' is not a model or group. Likely a modeling error.'
+                msg += ' is not a model or group. Likely a modeling error.'
                 logger.warning(msg)
 
         self._post_add_check()
@@ -682,7 +773,7 @@ class RoutineModel:
                 item.owner = self.system.models[item.model]
             else:
                 msg = f'Model indicator \'{item.model}\' of <{item.rtn.class_name}.{name}>'
-                msg += f' is not a model or group. Likely a modeling error.'
+                msg += ' is not a model or group. Likely a modeling error.'
                 logger.warning(msg)
 
         self._post_add_check()

@@ -166,6 +166,54 @@ class ROperationService(RBaseService):
         self.u = u
 
 
+class LoadScale(ROperationService):
+    """
+    Return load.
+
+    Parameters
+    ----------
+    u : Callable
+        nodal load.
+    sd : Callable
+        zonal load factor.
+    Cl: Callable
+        Connection matrix for Load and Bus.
+    name : str, optional
+        Instance name.
+    tex_name : str, optional
+        TeX name.
+    unit : str, optional
+        Unit.
+    info : str, optional
+        Description.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 sd: Callable,
+                 Cl: Callable,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 ):
+        tex_name = tex_name if tex_name is not None else u.tex_name
+        super().__init__(name=name, tex_name=tex_name, unit=unit,
+                         info=info, u=u,)
+        self.sd = sd
+        self.Cl = Cl
+
+    @property
+    def v(self):
+        Region = self.rtn.system.Region
+        yloc_zl = np.array(Region.idx2uid(self.u.v))
+        PQ = self.rtn.system.PQ
+        p0 = PQ.get(src='p0', attr='v', idx=PQ.idx.v)
+        p0s = np.multiply(self.sd.v[:, yloc_zl].transpose(),
+                          p0[:, np.newaxis])
+        return np.matmul(np.linalg.pinv(self.Cl.v), p0s)
+
+
 class NumOp(ROperationService):
     """
     Perform an operation on a numerical array using the
@@ -210,10 +258,9 @@ class NumOp(ROperationService):
                  vtype: Type = None,
                  rfun: Callable = None,
                  rargs: dict = {},
-                 expand_dims: int = None):
+                 expand_dims: int = None,
+                 array_out=True):
         tex_name = tex_name if tex_name is not None else u.tex_name
-        unit = unit if unit is not None else u.unit
-        info = info if info is not None else u.info
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, u=u,)
         self.fun = fun
@@ -221,6 +268,7 @@ class NumOp(ROperationService):
         self.rfun = rfun
         self.rargs = rargs
         self.expand_dims = expand_dims
+        self.array_out = array_out
 
     @property
     def v0(self):
@@ -228,8 +276,9 @@ class NumOp(ROperationService):
             out = self.fun([u.v for u in self.u], **self.args)
         else:
             out = self.fun(self.u.v, **self.args)
-        if not isinstance(out, np.ndarray):
-            out = np.array([out])
+        if self.array_out:
+            if not isinstance(out, np.ndarray):
+                out = np.array([out])
         return out
 
     @property
@@ -280,10 +329,12 @@ class NumExpandDim(NumOp):
                  tex_name: str = None,
                  unit: str = None,
                  info: str = None,
-                 vtype: Type = None,):
+                 vtype: Type = None,
+                 array_out: bool = True,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
-                         u=u, fun=np.expand_dims, args=args)
+                         u=u, fun=np.expand_dims, args=args,
+                         array_out=array_out)
         self.axis = axis
 
     @property
@@ -338,22 +389,23 @@ class NumOpDual(NumOp):
                  vtype: Type = None,
                  rfun: Callable = None,
                  rargs: dict = {},
-                 expand_dims: int = None):
+                 expand_dims: int = None,
+                 array_out=True):
         tex_name = tex_name if tex_name is not None else u.tex_name
-        unit = unit if unit is not None else u.unit
-        info = info if info is not None else u.info
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=fun, args=args,
                          rfun=rfun, rargs=rargs,
-                         expand_dims=expand_dims)
+                         expand_dims=expand_dims,
+                         array_out=array_out)
         self.u2 = u2
 
     @property
     def v0(self):
         out = self.fun(self.u.v, self.u2.v, **self.args)
-        if not isinstance(out, np.ndarray):
-            out = np.array([out])
+        if self.array_out:
+            if not isinstance(out, np.ndarray):
+                out = np.array([out])
         return out
 
 
@@ -387,8 +439,6 @@ class MinDur(NumOpDual):
                  info: str = None,
                  vtype: Type = None,):
         tex_name = tex_name if tex_name is not None else u.tex_name
-        unit = unit if unit is not None else u.unit
-        info = info if info is not None else u.info
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, u2=u2, fun=None, args=None,
@@ -402,15 +452,18 @@ class MinDur(NumOpDual):
     def v(self):
         n_gen = self.u.n
         n_ts = self.u.horizon.n
-        ton = np.zeros((n_gen, n_ts))
+        tout = np.zeros((n_gen, n_ts))
+        t = self.rtn.config.t  # dispatch interval
 
-        td1 = np.ceil(self.u2.v).astype(int)
+        # minimum online/offline duration
+        td = np.ceil(self.u2.v/t).astype(int)
 
-        for i in range(n_gen):
-            for t in range(n_ts):
-                if t + td1[i] <= n_ts:
-                    ton[i, t:t + td1[i]] = 1
-        return ton
+        # Create index arrays for generators and time periods
+        i, t = np.meshgrid(np.arange(n_gen), np.arange(n_ts), indexing='ij')
+        # Create a mask for valid time periods based on minimum duration
+        valid_mask = (t + td[i] <= n_ts)
+        tout[i[valid_mask], t[valid_mask]] = 1
+        return tout
 
 
 class NumHstack(NumOp):

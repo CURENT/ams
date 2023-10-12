@@ -9,7 +9,7 @@ from ams import models     # NOQA
 from ams import system    # NOQA
 from ams import routines  # NOQA
 from ams import opt       # NOQA
-from ams import solver  # NOQA
+from ams import pypower  # NOQA
 
 __author__ = 'Jining Wang'
 

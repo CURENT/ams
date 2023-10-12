@@ -2,24 +2,22 @@
 Module for optimization models.
 """
 
-import logging
+import logging  # NOQA
 
-from typing import Optional, Union
-from collections import OrderedDict
-import re
+from typing import Optional, Union  # NOQA
+from collections import OrderedDict  # NOQA
+import re  # NOQA
 
-import numpy as np
+import numpy as np  # NOQA
 
-from andes.core.common import Config
-from andes.core import BaseParam, DataParam, IdxParam, NumParam
-from andes.models.group import GroupBase
+from andes.core.common import Config  # NOQA
 
-from ams.core.param import RParam
-from ams.core.var import Algeb
+from ams.core.param import RParam  # NOQA
+from ams.core.var import Algeb  # NOQA
 
-from ams.utils import timer
+from ams.utils import timer  # NOQA
 
-import cvxpy as cp
+import cvxpy as cp  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +128,8 @@ class Var(Algeb, OptzBase):
         Lower bound
     ub : str, optional
         Upper bound
+    ctrl : str, optional
+        Controllability
     horizon : ams.routines.RParam, optional
         Horizon idx.
     nonneg : bool, optional
@@ -179,6 +179,8 @@ class Var(Algeb, OptzBase):
                  shape: Optional[Union[tuple, int]] = None,
                  lb: Optional[str] = None,
                  ub: Optional[str] = None,
+                 ctrl: Optional[str] = None,
+                 v0: Optional[str] = None,
                  horizon: Optional[RParam] = None,
                  nonneg: Optional[bool] = False,
                  nonpos: Optional[bool] = False,
@@ -204,14 +206,17 @@ class Var(Algeb, OptzBase):
         self.owner = None  # instance of the owner Model
         self.id = None     # variable internal index inside a model (assigned in run time)
         OptzBase.__init__(self, name=name, info=info, unit=unit)
-        self.src = name if (src is None) else src
+        self.src = src
         self.is_group = False
         self.model = model  # indicate if this variable is a group variable
         self.owner = None  # instance of the owner model or group
         self.lb = lb
         self.ub = ub
+        self.ctrl = ctrl
+        self.v0 = v0
         self.horizon = horizon
         self._shape = shape
+        self._v = None
 
         self.config = Config(name=self.class_name)  # `config` that can be exported
 
@@ -239,7 +244,12 @@ class Var(Algeb, OptzBase):
         """
         Return the CVXPY variable value.
         """
-        return self.om.vars[self.name].value
+        out = self.om.vars[self.name].value if self._v is None else self._v
+        return out
+
+    @v.setter
+    def v(self, value):
+        self._v = value
 
     def get_idx(self):
         if self.is_group:
@@ -254,7 +264,7 @@ class Var(Algeb, OptzBase):
         """
         Parse the variable.
         """
-        om = self.om
+        om = self.om  # NOQA
         sub_map = self.om.rtn.syms.sub_map
         # only used for CVXPY
         # NOTE: Config only allow lower case letters, do a conversion here
@@ -292,19 +302,23 @@ class Var(Algeb, OptzBase):
         for pattern, replacement, in sub_map.items():
             code_var = re.sub(pattern, replacement, code_var)
         exec(code_var)
-        exec(f"om.vars[self.name] = tmp")
+        exec("om.vars[self.name] = tmp")
         exec(f'setattr(om, self.name, om.vars["{self.name}"])')
+        u_ctrl = self.ctrl.v if self.ctrl else np.ones(nr)
+        v0 = self.v0.v if self.v0 else np.zeros(nr)
         if self.lb:
             lv = self.lb.owner.get(src=self.lb.name, idx=self.get_idx(), attr='v')
             u = self.lb.owner.get(src='u', idx=self.get_idx(), attr='v')
-            elv = u * lv  # element-wise lower bound considering online status
+            # element-wise lower bound considering online status
+            elv = u_ctrl * u * lv + (1 - u_ctrl) * v0
             # fit variable shape if horizon exists
             elv = np.tile(elv, (nc, 1)).T if nc > 0 else elv
             exec("om.constrs[self.lb.name] = tmp >= elv")
         if self.ub:
             uv = self.ub.owner.get(src=self.ub.name, idx=self.get_idx(), attr='v')
             u = self.lb.owner.get(src='u', idx=self.get_idx(), attr='v')
-            euv = u * uv  # element-wise upper bound considering online status
+            # element-wise upper bound considering online status
+            euv = u_ctrl * u * uv + (1 - u_ctrl) * v0
             # fit variable shape if horizon exists
             euv = np.tile(euv, (nc, 1)).T if nc > 0 else euv
             exec("om.constrs[self.ub.name] = tmp <= euv")
@@ -381,19 +395,19 @@ class Constraint(OptzBase):
         self.is_disabled = False
         # TODO: add constraint info from solver
 
-    def parse(self, disable_showcode=True):
+    def parse(self, no_code=True):
         """
         Parse the constraint.
 
         Parameters
         ----------
-        disable_showcode : bool, optional
+        no_code : bool, optional
             Flag indicating if the code should be shown, True by default.
         """
         sub_map = self.om.rtn.syms.sub_map
         if self.is_disabled:
             return True
-        om = self.om
+        om = self.om  # NOQA
         code_constr = self.e_str
         for pattern, replacement in sub_map.items():
             try:
@@ -409,7 +423,7 @@ class Constraint(OptzBase):
             raise ValueError(f'Constraint type {self.type} is not supported.')
         code_constr = f'om.constrs["{self.name}"]=' + code_constr
         logger.debug(f"Set constrs {self.name}: {self.e_str} {'<= 0' if self.type == 'uq' else '== 0'}")
-        if not disable_showcode:
+        if not no_code:
             logger.info(f"Code Constr: {code_constr}")
         exec(code_constr)
         exec(f'setattr(om, self.name, om.constrs["{self.name}"])')
@@ -466,24 +480,31 @@ class Objective(OptzBase):
         OptzBase.__init__(self, name=name, info=info, unit=unit)
         self.e_str = e_str
         self.sense = sense
+        self._v = None
 
     @property
     def v(self):
         """
         Return the CVXPY objective value.
         """
-        return self.om.obj.value
+        out = self.om.obj.value
+        out = self._v if out is None else out
+        return out
 
-    def parse(self, disable_showcode=True):
+    @v.setter
+    def v(self, value):
+        self._v = value
+
+    def parse(self, no_code=True):
         """
         Parse the objective function.
 
         Parameters
         ----------
-        disable_showcode : bool, optional
+        no_code : bool, optional
             Flag indicating if the code should be shown, True by default.
         """
-        om = self.om
+        om = self.om  # NOQA
         sub_map = self.om.rtn.syms.sub_map
         code_obj = self.e_str
         for pattern, replacement, in sub_map.items():
@@ -495,22 +516,16 @@ class Objective(OptzBase):
         else:
             raise ValueError(f'Objective sense {self.sense} is not supported.')
         code_obj = 'om.obj=' + code_obj
-        if not disable_showcode:
+        logger.debug(f"Set obj {self.name}: {self.sense}. {self.e_str}")
+        if not no_code:
             logger.info(f"Code Obj: {code_obj}")
         exec(code_obj)
         return True
 
     def __repr__(self):
-        if self.name is not None:
-            if self.v is not None:
-                return f"{self.name}: {self.e_str}, {self.name}={self.v:.4f}"
-            else:
-                return f"{self.name}: {self.e_str}"
-        else:
-            if self.v is not None:
-                return f"{self.e_str}={self.v:.4f}"
-            else:
-                return f"Unnamed obj: {self.e_str}"
+        name_str = f"{self.name}=" if self.name is not None else "obj="
+        value_str = f"{self.v:.4f}, " if self.v is not None else ""
+        return f"{name_str}{value_str}{self.e_str}"
 
 
 class OModel:
@@ -552,7 +567,7 @@ class OModel:
         self.m = 0  # number of constraints
 
     @timer
-    def setup(self, disable_showcode=True, force_generate=False):
+    def setup(self, no_code=True, force_generate=False):
         """
         Setup the optimziation model from symbolic description.
 
@@ -565,7 +580,7 @@ class OModel:
 
         Parameters
         ----------
-        disable_showcode : bool, optional
+        no_code : bool, optional
             Flag indicating if the code should be shown, True by default.
         force : bool, optional
             True to force generating symbols, False by default.
@@ -577,15 +592,15 @@ class OModel:
             ovar.parse()
         # --- add constraints ---
         for constr in rtn.constrs.values():
-            constr.parse(disable_showcode=disable_showcode)
+            constr.parse(no_code=no_code)
         # --- parse objective functions ---
         if rtn.type == 'PF':
             # NOTE: power flow type has no objective function
             pass
         elif rtn.obj is not None:
-            rtn.obj.parse(disable_showcode=disable_showcode)
+            rtn.obj.parse(no_code=no_code)
             # --- finalize the optimziation formulation ---
-            code_mdl = f"problem(self.obj, [constr for constr in self.constrs.values()])"
+            code_mdl = "problem(self.obj, [constr for constr in self.constrs.values()])"
             for pattern, replacement in self.rtn.syms.sub_map.items():
                 code_mdl = re.sub(pattern, replacement, code_mdl)
             code_mdl = "self.mdl=" + code_mdl

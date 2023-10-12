@@ -213,6 +213,14 @@ def mpc2system(mpc: dict, system) -> bool:
                    )
         gcost_idx += 1
 
+    # --- region ---
+    zone_id = np.unique(system.Bus.zone.v).astype(int)
+    for zone in zone_id:
+        zone_idx = f'ZONE_{zone}'
+        system.add('Region', idx=zone_idx, name=zone_idx)
+    bus_zone = system.Bus.zone.v
+    bus_zone = [f'ZONE_{int(zone)}' for zone in bus_zone]
+    system.Bus.zone.v = bus_zone
     return True
 
 
@@ -284,7 +292,10 @@ def system2mpc(system) -> dict:
     bus[:, 11] = system.Bus.vmax.v
     bus[:, 12] = system.Bus.vmin.v
 
-    # area and zone not supported
+    # --- zone ---
+    ZONE_I = system.Region.idx.v
+    mapping = {busi0: i for i, busi0 in enumerate(ZONE_I)}
+    bus[:, 10] = np.array([mapping[busi0] for busi0 in system.Bus.zone.v])
 
     # --- PQ ---
     if system.PQ.n > 0:
@@ -300,18 +311,19 @@ def system2mpc(system) -> dict:
 
     # --- PV ---
     if system.PV.n > 0:
-        pv_pos = system.Bus.idx2uid(system.PV.bus.v)
+        PV = system.PV
+        pv_pos = system.Bus.idx2uid(PV.bus.v)
         bus[pv_pos, 1] = 2
-        gen[system.Slack.n:, 0] = to_busid(system.PV.bus.v)
-        gen[system.Slack.n:, 1] = system.PV.p0.v * base_mva
-        gen[system.Slack.n:, 2] = system.PV.q0.v * base_mva
-        gen[system.Slack.n:, 3] = system.PV.qmax.v * base_mva
-        gen[system.Slack.n:, 4] = system.PV.qmin.v * base_mva
-        gen[system.Slack.n:, 5] = system.PV.v0.v
+        gen[system.Slack.n:, 0] = to_busid(PV.bus.v)
+        gen[system.Slack.n:, 1] = PV.p0.v * base_mva
+        gen[system.Slack.n:, 2] = PV.q0.v * base_mva
+        gen[system.Slack.n:, 3] = PV.qmax.v * base_mva
+        gen[system.Slack.n:, 4] = PV.qmin.v * base_mva
+        gen[system.Slack.n:, 5] = PV.v0.v
         gen[system.Slack.n:, 6] = base_mva
-        gen[system.Slack.n:, 7] = system.PV.u.v
-        gen[system.Slack.n:, 8] = system.PV.pmax.v * base_mva
-        gen[system.Slack.n:, 9] = system.PV.pmin.v * base_mva
+        gen[system.Slack.n:, 7] = PV.u.v
+        gen[system.Slack.n:, 8] = (PV.ctrl.v * PV.pmax.v + (1 - PV.ctrl.v) * PV.pmax.v) * base_mva
+        gen[system.Slack.n:, 9] = (PV.ctrl.v * PV.pmin.v + (1 - PV.ctrl.v) * PV.pmin.v) * base_mva
 
     # --- Slack ---
     if system.Slack.n > 0:
