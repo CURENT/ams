@@ -283,12 +283,12 @@ class RoutineModel:
         # FIXME: build the system matrices every init might slow down the process
         self.system.mats.make()
         results, elapsed_time = self.om.setup(no_code=no_code)
-        common_msg = f"Routine <{self.class_name}> initialized "
+        common_msg = f"Routine <{self.class_name}> "
         if results:
-            msg = f"in {elapsed_time}."
+            msg = f"initialized in {elapsed_time}."
             self.initialized = True
         else:
-            msg = "failed!"
+            msg = "initialization failed!"
         logger.info(common_msg + msg)
         return results
 

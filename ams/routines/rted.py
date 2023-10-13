@@ -81,8 +81,6 @@ class RTEDModel(DCOPFModel):
         self.info = 'Real-time economic dispatch'
         self.type = 'DCED'
 
-        self.info = 'Economic dispatch'
-        self.type = 'DCED'
         # --- service ---
         self.gs = ZonalSum(u=self.zg, zone='Region',
                            name='gs', tex_name=r'S_{g}',
@@ -257,9 +255,9 @@ class RTED2Data(RTEDData):
                            name='EtaD', src='EtaD',
                            tex_name='Eta_D', unit='%',
                            model='ESD1',)
-        self.genESD1 = RParam(info='gen of ESD1',
-                              name='grg1', tex_name=r'g_{ESD1}',
-                              model='ESD1', src='gen',)
+        self.genE = RParam(info='gen of ESD1',
+                           name='genE', tex_name=r'g_{ESD1}',
+                           model='ESD1', src='gen',)
 
 
 class RTED2Model(RTEDModel):
@@ -269,6 +267,9 @@ class RTED2Model(RTEDModel):
 
     def __init__(self, system, config):
         RTEDModel.__init__(self, system, config)
+        self.info = 'Real-time economic dispatch with energy storage'
+        self.type = 'DCED'
+
         # --- service ---
         self.REtaD = NumOp(info='1/EtaD',
                            name='REtaD', tex_name=r'1/{Eta_D}',
@@ -285,7 +286,7 @@ class RTED2Model(RTEDModel):
         self.SOC = Var(info='ESD1 SOC', unit='%',
                        name='SOC', tex_name=r'SOC',
                        model='ESD1', pos=True,)
-        self.ce = VarSelect(u=self.pg, indexer='genESD1',
+        self.ce = VarSelect(u=self.pg, indexer='genE',
                             name='ce', tex_name=r'C_{ESD1}',
                             info='Select ESD1 pg from StaticGen',)
         self.pec = Var(info='ESD1 charging power (system base)',
