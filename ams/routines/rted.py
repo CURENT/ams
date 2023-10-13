@@ -85,7 +85,7 @@ class RTEDModel(DCOPFModel):
         self.type = 'DCED'
         # --- service ---
         self.gs = ZonalSum(u=self.zg, zone='Region',
-                           name='gs', tex_name=r'\sum_{g}',
+                           name='gs', tex_name=r'S_{g}',
                            info='Sum Gen vars vector in shape of zone')
 
         # --- vars ---
@@ -97,7 +97,7 @@ class RTEDModel(DCOPFModel):
                        model='StaticGen', nonneg=True,)
         # --- constraints ---
         self.ds = ZonalSum(u=self.zb, zone='Region',
-                           name='ds', tex_name=r'\sum_{d}',
+                           name='ds', tex_name=r'S_{d}',
                            info='Sum pd vector in shape of zone',)
         self.pdz = NumOpDual(u=self.ds, u2=self.pl,
                              fun=np.multiply,
@@ -257,9 +257,9 @@ class RTED2Data(RTEDData):
                            name='EtaD', src='EtaD',
                            tex_name='Eta_D', unit='%',
                            model='ESD1',)
-        self.ge1 = RParam(info='gen of ESD1',
-                          name='grg1', tex_name=r'g_{ESD1}',
-                          model='ESD1', src='gen',)
+        self.genESD1 = RParam(info='gen of ESD1',
+                              name='grg1', tex_name=r'g_{ESD1}',
+                              model='ESD1', src='gen',)
 
 
 class RTED2Model(RTEDModel):
@@ -285,9 +285,9 @@ class RTED2Model(RTEDModel):
         self.SOC = Var(info='ESD1 SOC', unit='%',
                        name='SOC', tex_name=r'SOC',
                        model='ESD1', pos=True,)
-        self.e1s = VarSelect(u=self.pg, indexer='ge1',
-                             name='e1s', tex_name=r'S_{ESD1}',
-                             info='Select ESD1 pg from StaticGen',)
+        self.ce = VarSelect(u=self.pg, indexer='genESD1',
+                            name='ce', tex_name=r'C_{ESD1}',
+                            info='Select ESD1 pg from StaticGen',)
         self.pec = Var(info='ESD1 charging power (system base)',
                        unit='p.u.', name='pec', tex_name=r'p_{c,ESD1}',
                        model='ESD1',)
@@ -299,9 +299,9 @@ class RTED2Model(RTEDModel):
                       model='ESD1', pos=True,)
 
         # --- constraints ---
-        self.peb = Constraint(name='pges', type='eq',
-                              info='Select ESD1 power from StaticGen',
-                              e_str='e1s@pg - zc',)
+        self.cpge = Constraint(name='cpg1', type='eq',
+                               info='Select ESD1 power from StaticGen',
+                               e_str='ce@pg - zc',)
 
         self.SOClb = Constraint(name='SOClb', type='uq',
                                 info='ESD1 SOC lower bound',
