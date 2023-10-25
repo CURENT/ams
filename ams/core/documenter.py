@@ -303,8 +303,8 @@ class RDocumenter:
                             expr = re.sub(pattern, replacement, expr)
                         except re.error:
                             expr_pattern = pattern.removeprefix('\\b').removesuffix('\\b')
-                            logger.error(f'Faild parse Element <{expr_pattern}> \
-                                         in {p.class_name}, check its tex_name.')
+                            msg = f'Failed to parse <{expr_pattern}> in {self.parent.class_name} <{p.name}>, check its tex_name.'
+                            logger.error(msg)
                             expr = ''
                 for pattern, replacement in special_map.items():
                     expr = expr.replace(pattern, replacement)
@@ -364,7 +364,8 @@ class RDocumenter:
                     expr = re.sub(pattern, replacement, expr)
                 except re.error:
                     expr_pattern = pattern.removeprefix('\\b').removesuffix('\\b')
-                    logger.error(f'Faild parse Element {expr_pattern} in {p.class_name}, check its tex_name.')
+                    msg = f'Failed to parse <{expr_pattern}> in {p.class_name} <{p.name}>, check its tex_name.'
+                    logger.error(msg)
                     return ''
         expr = expr.replace('sum', r'\sum')
         expr = p.sense + '. ' + expr  # minimize or maximize
