@@ -278,7 +278,8 @@ class RTED2Model(RTEDModel):
         self.Mb = NumOp(info='10 times of max of pmax as big M',
                         name='Mb', tex_name=r'M_{big}',
                         u=self.pmax, fun=np.max,
-                        rfun=np.dot, rargs=dict(b=10),)
+                        rfun=np.dot, rargs=dict(b=10),
+                        array_out=False,)
 
         # --- vars ---
         self.SOC = Var(info='ESD1 SOC', unit='%',
@@ -312,9 +313,9 @@ class RTED2Model(RTEDModel):
         self.zclb = Constraint(name='zclb', type='uq', info='zc lower bound',
                                e_str='- zc + pec',)
         self.zcub = Constraint(name='zcub', type='uq', info='zc upper bound',
-                               e_str='zc - pec - Mb@(1-uc)',)
+                               e_str='zc - pec - Mb dot (1-uc)',)
         self.zcub2 = Constraint(name='zcub2', type='uq', info='zc upper bound',
-                                e_str='zc - Mb@uc',)
+                                e_str='zc - Mb dot uc',)
 
         SOCb = 'SOC - SOCinit - t dot REn * EtaC * zc'
         SOCb += '- t dot REn * REtaD * (pec - zc)'
@@ -325,7 +326,6 @@ class RTED2Model(RTEDModel):
 class RTED2(RTED2Data, RTED2Model):
     """
     RTED with energy storage :ref:`ESD1`.
-
     The bilinear term in the formulation is linearized with big-M method.
     """
 
