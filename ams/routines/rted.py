@@ -140,22 +140,21 @@ class RTEDModel(DCOPFModel):
 class RTED(RTEDData, RTEDModel):
     """
     DC-based real-time economic dispatch (RTED).
-
     RTED extends DCOPF with:
 
-    1. Parameter ``pg0``, which can be retrieved from dynamic simulation results.
+    1. Param ``pg0``, which can be retrieved from dynamic simulation results.
 
     2. RTED has mapping dicts to interface with ANDES.
 
     3. RTED routine adds a function ``dc2ac`` to do the AC conversion using ACOPF
 
-    4. Variables for zonal SFR reserve: ``pru`` and ``prd``;
+    4. Vars for zonal SFR reserve: ``pru`` and ``prd``;
 
-    5. Parameters for linear cost of zonal SFR reserve ``cru`` and ``crd``;
+    5. Param for linear cost of zonal SFR reserve ``cru`` and ``crd``;
 
-    6. Parameters for SFR requirement ``du`` and ``dd``;
+    6. Param for SFR requirement ``du`` and ``dd``;
 
-    7. Parameters fpr generator ramping: start point ``pg0`` and ramping limit ``R10``;
+    7. Param for generator ramping: start point ``pg0`` and ramping limit ``R10``;
 
     The function ``dc2ac`` sets the ``vBus`` value from solved ACOPF.
     Without this conversion, dynamic simulation might fail due to the gap between
@@ -224,13 +223,13 @@ class RTED(RTEDData, RTEDModel):
         return super().run(**kwargs)
 
 
-class RTED2Data(RTEDData):
+class ESD1Base:
     """
-    Data for real-time economic dispatch, with ESD1.
+    Base class for ESD1 used in DCED.
     """
 
     def __init__(self):
-        RTEDData.__init__(self)
+        # --- params ---
         self.En = RParam(info='Rated energy capacity',
                          name='En', src='En',
                          tex_name='E_n', unit='MWh',
@@ -258,17 +257,6 @@ class RTED2Data(RTEDData):
         self.genE = RParam(info='gen of ESD1',
                            name='genE', tex_name=r'g_{ESD1}',
                            model='ESD1', src='gen',)
-
-
-class RTED2Model(RTEDModel):
-    """
-    RTED model with ESD1.
-    """
-
-    def __init__(self, system, config):
-        RTEDModel.__init__(self, system, config)
-        self.info = 'Real-time economic dispatch with energy storage'
-        self.type = 'DCED'
 
         # --- service ---
         self.REtaD = NumOp(name='REtaD', tex_name=r'\frac{1}{\eta_d}',
@@ -323,12 +311,15 @@ class RTED2Model(RTEDModel):
                                info='ESD1 SOC balance', e_str=SOCb,)
 
 
-class RTED2(RTED2Data, RTED2Model):
+class RTED2(RTEDData, RTEDModel, ESD1Base):
     """
     RTED with energy storage :ref:`ESD1`.
     The bilinear term in the formulation is linearized with big-M method.
     """
 
     def __init__(self, system, config):
-        RTED2Data.__init__(self)
-        RTED2Model.__init__(self, system, config)
+        RTEDData.__init__(self)
+        RTEDModel.__init__(self, system, config)
+        ESD1Base.__init__(self)
+        self.info = 'Real-time economic dispatch with energy storage'
+        self.type = 'DCED'

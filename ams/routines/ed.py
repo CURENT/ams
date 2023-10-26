@@ -8,7 +8,7 @@ from ams.core.param import RParam  # NOQA
 from ams.core.service import (ZonalSum, NumOpDual, NumHstack,
                               RampSub, NumOp, LoadScale)  # NOQA
 
-from ams.routines.rted import RTEDData  # NOQA
+from ams.routines.rted import RTEDData, ESD1Base  # NOQA
 from ams.routines.dcopf import DCOPFModel  # NOQA
 
 from ams.core.service import VarSelect  # NOQA
@@ -167,24 +167,17 @@ class EDModel(DCOPFModel):
 class ED(EDData, EDModel):
     """
     DC-based multi-period economic dispatch (ED).
-
     ED extends DCOPF as follows:
 
-    1. Power generation ``pg`` is extended to 2D matrix using argument
-    ``horizon`` to represent the power generation of each generator in
-    each time period (horizon).
+    1. Var ``pg`` is extended to 2D
 
-    2. The rows correspond to generators and the columns correspond to time
-    periods (horizons).
-
-    3. Ramping limits ``rgu`` and ``rgd`` are introduced as 2D matrices to
-    represent the upward and downward ramping limits for each generator.
+    2. 2D Vars ``rgu`` and ``rgd`` are introduced
 
     Notes
     -----
     1. Formulations has been adjusted with interval ``config.t``, 1 [Hour] by default.
 
-    2. The tie-line flow has not been implemented in formulations
+    2. The tie-line flow is not implemented in this model.
     """
 
     def __init__(self, system, config):
@@ -197,118 +190,23 @@ class ED(EDData, EDModel):
 # if ``Region``, if ``Bus`` has param ``zone``, optional, if none, auto fill
 
 
-class ED2Data(EDData):
-    """
-    Data for economic dispatch, with ESD1.
-    """
-
-    def __init__(self):
-        EDData.__init__(self)
-        self.En = RParam(info='Rated energy capacity',
-                         name='En', src='En',
-                         tex_name='E_n', unit='MWh',
-                         model='ESD1',)
-        self.SOCmin = RParam(info='Minimum required value for SOC in limiter',
-                             name='SOCmin', src='SOCmin',
-                             tex_name='SOC_{min}', unit='%',
-                             model='ESD1',)
-        self.SOCmax = RParam(info='Maximum allowed value for SOC in limiter',
-                             name='SOCmax', src='SOCmax',
-                             tex_name='SOC_{max}', unit='%',
-                             model='ESD1',)
-        self.SOCinit = RParam(info='Initial state of charge',
-                              name='SOCinit', src='SOCinit',
-                              tex_name=r'SOC_{init}', unit='%',
-                              model='ESD1',)
-        self.EtaC = RParam(info='Efficiency during charging',
-                           name='EtaC', src='EtaC',
-                           tex_name=r'\eta_c', unit='%',
-                           model='ESD1',)
-        self.EtaD = RParam(info='Efficiency during discharging',
-                           name='EtaD', src='EtaD',
-                           tex_name=r'\eta_d', unit='%',
-                           model='ESD1',)
-        self.genE = RParam(info='gen of ESD1',
-                           name='genE', tex_name=r'g_{ESD1}',
-                           model='ESD1', src='gen',)
-
-
-class ED2Model(EDModel):
-    """
-    ED model with ESD1.
-    """
-
-    def __init__(self, system, config):
-        EDModel.__init__(self, system, config)
-        self.config.t = 1  # dispatch interval in hour
-
-        self.info = 'Economic dispatch with energy storage'
-        self.type = 'DCED'
-
-        # --- service ---
-        self.REtaD = NumOp(name='REtaD', tex_name=r'\frac{1}{\eta_d}',
-                           u=self.EtaD, fun=np.reciprocal,)
-        self.REn = NumOp(name='REn', tex_name=r'\frac{1}{E_n}',
-                         u=self.En, fun=np.reciprocal,)
-        self.Mb = NumOp(info='10 times of max of pmax as big M',
-                        name='Mb', tex_name=r'M_{big}',
-                        u=self.pmax, fun=np.max,
-                        rfun=np.dot, rargs=dict(b=10),
-                        array_out=False,)
-
-        # --- ESD1 vars ---
-        self.SOC = Var(info='ESD1 SOC in 2D',
-                       name='SOC', tex_name=r'SOC', unit='%',
-                       model='ESD1', pos=True,
-                       horizon=self.timeslot,)
-
-        self.ce = VarSelect(u=self.pg, indexer='genE',
-                            name='ce', tex_name=r'C_{ESD1}',
-                            info='Select ESD1 pg from StaticGen',)
-        self.pec = Var(info='ESD1 charging power (system base)',
-                       unit='p.u.', name='pec', tex_name=r'p_{c,ESD1}',
-                       model='ESD1',
-                       horizon=self.timeslot,)
-        self.uc = Var(info='2D ESD1 charging decision',
-                      name='uc', tex_name=r'u_{c}',
-                      model='ESD1', boolean=True,
-                      horizon=self.timeslot,)
-        self.zc = Var(info='2D aux var for ESD1 charging decision',
-                      name='zc', tex_name=r'z_{c}',
-                      model='ESD1', pos=True,
-                      horizon=self.timeslot,)
-
-        # --- constraints ---
-        self.cpge = Constraint(name='cpge', type='eq',
-                               info='Select ESD1 power from StaticGen',
-                               e_str='multiply(ce, pg) - zc',)
-
-        self.SOClb = Constraint(name='SOClb', type='uq',
-                                info='ESD1 SOC lower bound',
-                                e_str='-SOC + SOCmin',)
-        self.SOCub = Constraint(name='SOCub', type='uq',
-                                info='ESD1 SOC upper bound',
-                                e_str='SOC - SOCmax',)
-
-        self.zclb = Constraint(name='zclb', type='uq', info='zc lower bound',
-                               e_str='- zc + pec',)
-        self.zcub = Constraint(name='zcub', type='uq', info='zc upper bound',
-                               e_str='zc - pec - Mb dot (1-uc)',)
-        self.zcub2 = Constraint(name='zcub2', type='uq', info='zc upper bound',
-                                e_str='zc - Mb dot uc',)
-
-        SOCb = 'SOC - SOCinit - t dot REn * EtaC * zc'
-        SOCb += '- t dot REn * REtaD * (pec - zc)'
-        self.SOCb = Constraint(name='SOCb', type='eq',
-                               info='ESD1 SOC balance', e_str=SOCb,)
-
-
-class ED2(ED2Data, ED2Model):
+class ED2(EDData, EDModel, ESD1Base):
     """
     ED with energy storage :ref:`ESD1`.
     The bilinear term in the formulation is linearized with big-M method.
     """
 
     def __init__(self, system, config):
-        ED2Data.__init__(self)
-        ED2Model.__init__(self, system, config)
+        EDData.__init__(self)
+        EDModel.__init__(self, system, config)
+        ESD1Base.__init__(self)
+
+        self.config.t = 1  # dispatch interval in hour
+
+        self.info = 'Economic dispatch with energy storage'
+        self.type = 'DCED'
+
+        self.SOC.horizon = self.timeslot
+        self.pec.horizon = self.timeslot
+        self.uc.horizon = self.timeslot
+        self.zc.horizon = self.timeslot
