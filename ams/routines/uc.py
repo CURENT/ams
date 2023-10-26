@@ -10,6 +10,7 @@ from ams.core.param import RParam  # NOQA
 from ams.core.service import (NumOp, NumHstack,
                               NumOpDual, MinDur, ZonalSum)  # NOQA
 from ams.routines.ed import EDData, EDModel  # NOQA
+from ams.routines.rted import ESD1Base  # NOQA
 
 from ams.opt.omodel import Var, Constraint  # NOQA
 
@@ -66,7 +67,7 @@ class UCModel(EDModel):
     def __init__(self, system, config):
         EDModel.__init__(self, system, config)
         self.config.t = 1  # dispatch interval in hour
-        self.config.add(OrderedDict((('dp', 1000), # penalty for unserved load, $/p.u.
+        self.config.add(OrderedDict((('cp', 1000), # penalty for unserved load, $/p.u.
                                      )))
         self.info = 'unit commitment'
         self.type = 'DCUC'
@@ -168,7 +169,7 @@ class UCModel(EDModel):
         acost = ' + sum(csu * vgd + csd * wgd)'
         srcost = ' + sum(csr @ (multiply(Rpmax, ugd) - zug))'
         nsrcost = ' + sum(cnsr @ multiply((1 - ugd), Rpmax))'
-        dcost = ' + sum(dp dot pos(gs @ pg - pds))'
+        dcost = ' + sum(cp dot pos(gs @ pg - pds))'
         self.obj.e_str = gcost + acost + srcost + nsrcost + dcost
 
     def _initial_guess(self):
@@ -217,11 +218,11 @@ class UCModel(EDModel):
 
 class UC(UCData, UCModel):
     """
-    DC-based unit commitment (UC) with linearizing bilinear term using big M theory.
+    DC-based unit commitment (UC).
+    The bilinear term in the formulation is linearized with big-M method.
 
     Constraints include power balance, ramping, spinning reserve, non-spinning reserve,
     minimum ON/OFF duration.
-
     The cost inludes generation cost, startup cost, shutdown cost, spinning reserve cost,
     non-spinning reserve cost, and unserved energy penalty.
 
@@ -247,3 +248,23 @@ class UC(UCData, UCModel):
     def __init__(self, system, config):
         UCData.__init__(self)
         UCModel.__init__(self, system, config)
+
+
+class UC2(UCData, UCModel, ESD1Base):
+    """
+    UC with energy storage :ref:`ESD1`.
+    """
+
+    def __init__(self, system, config):
+        UCData.__init__(self)
+        UCModel.__init__(self, system, config)
+        ESD1Base.__init__(self)
+        self.config.t = 1  # dispatch interval in hour
+
+        self.info = 'unit commitment with energy storage'
+        self.type = 'DCUC'
+
+        self.SOC.horizon = self.timeslot
+        self.pec.horizon = self.timeslot
+        self.uc.horizon = self.timeslot
+        self.zc.horizon = self.timeslot

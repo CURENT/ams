@@ -107,6 +107,10 @@ class Var(Algeb, OptzBase):
     """
     Base class for variables used in a routine.
 
+    When `horizon` is provided, the variable will be expanded to a matrix,
+    where rows are indexed by the source variable index and columns are
+    indexed by the horizon index.
+
     Parameters
     ----------
     info : str, optional

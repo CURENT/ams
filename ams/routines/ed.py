@@ -8,10 +8,11 @@ from ams.core.param import RParam  # NOQA
 from ams.core.service import (ZonalSum, NumOpDual, NumHstack,
                               RampSub, NumOp, LoadScale)  # NOQA
 
-from ams.routines.rted import RTEDData  # NOQA
+from ams.routines.rted import RTEDData, ESD1Base  # NOQA
 from ams.routines.dcopf import DCOPFModel  # NOQA
 
-from ams.opt.omodel import Constraint  # NOQA
+from ams.core.service import VarSelect  # NOQA
+from ams.opt.omodel import Var, Constraint  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -68,15 +69,15 @@ class EDModel(DCOPFModel):
         # --- vars ---
         # NOTE: extend pg to 2D matrix, where row is gen and col is timeslot
         self.pg.horizon = self.timeslot
-        self.pg.info = '2D power generation (system base, row for gen, col for horizon)'
+        self.pg.info = '2D power generation (system base)'
 
         self.pn.horizon = self.timeslot
-        self.pn.info = '2D Bus power injection (system base, row for bus, col for horizon)'
+        self.pn.info = '2D Bus power injection (system base)'
 
         # --- constraints ---
         # --- power balance ---
         self.ds = ZonalSum(u=self.zb, zone='Region',
-                           name='ds', tex_name=r'\sum_{d}',
+                           name='ds', tex_name=r'S_{d}',
                            info='Sum pl vector in shape of zone',)
         self.pdz = NumOpDual(u=self.ds, u2=self.pl,
                              fun=np.multiply,
@@ -89,7 +90,7 @@ class EDModel(DCOPFModel):
                              name='pds', tex_name=r'p_{d,s,t}',
                              unit='p.u.', info='Scaled total load as row vector')
         self.gs = ZonalSum(u=self.zg, zone='Region',
-                           name='gs', tex_name=r'\sum_{g}',
+                           name='gs', tex_name=r'S_{g}',
                            info='Sum Gen vars vector in shape of zone')
         # NOTE: Spg @ pg returns a row vector
         self.pb.e_str = '- gs @ pg + pds'  # power balance
@@ -166,24 +167,17 @@ class EDModel(DCOPFModel):
 class ED(EDData, EDModel):
     """
     DC-based multi-period economic dispatch (ED).
-
     ED extends DCOPF as follows:
 
-    1. Power generation ``pg`` is extended to 2D matrix using argument
-    ``horizon`` to represent the power generation of each generator in
-    each time period (horizon).
+    1. Var ``pg`` is extended to 2D
 
-    2. The rows correspond to generators and the columns correspond to time
-    periods (horizons).
-
-    3. Ramping limits ``rgu`` and ``rgd`` are introduced as 2D matrices to
-    represent the upward and downward ramping limits for each generator.
+    2. 2D Vars ``rgu`` and ``rgd`` are introduced
 
     Notes
     -----
     1. Formulations has been adjusted with interval ``config.t``, 1 [Hour] by default.
 
-    2. The tie-line flow has not been implemented in formulations
+    2. The tie-line flow is not implemented in this model.
     """
 
     def __init__(self, system, config):
@@ -194,3 +188,25 @@ class ED(EDData, EDModel):
 # if has model ``TimeSlot``, mandatory
 # if has model ``Region``, optional
 # if ``Region``, if ``Bus`` has param ``zone``, optional, if none, auto fill
+
+
+class ED2(EDData, EDModel, ESD1Base):
+    """
+    ED with energy storage :ref:`ESD1`.
+    The bilinear term in the formulation is linearized with big-M method.
+    """
+
+    def __init__(self, system, config):
+        EDData.__init__(self)
+        EDModel.__init__(self, system, config)
+        ESD1Base.__init__(self)
+
+        self.config.t = 1  # dispatch interval in hour
+
+        self.info = 'Economic dispatch with energy storage'
+        self.type = 'DCED'
+
+        self.SOC.horizon = self.timeslot
+        self.pec.horizon = self.timeslot
+        self.uc.horizon = self.timeslot
+        self.zc.horizon = self.timeslot
