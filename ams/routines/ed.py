@@ -222,11 +222,11 @@ class ED2Data(EDData):
                               model='ESD1',)
         self.EtaC = RParam(info='Efficiency during charging',
                            name='EtaC', src='EtaC',
-                           tex_name='Eta_C', unit='%',
+                           tex_name=r'\eta_c', unit='%',
                            model='ESD1',)
         self.EtaD = RParam(info='Efficiency during discharging',
                            name='EtaD', src='EtaD',
-                           tex_name='Eta_D', unit='%',
+                           tex_name=r'\eta_d', unit='%',
                            model='ESD1',)
         self.genE = RParam(info='gen of ESD1',
                            name='genE', tex_name=r'g_{ESD1}',
@@ -245,6 +245,17 @@ class ED2Model(EDModel):
         self.info = 'Economic dispatch with energy storage'
         self.type = 'DCED'
 
+        # --- service ---
+        self.REtaD = NumOp(name='REtaD', tex_name=r'\frac{1}{\eta_d}',
+                           u=self.EtaD, fun=np.reciprocal,)
+        self.REn = NumOp(name='REn', tex_name=r'\frac{1}{E_n}',
+                         u=self.En, fun=np.reciprocal,)
+        self.Mb = NumOp(info='10 times of max of pmax as big M',
+                        name='Mb', tex_name=r'M_{big}',
+                        u=self.pmax, fun=np.max,
+                        rfun=np.dot, rargs=dict(b=10),
+                        array_out=False,)
+
         # --- ESD1 vars ---
         self.SOC = Var(info='ESD1 SOC in 2D',
                        name='SOC', tex_name=r'SOC', unit='%',
@@ -258,11 +269,11 @@ class ED2Model(EDModel):
                        unit='p.u.', name='pec', tex_name=r'p_{c,ESD1}',
                        model='ESD1',
                        horizon=self.timeslot,)
-        self.uc = Var(info='ESD1 charging decision',
+        self.uc = Var(info='2D ESD1 charging decision',
                       name='uc', tex_name=r'u_{c}',
                       model='ESD1', boolean=True,
                       horizon=self.timeslot,)
-        self.zc = Var(info='Aux var for ESD1 charging',
+        self.zc = Var(info='2D aux var for ESD1 charging decision',
                       name='zc', tex_name=r'z_{c}',
                       model='ESD1', pos=True,
                       horizon=self.timeslot,)
@@ -272,10 +283,30 @@ class ED2Model(EDModel):
                                info='Select ESD1 power from StaticGen',
                                e_str='multiply(ce, pg) - zc',)
 
+        self.SOClb = Constraint(name='SOClb', type='uq',
+                                info='ESD1 SOC lower bound',
+                                e_str='-SOC + SOCmin',)
+        self.SOCub = Constraint(name='SOCub', type='uq',
+                                info='ESD1 SOC upper bound',
+                                e_str='SOC - SOCmax',)
+
+        self.zclb = Constraint(name='zclb', type='uq', info='zc lower bound',
+                               e_str='- zc + pec',)
+        self.zcub = Constraint(name='zcub', type='uq', info='zc upper bound',
+                               e_str='zc - pec - Mb dot (1-uc)',)
+        self.zcub2 = Constraint(name='zcub2', type='uq', info='zc upper bound',
+                                e_str='zc - Mb dot uc',)
+
+        SOCb = 'SOC - SOCinit - t dot REn * EtaC * zc'
+        SOCb += '- t dot REn * REtaD * (pec - zc)'
+        self.SOCb = Constraint(name='SOCb', type='eq',
+                               info='ESD1 SOC balance', e_str=SOCb,)
+
 
 class ED2(ED2Data, ED2Model):
     """
-    DC-based multi-period economic dispatch (ED) with ESD1.
+    ED with energy storage :ref:`ESD1`.
+    The bilinear term in the formulation is linearized with big-M method.
     """
 
     def __init__(self, system, config):
