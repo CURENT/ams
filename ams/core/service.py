@@ -681,7 +681,10 @@ class VarSelect(NumOp):
             raise ValueError(f'{indexer.model} contains undefined {indexer.src}, likey a data error.')
 
         out = [1 if item in ref else 0 for item in uidx]
-
+        out = np.array(out)
+        if self.u.horizon is not None:
+            out = out[:, np.newaxis]
+            out = np.repeat(out, self.u.horizon.n, axis=1)
         return np.array(out)
 
 
