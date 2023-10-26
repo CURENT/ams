@@ -280,44 +280,22 @@ class RDocumenter:
             class_names.append(p.class_name)
             info.append(p.info if p.info else '')
 
-        # NOTE: in the future, there might occur special math symbols
-        special_map = OrderedDict([
-            ('SUMSYMBOL', r'\sum'),
-        ])
-
         # expressions based on output format
+        expressions = []
         if export == 'rest':
-            expressions = []
-            logger.debug(f'tex_map: {self.parent.syms.tex_map}')
             for p in self.constrs.values():
-                expr = p.e_str
-                for pattern, replacement in self.parent.syms.tex_map.items():
-                    if r'\sum' in replacement:
-                        replacement = replacement.replace(r'\sum', 'SUMSYMBOL')
-                    if r'\p' in replacement:
-                        continue
-                    if r'sum' in expr:
-                        expr = expr.replace('sum', 'SUMSYMBOL')
-                    else:
-                        try:
-                            expr = re.sub(pattern, replacement, expr)
-                        except re.error:
-                            expr_pattern = pattern.removeprefix('\\b').removesuffix('\\b')
-                            msg = f'Failed to parse <{expr_pattern}> in {self.parent.class_name} <{p.name}>, check its tex_name.'
-                            logger.error(msg)
-                            expr = ''
-                for pattern, replacement in special_map.items():
-                    expr = expr.replace(pattern, replacement)
+                expr = _tex_pre(self, p, self.parent.syms.tex_map)
                 if p.type == 'eq':
                     expr = f'{expr} = 0'
                 elif p.type == 'uq':
                     expr = f'{expr} <= 0'
-                logger.debug(f'{p.name} expr after: {expr}')
+                logger.debug(f'{p.name} math: {expr}')
                 expressions.append(expr)
-            expressions = math_wrap(expressions, export=export)
+
             title = 'Constraints\n----------------------------------'
         else:
             title = 'Constraints'
+        expressions = math_wrap(expressions, export=export)
 
         plain_dict = OrderedDict([('Name', names),
                                   ('Description', info),
@@ -352,22 +330,7 @@ class RDocumenter:
         units_rest.append(f'*{p.unit}*' if p.unit else '')
 
         # expressions based on output format
-        expr = p.e_str
-        # NOTE: re.sub will run into error if `\` occurs at first position
-        # here we skip `\sum` in re replacement and do this using string replace
-        # however, this method might not be robust
-        for pattern, replacement in self.parent.syms.tex_map.items():
-            if 'sum' in replacement:
-                continue
-            else:
-                try:
-                    expr = re.sub(pattern, replacement, expr)
-                except re.error:
-                    expr_pattern = pattern.removeprefix('\\b').removesuffix('\\b')
-                    msg = f'Failed to parse <{expr_pattern}> in {p.class_name} <{p.name}>, check its tex_name.'
-                    logger.error(msg)
-                    return ''
-        expr = expr.replace('sum', r'\sum')
+        expr = _tex_pre(self, p, self.parent.syms.tex_map)
         expr = p.sense + '. ' + expr  # minimize or maximize
         expr = [expr]
         if export == 'rest':
@@ -519,3 +482,54 @@ class RDocumenter:
                               export=export,
                               plain_dict=plain_dict,
                               rest_dict=rest_dict)
+
+def _tex_pre(docm, p, tex_map):
+    """
+    Prepare the expression for pretty printing.
+
+    Parameters
+    ----------
+    docm : Documenter
+        The Documenter instance.
+    p : obj or const
+        The objective or constraint instance.
+    tex_map : dict
+        The tex map to use.
+    """
+
+    # NOTE: in the future, there might occur special math symbols
+    special_map = OrderedDict([
+        ('SUM', r'\sum'),
+        ('ETA', r'\eta'),
+        ('FRAC', r'\frac'),
+    ])
+
+    expr = p.e_str
+
+    for pattern, replacement in tex_map.items():
+        if r'\sum' in replacement:
+            replacement = replacement.replace(r'\sum', 'SUM')
+        if r'sum' in expr:
+            expr = expr.replace('sum', 'SUM')
+        if '\eta' in replacement:
+            replacement = replacement.replace('\eta', 'ETA')
+        if r'\frac' in replacement:
+            replacement = replacement.replace(r'\frac', 'FRAC')
+        if r'\p' in replacement:
+            continue
+        try:
+            expr = re.sub(pattern, replacement, expr)
+        except re.error:
+            expr_pattern = pattern.removeprefix('\\b').removesuffix('\\b')
+            msg = f'Failed to parse <{expr_pattern}> in {docm.parent.class_name} <{p.name}>, check its tex_name.'
+            logger.error(msg)
+            expr = ''
+        try:
+            expr = expr.replace('*', ' ')
+        except re.error:
+            logger.error('Remains '*' in the expression.')
+
+    for pattern, replacement in special_map.items():
+        expr = expr.replace(pattern, replacement)
+
+    return expr

@@ -76,10 +76,10 @@ class SymProcessor:
 
         self.tex_map = OrderedDict([
             (r'\*\*(\d+)', '^{\\1}'),
-            (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1*\2'),
-            (r'\@', r'*'),
-            (r'dot', r'*'),
-            (r'multiply\(([^,]+), ([^)]+)\)', r'\1 * \2'),
+            (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 \2'),
+            (r'\@', r' '),
+            (r'dot', r' '),
+            (r'multiply\(([^,]+), ([^)]+)\)', r'\1 \2'),
             (r'\bnp.linalg.pinv(\d+)', r'\1^{\-1}'),
         ])
 
@@ -141,6 +141,9 @@ class SymProcessor:
             self.inputs_dict[key] = tmp
             if key in self.config.tex_names:
                 self.tex_names[tmp] = sp.Symbol(self.config.tex_names[key])
+
+        # NOTE: hard-coded config 't' tex name as 'T_{cfg}' for clarity in doc 
+        self.tex_map['\\bt\\b'] = 'T_{cfg}'
 
         # store tex names for pretty printing replacement later
         for var in self.inputs_dict:
