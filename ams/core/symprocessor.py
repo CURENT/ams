@@ -81,6 +81,7 @@ class SymProcessor:
             (r'dot', r' '),
             (r'multiply\(([^,]+), ([^)]+)\)', r'\1 \2'),
             (r'\bnp.linalg.pinv(\d+)', r'\1^{\-1}'),
+            (r'\bpos\b', 'F^{+}'),
         ])
 
         self.status = {
@@ -144,6 +145,7 @@ class SymProcessor:
 
         # NOTE: hard-coded config 't' tex name as 'T_{cfg}' for clarity in doc 
         self.tex_map['\\bt\\b'] = 'T_{cfg}'
+        self.tex_map['\\bcp\\b'] = 'c_{p, cfg}'
 
         # store tex names for pretty printing replacement later
         for var in self.inputs_dict:
