@@ -11,7 +11,8 @@ from ams.core.service import (ZonalSum, NumOpDual, NumHstack,
 from ams.routines.rted import RTEDData  # NOQA
 from ams.routines.dcopf import DCOPFModel  # NOQA
 
-from ams.opt.omodel import Constraint  # NOQA
+from ams.core.service import VarSelect  # NOQA
+from ams.opt.omodel import Var, Constraint  # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -68,10 +69,10 @@ class EDModel(DCOPFModel):
         # --- vars ---
         # NOTE: extend pg to 2D matrix, where row is gen and col is timeslot
         self.pg.horizon = self.timeslot
-        self.pg.info = '2D power generation (system base, row for gen, col for horizon)'
+        self.pg.info = '2D power generation (system base)'
 
         self.pn.horizon = self.timeslot
-        self.pn.info = '2D Bus power injection (system base, row for bus, col for horizon)'
+        self.pn.info = '2D Bus power injection (system base)'
 
         # --- constraints ---
         # --- power balance ---
@@ -194,3 +195,89 @@ class ED(EDData, EDModel):
 # if has model ``TimeSlot``, mandatory
 # if has model ``Region``, optional
 # if ``Region``, if ``Bus`` has param ``zone``, optional, if none, auto fill
+
+
+class ED2Data(EDData):
+    """
+    Data for economic dispatch, with ESD1.
+    """
+
+    def __init__(self):
+        EDData.__init__(self)
+        self.En = RParam(info='Rated energy capacity',
+                         name='En', src='En',
+                         tex_name='E_n', unit='MWh',
+                         model='ESD1',)
+        self.SOCmin = RParam(info='Minimum required value for SOC in limiter',
+                             name='SOCmin', src='SOCmin',
+                             tex_name='SOC_{min}', unit='%',
+                             model='ESD1',)
+        self.SOCmax = RParam(info='Maximum allowed value for SOC in limiter',
+                             name='SOCmax', src='SOCmax',
+                             tex_name='SOC_{max}', unit='%',
+                             model='ESD1',)
+        self.SOCinit = RParam(info='Initial state of charge',
+                              name='SOCinit', src='SOCinit',
+                              tex_name=r'SOC_{init}', unit='%',
+                              model='ESD1',)
+        self.EtaC = RParam(info='Efficiency during charging',
+                           name='EtaC', src='EtaC',
+                           tex_name='Eta_C', unit='%',
+                           model='ESD1',)
+        self.EtaD = RParam(info='Efficiency during discharging',
+                           name='EtaD', src='EtaD',
+                           tex_name='Eta_D', unit='%',
+                           model='ESD1',)
+        self.genE = RParam(info='gen of ESD1',
+                           name='genE', tex_name=r'g_{ESD1}',
+                           model='ESD1', src='gen',)
+
+
+class ED2Model(EDModel):
+    """
+    ED model with ESD1.
+    """
+
+    def __init__(self, system, config):
+        EDModel.__init__(self, system, config)
+        self.config.t = 1  # dispatch interval in hour
+
+        self.info = 'Economic dispatch with energy storage'
+        self.type = 'DCED'
+
+        # --- ESD1 vars ---
+        self.SOC = Var(info='ESD1 SOC in 2D',
+                       name='SOC', tex_name=r'SOC', unit='%',
+                       model='ESD1', pos=True,
+                       horizon=self.timeslot,)
+
+        self.ce = VarSelect(u=self.pg, indexer='genE',
+                            name='ce', tex_name=r'C_{ESD1}',
+                            info='Select ESD1 pg from StaticGen',)
+        self.pec = Var(info='ESD1 charging power (system base)',
+                       unit='p.u.', name='pec', tex_name=r'p_{c,ESD1}',
+                       model='ESD1',
+                       horizon=self.timeslot,)
+        self.uc = Var(info='ESD1 charging decision',
+                      name='uc', tex_name=r'u_{c}',
+                      model='ESD1', boolean=True,
+                      horizon=self.timeslot,)
+        self.zc = Var(info='Aux var for ESD1 charging',
+                      name='zc', tex_name=r'z_{c}',
+                      model='ESD1', pos=True,
+                      horizon=self.timeslot,)
+
+        # --- constraints ---
+        self.cpge = Constraint(name='cpge', type='eq',
+                               info='Select ESD1 power from StaticGen',
+                               e_str='multiply(ce, pg) - zc',)
+
+
+class ED2(ED2Data, ED2Model):
+    """
+    DC-based multi-period economic dispatch (ED) with ESD1.
+    """
+
+    def __init__(self, system, config):
+        ED2Data.__init__(self)
+        ED2Model.__init__(self, system, config)
