@@ -249,11 +249,11 @@ class RTED2Data(RTEDData):
                               model='ESD1',)
         self.EtaC = RParam(info='Efficiency during charging',
                            name='EtaC', src='EtaC',
-                           tex_name='Eta_C', unit='%',
+                           tex_name=r'\eta_c', unit='%',
                            model='ESD1',)
         self.EtaD = RParam(info='Efficiency during discharging',
                            name='EtaD', src='EtaD',
-                           tex_name='Eta_D', unit='%',
+                           tex_name=r'\eta_d', unit='%',
                            model='ESD1',)
         self.genE = RParam(info='gen of ESD1',
                            name='genE', tex_name=r'g_{ESD1}',
@@ -271,11 +271,9 @@ class RTED2Model(RTEDModel):
         self.type = 'DCED'
 
         # --- service ---
-        self.REtaD = NumOp(info='1/EtaD',
-                           name='REtaD', tex_name=r'1/{Eta_D}',
+        self.REtaD = NumOp(name='REtaD', tex_name=r'\frac{1}{\eta_d}',
                            u=self.EtaD, fun=np.reciprocal,)
-        self.REn = NumOp(info='1/En',
-                         name='REn', tex_name=r'1/{E_n}',
+        self.REn = NumOp(name='REn', tex_name=r'\frac{1}{E_n}',
                          u=self.En, fun=np.reciprocal,)
         self.Mb = NumOp(info='10 times of max of pmax as big M',
                         name='Mb', tex_name=r'M_{big}',
@@ -300,9 +298,9 @@ class RTED2Model(RTEDModel):
                       model='ESD1', pos=True,)
 
         # --- constraints ---
-        self.cpge = Constraint(name='cpg1', type='eq',
+        self.cpge = Constraint(name='cpge', type='eq',
                                info='Select ESD1 power from StaticGen',
-                               e_str='ce@pg - zc',)
+                               e_str='multiply(ce, pg) - zc',)
 
         self.SOClb = Constraint(name='SOClb', type='uq',
                                 info='ESD1 SOC lower bound',
@@ -318,7 +316,8 @@ class RTED2Model(RTEDModel):
         self.zcub2 = Constraint(name='zcub2', type='uq', info='zc upper bound',
                                 e_str='zc - Mb@uc',)
 
-        SOCb = 'SOC - SOCinit - t dot REn*EtaC*zc - t dot REn*REtaD*(pec - zc)'
+        SOCb = 'SOC - SOCinit - t dot REn * EtaC * zc'
+        SOCb += '- t dot REn * REtaD * (pec - zc)'
         self.SOCb = Constraint(name='SOCb', type='eq',
                                info='ESD1 SOC balance', e_str=SOCb,)
 
