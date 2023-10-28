@@ -3,8 +3,17 @@ Model for rolling horizon used in dispatch.
 """
 
 from andes.core import (ModelData, NumParam, DataParam)  # NOQA
-from andes.models.timeseries import (str_list_iconv, str_list_oconv)  # NOQA
+from andes.models.timeseries import (str_list_iconv)  # NOQA
 from ams.core.model import Model  # NOQA
+
+
+def str_list_oconv(x):
+    """
+    Convert list into a list literal.
+    """
+    # NOTE: convert elements to string from number first, then join them
+    str_x = [str(i) for i in x]
+    return ','.join(str_x)
 
 
 class TimeSlot(ModelData, Model):
