@@ -2,6 +2,7 @@
 Real-time economic dispatch.
 """
 import logging  # NOQA
+from collections import OrderedDict  # NOQA
 import numpy as np  # NOQA
 
 from ams.core.param import RParam  # NOQA
@@ -61,7 +62,12 @@ class EDModel(DCOPFModel):
 
     def __init__(self, system, config):
         DCOPFModel.__init__(self, system, config)
-        self.config.t = 1  # dispatch interval in hour
+
+        self.config.add(OrderedDict((('t', 1),
+                                     )))
+        self.config.add_extra("_help",
+                              t="time interval in hours",
+                              )
 
         self.info = 'Economic dispatch'
         self.type = 'DCED'
@@ -167,6 +173,9 @@ class EDModel(DCOPFModel):
 class ED(EDData, EDModel):
     """
     DC-based multi-period economic dispatch (ED).
+    Dispath interval ``config.t`` (:math:`T_{cfg}`) is introduced,
+    1 [Hour] by default.
+
     ED extends DCOPF as follows:
 
     1. Var ``pg`` is extended to 2D
@@ -175,7 +184,7 @@ class ED(EDData, EDModel):
 
     Notes
     -----
-    1. Formulations has been adjusted with interval ``config.t``, 1 [Hour] by default.
+    1. Formulations has been adjusted with interval ``config.t``
 
     2. The tie-line flow is not implemented in this model.
     """

@@ -70,7 +70,6 @@ class RoutineModel:
         # TODO: these default configs might to be revised
         self.config.add(OrderedDict((('sparselib', 'klu'),
                                      ('linsolve', 0),
-                                     ('t', 1),  # time interval in hours
                                      )))
         self.config.add_extra("_help",
                               sparselib="linear sparse solver name",

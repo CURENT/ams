@@ -66,9 +66,13 @@ class UCModel(EDModel):
 
     def __init__(self, system, config):
         EDModel.__init__(self, system, config)
-        self.config.t = 1  # dispatch interval in hour
-        self.config.add(OrderedDict((('cp', 1000), # penalty for unserved load, $/p.u.
+
+        self.config.add(OrderedDict((('cul', 1000),
                                      )))
+        self.config.add_extra("_help",
+                              cul="penalty for unserved load, $/p.u.",
+                              )
+
         self.info = 'unit commitment'
         self.type = 'DCUC'
 
@@ -169,7 +173,7 @@ class UCModel(EDModel):
         acost = ' + sum(csu * vgd + csd * wgd)'
         srcost = ' + sum(csr @ (multiply(Rpmax, ugd) - zug))'
         nsrcost = ' + sum(cnsr @ multiply((1 - ugd), Rpmax))'
-        dcost = ' + sum(cp dot pos(gs @ pg - pds))'
+        dcost = ' + sum(cul dot pos(gs @ pg - pds))'
         self.obj.e_str = gcost + acost + srcost + nsrcost + dcost
 
     def _initial_guess(self):
@@ -221,6 +225,9 @@ class UC(UCData, UCModel):
     DC-based unit commitment (UC).
     The bilinear term in the formulation is linearized with big-M method.
 
+    Penalty for unserved load is introduced as ``config.cul`` (:math:`c_{ul, cfg}`),
+    1000 [$/p.u.] by default.
+
     Constraints include power balance, ramping, spinning reserve, non-spinning reserve,
     minimum ON/OFF duration.
     The cost inludes generation cost, startup cost, shutdown cost, spinning reserve cost,
@@ -231,9 +238,9 @@ class UC(UCData, UCModel):
 
     Notes
     -----
-    1. Formulations has been adjusted with interval ``config.t``, 1 [Hour] by default.
+    1. Formulations has been adjusted with interval ``config.t``
 
-    2. The tie-line flow has not been implemented in formulations.
+    3. The tie-line flow has not been implemented in formulations.
 
     References
     ----------
@@ -259,7 +266,6 @@ class UC2(UCData, UCModel, ESD1Base):
         UCData.__init__(self)
         UCModel.__init__(self, system, config)
         ESD1Base.__init__(self)
-        self.config.t = 1  # dispatch interval in hour
 
         self.info = 'unit commitment with energy storage'
         self.type = 'DCUC'
