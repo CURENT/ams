@@ -1,6 +1,7 @@
 """
 Module for system.
 """
+import configparser
 import importlib  # NOQA
 import inspect  # NOQA
 import logging  # NOQA
@@ -18,6 +19,7 @@ from andes.utils.misc import elapsed  # NOQA
 from andes.utils.tab import Tab  # NOQA
 from andes.shared import pd  # NOQA
 
+import ams.io  # NOQA
 from ams.models.group import GroupBase  # NOQA
 from ams.routines.type import TypeBase  # NOQA
 from ams.models import file_classes  # NOQA
@@ -392,7 +394,7 @@ class System(andes_System):
             ret = False
 
         if self.Line.rate_a.v.max() == 0:
-            logger.warning("Line rate_a is corrected to large value automatically.")
+            logger.info("Line rate_a is adjusted to large value automatically.")
             self.Line.rate_a.v = 99
         # === no device addition or removal after this point ===
         # TODO: double check calc_pu_coeff
@@ -519,3 +521,62 @@ class System(andes_System):
         return to_andes(self, setup=setup, addfile=addfile,
                         overwite=overwite, no_keep=no_keep,
                         **kwargs)
+
+
+# --------------- Helper Functions ---------------
+
+def _config_numpy(seed='None', divide='warn', invalid='warn'):
+    """
+    Configure NumPy based on Config.
+    """
+
+    # set up numpy random seed
+    if isinstance(seed, int):
+        np.random.seed(seed)
+        logger.debug("Random seed set to <%d>.", seed)
+
+    # set levels
+    np.seterr(divide=divide,
+              invalid=invalid,
+              )
+
+
+def load_config_rc(conf_path=None):
+    """
+    Load config from an rc-formatted file.
+
+    Parameters
+    ----------
+    conf_path : None or str
+        Path to the config file. If is `None`, the function body will not
+        run.
+
+    Returns
+    -------
+    configparse.ConfigParser
+    """
+    if conf_path is None:
+        return
+
+    conf = configparser.ConfigParser()
+    conf.read(conf_path)
+    logger.info('> Loaded config from file "%s"', conf_path)
+    return conf
+
+
+def example(setup=True, no_output=True, **kwargs):
+    """
+    Return an :py:class:`ams.system.System` object for the
+    ``ieee14_uced.xlsx`` as an example.
+
+    This function is useful when a user wants to quickly get a
+    System object for testing.
+
+    Returns
+    -------
+    System
+        An example :py:class:`ams.system.System` object.
+    """
+
+    return ams.load(ams.get_case('matpower/case14.m'),
+                    setup=setup, no_output=no_output, **kwargs)

@@ -4,8 +4,15 @@ Main entry point for the AMS CLI and scripting interfaces.
 
 import logging  # NOQA
 import os  # NOQA
-from andes.main import set_logger_level, _find_cases  # NOQA
-from andes.shared import coloredlogs  # NOQA
+import platform  # NOQA
+import sys
+from subprocess import call  # NOQA
+from typing import Optional, Union  # NOQA
+
+from ._version import get_versions
+
+from andes.main import _find_cases  # NOQA
+from andes.shared import coloredlogs, unittest  # NOQA
 from andes.utils.misc import elapsed, is_interactive  # NOQA
 
 import ams  # NOQA
@@ -138,6 +145,16 @@ def load(case, setup=True,
     return system
 
 
+def set_logger_level(lg, type_to_set, level):
+    """
+    Set logging level for the given type of handler.
+    """
+
+    for h in lg.handlers:
+        if isinstance(h, type_to_set):
+            h.setLevel(level)
+
+
 def find_log_path(lg):
     """
     Find the file paths of the FileHandlers.
@@ -147,3 +164,285 @@ def find_log_path(lg):
         if isinstance(h, logging.FileHandler):
             out.append(h.baseFilename)
     return out
+
+
+def misc(edit_config='', save_config='', show_license=False, clean=True, recursive=False,
+         overwrite=None, version=False, **kwargs):
+    """
+    Miscellaneous commands.
+    """
+
+    if edit_conf(edit_config):
+        return
+    if show_license:
+        print_license()
+        return
+    if save_config != '':
+        save_conf(save_config, overwrite=overwrite, **kwargs)
+        return
+    if clean is True:
+        remove_output(recursive)
+        return
+
+    if demo is True:
+        demo(**kwargs)
+        return
+
+    if version is True:
+        versioninfo()
+        return
+
+    logger.info("info: no option specified. Use 'ams misc -h' for help.")
+
+
+def doc(attribute=None, list_supported=False, config=False, **kwargs):
+    """
+    Quick documentation from command-line.
+    """
+    system = System()
+    if attribute is not None:
+        if attribute in system.__dict__ and hasattr(system.__dict__[attribute], 'doc'):
+            logger.info(system.__dict__[attribute].doc())
+        else:
+            logger.error('Model <%s> does not exist.', attribute)
+
+    elif list_supported is True:
+        logger.info(system.supported_routines())
+
+    else:
+        logger.info('info: no option specified. Use \'ams doc -h\' for help.')
+
+
+def demo(**kwargs):
+    """
+    TODO: show some demonstrations from CLI.
+    """
+    raise NotImplementedError("Demos have not been implemented")
+
+
+def versioninfo():
+    """
+    Print version info for ANDES and dependencies.
+    """
+
+    import numpy as np
+    import cvxpy
+    import andes
+
+    versions = {'Python': platform.python_version(),
+                'ams': get_versions()['version'],
+                'andes': andes.__version__,
+                'numpy': np.__version__,
+                'cvxpy': cvxpy.__version__,
+                }
+    maxwidth = max([len(k) for k in versions.keys()])
+
+    try:
+        import numba
+    except ImportError:
+        numba = None
+
+    if numba is not None:
+        versions["numba"] = numba.__version__
+
+    for key, val in versions.items():
+        print(f"{key: <{maxwidth}}  {val}")
+
+
+def print_license():
+    """
+    Print out AMS license to stdout.
+    """
+
+    print(f"""
+    AMS version {ams.__version__}
+
+    Copyright (c) 2023 Jinning Wang
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    A copy of the GNU General Public License is included below.
+    For further information, see <http://www.gnu.org/licenses/>.
+    """)
+    return True
+
+
+def edit_conf(edit_config: Optional[Union[str, bool]] = ''):
+    """
+    Edit the Andes config file which occurs first in the search path.
+
+    Parameters
+    ----------
+    edit_config : bool
+        If ``True``, try to open up an editor and edit the config file. Otherwise returns.
+
+    Returns
+    -------
+    bool
+        ``True`` is a config file is found and an editor is opened. ``False`` if ``edit_config`` is False.
+    """
+    ret = False
+
+    # no `edit-config` supplied
+    if edit_config == '':
+        return ret
+
+    conf_path = get_config_path()
+
+    if conf_path is None:
+        logger.info('Config file does not exist. Automatically saving.')
+        system = System()
+        conf_path = system.save_config()
+
+    logger.info('Editing config file "%s"', conf_path)
+
+    editor = ''
+    if edit_config is not None:
+        # use `edit_config` as default editor
+        editor = edit_config
+    else:
+        # use the following default editors
+        if platform.system() == 'Linux':
+            editor = os.environ.get('EDITOR', 'vim')
+        elif platform.system() == 'Darwin':
+            editor = os.environ.get('EDITOR', 'vim')
+        elif platform.system() == 'Windows':
+            editor = 'notepad.exe'
+
+    editor_cmd = editor.split()
+    editor_cmd.append(conf_path)
+    call(editor_cmd)
+    ret = True
+    return ret
+
+
+def save_conf(config_path=None, overwrite=None, **kwargs):
+    """
+    Save the AMS config to a file at the path specified by ``save_config``.
+    The save action will not run if ``save_config = ''``.
+
+    Parameters
+    ----------
+    config_path : None or str, optional, ('' by default)
+
+        Path to the file to save the config file. If the path is an emtpy
+        string, the save action will not run. Save to
+        `~/.ams/ams.conf` if ``None``.
+
+    Returns
+    -------
+    bool
+        ``True`` is the save action is run. ``False`` otherwise.
+    """
+    ret = False
+
+    # no ``--save-config ``
+    if config_path == '':
+        return ret
+
+    if config_path is not None and os.path.isdir(config_path):
+        config_path = os.path.join(config_path, 'ams.rc')
+
+    ps = System(**kwargs)
+    ps.save_config(config_path, overwrite=overwrite)
+    ret = True
+
+    return ret
+
+
+# TODO: list AMS output files here
+def remove_output(recursive=False):
+    """
+    Remove the outputs generated by Andes, including power flow reports
+    ``_out.txt``, time-domain list ``_out.lst`` and data ``_out.dat``,
+    eigenvalue analysis report ``_eig.txt``.
+
+    Parameters
+    ----------
+    recursive : bool
+        Recursively clean all subfolders
+
+    Returns
+    -------
+    bool
+        ``True`` is the function body executes with success. ``False``
+        otherwise.
+    """
+    found = False
+    cwd = os.getcwd()
+
+    if recursive:
+        dirs = [x[0] for x in os.walk(cwd)]
+    else:
+        dirs = (cwd,)
+
+    for d in dirs:
+        for file in os.listdir(d):
+            if file.endswith('_eig.txt') or \
+                    file.endswith('_out.txt'):
+                found = True
+                try:
+                    os.remove(os.path.join(d, file))
+                    logger.info('"%s" removed.', os.path.join(d, file))
+                except IOError:
+                    logger.error('Error removing file "%s".',
+                                 os.path.join(d, file))
+    if not found:
+        logger.info('No output file found in the working directory.')
+
+    return True
+
+
+def selftest(quick=False, extra=False, **kwargs):
+    """
+    Run unit tests.
+    """
+
+    # map verbosity level from logging to unittest
+    vmap = {1: 3, 10: 3, 20: 2, 30: 1, 40: 1, 50: 1}
+    verbose = vmap[kwargs.get('verbose', 20)]
+
+    # skip if quick
+    quick_skips = ('test_1_docs', 'test_codegen_inc')
+
+    # extra test naming convention
+    extra_test = 'extra_test'
+
+    try:
+        logger.handlers[0].setLevel(logging.WARNING)
+        sys.stdout = open(os.devnull, 'w')  # suppress print statements
+    except IndexError:  # logger not set up
+        pass
+
+    # discover test cases
+    test_directory = tests_root()
+    suite = unittest.TestLoader().discover(test_directory)
+
+    # remove codegen for quick mode
+    for test_group in suite._tests:
+        for test_class in test_group._tests:
+            tests_keep = list()
+
+            for t in test_class._tests:
+                # skip the extra tests if `extra` is not True
+                if (extra is not True) and (extra_test in t._testMethodName):
+                    continue
+
+                # skip the ones for `quick`
+                if quick is True and (t._testMethodName in quick_skips):
+                    continue
+
+                tests_keep.append(t)
+
+            test_class._tests = tests_keep
+
+    unittest.TextTestRunner(verbosity=verbose).run(suite)
+    sys.stdout = sys.__stdout__
