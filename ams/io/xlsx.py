@@ -34,6 +34,8 @@ def write(system, outfile,
         None to prompt for overwrite selection; True to overwrite; False to not overwrite
     add_book : str, optional
         An optional model to be added to the output spreadsheet
+    to_andes : bool, optional
+        Write to an ANDES system, where non-ANDES models are skipped
 
     Returns
     -------
@@ -53,35 +55,31 @@ def write(system, outfile,
     return True
 
 
-def _write_system(system, writer, skip_empty, to_andes=True):
+def _write_system(system, writer, skip_empty, to_andes=False):
     """
     Write the system to pandas ExcelWriter
 
     Rewrite function ``andes.io.xlsx._write_system`` to skip non-andes sheets.
     """
-    na_models = []
     skip_params = []
+    ad_models = []
     if to_andes:
-        # Initialize an ANDES system
+        # Instantiate an ANDES system
         sa = andes_system(setup=False, default_config=True,
                           codegen=False, autogen_stale=False,
-                          no_undill=True,
-                          )
+                          no_undill=True,)
+        ad_models = list(sa.models.keys())
     for name, instance in system.models.items():
         if skip_empty and instance.n == 0:
             continue
-        if to_andes:
-            if name not in sa.models.keys():
-                na_models.append(name)
-                continue
         instance.cache.refresh("df_in")
-        if to_andes:
+        df = instance.cache.df_in
+        if to_andes and name in ad_models:
+            # NOTE: ommit parameters that are not in ANDES
+            skip_params = []
             ams_params = list(instance.params.keys())
             andes_params = list(sa.models[name].params.keys())
             skip_params = list(set(ams_params) - set(andes_params))
-        if skip_params:
-            df = instance.cache.df_in.drop(skip_params, axis=1)
-        else:
-            df = instance.cache.df_in
+            df = instance.cache.df_in.drop(skip_params, axis=1, errors='ignore')
         df.to_excel(writer, sheet_name=name, freeze_panes=(1, 0))
     return writer
