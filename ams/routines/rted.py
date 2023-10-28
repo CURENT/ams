@@ -61,7 +61,13 @@ class RTEDModel(DCOPFModel):
 
     def __init__(self, system, config):
         DCOPFModel.__init__(self, system, config)
-        self.config.t = 5/60  # time interval in hours
+
+        self.config.add(OrderedDict((('t', 5/60),
+                                     )))
+        self.config.add_extra("_help",
+                              t="time interval in hours",
+                              )
+
         self.map1 = OrderedDict([
             ('StaticGen', {
                 'pg0': 'p',
