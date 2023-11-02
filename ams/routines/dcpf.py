@@ -99,13 +99,14 @@ class DCPFlowBase(RoutineModel):
         self.system.recent = self.system.routines[self.class_name]
         return True
 
-    def solve(self, method=None, **kwargs):
+    def solve(self, method=None):
         """
         Solve DC power flow using PYPOWER.
         """
         ppc = system2ppc(self.system)
         ppopt = ppoption(PF_DC=True)
-        res, success, sstats = runpf(casedata=ppc, ppopt=ppopt, **kwargs)
+
+        res, success, sstats = runpf(casedata=ppc, ppopt=ppopt)
         return res, success, sstats
 
     def run(self, force_init=False, no_code=True,
@@ -135,7 +136,7 @@ class DCPFlowBase(RoutineModel):
         if not self.initialized:
             self.init(force=force_init, no_code=no_code)
         t0, _ = elapsed()
-        res, success, sstats = self.solve(method=method, **kwargs)
+        res, success, sstats = self.solve(method=method)
         self.exit_code = 0 if success else 1
         _, s = elapsed(t0)
         self.exec_time = float(s.split(' ')[0])
