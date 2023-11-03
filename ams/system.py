@@ -16,7 +16,7 @@ from andes.variables import FileMan
 
 from andes.utils.misc import elapsed
 from andes.utils.tab import Tab
-from andes.shared import pd  # NOQA
+from andes.shared import (matrix, np, sparse, spmatrix)  # NOQA
 
 import ams.io
 from ams.models.group import GroupBase
@@ -126,7 +126,7 @@ class System(andes_System):
             '_p_restore', '_store_calls', '_store_tf', '_to_orddct', '_v_to_dae',
             'save_config', 'collect_config', 'e_clear', 'f_update',
             'fg_to_dae', 'from_ipysheet', 'g_islands', 'g_update', 'get_z',
-            'init', 'j_islands', 'j_update', 'l_update_eq', 'connectivity', 'summary',
+            'init', 'j_islands', 'j_update', 'l_update_eq', 'summary',
             'l_update_var', 'precompile', 'prepare', 'reload', 'remove_pycapsule',
             's_update_post', 's_update_var', 'store_adder_setter', 'store_no_check_init',
             'store_sparse_pattern', 'store_switch_times', 'switch_action', 'to_ipysheet',
@@ -484,6 +484,18 @@ class System(andes_System):
                   )
 
         return tab.draw()
+
+    def connectivity(self, info=True):
+        """
+        Perform connectivity check for system.
+
+        Parameters
+        ----------
+        info : bool
+            True to log connectivity summary.
+        """
+
+        raise NotImplementedError
 
     def to_andes(self, setup=True, addfile=None, overwite=None, no_keep=True,
                  **kwargs):
