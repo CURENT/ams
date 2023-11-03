@@ -2,20 +2,26 @@
 Main entry point for the AMS CLI and scripting interfaces.
 """
 
+import cProfile
+import io
 import logging  # NOQA
 import os  # NOQA
 import platform  # NOQA
+import pstats
 import sys
+from functools import partial
 from subprocess import call  # NOQA
+from time import sleep
 from typing import Optional, Union  # NOQA
 
 from ._version import get_versions
 
 from andes.main import _find_cases  # NOQA
-from andes.shared import coloredlogs, unittest  # NOQA
+from andes.shared import Pool, Process, coloredlogs, unittest, NCPUS_PHYSICAL # NOQA
 from andes.utils.misc import elapsed, is_interactive  # NOQA
 
 import ams  # NOQA
+from ams.routines import routine_cli
 from ams.system import System  # NOQA
 from ams.utils.paths import get_config_path, get_log_dir, tests_root  # NOQA
 
@@ -142,6 +148,287 @@ def load(case, setup=True,
 
     if setup:
         system.setup()
+    return system
+
+
+def run_case(case, *, routine='pflow', profile=False,
+             convert='', convert_all='', add_book=None,
+             **kwargs):
+    """
+    Run single simulation case for the given full path.
+    Use ``run`` instead of ``run_case`` whenever possible.
+
+    Argument ``input_path`` will not be prepended to ``case``.
+
+    Arguments recognizable by ``load`` can be passed to ``run_case``.
+
+    Parameters
+    ----------
+    case : str
+        Full path to the test case
+    routine : str, ('pflow', 'tds', 'eig')
+        Computation routine to run
+    profile : bool, optional
+        True to enable profiler
+    convert : str, optional
+        Format name for case file conversion.
+    convert_all : str, optional
+        Format name for case file conversion, output
+        sheets for all available devices.
+    add_book : str, optional
+        Name of the device to be added to an excel case
+        as a new sheet.
+    """
+
+    pr = cProfile.Profile()
+    # enable profiler if requested
+    if profile is True:
+        pr.enable()
+
+    system = load(case,
+                  use_input_path=False,
+                  **kwargs)
+
+    if system is None:
+        return None
+
+    skip_empty = True
+    overwrite = None
+    # convert to xlsx and process `add-book` option
+    if add_book is not None:
+        convert = 'xlsx'
+        overwrite = True
+    if convert_all != '':
+        convert = 'xlsx'
+        skip_empty = False
+
+    # convert to the requested format
+    if convert != '':
+        ams.io.dump(system, convert, overwrite=overwrite, skip_empty=skip_empty,
+                    add_book=add_book)
+        return system
+
+    # run the requested routine
+    if routine is not None:
+        if isinstance(routine, str):
+            routine = [routine]
+
+        if system.is_setup:
+            for r in routine:
+                system.__dict__[routine_cli[r.lower()]].run(**kwargs)
+        else:
+            logger.error("System is not set up. Routines cannot continue.")
+
+    # Disable profiler and output results
+    if profile:
+        pr.disable()
+
+        if system.files.no_output:
+            nlines = 40
+            s = io.StringIO()
+            ps = pstats.Stats(pr, stream=sys.stdout).sort_stats('cumtime')
+            ps.print_stats(nlines)
+            logger.info(s.getvalue())
+            s.close()
+        else:
+            nlines = 999
+            with open(system.files.prof, 'w') as s:
+                ps = pstats.Stats(pr, stream=s).sort_stats('cumtime')
+                ps.print_stats(nlines)
+                ps.dump_stats(system.files.prof_raw)
+            logger.info('cProfile text data written to "%s".', system.files.prof)
+            logger.info('cProfile raw data written to "%s". View with tool `snakeviz`.', system.files.prof_raw)
+
+    return system
+
+
+def _run_mp_proc(cases, ncpu=NCPUS_PHYSICAL, **kwargs):
+    """
+    Run multiprocessing with `Process`.
+
+    Return values from `run_case` are not preserved. Always return `True` when done.
+    """
+
+    # start processes
+    jobs = []
+    for idx, file in enumerate(cases):
+        job = Process(name=f'Process {idx:d}', target=run_case, args=(file,), kwargs=kwargs)
+        jobs.append(job)
+        job.start()
+        start_msg = f'Process {idx:d} for "{file:s}" started.'
+        print(start_msg)
+        logger.debug(start_msg)
+        if (idx % ncpu == ncpu - 1) or (idx == len(cases) - 1):
+            sleep(0.1)
+            for job in jobs:
+                job.join()
+            jobs = []
+
+    return True
+
+
+def _run_mp_pool(cases, ncpu=NCPUS_PHYSICAL, verbose=logging.INFO, **kwargs):
+    """
+    Run multiprocessing jobs using Pool.
+
+    This function returns all System instances in a list, but requires longer computation time.
+
+    Parameters
+    ----------
+    ncpu : int, optional = os.cpu_cout()
+        Number of cpu cores to use in parallel
+    mp_verbose : 10 - 50
+        Verbosity level during multiprocessing
+    verbose : 10, 20, 30, 40, 50
+        Verbosity level outside multiprocessing
+    """
+
+    pool = Pool(ncpu)
+    print("Cases are processed in the following order:")
+    print('\n'.join([f'"{name}"' for name in cases]))
+
+    ret = pool.map(partial(run_case,
+                           verbose=verbose,
+                           remove_pycapsule=True,
+                           autogen_stale=False,
+                           **kwargs),
+                   cases)
+
+    # FIXME: does following code work in AMS?
+    # # fix address for in-place arrays
+    # for ss in ret:
+    #     fix_view_arrays(ss)
+
+    return ret
+
+
+def run(filename, input_path='', verbose=20, mp_verbose=30,
+        ncpu=NCPUS_PHYSICAL, pool=False,
+        cli=False, shell=False, **kwargs):
+    """
+    Entry point to run ANDES routines.
+
+    Parameters
+    ----------
+    filename : str
+        file name (or pattern)
+    input_path : str, optional
+        input search path
+    verbose : int, 10 (DEBUG), 20 (INFO), 30 (WARNING), 40 (ERROR), 50 (CRITICAL)
+        Verbosity level. If ``config_logger`` is called prior to ``run``,
+        this option will be ignored.
+    mp_verbose : int
+        Verbosity level for multiprocessing tasks
+    ncpu : int, optional
+        Number of cpu cores to use in parallel
+    pool: bool, optional
+        Use Pool for multiprocessing to return a list of created Systems.
+    kwargs
+        Other supported keyword arguments
+    cli : bool, optional
+        If is running from command-line. If True, returns exit code instead of System
+    shell : bool, optional
+        If True, enter IPython shell after routine.
+
+    Returns
+    -------
+    System or exit_code
+        An instance of system (if `cli == False`) or an exit code otherwise..
+
+    """
+
+    if is_interactive() and len(logger.handlers) == 0:
+        config_logger(verbose, file=False)
+
+    # put some args back to `kwargs`
+    kwargs['input_path'] = input_path
+    kwargs['verbose'] = verbose
+
+    cases = _find_cases(filename, input_path)
+
+    system = None
+    ex_code = 0
+
+    if len(filename) > 0 and len(cases) == 0:
+        ex_code = 1  # file specified but not found
+
+    t0, _ = elapsed()
+    if len(cases) == 1:
+        system = run_case(cases[0], **kwargs)
+    elif len(cases) > 1:
+        # FIXME: after standardize code generation, enable following code
+        # # import `pycode` to local namespace to avoid a picking issue
+        # import_pycode()
+
+        # suppress logging output during multiprocessing
+        logger.info('-> Processing %s jobs on %s CPUs.', len(cases), ncpu)
+        set_logger_level(logger, logging.StreamHandler, mp_verbose)
+        set_logger_level(logger, logging.FileHandler, logging.DEBUG)
+
+        if pool is True:
+            system = _run_mp_pool(cases,
+                                  ncpu=ncpu,
+                                  mp_verbose=mp_verbose,
+                                  **kwargs)
+        else:
+            system = _run_mp_proc(cases,
+                                  ncpu=ncpu,
+                                  mp_verbose=mp_verbose,
+                                  **kwargs)
+
+        # restore command line output when all jobs are done
+        set_logger_level(logger, logging.StreamHandler, verbose)
+
+        log_files = find_log_path(logger)
+        if len(log_files) > 0:
+            log_paths = '\n'.join(log_files)
+            print(f'Log saved to "{log_paths}".')
+
+    t0, s0 = elapsed(t0)
+
+    if len(cases) == 1:
+        if system is not None:
+            ex_code += system.exit_code
+        else:
+            ex_code += 1
+    elif len(cases) > 1:
+        if isinstance(system, list):
+            for s in system:
+                ex_code += s.exit_code
+
+    if len(cases) == 1:
+        if ex_code == 0:
+            print(f'-> Single process finished in {s0}.')
+        else:
+            print(f'-> Single process exit with an error in {s0}.')
+    elif len(cases) > 1:
+        if ex_code == 0:
+            print(f'-> Multiprocessing finished in {s0}.')
+        else:
+            print(f'-> Multiprocessing exit with an error in {s0}.')
+
+    # IPython interactive shell
+    if shell is True:
+        try:
+            from IPython import embed
+
+            # load plotter before entering IPython
+            if system is None:
+                logger.warning("IPython: The System object has not been created.")
+            elif isinstance(system, System):
+                logger.info("IPython: Access System object in variable `system`.")
+                system.TDS.load_plotter()
+            elif isinstance(system, list):
+                logger.warning("IPython: System objects stored in list `system`.\n"
+                               "Call `TDS.load_plotter()` on each for plotter.")
+
+            embed()
+        except ImportError:
+            logger.warning("IPython import error. Installed?")
+
+    if cli is True:
+        return ex_code
+
     return system
 
 
