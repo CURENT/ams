@@ -9,6 +9,11 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.7.3 (2023-11-3)
+-------------------
+
+- Add tests
+
 v0.7.2 (2023-10-26)
 -------------------
 
