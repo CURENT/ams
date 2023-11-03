@@ -1,32 +1,31 @@
 """
 Module for system.
 """
-import configparser
-import importlib  # NOQA
-import inspect  # NOQA
-import logging  # NOQA
-from collections import OrderedDict  # NOQA
+import importlib
+import inspect
+import logging
+from collections import OrderedDict
 from typing import Dict, Optional, Tuple, Union  # NOQA
 
-import numpy as np  # NOQA
+import numpy as np
 
-from andes.core import Config  # NOQA
-from andes.system import System as andes_System  # NOQA
-from andes.system import (_config_numpy, load_config_rc)  # NOQA
-from andes.variables import FileMan  # NOQA
+from andes.core import Config
+from andes.system import System as andes_System
+from andes.system import (_config_numpy, load_config_rc)
+from andes.variables import FileMan
 
-from andes.utils.misc import elapsed  # NOQA
-from andes.utils.tab import Tab  # NOQA
+from andes.utils.misc import elapsed
+from andes.utils.tab import Tab
 from andes.shared import pd  # NOQA
 
-import ams.io  # NOQA
-from ams.models.group import GroupBase  # NOQA
-from ams.routines.type import TypeBase  # NOQA
-from ams.models import file_classes  # NOQA
-from ams.routines import all_routines   # NOQA
-from ams.utils.paths import get_config_path  # NOQA
-from ams.core.matprocessor import MatProcessor  # NOQA
-from ams.interop.andes import to_andes  # NOQA
+import ams.io
+from ams.models.group import GroupBase
+from ams.routines.type import TypeBase
+from ams.models import file_classes
+from ams.routines import all_routines
+from ams.utils.paths import get_config_path
+from ams.core.matprocessor import MatProcessor
+from ams.interop.andes import to_andes
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +127,7 @@ class System(andes_System):
             'save_config', 'collect_config', 'e_clear', 'f_update',
             'fg_to_dae', 'from_ipysheet', 'g_islands', 'g_update', 'get_z',
             'init', 'j_islands', 'j_update', 'l_update_eq', 'connectivity', 'summary',
-            'l_update_var', 'precompile', 'prepare', 'reload', 'remove_pycapsule', 'reset',
+            'l_update_var', 'precompile', 'prepare', 'reload', 'remove_pycapsule',
             's_update_post', 's_update_var', 'store_adder_setter', 'store_no_check_init',
             'store_sparse_pattern', 'store_switch_times', 'switch_action', 'to_ipysheet',
             'undill']
@@ -374,6 +373,13 @@ class System(andes_System):
                                          from_idx=model_idx,
                                          to_idx=dest_idx)
 
+    def reset(self, force=False):
+        """
+        Reset to the state after reading data and setup.
+        """
+        self.is_setup = False
+        self.setup()
+
     def setup(self):
         """
         Set up system for studies.
@@ -524,45 +530,7 @@ class System(andes_System):
 
 
 # --------------- Helper Functions ---------------
-
-def _config_numpy(seed='None', divide='warn', invalid='warn'):
-    """
-    Configure NumPy based on Config.
-    """
-
-    # set up numpy random seed
-    if isinstance(seed, int):
-        np.random.seed(seed)
-        logger.debug("Random seed set to <%d>.", seed)
-
-    # set levels
-    np.seterr(divide=divide,
-              invalid=invalid,
-              )
-
-
-def load_config_rc(conf_path=None):
-    """
-    Load config from an rc-formatted file.
-
-    Parameters
-    ----------
-    conf_path : None or str
-        Path to the config file. If is `None`, the function body will not
-        run.
-
-    Returns
-    -------
-    configparse.ConfigParser
-    """
-    if conf_path is None:
-        return
-
-    conf = configparser.ConfigParser()
-    conf.read(conf_path)
-    logger.info('> Loaded config from file "%s"', conf_path)
-    return conf
-
+# NOTE: _config_numpy, load_config_rc are imported from andes.system
 
 def example(setup=True, no_output=True, **kwargs):
     """
