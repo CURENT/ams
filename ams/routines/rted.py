@@ -261,7 +261,7 @@ class ESD1Base:
                            tex_name=r'\eta_d', unit='%',
                            model='ESD1',)
         self.genE = RParam(info='gen of ESD1',
-                           name='genE', tex_name=r'g_{ESD1}',
+                           name='genE', tex_name=r'g_{ES}',
                            model='ESD1', src='gen',)
 
         # --- service ---
@@ -280,22 +280,22 @@ class ESD1Base:
                        name='SOC', tex_name=r'SOC',
                        model='ESD1', pos=True,)
         self.ce = VarSelect(u=self.pg, indexer='genE',
-                            name='ce', tex_name=r'C_{ESD1}',
-                            info='Select ESD1 pg from StaticGen',)
-        self.pec = Var(info='ESD1 charging power (system base)',
-                       unit='p.u.', name='pec', tex_name=r'p_{c,ESD1}',
+                            name='ce', tex_name=r'C_{ES}',
+                            info='Select pge from pg',)
+        self.pge = Var(info='ESD1 output power (system base)',
+                       unit='p.u.', name='pge', tex_name=r'p_{g,ES}',
                        model='ESD1',)
-        self.uc = Var(info='ESD1 charging decision',
-                      name='uc', tex_name=r'u_{c}',
-                      model='ESD1', boolean=True,)
-        self.zc = Var(info='Aux var for ESD1 charging',
-                      name='zc', tex_name=r'z_{c}',
-                      model='ESD1', pos=True,)
+        self.ued = Var(info='ESD1 commitment decision',
+                       name='ued', tex_name=r'u_{ES,d}',
+                       model='ESD1', boolean=True,)
+        self.zue = Var(info='Aux var, :math:`z_{ue} = u_{e,d} * p_{g,ES}`',
+                       name='zue', tex_name=r'z_{ue}',
+                       model='ESD1', pos=True,)
 
         # --- constraints ---
         self.cpge = Constraint(name='cpge', type='eq',
                                info='Select ESD1 power from StaticGen',
-                               e_str='multiply(ce, pg) - zc',)
+                               e_str='multiply(ce, pg) - zue',)
 
         self.SOClb = Constraint(name='SOClb', type='uq',
                                 info='ESD1 SOC lower bound',
@@ -304,15 +304,15 @@ class ESD1Base:
                                 info='ESD1 SOC upper bound',
                                 e_str='SOC - SOCmax',)
 
-        self.zclb = Constraint(name='zclb', type='uq', info='zc lower bound',
-                               e_str='- zc + pec',)
-        self.zcub = Constraint(name='zcub', type='uq', info='zc upper bound',
-                               e_str='zc - pec - Mb dot (1-uc)',)
-        self.zcub2 = Constraint(name='zcub2', type='uq', info='zc upper bound',
-                                e_str='zc - Mb dot uc',)
+        self.zclb = Constraint(name='zclb', type='uq', info='zue lower bound',
+                               e_str='- zue + pge',)
+        self.zcub = Constraint(name='zcub', type='uq', info='zue upper bound',
+                               e_str='zue - pge - Mb dot (1-ued)',)
+        self.zcub2 = Constraint(name='zcub2', type='uq', info='zue upper bound',
+                                e_str='zue - Mb dot ued',)
 
-        SOCb = 'SOC - SOCinit - t dot REn * EtaC * zc'
-        SOCb += '- t dot REn * REtaD * (pec - zc)'
+        SOCb = 'SOC - SOCinit - t dot REn * EtaC * zue'
+        SOCb += '- t dot REn * REtaD * (pge - zue)'
         self.SOCb = Constraint(name='SOCb', type='eq',
                                info='ESD1 SOC balance', e_str=SOCb,)
 

@@ -216,6 +216,6 @@ class ED2(EDData, EDModel, ESD1Base):
         self.type = 'DCED'
 
         self.SOC.horizon = self.timeslot
-        self.pec.horizon = self.timeslot
-        self.uc.horizon = self.timeslot
-        self.zc.horizon = self.timeslot
+        self.pge.horizon = self.timeslot
+        self.ued.horizon = self.timeslot
+        self.zue.horizon = self.timeslot

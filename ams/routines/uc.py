@@ -93,7 +93,7 @@ class UCModel(EDModel):
                        model='StaticGen', src='u',
                        boolean=True,)
 
-        self.zug = Var(info='Aux var for ugd',
+        self.zug = Var(info='Aux var, :math:`z_{ug} = u_{g,d} * p_g`',
                        horizon=self.timeslot,
                        name='zug', tex_name=r'z_{ug}',
                        model='StaticGen', pos=True,)
@@ -271,6 +271,6 @@ class UC2(UCData, UCModel, ESD1Base):
         self.type = 'DCUC'
 
         self.SOC.horizon = self.timeslot
-        self.pec.horizon = self.timeslot
-        self.uc.horizon = self.timeslot
-        self.zc.horizon = self.timeslot
+        self.pge.horizon = self.timeslot
+        self.ued.horizon = self.timeslot
+        self.zue.horizon = self.timeslot
