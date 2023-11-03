@@ -76,14 +76,7 @@ class PFlowModel(DCPFlowBase):
             tex_name=r"q_{g}",
             model="StaticGen",
         )
-        # --- constraints ---
-        self.pb = Constraint(
-            name="pb",
-            info="power balance",
-            e_str="sum(pl) - sum(pg)",
-            type="eq",
-        )
-        # TODO: AC power flow formulation
+        # NOTE: omit AC power flow formulation here
 
     def solve(self, method="newton"):
         """
