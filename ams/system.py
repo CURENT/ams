@@ -1,30 +1,31 @@
 """
 Module for system.
 """
-import importlib  # NOQA
-import inspect  # NOQA
-import logging  # NOQA
-from collections import OrderedDict  # NOQA
+import importlib
+import inspect
+import logging
+from collections import OrderedDict
 from typing import Dict, Optional, Tuple, Union  # NOQA
 
-import numpy as np  # NOQA
+import numpy as np
 
-from andes.core import Config  # NOQA
-from andes.system import System as andes_System  # NOQA
-from andes.system import (_config_numpy, load_config_rc)  # NOQA
-from andes.variables import FileMan  # NOQA
+from andes.core import Config
+from andes.system import System as andes_System
+from andes.system import (_config_numpy, load_config_rc)
+from andes.variables import FileMan
 
-from andes.utils.misc import elapsed  # NOQA
-from andes.utils.tab import Tab  # NOQA
-from andes.shared import pd  # NOQA
+from andes.utils.misc import elapsed
+from andes.utils.tab import Tab
+from andes.shared import (matrix, np, sparse, spmatrix)  # NOQA
 
-from ams.models.group import GroupBase  # NOQA
-from ams.routines.type import TypeBase  # NOQA
-from ams.models import file_classes  # NOQA
-from ams.routines import all_routines   # NOQA
-from ams.utils.paths import get_config_path  # NOQA
-from ams.core.matprocessor import MatProcessor  # NOQA
-from ams.interop.andes import to_andes  # NOQA
+import ams.io
+from ams.models.group import GroupBase
+from ams.routines.type import TypeBase
+from ams.models import file_classes
+from ams.routines import all_routines
+from ams.utils.paths import get_config_path
+from ams.core.matprocessor import MatProcessor
+from ams.interop.andes import to_andes
 
 logger = logging.getLogger(__name__)
 
@@ -125,8 +126,8 @@ class System(andes_System):
             '_p_restore', '_store_calls', '_store_tf', '_to_orddct', '_v_to_dae',
             'save_config', 'collect_config', 'e_clear', 'f_update',
             'fg_to_dae', 'from_ipysheet', 'g_islands', 'g_update', 'get_z',
-            'init', 'j_islands', 'j_update', 'l_update_eq', 'connectivity', 'summary',
-            'l_update_var', 'precompile', 'prepare', 'reload', 'remove_pycapsule', 'reset',
+            'init', 'j_islands', 'j_update', 'l_update_eq', 'summary',
+            'l_update_var', 'precompile', 'prepare', 'reload', 'remove_pycapsule',
             's_update_post', 's_update_var', 'store_adder_setter', 'store_no_check_init',
             'store_sparse_pattern', 'store_switch_times', 'switch_action', 'to_ipysheet',
             'undill']
@@ -372,6 +373,13 @@ class System(andes_System):
                                          from_idx=model_idx,
                                          to_idx=dest_idx)
 
+    def reset(self, force=False):
+        """
+        Reset to the state after reading data and setup.
+        """
+        self.is_setup = False
+        self.setup()
+
     def setup(self):
         """
         Set up system for studies.
@@ -392,7 +400,7 @@ class System(andes_System):
             ret = False
 
         if self.Line.rate_a.v.max() == 0:
-            logger.warning("Line rate_a is corrected to large value automatically.")
+            logger.info("Line rate_a is adjusted to large value automatically.")
             self.Line.rate_a.v = 99
         # === no device addition or removal after this point ===
         # TODO: double check calc_pu_coeff
@@ -477,6 +485,18 @@ class System(andes_System):
 
         return tab.draw()
 
+    def connectivity(self, info=True):
+        """
+        Perform connectivity check for system.
+
+        Parameters
+        ----------
+        info : bool
+            True to log connectivity summary.
+        """
+
+        raise NotImplementedError
+
     def to_andes(self, setup=True, addfile=None, overwite=None, no_keep=True,
                  **kwargs):
         """
@@ -519,3 +539,24 @@ class System(andes_System):
         return to_andes(self, setup=setup, addfile=addfile,
                         overwite=overwite, no_keep=no_keep,
                         **kwargs)
+
+
+# --------------- Helper Functions ---------------
+# NOTE: _config_numpy, load_config_rc are imported from andes.system
+
+def example(setup=True, no_output=True, **kwargs):
+    """
+    Return an :py:class:`ams.system.System` object for the
+    ``ieee14_uced.xlsx`` as an example.
+
+    This function is useful when a user wants to quickly get a
+    System object for testing.
+
+    Returns
+    -------
+    System
+        An example :py:class:`ams.system.System` object.
+    """
+
+    return ams.load(ams.get_case('matpower/case14.m'),
+                    setup=setup, no_output=no_output, **kwargs)

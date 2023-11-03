@@ -294,8 +294,9 @@ def system2mpc(system) -> dict:
 
     # --- zone ---
     ZONE_I = system.Region.idx.v
-    mapping = {busi0: i for i, busi0 in enumerate(ZONE_I)}
-    bus[:, 10] = np.array([mapping[busi0] for busi0 in system.Bus.zone.v])
+    if len(ZONE_I) > 0:
+        mapping = {busi0: i for i, busi0 in enumerate(ZONE_I)}
+        bus[:, 10] = np.array([mapping[busi0] for busi0 in system.Bus.zone.v])
 
     # --- PQ ---
     if system.PQ.n > 0:
@@ -366,6 +367,8 @@ def system2mpc(system) -> dict:
         gencost[:, 4] = system.GCost.c2.v / base_mva / base_mva
         gencost[:, 5] = system.GCost.c1.v / base_mva
         gencost[:, 6] = system.GCost.c0.v / base_mva
+    else:
+        mpc.pop('gencost')
 
     mpc['bus_name'] = np.array(system.Bus.name.v)
 

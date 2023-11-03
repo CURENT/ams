@@ -138,6 +138,7 @@ def runpf(casedata, ppopt):
         method_map = {1: 'Newton', 2: 'fast-decoupled, XB',
                       3: 'fast-decoupled, BX', 4: 'Gauss-Seidel'}
         alg = method_map.get(ppopt['PF_ALG'])
+        sstats['solver_name'] = f'PYPOWER-{alg}'
         logger.debug(f"Solution method: {alg}'s method.")
         if alg is None:
             logger.debug('Only Newton\'s method, fast-decoupled, and '

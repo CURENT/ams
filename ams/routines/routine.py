@@ -70,7 +70,6 @@ class RoutineModel:
         # TODO: these default configs might to be revised
         self.config.add(OrderedDict((('sparselib', 'klu'),
                                      ('linsolve', 0),
-                                     ('t', 1),  # time interval in hours
                                      )))
         self.config.add_extra("_help",
                               sparselib="linear sparse solver name",
@@ -212,14 +211,9 @@ class RoutineModel:
         Set the value of an attribute of a routine parameter.
         """
         if self.__dict__[src].owner is not None:
+            # TODO: fit to `_v` type param in the future
             owner = self.__dict__[src].owner
-            try:
-                owner.set(src=src, idx=idx, attr=attr, value=value)
-                return True
-            except KeyError:
-                # TODO: hold values to _v if necessary in the future
-                logger.info(f'Variable {self.name} has no mapping.')
-                return None
+            return owner.set(src=src, idx=idx, attr=attr, value=value)
         else:
             logger.info(f'Variable {self.name} has no owner.')
             # FIXME: add idx for non-grouped variables
