@@ -335,6 +335,13 @@ class Var(Algeb, OptzBase):
         if self.owner.n == 0:
             span = []
 
+        elif isinstance(self.v, np.ndarray):
+            if self.v.shape[0] == 1 or self.v.ndim == 1:
+                if len(self.v) <= 20:
+                    span = f', v={self.v}'
+            else:
+                span = f', v in shape {self.v.shape}'
+
         elif 1 <= self.owner.n <= 20:
             span = f'a={self.a}, v={self.v}'
 
