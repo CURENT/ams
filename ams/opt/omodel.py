@@ -340,7 +340,7 @@ class Var(Algeb, OptzBase):
                 if len(self.v) <= 20:
                     span = f', v={self.v}'
             else:
-                span = f', v in shape {self.v.shape}'
+                span = f'v in shape {self.v.shape}'
 
         elif 1 <= self.owner.n <= 20:
             span = f'a={self.a}, v={self.v}'
