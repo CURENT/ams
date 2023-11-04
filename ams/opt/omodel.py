@@ -248,7 +248,10 @@ class Var(Algeb, OptzBase):
         """
         Return the CVXPY variable value.
         """
-        out = self.om.vars[self.name].value if self._v is None else self._v
+        if self.name in self.om.vars:
+            out = self.om.vars[self.name].value if self._v is None else self._v
+        else:
+            out = None
         return out
 
     @v.setter

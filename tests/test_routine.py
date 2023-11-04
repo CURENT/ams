@@ -31,6 +31,22 @@ class TestRoutineMethods(unittest.TestCase):
                            no_output=True,
                            )
 
+    def test_var_access_brfore_solve(self):
+        """
+        Test var access before solve.
+        """
+        self.ss.DCOPF.init()
+        np.testing.assert_equal(self.ss.DCOPF.pg.v, None)
+
+    def test_var_access_after_solve(self):
+        """
+        Test var access after solve.
+        """
+        self.ss.DCOPF.run()
+        np.testing.assert_equal(self.ss.DCOPF.pg.v,
+                                self.ss.StaticGen.get(src='p', attr='v',
+                                                      idx=self.ss.DCOPF.pg.get_idx()))
+
     def test_routine_set(self):
         """
         Test `Routine.set()` method.
@@ -46,9 +62,6 @@ class TestRoutineMethods(unittest.TestCase):
 
         # get a rparam value
         np.testing.assert_equal(self.ss.DCOPF.get('ug', 'PV_30'), 1)
-
-        # before solving, vars values are not available
-        self.assertRaises(KeyError, self.ss.DCOPF.get, 'pg', 'PV_30')
 
         self.ss.DCOPF.run(solver='OSQP')
         self.assertEqual(self.ss.DCOPF.exit_code, 0, "Exit code is not 0.")
