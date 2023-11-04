@@ -182,7 +182,7 @@ class RParam:
                     if len(self.v) <= 20:
                         span = f', v={self.v}'
                 else:
-                    span = f', v in shape({self.v.shape})'
+                    span = f', v in shape {self.v.shape}'
             elif isinstance(self.v, list):
                 if len(self.v) <= 20:
                     span = f', v={self.v}'
