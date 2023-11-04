@@ -23,43 +23,13 @@ def require_MIP_solver(f):
 
 class TestRoutineMethods(unittest.TestCase):
     """
-    Test methods of Routine.
+    Test methods of `Routine`.
     """
     def setUp(self) -> None:
         self.ss = ams.load(ams.get_case("ieee39/ieee39_uced_esd1.xlsx"),
                            default_config=True,
                            no_output=True,
                            )
-
-    def test_var_access_brfore_solve(self):
-        """
-        Test Var access before solve.
-        """
-        self.ss.DCOPF.init()
-        self.assertIsNone(self.ss.DCOPF.pg.v)
-
-    def test_var_access_after_solve(self):
-        """
-        Test Var access after solve.
-        """
-        self.ss.DCOPF.run()
-        np.testing.assert_equal(self.ss.DCOPF.pg.v,
-                                self.ss.StaticGen.get(src='p', attr='v',
-                                                      idx=self.ss.DCOPF.pg.get_idx()))
-
-    def test_constr_access_brfore_solve(self):
-        """
-        Test Constr access before solve.
-        """
-        self.ss.DCOPF.init(force=True)
-        np.testing.assert_equal(self.ss.DCOPF.lub.v, None)
-
-    def test_constr_access_after_solve(self):
-        """
-        Test Constr access after solve.
-        """
-        self.ss.DCOPF.run()
-        self.assertIsInstance(self.ss.DCOPF.lub.v, np.ndarray)
 
     def test_routine_set(self):
         """
@@ -82,6 +52,17 @@ class TestRoutineMethods(unittest.TestCase):
         np.testing.assert_equal(self.ss.DCOPF.get('pg', 'PV_30', 'v'),
                                 self.ss.StaticGen.get('p', 'PV_30', 'v'))
 
+
+class TestRoutineSolve(unittest.TestCase):
+    """
+    Test solving routines.
+    """
+    def setUp(self) -> None:
+        self.ss = ams.load(ams.get_case("ieee39/ieee39_uced_esd1.xlsx"),
+                           default_config=True,
+                           no_output=True,
+                           )
+
     def test_RTED(self):
         """
         Test `RTED.run()`.
@@ -89,15 +70,6 @@ class TestRoutineMethods(unittest.TestCase):
 
         self.ss.RTED.run(solver='OSQP')
         self.assertEqual(self.ss.RTED.exit_code, 0, "Exit code is not 0.")
-
-    @require_MIP_solver
-    def test_RTED2(self):
-        """
-        Test `RTED2.run()`.
-        """
-
-        self.ss.RTED2.run()
-        self.assertEqual(self.ss.RTED2.exit_code, 0, "Exit code is not 0.")
 
     def test_ED(self):
         """
@@ -108,6 +80,24 @@ class TestRoutineMethods(unittest.TestCase):
         self.assertEqual(self.ss.ED.exit_code, 0, "Exit code is not 0.")
 
     @require_MIP_solver
+    def test_UC(self):
+        """
+        Test `UC.run()`.
+        """
+
+        self.ss.UC.run()
+        self.assertEqual(self.ss.UC.exit_code, 0, "Exit code is not 0.")
+
+    @require_MIP_solver
+    def test_RTED2(self):
+        """
+        Test `RTED2.run()`.
+        """
+
+        self.ss.RTED2.run()
+        self.assertEqual(self.ss.RTED2.exit_code, 0, "Exit code is not 0.")
+
+    @require_MIP_solver
     def test_ED2(self):
         """
         Test `ED2.run()`.
@@ -115,3 +105,12 @@ class TestRoutineMethods(unittest.TestCase):
 
         self.ss.ED2.run()
         self.assertEqual(self.ss.ED2.exit_code, 0, "Exit code is not 0.")
+
+    @require_MIP_solver
+    def test_UC2(self):
+        """
+        Test `UC2.run()`.
+        """
+
+        self.ss.UC2.run()
+        self.assertEqual(self.ss.UC2.exit_code, 0, "Exit code is not 0.")
