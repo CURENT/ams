@@ -33,19 +33,33 @@ class TestRoutineMethods(unittest.TestCase):
 
     def test_var_access_brfore_solve(self):
         """
-        Test var access before solve.
+        Test Var access before solve.
         """
         self.ss.DCOPF.init()
-        np.testing.assert_equal(self.ss.DCOPF.pg.v, None)
+        self.assertIsNone(self.ss.DCOPF.pg.v)
 
     def test_var_access_after_solve(self):
         """
-        Test var access after solve.
+        Test Var access after solve.
         """
         self.ss.DCOPF.run()
         np.testing.assert_equal(self.ss.DCOPF.pg.v,
                                 self.ss.StaticGen.get(src='p', attr='v',
                                                       idx=self.ss.DCOPF.pg.get_idx()))
+
+    def test_constr_access_brfore_solve(self):
+        """
+        Test Constr access before solve.
+        """
+        self.ss.DCOPF.init(force=True)
+        np.testing.assert_equal(self.ss.DCOPF.lub.v, None)
+
+    def test_constr_access_after_solve(self):
+        """
+        Test Constr access after solve.
+        """
+        self.ss.DCOPF.run()
+        self.assertIsInstance(self.ss.DCOPF.lub.v, np.ndarray)
 
     def test_routine_set(self):
         """
