@@ -340,7 +340,7 @@ class Var(Algeb, OptzBase):
                 if len(self.v) <= 20:
                     span = f', v={self.v}'
             else:
-                span = f'v in shape {self.v.shape}'
+                span = f', v in shape {self.v.shape}'
 
         elif 1 <= self.owner.n <= 20:
             span = f'a={self.a}, v={self.v}'
@@ -353,7 +353,7 @@ class Var(Algeb, OptzBase):
             span = ':'.join([str(i) for i in span])
             span = 'a=[' + span + ']'
 
-        return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}, {span}'
+        return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}{span}'
 
 
 class Constraint(OptzBase):
@@ -446,6 +446,16 @@ class Constraint(OptzBase):
     def __repr__(self):
         enabled = 'ON' if self.name in self.om.constrs else 'OFF'
         return f"[{enabled}]: {self.e_str}"
+
+    @property
+    def v(self):
+        """
+        Return the CVXPY constraint LHS value.
+        """
+        if self.name in self.om.constrs:
+            return self.om.constrs[self.name]._expr.value
+        else:
+            return None
 
 
 class Objective(OptzBase):
