@@ -3,7 +3,9 @@ OPF routines.
 """
 import logging  # NOQA
 
+import numpy as np  # NOQA
 from ams.core.param import RParam  # NOQA
+from ams.core.service import NumOp  # NOQA
 
 from ams.routines.routine import RoutineData, RoutineModel  # NOQA
 
@@ -52,6 +54,9 @@ class DCOPFData(RoutineData):
         self.Cg = RParam(info='connection matrix for Gen and Bus',
                          name='Cg', tex_name=r'C_{g}',
                          model='mats', src='Cg',)
+        self.Cft = RParam(info='connection matrix for Line and Bus',
+                          name='Cft', tex_name=r'C_{ft}',
+                          model='mats', src='Cft',)
         # --- load ---
         self.pl = RParam(info='nodal active load (system base)',
                          name='pl', tex_name=r'p_{l}',
@@ -172,13 +177,21 @@ class DCOPFModel(DCOPFBase):
         self.pn = Var(info='Bus active power injection (system base)',
                       unit='p.u.', name='pn', tex_name=r'p_{n}',
                       model='Bus',)
+        self.plf = Var(info='line active power',
+                       name='plf', tex_name=r'p_{lf}', unit='p.u.',
+                       model='Line',)
         # --- constraints ---
+        self.CftT = NumOp(u=self.Cft,
+                          fun=np.transpose,
+                          name='CftT',
+                          tex_name=r'C_{ft}^{T}',
+                          info='transpose of connection matrix',)
         self.pb = Constraint(name='pb', info='power balance',
                              e_str='sum(pl) - sum(pg)',
                              type='eq',)
         self.pinj = Constraint(name='pinj',
                                info='nodal power injection',
-                               e_str='Cg@(pn - pl) - pg',
+                               e_str='CftT@plf - pl - pn',
                                type='eq',)
         self.lub = Constraint(name='lub', info='Line limits upper bound',
                               e_str='PTDF @ (pn - pl) - rate_a',

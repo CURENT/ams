@@ -40,9 +40,6 @@ class DOPFData(DCOPFData):
         self.qmin = RParam(info='generator minimum reactive power (system base)',
                            name='qmin', tex_name=r'q_{min}', unit='p.u.',
                            model='StaticGen', src='qmin',)
-        self.Cft = RParam(info='connection matrix for Line and Bus',
-                          name='Cft', tex_name=r'C_{ft}',
-                          model='mats', src='Cft',)
 
 
 class LDOPFModel(DCOPFModel):
@@ -75,9 +72,6 @@ class LDOPFModel(DCOPFModel):
                              e_str='-vsq + vmin**2',
                              type='uq',)
 
-        self.plf = Var(info='line active power',
-                       name='plf', tex_name=r'p_{lf}', unit='p.u.',
-                       model='Line',)
         self.qlf = Var(info='line reactive power',
                        name='qlf', tex_name=r'q_{lf}', unit='p.u.',
                        model='Line',)
