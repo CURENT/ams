@@ -3,7 +3,6 @@ Shared constants and delayed imports.
 
 This module is supplementary to the ``andes.shared`` module.
 """
-
 import logging
 from functools import wraps
 
@@ -40,15 +39,4 @@ def require_igraph(f):
     return wrapper
 
 
-def require_MIP_solver(f):
-    """
-    Decorator for functions that require MIP solver.
-    """
 
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        if not any(s in MIP_SOLVERS for s in INSTALLED_SOLVERS):
-            raise ImportError("No MIP solver is available.")
-        return f(*args, **kwargs)
-
-    return wrapper
