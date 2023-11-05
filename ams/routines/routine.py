@@ -954,18 +954,19 @@ class RoutineModel:
 
         # --- variables ---
         k = ytimes if ytimes is not None else 1
-        if input.owner.class_name == "Bus":
-            logger.debug(f"Plotting <{input.name}> as vertex label.")
-            values = [f"${input.tex_name}$={round(k*v)}" for v in input.v]
-            vlabel = system.Bus.name.v
-            vout = [f"{vin}, {label}" for label, vin in zip(values, vlabel)]
-            vstyle["vertex_label"] = vout
-        elif input.owner.class_name == "Line":
-            logger.debug(f"Plotting <{input.name}> as edge label.")
-            values = [f"${input.tex_name}$={round(k*v)}" for v in input.v]
-            elabel = system.Line.name.v
-            eout = [f"{label}" for label, ein in zip(values, elabel)]
-            vstyle["edge_label"] = eout
+        if input is not None:
+            if input.owner.class_name == "Bus":
+                logger.debug(f"Plotting <{input.name}> as vertex label.")
+                values = [f"${input.tex_name}$={round(k*v)}" for v in input.v]
+                vlabel = system.Bus.name.v
+                vout = [f"{vin}, {label}" for label, vin in zip(values, vlabel)]
+                vstyle["vertex_label"] = vout
+            elif input.owner.class_name == "Line":
+                logger.debug(f"Plotting <{input.name}> as edge label.")
+                values = [f"${input.tex_name}$={round(k*v)}" for v in input.v]
+                elabel = system.Line.name.v
+                eout = [f"{label}" for label, ein in zip(values, elabel)]
+                vstyle["edge_label"] = eout
 
         if ax is None:
             _, ax = plt.subplots(figsize=figsize, dpi=dpi)
