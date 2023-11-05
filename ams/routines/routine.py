@@ -7,19 +7,39 @@ from typing import Optional, Union, Type, Iterable
 from collections import OrderedDict
 
 import numpy as np
+from functools import wraps
 import matplotlib.pyplot as plt
 
 from andes.core import Config
 from andes.shared import deg2rad  # NOQA
 from andes.utils.misc import elapsed
-from ams.core.param import RParam
-from ams.opt.omodel import OModel, Var, Constraint, Objective
 
+from ams.core.param import RParam
 from ams.core.symprocessor import SymProcessor
 from ams.core.documenter import RDocumenter
 from ams.core.service import RBaseService, ValueService
+from ams.opt.omodel import OModel, Var, Constraint, Objective
+
+from ams.shared import igraph as ig
+
 
 logger = logging.getLogger(__name__)
+
+
+def require_igraph(f):
+    """
+    Decorator for functions that require igraph.
+    """
+
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        try:
+            getattr(ig, '__version__')
+        except AttributeError:
+            logger.error("Package `igraph` is not installed.")
+        return f(*args, **kwargs)
+
+    return wrapper
 
 
 class RoutineData:
@@ -818,19 +838,15 @@ class RoutineModel:
         """
         raise NotImplementedError
 
+    @require_igraph
     def gmake(self, directed=True):
-        try:
-            import igraph as ig
-        except ImportError:
-            logger.error("Package `igraph` is not installed.")
-            return None
-
         system = self.system
         edges = np.column_stack([system.Bus.idx2uid(system.Line.bus1.v),
                                  system.Bus.idx2uid(system.Line.bus2.v)])
         g = ig.Graph(n=system.Bus.n, directed=directed, edges=edges)
         return g
 
+    @require_igraph
     def graph(
         self,
         input: Optional[Union[RParam, Var]] = None,
