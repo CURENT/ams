@@ -21,6 +21,19 @@ def require_MIP_solver(f):
     return wrapper
 
 
+def require_igraph(f):
+    """
+    Decorator for skipping tests that require igraph.
+    """
+    def wrapper(*args, **kwargs):
+        try:
+            import igraph
+        except ImportError:
+            raise unittest.SkipTest("igraph is not available.")
+        return f(*args, **kwargs)
+    return wrapper
+
+
 class TestRoutineMethods(unittest.TestCase):
     """
     Test methods of `Routine`.
@@ -114,3 +127,69 @@ class TestRoutineSolve(unittest.TestCase):
 
         self.ss.UC2.run()
         self.assertEqual(self.ss.UC2.exit_code, 0, "Exit code is not 0.")
+
+
+class TestRoutineGraph(unittest.TestCase):
+    """
+    Test routine graph.
+    """
+
+    @require_igraph
+    def test_5bus_graph(self):
+        """
+        Test routine graph of PJM 5-bus system.
+        """
+        ss = ams.load(ams.get_case("5bus/pjm5bus_uced.xlsx"),
+                      default_config=True,
+                      no_output=True,
+                      )
+        _, g = ss.DCOPF.graph()
+        self.assertGreaterEqual(np.min(g.degree()), 1)
+
+    @require_igraph
+    def test_ieee14_graph(self):
+        """
+        Test routine graph of IEEE 14-bus system.
+        """
+        ss = ams.load(ams.get_case("ieee14/ieee14_uced.xlsx"),
+                      default_config=True,
+                      no_output=True,
+                      )
+        _, g = ss.DCOPF.graph()
+        self.assertGreaterEqual(np.min(g.degree()), 1)
+
+    @require_igraph
+    def test_ieee39_graph(self):
+        """
+        Test routine graph of IEEE 39-bus system.
+        """
+        ss = ams.load(ams.get_case("ieee39/ieee39_uced_esd1.xlsx"),
+                      default_config=True,
+                      no_output=True,
+                      )
+        _, g = ss.DCOPF.graph()
+        self.assertGreaterEqual(np.min(g.degree()), 1)
+
+    @require_igraph
+    def test_npcc_graph(self):
+        """
+        Test routine graph of NPCC 140-bus system.
+        """
+        ss = ams.load(ams.get_case("npcc/npcc_uced.xlsx"),
+                      default_config=True,
+                      no_output=True,
+                      )
+        _, g = ss.DCOPF.graph()
+        self.assertGreaterEqual(np.min(g.degree()), 1)
+
+    @require_igraph
+    def test_wecc_graph(self):
+        """
+        Test routine graph of WECC 179-bus system.
+        """
+        ss = ams.load(ams.get_case("wecc/wecc_uced.xlsx"),
+                      default_config=True,
+                      no_output=True,
+                      )
+        _, g = ss.DCOPF.graph()
+        self.assertGreaterEqual(np.min(g.degree()), 1)

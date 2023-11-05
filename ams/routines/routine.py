@@ -818,6 +818,19 @@ class RoutineModel:
         """
         raise NotImplementedError
 
+    def gmake(self, directed=True):
+        try:
+            import igraph as ig
+        except ImportError:
+            logger.error("Package `igraph` is not installed.")
+            return None
+
+        system = self.system
+        edges = np.column_stack([system.Bus.idx2uid(system.Line.bus1.v),
+                                 system.Bus.idx2uid(system.Line.bus2.v)])
+        g = ig.Graph(n=system.Bus.n, directed=directed, edges=edges)
+        return g
+
     def graph(
         self,
         input: Optional[Union[RParam, Var]] = None,
@@ -907,9 +920,7 @@ class RoutineModel:
             logger.error("Package `igraph` is not installed.")
             return None
 
-        system = self.system
-        edges = np.column_stack([system.Line.bus1.v, system.Line.bus2.v])
-        g = ig.Graph(n=system.Bus.n, directed=directed, edges=edges)
+        g = self.gmake(directed=directed)
 
         # --- visual style ---
         vstyle = {
@@ -927,7 +938,7 @@ class RoutineModel:
             # others
             **visual_style,
         }
-
+        system = self.system
         # bus size
         gidx = system.PV.idx.v + system.Slack.idx.v
         gbus = system.StaticGen.get(src="bus", attr="v", idx=gidx)
@@ -957,16 +968,18 @@ class RoutineModel:
         if input is not None:
             if input.owner.class_name == "Bus":
                 logger.debug(f"Plotting <{input.name}> as vertex label.")
-                values = [f"${input.tex_name}$={round(k*v)}" for v in input.v]
+                values = [f"${input.tex_name}$={round(k*v, 3)}" for v in input.v]
                 vlabel = system.Bus.name.v
                 vout = [f"{vin}, {label}" for label, vin in zip(values, vlabel)]
                 vstyle["vertex_label"] = vout
             elif input.owner.class_name == "Line":
                 logger.debug(f"Plotting <{input.name}> as edge label.")
-                values = [f"${input.tex_name}$={round(k*v)}" for v in input.v]
+                values = [f"${input.tex_name}$={round(k*v, 3)}" for v in input.v]
                 elabel = system.Line.name.v
                 eout = [f"{label}" for label, ein in zip(values, elabel)]
                 vstyle["edge_label"] = eout
+            else:
+                logger.error(f"Unsupported input type <{input.owner.class_name}>.")
 
         if ax is None:
             _, ax = plt.subplots(figsize=figsize, dpi=dpi)
