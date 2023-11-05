@@ -1,36 +1,22 @@
+from functools import wraps
 import unittest
 import numpy as np
 
 import ams
-import cvxpy as cp
+from ams.shared import require_igraph, MIP_SOLVERS, INSTALLED_SOLVERS
 
 
 def require_MIP_solver(f):
     """
-    Decorator for skipping tests that require MIP solver.
+    Decorator for functions that require MIP solver.
     """
-    def wrapper(*args, **kwargs):
-        all_solvers = cp.installed_solvers()
-        mip_solvers = ['CBC', 'COPT', 'GLPK_MI', 'CPLEX', 'GUROBI',
-                       'MOSEK', 'SCIP', 'XPRESS', 'SCIPY']
-        if any(s in mip_solvers for s in all_solvers):
-            pass
-        else:
-            raise unittest.SkipTest("MIP solver is not available.")
-        return f(*args, **kwargs)
-    return wrapper
 
-
-def require_igraph(f):
-    """
-    Decorator for skipping tests that require igraph.
-    """
+    @wraps(f)
     def wrapper(*args, **kwargs):
-        try:
-            import igraph
-        except ImportError:
-            raise unittest.SkipTest("igraph is not available.")
+        if not any(s in MIP_SOLVERS for s in INSTALLED_SOLVERS):
+            raise ModuleNotFoundError("No MIP solver is available.")
         return f(*args, **kwargs)
+
     return wrapper
 
 
@@ -143,7 +129,7 @@ class TestRoutineGraph(unittest.TestCase):
                       default_config=True,
                       no_output=True,
                       )
-        _, g = ss.DCOPF.graph()
+        _, g = ss.DCOPF.igraph()
         self.assertGreaterEqual(np.min(g.degree()), 1)
 
     @require_igraph
@@ -155,7 +141,7 @@ class TestRoutineGraph(unittest.TestCase):
                       default_config=True,
                       no_output=True,
                       )
-        _, g = ss.DCOPF.graph()
+        _, g = ss.DCOPF.igraph()
         self.assertGreaterEqual(np.min(g.degree()), 1)
 
     @require_igraph
@@ -167,7 +153,7 @@ class TestRoutineGraph(unittest.TestCase):
                       default_config=True,
                       no_output=True,
                       )
-        _, g = ss.DCOPF.graph()
+        _, g = ss.DCOPF.igraph()
         self.assertGreaterEqual(np.min(g.degree()), 1)
 
     @require_igraph
@@ -179,7 +165,7 @@ class TestRoutineGraph(unittest.TestCase):
                       default_config=True,
                       no_output=True,
                       )
-        _, g = ss.DCOPF.graph()
+        _, g = ss.DCOPF.igraph()
         self.assertGreaterEqual(np.min(g.degree()), 1)
 
     @require_igraph
@@ -191,5 +177,5 @@ class TestRoutineGraph(unittest.TestCase):
                       default_config=True,
                       no_output=True,
                       )
-        _, g = ss.DCOPF.graph()
+        _, g = ss.DCOPF.igraph()
         self.assertGreaterEqual(np.min(g.degree()), 1)

@@ -7,7 +7,6 @@ from typing import Optional, Union, Type, Iterable
 from collections import OrderedDict
 
 import numpy as np
-from functools import wraps
 import matplotlib.pyplot as plt
 
 from andes.core import Config
@@ -21,25 +20,10 @@ from ams.core.service import RBaseService, ValueService
 from ams.opt.omodel import OModel, Var, Constraint, Objective
 
 from ams.shared import igraph as ig
+from ams.shared import require_igraph
 
 
 logger = logging.getLogger(__name__)
-
-
-def require_igraph(f):
-    """
-    Decorator for functions that require igraph.
-    """
-
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        try:
-            getattr(ig, '__version__')
-        except AttributeError:
-            logger.error("Package `igraph` is not installed.")
-        return f(*args, **kwargs)
-
-    return wrapper
 
 
 class RoutineData:
@@ -839,7 +823,20 @@ class RoutineModel:
         raise NotImplementedError
 
     @require_igraph
-    def gmake(self, directed=True):
+    def igmake(self, directed=True):
+        """
+        Build an igraph object from the system.
+
+        Parameters
+        ----------
+        directed: bool
+            Whether the graph is directed.
+
+        Returns
+        -------
+        igraph.Graph
+            An igraph object.
+        """
         system = self.system
         edges = np.column_stack([system.Bus.idx2uid(system.Line.bus1.v),
                                  system.Bus.idx2uid(system.Line.bus2.v)])
@@ -847,7 +844,7 @@ class RoutineModel:
         return g
 
     @require_igraph
-    def graph(
+    def igraph(
         self,
         input: Optional[Union[RParam, Var]] = None,
         ytimes: Optional[float] = None,
@@ -870,7 +867,7 @@ class RoutineModel:
         **visual_style,
     ):
         """
-        Plot a system graph, with optional input.
+        Plot a system uging `g.plot()` of `igraph`, with optional input.
         For now, only support plotting of Bus and Line elements as input.
 
         Examples
@@ -929,14 +926,16 @@ class RoutineModel:
             Matplotlib axes.
         visual_style: dict, optional
             Visual style, see ``igraph.plot`` for details.
-        """
-        try:
-            import igraph as ig
-        except ImportError:
-            logger.error("Package `igraph` is not installed.")
-            return None
 
-        g = self.gmake(directed=directed)
+        Returns
+        -------
+        plt.Axes
+            Matplotlib axes.
+        igraph.Graph
+            An igraph object.
+        """
+
+        g = self.igmake(directed=directed)
 
         # --- visual style ---
         vstyle = {
