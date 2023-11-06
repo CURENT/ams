@@ -245,6 +245,8 @@ class NumOp(ROperationService):
         Keyword arguments to pass to ``rfun``.
     expand_dims : int, optional
         Expand the dimensions of the output array along a specified axis.
+    array_out : bool, optional
+        Whether to force the output to be an array.
     """
 
     def __init__(self,
@@ -317,8 +319,8 @@ class NumExpandDim(NumOp):
         Description.
     vtype : Type, optional
         Variable type.
-    model : str, optional
-        Model name.
+    array_out : bool, optional
+        Whether to force the output to be an array.
     """
 
     def __init__(self,
@@ -375,6 +377,8 @@ class NumOpDual(NumOp):
         Keyword arguments to pass to ``rfun``.
     expand_dims : int, optional
         Expand the dimensions of the output array along a specified axis.
+    array_out : bool, optional
+        Whether to force the output to be an array.
     """
 
     def __init__(self,
