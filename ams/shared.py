@@ -23,6 +23,20 @@ MIP_SOLVERS = ['CBC', 'COPT', 'GLPK_MI', 'CPLEX', 'GUROBI',
 INSTALLED_SOLVERS = cp.installed_solvers()
 
 
+def require_MIP_solver(f):
+    """
+    Decorator for functions that require MIP solver.
+    """
+
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if not any(s in MIP_SOLVERS for s in INSTALLED_SOLVERS):
+            raise ModuleNotFoundError("No MIP solver is available.")
+        return f(*args, **kwargs)
+
+    return wrapper
+
+
 def require_igraph(f):
     """
     Decorator for functions that require igraph.
@@ -37,6 +51,3 @@ def require_igraph(f):
         return f(*args, **kwargs)
 
     return wrapper
-
-
-

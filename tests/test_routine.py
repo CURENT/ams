@@ -1,23 +1,8 @@
-from functools import wraps
 import unittest
 import numpy as np
 
 import ams
-from ams.shared import require_igraph, MIP_SOLVERS, INSTALLED_SOLVERS
-
-
-def require_MIP_solver(f):
-    """
-    Decorator for functions that require MIP solver.
-    """
-
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        if not any(s in MIP_SOLVERS for s in INSTALLED_SOLVERS):
-            raise ModuleNotFoundError("No MIP solver is available.")
-        return f(*args, **kwargs)
-
-    return wrapper
+from ams.shared import require_igraph
 
 
 class TestRoutineMethods(unittest.TestCase):
@@ -43,76 +28,40 @@ class TestRoutineMethods(unittest.TestCase):
         Test `Routine.get()` method.
         """
 
-        # get a rparam value
+        # get an rparam value
         np.testing.assert_equal(self.ss.DCOPF.get('ug', 'PV_30'), 1)
 
+        # get an unpacked var value
         self.ss.DCOPF.run(solver='OSQP')
         self.assertEqual(self.ss.DCOPF.exit_code, 0, "Exit code is not 0.")
         np.testing.assert_equal(self.ss.DCOPF.get('pg', 'PV_30', 'v'),
                                 self.ss.StaticGen.get('p', 'PV_30', 'v'))
 
 
-class TestRoutineSolve(unittest.TestCase):
+class TestRoutineInit(unittest.TestCase):
     """
     Test solving routines.
     """
     def setUp(self) -> None:
-        self.ss = ams.load(ams.get_case("ieee39/ieee39_uced_esd1.xlsx"),
+        self.s1 = ams.load(ams.get_case("ieee39/ieee39_uced_esd1.xlsx"),
+                           default_config=True,
+                           no_output=True,
+                           )
+        self.s2 = ams.load(ams.get_case("ieee123/ieee123_regcv1.xlsx"),
                            default_config=True,
                            no_output=True,
                            )
 
-    def test_RTED(self):
+    def test_Init(self):
         """
-        Test `RTED.run()`.
+        Test `routine.init()`.
         """
-
-        self.ss.RTED.run(solver='OSQP')
-        self.assertEqual(self.ss.RTED.exit_code, 0, "Exit code is not 0.")
-
-    def test_ED(self):
-        """
-        Test `ED.run()`.
-        """
-
-        self.ss.ED.run(solver='OSQP')
-        self.assertEqual(self.ss.ED.exit_code, 0, "Exit code is not 0.")
-
-    @require_MIP_solver
-    def test_UC(self):
-        """
-        Test `UC.run()`.
-        """
-
-        self.ss.UC.run()
-        self.assertEqual(self.ss.UC.exit_code, 0, "Exit code is not 0.")
-
-    @require_MIP_solver
-    def test_RTED2(self):
-        """
-        Test `RTED2.run()`.
-        """
-
-        self.ss.RTED2.run()
-        self.assertEqual(self.ss.RTED2.exit_code, 0, "Exit code is not 0.")
-
-    @require_MIP_solver
-    def test_ED2(self):
-        """
-        Test `ED2.run()`.
-        """
-
-        self.ss.ED2.run()
-        self.assertEqual(self.ss.ED2.exit_code, 0, "Exit code is not 0.")
-
-    @require_MIP_solver
-    def test_UC2(self):
-        """
-        Test `UC2.run()`.
-        """
-
-        self.ss.UC2.run()
-        self.assertEqual(self.ss.UC2.exit_code, 0, "Exit code is not 0.")
+        # NOTE: for DED, using ieee123 as a test case
+        for rtn in self.s1.routines.values():
+            if rtn.type == 'DED':
+                rtn = getattr(self.s2, rtn.class_name)
+            self.assertTrue(rtn.init(force=True),
+                            f"{rtn.class_name} initialization failed!")
 
 
 class TestRoutineGraph(unittest.TestCase):
