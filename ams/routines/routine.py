@@ -848,22 +848,35 @@ class RoutineModel:
         self,
         input: Optional[Union[RParam, Var]] = None,
         ytimes: Optional[float] = None,
+        decimal: Optional[int] = 6,
         directed: Optional[bool] = True,
         dpi: Optional[int] = 100,
         figsize: Optional[tuple] = None,
         adjust_bus: Optional[bool] = False,
         gen_color: Optional[str] = "red",
         rest_color: Optional[str] = "black",
-        vertex_size: Optional[int] = 10.0,
-        vertex_label_size: Optional[int] = 8,
-        vertex_label_dist: Optional[int] = -1.5,
-        vertex_label_angle: Optional[int] = 10.2,
-        edge_arrow_size: Optional[int] = 8,
-        edge_width: Optional[int] = 1,
+        vertex_shape: Optional[str] = "circle",
+        vertex_font: Optional[str] = None,
+        no_vertex_label: Optional[bool] = False,
+        vertex_label: Optional[Union[str, list]] = None,
+        vertex_size: Optional[float] = None,
+        vertex_label_size: Optional[float] = None,
+        vertex_label_dist: Optional[float] = 1.5,
+        vertex_label_angle: Optional[float] = 10.2,
+        edge_arrow_size: Optional[float] = None,
+        edge_arrow_width: Optional[float] = None,
+        edge_width: Optional[float] = None,
         edge_align_label: Optional[bool] = True,
+        edge_background: Optional[str] = None,
+        edge_color: Optional[str] = None,
+        edge_curved: Optional[bool] = False,
+        edge_font: Optional[str] = None,
+        edge_label: Optional[Union[str, list]] = None,
         layout: Optional[str] = "rt",
         autocurve: Optional[bool] = True,
         ax: Optional[plt.Axes] = None,
+        title: Optional[str] = None,
+        title_loc: Optional[str] = None,
         **visual_style,
     ):
         """
@@ -904,22 +917,32 @@ class RoutineModel:
             Color of the generator bus.
         rest_color: str, optional
             Color of the rest buses.
-        vertex_size: int, optional
+        no_vertex_label: bool, optional
+            Whether to show vertex labels.
+        vertex_shape: str, optional
+            Shape of the vertices.
+        vertex_font: str, optional
+            Font of the vertices.
+        vertex_size: float, optional
             Size of the vertices.
-        vertex_label_size: int, optional
+        vertex_label_size: float, optional
             Size of the vertex labels.
-        vertex_label_dist: int, optional
+        vertex_label_dist: float, optional
             Distance of the vertex labels.
-        vertex_label_angle: int, optional
+        vertex_label_angle: float, optional
             Angle of the vertex labels.
-        edge_arrow_size: int, optional
+        edge_arrow_size: float, optional
             Size of the edge arrows.
-        edge_width: int, optional
+        edge_arrow_width: float, optional
+            Width of the edge arrows.
+        edge_width: float, optional
             Width of the edges.
         edge_align_label: bool, optional
             Whether to align the edge labels.
+        edge_background: str, optional
+            RGB colored rectangle background of the edge labels.
         layout: str, optional
-            Layout of the graph.
+            Layout of the graph, ['rt', 'kk', 'fr', 'drl', 'lgl', 'circle', 'grid_fr'].
         autocurve: bool, optional
             Whether to use autocurve.
         ax: plt.Axes, optional
@@ -942,18 +965,32 @@ class RoutineModel:
             # layout style
             "layout": layout,
             # vertices
+            "vertex_shape": vertex_shape,
+            "vertex_font": vertex_font,
             "vertex_size": vertex_size,
+            "vertex_label": vertex_label,
             "vertex_label_size": vertex_label_size,
             "vertex_label_dist": vertex_label_dist,
             "vertex_label_angle": vertex_label_angle,
             # edges
             "edge_arrow_size": edge_arrow_size,
+            "edge_arrow_width": edge_arrow_width,
             "edge_width": edge_width,
             "edge_align_label": edge_align_label,
+            "edge_background": edge_background,
+            "edge_color": edge_color,
+            "edge_curved": edge_curved,
+            "edge_font": edge_font,
+            "edge_label": edge_label,
             # others
             **visual_style,
         }
         system = self.system
+        # bus name, will be overwritten if input is not None
+        vstyle["vertex_name"] = system.Bus.name.v
+        if vertex_label is None:
+            vstyle["vertex_label"] = None if no_vertex_label else system.Bus.name.v
+
         # bus size
         gidx = system.PV.idx.v + system.Slack.idx.v
         gbus = system.StaticGen.get(src="bus", attr="v", idx=gidx)
@@ -983,13 +1020,11 @@ class RoutineModel:
         if input is not None:
             if input.owner.class_name == "Bus":
                 logger.debug(f"Plotting <{input.name}> as vertex label.")
-                values = [f"${input.tex_name}$={round(k*v, 3)}" for v in input.v]
-                vlabel = system.Bus.name.v
-                vout = [f"{vin}, {label}" for label, vin in zip(values, vlabel)]
-                vstyle["vertex_label"] = vout
+                values = [f"${input.tex_name}$={round(k*v, decimal)}" for v in input.v]
+                vstyle["vertex_label"] = values
             elif input.owner.class_name == "Line":
                 logger.debug(f"Plotting <{input.name}> as edge label.")
-                values = [f"${input.tex_name}$={round(k*v, 3)}" for v in input.v]
+                values = [f"${input.tex_name}$={round(k*v, decimal)}" for v in input.v]
                 elabel = system.Line.name.v
                 eout = [f"{label}" for label, ein in zip(values, elabel)]
                 vstyle["edge_label"] = eout
@@ -998,5 +1033,9 @@ class RoutineModel:
 
         if ax is None:
             _, ax = plt.subplots(figsize=figsize, dpi=dpi)
+        default_name = self.class_name
+        if input is not None:
+            default_name += f"\n${input.tex_name}$" + f" [${input.unit}$]"
+        ax.set_title(title if title else default_name, loc=title_loc)
         ig.plot(g, autocurve=autocurve, target=ax, **vstyle)
         return ax, g
