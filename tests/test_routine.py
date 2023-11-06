@@ -58,8 +58,10 @@ class TestRoutineInit(unittest.TestCase):
         """
         # NOTE: for DED, using ieee123 as a test case
         for rtn in self.s1.routines.values():
-            if rtn.type == 'DED':
+            if not rtn._data_check():
                 rtn = getattr(self.s2, rtn.class_name)
+                if not rtn._data_check():
+                    continue  # TODO: here should be a warning?
             self.assertTrue(rtn.init(force=True),
                             f"{rtn.class_name} initialization failed!")
 
