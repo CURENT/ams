@@ -266,8 +266,8 @@ class RoutineModel:
                     no_input.append(rname)
                     owner_list.append(rparam.owner.class_name)
         if len(no_input) > 0:
-            msg = f"Following models have no input: {set(owner_list)}"
-            logger.error(msg)
+            msg = f"Following models are missing in input: {set(owner_list)}"
+            logger.warning(msg)
             return False
         # TODO: add data validation for RParam, typical range, etc.
         return True
