@@ -94,7 +94,7 @@ class LDOPFModel(DCOPFModel):
 
         self.lvd = Constraint(name='lvd',
                               info='line voltage drop',
-                              e_str='Cft@vsq - (r * pl + x * qlf)',
+                              e_str='Cft@vsq - (r * plf + x * qlf)',
                               type='eq',)
 
         # --- objective ---

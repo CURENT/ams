@@ -217,7 +217,7 @@ class UCModel(EDModel):
 
     def init(self, **kwargs):
         self._initial_guess()
-        super().init(**kwargs)
+        return super().init(**kwargs)
 
 
 class UC(UCData, UCModel):
