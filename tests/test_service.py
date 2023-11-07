@@ -1,4 +1,3 @@
-from functools import wraps
 import unittest
 import numpy as np
 
@@ -6,8 +5,8 @@ from scipy.sparse import csr_matrix as c_sparse  # NOQA
 from scipy.sparse import lil_matrix as l_sparse  # NOQA
 
 import ams
-from ams.core.matprocessor import MatProcessor
-from ams.core.service import NumOp, ZonalSum
+from ams.core.matprocessor import MatProcessor, MParam
+from ams.core.service import NumOp, NumOpDual, ZonalSum
 
 
 class TestMatProcessor(unittest.TestCase):
@@ -28,11 +27,20 @@ class TestMatProcessor(unittest.TestCase):
         self.mats = MatProcessor(self.ss)
         self.mats.make()
 
+    def test_MParam(self):
+        """
+        Test `MParam`.
+        """
+        one_vec = MParam(v=c_sparse(np.ones(self.ss.Bus.n)))
+        # check if `_v` is `c_sparse` instance
+        self.assertIsInstance(one_vec._v, c_sparse)
+        # check if `v` is 1D-array
+        self.assertEqual(one_vec.v.shape, (self.ss.Bus.n,))
+
     def test_PTDF(self):
         """
         Test `PTDF`.
         """
-        # self.assertIsInstance(self.mats.PTDF._v, (c_sparse, l_sparse))
         self.assertIsInstance(self.mats.PTDF.v, np.ndarray)
         self.assertEqual(self.mats.PTDF.v.shape, (self.nl, self.nB))
 
@@ -91,7 +99,6 @@ class TestService(unittest.TestCase):
             rargs=dict(b=10),
             array_out=True,
         )
-        self.assertIsInstance(M.v, np.ndarray)
         M2 = NumOp(
             u=self.ss.PV.pmax,
             fun=np.max,
@@ -99,13 +106,18 @@ class TestService(unittest.TestCase):
             rargs=dict(b=10),
             array_out=False,
         )
+        self.assertIsInstance(M.v, np.ndarray)
         self.assertIsInstance(M2.v, (int, float))
 
     def test_NumOpDual(self):
         """
         Test `NumOpDual`.
         """
-        pass
+        p_vec = MParam(v=self.ss.mats.pl.v)
+        one_vec = MParam(v=np.ones(self.ss.Bus.n))
+        p_sum = NumOpDual(u=p_vec, u2=one_vec,
+                          fun=np.multiply, rfun=np.sum)
+        self.assertEqual(p_sum.v, self.ss.PQ.p0.v.sum())
 
     def test_ZonalSum(self):
         """
