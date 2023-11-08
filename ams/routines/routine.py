@@ -353,7 +353,11 @@ class RoutineModel:
         _, s = elapsed(t0)
         self.exec_time = float(s.split(" ")[0])
         sstats = self.om.mdl.solver_stats  # solver stats
-        n_iter = int(sstats.num_iters)
+        print(sstats.num_iters)
+        if sstats.num_iters is None:
+            n_iter = -1
+        else:
+            n_iter = int(sstats.num_iters)
         n_iter_str = f"{n_iter} iterations " if n_iter > 1 else f"{n_iter} iteration "
         if self.exit_code == 0:
             msg = f"{self.class_name} solved as {status} in {s}, converged after "
