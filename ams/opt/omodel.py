@@ -332,27 +332,7 @@ class Var(Algeb, OptzBase):
         return True
 
     def __repr__(self):
-        span = []
-        if self.owner.n == 0:
-            span = []
-        elif 1 <= self.owner.n <= 20:
-            span = f'a={self.a}, v={self.v.round(3)}'
-        else:
-            span = []
-            span.append(self.a[0])
-            span.append(self.a[-1])
-            span.append(self.a[1] - self.a[0])
-            span = ':'.join([str(i) for i in span])
-            span = ', a=[' + span + ']'
-
-        if isinstance(self.v, np.ndarray):
-            if self.v.shape[0] == 1 or self.v.ndim == 1:
-                if len(self.v) <= 20:
-                    span = f', v={self.v.round(3)}'
-            else:
-                span = f', v in shape {self.v.shape}'
-
-        return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}{span}'
+        return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}'
 
 
 class Constraint(OptzBase):
@@ -444,7 +424,9 @@ class Constraint(OptzBase):
 
     def __repr__(self):
         enabled = 'ON' if self.name in self.om.constrs else 'OFF'
-        return f"[{enabled}]: {self.e_str}"
+        out = f"[{enabled}]: {self.e_str}"
+        out += " =0" if self.type == 'eq' else " <=0"
+        return out
 
     @property
     def v(self):

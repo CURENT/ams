@@ -158,39 +158,7 @@ class RParam:
         return self.__class__.__name__
 
     def __repr__(self):
-        if self.is_ext:
-            span = ''
-            if isinstance(self.v, np.ndarray):
-                if 1 in self.v.shape:
-                    if len(self.v) <= 20:
-                        span = f', v={self.v}'
-            else:
-                if len(self.v) <= 20:
-                    span = f', v={self.v}'
-                else:
-                    span = f', v in length of {len(self.v)}'
-            return f'{self.__class__.__name__}: {self.name}{span}'
-        else:
-            span = ''
-            if 1 <= self.n <= 20:
-                span = f', v={self.v}'
-                if hasattr(self, 'vin') and (self.vin is not None):
-                    span += f', v in length of {self.vin}'
-
-            if isinstance(self.v, np.ndarray):
-                if self.v.shape[0] == 1 or self.v.ndim == 1:
-                    if len(self.v) <= 20:
-                        span = f', v={self.v}'
-                else:
-                    span = f', v in shape {self.v.shape}'
-            elif isinstance(self.v, list):
-                if len(self.v) <= 20:
-                    span = f', v={self.v}'
-                else:
-                    span = f', v in length of {len(self.v)}'
-            else:
-                span = f', v={self.v}'
-            return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}{span}'
+        return f'{self.__class__.__name__}: {self.owner.__class__.__name__}.{self.name}'
 
     def get_idx(self):
         """
