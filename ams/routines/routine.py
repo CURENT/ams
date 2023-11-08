@@ -272,7 +272,7 @@ class RoutineModel:
         # TODO: add data validation for RParam, typical range, etc.
         return True
 
-    def init(self, force=False, no_code=True, **kwargs):
+    def init(self, force=True, no_code=True, **kwargs):
         """
         Setup optimization model.
 
