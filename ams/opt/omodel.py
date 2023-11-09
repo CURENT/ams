@@ -85,10 +85,10 @@ class OptzBase:
         """
         Return the shape.
         """
-        if self.rtn.initialized:
+        try:
             return self.om.__dict__[self.name].shape
-        else:
-            logger.warning(f'<{self.rtn.class_name}> is not initialized yet.')
+        except KeyError:
+            logger.warning('Shape info is not ready before initialziation.')
             return None
 
     @property
