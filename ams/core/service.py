@@ -623,17 +623,45 @@ class VarSelect(NumOp):
     A numerical matrix to select a subset of a 2D variable,
     ``u.v[:, idx]``.
 
+    For example, if nned to select Energy Storage output
+    power from StaticGen `pg`, following definition can be used:
+    ```python
+    class RTED:
+    ...
+    self.ce = VarSelect(u=self.pg, indexer='genE')
+    ...
+    ```
+
     Parameters
     ----------
     u : Callable
         The input matrix variable.
-    idx : list
-        The index of the subset.
+    indexer: str
+        The name of the indexer source.
+    gamma : str, optional
+        The name of the indexer gamma.
+    name : str, optional
+        The name of the instance.
+    tex_name : str, optional
+        The TeX name for the instance.
+    unit : str, optional
+        The unit of the output.
+    info : str, optional
+        A description of the operation.
+    vtype : Type, optional
+        The variable type.
+    rfun : Callable, optional
+        Function to apply to the output of ``fun``.
+    rargs : dict, optional
+        Keyword arguments to pass to ``rfun``.
+    array_out : bool, optional
+        Whether to force the output to be an array.
     """
 
     def __init__(self,
                  u: Callable,
                  indexer: str,
+                 gamma: str = None,
                  name: str = None,
                  tex_name: str = None,
                  unit: str = None,
@@ -641,12 +669,15 @@ class VarSelect(NumOp):
                  vtype: Type = None,
                  rfun: Callable = None,
                  rargs: dict = {},
+                 array_out: bool = True,
                  **kwargs
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, u=u, fun=None,
-                         rfun=rfun, rargs=rargs, **kwargs)
+                         rfun=rfun, rargs=rargs, array_out=array_out,
+                         **kwargs)
         self.indexer = indexer
+        self.gamma = gamma
 
     @property
     def v0(self):
@@ -684,12 +715,12 @@ class VarSelect(NumOp):
         if not is_subset:
             raise ValueError(f'{indexer.model} contains undefined {indexer.src}, likey a data error.')
 
-        out = [1 if item in ref else 0 for item in uidx]
-        out = np.array(out)
-        if self.u.horizon is not None:
-            out = out[:, np.newaxis]
-            out = np.repeat(out, self.u.horizon.n, axis=1)
-        return np.array(out)
+        row, col = np.meshgrid(uidx, ref)
+        out = (row == col).astype(int)
+        if self.gamma:
+            vgamma = getattr(self.rtn, self.gamma)
+            out = vgamma.v[:, np.newaxis] * out
+        return out
 
 
 class VarReduction(NumOp):
