@@ -52,6 +52,9 @@ class RTEDData(DCOPFData):
                           name='R10', tex_name=r'R_{10}',
                           model='StaticGen', src='R10',
                           unit='p.u./h',)
+        self.gammape = RParam(info='Ratio of ESD1.pge w.r.t to that of static generator',
+                              name='gammape', tex_name=r'\gamma_{p,e}',
+                              model='ESD1', src='gammap',)
 
 
 class RTEDModel(DCOPFModel):
@@ -260,8 +263,8 @@ class ESD1Base:
                            name='EtaD', src='EtaD',
                            tex_name=r'\eta_d', unit='%',
                            model='ESD1',)
-        self.genE = RParam(info='gen of ESD1',
-                           name='genE', tex_name=r'g_{ES}',
+        self.gene = RParam(info='gen of ESD1',
+                           name='gene', tex_name=r'g_{E}',
                            model='ESD1', src='gen',)
 
         # --- service ---
@@ -278,31 +281,27 @@ class ESD1Base:
         # --- vars ---
         self.SOC = Var(info='ESD1 SOC', unit='%',
                        name='SOC', tex_name=r'SOC',
-                       model='ESD1', pos=True,)
-        self.ce = VarSelect(u=self.pg, indexer='genE',
-                            name='ce', tex_name=r'C_{ES}',
-                            info='Select pge from pg',)
+                       model='ESD1', pos=True,
+                       v0=self.SOCinit,
+                       lb=self.SOCmin, ub=self.SOCmax,)
+        self.ce = VarSelect(u=self.pg, indexer='gene',
+                            name='ce', tex_name=r'C_{E}',
+                            info='Select zue from pg',
+                            gamma='gammape',)
         self.pge = Var(info='ESD1 output power (system base)',
-                       unit='p.u.', name='pge', tex_name=r'p_{g,ES}',
+                       unit='p.u.', name='pge', tex_name=r'p_{g,E}',
                        model='ESD1',)
-        self.ued = Var(info='ESD1 commitment decision',
-                       name='ued', tex_name=r'u_{ES,d}',
+        self.ued = Var(info='ESD1 charging decision',
+                       name='ued', tex_name=r'u_{E,d}',
                        model='ESD1', boolean=True,)
-        self.zue = Var(info='Aux var, :math:`z_{ue} = u_{e,d} * p_{g,ES}`',
+        self.zue = Var(info='Aux var, :math:`z_{ue} = u_{e,d} * p_{g,E}`',
                        name='zue', tex_name=r'z_{ue}',
                        model='ESD1', pos=True,)
 
         # --- constraints ---
         self.cpge = Constraint(name='cpge', type='eq',
-                               info='Select ESD1 power from StaticGen',
-                               e_str='multiply(ce, pg) - zue',)
-
-        self.SOClb = Constraint(name='SOClb', type='uq',
-                                info='ESD1 SOC lower bound',
-                                e_str='-SOC + SOCmin',)
-        self.SOCub = Constraint(name='SOCub', type='uq',
-                                info='ESD1 SOC upper bound',
-                                e_str='SOC - SOCmax',)
+                               info='Select zue from pg',
+                               e_str='ce @ pg + zue',)
 
         self.zclb = Constraint(name='zclb', type='uq', info='zue lower bound',
                                e_str='- zue + pge',)
@@ -311,10 +310,12 @@ class ESD1Base:
         self.zcub2 = Constraint(name='zcub2', type='uq', info='zue upper bound',
                                 e_str='zue - Mb dot ued',)
 
-        SOCb = 'SOC - SOCinit - t dot REn * EtaC * zue'
-        SOCb += '- t dot REn * REtaD * (pge - zue)'
+        # NOTE: SOC balance is wrong!
+        SOCb = 'En dot (SOC - SOCinit) - t dot EtaC * zue'
+        SOCb += '+ t dot REtaD * (pge - zue)'
         self.SOCb = Constraint(name='SOCb', type='eq',
-                               info='ESD1 SOC balance', e_str=SOCb,)
+                               info='ESD1 SOC balance',
+                               e_str=SOCb,)
 
 
 class RTED2(RTEDData, RTEDModel, ESD1Base):
