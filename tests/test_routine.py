@@ -1,8 +1,32 @@
 import unittest
+from functools import wraps
 import numpy as np
 
 import ams
-from ams.shared import require_igraph
+
+try:
+    from ams.shared import igraph
+    getattr(igraph, '__version__')
+    HAVE_IGRAPH = True
+except (ImportError, AttributeError):
+    HAVE_IGRAPH = False
+
+
+def require_igraph(f):
+    """
+    Decorator for functions that require igraph.
+    """
+
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        try:
+            getattr(igraph, '__version__')
+        except AttributeError:
+            raise ModuleNotFoundError("igraph needs to be manually installed.")
+
+        return f(*args, **kwds)
+
+    return wrapper
 
 
 class TestRoutineMethods(unittest.TestCase):
@@ -32,7 +56,7 @@ class TestRoutineMethods(unittest.TestCase):
         np.testing.assert_equal(self.ss.DCOPF.get('ug', 'PV_30'), 1)
 
         # get an unpacked var value
-        self.ss.DCOPF.run(solver='OSQP')
+        self.ss.DCOPF.run()
         self.assertEqual(self.ss.DCOPF.exit_code, 0, "Exit code is not 0.")
         np.testing.assert_equal(self.ss.DCOPF.get('pg', 'PV_30', 'v'),
                                 self.ss.StaticGen.get('p', 'PV_30', 'v'))
@@ -66,12 +90,12 @@ class TestRoutineInit(unittest.TestCase):
                             f"{rtn.class_name} initialization failed!")
 
 
+@unittest.skipUnless(HAVE_IGRAPH, "igaph not available")
 class TestRoutineGraph(unittest.TestCase):
     """
     Test routine graph.
     """
 
-    @require_igraph
     def test_5bus_graph(self):
         """
         Test routine graph of PJM 5-bus system.
@@ -83,7 +107,6 @@ class TestRoutineGraph(unittest.TestCase):
         _, g = ss.DCOPF.igraph()
         self.assertGreaterEqual(np.min(g.degree()), 1)
 
-    @require_igraph
     def test_ieee14_graph(self):
         """
         Test routine graph of IEEE 14-bus system.
@@ -95,7 +118,6 @@ class TestRoutineGraph(unittest.TestCase):
         _, g = ss.DCOPF.igraph()
         self.assertGreaterEqual(np.min(g.degree()), 1)
 
-    @require_igraph
     def test_ieee39_graph(self):
         """
         Test routine graph of IEEE 39-bus system.
@@ -107,7 +129,6 @@ class TestRoutineGraph(unittest.TestCase):
         _, g = ss.DCOPF.igraph()
         self.assertGreaterEqual(np.min(g.degree()), 1)
 
-    @require_igraph
     def test_npcc_graph(self):
         """
         Test routine graph of NPCC 140-bus system.
@@ -119,7 +140,6 @@ class TestRoutineGraph(unittest.TestCase):
         _, g = ss.DCOPF.igraph()
         self.assertGreaterEqual(np.min(g.degree()), 1)
 
-    @require_igraph
     def test_wecc_graph(self):
         """
         Test routine graph of WECC 179-bus system.
