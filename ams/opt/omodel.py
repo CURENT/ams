@@ -181,7 +181,7 @@ class Var(Algeb, OptzBase):
                  unit: Optional[str] = None,
                  model: Optional[str] = None,
                  shape: Optional[Union[tuple, int]] = None,
-                 lb: Optional[str] = None,
+                 lb: Optional[RParam] = None,
                  ub: Optional[str] = None,
                  ctrl: Optional[str] = None,
                  v0: Optional[str] = None,
@@ -321,6 +321,7 @@ class Var(Algeb, OptzBase):
             # fit variable shape if horizon exists
             elv = np.tile(elv, (nc, 1)).T if nc > 0 else elv
             exec("om.constrs[self.lb.name] = tmp >= elv")
+            exec("setattr(om, self.lb.name, om.constrs[self.lb.name])")
         if self.ub:
             uv = self.ub.owner.get(src=self.ub.name, idx=self.get_idx(), attr='v')
             u = self.lb.owner.get(src='u', idx=self.get_idx(), attr='v')
@@ -329,6 +330,7 @@ class Var(Algeb, OptzBase):
             # fit variable shape if horizon exists
             euv = np.tile(euv, (nc, 1)).T if nc > 0 else euv
             exec("om.constrs[self.ub.name] = tmp <= euv")
+            exec("setattr(om, self.ub.name, om.constrs[self.ub.name])")
         return True
 
     def __repr__(self):
