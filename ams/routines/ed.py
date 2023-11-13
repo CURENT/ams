@@ -1,18 +1,17 @@
 """
 Real-time economic dispatch.
 """
-import logging  # NOQA
-from collections import OrderedDict  # NOQA
-import numpy as np  # NOQA
+import logging
+from collections import OrderedDict
+import numpy as np
 
-from ams.core.param import RParam  # NOQA
+from ams.core.param import RParam
 from ams.core.service import (ZonalSum, NumOpDual, NumHstack,
-                              RampSub, NumOp, LoadScale)  # NOQA
+                              RampSub, NumOp, LoadScale)
 
-from ams.routines.rted import RTEDData, ESD1Base  # NOQA
-from ams.routines.dcopf import DCOPFModel  # NOQA
+from ams.routines.rted import RTEDData, ESD1Base
+from ams.routines.dcopf import DCOPFModel
 
-from ams.core.service import VarSelect  # NOQA
 from ams.opt.omodel import Var, Constraint  # NOQA
 
 logger = logging.getLogger(__name__)
@@ -215,7 +214,36 @@ class ED2(EDData, EDModel, ESD1Base):
         self.info = 'Economic dispatch with energy storage'
         self.type = 'DCED'
 
+        # NOTE: extend vars to 2D
         self.SOC.horizon = self.timeslot
-        self.pge.horizon = self.timeslot
-        self.ued.horizon = self.timeslot
-        self.zue.horizon = self.timeslot
+        self.pce.horizon = self.timeslot
+        self.pde.horizon = self.timeslot
+        self.uce.horizon = self.timeslot
+        self.ude.horizon = self.timeslot
+        self.zce.horizon = self.timeslot
+        self.zde.horizon = self.timeslot
+
+        self.Mre = RampSub(u=self.SOC, name='Mre', tex_name=r'M_{r,E}',
+                           info='Subtraction matrix for SOC',)
+        self.EnR = NumHstack(u=self.En, ref=self.Mre,
+                             name='EnR', tex_name=r'E_{n,R}',
+                             info='Repeated En as 2D matrix, (ng, ng-1)',)
+        self.EtaCR = NumHstack(u=self.EtaC, ref=self.Mre,
+                               name='EtaCR', tex_name=r'\eta_{c,R}',
+                               info='Repeated Etac as 2D matrix, (ng, ng-1)',)
+        self.REtaDR = NumHstack(u=self.REtaD, ref=self.Mre,
+                                name='REtaDR', tex_name=r'R_{\eta_d,R}',
+                                info='Repeated REtaD as 2D matrix, (ng, ng-1)',)
+        SOCb = 'mul(EnR, SOC @ Mre) - t dot mul(EtaCR, zce[:, 1:])'
+        SOCb += ' + t dot mul(REtaDR, zde[:, 1:])'
+        self.SOCb.e_str = SOCb
+
+        SOCb0 = 'mul(En, SOC[:, 0] - SOCinit) - t dot mul(EtaC, zce[:, 0])'
+        SOCb0 += ' + t dot mul(REtaD, zde[:, 0])'
+        self.SOCb0 = Constraint(name='SOCb', type='eq',
+                                info='ESD1 SOC initial balance',
+                                e_str=SOCb0,)
+
+        self.SOCr = Constraint(name='SOCr', type='eq',
+                               info='SOC requirement',
+                               e_str='SOC[:, -1] - SOCinit',)

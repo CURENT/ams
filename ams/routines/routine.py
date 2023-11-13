@@ -353,7 +353,6 @@ class RoutineModel:
         _, s = elapsed(t0)
         self.exec_time = float(s.split(" ")[0])
         sstats = self.om.mdl.solver_stats  # solver stats
-        print(sstats.num_iters)
         if sstats.num_iters is None:
             n_iter = -1
         else:

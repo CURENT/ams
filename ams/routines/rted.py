@@ -122,22 +122,22 @@ class RTEDModel(DCOPFModel):
                              info='zonal RegDn reserve requirement',)
         self.rbu = Constraint(name='rbu', type='eq',
                               info='RegUp reserve balance',
-                              e_str='gs @ multiply(ug, pru) - dud',)
+                              e_str='gs @ mul(ug, pru) - dud',)
         self.rbd = Constraint(name='rbd', type='eq',
                               info='RegDn reserve balance',
-                              e_str='gs @ multiply(ug, prd) - ddd',)
+                              e_str='gs @ mul(ug, prd) - ddd',)
         self.rru = Constraint(name='rru', type='uq',
                               info='RegUp reserve ramp',
-                              e_str='multiply(ug, pg + pru) - pmax',)
+                              e_str='mul(ug, pg + pru) - pmax',)
         self.rrd = Constraint(name='rrd', type='uq',
                               info='RegDn reserve ramp',
-                              e_str='multiply(ug, -pg + prd) - pmin',)
+                              e_str='mul(ug, -pg + prd) - pmin',)
         self.rgu = Constraint(name='rgu', type='uq',
                               info='ramp up limit of generator output',
-                              e_str='multiply(ug, pg-pg0-R10)',)
+                              e_str='mul(ug, pg-pg0-R10)',)
         self.rgd = Constraint(name='rgd', type='uq',
                               info='ramp down limit of generator output',
-                              e_str='multiply(ug, -pg+pg0-R10)',)
+                              e_str='mul(ug, -pg+pg0-R10)',)
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
         # NOTE: the product of dt and pg is processed using ``dot``, because dt is a numnber
@@ -270,8 +270,6 @@ class ESD1Base:
         # --- service ---
         self.REtaD = NumOp(name='REtaD', tex_name=r'\frac{1}{\eta_d}',
                            u=self.EtaD, fun=np.reciprocal,)
-        self.REn = NumOp(name='REn', tex_name=r'\frac{1}{E_n}',
-                         u=self.En, fun=np.reciprocal,)
         self.Mb = NumOp(info='10 times of max of pmax as big M',
                         name='Mb', tex_name=r'M_{big}',
                         u=self.pmax, fun=np.max,
@@ -288,31 +286,49 @@ class ESD1Base:
                             name='ce', tex_name=r'C_{E}',
                             info='Select zue from pg',
                             gamma='gammape',)
-        self.pge = Var(info='ESD1 output power (system base)',
-                       unit='p.u.', name='pge', tex_name=r'p_{g,E}',
-                       model='ESD1',)
-        self.ued = Var(info='ESD1 charging decision',
-                       name='ued', tex_name=r'u_{E,d}',
+        self.pce = Var(info='ESD1 charging power (system base)',
+                       unit='p.u.', name='pce', tex_name=r'p_{c,E}',
+                       model='ESD1', nonneg=True,)
+        self.pde = Var(info='ESD1 discharging power (system base)',
+                       unit='p.u.', name='pde', tex_name=r'p_{d,E}',
+                       model='ESD1', nonneg=True,)
+        self.uce = Var(info='ESD1 charging decision',
+                       name='uce', tex_name=r'u_{c,E}',
                        model='ESD1', boolean=True,)
-        self.zue = Var(info='Aux var, :math:`z_{ue} = u_{e,d} * p_{g,E}`',
-                       name='zue', tex_name=r'z_{ue}',
-                       model='ESD1', pos=True,)
+        self.ude = Var(info='ESD1 discharging decision',
+                       name='ude', tex_name=r'u_{d,E}',
+                       model='ESD1', boolean=True,)
+        self.zce = Var(info='Aux var for charging, :math:`z_{c,e}=u_{c,E}p_{c,E}`',
+                       name='zce', tex_name=r'z_{c,E}',
+                       model='ESD1', nonneg=True,)
+        self.zde = Var(info='Aux var for discharging, :math:`z_{d,e}=u_{d,E}*p_{d,E}`',
+                       name='zde', tex_name=r'z_{d,E}',
+                       model='ESD1', nonneg=True,)
 
         # --- constraints ---
-        self.cpge = Constraint(name='cpge', type='eq',
-                               info='Select zue from pg',
-                               e_str='ce @ pg + zue',)
+        self.ceb = Constraint(name='ceb', type='eq',
+                              info='Charging decision bound',
+                              e_str='uce + ude - 1',)
+        self.cpe = Constraint(name='cpe', type='eq',
+                              info='Select pce from pg',
+                              e_str='ce @ pg - zce - zde',)
 
-        self.zclb = Constraint(name='zclb', type='uq', info='zue lower bound',
-                               e_str='- zue + pge',)
-        self.zcub = Constraint(name='zcub', type='uq', info='zue upper bound',
-                               e_str='zue - pge - Mb dot (1-ued)',)
-        self.zcub2 = Constraint(name='zcub2', type='uq', info='zue upper bound',
-                                e_str='zue - Mb dot ued',)
+        self.zce1 = Constraint(name='zce1', type='uq', info='zce bound 1',
+                               e_str='-zce + pce',)
+        self.zce2 = Constraint(name='zce2', type='uq', info='zce bound 2',
+                               e_str='zce - pce - Mb dot (1-uce)',)
+        self.zce3 = Constraint(name='zce3', type='uq', info='zce bound 3',
+                               e_str='zce - Mb dot uce',)
 
-        # NOTE: SOC balance is wrong!
-        SOCb = 'En dot (SOC - SOCinit) - t dot EtaC * zue'
-        SOCb += '+ t dot REtaD * (pge - zue)'
+        self.zde1 = Constraint(name='zde1', type='uq', info='zde bound 1',
+                               e_str='-zde + pde',)
+        self.zde2 = Constraint(name='zde2', type='uq', info='zde bound 2',
+                               e_str='zde - pde - Mb dot (1-ude)',)
+        self.zde3 = Constraint(name='zde3', type='uq', info='zde bound 3',
+                               e_str='zde - Mb dot ude',)
+
+        SOCb = 'mul(En, (SOC - SOCinit)) - t dot mul(EtaC, zce)'
+        SOCb += '+ t dot mul(REtaD, zde)'
         self.SOCb = Constraint(name='SOCb', type='eq',
                                info='ESD1 SOC balance',
                                e_str=SOCb,)

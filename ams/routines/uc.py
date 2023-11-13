@@ -270,7 +270,7 @@ class UC2(UCData, UCModel, ESD1Base):
         self.info = 'unit commitment with energy storage'
         self.type = 'DCUC'
 
-        self.SOC.horizon = self.timeslot
-        self.pge.horizon = self.timeslot
-        self.ued.horizon = self.timeslot
-        self.zue.horizon = self.timeslot
+        # self.SOC.horizon = self.timeslot
+        # self.pge.horizon = self.timeslot
+        # self.ude.horizon = self.timeslot
+        # self.zue.horizon = self.timeslot
