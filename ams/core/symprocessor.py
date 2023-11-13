@@ -67,6 +67,7 @@ class SymProcessor:
             (r'\bvar\b', f'{lang}.Variable'),
             (r'\bproblem\b', f'{lang}.Problem'),
             (r'\bmultiply\b', f'{lang}.multiply'),
+            (r'\bmul\b', f'{lang}.multiply'),  # alias for multiply
             (r'\bvstack\b', f'{lang}.vstack'),
             (r'\bnorm\b', f'{lang}.norm'),
             (r'\bpos\b', f'{lang}.pos'),
