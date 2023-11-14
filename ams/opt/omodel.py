@@ -4,7 +4,7 @@ Module for optimization models.
 
 import logging  # NOQA
 
-from typing import Optional, Union  # NOQA
+from typing import Any, Optional, Union  # NOQA
 from collections import OrderedDict  # NOQA
 import re  # NOQA
 
@@ -49,6 +49,7 @@ class OptzBase:
         self.info = info
         self.unit = unit
         self.is_disabled = False
+        self.optz = None  # corresponding optimization element
 
     def parse(self):
         """
@@ -222,6 +223,9 @@ class Var(Algeb, OptzBase):
         self._shape = shape
         self._v = None
 
+        self.optz_lb = None
+        self.optz_ub = None
+
         self.config = Config(name=self.class_name)  # `config` that can be exported
 
         self.config.add(OrderedDict((('nonneg', nonneg),
@@ -308,9 +312,8 @@ class Var(Algeb, OptzBase):
         code_var = f"tmp=var({shape}, **config)"
         for pattern, replacement, in sub_map.items():
             code_var = re.sub(pattern, replacement, code_var)
-        exec(code_var)
-        exec("om.vars[self.name] = tmp")
-        exec(f'setattr(om, self.name, om.vars["{self.name}"])')
+        exec(code_var)  # build the Var object
+        exec("self.optz = tmp")  # assign the to the optz attribute
         u_ctrl = self.ctrl.v if self.ctrl else np.ones(nr)
         v0 = self.v0.v if self.v0 else np.zeros(nr)
         if self.lb:
@@ -320,8 +323,7 @@ class Var(Algeb, OptzBase):
             elv = u_ctrl * u * lv + (1 - u_ctrl) * v0
             # fit variable shape if horizon exists
             elv = np.tile(elv, (nc, 1)).T if nc > 0 else elv
-            exec("om.constrs[self.lb.name] = tmp >= elv")
-            exec("setattr(om, self.lb.name, om.constrs[self.lb.name])")
+            exec("self.optz_lb = tmp >= elv")
         if self.ub:
             uv = self.ub.owner.get(src=self.ub.name, idx=self.get_idx(), attr='v')
             u = self.lb.owner.get(src='u', idx=self.get_idx(), attr='v')
@@ -329,8 +331,7 @@ class Var(Algeb, OptzBase):
             euv = u_ctrl * u * uv + (1 - u_ctrl) * v0
             # fit variable shape if horizon exists
             euv = np.tile(euv, (nc, 1)).T if nc > 0 else euv
-            exec("om.constrs[self.ub.name] = tmp <= euv")
-            exec("setattr(om, self.ub.name, om.constrs[self.ub.name])")
+            exec("self.optz_ub = tmp <= euv")
         return True
 
     def __repr__(self):
@@ -411,17 +412,16 @@ class Constraint(OptzBase):
                 logger.error(f"Error in parsing constr <{self.name}>.")
                 raise e
         if self.type == 'uq':
-            code_constr = f'{code_constr} <= 0'
+            code_constr = f'tmp = {code_constr} <= 0'
         elif self.type == 'eq':
-            code_constr = f'{code_constr} == 0'
+            code_constr = f'tmp = {code_constr} == 0'
         else:
             raise ValueError(f'Constraint type {self.type} is not supported.')
-        code_constr = f'om.constrs["{self.name}"]=' + code_constr
         logger.debug(f"Set constrs {self.name}: {self.e_str} {'<= 0' if self.type == 'uq' else '== 0'}")
         if not no_code:
             logger.info(f"Code Constr: {code_constr}")
         exec(code_constr)
-        exec(f'setattr(om, self.name, om.constrs["{self.name}"])')
+        exec("self.optz = tmp")
         return True
 
     def __repr__(self):
@@ -594,12 +594,15 @@ class OModel:
         """
         rtn = self.rtn
         rtn.syms.generate_symbols(force_generate=force_generate)
+        # TODO: add Service as cp.Parameter
         # --- add decision variables ---
-        for ovar in rtn.vars.values():
-            ovar.parse()
+        for key, val in rtn.vars.items():
+            val.parse()
+            setattr(self, key, val.optz)
         # --- add constraints ---
-        for constr in rtn.constrs.values():
-            constr.parse(no_code=no_code)
+        for key, val in rtn.constrs.items():
+            val.parse(no_code=no_code)
+            setattr(self, key, val.optz)
         # --- parse objective functions ---
         if rtn.type == 'PF':
             # NOTE: power flow type has no objective function
@@ -631,3 +634,19 @@ class OModel:
         Return the class name
         """
         return self.__class__.__name__
+
+    def __register_attribute(self, key, value):
+        """
+        Register a pair of attributes to OModel instance.
+
+        Called within ``__setattr__``, this is where the magic happens.
+        Subclass attributes are automatically registered based on the variable type.
+        """
+        if isinstance(value, cp.Variable):
+            self.vars[key] = value
+        elif isinstance(value, cp.Constraint):
+            self.constrs[key] = value
+
+    def __setattr__(self, __name: str, __value: Any):
+        self.__register_attribute(__name, __value)
+        super().__setattr__(__name, __value)

@@ -449,8 +449,10 @@ class RoutineModel:
             value.om = self.om
         if isinstance(value, Var):
             self.vars[key] = value
+            self.om.vars[key] = None
         elif isinstance(value, Constraint):
             self.constrs[key] = value
+            self.om.constrs[key] = None
         elif isinstance(value, RParam):
             self.rparams[key] = value
         elif isinstance(value, RBaseService):
