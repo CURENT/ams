@@ -12,9 +12,6 @@ import numpy as np  # NOQA
 
 from andes.core.common import Config  # NOQA
 
-from ams.core.param import RParam  # NOQA
-from ams.core.var import Algeb  # NOQA
-
 from ams.utils import timer  # NOQA
 
 import cvxpy as cp  # NOQA
@@ -49,6 +46,7 @@ class OptzBase:
         self.info = info
         self.unit = unit
         self.is_disabled = False
+        self.rtn = None
         self.optz = None  # corresponding optimization element
 
     def parse(self):
@@ -75,13 +73,6 @@ class OptzBase:
             return self.owner.n
 
     @property
-    def rtn(self):
-        """
-        Return the owner routine.
-        """
-        return self.om.rtn
-
-    @property
     def shape(self):
         """
         Return the shape.
@@ -104,7 +95,44 @@ class OptzBase:
             return None
 
 
-class Var(Algeb, OptzBase):
+class Param(OptzBase):
+    """
+    Base class for parameters used in a routine.
+    """
+
+    def __init__(self,
+                 name: Optional[str] = None,
+                 info: Optional[str] = None,
+                 src: Optional[str] = None,
+                 unit: Optional[str] = None,
+                 ):
+        OptzBase.__init__(self, name=name, info=info, unit=unit)
+        self.src = src
+
+    def parse(self):
+        """
+        Parse the parameter.
+        """
+        sub_map = self.om.rtn.syms.sub_map
+        code_param = f"tmp=param(shape={self.v.shape})"
+        for pattern, replacement, in sub_map.items():
+            code_param = re.sub(pattern, replacement, code_param)
+        exec(code_param)
+        exec("self.optz = tmp")
+        exec("self.optz.value = self.v")
+        return True
+
+    def update(self):
+        """
+        Update the parameter value from RParam, MParam, or Service.
+        """
+        self.optz.value = self.v
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}: {self.name}'
+
+
+class Var(OptzBase):
     """
     Base class for variables used in a routine.
 
@@ -182,11 +210,11 @@ class Var(Algeb, OptzBase):
                  unit: Optional[str] = None,
                  model: Optional[str] = None,
                  shape: Optional[Union[tuple, int]] = None,
-                 lb: Optional[RParam] = None,
-                 ub: Optional[str] = None,
+                 lb=None,
+                 ub=None,
                  ctrl: Optional[str] = None,
                  v0: Optional[str] = None,
-                 horizon: Optional[RParam] = None,
+                 horizon=None,
                  nonneg: Optional[bool] = False,
                  nonpos: Optional[bool] = False,
                  complex: Optional[bool] = False,
@@ -201,8 +229,6 @@ class Var(Algeb, OptzBase):
                  pos: Optional[bool] = False,
                  neg: Optional[bool] = False,
                  ):
-        # Algeb.__init__(self, name=name, tex_name=tex_name, info=info, unit=unit)
-        # below info is the same as Algeb
         self.name = name
         self.info = info
         self.unit = unit
@@ -275,7 +301,6 @@ class Var(Algeb, OptzBase):
         """
         Parse the variable.
         """
-        om = self.om  # NOQA
         sub_map = self.om.rtn.syms.sub_map
         # only used for CVXPY
         # NOTE: Config only allow lower case letters, do a conversion here
@@ -403,7 +428,6 @@ class Constraint(OptzBase):
         sub_map = self.om.rtn.syms.sub_map
         if self.is_disabled:
             return True
-        om = self.om  # NOQA
         code_constr = self.e_str
         for pattern, replacement in sub_map.items():
             try:
@@ -511,7 +535,6 @@ class Objective(OptzBase):
         no_code : bool, optional
             Flag indicating if the code should be shown, True by default.
         """
-        om = self.om  # NOQA
         sub_map = self.om.rtn.syms.sub_map
         code_obj = self.e_str
         for pattern, replacement, in sub_map.items():
@@ -522,7 +545,7 @@ class Objective(OptzBase):
             code_obj = f'cp.Maximize({code_obj})'
         else:
             raise ValueError(f'Objective sense {self.sense} is not supported.')
-        code_obj = 'om.obj=' + code_obj
+        code_obj = 'self.om.obj=' + code_obj
         logger.debug(f"Set obj {self.name}: {self.sense}. {self.e_str}")
         if not no_code:
             logger.info(f"Code Obj: {code_obj}")
@@ -567,6 +590,7 @@ class OModel:
     def __init__(self, routine):
         self.rtn = routine
         self.mdl = None
+        self.params = OrderedDict()
         self.vars = OrderedDict()
         self.constrs = OrderedDict()
         self.obj = None
@@ -595,6 +619,12 @@ class OModel:
         rtn = self.rtn
         rtn.syms.generate_symbols(force_generate=force_generate)
         # TODO: add Service as cp.Parameter
+        # --- add RParams and Services as parameters ---
+        # NOTE: items in ``rtn.params`` are not
+        # ``RParam`` or ``Service`` instances
+        for key, val in rtn.params.items():
+            val.parse()
+            setattr(self, key, val.optz)
         # --- add decision variables ---
         for key, val in rtn.vars.items():
             val.parse()
@@ -646,7 +676,25 @@ class OModel:
             self.vars[key] = value
         elif isinstance(value, cp.Constraint):
             self.constrs[key] = value
+        elif isinstance(value, cp.Parameter):
+            self.params[key] = value
 
     def __setattr__(self, __name: str, __value: Any):
         self.__register_attribute(__name, __value)
         super().__setattr__(__name, __value)
+
+    def update_param(self, params=Optional[Union[Param, str, list]]):
+        """
+        Update the Parameter values.
+        """
+        if params is None:
+            for _, val in self.params.items():
+                val.update()
+        elif isinstance(params, Param):
+            params.update()
+        elif isinstance(params, str):
+            self.params[params].update()
+        elif isinstance(params, list):
+            for param in params:
+                param.update()
+        return True

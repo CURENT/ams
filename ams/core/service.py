@@ -9,11 +9,13 @@ import numpy as np  # NOQA
 
 from andes.core.service import BaseService, BackRef, RefFlatten  # NOQA
 
+from ams.opt.omodel import Param
+
 
 logger = logging.getLogger(__name__)
 
 
-class RBaseService(BaseService):
+class RBaseService(BaseService, Param):
     """
     Base class for services that are used in a routine.
     Revised from module `andes.core.service.BaseService`.
@@ -41,8 +43,9 @@ class RBaseService(BaseService):
                  info: str = None,
                  vtype: Type = None,
                  ):
-        super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype)
+        Param.__init__(self, name=name, unit=unit, info=info)
+        BaseService.__init__(self, name=name, tex_name=tex_name, unit=unit,
+                             info=info, vtype=vtype)
         self.export = False
         self.is_group = False
         self.rtn = None

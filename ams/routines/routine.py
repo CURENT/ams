@@ -17,7 +17,7 @@ from ams.core.param import RParam
 from ams.core.symprocessor import SymProcessor
 from ams.core.documenter import RDocumenter
 from ams.core.service import RBaseService, ValueService
-from ams.opt.omodel import OModel, Var, Constraint, Objective
+from ams.opt.omodel import OModel, Param, Var, Constraint, Objective
 
 from ams.shared import igraph as ig
 from ams.shared import require_igraph
@@ -33,6 +33,9 @@ class RoutineData:
 
     def __init__(self):
         self.rparams = OrderedDict()  # list out RParam in a routine
+        self.params = OrderedDict()  # list out Params in a routine
+        # --- optimization modeling ---
+        self.om = OModel(routine=self)
 
 
 class RoutineModel:
@@ -55,6 +58,7 @@ class RoutineModel:
 
         self.services = OrderedDict()  # list out services in a routine
 
+        self.params = OrderedDict()  # list out Params in a routine
         self.vars = OrderedDict()  # list out Vars in a routine
         self.constrs = OrderedDict()
         self.obj = None
@@ -445,18 +449,29 @@ class RoutineModel:
         Called within ``__setattr__``, this is where the magic happens.
         Subclass attributes are automatically registered based on the variable type.
         """
-        if isinstance(value, (Var, Constraint, Objective)):
+        if isinstance(value, (Param, Var, Constraint, Objective)):
             value.om = self.om
+            value.rtn = self
         if isinstance(value, Var):
             self.vars[key] = value
-            self.om.vars[key] = None
+            self.om.vars[key] = None  # cp.Variable
         elif isinstance(value, Constraint):
             self.constrs[key] = value
-            self.om.constrs[key] = None
+            self.om.constrs[key] = None  # cp.Constraint
         elif isinstance(value, RParam):
             self.rparams[key] = value
+            self.params[key] = value
+            self.om.params[key] = None  # cp.Parameter
         elif isinstance(value, RBaseService):
             self.services[key] = value
+            self.params[key] = value
+            self.om.params[key] = None  # cp.Parameter
+
+    def update_param(self, params=Optional[Union[Param, str, list]]):
+        """
+        Update parameters in the optimization model.
+        """
+        return self.om.update_param(params=params)
 
     def __delattr__(self, name):
         """

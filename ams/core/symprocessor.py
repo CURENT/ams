@@ -65,6 +65,7 @@ class SymProcessor:
             (r' dot ', r' * '),
             (r'\bsum\b', f'{lang}.sum'),
             (r'\bvar\b', f'{lang}.Variable'),
+            (r'\bparam\b', f'{lang}.Parameter'),
             (r'\bproblem\b', f'{lang}.Problem'),
             (r'\bmultiply\b', f'{lang}.multiply'),
             (r'\bmul\b', f'{lang}.multiply'),  # alias for multiply

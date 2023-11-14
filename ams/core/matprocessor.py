@@ -2,20 +2,23 @@
 Module for system matrix make.
 """
 
-import logging  # NOQA
-from typing import Optional  # NOQA
+import logging
+from typing import Optional
 
-import numpy as np  # NOQA
-from ams.pypower.make import makePTDF, makeBdc  # NOQA
-from ams.io.pypower import system2ppc  # NOQA
+import numpy as np
 
-from scipy.sparse import csr_matrix as c_sparse  # NOQA
-from scipy.sparse import lil_matrix as l_sparse  # NOQA
+from scipy.sparse import csr_matrix as c_sparse
+from scipy.sparse import lil_matrix as l_sparse
+
+from ams.pypower.make import makePTDF, makeBdc
+from ams.io.pypower import system2ppc
+
+from ams.opt.omodel import Param
 
 logger = logging.getLogger(__name__)
 
 
-class MParam:
+class MParam(Param):
     """
     Class for matrix parameters built from the system.
 
@@ -47,6 +50,7 @@ class MParam:
                  unit: Optional[str] = None,
                  v: Optional[np.ndarray] = None,
                  ):
+        Param.__init__(self, name=name, info=info)
         self.name = name
         self.tex_name = tex_name if (tex_name is not None) else name
         self.info = info

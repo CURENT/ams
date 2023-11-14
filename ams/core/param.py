@@ -16,10 +16,12 @@ from andes.models.group import GroupBase  # NOQA
 
 from ams.core.var import Algeb  # NOQA
 
+from ams.opt.omodel import Param  # NOQA
+
 logger = logging.getLogger(__name__)
 
 
-class RParam:
+class RParam(Param):
     """
     Class for parameters used in a routine.
     This class is developed to simplify the routine definition.
@@ -79,6 +81,7 @@ class RParam:
                  indexer: Optional[str] = None,
                  imodel: Optional[str] = None,
                  ):
+        Param.__init__(self, name=name, info=info, src=src, unit=unit)
 
         self.name = name
         self.tex_name = tex_name if (tex_name is not None) else name
