@@ -51,11 +51,11 @@ class DCOPFBase(RoutineModel):
         self.pmax = RParam(info='Gen maximum active power (system base)',
                            name='pmax', tex_name=r'p_{max}',
                            unit='p.u.', model='StaticGen',
-                           no_parse=True,)
+                           no_parse=False,)
         self.pmin = RParam(info='Gen minimum active power (system base)',
                            name='pmin', tex_name=r'p_{min}',
                            unit='p.u.', model='StaticGen',
-                           no_parse=True,)
+                           no_parse=False,)
         self.pg0 = RParam(info='Gen initial active power (system base)',
                           name='p0', tex_name=r'p_{g,0}',
                           unit='p.u.', model='StaticGen',)
@@ -79,7 +79,7 @@ class DCOPFBase(RoutineModel):
         self.PTDF = RParam(info='Power transfer distribution factor matrix',
                            name='PTDF', tex_name=r'P_{TDF}',
                            model='mats', src='PTDF',
-                           no_parse=True,)
+                           no_parse=False,)
 
     def solve(self, **kwargs):
         """
@@ -172,11 +172,10 @@ class DCOPF(DCOPFBase):
         self.type = 'DCED'
         # --- vars ---
         self.pg = Var(info='Gen active power (system base)',
-                      unit='p.u.', name='pg', src='p',
-                      tex_name=r'p_{g}',
-                      model='StaticGen',
-                      lb=self.pmin, ub=self.pmax,
-                      ctrl=self.ctrl, v0=self.pg0)
+                      unit='p.u.',
+                      name='pg', tex_name=r'p_{g}',
+                      model='StaticGen', src='p',
+                      v0=self.pg0)
         self.pn = Var(info='Bus active power injection (system base)',
                       unit='p.u.', name='pn', tex_name=r'p_{n}',
                       model='Bus',)
@@ -184,6 +183,17 @@ class DCOPF(DCOPFBase):
                        name='plf', tex_name=r'p_{lf}', unit='p.u.',
                        model='Line',)
         # --- constraints ---
+        # NOTE: `ug*pmin` results in unexpected error
+        self.nctrl = NumOp(u=self.ctrl, fun=np.logical_not,
+                           name='nctrl', tex_name=r'-c_{trl}',
+                           info='gen uncontrollability',
+                           no_parse=True,)
+        pglb = '-pg + mul(nctrl, pg0) + mul(ctrl, mul(ug, pmin))'
+        self.pglb = Constraint(name='pglb', info='pg min',
+                               e_str=pglb, type='uq',)
+        pgub = 'pg - mul(nctrl, pg0) - mul(ctrl, mul(ug, pmax))'
+        self.pgub = Constraint(name='pgub', info='pg max',
+                               e_str=pgub, type='uq',)
         self.CftT = NumOp(u=self.Cft, fun=np.transpose,
                           name='CftT', tex_name=r'C_{ft}^{T}',
                           info='transpose of connection matrix',

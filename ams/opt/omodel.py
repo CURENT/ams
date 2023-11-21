@@ -226,12 +226,6 @@ class Var(OptzBase):
         Source variable name. If is None, the value of `name` will be used.
     model : str, optional
         Name of the owner model or group.
-    lb : str, optional
-        Lower bound
-    ub : str, optional
-        Upper bound
-    ctrl : str, optional
-        Controllability
     horizon : ams.routines.RParam, optional
         Horizon idx.
     nonneg : bool, optional
@@ -279,9 +273,6 @@ class Var(OptzBase):
                  unit: Optional[str] = None,
                  model: Optional[str] = None,
                  shape: Optional[Union[tuple, int]] = None,
-                 lb=None,
-                 ub=None,
-                 ctrl: Optional[str] = None,
                  v0: Optional[str] = None,
                  horizon=None,
                  nonneg: Optional[bool] = False,
@@ -310,9 +301,6 @@ class Var(OptzBase):
         self.is_group = False
         self.model = model  # indicate if this variable is a group variable
         self.owner = None  # instance of the owner model or group
-        self.lb = lb
-        self.ub = ub
-        self.ctrl = ctrl
         self.v0 = v0
         self.horizon = horizon
         self._shape = shape
@@ -408,24 +396,6 @@ class Var(OptzBase):
             code_var = re.sub(pattern, replacement, code_var)
         exec(code_var)  # build the Var object
         exec("self.optz = tmp")  # assign the to the optz attribute
-        u_ctrl = self.ctrl.v if self.ctrl else np.ones(nr)
-        v0 = self.v0.v if self.v0 else np.zeros(nr)
-        if self.lb:
-            lv = self.lb.owner.get(src=self.lb.name, idx=self.get_idx(), attr='v')
-            u = self.lb.owner.get(src='u', idx=self.get_idx(), attr='v')
-            # element-wise lower bound considering online status
-            elv = u_ctrl * u * lv + (1 - u_ctrl) * v0
-            # fit variable shape if horizon exists
-            elv = np.tile(elv, (nc, 1)).T if nc > 0 else elv
-            exec("self.optz_lb = tmp >= elv")
-        if self.ub:
-            uv = self.ub.owner.get(src=self.ub.name, idx=self.get_idx(), attr='v')
-            u = self.lb.owner.get(src='u', idx=self.get_idx(), attr='v')
-            # element-wise upper bound considering online status
-            euv = u_ctrl * u * uv + (1 - u_ctrl) * v0
-            # fit variable shape if horizon exists
-            euv = np.tile(euv, (nc, 1)).T if nc > 0 else euv
-            exec("self.optz_ub = tmp <= euv")
         return True
 
     def __repr__(self):

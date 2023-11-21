@@ -53,8 +53,14 @@ class LDOPF(DCOPF):
         # --- vars ---
         self.qg = Var(info='Gen reactive power (system base)',
                       name='qg', tex_name=r'q_{g}', unit='p.u.',
-                      model='StaticGen', src='q',
-                      lb=self.qmin, ub=self.qmax,)
+                      model='StaticGen', src='q',)
+        self.qglb = Constraint(name='qglb', type='uq',
+                               info='Gen reactive power lower limit',
+                               e_str='-qg + qmin',)
+        self.qgub = Constraint(name='qgub', type='uq',
+                               info='Gen reactive power upper limit',
+                               e_str='qg - qmax',)
+        # TODO: add qg limit,  lb=self.qmin, ub=self.qmax,
         self.qn = Var(info='Bus reactive power',
                       name='qn', tex_name=r'q_{n}', unit='p.u.',
                       model='Bus',)

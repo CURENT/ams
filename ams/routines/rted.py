@@ -316,8 +316,13 @@ class ESD1Base:
         self.SOC = Var(info='ESD1 SOC', unit='%',
                        name='SOC', tex_name=r'SOC',
                        model='ESD1', pos=True,
-                       v0=self.SOCinit,
-                       lb=self.SOCmin, ub=self.SOCmax,)
+                       v0=self.SOCinit,)
+        self.SOClb = Constraint(name='SOClb', type='uq',
+                                info='SOC lower bound',
+                                e_str='-SOC + SOCmin',)
+        self.SOCub = Constraint(name='SOCub', type='uq',
+                                info='SOC upper bound',
+                                e_str='SOC - SOCmax',)
         self.ce = VarSelect(u=self.pg, indexer='gene',
                             name='ce', tex_name=r'C_{E}',
                             info='Select zue from pg',

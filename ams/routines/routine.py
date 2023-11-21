@@ -370,7 +370,7 @@ class RoutineModel:
             self.unpack(**kwargs)
             return True
         else:
-            msg = f"{self.class_name} failed after "
+            msg = f"{self.class_name} failed as {status} after "
             msg += n_iter_str + f"using solver {sstats.solver_name}!"
             logger.warning(msg)
             return False
@@ -757,8 +757,6 @@ class RoutineModel:
                 info: Optional[str] = None,
                 src: Optional[str] = None,
                 unit: Optional[str] = None,
-                lb: Optional[str] = None,
-                ub: Optional[str] = None,
                 horizon: Optional[RParam] = None,
                 nonneg: Optional[bool] = False,
                 nonpos: Optional[bool] = False,
@@ -831,31 +829,15 @@ class RoutineModel:
         """
         if model is None and shape is None:
             raise ValueError("Either model or shape must be specified.")
-        item = Var(
-            name=name,
-            tex_name=tex_name,
-            info=info,
-            src=src,
-            unit=unit,
-            model=model,
-            shape=shape,
-            lb=lb,
-            ub=ub,
-            horizon=horizon,
-            nonneg=nonneg,
-            nonpos=nonpos,
-            complex=complex,
-            imag=imag,
-            symmetric=symmetric,
-            diag=diag,
-            psd=psd,
-            nsd=nsd,
-            hermitian=hermitian,
-            bool=bool,
-            integer=integer,
-            pos=pos,
-            neg=neg,
-        )
+        item = Var(name=name, tex_name=tex_name,
+                   info=info, src=src, unit=unit,
+                   model=model, shape=shape, horizon=horizon,
+                   nonneg=nonneg, nonpos=nonpos,
+                   complex=complex, imag=imag,
+                   symmetric=symmetric, diag=diag,
+                   psd=psd, nsd=nsd, hermitian=hermitian,
+                   bool=bool, integer=integer,
+                   pos=pos, neg=neg, )
 
         # add the variable as an routine attribute
         setattr(self, name, item)
