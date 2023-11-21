@@ -189,9 +189,13 @@ class Param(OptzBase):
 
     def update(self):
         """
-        Update the parameter value from RParam, MParam, or Service.
+        Update the Parameter value.
         """
+        # NOTE: skip no_parse parameters
+        if self.optz is None:
+            return None
         self.optz.value = self.v
+        return True
 
     def __repr__(self):
         return f'{self.__class__.__name__}: {self.name}'
@@ -745,20 +749,17 @@ class OModel:
         self.__register_attribute(__name, __value)
         super().__setattr__(__name, __value)
 
-    def update_param(self, params=Optional[Union[Param, str, list]]):
+    def update(self, params):
         """
         Update the Parameter values.
+
+        Parameters
+        ----------
+        params: list
+            List of parameters to be updated.
         """
-        if params is None:
-            for _, val in self.params.items():
-                val.update()
-        elif isinstance(params, Param):
-            params.update()
-        elif isinstance(params, str):
-            self.params[params].update()
-        elif isinstance(params, list):
-            for param in params:
-                param.update()
+        for param in params:
+            param.update()
         return True
 
     def __repr__(self) -> str:

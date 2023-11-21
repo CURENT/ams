@@ -289,7 +289,6 @@ class RoutineModel:
         no_code: bool
             Whether to show generated code.
         """
-        # TODO: add input check, e.g., if GCost exists
         if not force and self.initialized:
             logger.debug(f"{self.class_name} has already been initialized.")
             return True
@@ -299,7 +298,7 @@ class RoutineModel:
             msg = f"{self.class_name} data check failed, setup may run into error!"
             logger.warning(msg)
         self._constr_check()
-        # FIXME: build the system matrices every init might slow down the process
+        # FIXME: build the system matrices every init might slow down
         self.system.mats.make()
         results, elapsed_time = self.om.setup(no_code=no_code)
         common_msg = f"Routine <{self.class_name}> "
@@ -466,11 +465,55 @@ class RoutineModel:
         elif isinstance(value, RBaseService):
             self.services[key] = value
 
-    def update_param(self, params=Optional[Union[Param, str, list]]):
+    def update(self, params=None, mat_make=True,):
         """
-        Update parameters in the optimization model.
+        Update the values of Parameters in the optimization model.
+
+        This method is particularly important when some `RParams` are
+        linked with system matrices. 
+        In such cases, setting `mat_make=True` is necessary to rebuild
+        these matrices for the changes to take effect.
+        This is common in scenarios involving topology changes, connection statuses, 
+        or load value modifications.
+        If unsure, it is advisable to use `mat_make=True` as a precautionary measure.
+
+        Parameters
+        ----------
+        params: Parameter, str, or list
+            Parameter, Parameter name, or a list of parameter names to be updated.
+            If None, all parameters will be updated.
+        mat_make: bool
+            True to rebuild the system matrices. Set to False to speed up the process
+            if no system matrices are changed.
         """
-        return self.om.update_param(params=params)
+        t0, _ = elapsed()
+        re_setup = False
+        # sanitize input
+        sparams = []
+        if params is None:
+            sparams = [val for val in self.params.values()]
+            mat_make = True
+        elif isinstance(params, Param):
+            sparams = [params]
+        elif isinstance(params, str):
+            sparams = [self.params[params]]
+        elif isinstance(params, list):
+            sparams = [self.params[param] for param in params if isinstance(param, str)]
+            for param in params:
+                param.update()
+        for param in sparams:
+            if param.optz is None:  # means no_parse=True
+                re_setup = True
+                break
+        if mat_make:
+            self.system.mats.make()
+        if re_setup:
+            logger.warning(f"Resetup {self.class_name} OModel due to non-parametric change.")        
+            _, _ = self.om.setup(no_code=True)
+        results = self.om.update(params=sparams)
+        t0, s0 = elapsed(t0)
+        logger.debug(f"Update params in {s0}.")
+        return results
 
     def __delattr__(self, name):
         """
