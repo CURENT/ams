@@ -1,20 +1,19 @@
 """
-Module for optimization models.
+Module for optimization modeling.
 """
+import logging
 
-import logging  # NOQA
+from typing import Any, Optional, Union
+from collections import OrderedDict
+import re
 
-from typing import Any, Optional, Union  # NOQA
-from collections import OrderedDict  # NOQA
-import re  # NOQA
+import numpy as np
 
-import numpy as np  # NOQA
+from andes.core.common import Config
 
-from andes.core.common import Config  # NOQA
+from ams.utils import timer
 
-from ams.utils import timer  # NOQA
-
-import cvxpy as cp  # NOQA
+import cvxpy as cp
 
 logger = logging.getLogger(__name__)
 
@@ -98,28 +97,103 @@ class OptzBase:
 class Param(OptzBase):
     """
     Base class for parameters used in a routine.
+
+    Parameters
+    ----------
+    const: bool, optional
+        True to set the parameter as constant.
+    no_parse: bool, optional
+        True to skip parsing the parameter.
+    nonneg: bool, optional
+        True to set the parameter as non-negative.
+    nonpos: bool, optional
+        True to set the parameter as non-positive.
+    complex: bool, optional
+        True to set the parameter as complex.
+    imag: bool, optional
+        True to set the parameter as imaginary.
+    symmetric: bool, optional
+        True to set the parameter as symmetric.
+    diag: bool, optional
+        True to set the parameter as diagonal.
+    hermitian: bool, optional
+        True to set the parameter as hermitian.
+    boolean: bool, optional
+        True to set the parameter as boolean.
+    integer: bool, optional
+        True to set the parameter as integer.
+    pos: bool, optional
+        True to set the parameter as positive.
+    neg: bool, optional
+        True to set the parameter as negative.
+    sparsity: list, optional
+        Sparsity pattern of the parameter.
     """
 
     def __init__(self,
                  name: Optional[str] = None,
                  info: Optional[str] = None,
-                 src: Optional[str] = None,
                  unit: Optional[str] = None,
+                 no_parse: Optional[bool] = False,
+                 const: Optional[bool] = False,
+                 nonneg: Optional[bool] = False,
+                 nonpos: Optional[bool] = False,
+                 complex: Optional[bool] = False,
+                 imag: Optional[bool] = False,
+                 symmetric: Optional[bool] = False,
+                 diag: Optional[bool] = False,
+                 hermitian: Optional[bool] = False,
+                 boolean: Optional[bool] = False,
+                 integer: Optional[bool] = False,
+                 pos: Optional[bool] = False,
+                 neg: Optional[bool] = False,
+                 sparsity: Optional[list] = None,
                  ):
         OptzBase.__init__(self, name=name, info=info, unit=unit)
-        self.src = src
+        self.no_parse = no_parse  # True to skip parsing the parameter
+        self.sparsity = sparsity  # sparsity pattern
+
+        self.config = Config(name=self.class_name)  # `config` that can be exported
+
+        self.config.add(OrderedDict((('nonneg', nonneg),
+                                     ('nonpos', nonpos),
+                                     ('complex', complex),
+                                     ('imag', imag),
+                                     ('symmetric', symmetric),
+                                     ('diag', diag),
+                                     ('hermitian', hermitian),
+                                     ('boolean', boolean),
+                                     ('integer', integer),
+                                     ('pos', pos),
+                                     ('neg', neg),
+                                     ('const', const),
+                                     )))
 
     def parse(self):
         """
         Parse the parameter.
         """
+        config = self.config.as_dict()  # NOQA
         sub_map = self.om.rtn.syms.sub_map
-        code_param = f"tmp=param(shape={self.v.shape})"
+        if self.config.const:
+            code_param = "tmp=const(value=self.v)"
+        else:
+            shape = np.shape(self.v)
+            config.pop('const', None)
+            code_param = f"tmp=param(shape={shape}, **config)"
         for pattern, replacement, in sub_map.items():
             code_param = re.sub(pattern, replacement, code_param)
         exec(code_param)
-        exec("self.optz = tmp")
-        exec("self.optz.value = self.v")
+        exec("self.optz=tmp")
+        if not self.config.const:
+            try:
+                exec("self.optz.value = self.v")
+            except ValueError:
+                msg = f"Parameter <{self.name}> has non-numeric value, "
+                msg += "no_parse=True is applied."
+                logger.warning(msg)
+                self.no_parse = True
+                return False
         return True
 
     def update(self):
@@ -559,7 +633,7 @@ class Objective(OptzBase):
 
 
 class OModel:
-    r"""
+    """
     Base class for optimization models.
 
     Parameters
@@ -571,6 +645,8 @@ class OModel:
     ----------
     mdl: cvxpy.Problem
         Optimization model.
+    params: OrderedDict
+        Parameters.
     vars: OrderedDict
         Decision variables.
     constrs: OrderedDict
@@ -581,15 +657,12 @@ class OModel:
         Number of decision variables.
     m: int
         Number of constraints.
-
-    TODO:
-    - Add _check_attribute and _register_attribute for vars, constrs, and obj.
-    - Add support for user-defined vars, constrs, and obj.
     """
 
     def __init__(self, routine):
         self.rtn = routine
         self.mdl = None
+        self.consts = OrderedDict()
         self.params = OrderedDict()
         self.vars = OrderedDict()
         self.constrs = OrderedDict()
@@ -618,13 +691,16 @@ class OModel:
         """
         rtn = self.rtn
         rtn.syms.generate_symbols(force_generate=force_generate)
-        # TODO: add Service as cp.Parameter
         # --- add RParams and Services as parameters ---
-        # NOTE: items in ``rtn.params`` are not
-        # ``RParam`` or ``Service`` instances
-        for key, val in rtn.params.items():
+        # logger.debug(f"params: {rtn.params.keys()}")
+        for key, val in rtn.consts.items():
             val.parse()
             setattr(self, key, val.optz)
+        for key, val in rtn.params.items():
+            # logger.debug(f"Parsing param {key}")
+            if not val.no_parse:
+                val.parse()
+                setattr(self, key, val.optz)
         # --- add decision variables ---
         for key, val in rtn.vars.items():
             val.parse()
@@ -698,3 +774,6 @@ class OModel:
             for param in params:
                 param.update()
         return True
+
+    def __repr__(self) -> str:
+        return f'{self.rtn.class_name}.{self.__class__.__name__} at {hex(id(self))}'

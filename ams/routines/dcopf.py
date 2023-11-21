@@ -1,74 +1,18 @@
 """
-OPF routines.
+DCOPF routines.
 """
-import logging  # NOQA
+import logging
 
-import numpy as np  # NOQA
-from ams.core.param import RParam  # NOQA
-from ams.core.service import NumOp  # NOQA
+import numpy as np
+from ams.core.param import RParam
+from ams.core.service import NumOp
 
-from ams.routines.routine import RoutineData, RoutineModel  # NOQA
+from ams.routines.routine import RoutineModel
 
-from ams.opt.omodel import Var, Constraint, Objective  # NOQA
+from ams.opt.omodel import Var, Constraint, Objective
 
 
 logger = logging.getLogger(__name__)
-
-
-class DCOPFData(RoutineData):
-    """
-    DCOPF data.
-    """
-
-    def __init__(self):
-        RoutineData.__init__(self)
-        # --- generator cost ---
-        self.ug = RParam(info='Gen connection status',
-                         name='ug', tex_name=r'u_{g}',
-                         model='StaticGen', src='u',)
-        self.ctrl = RParam(info='Gen controllability',
-                           name='ctrl', tex_name=r'c_{trl}',
-                           model='StaticGen', src='ctrl',)
-        self.c2 = RParam(info='Gen cost coefficient 2',
-                         name='c2', tex_name=r'c_{2}',
-                         unit=r'$/(p.u.^2)', model='GCost',
-                         indexer='gen', imodel='StaticGen',)
-        self.c1 = RParam(info='Gen cost coefficient 1',
-                         name='c1', tex_name=r'c_{1}',
-                         unit=r'$/(p.u.)', model='GCost',
-                         indexer='gen', imodel='StaticGen',)
-        self.c0 = RParam(info='Gen cost coefficient 0',
-                         name='c0', tex_name=r'c_{0}',
-                         unit=r'$', model='GCost',
-                         indexer='gen', imodel='StaticGen',)
-        # --- generator limit ---
-        self.pmax = RParam(info='Gen maximum active power (system base)',
-                           name='pmax', tex_name=r'p_{max}',
-                           unit='p.u.', model='StaticGen',)
-        self.pmin = RParam(info='Gen minimum active power (system base)',
-                           name='pmin', tex_name=r'p_{min}',
-                           unit='p.u.', model='StaticGen',)
-        self.pg0 = RParam(info='Gen initial active power (system base)',
-                          name='p0', tex_name=r'p_{g,0}',
-                          unit='p.u.', model='StaticGen',)
-        self.Cg = RParam(info='connection matrix for Gen and Bus',
-                         name='Cg', tex_name=r'C_{g}',
-                         model='mats', src='Cg',)
-        self.Cft = RParam(info='connection matrix for Line and Bus',
-                          name='Cft', tex_name=r'C_{ft}',
-                          model='mats', src='Cft',)
-        # --- load ---
-        self.pl = RParam(info='nodal active load (system base)',
-                         name='pl', tex_name=r'p_{l}',
-                         model='mats', src='pl',
-                         unit='p.u.',)
-        # --- line ---
-        self.rate_a = RParam(info='long-term flow limit',
-                             name='rate_a', tex_name=r'R_{ATEA}',
-                             unit='MVA', model='Line',)
-        self.PTDF = RParam(info='Power transfer distribution factor matrix',
-                           name='PTDF', tex_name=r'P_{TDF}',
-                           model='mats', src='PTDF',)
 
 
 class DCOPFBase(RoutineModel):
@@ -80,6 +24,62 @@ class DCOPFBase(RoutineModel):
 
     def __init__(self, system, config):
         RoutineModel.__init__(self, system, config)
+        # --- generator cost ---
+        self.ug = RParam(info='Gen connection status',
+                         name='ug', tex_name=r'u_{g}',
+                         model='StaticGen', src='u',
+                         const=True)
+        self.ctrl = RParam(info='Gen controllability',
+                           name='ctrl', tex_name=r'c_{trl}',
+                           model='StaticGen', src='ctrl',
+                           no_parse=True)
+        self.c2 = RParam(info='Gen cost coefficient 2',
+                         name='c2', tex_name=r'c_{2}',
+                         unit=r'$/(p.u.^2)', model='GCost',
+                         indexer='gen', imodel='StaticGen',
+                         pos=True)
+        self.c1 = RParam(info='Gen cost coefficient 1',
+                         name='c1', tex_name=r'c_{1}',
+                         unit=r'$/(p.u.)', model='GCost',
+                         indexer='gen', imodel='StaticGen',)
+        self.c0 = RParam(info='Gen cost coefficient 0',
+                         name='c0', tex_name=r'c_{0}',
+                         unit=r'$', model='GCost',
+                         indexer='gen', imodel='StaticGen',
+                         const=True)
+        # --- generator limit ---
+        self.pmax = RParam(info='Gen maximum active power (system base)',
+                           name='pmax', tex_name=r'p_{max}',
+                           unit='p.u.', model='StaticGen',
+                           const=True,)
+        self.pmin = RParam(info='Gen minimum active power (system base)',
+                           name='pmin', tex_name=r'p_{min}',
+                           unit='p.u.', model='StaticGen',
+                           const=True,)
+        self.pg0 = RParam(info='Gen initial active power (system base)',
+                          name='p0', tex_name=r'p_{g,0}',
+                          unit='p.u.', model='StaticGen',)
+        self.Cg = RParam(info='connection matrix for Gen and Bus',
+                         name='Cg', tex_name=r'C_{g}',
+                         model='mats', src='Cg',
+                         const=True,)
+        self.Cft = RParam(info='connection matrix for Line and Bus',
+                          name='Cft', tex_name=r'C_{ft}',
+                          model='mats', src='Cft',
+                          const=True,)
+        # --- load ---
+        self.pl = RParam(info='nodal active load (system base)',
+                         name='pl', tex_name=r'p_{l}',
+                         model='mats', src='pl',
+                         unit='p.u.',)
+        # --- line ---
+        self.rate_a = RParam(info='long-term flow limit',
+                             name='rate_a', tex_name=r'R_{ATEA}',
+                             unit='MVA', model='Line')
+        self.PTDF = RParam(info='Power transfer distribution factor matrix',
+                           name='PTDF', tex_name=r'P_{TDF}',
+                           model='mats', src='PTDF',
+                           const=True,)
 
     def solve(self, **kwargs):
         """
@@ -158,9 +158,12 @@ class DCOPFBase(RoutineModel):
         return True
 
 
-class DCOPFModel(DCOPFBase):
+class DCOPF(DCOPFBase):
     """
-    DCOPF model.
+    Standard DC optimal power flow (DCOPF).
+
+    In this model, the bus injected power ``pn`` is used as internal variable
+    between generator output and load demand.
     """
 
     def __init__(self, system, config):
@@ -181,11 +184,10 @@ class DCOPFModel(DCOPFBase):
                        name='plf', tex_name=r'p_{lf}', unit='p.u.',
                        model='Line',)
         # --- constraints ---
-        self.CftT = NumOp(u=self.Cft,
-                          fun=np.transpose,
-                          name='CftT',
-                          tex_name=r'C_{ft}^{T}',
-                          info='transpose of connection matrix',)
+        self.CftT = NumOp(u=self.Cft, fun=np.transpose,
+                          name='CftT', tex_name=r'C_{ft}^{T}',
+                          info='transpose of connection matrix',
+                          const=True,)
         self.pb = Constraint(name='pb', info='power balance',
                              e_str='sum(pl) - sum(pg)',
                              type='eq',)
@@ -202,18 +204,7 @@ class DCOPFModel(DCOPFBase):
         # --- objective ---
         self.obj = Objective(name='tc',
                              info='total cost', unit='$',
-                             e_str='sum(c2 * pg**2 + c1 * pg + ug * c0)',
                              sense='min',)
-
-
-class DCOPF(DCOPFData, DCOPFModel):
-    """
-    Standard DC optimal power flow (DCOPF).
-
-    In this model, the bus injected power ``pn`` is used as internal variable
-    between generator output and load demand.
-    """
-
-    def __init__(self, system, config):
-        DCOPFData.__init__(self)
-        DCOPFModel.__init__(self, system, config)
+        self.obj.e_str = 'sum_squares(mul(c2, pg))' \
+                         '+ sum(mul(c1, pg))' \
+                         '+ sum(mul(ug, c0))'

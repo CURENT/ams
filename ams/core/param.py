@@ -3,20 +3,19 @@ Base class for parameters.
 """
 
 
-import logging  # NOQA
+import logging
 
-from typing import Optional  # NOQA
+from typing import Optional
+from collections import Iterable
 
-import numpy as np  # NOQA
-from scipy.sparse import issparse  # NOQA
+import numpy as np
+from scipy.sparse import issparse
 
-from andes.core.common import Config  # NOQA
 from andes.core import BaseParam, DataParam, IdxParam, NumParam, ExtParam  # NOQA
 from andes.models.group import GroupBase  # NOQA
 
 from ams.core.var import Algeb  # NOQA
-
-from ams.opt.omodel import Param  # NOQA
+from ams.opt.omodel import Param
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +24,23 @@ class RParam(Param):
     """
     Class for parameters used in a routine.
     This class is developed to simplify the routine definition.
+
+    `RParm` is further used to define `Parameter` or `Constant`
+    in the optimization model.
+
+    `no_parse` is used to skip parsing the `RParam` in optimization
+    model.
+    This is useful when the RParam contains non-numeric values,
+    or it is not necessary to be added to the optimization model.
+
+    `const` is used to define the parameter as a `Constant`,
+    otherwise it will be defined as a `Parameter`.
+    The key difference between `Parameter` and `Constant` in optimization
+    is that `Parameter` is mutable but `Constant` is not.
+
+    Note that if `const=True`, following input parameters will
+    be ignored: `nonneg`, `nonpos`, `complex`, `imag`, `symmetric`,
+    `diag`, `hermitian`, `boolean`, `integer`, `pos`, `neg`, `sparsity`.
 
     Parameters
     ----------
@@ -48,6 +64,34 @@ class RParam(Param):
         Indexer of the parameter.
     imodel : str, optional
         Name of the owner model or group of the indexer.
+    no_parse: bool, optional
+        True to skip parsing the parameter.
+    const: bool, optional
+        True to set the parameter as constant.
+    nonneg: bool, optional
+        True to set the parameter as non-negative.
+    nonpos: bool, optional
+        True to set the parameter as non-positive.
+    complex: bool, optional
+        True to set the parameter as complex.
+    imag: bool, optional
+        True to set the parameter as imaginary.
+    symmetric: bool, optional
+        True to set the parameter as symmetric.
+    diag: bool, optional
+        True to set the parameter as diagonal.
+    hermitian: bool, optional
+        True to set the parameter as hermitian.
+    boolean: bool, optional
+        True to set the parameter as boolean.
+    integer: bool, optional
+        True to set the parameter as integer.
+    pos: bool, optional
+        True to set the parameter as positive.
+    neg: bool, optional
+        True to set the parameter as negative.
+    sparsity: list, optional
+        Sparsity pattern of the parameter.
 
     Examples
     --------
@@ -80,9 +124,26 @@ class RParam(Param):
                  v: Optional[np.ndarray] = None,
                  indexer: Optional[str] = None,
                  imodel: Optional[str] = None,
+                 expand_dims: Optional[int] = None,
+                 no_parse: Optional[bool] = False,
+                 const: Optional[bool] = False,
+                 nonneg: Optional[bool] = False,
+                 nonpos: Optional[bool] = False,
+                 complex: Optional[bool] = False,
+                 imag: Optional[bool] = False,
+                 symmetric: Optional[bool] = False,
+                 diag: Optional[bool] = False,
+                 hermitian: Optional[bool] = False,
+                 boolean: Optional[bool] = False,
+                 integer: Optional[bool] = False,
+                 pos: Optional[bool] = False,
+                 neg: Optional[bool] = False,
+                 sparsity: Optional[list] = None,
                  ):
-        Param.__init__(self, name=name, info=info, src=src, unit=unit)
-
+        Param.__init__(self, const=const, nonneg=nonneg, nonpos=nonpos,
+                       complex=complex, imag=imag, symmetric=symmetric,
+                       diag=diag, hermitian=hermitian, boolean=boolean,
+                       integer=integer, pos=pos, neg=neg, sparsity=sparsity)
         self.name = name
         self.tex_name = tex_name if (tex_name is not None) else name
         self.info = info
@@ -92,6 +153,8 @@ class RParam(Param):
         self.model = model  # name of a group or model
         self.indexer = indexer  # name of the indexer
         self.imodel = imodel  # name of a group or model of the indexer
+        self.expand_dims = expand_dims
+        self.no_parse = no_parse
         self.owner = None  # instance of the owner model or group
         self.rtn = None  # instance of the owner routine
         self.is_ext = False  # indicate if the value is set externally
@@ -109,18 +172,19 @@ class RParam(Param):
         - This property is a wrapper for the ``get`` method of the owner class.
         - The value will sort by the indexer if indexed, used for optmization modeling.
         """
+        out = None
         if self.indexer is None:
             if self.is_ext:
                 if issparse(self._v):
-                    return self._v.toarray()
+                    out = self._v.toarray()
                 else:
-                    return self._v
+                    out = self._v
             elif self.is_group:
-                return self.owner.get(src=self.src, attr='v',
-                                      idx=self.owner.get_idx())
+                out = self.owner.get(src=self.src, attr='v',
+                                     idx=self.owner.get_idx())
             else:
                 src_param = getattr(self.owner, self.src)
-                return getattr(src_param, 'v')
+                out = getattr(src_param, 'v')
         else:
             try:
                 imodel = getattr(self.rtn.system, self.imodel)
@@ -133,15 +197,29 @@ class RParam(Param):
             except Exception as e:
                 raise e
             model = getattr(self.rtn.system, self.model)
-            sorted_v = model.get(src=self.src, attr='v', idx=sorted_idx)
-            return sorted_v
+            out = model.get(src=self.src, attr='v', idx=sorted_idx)
+        if self.expand_dims is not None:
+            out = np.expand_dims(out, axis=self.expand_dims)
+        return out
 
     @property
     def shape(self):
         """
         Return the shape of the parameter.
         """
-        return self.v.shape
+        return np.shape(self.v)
+
+    @property
+    def dtype(self):
+        """
+        Return the data type of the parameter value.
+        """
+        if isinstance(self.v, (str, bytes)):
+            return str
+        elif isinstance(self.v, Iterable):
+            return type(self.v[0])
+        else:
+            return type(self.v)
 
     @property
     def n(self):

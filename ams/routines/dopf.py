@@ -1,33 +1,43 @@
 """
 Distributional optimal power flow (DOPF).
 """
-import numpy as np  # NOQA
+import numpy as np
 
-from ams.core.param import RParam  # NOQA
-from ams.core.service import NumOp  # NOQA
+from ams.core.param import RParam
+from ams.core.service import NumOp
 
-from ams.routines.dcopf import DCOPFData, DCOPFModel  # NOQA
+from ams.routines.dcopf import DCOPF
 
-from ams.opt.omodel import Var, Constraint, Objective  # NOQA
+from ams.opt.omodel import Var, Constraint, Objective
 
 
-class DOPFData(DCOPFData):
+class LDOPF(DCOPF):
     """
-    Data for DOPF.
+    Linearzied distribution OPF, where power loss are ignored.
+
+    Reference:
+
+    [1] L. Bai, J. Wang, C. Wang, C. Chen, and F. Li, “Distribution Locational Marginal Pricing (DLMP)
+    for Congestion Management and Voltage Support,” IEEE Trans. Power Syst., vol. 33, no. 4,
+    pp. 4061–4073, Jul. 2018, doi: 10.1109/TPWRS.2017.2767632.
     """
 
-    def __init__(self):
-        DCOPFData.__init__(self)
+    def __init__(self, system, config):
+        DCOPF.__init__(self, system, config)
+        self.info = 'Linearzied distribution OPF'
+        self.type = 'DED'
+
+        # --- params ---
         self.ql = RParam(info='reactive power demand connected to Bus (system base)',
                          name='ql', tex_name=r'q_{l}', unit='p.u.',
                          model='mats', src='ql',)
         self.vmax = RParam(info="Bus voltage upper limit",
                            name='vmax', tex_name=r'v_{max}', unit='p.u.',
-                           model='Bus', src='vmax',
+                           model='Bus', src='vmax', no_parse=True,
                            )
         self.vmin = RParam(info="Bus voltage lower limit",
                            name='vmin', tex_name=r'v_{min}', unit='p.u.',
-                           model='Bus', src='vmin', )
+                           model='Bus', src='vmin', no_parse=True,)
         self.r = RParam(info='line resistance',
                         name='r', tex_name='r', unit='p.u.',
                         model='Line', src='r')
@@ -40,17 +50,6 @@ class DOPFData(DCOPFData):
         self.qmin = RParam(info='generator minimum reactive power (system base)',
                            name='qmin', tex_name=r'q_{min}', unit='p.u.',
                            model='StaticGen', src='qmin',)
-
-
-class LDOPFModel(DCOPFModel):
-    """
-    Linearzied distribution OPF model.
-    """
-
-    def __init__(self, system, config):
-        DCOPFModel.__init__(self, system, config)
-        self.info = 'Linearzied distribution OPF'
-        self.type = 'DED'
         # --- vars ---
         self.qg = Var(info='Gen reactive power (system base)',
                       name='qg', tex_name=r'q_{g}', unit='p.u.',
@@ -77,11 +76,6 @@ class LDOPFModel(DCOPFModel):
                        model='Line',)
 
         # --- constraints ---
-        self.CftT = NumOp(u=self.Cft,
-                          fun=np.transpose,
-                          name='CftT',
-                          tex_name=r'C_{ft}^{T}',
-                          info='transpose of connection matrix',)
         self.pinj.e_str = 'CftT@plf - pl - pn'
         self.qinj = Constraint(name='qinj',
                                info='node reactive power injection',
@@ -106,9 +100,12 @@ class LDOPFModel(DCOPFModel):
         self.system.Bus.set(src='v', attr='v', value=vBus, idx=self.vsq.get_idx())
 
 
-class LDOPF(DOPFData, LDOPFModel):
+class LDOPF2(LDOPF):
     """
-    Linearzied distribution OPF, where power loss are ignored.
+    Linearzied distribution OPF with variables for virtual inertia and damping from from REGCV1,
+    where power loss are ignored.
+
+    ERROR: the formulation is problematic, check later.
 
     Reference:
 
@@ -118,17 +115,9 @@ class LDOPF(DOPFData, LDOPFModel):
     """
 
     def __init__(self, system, config):
-        DOPFData.__init__(self)
-        LDOPFModel.__init__(self, system, config)
+        LDOPF.__init__(self, system, config)
 
-
-class DOPF2Data(DOPFData):
-    """
-    Data for DOPF with PFRCost for virtual inertia and damping from REGCV1.
-    """
-
-    def __init__(self):
-        DOPFData.__init__(self)
+        # --- params ---
         self.cm = RParam(info='Virtual inertia cost',
                          name='cm', src='cm',
                          tex_name=r'c_{m}', unit=r'$/s',
@@ -139,15 +128,6 @@ class DOPF2Data(DOPFData):
                          tex_name=r'c_{d}', unit=r'$/(p.u.)',
                          model='REGCV1Cost',
                          indexer='reg', imodel='REGCV1',)
-
-
-class LDOPF2Model(LDOPFModel):
-    """
-    Linearzied distribution OPF model with VSG.
-    """
-
-    def __init__(self, system, config):
-        LDOPFModel.__init__(self, system, config)
         # --- vars ---
         self.M = Var(info='Emulated startup time constant (M=2H) from REGCV1',
                      name='M', tex_name=r'M', unit='s',
@@ -159,20 +139,3 @@ class LDOPF2Model(LDOPFModel):
                              info='total cost', unit='$',
                              e_str='sum(c2 * pg**2 + c1 * pg + ug * c0 + cm * M + cd * D)',
                              sense='min',)
-
-
-class LDOPF2(DOPF2Data, LDOPF2Model):
-    """
-    Linearzied distribution OPF with variables for virtual inertia and damping from from REGCV1,
-    where power loss are ignored.
-
-    Reference:
-
-    [1] L. Bai, J. Wang, C. Wang, C. Chen, and F. Li, “Distribution Locational Marginal Pricing (DLMP)
-    for Congestion Management and Voltage Support,” IEEE Trans. Power Syst., vol. 33, no. 4,
-    pp. 4061–4073, Jul. 2018, doi: 10.1109/TPWRS.2017.2767632.
-    """
-
-    def __init__(self, system, config):
-        DOPF2Data.__init__(self)
-        LDOPF2Model.__init__(self, system, config)

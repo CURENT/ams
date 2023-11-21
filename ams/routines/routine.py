@@ -32,10 +32,7 @@ class RoutineData:
     """
 
     def __init__(self):
-        self.rparams = OrderedDict()  # list out RParam in a routine
-        self.params = OrderedDict()  # list out Params in a routine
-        # --- optimization modeling ---
-        self.om = OModel(routine=self)
+        pass
 
 
 class RoutineModel:
@@ -56,8 +53,10 @@ class RoutineModel:
         self.syms = SymProcessor(self)  # symbolic processor
         self._syms = False  # flag if symbols has been generated
 
+        self.rparams = OrderedDict()  # list out RParam in a routine
         self.services = OrderedDict()  # list out services in a routine
 
+        self.consts = OrderedDict()  # list out Consts in a routine
         self.params = OrderedDict()  # list out Params in a routine
         self.vars = OrderedDict()  # list out Vars in a routine
         self.constrs = OrderedDict()
@@ -269,6 +268,10 @@ class RoutineModel:
                 if rparam.owner.n == 0:
                     no_input.append(rname)
                     owner_list.append(rparam.owner.class_name)
+            # TODO: add more data config check?
+            if rparam.config.pos:
+                if not np.all(rparam.v > 0):
+                    logger.warning(f"RParam <{rname}> should have all positive values.")
         if len(no_input) > 0:
             msg = f"Following models are missing in input: {set(owner_list)}"
             logger.warning(msg)
@@ -409,7 +412,7 @@ class RoutineModel:
         """
         if key in self.__dict__:
             existing_keys = []
-            for type in ["constrs", "vars", "rparams"]:
+            for type in ["constrs", "vars", "rparams", "services"]:
                 if type in self.__dict__:
                     existing_keys += list(self.__dict__[type].keys())
             if key in existing_keys:
@@ -435,8 +438,6 @@ class RoutineModel:
         # NOTE: value.id is not in use yet
         if isinstance(value, Var):
             value.id = len(self.vars)
-        elif isinstance(value, RParam):
-            value.id = len(self.rparams)
         self._check_attribute(key, value)
         self._register_attribute(key, value)
 
@@ -452,6 +453,13 @@ class RoutineModel:
         if isinstance(value, (Param, Var, Constraint, Objective)):
             value.om = self.om
             value.rtn = self
+        if isinstance(value, Param):
+            if value.config.const:
+                self.consts[key] = value
+                self.om.consts[key] = None  # cp.Constant
+            else:
+                self.params[key] = value
+                self.om.params[key] = None  # cp.Parameter
         if isinstance(value, Var):
             self.vars[key] = value
             self.om.vars[key] = None  # cp.Variable
@@ -460,12 +468,8 @@ class RoutineModel:
             self.om.constrs[key] = None  # cp.Constraint
         elif isinstance(value, RParam):
             self.rparams[key] = value
-            self.params[key] = value
-            self.om.params[key] = None  # cp.Parameter
         elif isinstance(value, RBaseService):
             self.services[key] = value
-            self.params[key] = value
-            self.om.params[key] = None  # cp.Parameter
 
     def update_param(self, params=Optional[Union[Param, str, list]]):
         """

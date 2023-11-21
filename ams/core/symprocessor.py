@@ -66,6 +66,7 @@ class SymProcessor:
             (r'\bsum\b', f'{lang}.sum'),
             (r'\bvar\b', f'{lang}.Variable'),
             (r'\bparam\b', f'{lang}.Parameter'),
+            (r'\bconst\b', f'{lang}.Constant'),
             (r'\bproblem\b', f'{lang}.Problem'),
             (r'\bmultiply\b', f'{lang}.multiply'),
             (r'\bmul\b', f'{lang}.multiply'),  # alias for multiply
@@ -74,6 +75,11 @@ class SymProcessor:
             (r'\bpos\b', f'{lang}.pos'),
             (r'\bpower\b', f'{lang}.power'),
             (r'\bsign\b', f'{lang}.sign'),
+            (r'\bsquare\b', f'{lang}.square'),
+            (r'\bquad_over_lin\b', f'{lang}.quad_over_lin'),
+            (r'\bdiag\b', f'{lang}.diag'),
+            (r'\bquad_form\b', f'{lang}.quad_form'),
+            (r'\bsum_squares\b', f'{lang}.sum_squares'),
         ])
 
         self.tex_map = OrderedDict([
@@ -125,7 +131,8 @@ class SymProcessor:
         for rpname, rparam in self.parent.rparams.items():
             tmp = sp.symbols(f'{rparam.name}')
             self.inputs_dict[rpname] = tmp
-            self.sub_map[rf"\b{rpname}\b"] = f'self.om.rtn.{rpname}.v'
+            sub_name = f'self.rtn.{rpname}.v' if rparam.no_parse else f'self.om.{rpname}'
+            self.sub_map[rf"\b{rpname}\b"] = sub_name
             self.tex_map[rf"\b{rpname}\b"] = f'{rparam.tex_name}'
 
         # Routine Services
@@ -133,7 +140,8 @@ class SymProcessor:
             tmp = sp.symbols(f'{service.name}')
             self.services_dict[sname] = tmp
             self.inputs_dict[sname] = tmp
-            self.sub_map[rf"\b{sname}\b"] = f'self.om.rtn.{sname}.v'
+            sub_name = f'self.rtn.{sname}.v' if service.no_parse else f'self.om.{sname}'
+            self.sub_map[rf"\b{sname}\b"] = sub_name
             self.tex_map[rf"\b{sname}\b"] = f'{service.tex_name}'
 
         # store tex names defined in `self.config`
