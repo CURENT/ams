@@ -82,7 +82,7 @@ class ED(RTED):
         self.Cl = RParam(info='connection matrix for Load and Bus',
                          name='Cl', tex_name=r'C_{l}',
                          model='mats', src='Cl',
-                         const=True,)
+                         no_parse=True,)
         self.zl = RParam(info='zone of load',
                          name='zl', tex_name=r'z_{l}',
                          model='StaticLoad', src='zone',
@@ -132,7 +132,7 @@ class ED(RTED):
         self.Cli = NumOp(u=self.Cl, fun=np.linalg.pinv,
                          name='Cli', tex_name=r'C_{l}^{-1}',
                          info='inverse of Cl',
-                         const=True)
+                         no_parse=True)
         self.Rpd = LoadScale(u=self.zl, sd=self.sd, Cl=self.Cl,
                              name='Rpd', tex_name=r'p_{d,R}',
                              info='Scaled nodal load',)

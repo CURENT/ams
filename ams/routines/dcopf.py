@@ -28,7 +28,7 @@ class DCOPFBase(RoutineModel):
         self.ug = RParam(info='Gen connection status',
                          name='ug', tex_name=r'u_{g}',
                          model='StaticGen', src='u',
-                         const=True)
+                         no_parse=True)
         self.ctrl = RParam(info='Gen controllability',
                            name='ctrl', tex_name=r'c_{trl}',
                            model='StaticGen', src='ctrl',
@@ -46,27 +46,27 @@ class DCOPFBase(RoutineModel):
                          name='c0', tex_name=r'c_{0}',
                          unit=r'$', model='GCost',
                          indexer='gen', imodel='StaticGen',
-                         const=True)
+                         no_parse=True)
         # --- generator limit ---
         self.pmax = RParam(info='Gen maximum active power (system base)',
                            name='pmax', tex_name=r'p_{max}',
                            unit='p.u.', model='StaticGen',
-                           const=True,)
+                           no_parse=True,)
         self.pmin = RParam(info='Gen minimum active power (system base)',
                            name='pmin', tex_name=r'p_{min}',
                            unit='p.u.', model='StaticGen',
-                           const=True,)
+                           no_parse=True,)
         self.pg0 = RParam(info='Gen initial active power (system base)',
                           name='p0', tex_name=r'p_{g,0}',
                           unit='p.u.', model='StaticGen',)
         self.Cg = RParam(info='connection matrix for Gen and Bus',
                          name='Cg', tex_name=r'C_{g}',
                          model='mats', src='Cg',
-                         const=True,)
+                         no_parse=True,)
         self.Cft = RParam(info='connection matrix for Line and Bus',
                           name='Cft', tex_name=r'C_{ft}',
                           model='mats', src='Cft',
-                          const=True,)
+                          no_parse=True,)
         # --- load ---
         self.pl = RParam(info='nodal active load (system base)',
                          name='pl', tex_name=r'p_{l}',
@@ -79,7 +79,7 @@ class DCOPFBase(RoutineModel):
         self.PTDF = RParam(info='Power transfer distribution factor matrix',
                            name='PTDF', tex_name=r'P_{TDF}',
                            model='mats', src='PTDF',
-                           const=True,)
+                           no_parse=True,)
 
     def solve(self, **kwargs):
         """
@@ -187,7 +187,7 @@ class DCOPF(DCOPFBase):
         self.CftT = NumOp(u=self.Cft, fun=np.transpose,
                           name='CftT', tex_name=r'C_{ft}^{T}',
                           info='transpose of connection matrix',
-                          const=True,)
+                          no_parse=True,)
         self.pb = Constraint(name='pb', info='power balance',
                              e_str='sum(pl) - sum(pg)',
                              type='eq',)
