@@ -25,22 +25,13 @@ class RParam(Param):
     Class for parameters used in a routine.
     This class is developed to simplify the routine definition.
 
-    `RParm` is further used to define `Parameter` or `Constant`
-    in the optimization model.
+    `RParm` is further used to define `Parameter` in the optimization model.
 
     `no_parse` is used to skip parsing the `RParam` in optimization
     model.
+    It means that the `RParam` will not be added to the optimization model.
     This is useful when the RParam contains non-numeric values,
     or it is not necessary to be added to the optimization model.
-
-    `const` is used to define the parameter as a `Constant`,
-    otherwise it will be defined as a `Parameter`.
-    The key difference between `Parameter` and `Constant` in optimization
-    is that `Parameter` is mutable but `Constant` is not.
-
-    Note that if `const=True`, following input parameters will
-    be ignored: `nonneg`, `nonpos`, `complex`, `imag`, `symmetric`,
-    `diag`, `hermitian`, `boolean`, `integer`, `pos`, `neg`, `sparsity`.
 
     Parameters
     ----------
@@ -66,8 +57,6 @@ class RParam(Param):
         Name of the owner model or group of the indexer.
     no_parse: bool, optional
         True to skip parsing the parameter.
-    const: bool, optional
-        True to set the parameter as constant.
     nonneg: bool, optional
         True to set the parameter as non-negative.
     nonpos: bool, optional
@@ -126,7 +115,6 @@ class RParam(Param):
                  imodel: Optional[str] = None,
                  expand_dims: Optional[int] = None,
                  no_parse: Optional[bool] = False,
-                 const: Optional[bool] = False,
                  nonneg: Optional[bool] = False,
                  nonpos: Optional[bool] = False,
                  complex: Optional[bool] = False,
@@ -140,7 +128,7 @@ class RParam(Param):
                  neg: Optional[bool] = False,
                  sparsity: Optional[list] = None,
                  ):
-        Param.__init__(self, const=const, nonneg=nonneg, nonpos=nonpos,
+        Param.__init__(self, nonneg=nonneg, nonpos=nonpos,
                        complex=complex, imag=imag, symmetric=symmetric,
                        diag=diag, hermitian=hermitian, boolean=boolean,
                        integer=integer, pos=pos, neg=neg, sparsity=sparsity)

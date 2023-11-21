@@ -56,7 +56,6 @@ class RoutineModel:
         self.rparams = OrderedDict()  # list out RParam in a routine
         self.services = OrderedDict()  # list out services in a routine
 
-        self.consts = OrderedDict()  # list out Consts in a routine
         self.params = OrderedDict()  # list out Params in a routine
         self.vars = OrderedDict()  # list out Vars in a routine
         self.constrs = OrderedDict()
@@ -454,12 +453,8 @@ class RoutineModel:
             value.om = self.om
             value.rtn = self
         if isinstance(value, Param):
-            if value.config.const:
-                self.consts[key] = value
-                self.om.consts[key] = None  # cp.Constant
-            else:
-                self.params[key] = value
-                self.om.params[key] = None  # cp.Parameter
+            self.params[key] = value
+            self.om.params[key] = None  # cp.Parameter
         if isinstance(value, Var):
             self.vars[key] = value
             self.om.vars[key] = None  # cp.Variable

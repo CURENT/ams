@@ -45,10 +45,9 @@ class RBaseService(BaseService, Param):
                  info: str = None,
                  vtype: Type = None,
                  no_parse: bool = False,
-                 const: bool = False,
                  ):
         Param.__init__(self, name=name, unit=unit, info=info,
-                       no_parse=no_parse, const=const)
+                       no_parse=no_parse)
         BaseService.__init__(self, name=name, tex_name=tex_name, unit=unit,
                              info=info, vtype=vtype)
         self.export = False
@@ -127,11 +126,10 @@ class ValueService(RBaseService):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 const: bool = False,
                  no_parse: bool = False,
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, const=const,
+                         info=info, vtype=vtype,
                          no_parse=no_parse)
         self._v = value
 
@@ -172,10 +170,9 @@ class ROperationService(RBaseService):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 const: bool = False,
                  no_parse: bool = False,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, const=const,
+                         info=info, vtype=vtype,
                          no_parse=no_parse)
         self.u = u
 
@@ -210,12 +207,11 @@ class LoadScale(ROperationService):
                  tex_name: str = None,
                  unit: str = None,
                  info: str = None,
-                 const: bool = False,
                  no_parse: bool = False,
                  ):
         tex_name = tex_name if tex_name is not None else u.tex_name
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, u=u, const=const, no_parse=no_parse)
+                         info=info, u=u, no_parse=no_parse)
         self.sd = sd
         self.Cl = Cl
 
@@ -278,12 +274,11 @@ class NumOp(ROperationService):
                  rargs: dict = {},
                  expand_dims: int = None,
                  array_out=True,
-                 const: bool = False,
                  no_parse: bool = False,):
         tex_name = tex_name if tex_name is not None else u.tex_name
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, u=u,
-                         const=const, no_parse=no_parse)
+                         no_parse=no_parse)
         self.fun = fun
         self.args = args
         self.rfun = rfun
@@ -352,12 +347,11 @@ class NumExpandDim(NumOp):
                  info: str = None,
                  vtype: Type = None,
                  array_out: bool = True,
-                 const: bool = False,
                  no_parse: bool = False,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=np.expand_dims, args=args,
-                         array_out=array_out, const=const,
+                         array_out=array_out,
                          no_parse=no_parse)
         self.axis = axis
 
@@ -417,7 +411,6 @@ class NumOpDual(NumOp):
                  rargs: dict = {},
                  expand_dims: int = None,
                  array_out=True,
-                 const: bool = False,
                  no_parse: bool = False,):
         tex_name = tex_name if tex_name is not None else u.tex_name
         super().__init__(name=name, tex_name=tex_name, unit=unit,
@@ -425,7 +418,7 @@ class NumOpDual(NumOp):
                          u=u, fun=fun, args=args,
                          rfun=rfun, rargs=rargs,
                          expand_dims=expand_dims,
-                         array_out=array_out, const=const,
+                         array_out=array_out,
                          no_parse=no_parse)
         self.u2 = u2
 
@@ -467,14 +460,13 @@ class MinDur(NumOpDual):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 const: bool = False,
                  no_parse: bool = False,):
         tex_name = tex_name if tex_name is not None else u.tex_name
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, u2=u2, fun=None, args=None,
                          rfun=None, rargs=None,
-                         expand_dims=None, const=const,
+                         expand_dims=None,
                          no_parse=no_parse)
         if self.u.horizon is None:
             msg = f'{self.class_name} {self.name}.u {self.u.name} has no horizon, likely a modeling error.'
@@ -537,12 +529,11 @@ class NumHstack(NumOp):
                  vtype: Type = None,
                  rfun: Callable = None,
                  rargs: dict = {},
-                 const: bool = False,
                  no_parse: bool = False,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=np.hstack, args=args,
-                         rfun=rfun, rargs=rargs, const=const,
+                         rfun=rfun, rargs=rargs,
                          no_parse=no_parse)
         self.ref = ref
 
@@ -621,14 +612,13 @@ class ZonalSum(NumOp):
                  vtype: Type = None,
                  rfun: Callable = None,
                  rargs: dict = {},
-                 const: bool = False,
                  no_parse: bool = False,
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=None, args={},
                          rfun=rfun, rargs=rargs,
-                         const=const, no_parse=no_parse)
+                         no_parse=no_parse)
         self.zone = zone
 
     @property
@@ -705,14 +695,13 @@ class VarSelect(NumOp):
                  rfun: Callable = None,
                  rargs: dict = {},
                  array_out: bool = True,
-                 const: bool = False,
                  no_parse: bool = False,
                  **kwargs
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, u=u, fun=None,
                          rfun=rfun, rargs=rargs, array_out=array_out,
-                         const=const, no_parse=no_parse,
+                         no_parse=no_parse,
                          **kwargs)
         self.indexer = indexer
         self.gamma = gamma
@@ -796,14 +785,13 @@ class VarReduction(NumOp):
                  vtype: Type = None,
                  rfun: Callable = None,
                  rargs: dict = {},
-                 const: bool = False,
                  no_parse: bool = False,
                  **kwargs
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=None, rfun=rfun, rargs=rargs,
-                         const=const, no_parse=no_parse,
+                         no_parse=no_parse,
                          **kwargs)
         self.fun = fun
 
@@ -852,13 +840,12 @@ class RampSub(NumOp):
                  vtype: Type = None,
                  rfun: Callable = None,
                  rargs: dict = {},
-                 const: bool = False,
                  no_parse: bool = False,
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=None, rfun=rfun, rargs=rargs,
-                         const=const, no_parse=no_parse,)
+                         no_parse=no_parse,)
 
     @property
     def v0(self):

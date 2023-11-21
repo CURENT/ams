@@ -277,7 +277,7 @@ class ESD1Base:
         self.En = RParam(info='Rated energy capacity',
                          name='En', src='En',
                          tex_name='E_n', unit='MWh',
-                         model='ESD1', const=True,)
+                         model='ESD1', no_parse=True,)
         self.SOCmin = RParam(info='Minimum required value for SOC in limiter',
                              name='SOCmin', src='SOCmin',
                              tex_name='SOC_{min}', unit='%',
@@ -293,7 +293,7 @@ class ESD1Base:
         self.EtaC = RParam(info='Efficiency during charging',
                            name='EtaC', src='EtaC',
                            tex_name=r'\eta_c', unit='%',
-                           model='ESD1', const=True,)
+                           model='ESD1', no_parse=True,)
         self.EtaD = RParam(info='Efficiency during discharging',
                            name='EtaD', src='EtaD',
                            tex_name=r'\eta_d', unit='%',
@@ -321,7 +321,7 @@ class ESD1Base:
         self.ce = VarSelect(u=self.pg, indexer='gene',
                             name='ce', tex_name=r'C_{E}',
                             info='Select zue from pg',
-                            gamma='gammape', const=True,)
+                            gamma='gammape', no_parse=True,)
         self.pce = Var(info='ESD1 charging power (system base)',
                        unit='p.u.', name='pce', tex_name=r'p_{c,E}',
                        model='ESD1', nonneg=True,)
