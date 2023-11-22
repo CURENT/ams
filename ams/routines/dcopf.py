@@ -5,7 +5,7 @@ import logging
 
 import numpy as np
 from ams.core.param import RParam
-from ams.core.service import NumOp, VarSelect, NumOpDual
+from ams.core.service import NumOp
 
 from ams.routines.routine import RoutineModel
 
@@ -33,6 +33,10 @@ class DCOPFBase(RoutineModel):
                            name='ctrl', tex_name=r'c_{trl}',
                            model='StaticGen', src='ctrl',
                            no_parse=True)
+        self.nctrl = NumOp(u=self.ctrl, fun=np.logical_not,
+                           name='nctrl', tex_name=r'-c_{trl}',
+                           info='gen uncontrollability',
+                           no_parse=True,)
         self.c2 = RParam(info='Gen cost coefficient 2',
                          name='c2', tex_name=r'c_{2}',
                          unit=r'$/(p.u.^2)', model='GCost',
@@ -59,10 +63,6 @@ class DCOPFBase(RoutineModel):
         self.pg0 = RParam(info='Gen initial active power',
                           name='p0', tex_name=r'p_{g,0}',
                           unit='p.u.', model='StaticGen',)
-        self.idxg = RParam(info='Gen bus',
-                           name='idxg', tex_name=r'idx_{g}',
-                           model='StaticGen', src='bus',
-                           no_parse=True,)
 
         # --- load ---
         self.pd = RParam(info='nodal active demand',
@@ -92,6 +92,15 @@ class DCOPFBase(RoutineModel):
                          name='Cl', tex_name=r'C_{l}',
                          model='mats', src='Cl',
                          no_parse=True,)
+        self.Cft = RParam(info='Line connection matrix',
+                          name='Cft', tex_name=r'C_{ft}',
+                          model='mats', src='Cft',
+                          no_parse=True,)
+        self.PTDF = RParam(info='Power Transfer Distribution Factor',
+                           name='PTDF', tex_name=r'PTDF',
+                           model='mats', src='PTDF',
+                           no_parse=True,)
+
         self.Cgi = NumOp(u=self.Cg, fun=np.linalg.pinv,
                          name='Cgi', tex_name=r'C_{g}^{-1}',
                          info='inverse of Cg',
@@ -101,14 +110,6 @@ class DCOPFBase(RoutineModel):
                          info='inverse of Cl',
                          no_parse=True,)
 
-        self.Cft = RParam(info='Line connection matrix',
-                          name='Cft', tex_name=r'C_{ft}',
-                          model='mats', src='Cft',
-                          no_parse=True,)
-        self.PTDF = RParam(info='Power Transfer Distribution Factor',
-                           name='PTDF', tex_name=r'PTDF',
-                           model='mats', src='PTDF',
-                           no_parse=True,)
 
     def solve(self, **kwargs):
         """
@@ -206,10 +207,6 @@ class DCOPF(DCOPFBase):
                       model='StaticGen', src='p',
                       v0=self.pg0)
         # NOTE: `ug*pmin` results in unexpected error
-        self.nctrl = NumOp(u=self.ctrl, fun=np.logical_not,
-                           name='nctrl', tex_name=r'-c_{trl}',
-                           info='gen uncontrollability',
-                           no_parse=True,)
         pglb = '-pg + mul(nctrl, pg0) + mul(ctrl, mul(ug, pmin))'
         self.pglb = Constraint(name='pglb', info='pg min',
                                e_str=pglb, type='uq',)
@@ -244,10 +241,6 @@ class DCOPF(DCOPFBase):
                               info='nodal power injection',
                               e_str='PTDF@(Cgi@pg - Cli@pd) - plf',)
 
-        # self.pinj = Constraint(name='pinj',
-        #                        info='nodal power injection',
-        #                        e_str='CftT@plf - pl - pn',
-        #                        type='eq',)
         # --- objective ---
         self.obj = Objective(name='tc',
                              info='total cost', unit='$',
