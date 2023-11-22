@@ -5,7 +5,7 @@ import logging
 
 import numpy as np
 from ams.core.param import RParam
-from ams.core.service import NumOp
+from ams.core.service import NumOp, VarSelect, NumOpDual
 
 from ams.routines.routine import RoutineModel
 
@@ -47,39 +47,68 @@ class DCOPFBase(RoutineModel):
                          unit=r'$', model='GCost',
                          indexer='gen', imodel='StaticGen',
                          no_parse=True)
-        # --- generator limit ---
-        self.pmax = RParam(info='Gen maximum active power (system base)',
+        # --- generator ---
+        self.pmax = RParam(info='Gen maximum active power',
                            name='pmax', tex_name=r'p_{max}',
                            unit='p.u.', model='StaticGen',
                            no_parse=False,)
-        self.pmin = RParam(info='Gen minimum active power (system base)',
+        self.pmin = RParam(info='Gen minimum active power',
                            name='pmin', tex_name=r'p_{min}',
                            unit='p.u.', model='StaticGen',
                            no_parse=False,)
-        self.pg0 = RParam(info='Gen initial active power (system base)',
+        self.pg0 = RParam(info='Gen initial active power',
                           name='p0', tex_name=r'p_{g,0}',
                           unit='p.u.', model='StaticGen',)
-        self.Cg = RParam(info='connection matrix for Gen and Bus',
-                         name='Cg', tex_name=r'C_{g}',
-                         model='mats', src='Cg',
-                         no_parse=True,)
-        self.Cft = RParam(info='connection matrix for Line and Bus',
-                          name='Cft', tex_name=r'C_{ft}',
-                          model='mats', src='Cft',
-                          no_parse=True,)
+        self.idxg = RParam(info='Gen bus',
+                           name='idxg', tex_name=r'idx_{g}',
+                           model='StaticGen', src='bus',
+                           no_parse=True,)
+
         # --- load ---
-        self.pl = RParam(info='nodal active load (system base)',
-                         name='pl', tex_name=r'p_{l}',
-                         model='mats', src='pl',
+        self.pd = RParam(info='nodal active demand',
+                         name='pd', tex_name=r'p_{d}',
+                         model='StaticLoad', src='p0',
                          unit='p.u.',)
+
         # --- line ---
+        self.x = RParam(info='line reactance',
+                        name='x', tex_name=r'x',
+                        model='Line', src='x',
+                        unit='p.u.', no_parse=True,)
         self.rate_a = RParam(info='long-term flow limit',
                              name='rate_a', tex_name=r'R_{ATEA}',
                              unit='MVA', model='Line')
-        self.PTDF = RParam(info='Power transfer distribution factor matrix',
-                           name='PTDF', tex_name=r'P_{TDF}',
+
+        # --- connection matrix ---
+        self.Cg = RParam(info='Gen connection matrix',
+                         name='Cg', tex_name=r'C_{g}',
+                         model='mats', src='Cg',
+                         no_parse=True,)
+        self.Cs = RParam(info='Slack connection matrix',
+                         name='Cs', tex_name=r'C_{s}',
+                         model='mats', src='Cs',
+                         no_parse=True,)
+        self.Cl = RParam(info='Load connection matrix',
+                         name='Cl', tex_name=r'C_{l}',
+                         model='mats', src='Cl',
+                         no_parse=True,)
+        self.Cgi = NumOp(u=self.Cg, fun=np.linalg.pinv,
+                         name='Cgi', tex_name=r'C_{g}^{-1}',
+                         info='inverse of Cg',
+                         no_parse=True,)
+        self.Cli = NumOp(u=self.Cl, fun=np.linalg.pinv,
+                         name='Cli', tex_name=r'C_{l}^{-1}',
+                         info='inverse of Cl',
+                         no_parse=True,)
+
+        self.Cft = RParam(info='Line connection matrix',
+                          name='Cft', tex_name=r'C_{ft}',
+                          model='mats', src='Cft',
+                          no_parse=True,)
+        self.PTDF = RParam(info='Power Transfer Distribution Factor',
+                           name='PTDF', tex_name=r'PTDF',
                            model='mats', src='PTDF',
-                           no_parse=False,)
+                           no_parse=True,)
 
     def solve(self, **kwargs):
         """
@@ -171,18 +200,11 @@ class DCOPF(DCOPFBase):
         self.info = 'DC Optimal Power Flow'
         self.type = 'DCED'
         # --- vars ---
-        self.pg = Var(info='Gen active power (system base)',
+        self.pg = Var(info='Gen active power',
                       unit='p.u.',
                       name='pg', tex_name=r'p_{g}',
                       model='StaticGen', src='p',
                       v0=self.pg0)
-        self.pn = Var(info='Bus active power injection (system base)',
-                      unit='p.u.', name='pn', tex_name=r'p_{n}',
-                      model='Bus',)
-        self.plf = Var(info='line active power',
-                       name='plf', tex_name=r'p_{lf}', unit='p.u.',
-                       model='Line',)
-        # --- constraints ---
         # NOTE: `ug*pmin` results in unexpected error
         self.nctrl = NumOp(u=self.ctrl, fun=np.logical_not,
                            name='nctrl', tex_name=r'-c_{trl}',
@@ -194,23 +216,38 @@ class DCOPF(DCOPFBase):
         pgub = 'pg - mul(nctrl, pg0) - mul(ctrl, mul(ug, pmax))'
         self.pgub = Constraint(name='pgub', info='pg max',
                                e_str=pgub, type='uq',)
-        self.CftT = NumOp(u=self.Cft, fun=np.transpose,
-                          name='CftT', tex_name=r'C_{ft}^{T}',
-                          info='transpose of connection matrix',
-                          no_parse=True,)
+
+        self.aBus = Var(info='Bus voltage angle',
+                        name='aBus', tex_name=r'\theta_{n}',
+                        unit='rad', model='Bus',)
+        self.pn = Var(info='Bus active power injection',
+                      name='pn', tex_name=r'p_{n}',
+                      unit='p.u.', model='Bus',)
+
+        self.plf = Var(info='Line active power',
+                       name='plf', tex_name=r'p_{lf}',
+                       unit='p.u.', model='Line',)
+        self.plflb = Constraint(name='plflb', info='Line power lower bound',
+                                e_str='-plf - rate_a', type='uq',)
+        self.plfub = Constraint(name='plfub', info='Line power upper bound',
+                                e_str='plf - rate_a', type='uq',)
+
+        # --- constraints ---
         self.pb = Constraint(name='pb', info='power balance',
-                             e_str='sum(pl) - sum(pg)',
+                             e_str='sum(pd) - sum(pg)',
                              type='eq',)
-        self.pinj = Constraint(name='pinj',
-                               info='nodal power injection',
-                               e_str='CftT@plf - pl - pn',
-                               type='eq',)
-        self.lub = Constraint(name='lub', info='Line limits upper bound',
-                              e_str='PTDF @ (pn - pl) - rate_a',
-                              type='uq',)
-        self.llb = Constraint(name='llb', info='Line limits lower bound',
-                              e_str='- PTDF @ (pn - pl) - rate_a',
-                              type='uq',)
+        self.aref = Constraint(name='aref', type='eq',
+                               info='reference bus angle',
+                               e_str='Cs@aBus',)
+
+        self.pnb = Constraint(name='pnb', type='eq',
+                              info='nodal power injection',
+                              e_str='PTDF@(Cgi@pg - Cli@pd) - plf',)
+
+        # self.pinj = Constraint(name='pinj',
+        #                        info='nodal power injection',
+        #                        e_str='CftT@plf - pl - pn',
+        #                        type='eq',)
         # --- objective ---
         self.obj = Objective(name='tc',
                              info='total cost', unit='$',

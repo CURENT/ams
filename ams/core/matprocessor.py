@@ -117,6 +117,9 @@ class MatProcessor:
         self.Cg = MParam(name='Cg', tex_name=r'C_g',
                          info='Generator connectivity matrix',
                          v=None)
+        self.Cs = MParam(name='Cs', tex_name=r'C_s',
+                         info='Slack connectivity matrix',
+                         v=None)
         self.Cl = MParam(name='Cl', tex_name=r'Cl',
                          info='Load connectivity matrix',
                          v=None)
@@ -137,6 +140,8 @@ class MatProcessor:
         # FIXME: hard coded here
         gen_bus = system.StaticGen.get(src='bus', attr='v',
                                        idx=system.StaticGen.get_idx())
+        slack_bus = system.Slack.get(src='bus', attr='v',
+                                     idx=system.Slack.idx.v)
         all_bus = system.Bus.idx.v
         load_bus = system.StaticLoad.get(src='bus', attr='v',
                                          idx=system.StaticLoad.get_idx())
@@ -145,6 +150,8 @@ class MatProcessor:
         self.pl._v = c_sparse(system.PQ.get(src='p0', attr='v', idx=idx_PD))
         self.ql._v = np.array(system.PQ.get(src='q0', attr='v', idx=idx_PD))
 
+        row, col = np.meshgrid(all_bus, slack_bus)
+        self.Cs._v = c_sparse((row == col).astype(int))
         row, col = np.meshgrid(all_bus, gen_bus)
         self.Cg._v = c_sparse((row == col).astype(int))
         row, col = np.meshgrid(all_bus, load_bus)
