@@ -217,9 +217,6 @@ class DCOPF(DCOPFBase):
         self.aBus = Var(info='Bus voltage angle',
                         name='aBus', tex_name=r'\theta_{n}',
                         unit='rad', model='Bus',)
-        self.pn = Var(info='Bus active power injection',
-                      name='pn', tex_name=r'p_{n}',
-                      unit='p.u.', model='Bus',)
 
         self.plf = Var(info='Line active power',
                        name='plf', tex_name=r'p_{lf}',
