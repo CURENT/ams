@@ -23,6 +23,172 @@ class RTEDBase(DCOPF):
 
     def __init__(self, system, config):
         DCOPF.__init__(self, system, config)
+        # --- region ---
+        self.zg = RParam(info='Gen zone',
+                         name='zg', tex_name='z_{one,g}',
+                         model='StaticGen', src='zone',
+                         no_parse=True)
+        self.zd = RParam(info='Load zone',
+                         name='zd', tex_name='z_{one,d}',
+                         model='StaticLoad', src='zone',
+                         no_parse=True)
+        self.gs = ZonalSum(u=self.zg, zone='Region',
+                           name='gs', tex_name=r'S_{g}',
+                           info='Sum Gen vars vector in shape of zone')
+        self.ds = ZonalSum(u=self.zd, zone='Region',
+                           name='ds', tex_name=r'S_{d}',
+                           info='Sum pd vector in shape of zone',
+                           no_parse=True,)
+        self.pdz = NumOpDual(u=self.ds, u2=self.pd,
+                             fun=np.multiply,
+                             rfun=np.sum, rargs=dict(axis=1),
+                             expand_dims=0,
+                             name='pdz', tex_name=r'p_{d,z}',
+                             unit='p.u.', info='zonal total load',
+                             no_parse=True,)
+
+        # --- generator ---
+        self.R10 = RParam(info='10-min ramp rate',
+                          name='R10', tex_name=r'R_{10}',
+                          model='StaticGen', src='R10',
+                          unit='p.u./h',)
+        self.gammape = RParam(info='Ratio of ESD1.pge w.r.t to that of static generator',
+                              name='gammape', tex_name=r'\gamma_{p,e}',
+                              model='ESD1', src='gammap',
+                              no_parse=True,)
+
+
+class SFRBase:
+    """
+    Base class for SFR used in DCED.
+    """
+
+    def __init__(self):
+
+        # 1. reserve
+        #  --- reserve cost ---
+        self.cru = RParam(info='RegUp reserve coefficient',
+                          name='cru', tex_name=r'c_{r,u}',
+                          model='SFRCost', src='cru',
+                          unit=r'$/(p.u.)',)
+        self.crd = RParam(info='RegDown reserve coefficient',
+                          name='crd', tex_name=r'c_{r,d}',
+                          model='SFRCost', src='crd',
+                          unit=r'$/(p.u.)',)
+        # --- reserve requirement ---
+        self.du = RParam(info='RegUp reserve requirement in percentage',
+                         name='du', tex_name=r'd_{u}',
+                         model='SFR', src='du',
+                         unit='%', no_parse=True,)
+        self.dd = RParam(info='RegDown reserve requirement in percentage',
+                         name='dd', tex_name=r'd_{d}',
+                         model='SFR', src='dd',
+                         unit='%', no_parse=True,)
+
+
+class RTED(RTEDBase, SFRBase):
+    """
+    DC-based real-time economic dispatch (RTED).
+    RTED extends DCOPF with:
+
+    1. Param ``pg0``, which can be retrieved from dynamic simulation results.
+
+    2. RTED has mapping dicts to interface with ANDES.
+
+    3. RTED routine adds a function ``dc2ac`` to do the AC conversion using ACOPF
+
+    4. Vars for zonal SFR reserve: ``pru`` and ``prd``;
+
+    5. Param for linear cost of zonal SFR reserve ``cru`` and ``crd``;
+
+    6. Param for SFR requirement ``du`` and ``dd``;
+
+    7. Param for generator ramping: start point ``pg0`` and ramping limit ``R10``;
+
+    The function ``dc2ac`` sets the ``vBus`` value from solved ACOPF.
+    Without this conversion, dynamic simulation might fail due to the gap between
+    DC-based dispatch results and AC-based dynamic initialization.
+
+    Notes
+    -----
+    1. Formulations has been adjusted with interval ``config.t``, 5/60 [Hour] by default.
+
+    2. The tie-line flow has not been implemented in formulations.
+    """
+
+    def __init__(self, system, config):
+        RTEDBase.__init__(self, system, config)
+        SFRBase.__init__(self)
+
+        self.config.add(OrderedDict((('t', 5/60),
+                                     )))
+        self.config.add_extra("_help",
+                              t="time interval in hours",
+                              )
+
+        self.map1 = OrderedDict([
+            ('StaticGen', {
+                'pg0': 'p',
+            }),
+        ])
+        # NOTE: define map2
+        # DC-based RTED assume bus voltage to be 1
+        # here we mock the ACOPF bus voltage results to fit the interface
+        self.map2 = OrderedDict([
+            ('Bus', {
+                'vBus': 'v0',
+            }),
+            ('StaticGen', {
+                'pg': 'p0',
+            }),
+        ])
+        self.info = 'Real-time economic dispatch'
+        self.type = 'DCED'
+
+        # --- vars ---
+        self.pru = Var(info='RegUp reserve',
+                       unit='p.u.', name='pru', tex_name=r'p_{r,u}',
+                       model='StaticGen', nonneg=True,)
+        self.prd = Var(info='RegDn reserve',
+                       unit='p.u.', name='prd', tex_name=r'p_{r,d}',
+                       model='StaticGen', nonneg=True,)
+
+        # --- constraints ---
+        self.dud = NumOpDual(u=self.pdz, u2=self.du, fun=np.multiply,
+                             rfun=np.reshape, rargs=dict(newshape=(-1,)),
+                             name='dud', tex_name=r'd_{u, d}',
+                             info='zonal RegUp reserve requirement',)
+        self.ddd = NumOpDual(u=self.pdz, u2=self.dd, fun=np.multiply,
+                             rfun=np.reshape, rargs=dict(newshape=(-1,)),
+                             name='ddd', tex_name=r'd_{d, d}',
+                             info='zonal RegDn reserve requirement',)
+        self.rbu = Constraint(name='rbu', type='eq',
+                              info='RegUp reserve balance',
+                              e_str='gs @ mul(ug, pru) - dud',)
+        self.rbd = Constraint(name='rbd', type='eq',
+                              info='RegDn reserve balance',
+                              e_str='gs @ mul(ug, prd) - ddd',)
+        self.rru = Constraint(name='rru', type='uq',
+                              info='RegUp reserve source',
+                              e_str='mul(ug, pg + pru) - mul(ug, pmax)',)
+        self.rrd = Constraint(name='rrd', type='uq',
+                              info='RegDn reserve source',
+                              e_str='mul(ug, -pg + prd) - mul(ug, pmin)',)
+        self.rgu = Constraint(name='rgu', type='uq',
+                              info='Gen ramping up',
+                              e_str='mul(ug, pg-pg0-R10)',)
+        self.rgd = Constraint(name='rgd', type='uq',
+                              info='Gen ramping down',
+                              e_str='mul(ug, -pg+pg0-R10)',)
+        # --- objective ---
+        self.obj.info = 'total generation and reserve cost'
+        # NOTE: the product of dt and pg is processed using ``dot``,
+        # because dt is a numnber
+        cost = 'sum_squares(mul(c2, pg))'
+        cost += '+ sum(c1 @ (t dot pg))'
+        cost += '+ ug * c0'  # constant cost
+        cost += '+ sum(cru * pru + crd * prd)'  # reserve cost
+        self.obj.e_str = cost
 
     def dc2ac(self, **kwargs):
         """
@@ -111,162 +277,6 @@ class RTEDBase(DCOPF):
         return super().run(**kwargs)
 
 
-class RTED(RTEDBase):
-    """
-    DC-based real-time economic dispatch (RTED).
-    RTED extends DCOPF with:
-
-    1. Param ``pg0``, which can be retrieved from dynamic simulation results.
-
-    2. RTED has mapping dicts to interface with ANDES.
-
-    3. RTED routine adds a function ``dc2ac`` to do the AC conversion using ACOPF
-
-    4. Vars for zonal SFR reserve: ``pru`` and ``prd``;
-
-    5. Param for linear cost of zonal SFR reserve ``cru`` and ``crd``;
-
-    6. Param for SFR requirement ``du`` and ``dd``;
-
-    7. Param for generator ramping: start point ``pg0`` and ramping limit ``R10``;
-
-    The function ``dc2ac`` sets the ``vBus`` value from solved ACOPF.
-    Without this conversion, dynamic simulation might fail due to the gap between
-    DC-based dispatch results and AC-based dynamic initialization.
-
-    Notes
-    -----
-    1. Formulations has been adjusted with interval ``config.t``, 5/60 [Hour] by default.
-
-    2. The tie-line flow has not been implemented in formulations.
-    """
-
-    def __init__(self, system, config):
-        RTEDBase.__init__(self, system, config)
-
-        self.config.add(OrderedDict((('t', 5/60),
-                                     )))
-        self.config.add_extra("_help",
-                              t="time interval in hours",
-                              )
-
-        self.map1 = OrderedDict([
-            ('StaticGen', {
-                'pg0': 'p',
-            }),
-        ])
-        # NOTE: define map2
-        # DC-based RTED assume bus voltage to be 1
-        # here we mock the ACOPF bus voltage results to fit the interface
-        self.map2 = OrderedDict([
-            ('Bus', {
-                'vBus': 'v0',
-            }),
-            ('StaticGen', {
-                'pg': 'p0',
-            }),
-        ])
-        self.info = 'Real-time economic dispatch'
-        self.type = 'DCED'
-
-        # 1. reserve
-        # 1.1. reserve cost
-        self.cru = RParam(info='RegUp reserve coefficient',
-                          name='cru', tex_name=r'c_{r,u}',
-                          model='SFRCost', src='cru',
-                          unit=r'$/(p.u.)',)
-        self.crd = RParam(info='RegDown reserve coefficient',
-                          name='crd', tex_name=r'c_{r,d}',
-                          model='SFRCost', src='crd',
-                          unit=r'$/(p.u.)',)
-        # 1.2. reserve requirement
-        self.du = RParam(info='RegUp reserve requirement in percentage',
-                         name='du', tex_name=r'd_{u}',
-                         model='SFR', src='du',
-                         unit='%', no_parse=True,)
-        self.dd = RParam(info='RegDown reserve requirement in percentage',
-                         name='dd', tex_name=r'd_{d}',
-                         model='SFR', src='dd',
-                         unit='%', no_parse=True,)
-        self.zb = RParam(info='Bus zone',
-                         name='zb', tex_name='z_{one,bus}',
-                         model='Bus', src='zone',
-                         no_parse=True)
-        self.zg = RParam(info='generator zone data',
-                         name='zg', tex_name='z_{one,g}',
-                         model='StaticGen', src='zone',
-                         no_parse=True)
-        # 2. generator
-        self.R10 = RParam(info='10-min ramp rate (system base)',
-                          name='R10', tex_name=r'R_{10}',
-                          model='StaticGen', src='R10',
-                          unit='p.u./h',)
-        self.gammape = RParam(info='Ratio of ESD1.pge w.r.t to that of static generator',
-                              name='gammape', tex_name=r'\gamma_{p,e}',
-                              model='ESD1', src='gammap',
-                              no_parse=True,)
-
-        # --- service ---
-        self.gs = ZonalSum(u=self.zg, zone='Region',
-                           name='gs', tex_name=r'S_{g}',
-                           info='Sum Gen vars vector in shape of zone')
-
-        # --- vars ---
-        self.pru = Var(info='RegUp reserve (system base)',
-                       unit='p.u.', name='pru', tex_name=r'p_{r,u}',
-                       model='StaticGen', nonneg=True,)
-        self.prd = Var(info='RegDn reserve (system base)',
-                       unit='p.u.', name='prd', tex_name=r'p_{r,d}',
-                       model='StaticGen', nonneg=True,)
-        # --- constraints ---
-        self.ds = ZonalSum(u=self.zb, zone='Region',
-                           name='ds', tex_name=r'S_{d}',
-                           info='Sum pl vector in shape of zone',
-                           no_parse=True,)
-        self.pdz = NumOpDual(u=self.ds, u2=self.pl,
-                             fun=np.multiply,
-                             rfun=np.sum, rargs=dict(axis=1),
-                             expand_dims=0,
-                             name='pdz', tex_name=r'p_{d,z}',
-                             unit='p.u.', info='zonal load',
-                             no_parse=True,)
-        self.dud = NumOpDual(u=self.pdz, u2=self.du, fun=np.multiply,
-                             rfun=np.reshape, rargs=dict(newshape=(-1,)),
-                             name='dud', tex_name=r'd_{u, d}',
-                             info='zonal RegUp reserve requirement',)
-        self.ddd = NumOpDual(u=self.pdz, u2=self.dd, fun=np.multiply,
-                             rfun=np.reshape, rargs=dict(newshape=(-1,)),
-                             name='ddd', tex_name=r'd_{d, d}',
-                             info='zonal RegDn reserve requirement',)
-        self.rbu = Constraint(name='rbu', type='eq',
-                              info='RegUp reserve balance',
-                              e_str='gs @ mul(ug, pru) - dud',)
-        self.rbd = Constraint(name='rbd', type='eq',
-                              info='RegDn reserve balance',
-                              e_str='gs @ mul(ug, prd) - ddd',)
-        self.rru = Constraint(name='rru', type='uq',
-                              info='RegUp reserve ramp',
-                              e_str='mul(ug, pg + pru) - pmax',)
-        self.rrd = Constraint(name='rrd', type='uq',
-                              info='RegDn reserve ramp',
-                              e_str='mul(ug, -pg + prd) - pmin',)
-        self.rgu = Constraint(name='rgu', type='uq',
-                              info='Gen ramping up',
-                              e_str='mul(ug, pg-pg0-R10)',)
-        self.rgd = Constraint(name='rgd', type='uq',
-                              info='Gen ramping down',
-                              e_str='mul(ug, -pg+pg0-R10)',)
-        # --- objective ---
-        self.obj.info = 'total generation and reserve cost'
-        # NOTE: the product of dt and pg is processed using ``dot``,
-        # because dt is a numnber
-        cost = 'sum_squares(mul(c2, pg))'
-        cost += '+ sum(c1 @ (t dot pg))'
-        cost += '+ ug * c0'  # constant cost
-        cost += '+ sum(cru * pru + crd * prd)'  # reserve cost
-        self.obj.e_str = cost
-
-
 class ESD1Base:
     """
     Base class for ESD1 used in DCED.
@@ -327,11 +337,13 @@ class ESD1Base:
                             name='ce', tex_name=r'C_{E}',
                             info='Select zue from pg',
                             gamma='gammape', no_parse=True,)
-        self.pce = Var(info='ESD1 charging power (system base)',
-                       unit='p.u.', name='pce', tex_name=r'p_{c,E}',
+        self.pce = Var(info='ESD1 charging power',
+                       unit='p.u.', name='pce',
+                       tex_name=r'p_{c,E}',
                        model='ESD1', nonneg=True,)
-        self.pde = Var(info='ESD1 discharging power (system base)',
-                       unit='p.u.', name='pde', tex_name=r'p_{d,E}',
+        self.pde = Var(info='ESD1 discharging power',
+                       unit='p.u.', name='pde',
+                       tex_name=r'p_{d,E}',
                        model='ESD1', nonneg=True,)
         self.uce = Var(info='ESD1 charging decision',
                        name='uce', tex_name=r'u_{c,E}',
@@ -339,12 +351,12 @@ class ESD1Base:
         self.ude = Var(info='ESD1 discharging decision',
                        name='ude', tex_name=r'u_{d,E}',
                        model='ESD1', boolean=True,)
-        self.zce = Var(info='Aux var for charging, :math:`z_{c,e}=u_{c,E}p_{c,E}`',
-                       name='zce', tex_name=r'z_{c,E}',
+        self.zce = Var(name='zce', tex_name=r'z_{c,E}',
                        model='ESD1', nonneg=True,)
-        self.zde = Var(info='Aux var for discharging, :math:`z_{d,e}=u_{d,E}*p_{d,E}`',
-                       name='zde', tex_name=r'z_{d,E}',
+        self.zce.info = 'Aux var for charging, :math:`z_{c,e}=u_{c,E}*p_{c,E}`'
+        self.zde = Var(name='zde', tex_name=r'z_{d,E}',
                        model='ESD1', nonneg=True,)
+        self.zde.info = 'Aux var for discharging, :math:`z_{d,e}=u_{d,E}*p_{d,E}`'
 
         # --- constraints ---
         self.ceb = Constraint(name='ceb', type='eq',
