@@ -657,17 +657,31 @@ class OModel:
         rtn.syms.generate_symbols(force_generate=force_generate)
         # --- add RParams and Services as parameters ---
         for key, val in rtn.params.items():
-            # logger.debug(f"Parsing param {key}")
             if not val.no_parse:
-                val.parse()
+                try:
+                    val.parse()
+                except ValueError as e:
+                    msg = f"Failed to parse Param <{key}>. "
+                    msg += f"Original error: {e}"
+                    raise ValueError(msg)
                 setattr(self, key, val.optz)
         # --- add decision variables ---
         for key, val in rtn.vars.items():
-            val.parse()
+            try:
+                val.parse()
+            except ValueError as e:
+                msg = f"Failed to parse Var <{key}>. "
+                msg += f"Original error: {e}"
+                raise ValueError(msg)
             setattr(self, key, val.optz)
         # --- add constraints ---
         for key, val in rtn.constrs.items():
-            val.parse(no_code=no_code)
+            try:
+                val.parse(no_code=no_code)
+            except ValueError as e:
+                msg = f"Failed to parse Constr <{key}>. "
+                msg += f"Original error: {e}"
+                raise ValueError(msg)
             setattr(self, key, val.optz)
         # --- parse objective functions ---
         if rtn.type == 'PF':
