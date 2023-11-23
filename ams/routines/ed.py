@@ -6,14 +6,88 @@ from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
-from ams.core.service import (ZonalSum, NumOpDual, NumHstack,
+from ams.core.service import (NumOpDual, NumHstack,
                               RampSub, NumOp, LoadScale)
 
 from ams.routines.rted import RTED, ESD1Base
 
-from ams.opt.omodel import Constraint
+from ams.opt.omodel import Var, Constraint
 
 logger = logging.getLogger(__name__)
+
+
+class SRBase:
+    """
+    Base class for spinning reserve.
+    """
+    
+    def __init__(self) -> None:
+        self.dsrp = RParam(info='spinning reserve requirement in percentage',
+                           name='dsr', tex_name=r'd_{sr}',
+                           model='SR', src='demand',
+                           unit='%',)
+        self.csr = RParam(info='cost for spinning reserve',
+                          name='csr', tex_name=r'c_{sr}',
+                          model='SRCost', src='csr',
+                          unit=r'$/(p.u.*h)',
+                          indexer='gen', imodel='StaticGen',)
+
+        self.prs = Var(name='prs', tex_name=r'p_{r,s}',
+                       info='spinning reserve', unit='p.u.',
+                       model='StaticGen', nonneg=True,)
+
+        self.dsrpz = NumOpDual(u=self.pdz, u2=self.dsrp, fun=np.multiply,
+                               name='dsrpz', tex_name=r'd_{s,r, p, z}',
+                               info='zonal spinning reserve requirement in percentage',)
+        self.dsr = NumOpDual(u=self.dsrpz, u2=self.sd, fun=np.multiply,
+                             rfun=np.transpose,
+                             name='dsr', tex_name=r'd_{s,r,z}',
+                             info='zonal spinning reserve requirement',)
+
+
+class MPBase:
+    """
+    Base class for multi-period dispatch.
+    """
+
+    def __init__(self) -> None:
+        # NOTE: Setting `ED.scale.owner` to `Horizon` will cause an error when calling `ED.scale.v`.
+        # This is because `Horizon` is a group that only contains the model `TimeSlot`.
+        # The `get` method of `Horizon` calls `andes.models.group.GroupBase.get` and results in an error.
+        self.sd = RParam(info='zonal load factor for ED',
+                         name='sd', tex_name=r's_{d}',
+                         src='sd', model='EDTSlot')
+
+        self.timeslot = RParam(info='Time slot for multi-period ED',
+                               name='timeslot', tex_name=r't_{s,idx}',
+                               src='idx', model='EDTSlot',
+                               no_parse=True)
+
+        self.pdsz = NumOpDual(u=self.sd, u2=self.pdz,
+                             fun=np.multiply, rfun=np.transpose,
+                             name='pds', tex_name=r'p_{d,s,z}',
+                             unit='p.u.',
+                             info='Scaled zonal total load')
+
+        self.tlv = NumOp(u=self.timeslot, fun=np.ones_like,
+                         args=dict(dtype=float),
+                         expand_dims=0,
+                         info='time length vector',
+                         no_parse=True)
+
+        self.pds = LoadScale(u=self.pd, sd=self.sd,
+                             name='pds', tex_name=r'p_{d,s}',
+                             info='Scaled load',)
+
+        self.R30 = RParam(info='30-min ramp rate',
+                          name='R30', tex_name=r'R_{30}',
+                          src='R30', unit='p.u./min',
+                          model='StaticGen')
+        self.Mr = RampSub(u=self.pg, name='Mr', tex_name=r'M_{r}',
+                          info='Subtraction matrix for ramping',)
+        self.RR30 = NumHstack(u=self.R30, ref=self.Mr,
+                              name='RR30', tex_name=r'R_{30,R}',
+                              info='Repeated ramp rate',)
 
 
 class ED(RTED):
@@ -24,9 +98,11 @@ class ED(RTED):
 
     ED extends DCOPF as follows:
 
-    1. Var ``pg`` is extended to 2D
+    1. Vars `pg`, `pru`, `prd` are extended to 2D
 
-    2. 2D Vars ``rgu`` and ``rgd`` are introduced
+    2. 2D Vars `rgu` and `rgd` are introduced
+
+    3. Param `ug` is sourced from `EDTSlot`.`ug` as commitment decisions
 
     Notes
     -----
@@ -37,6 +113,8 @@ class ED(RTED):
 
     def __init__(self, system, config):
         RTED.__init__(self, system, config)
+        MPBase.__init__(self)
+        SRBase.__init__(self)
 
         self.config.add(OrderedDict((('t', 1),
                                      )))
@@ -47,139 +125,110 @@ class ED(RTED):
         self.info = 'Economic dispatch'
         self.type = 'DCED'
 
-        self.ug.expand_dims = 1
+        self.ug.info = 'unit commitment decisions'
+        self.ug.model = 'EDTSlot'
+        self.ug.src = 'ug'
+        self.ug.tex_name = r'u_{g}^{T}',
+
+        self.ctrl.expand_dims = 1
         self.c0.expand_dims = 1
         self.pmax.expand_dims = 1
         self.pmin.expand_dims = 1
+        self.pg0.expand_dims = 1
         self.rate_a.expand_dims = 1
         self.dud.expand_dims = 1
         self.ddd.expand_dims = 1
 
         # --- params ---
-        # NOTE: Setting `ED.scale.owner` to `Horizon` will cause an error when calling `ED.scale.v`.
-        # This is because `Horizon` is a group that only contains the model `TimeSlot`.
-        # The `get` method of `Horizon` calls `andes.models.group.GroupBase.get` and results in an error.
-        self.sd = RParam(info='zonal load factor for ED',
-                         name='sd', tex_name=r's_{d}',
-                         src='sd', model='EDTSlot')
-        self.timeslot = RParam(info='Time slot for multi-period ED',
-                               name='timeslot', tex_name=r't_{s,idx}',
-                               src='idx', model='EDTSlot',
-                               no_parse=True)
-        self.R30 = RParam(info='30-min ramp rate (system base)',
-                          name='R30', tex_name=r'R_{30}',
-                          src='R30', unit='p.u./min',
-                          model='StaticGen')
-        self.dsrp = RParam(info='spinning reserve requirement in percentage',
-                           name='dsr', tex_name=r'd_{sr}',
-                           model='SR', src='demand',
-                           unit='%',)
-        self.csr = RParam(info='cost for spinning reserve',
-                          name='csr', tex_name=r'c_{sr}',
-                          model='SRCost', src='csr',
-                          unit=r'$/(p.u.*h)',
-                          indexer='gen', imodel='StaticGen',)
-        self.Cl = RParam(info='connection matrix for Load and Bus',
-                         name='Cl', tex_name=r'C_{l}',
-                         model='mats', src='Cl',
-                         no_parse=True,)
-        self.zl = RParam(info='zone of load',
-                         name='zl', tex_name=r'z_{l}',
-                         model='StaticLoad', src='zone',
+        self.ugt = NumOp(u=self.ug, fun=np.transpose,
+                         name='ugt', tex_name=r'u_{g}',
+                         info='input ug transpose',
                          no_parse=True)
 
         # --- vars ---
         # NOTE: extend pg to 2D matrix, where row is gen and col is timeslot
         self.pg.horizon = self.timeslot
-        self.pg.info = '2D power generation (system base)'
+        self.pg.info = '2D Gen power'
+        pglb = '-pg + mul(mul(nctrl, pg0), tlv) '
+        pglb += '+ mul(mul(ctrl, pmin), tlv)'
+        self.pglb.e_str = pglb
+        pgub = 'pg - mul(mul(nctrl, pg0), tlv) '
+        pgub += '- mul(mul(ctrl, pmax), tlv)'
+        self.pgub.e_str = pgub
 
-        self.pn.horizon = self.timeslot
-        self.pn.info = '2D Bus power injection (system base)'
+        self.plf.horizon = self.timeslot
+        self.plf.info = '2D Line flow'
 
         self.pru.horizon = self.timeslot
-        self.pru.info = '2D RegUp power (system base)'
+        self.pru.info = '2D RegUp power'
 
         self.prd.horizon = self.timeslot
-        self.prd.info = '2D RegDn power (system base)'
+        self.prd.info = '2D RegDn power'
+
+        self.prs.horizon = self.timeslot
 
         # --- constraints ---
-        # --- power balance ---
-        self.pds = NumOpDual(u=self.sd, u2=self.pdz,
-                             fun=np.multiply, rfun=np.transpose,
-                             name='pds', tex_name=r'p_{d,s,t}',
-                             unit='p.u.', info='Scaled total load as row vector')
         # NOTE: Spg @ pg returns a row vector
-        self.pb.e_str = '- gs @ pg + pds'  # power balance
+        self.pb.e_str = '- gs @ pg + pdsz'  # power balance
 
-        # spinning reserve
-        self.tlv = NumOp(u=self.timeslot, fun=np.ones_like,
-                         args=dict(dtype=float),
-                         expand_dims=0,
-                         info='time length vector',
-                         no_parse=True)
-        self.dsrpz = NumOpDual(u=self.pdz, u2=self.dsrp, fun=np.multiply,
-                               name='dsrpz', tex_name=r'd_{sr, p, z}',
-                               info='zonal spinning reserve requirement in percentage',)
-        self.dsr = NumOpDual(u=self.dsrpz, u2=self.sd, fun=np.multiply,
-                             rfun=np.transpose,
-                             name='dsr', tex_name=r'd_{sr}',
-                             info='zonal spinning reserve requirement',)
-
-        self.sr = Constraint(name='sr', info='spinning reserve', type='uq',
-                             e_str='-gs@mul(mul(pmax, tlv) - pg, mul(ug, tlv)) + dsr')
+        self.prsb = Constraint(info='spinning reserve balance',
+                               name='prs', type='eq',
+                               e_str='mul(ugt, mul(pmax, tlv) - pg) - prs')
+        self.rb = Constraint(info='spinning reserve requirement',
+                             name='rb', type='uq',
+                             e_str='-gs@mul(prs, ugt) + dsr')
 
         # --- bus power injection ---
-        self.Cli = NumOp(u=self.Cl, fun=np.linalg.pinv,
-                         name='Cli', tex_name=r'C_{l}^{-1}',
-                         info='inverse of Cl',
-                         no_parse=True)
-        self.Rpd = LoadScale(u=self.zl, sd=self.sd, Cl=self.Cl,
-                             name='Rpd', tex_name=r'p_{d,R}',
-                             info='Scaled nodal load',)
-        self.pinj.e_str = 'Cg @ (pn - Rpd) - pg'  # power injection
+        self.pnb.e_str =  'PTDF@(Cgi@pg - Cli@pds) - plf'
 
         # --- line limits ---
-        self.lub.e_str = 'PTDF @ (pn - Rpd) - mul(rate_a, tlv)'
-        self.llb.e_str = '-PTDF @ (pn - Rpd) - mul(rate_a, tlv)'
+        self.plflb.e_str = '-plf - mul(rate_a, tlv)'
+        self.plfub.e_str = 'plf - mul(rate_a, tlv)'
 
         # --- ramping ---
-        self.Mr = RampSub(u=self.pg, name='Mr', tex_name=r'M_{r}',
-                          info='Subtraction matrix for ramping, (ng, ng-1)',)
-        self.RR30 = NumHstack(u=self.R30, ref=self.Mr,
-                              name='RR30', tex_name=r'R_{30,R}',
-                              info='Repeated ramp rate as 2D matrix, (ng, ng-1)',)
 
-        self.rbu.e_str = 'gs @ mul(mul(ug, tlv), pru) - mul(dud, tlv)'
-        self.rbd.e_str = 'gs @ mul(mul(ug, tlv), prd) - mul(ddd, tlv)'
+        self.rbu.e_str = 'gs@mul(ugt, pru) - mul(dud, tlv)'
+        self.rbd.e_str = 'gs@mul(ugt, prd) - mul(ddd, tlv)'
 
-        self.rru.e_str = 'mul(mul(ug, tlv), pg + pru) - mul(pmax, tlv)'
-        self.rrd.e_str = 'mul(mul(ug, tlv), -pg + prd) - mul(pmin, tlv)'
+        self.rru.e_str = 'mul(ugt, pg + pru) - mul(pmax, tlv)'
+        self.rrd.e_str = 'mul(ugt, -pg + prd) - mul(pmin, tlv)'
 
         self.rgu.e_str = 'pg @ Mr - t dot RR30'
         self.rgd.e_str = '-pg @ Mr - t dot RR30'
 
         self.rgu0 = Constraint(name='rgu0',
                                info='Initial gen ramping up',
-                               e_str='pg[:, 0] - pg0 - R30',
+                               e_str='pg[:, 0] - pg0[:, 0] - R30',
                                type='uq',)
         self.rgd0 = Constraint(name='rgd0',
                                info='Initial gen ramping down',
-                               e_str='- pg[:, 0] + pg0 - R30',
+                               e_str='- pg[:, 0] + pg0[:, 0] - R30',
                                type='uq',)
 
         # --- objective ---
         cost = 'sum(c2 @ (t dot pg)**2 + c1 @ (t dot pg))'
-        cost += '+ sum(mul(mul(ug, c0), tlv))'  # constant cost
-        cost += ' + sum(csr @ (mul(mul(ug, pmax), tlv) - pg))'  # spinning reserve cost
+        # constant cost
+        cost += '+ sum(mul(ugt, mul(c0, tlv)))'
+        # spinning reserve cost
+        cost += ' + sum(csr@prs)'
         self.obj.e_str = cost
+
+    def dc2ac(self, **kwargs):
+        """
+        AC conversion ``dc2ac`` is not implemented yet for
+        multi-period dispatch.
+        """
+        return NotImplementedError
 
     def unpack(self, **kwargs):
         """
-        ED will not unpack results from solver into devices
-        because the resutls are multi-time-period.
+        Multi-period dispatch will not unpack results from
+        solver into devices.
+
+        # TODO: unpack first period results, and allow input
+        # to specify which period to unpack.
         """
         return None
-
 
 # TODO: add data check
 # if has model ``TimeSlot``, mandatory

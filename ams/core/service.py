@@ -187,8 +187,6 @@ class LoadScale(ROperationService):
         nodal load.
     sd : Callable
         zonal load factor.
-    Cl: Callable
-        Connection matrix for Load and Bus.
     name : str, optional
         Instance name.
     tex_name : str, optional
@@ -202,7 +200,6 @@ class LoadScale(ROperationService):
     def __init__(self,
                  u: Callable,
                  sd: Callable,
-                 Cl: Callable,
                  name: str = None,
                  tex_name: str = None,
                  unit: str = None,
@@ -213,17 +210,17 @@ class LoadScale(ROperationService):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, u=u, no_parse=no_parse)
         self.sd = sd
-        self.Cl = Cl
 
     @property
     def v(self):
-        Region = self.rtn.system.Region
-        yloc_zl = np.array(Region.idx2uid(self.u.v))
-        PQ = self.rtn.system.PQ
-        p0 = PQ.get(src='p0', attr='v', idx=PQ.idx.v)
-        p0s = np.multiply(self.sd.v[:, yloc_zl].transpose(),
-                          p0[:, np.newaxis])
-        return np.matmul(np.linalg.pinv(self.Cl.v), p0s)
+        sys = self.rtn.system
+        u_idx = self.u.get_idx()
+        u_bus = self.u.owner.get(src='bus', attr='v', idx=u_idx)
+        u_zone = sys.Bus.get(src='zone', attr='v', idx=u_bus)
+        u_yloc = np.array(sys.Region.idx2uid(u_zone))
+        p0s = np.multiply(self.sd.v[:, u_yloc].transpose(),
+                          self.u.v[:, np.newaxis])
+        return p0s
 
 
 class NumOp(ROperationService):
