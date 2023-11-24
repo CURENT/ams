@@ -8,7 +8,8 @@ import pandas as pd
 
 from ams.core.param import RParam
 from ams.core.service import (NumOp, NumOpDual, MinDur)
-from ams.routines.ed import ED
+from ams.routines.rted import RTEDBase
+from ams.routines.ed import SRBase, MPBase
 from ams.routines.rted import ESD1Base
 
 from ams.opt.omodel import Var, Constraint
@@ -16,7 +17,42 @@ from ams.opt.omodel import Var, Constraint
 logger = logging.getLogger(__name__)
 
 
-class UC(ED):
+class NSRBase:
+    """
+    Base class for non-spinning reserve.
+    """
+
+    def __init__(self) -> None:
+        self.cnsr = RParam(info='cost for non-spinning reserve',
+                           name='cnsr', tex_name=r'c_{nsr}',
+                           model='NSRCost', src='cnsr',
+                           unit=r'$/(p.u.*h)',
+                           indexer='gen', imodel='StaticGen',)
+        self.dnsrp = RParam(info='non-spinning reserve requirement in percentage',
+                            name='dnsr', tex_name=r'd_{nsr}',
+                            model='NSR', src='demand',
+                            unit='%',)
+        self.prns = Var(info='non-spinning reserve',
+                        name='prns', tex_name=r'p_{r, ns}',
+                        model='StaticGen', nonneg=True,)
+
+        self.dnsrpz = NumOpDual(u=self.pdz, u2=self.dnsrp, fun=np.multiply,
+                                name='dnsrpz', tex_name=r'd_{nsr, p, z}',
+                                info='zonal non-spinning reserve requirement in percentage',)
+        self.dnsr = NumOpDual(u=self.dnsrpz, u2=self.sd, fun=np.multiply,
+                              rfun=np.transpose,
+                              name='dnsr', tex_name=r'd_{nsr}',
+                              info='zonal non-spinning reserve requirement',
+                              no_parse=True,)
+
+        # NOTE: define e_str in dispatch model
+        self.prnsb = Constraint(info='non-spinning reserve balance',
+                                name='prnsb', type='eq',)
+        self.rnsr = Constraint(info='non-spinning reserve requirement',
+                               name='rnsr', type='uq',)
+
+
+class UC(RTEDBase, MPBase, SRBase, NSRBase):
     """
     DC-based unit commitment (UC).
     The bilinear term in the formulation is linearized with big-M method.
@@ -49,11 +85,16 @@ class UC(ED):
     """
 
     def __init__(self, system, config):
-        ED.__init__(self, system, config)
+        RTEDBase.__init__(self, system, config)
+        MPBase.__init__(self)
+        SRBase.__init__(self)
+        NSRBase.__init__(self)
 
-        self.config.add(OrderedDict((('cul', 1000),
+        self.config.add(OrderedDict((('t', 1),
+                                     ('cul', 1000),
                                      )))
         self.config.add_extra("_help",
+                              t="time interval in hours",
                               cul="penalty for unserved load, $/p.u.",
                               )
 
@@ -84,15 +125,27 @@ class UC(ED):
         self.timeslot.info = 'Time slot for multi-period UC'
         self.timeslot.model = 'UCTSlot'
 
-        self.cnsr = RParam(info='cost for non-spinning reserve',
-                           name='cnsr', tex_name=r'c_{nsr}',
-                           model='NSRCost', src='cnsr',
-                           unit=r'$/(p.u.*h)',
-                           indexer='gen', imodel='StaticGen',)
-        self.dnsrp = RParam(info='non-spinning reserve requirement in percentage',
-                            name='dnsr', tex_name=r'd_{nsr}',
-                            model='NSR', src='demand',
-                            unit='%',)
+        self.ug.expand_dims = 1
+
+        # NOTE: extend pg to 2D matrix, where row is gen and col is timeslot
+        self.pg.horizon = self.timeslot
+        self.pg.info = '2D Gen power'
+
+        self.plf.horizon = self.timeslot
+        self.plf.info = '2D Line flow'
+
+        self.prs.horizon = self.timeslot
+        self.prs.info = '2D Spinning reserve'
+
+        self.prns.horizon = self.timeslot
+        self.prns.info = '2D Non-spinning reserve'
+
+        pglb = '-pg + mul(mul(nctrl, pg0), tlv) '
+        pglb += '+ mul(mul(ctrl, pmin), tlv)'
+        self.pglb.e_str = pglb
+        pgub = 'pg - mul(mul(nctrl, pg0), tlv) '
+        pgub += '- mul(mul(ctrl, pmax), tlv)'
+        self.pgub.e_str = pgub
 
         # --- vars ---
         self.ugd = Var(info='commitment decision',
@@ -131,8 +184,22 @@ class UC(ED):
                                 e_str='-ugd[:, 0] + ug[:, 0] - wgd[:, 0]',)
 
         # --- constraints ---
-        self.pb.e_str = '- gs @ zug + pds'  # power balance
-        self.pb.type = 'uq'
+        self.pb.e_str = 'gs @ zug - pdsz'  # power balance
+        self.pb.type = 'uq'  # soft constraint
+
+        # spinning reserve
+        self.prsb.e_str = 'mul(ugd, mul(pmax, tlv)) - zug - prs'
+        # spinning reserve requirement
+        # TODO: rsr eqn is not correct, need to fix
+        self.rsr.e_str = '-gs@prs + dsr'
+
+        # non-spinning reserve
+        self.prnsb.e_str = 'mul(1-ugd, mul(pmax, tlv)) - prns'
+        # non-spinning reserve requirement
+        self.rnsr.e_str = '-gs@prns + dnsr'
+
+        # --- bus power injection ---
+        self.pnb.e_str =  'PTDF@(Cgi@pg - Cli@pds) - plf'
 
         # --- big M for ugd*pg ---
         self.Mzug = NumOp(info='10 times of max of pmax as big M for zug',
@@ -146,18 +213,6 @@ class UC(ED):
                                 type='uq', e_str='zug - pg - Mzug dot (1 - ugd)')
         self.zugub2 = Constraint(name='zugub2', info='zug upper bound',
                                  type='uq', e_str='zug - Mzug dot ugd')
-
-        # --- reserve ---
-        # supplement non-spinning reserve
-        self.dnsrpz = NumOpDual(u=self.pdz, u2=self.dnsrp, fun=np.multiply,
-                                name='dnsrpz', tex_name=r'd_{nsr, p, z}',
-                                info='zonal non-spinning reserve requirement in percentage',)
-        self.dnsr = NumOpDual(u=self.dnsrpz, u2=self.sd, fun=np.multiply,
-                              rfun=np.transpose,
-                              name='dnsr', tex_name=r'd_{nsr}',
-                              info='zonal non-spinning reserve requirement',)
-        self.nsr = Constraint(name='nsr', info='non-spinning reserve', type='uq',
-                              e_str='-gs@(multiply((1 - ugd), mul(pmax, tlv))) + dnsr')
 
         # --- minimum ON/OFF duration ---
         self.Con = MinDur(u=self.pg, u2=self.td1,
@@ -173,19 +228,13 @@ class UC(ED):
                                name='doff', type='uq',
                                e_str='multiply(Coff, wgd) - (1 - ugd)')
 
-        # --- penalty for unserved load ---
-        self.Cgi = NumOp(u=self.Cg, fun=np.linalg.pinv,
-                         name='Cgi', tex_name=r'C_{g}^{-1}',
-                         info='inverse of Cg',
-                         no_parse=True)
-
         # --- objective ---
         gcost = 'sum(c2 @ (t dot zug)**2 + c1 @ (t dot zug))'
         gcost += '+ sum(mul(mul(ug, c0), tlv))'
         acost = ' + sum(csu * vgd + csd * wgd)'  # action
-        srcost = ' + sum(csr @ (mul(mul(pmax, tlv), ugd) - zug))'  # spinning reserve
-        nsrcost = ' + sum(cnsr @ mul((1 - ugd), mul(pmax, tlv)))'  # non-spinning reserve
-        dcost = ' + sum(cul dot pos(gs @ pg - pds))'  # unserved energy
+        srcost = ' + sum(csr @ prs)'  # spinning reserve
+        nsrcost = ' + sum(cnsr @ prns)'  # non-spinning reserve
+        dcost = ' + sum(cul dot pos(gs @ pg - pdsz))'  # unserved load
         self.obj.e_str = gcost + acost + srcost + nsrcost + dcost
 
     def _initial_guess(self):
@@ -230,6 +279,23 @@ class UC(ED):
     def init(self, **kwargs):
         self._initial_guess()
         return super().init(**kwargs)
+
+    def dc2ac(self, **kwargs):
+        """
+        AC conversion ``dc2ac`` is not implemented yet for
+        multi-period dispatch.
+        """
+        return NotImplementedError
+
+    def unpack(self, **kwargs):
+        """
+        Multi-period dispatch will not unpack results from
+        solver into devices.
+
+        # TODO: unpack first period results, and allow input
+        # to specify which period to unpack.
+        """
+        return None
 
 
 class UC2(UC, ESD1Base):

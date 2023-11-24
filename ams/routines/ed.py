@@ -44,6 +44,12 @@ class SRBase:
                              name='dsr', tex_name=r'd_{s,r,z}',
                              info='zonal spinning reserve requirement',)
 
+        # NOTE: define e_str in dispatch model
+        self.prsb = Constraint(info='spinning reserve balance',
+                               name='prsb', type='eq',)
+        self.rsr = Constraint(info='spinning reserve requirement',
+                              name='rsr', type='uq',)
+
 
 class MPBase:
     """
@@ -72,6 +78,7 @@ class MPBase:
         self.tlv = NumOp(u=self.timeslot, fun=np.ones_like,
                          args=dict(dtype=float),
                          expand_dims=0,
+                         name='tlv', tex_name=r'v_{tl}',
                          info='time length vector',
                          no_parse=True)
 
@@ -89,6 +96,12 @@ class MPBase:
                               name='RR30', tex_name=r'R_{30,R}',
                               info='Repeated ramp rate',)
 
+        self.ctrl.expand_dims = 1
+        self.c0.expand_dims = 1
+        self.pmax.expand_dims = 1
+        self.pmin.expand_dims = 1
+        self.pg0.expand_dims = 1
+        self.rate_a.expand_dims = 1
 
 class ED(RTED):
     """
@@ -130,12 +143,6 @@ class ED(RTED):
         self.ug.src = 'ug'
         self.ug.tex_name = r'u_{g}^{T}',
 
-        self.ctrl.expand_dims = 1
-        self.c0.expand_dims = 1
-        self.pmax.expand_dims = 1
-        self.pmin.expand_dims = 1
-        self.pg0.expand_dims = 1
-        self.rate_a.expand_dims = 1
         self.dud.expand_dims = 1
         self.ddd.expand_dims = 1
 
@@ -171,12 +178,8 @@ class ED(RTED):
         # NOTE: Spg @ pg returns a row vector
         self.pb.e_str = '- gs @ pg + pdsz'  # power balance
 
-        self.prsb = Constraint(info='spinning reserve balance',
-                               name='prs', type='eq',
-                               e_str='mul(ugt, mul(pmax, tlv) - pg) - prs')
-        self.rb = Constraint(info='spinning reserve requirement',
-                             name='rb', type='uq',
-                             e_str='-gs@mul(prs, ugt) + dsr')
+        self.prsb.e_str = 'mul(ugt, mul(pmax, tlv) - pg) - prs'
+        self.rsr.e_str = '-gs@prs + dsr'
 
         # --- bus power injection ---
         self.pnb.e_str =  'PTDF@(Cgi@pg - Cli@pds) - plf'
@@ -186,7 +189,6 @@ class ED(RTED):
         self.plfub.e_str = 'plf - mul(rate_a, tlv)'
 
         # --- ramping ---
-
         self.rbu.e_str = 'gs@mul(ugt, pru) - mul(dud, tlv)'
         self.rbd.e_str = 'gs@mul(ugt, prd) - mul(ddd, tlv)'
 
