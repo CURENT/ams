@@ -65,7 +65,7 @@ class DCOPFBase(RoutineModel):
                           unit='p.u.', model='StaticGen',)
 
         # --- load ---
-        self.pd = RParam(info='nodal active demand',
+        self.pd = RParam(info='active demand',
                          name='pd', tex_name=r'p_{d}',
                          model='StaticLoad', src='p0',
                          unit='p.u.',)
@@ -230,6 +230,7 @@ class DCOPF(DCOPFBase):
         self.pb = Constraint(name='pb', info='power balance',
                              e_str='sum(pd) - sum(pg)',
                              type='eq',)
+        # TODO: add eqn to get aBus
         self.aref = Constraint(name='aref', type='eq',
                                info='reference bus angle',
                                e_str='Cs@aBus',)
