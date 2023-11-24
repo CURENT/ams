@@ -79,22 +79,8 @@ class RBaseService(BaseService, Param):
         return self.__class__.__name__
 
     def __repr__(self):
-        val_str = ''
-
-        v = self.v
-
-        if v is None:
-            return f'{self.class_name}: {self.owner.class_name}.{self.name}'
-        elif isinstance(v, np.ndarray):
-            if v.shape[0] == 1:
-                if len(self.v) <= 20:
-                    val_str = f', v={self.v}'
-                else:
-                    val_str = f', v in shape of {self.v.shape}'
-            else:
-                val_str = f', v in shape of {self.v.shape}'
-
-            return f'{self.class_name}: {self.rtn.class_name}.{self.name}{val_str}'
+        if self.name is None:
+            return f'{self.class_name}: {self.rtn.class_name}'
         else:
             return f'{self.class_name}: {self.rtn.class_name}.{self.name}'
 
@@ -466,7 +452,8 @@ class MinDur(NumOpDual):
                          expand_dims=None,
                          no_parse=no_parse)
         if self.u.horizon is None:
-            msg = f'{self.class_name} {self.name}.u {self.u.name} has no horizon, likely a modeling error.'
+            msg = f'{self.class_name} <{self.name}>.u: <{self.u.name}> '
+            msg += 'has no horizon, likely a modeling error.'
             logger.error(msg)
 
     @property

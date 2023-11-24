@@ -593,7 +593,11 @@ class Objective(OptzBase):
 
     def __repr__(self):
         name_str = f"{self.name}=" if self.name is not None else "obj="
-        value_str = f"{self.v:.4f}, " if self.v is not None else ""
+        try:
+            v = self.v
+        except Exception:
+            v = None
+        value_str = f"{v:.4f}, " if v is not None else ""
         return f"{name_str}{value_str}{self.e_str}"
 
 
@@ -660,35 +664,41 @@ class OModel:
             if not val.no_parse:
                 try:
                     val.parse()
-                except ValueError as e:
+                except Exception as e:
                     msg = f"Failed to parse Param <{key}>. "
                     msg += f"Original error: {e}"
-                    raise ValueError(msg)
+                    raise Exception(msg)
                 setattr(self, key, val.optz)
         # --- add decision variables ---
         for key, val in rtn.vars.items():
             try:
                 val.parse()
-            except ValueError as e:
+            except Exception as e:
                 msg = f"Failed to parse Var <{key}>. "
                 msg += f"Original error: {e}"
-                raise ValueError(msg)
+                raise Exception(msg)
             setattr(self, key, val.optz)
         # --- add constraints ---
         for key, val in rtn.constrs.items():
             try:
                 val.parse(no_code=no_code)
-            except ValueError as e:
+            except Exception as e:
                 msg = f"Failed to parse Constr <{key}>. "
                 msg += f"Original error: {e}"
-                raise ValueError(msg)
+                raise Exception(msg)
             setattr(self, key, val.optz)
         # --- parse objective functions ---
         if rtn.type == 'PF':
             # NOTE: power flow type has no objective function
             pass
         elif rtn.obj is not None:
-            rtn.obj.parse(no_code=no_code)
+            try:
+                rtn.obj.parse(no_code=no_code)
+            except Exception as e:
+                msg = f"Failed to parse Obj <{rtn.obj.name}>. "
+                msg += f"Original error: {e}"
+                raise Exception(msg)
+
             # --- finalize the optimziation formulation ---
             code_mdl = "problem(self.obj, [constr for constr in self.constrs.values()])"
             for pattern, replacement in self.rtn.syms.sub_map.items():
