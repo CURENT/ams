@@ -52,10 +52,6 @@ class RTEDBase(DCOPF):
                           name='R10', tex_name=r'R_{10}',
                           model='StaticGen', src='R10',
                           unit='p.u./h',)
-        self.gammape = RParam(info='Ratio of ESD1.pge w.r.t to that of static generator',
-                              name='gammape', tex_name=r'\gamma_{p,e}',
-                              model='ESD1', src='gammap',
-                              no_parse=True,)
 
 
 class SFRBase:
@@ -312,6 +308,10 @@ class ESD1Base:
                            name='gene', tex_name=r'g_{E}',
                            model='ESD1', src='gen',
                            no_parse=True,)
+        info = 'Ratio of ESD1.pge w.r.t to that of static generator',
+        self.gammape = RParam(name='gammape', tex_name=r'\gamma_{p,e}',
+                              model='ESD1', src='gammap',
+                              no_parse=True, info=info)
 
         # --- service ---
         self.REtaD = NumOp(name='REtaD', tex_name=r'\frac{1}{\eta_d}',
