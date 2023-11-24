@@ -297,7 +297,7 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
         return None
 
 
-class UC2(UC, ESD1MPBase):
+class UCES(UC, ESD1MPBase):
     """
     UC with energy storage :ref:`ESD1`.
     """

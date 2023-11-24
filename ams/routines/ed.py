@@ -273,7 +273,7 @@ class ESD1MPBase(ESD1Base):
                                e_str='SOC[:, -1] - SOCinit',)
 
 
-class ED2(ED, ESD1Base):
+class EDES(ED, ESD1Base):
     """
     ED with energy storage :ref:`ESD1`.
     The bilinear term in the formulation is linearized with big-M method.

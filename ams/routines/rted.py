@@ -387,7 +387,7 @@ class ESD1Base:
                                e_str=SOCb,)
 
 
-class RTED2(RTED, ESD1Base):
+class RTEDES(RTED, ESD1Base):
     """
     RTED with energy storage :ref:`ESD1`.
     The bilinear term in the formulation is linearized with big-M method.
