@@ -154,8 +154,10 @@ class RoutineModel:
         horizon_all = mdl.idx.v
         try:
             row = horizon_all.index(horizon)
-        except ValueError:
-            raise ValueError(f"<{model}> does not have horizon with idx=<{horizon}>.")
+        except ValueError as e:
+            msg = f"<{model}> does not have horizon with idx=<{horizon}>. "
+            msg += f"Original error: {e}"
+            raise ValueError(msg)
         pq_factor = np.array(sdv[:, col][row, :])
         pqv = np.multiply(pq0, pq_factor)
         return pqv
