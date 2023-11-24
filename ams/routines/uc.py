@@ -9,8 +9,7 @@ import pandas as pd
 from ams.core.param import RParam
 from ams.core.service import (NumOp, NumOpDual, MinDur)
 from ams.routines.rted import RTEDBase
-from ams.routines.ed import SRBase, MPBase
-from ams.routines.rted import ESD1Base
+from ams.routines.ed import SRBase, MPBase, ESD1MPBase
 
 from ams.opt.omodel import Var, Constraint
 
@@ -91,7 +90,7 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
         NSRBase.__init__(self)
 
         self.config.add(OrderedDict((('t', 1),
-                                     ('cul', 1000),
+                                     ('cul', 10000),
                                      )))
         self.config.add_extra("_help",
                               t="time interval in hours",
@@ -234,7 +233,7 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
         acost = ' + sum(csu * vgd + csd * wgd)'  # action
         srcost = ' + sum(csr @ prs)'  # spinning reserve
         nsrcost = ' + sum(cnsr @ prns)'  # non-spinning reserve
-        dcost = ' + sum(cul dot pos(gs @ pg - pdsz))'  # unserved load
+        dcost = ' + sum(cul dot pos(pdsz - gs @ pg))'  # unserved load
         self.obj.e_str = gcost + acost + srcost + nsrcost + dcost
 
     def _initial_guess(self):
@@ -298,20 +297,22 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
         return None
 
 
-class UC2(UC, ESD1Base):
+class UC2(UC, ESD1MPBase):
     """
     UC with energy storage :ref:`ESD1`.
     """
 
     def __init__(self, system, config):
         UC.__init__(self, system, config)
-        ESD1Base.__init__(self)
+        ESD1MPBase.__init__(self)
 
         self.info = 'unit commitment with energy storage'
         self.type = 'DCUC'
 
-        # TODO: finish UC with energy storage formulation
-        # self.SOC.horizon = self.timeslot
-        # self.pge.horizon = self.timeslot
-        # self.ude.horizon = self.timeslot
-        # self.zue.horizon = self.timeslot
+        self.SOC.horizon = self.timeslot
+        self.pce.horizon = self.timeslot
+        self.pde.horizon = self.timeslot
+        self.uce.horizon = self.timeslot
+        self.ude.horizon = self.timeslot
+        self.zce.horizon = self.timeslot
+        self.zde.horizon = self.timeslot

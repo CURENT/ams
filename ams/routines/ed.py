@@ -238,29 +238,13 @@ class ED(RTED):
 # if ``Region``, if ``Bus`` has param ``zone``, optional, if none, auto fill
 
 
-class ED2(ED, ESD1Base):
+class ESD1MPBase(ESD1Base):
     """
-    ED with energy storage :ref:`ESD1`.
-    The bilinear term in the formulation is linearized with big-M method.
+    Extended base class for energy storage in multi-period dispatch.
     """
 
-    def __init__(self, system, config):
-        ED.__init__(self, system, config)
+    def __init__(self):
         ESD1Base.__init__(self)
-
-        self.config.t = 1  # dispatch interval in hour
-
-        self.info = 'Economic dispatch with energy storage'
-        self.type = 'DCED'
-
-        # NOTE: extend vars to 2D
-        self.SOC.horizon = self.timeslot
-        self.pce.horizon = self.timeslot
-        self.pde.horizon = self.timeslot
-        self.uce.horizon = self.timeslot
-        self.ude.horizon = self.timeslot
-        self.zce.horizon = self.timeslot
-        self.zde.horizon = self.timeslot
 
         self.Mre = RampSub(u=self.SOC, name='Mre', tex_name=r'M_{r,E}',
                            info='Subtraction matrix for SOC',
@@ -287,3 +271,28 @@ class ED2(ED, ESD1Base):
         self.SOCr = Constraint(name='SOCr', type='eq',
                                info='SOC requirement',
                                e_str='SOC[:, -1] - SOCinit',)
+
+
+class ED2(ED, ESD1Base):
+    """
+    ED with energy storage :ref:`ESD1`.
+    The bilinear term in the formulation is linearized with big-M method.
+    """
+
+    def __init__(self, system, config):
+        ED.__init__(self, system, config)
+        ESD1Base.__init__(self)
+
+        self.config.t = 1  # dispatch interval in hour
+
+        self.info = 'Economic dispatch with energy storage'
+        self.type = 'DCED'
+
+        # NOTE: extend vars to 2D
+        self.SOC.horizon = self.timeslot
+        self.pce.horizon = self.timeslot
+        self.pde.horizon = self.timeslot
+        self.uce.horizon = self.timeslot
+        self.ude.horizon = self.timeslot
+        self.zce.horizon = self.timeslot
+        self.zde.horizon = self.timeslot
