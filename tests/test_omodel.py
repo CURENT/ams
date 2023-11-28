@@ -52,13 +52,13 @@ class TestOMdel(unittest.TestCase):
         Test `Constr` access before solve.
         """
         self.ss.DCOPF.init(force=True)
-        np.testing.assert_equal(self.ss.DCOPF.lub.v, None)
+        np.testing.assert_equal(self.ss.DCOPF.plflb.v, None)
 
     def test_constr_access_after_solve(self):
         """
         Test `Constr` access after solve.
         """
         self.ss.DCOPF.run()
-        self.assertIsInstance(self.ss.DCOPF.lub.v, np.ndarray)
+        self.assertIsInstance(self.ss.DCOPF.plflb.v, np.ndarray)
 
     # NOTE: add Var, Constr add functions

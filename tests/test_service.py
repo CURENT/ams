@@ -65,14 +65,13 @@ class TestService(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.ss = ams.load(
-            ams.get_case("ieee39/ieee39_uced_esd1.xlsx"),
-            default_config=True,
-            no_output=True,
-        )
+        self.ss = ams.load(ams.get_case("ieee39/ieee39_uced_esd1.xlsx"),
+                           default_config=True,
+                           no_output=True,)
         self.nR = self.ss.Region.n
         self.nB = self.ss.Bus.n
-        self.nl = self.ss.Line.n
+        self.nL = self.ss.Line.n
+        self.nD = self.ss.StaticLoad.n  # number of static loads
 
     def test_NumOp_norfun(self):
         """
@@ -92,20 +91,14 @@ class TestService(unittest.TestCase):
         """
         Test `NumOp` non-array output.
         """
-        M = NumOp(
-            u=self.ss.PV.pmax,
-            fun=np.max,
-            rfun=np.dot,
-            rargs=dict(b=10),
-            array_out=True,
-        )
-        M2 = NumOp(
-            u=self.ss.PV.pmax,
-            fun=np.max,
-            rfun=np.dot,
-            rargs=dict(b=10),
-            array_out=False,
-        )
+        M = NumOp(u=self.ss.PV.pmax,
+                  fun=np.max,
+                  rfun=np.dot, rargs=dict(b=10),
+                  array_out=True,)
+        M2 = NumOp(u=self.ss.PV.pmax,
+                   fun=np.max,
+                   rfun=np.dot, rargs=dict(b=10),
+                   array_out=False,)
         self.assertIsInstance(M.v, np.ndarray)
         self.assertIsInstance(M2.v, (int, float))
 
@@ -123,15 +116,11 @@ class TestService(unittest.TestCase):
         """
         Test `ZonalSum`.
         """
-        ds = ZonalSum(
-            u=self.ss.RTED.zb,
-            zone="Region",
-            name="ds",
-            tex_name=r"S_{d}",
-            info="Sum pl vector in shape of zone",
-        )
+        ds = ZonalSum(u=self.ss.RTED.zd, zone="Region",
+                      name="ds", tex_name=r"S_{d}",
+                      info="Sum pl vector in shape of zone",)
         ds.rtn = self.ss.RTED
         # check if the shape is correct
-        np.testing.assert_array_equal(ds.v.shape, (self.nR, self.nB))
+        np.testing.assert_array_equal(ds.v.shape, (self.nR, self.nD))
         # check if the values are correct
         self.assertTrue(np.all(ds.v.sum(axis=1) <= np.array([self.nB, self.nB])))
