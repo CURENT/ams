@@ -186,7 +186,7 @@ exec(open("genroutineref.py").read())
 # import and execute model reference generation script
 shutil.rmtree("_examples", ignore_errors=True)
 shutil.copytree("../../examples", "_examples", )
-# shutil.rmtree("_examples/demonstration")
+shutil.rmtree("_examples/demonstration")
 
 jupyter_execute_notebooks = "off"
 

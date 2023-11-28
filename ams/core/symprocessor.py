@@ -4,10 +4,10 @@ Symbolic processor class for AMS routines.
 This module is revised from ``andes.core.symprocessor``.
 """
 
-import logging  # NOQA
-from collections import OrderedDict  # NOQA
+import logging
+from collections import OrderedDict
 
-import sympy as sp  # NOQA
+import sympy as sp
 
 logger = logging.getLogger(__name__)
 
@@ -87,9 +87,13 @@ class SymProcessor:
             (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 \2'),
             (r'\@', r' '),
             (r'dot', r' '),
+            (r'sum_squares\((.*?)\)', r"SUM((\1))^2"),
             (r'multiply\(([^,]+), ([^)]+)\)', r'\1 \2'),
             (r'\bnp.linalg.pinv(\d+)', r'\1^{\-1}'),
             (r'\bpos\b', 'F^{+}'),
+            (r'mul\((.*?),\s*(.*?)\)', r'\1 \2'),
+            (r'\bmul\b\((.*?),\s*(.*?)\)', r'\1 \2'),
+            (r'\bsum\b', 'SUM'),
         ])
 
         self.status = {

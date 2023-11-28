@@ -53,11 +53,11 @@ class DCOPFBase(RoutineModel):
                          no_parse=True)
         # --- generator ---
         self.pmax = RParam(info='Gen maximum active power',
-                           name='pmax', tex_name=r'p_{max}',
+                           name='pmax', tex_name=r'p_{g, max}',
                            unit='p.u.', model='StaticGen',
                            no_parse=False,)
         self.pmin = RParam(info='Gen minimum active power',
-                           name='pmin', tex_name=r'p_{min}',
+                           name='pmin', tex_name=r'p_{g, min}',
                            unit='p.u.', model='StaticGen',
                            no_parse=False,)
         self.pg0 = RParam(info='Gen initial active power',
@@ -97,7 +97,7 @@ class DCOPFBase(RoutineModel):
                           model='mats', src='Cft',
                           no_parse=True,)
         self.PTDF = RParam(info='Power Transfer Distribution Factor',
-                           name='PTDF', tex_name=r'PTDF',
+                           name='PTDF', tex_name=r'P_{TDF}',
                            model='mats', src='PTDF',
                            no_parse=True,)
 

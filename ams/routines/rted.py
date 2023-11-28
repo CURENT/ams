@@ -284,13 +284,13 @@ class ESD1Base:
                          name='En', src='En',
                          tex_name='E_n', unit='MWh',
                          model='ESD1', no_parse=True,)
-        self.SOCmin = RParam(info='Minimum required value for SOC in limiter',
-                             name='SOCmin', src='SOCmin',
-                             tex_name='SOC_{min}', unit='%',
-                             model='ESD1',)
         self.SOCmax = RParam(info='Maximum allowed value for SOC in limiter',
                              name='SOCmax', src='SOCmax',
-                             tex_name='SOC_{max}', unit='%',
+                             tex_name=r'SOC_{max}', unit='%',
+                             model='ESD1',)
+        self.SOCmin = RParam(info='Minimum required value for SOC in limiter',
+                             name='SOCmin', src='SOCmin',
+                             tex_name=r'SOC_{min}', unit='%',
                              model='ESD1',)
         self.SOCinit = RParam(info='Initial state of charge',
                               name='SOCinit', src='SOCinit',

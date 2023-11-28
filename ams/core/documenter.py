@@ -498,18 +498,24 @@ def _tex_pre(docm, p, tex_map):
     """
 
     # NOTE: in the future, there might occur special math symbols
-    map_before = {
-        'sum': 'SUM',
-        r'\sum': 'SUM',
-        r'\eta': 'ETA',
-        r'\gamma': 'GAMMA',
-        r'\frac': 'FRAC',
-    }
+    map_before = OrderedDict([
+        ('sum', 'SUM'),
+        (r'\sum', 'SUM'),
+        (r'\eta', 'ETA'),
+        (r'\gamma', 'GAMMA'),
+        (r'\theta', 'THETA'),
+        (r'\frac', 'FRAC'),
+        (r'\overline', 'OVERLINE'),
+        (r'\underline', 'UNDERLINE'),
+    ])
     map_post = OrderedDict([
         ('SUM', r'\sum'),
+        ('THETA', r'\theta'),
         ('ETA', r'\eta'),
         ('GAMMA', r'\gamma'),
         ('FRAC', r'\frac'),
+        ('OVERLINE', r'\overline'),
+        ('UNDERLINE', r'\underline'),
     ])
 
     expr = p.e_str

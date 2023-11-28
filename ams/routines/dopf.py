@@ -31,11 +31,13 @@ class DOPF(DCOPF):
                          name='qd', tex_name=r'q_{d}', unit='p.u.',
                          model='StaticLoad', src='q0',)
         self.vmax = RParam(info="Bus voltage upper limit",
-                           name='vmax', tex_name=r'v_{max}', unit='p.u.',
+                           name='vmax', tex_name=r'\overline{v}',
+                           unit='p.u.',
                            model='Bus', src='vmax', no_parse=True,
                            )
         self.vmin = RParam(info="Bus voltage lower limit",
-                           name='vmin', tex_name=r'v_{min}', unit='p.u.',
+                           name='vmin', tex_name=r'\underline{v}',
+                           unit='p.u.',
                            model='Bus', src='vmin', no_parse=True,)
         self.r = RParam(info='line resistance',
                         name='r', tex_name='r', unit='p.u.',

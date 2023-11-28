@@ -111,11 +111,11 @@ class ED(RTED):
 
     ED extends DCOPF as follows:
 
-    1. Vars `pg`, `pru`, `prd` are extended to 2D
+    1. Vars ``pg``, ``pru``, ``prd`` are extended to 2D
 
-    2. 2D Vars `rgu` and `rgd` are introduced
+    2. 2D Vars ``rgu`` and ``rgd`` are introduced
 
-    3. Param `ug` is sourced from `EDTSlot`.`ug` as commitment decisions
+    3. Param ``ug`` is sourced from ``EDTSlot.ug`` as commitment decisions
 
     Notes
     -----
@@ -141,7 +141,7 @@ class ED(RTED):
         self.ug.info = 'unit commitment decisions'
         self.ug.model = 'EDTSlot'
         self.ug.src = 'ug'
-        self.ug.tex_name = r'u_{g}^{T}',
+        # self.ug.tex_name = r'u_{g}',
 
         self.dud.expand_dims = 1
         self.ddd.expand_dims = 1
