@@ -90,7 +90,7 @@ class TestRoutineInit(unittest.TestCase):
                             f"{rtn.class_name} initialization failed!")
 
 
-@unittest.skipUnless(HAVE_IGRAPH, "igaph not available")
+@unittest.skipUnless(HAVE_IGRAPH, "igraph not available")
 class TestRoutineGraph(unittest.TestCase):
     """
     Test routine graph.
