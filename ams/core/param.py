@@ -5,8 +5,7 @@ Base class for parameters.
 
 import logging
 
-from typing import Optional
-from collections import Iterable
+from typing import Optional, Iterable
 
 import numpy as np
 from scipy.sparse import issparse
