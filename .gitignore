@@ -36,3 +36,6 @@ icebar
 
 # example excel files cache
 ~$*.xlsx
+
+# conda
+.conda/*

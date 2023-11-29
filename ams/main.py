@@ -515,22 +515,16 @@ def versioninfo():
     import numpy as np
     import cvxpy
     import andes
+    from ams.shared import INSTALLED_SOLVERS
 
     versions = {'Python': platform.python_version(),
                 'ams': get_versions()['version'],
                 'andes': andes.__version__,
                 'numpy': np.__version__,
                 'cvxpy': cvxpy.__version__,
+                'solvers': ', '.join(INSTALLED_SOLVERS),
                 }
     maxwidth = max([len(k) for k in versions.keys()])
-
-    try:
-        import numba
-    except ImportError:
-        numba = None
-
-    if numba is not None:
-        versions["numba"] = numba.__version__
 
     for key, val in versions.items():
         print(f"{key: <{maxwidth}}  {val}")

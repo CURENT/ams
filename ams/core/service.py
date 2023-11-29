@@ -9,11 +9,13 @@ import numpy as np  # NOQA
 
 from andes.core.service import BaseService, BackRef, RefFlatten  # NOQA
 
+from ams.opt.omodel import Param
+
 
 logger = logging.getLogger(__name__)
 
 
-class RBaseService(BaseService):
+class RBaseService(BaseService, Param):
     """
     Base class for services that are used in a routine.
     Revised from module `andes.core.service.BaseService`.
@@ -32,6 +34,8 @@ class RBaseService(BaseService):
         Variable type.
     model : str, optional
         Model name.
+    no_parse: bool, optional
+        True to skip parsing the service.
     """
 
     def __init__(self,
@@ -40,9 +44,12 @@ class RBaseService(BaseService):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
+                 no_parse: bool = False,
                  ):
-        super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype)
+        Param.__init__(self, name=name, unit=unit, info=info,
+                       no_parse=no_parse)
+        BaseService.__init__(self, name=name, tex_name=tex_name, unit=unit,
+                             info=info, vtype=vtype)
         self.export = False
         self.is_group = False
         self.rtn = None
@@ -72,22 +79,8 @@ class RBaseService(BaseService):
         return self.__class__.__name__
 
     def __repr__(self):
-        val_str = ''
-
-        v = self.v
-
-        if v is None:
-            return f'{self.class_name}: {self.owner.class_name}.{self.name}'
-        elif isinstance(v, np.ndarray):
-            if v.shape[0] == 1:
-                if len(self.v) <= 20:
-                    val_str = f', v={self.v}'
-                else:
-                    val_str = f', v in shape of {self.v.shape}'
-            else:
-                val_str = f', v in shape of {self.v.shape}'
-
-            return f'{self.class_name}: {self.rtn.class_name}.{self.name}{val_str}'
+        if self.name is None:
+            return f'{self.class_name}: {self.rtn.class_name}'
         else:
             return f'{self.class_name}: {self.rtn.class_name}.{self.name}'
 
@@ -119,9 +112,11 @@ class ValueService(RBaseService):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
+                 no_parse: bool = False,
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype)
+                         info=info, vtype=vtype,
+                         no_parse=no_parse)
         self._v = value
 
     @property
@@ -160,9 +155,11 @@ class ROperationService(RBaseService):
                  tex_name: str = None,
                  unit: str = None,
                  info: str = None,
-                 vtype: Type = None,):
+                 vtype: Type = None,
+                 no_parse: bool = False,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype)
+                         info=info, vtype=vtype,
+                         no_parse=no_parse)
         self.u = u
 
 
@@ -176,8 +173,6 @@ class LoadScale(ROperationService):
         nodal load.
     sd : Callable
         zonal load factor.
-    Cl: Callable
-        Connection matrix for Load and Bus.
     name : str, optional
         Instance name.
     tex_name : str, optional
@@ -191,27 +186,27 @@ class LoadScale(ROperationService):
     def __init__(self,
                  u: Callable,
                  sd: Callable,
-                 Cl: Callable,
                  name: str = None,
                  tex_name: str = None,
                  unit: str = None,
                  info: str = None,
+                 no_parse: bool = False,
                  ):
         tex_name = tex_name if tex_name is not None else u.tex_name
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, u=u,)
+                         info=info, u=u, no_parse=no_parse)
         self.sd = sd
-        self.Cl = Cl
 
     @property
     def v(self):
-        Region = self.rtn.system.Region
-        yloc_zl = np.array(Region.idx2uid(self.u.v))
-        PQ = self.rtn.system.PQ
-        p0 = PQ.get(src='p0', attr='v', idx=PQ.idx.v)
-        p0s = np.multiply(self.sd.v[:, yloc_zl].transpose(),
-                          p0[:, np.newaxis])
-        return np.matmul(np.linalg.pinv(self.Cl.v), p0s)
+        sys = self.rtn.system
+        u_idx = self.u.get_idx()
+        u_bus = self.u.owner.get(src='bus', attr='v', idx=u_idx)
+        u_zone = sys.Bus.get(src='zone', attr='v', idx=u_bus)
+        u_yloc = np.array(sys.Region.idx2uid(u_zone))
+        p0s = np.multiply(self.sd.v[:, u_yloc].transpose(),
+                          self.u.v[:, np.newaxis])
+        return p0s
 
 
 class NumOp(ROperationService):
@@ -245,6 +240,8 @@ class NumOp(ROperationService):
         Keyword arguments to pass to ``rfun``.
     expand_dims : int, optional
         Expand the dimensions of the output array along a specified axis.
+    array_out : bool, optional
+        Whether to force the output to be an array.
     """
 
     def __init__(self,
@@ -259,10 +256,12 @@ class NumOp(ROperationService):
                  rfun: Callable = None,
                  rargs: dict = {},
                  expand_dims: int = None,
-                 array_out=True):
+                 array_out=True,
+                 no_parse: bool = False,):
         tex_name = tex_name if tex_name is not None else u.tex_name
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, vtype=vtype, u=u,)
+                         info=info, vtype=vtype, u=u,
+                         no_parse=no_parse)
         self.fun = fun
         self.args = args
         self.rfun = rfun
@@ -317,8 +316,8 @@ class NumExpandDim(NumOp):
         Description.
     vtype : Type, optional
         Variable type.
-    model : str, optional
-        Model name.
+    array_out : bool, optional
+        Whether to force the output to be an array.
     """
 
     def __init__(self,
@@ -330,11 +329,13 @@ class NumExpandDim(NumOp):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 array_out: bool = True,):
+                 array_out: bool = True,
+                 no_parse: bool = False,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=np.expand_dims, args=args,
-                         array_out=array_out)
+                         array_out=array_out,
+                         no_parse=no_parse)
         self.axis = axis
 
     @property
@@ -375,6 +376,8 @@ class NumOpDual(NumOp):
         Keyword arguments to pass to ``rfun``.
     expand_dims : int, optional
         Expand the dimensions of the output array along a specified axis.
+    array_out : bool, optional
+        Whether to force the output to be an array.
     """
 
     def __init__(self,
@@ -390,14 +393,16 @@ class NumOpDual(NumOp):
                  rfun: Callable = None,
                  rargs: dict = {},
                  expand_dims: int = None,
-                 array_out=True):
+                 array_out=True,
+                 no_parse: bool = False,):
         tex_name = tex_name if tex_name is not None else u.tex_name
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=fun, args=args,
                          rfun=rfun, rargs=rargs,
                          expand_dims=expand_dims,
-                         array_out=array_out)
+                         array_out=array_out,
+                         no_parse=no_parse)
         self.u2 = u2
 
     @property
@@ -437,15 +442,18 @@ class MinDur(NumOpDual):
                  tex_name: str = None,
                  unit: str = None,
                  info: str = None,
-                 vtype: Type = None,):
+                 vtype: Type = None,
+                 no_parse: bool = False,):
         tex_name = tex_name if tex_name is not None else u.tex_name
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, u2=u2, fun=None, args=None,
                          rfun=None, rargs=None,
-                         expand_dims=None)
+                         expand_dims=None,
+                         no_parse=no_parse)
         if self.u.horizon is None:
-            msg = f'{self.class_name} {self.name}.u {self.u.name} has no horizon, likely a modeling error.'
+            msg = f'{self.class_name} <{self.name}>.u: <{self.u.name}> '
+            msg += 'has no horizon, likely a modeling error.'
             logger.error(msg)
 
     @property
@@ -468,7 +476,8 @@ class MinDur(NumOpDual):
 
 class NumHstack(NumOp):
     """
-    Repeat an array along the second axis nc times
+    Repeat an array along the second axis nc times or the length of
+    reference array,
     using NumPy's hstack function, where nc is the column number of the
     reference array,
     ``np.hstack([u.v[:, np.newaxis] * ref.shape[1]], **kwargs)``.
@@ -503,20 +512,22 @@ class NumHstack(NumOp):
                  info: str = None,
                  vtype: Type = None,
                  rfun: Callable = None,
-                 rargs: dict = {}):
+                 rargs: dict = {},
+                 no_parse: bool = False,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=np.hstack, args=args,
-                         rfun=rfun, rargs=rargs)
+                         rfun=rfun, rargs=rargs,
+                         no_parse=no_parse)
         self.ref = ref
 
     @property
     def v0(self):
         nc = 1
-        if hasattr(self.ref, "shape"):
-            nc = self.ref.shape[1]
-        elif isinstance(self.ref.v, (list, tuple)):
+        if isinstance(self.ref.v, (list, tuple)):
             nc = len(self.ref.v)
+        elif hasattr(self.ref, "shape"):
+            nc = self.ref.shape[1]
         else:
             raise AttributeError(f"{self.rtn.class_name}: ref {self.ref.name} has no attribute shape nor length.")
         return self.fun([self.u.v[:, np.newaxis]] * nc,
@@ -585,11 +596,13 @@ class ZonalSum(NumOp):
                  vtype: Type = None,
                  rfun: Callable = None,
                  rargs: dict = {},
+                 no_parse: bool = False,
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=None, args={},
-                         rfun=rfun, rargs=rargs)
+                         rfun=rfun, rargs=rargs,
+                         no_parse=no_parse)
         self.zone = zone
 
     @property
@@ -619,17 +632,45 @@ class VarSelect(NumOp):
     A numerical matrix to select a subset of a 2D variable,
     ``u.v[:, idx]``.
 
+    For example, if nned to select Energy Storage output
+    power from StaticGen `pg`, following definition can be used:
+    ```python
+    class RTED:
+    ...
+    self.ce = VarSelect(u=self.pg, indexer='genE')
+    ...
+    ```
+
     Parameters
     ----------
     u : Callable
         The input matrix variable.
-    idx : list
-        The index of the subset.
+    indexer: str
+        The name of the indexer source.
+    gamma : str, optional
+        The name of the indexer gamma.
+    name : str, optional
+        The name of the instance.
+    tex_name : str, optional
+        The TeX name for the instance.
+    unit : str, optional
+        The unit of the output.
+    info : str, optional
+        A description of the operation.
+    vtype : Type, optional
+        The variable type.
+    rfun : Callable, optional
+        Function to apply to the output of ``fun``.
+    rargs : dict, optional
+        Keyword arguments to pass to ``rfun``.
+    array_out : bool, optional
+        Whether to force the output to be an array.
     """
 
     def __init__(self,
                  u: Callable,
                  indexer: str,
+                 gamma: str = None,
                  name: str = None,
                  tex_name: str = None,
                  unit: str = None,
@@ -637,12 +678,17 @@ class VarSelect(NumOp):
                  vtype: Type = None,
                  rfun: Callable = None,
                  rargs: dict = {},
+                 array_out: bool = True,
+                 no_parse: bool = False,
                  **kwargs
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, u=u, fun=None,
-                         rfun=rfun, rargs=rargs, **kwargs)
+                         rfun=rfun, rargs=rargs, array_out=array_out,
+                         no_parse=no_parse,
+                         **kwargs)
         self.indexer = indexer
+        self.gamma = gamma
 
     @property
     def v0(self):
@@ -680,12 +726,12 @@ class VarSelect(NumOp):
         if not is_subset:
             raise ValueError(f'{indexer.model} contains undefined {indexer.src}, likey a data error.')
 
-        out = [1 if item in ref else 0 for item in uidx]
-        out = np.array(out)
-        if self.u.horizon is not None:
-            out = out[:, np.newaxis]
-            out = np.repeat(out, self.u.horizon.n, axis=1)
-        return np.array(out)
+        row, col = np.meshgrid(uidx, ref)
+        out = (row == col).astype(int)
+        if self.gamma:
+            vgamma = getattr(self.rtn, self.gamma)
+            out = vgamma.v[:, np.newaxis] * out
+        return out
 
 
 class VarReduction(NumOp):
@@ -723,11 +769,13 @@ class VarReduction(NumOp):
                  vtype: Type = None,
                  rfun: Callable = None,
                  rargs: dict = {},
+                 no_parse: bool = False,
                  **kwargs
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=None, rfun=rfun, rargs=rargs,
+                         no_parse=no_parse,
                          **kwargs)
         self.fun = fun
 
@@ -776,10 +824,12 @@ class RampSub(NumOp):
                  vtype: Type = None,
                  rfun: Callable = None,
                  rargs: dict = {},
+                 no_parse: bool = False,
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
-                         u=u, fun=None, rfun=rfun, rargs=rargs,)
+                         u=u, fun=None, rfun=rfun, rargs=rargs,
+                         no_parse=no_parse,)
 
     @property
     def v0(self):

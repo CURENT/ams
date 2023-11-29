@@ -2,17 +2,23 @@
 Module for system matrix make.
 """
 
-import logging  # NOQA
-from typing import Optional  # NOQA
+import logging
+from typing import Optional
 
-import numpy as np  # NOQA
-from ams.pypower.make import makePTDF, makeBdc  # NOQA
-from ams.io.pypower import system2ppc  # NOQA
+import numpy as np
+
+from scipy.sparse import csr_matrix as c_sparse
+from scipy.sparse import lil_matrix as l_sparse
+
+from ams.pypower.make import makePTDF, makeBdc
+from ams.io.pypower import system2ppc
+
+from ams.opt.omodel import Param
 
 logger = logging.getLogger(__name__)
 
 
-class MParam:
+class MParam(Param):
     """
     Class for matrix parameters built from the system.
 
@@ -44,6 +50,7 @@ class MParam:
                  unit: Optional[str] = None,
                  v: Optional[np.ndarray] = None,
                  ):
+        Param.__init__(self, name=name, info=info)
         self.name = name
         self.tex_name = tex_name if (tex_name is not None) else name
         self.info = info
@@ -56,6 +63,14 @@ class MParam:
         """
         Return the value of the parameter.
         """
+        # NOTE: scipy.sparse matrix will return 2D array
+        # so we squeeze it here if only one row
+        if isinstance(self._v, (c_sparse, l_sparse)):
+            out = self._v.toarray()
+            if out.shape[0] == 1:
+                return np.squeeze(out)
+            else:
+                return out
         return self._v
 
     @property
@@ -102,6 +117,9 @@ class MatProcessor:
         self.Cg = MParam(name='Cg', tex_name=r'C_g',
                          info='Generator connectivity matrix',
                          v=None)
+        self.Cs = MParam(name='Cs', tex_name=r'C_s',
+                         info='Slack connectivity matrix',
+                         v=None)
         self.Cl = MParam(name='Cl', tex_name=r'Cl',
                          info='Load connectivity matrix',
                          v=None)
@@ -122,18 +140,22 @@ class MatProcessor:
         # FIXME: hard coded here
         gen_bus = system.StaticGen.get(src='bus', attr='v',
                                        idx=system.StaticGen.get_idx())
+        slack_bus = system.Slack.get(src='bus', attr='v',
+                                     idx=system.Slack.idx.v)
         all_bus = system.Bus.idx.v
         load_bus = system.StaticLoad.get(src='bus', attr='v',
                                          idx=system.StaticLoad.get_idx())
         idx_PD = system.PQ.find_idx(keys="bus", values=all_bus,
                                     allow_none=True, default=None)
-        self.pl._v = np.array(system.PQ.get(src='p0', attr='v', idx=idx_PD))
+        self.pl._v = c_sparse(system.PQ.get(src='p0', attr='v', idx=idx_PD))
         self.ql._v = np.array(system.PQ.get(src='q0', attr='v', idx=idx_PD))
 
+        row, col = np.meshgrid(all_bus, slack_bus)
+        self.Cs._v = c_sparse((row == col).astype(int))
         row, col = np.meshgrid(all_bus, gen_bus)
-        self.Cg._v = (row == col).astype(int)
+        self.Cg._v = c_sparse((row == col).astype(int))
         row, col = np.meshgrid(all_bus, load_bus)
-        self.Cl._v = (row == col).astype(int)
+        self.Cl._v = c_sparse((row == col).astype(int))
 
         return True
 
