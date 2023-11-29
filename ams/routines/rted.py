@@ -292,7 +292,7 @@ class ESD1Base:
                              name='SOCmin', src='SOCmin',
                              tex_name=r'SOC_{min}', unit='%',
                              model='ESD1',)
-        self.SOCinit = RParam(info='Initial state of charge',
+        self.SOCinit = RParam(info='Initial SOC',
                               name='SOCinit', src='SOCinit',
                               tex_name=r'SOC_{init}', unit='%',
                               model='ESD1',)
@@ -323,7 +323,7 @@ class ESD1Base:
                         array_out=False,)
 
         # --- vars ---
-        self.SOC = Var(info='ESD1 SOC', unit='%',
+        self.SOC = Var(info='ESD1 State of Charge', unit='%',
                        name='SOC', tex_name=r'SOC',
                        model='ESD1', pos=True,
                        v0=self.SOCinit,)
