@@ -5,7 +5,7 @@ import logging
 
 import numpy as np
 from ams.core.param import RParam
-from ams.core.service import NumOp
+from ams.core.service import NumOp, NumOpDual
 
 from ams.routines.routine import RoutineModel
 
@@ -33,10 +33,18 @@ class DCOPFBase(RoutineModel):
                            name='ctrl', tex_name=r'c_{trl}',
                            model='StaticGen', src='ctrl',
                            no_parse=True)
+        self.ctrle = NumOpDual(info='Effective Gen controllability',
+                               name='ctrle', tex_name=r'c_{trl, e}',
+                               u=self.ctrl, u2=self.ug,
+                               fun=np.multiply, no_parse=True)
         self.nctrl = NumOp(u=self.ctrl, fun=np.logical_not,
-                           name='nctrl', tex_name=r'-c_{trl}',
-                           info='gen uncontrollability',
+                           name='nctrl', tex_name=r'c_{trl,n}',
+                           info='Effective Gen uncontrollability',
                            no_parse=True,)
+        self.nctrle = NumOpDual(info='Effective Gen uncontrollability',
+                                name='nctrle', tex_name=r'c_{trl,n,e}',
+                                u=self.nctrl, u2=self.ug,
+                                fun=np.multiply, no_parse=True)
         self.c2 = RParam(info='Gen cost coefficient 2',
                          name='c2', tex_name=r'c_{2}',
                          unit=r'$/(p.u.^2)', model='GCost',
@@ -207,10 +215,10 @@ class DCOPF(DCOPFBase):
                       model='StaticGen', src='p',
                       v0=self.pg0)
         # NOTE: `ug*pmin` results in unexpected error
-        pglb = '-pg + mul(nctrl, pg0) + mul(ctrl, mul(ug, pmin))'
+        pglb = '-pg + mul(nctrle, pg0) + mul(ctrle, pmin)'
         self.pglb = Constraint(name='pglb', info='pg min',
                                e_str=pglb, type='uq',)
-        pgub = 'pg - mul(nctrl, pg0) - mul(ctrl, mul(ug, pmax))'
+        pgub = 'pg - mul(nctrle, pg0) - mul(ctrle, pmax)'
         self.pgub = Constraint(name='pgub', info='pg max',
                                e_str=pgub, type='uq',)
 

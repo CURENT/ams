@@ -139,11 +139,16 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
         self.prns.horizon = self.timeslot
         self.prns.info = '2D Non-spinning reserve'
 
-        pglb = '-pg + mul(mul(nctrl, pg0), tlv) '
-        pglb += '+ mul(mul(ctrl, pmin), tlv)'
+        # TODO: havn't test non-controllability?
+        self.ctrle.u2 = self.tlv
+        self.ctrle.info = 'Reshaped controllability'
+        self.nctrle.u2 = self.tlv
+        self.nctrle.info = 'Reshaped non-controllability'
+        pglb = '-pg + mul(mul(nctrl, pg0), ugd)'
+        pglb += '+ mul(mul(ctrl, pmin), ugd)'
         self.pglb.e_str = pglb
-        pgub = 'pg - mul(mul(nctrl, pg0), tlv) '
-        pgub += '- mul(mul(ctrl, pmax), tlv)'
+        pgub = 'pg - mul(mul(nctrl, pg0), ugd)'
+        pgub += '- mul(mul(ctrl, pmax), ugd)'
         self.pgub.e_str = pgub
 
         # --- vars ---
@@ -189,7 +194,6 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
         # spinning reserve
         self.prsb.e_str = 'mul(ugd, mul(pmax, tlv)) - zug - prs'
         # spinning reserve requirement
-        # TODO: rsr eqn is not correct, need to fix
         self.rsr.e_str = '-gs@prs + dsr'
 
         # non-spinning reserve
@@ -272,7 +276,7 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
             g_idx = priority[0]
             ug0 = 0
         self.system.StaticGen.set(src='u', attr='v', idx=g_idx, value=ug0)
-        logger.warning(f'Turn off StaticGen {g_idx} as initial guess for commitment.')
+        logger.warning(f'Turn off StaticGen {g_idx} as initial commitment guess.')
         return True
 
     def init(self, **kwargs):

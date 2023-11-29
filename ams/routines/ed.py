@@ -78,7 +78,7 @@ class MPBase:
         self.tlv = NumOp(u=self.timeslot, fun=np.ones_like,
                          args=dict(dtype=float),
                          expand_dims=0,
-                         name='tlv', tex_name=r'v_{tl}',
+                         name='tlv', tex_name=r'1_{tl}',
                          info='time length vector',
                          no_parse=True)
 
@@ -156,11 +156,13 @@ class ED(RTED):
         # NOTE: extend pg to 2D matrix, where row is gen and col is timeslot
         self.pg.horizon = self.timeslot
         self.pg.info = '2D Gen power'
-        pglb = '-pg + mul(mul(nctrl, pg0), tlv) '
-        pglb += '+ mul(mul(ctrl, pmin), tlv)'
+        self.ctrle.u2 = self.ugt
+        self.nctrle.u2 = self.ugt
+        pglb = '-pg + mul(mul(nctrle, pg0), tlv) '
+        pglb += '+ mul(mul(ctrle, tlv), pmin)'
         self.pglb.e_str = pglb
-        pgub = 'pg - mul(mul(nctrl, pg0), tlv) '
-        pgub += '- mul(mul(ctrl, pmax), tlv)'
+        pgub = 'pg - mul(mul(nctrle, pg0), tlv) '
+        pgub += '- mul(mul(ctrle, tlv), pmax)'
         self.pgub.e_str = pgub
 
         self.plf.horizon = self.timeslot
