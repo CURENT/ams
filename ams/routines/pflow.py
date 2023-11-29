@@ -9,19 +9,29 @@ from ams.io.pypower import system2ppc  # NOQA
 from ams.pypower.core import ppoption  # NOQA
 from ams.core.param import RParam  # NOQA
 
-from ams.routines.dcpf import DCPFlowData, DCPFlowBase  # NOQA
+from ams.routines.dcpf import DCPFlowBase  # NOQA
 from ams.opt.omodel import Var, Constraint  # NOQA
 
 logger = logging.getLogger(__name__)
 
 
-class PFlowData(DCPFlowData):
+class PFlow(DCPFlowBase):
     """
     AC Power Flow routine.
+
+    Notes
+    -----
+    1. AC pwoer flow is solved with PYPOWER ``runpf`` function.
+    2. AC power flow formulation in AMS style is NOT DONE YET,
+       but this does not affect the results
+       because the data are passed to PYPOWER for solving.
     """
 
-    def __init__(self):
-        DCPFlowData.__init__(self)
+    def __init__(self, system, config):
+        DCPFlowBase.__init__(self, system, config)
+        self.info = "AC Power Flow"
+        self.type = "PF"
+
         self.qd = RParam(
             info="reactive power load in system base",
             name="qd",
@@ -30,17 +40,6 @@ class PFlowData(DCPFlowData):
             unit="p.u.",
             model="PQ",
         )
-
-
-class PFlowModel(DCPFlowBase):
-    """
-    AC power flow model.
-    """
-
-    def __init__(self, system, config):
-        DCPFlowBase.__init__(self, system, config)
-        self.info = "AC Power Flow"
-        self.type = "PF"
 
         # --- bus ---
         self.aBus = Var(
@@ -133,20 +132,3 @@ class PFlowModel(DCPFlowBase):
             method=method,
             **kwargs,
         )
-
-
-class PFlow(PFlowData, PFlowModel):
-    """
-    AC Power Flow routine.
-
-    Notes
-    -----
-    1. AC pwoer flow is solved with PYPOWER ``runpf`` function.
-    2. AC power flow formulation in AMS style is NOT DONE YET,
-       but this does not affect the results
-       because the data are passed to PYPOWER for solving.
-    """
-
-    def __init__(self, system=None, config=None):
-        PFlowData.__init__(self)
-        PFlowModel.__init__(self, system, config)

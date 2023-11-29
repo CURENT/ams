@@ -10,24 +10,10 @@ from ams.pypower.core import ppoption  # NOQA
 from ams.io.pypower import system2ppc  # NOQA
 from ams.core.param import RParam  # NOQA
 
-from ams.routines.dcopf import DCOPFData  # NOQA
 from ams.routines.dcpf import DCPFlowBase  # NOQA
 from ams.opt.omodel import Var, Constraint, Objective  # NOQA
 
 logger = logging.getLogger(__name__)
-
-
-class ACOPFData(DCOPFData):
-    """
-    ACOPF data.
-    """
-
-    def __init__(self):
-        DCOPFData.__init__(self)
-        self.ql = RParam(info='reactive power demand (system base)',
-                         name='ql', tex_name=r'q_{l}',
-                         model='mats', src='ql',
-                         unit='p.u.',)
 
 
 class ACOPFBase(DCPFlowBase):
@@ -37,8 +23,6 @@ class ACOPFBase(DCPFlowBase):
 
     def __init__(self, system, config):
         DCPFlowBase.__init__(self, system, config)
-        self.info = 'AC Optimal Power Flow'
-        self.type = 'ACED'
         # NOTE: ACOPF does not receive data from dynamic
         self.map1 = OrderedDict()
         self.map2 = OrderedDict([
@@ -102,15 +86,42 @@ class ACOPFBase(DCPFlowBase):
                     **kwargs, )
 
 
-class ACOPFModel(ACOPFBase):
+class ACOPF(ACOPFBase):
     """
-    ACOPF model.
+    Standard AC optimal power flow.
+
+    Notes
+    -----
+    1. ACOPF is solved with PYPOWER ``runopf`` function.
+    2. ACOPF formulation in AMS style is NOT DONE YET,
+       but this does not affect the results
+       because the data are passed to PYPOWER for solving.
     """
 
     def __init__(self, system, config):
         ACOPFBase.__init__(self, system, config)
         self.info = 'AC Optimal Power Flow'
         self.type = 'ACED'
+
+        # --- params ---
+        self.c2 = RParam(info='Gen cost coefficient 2',
+                         name='c2', tex_name=r'c_{2}',
+                         unit=r'$/(p.u.^2)', model='GCost',
+                         indexer='gen', imodel='StaticGen',
+                         nonneg=True)
+        self.c1 = RParam(info='Gen cost coefficient 1',
+                         name='c1', tex_name=r'c_{1}',
+                         unit=r'$/(p.u.)', model='GCost',
+                         indexer='gen', imodel='StaticGen',)
+        self.c0 = RParam(info='Gen cost coefficient 0',
+                         name='c0', tex_name=r'c_{0}',
+                         unit=r'$', model='GCost',
+                         indexer='gen', imodel='StaticGen',
+                         no_parse=True)
+        self.ql = RParam(info='reactive power demand (system base)',
+                         name='ql', tex_name=r'q_{l}',
+                         model='mats', src='ql',
+                         unit='p.u.',)
         # --- bus ---
         self.aBus = Var(info='Bus voltage angle',
                         unit='rad',
@@ -141,20 +152,3 @@ class ACOPFModel(ACOPFBase):
                              info='total cost',
                              e_str='sum(c2 * pg**2 + c1 * pg + c0)',
                              sense='min',)
-
-
-class ACOPF(ACOPFData, ACOPFModel):
-    """
-    Standard AC optimal power flow.
-
-    Notes
-    -----
-    1. ACOPF is solved with PYPOWER ``runopf`` function.
-    2. ACOPF formulation in AMS style is NOT DONE YET,
-       but this does not affect the results
-       because the data are passed to PYPOWER for solving.
-    """
-
-    def __init__(self, system=None, config=None):
-        ACOPFData.__init__(self)
-        ACOPFModel.__init__(self, system, config)

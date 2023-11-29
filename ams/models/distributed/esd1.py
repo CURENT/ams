@@ -32,12 +32,12 @@ class ESD1Data(ModelData):
                            )
 
         self.gammap = NumParam(default=1.0, tex_name=r'\gamma_p',
-                               info='Ratio of PVD1.pref0 w.r.t to that of static PV',
+                               info='Ratio of ESD1.pref0 w.r.t to that of static PV',
                                vrange='(0, 1]',
                                )
 
         self.gammaq = NumParam(default=1.0, tex_name=r'\gamma_q',
-                               info='Ratio of PVD1.qref0 w.r.t to that of static PV',
+                               info='Ratio of ESD1.qref0 w.r.t to that of static PV',
                                vrange='(0, 1]',
                                )
 

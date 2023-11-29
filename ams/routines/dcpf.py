@@ -1,30 +1,35 @@
 """
 Power flow routines.
 """
-import logging  # NOQA
+import logging
 
-from andes.shared import deg2rad  # NOQA
-from andes.utils.misc import elapsed  # NOQA
+from andes.shared import deg2rad
+from andes.utils.misc import elapsed
 
-from ams.routines.routine import RoutineData, RoutineModel  # NOQA
-from ams.opt.omodel import Var  # NOQA
-from ams.pypower import runpf  # NOQA
-from ams.pypower.core import ppoption  # NOQA
+from ams.routines.routine import RoutineModel
+from ams.opt.omodel import Var
+from ams.pypower import runpf
+from ams.pypower.core import ppoption
 
-from ams.io.pypower import system2ppc  # NOQA
-from ams.core.param import RParam  # NOQA
+from ams.io.pypower import system2ppc
+from ams.core.param import RParam
 
 logger = logging.getLogger(__name__)
 
 
-class DCPFlowData(RoutineData):
+class DCPFlowBase(RoutineModel):
     """
-    Data class for power flow routines.
+    Base class for power flow.
+
+    Overload the ``solve``, ``unpack``, and ``run`` methods.
     """
 
-    def __init__(self):
-        RoutineData.__init__(self)
-        # --- line ---
+    def __init__(self, system, config):
+        RoutineModel.__init__(self, system, config)
+        self.info = 'DC Power Flow'
+        self.type = 'PF'
+
+        # --- routine data ---
         self.x = RParam(info="line reactance",
                         name='x', tex_name='x',
                         unit='p.u.',
@@ -43,19 +48,6 @@ class DCPFlowData(RoutineData):
                          name='pl', tex_name=r'p_{l}',
                          unit='p.u.',
                          model='mats', src='pl')
-
-
-class DCPFlowBase(RoutineModel):
-    """
-    Base class for power flow.
-
-    Overload the ``solve``, ``unpack``, and ``run`` methods.
-    """
-
-    def __init__(self, system, config):
-        RoutineModel.__init__(self, system, config)
-        self.info = 'DC Power Flow'
-        self.type = 'PF'
 
     def unpack(self, res):
         """
@@ -174,9 +166,15 @@ class DCPFlowBase(RoutineModel):
         raise NotImplementedError
 
 
-class DCPFlowModel(DCPFlowBase):
+class DCPF(DCPFlowBase):
     """
-    Base class for power flow model.
+    DC power flow.
+
+    Notes
+    -----
+    1. DCPF is solved with PYPOWER ``runpf`` function.
+    2. DCPF formulation is not complete yet, but this does not affect the
+       results because the data are passed to PYPOWER for solving.
     """
 
     def __init__(self, system, config):
@@ -193,19 +191,3 @@ class DCPFlowModel(DCPFlowBase):
                       unit='p.u.',
                       name='pg', tex_name=r'p_{g}',
                       model='StaticGen', src='p',)
-
-
-class DCPF(DCPFlowData, DCPFlowModel):
-    """
-    DC power flow.
-
-    Notes
-    -----
-    1. DCPF is solved with PYPOWER ``runpf`` function.
-    2. DCPF formulation is not complete yet, but this does not affect the
-       results because the data are passed to PYPOWER for solving.
-    """
-
-    def __init__(self, system=None, config=None):
-        DCPFlowData.__init__(self)
-        DCPFlowModel.__init__(self, system, config)

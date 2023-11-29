@@ -1,29 +1,105 @@
 """
-Real-time economic dispatch.
+Unit commitment routines.
 """
-import logging  # NOQA
-from collections import OrderedDict  # NOQA
-import numpy as np  # NOQA
-import pandas as pd  # NOQA
+import logging
+from collections import OrderedDict
+import numpy as np
+import pandas as pd
 
-from ams.core.param import RParam  # NOQA
-from ams.core.service import (NumOp, NumHstack,
-                              NumOpDual, MinDur, ZonalSum)  # NOQA
-from ams.routines.ed import EDData, EDModel  # NOQA
-from ams.routines.rted import ESD1Base  # NOQA
+from ams.core.param import RParam
+from ams.core.service import (NumOp, NumOpDual, MinDur)
+from ams.routines.rted import RTEDBase
+from ams.routines.ed import SRBase, MPBase, ESD1MPBase
 
-from ams.opt.omodel import Var, Constraint  # NOQA
+from ams.opt.omodel import Var, Constraint
 
 logger = logging.getLogger(__name__)
 
 
-class UCData(EDData):
+class NSRBase:
     """
-    UC data.
+    Base class for non-spinning reserve.
     """
 
-    def __init__(self):
-        EDData.__init__(self)
+    def __init__(self) -> None:
+        self.cnsr = RParam(info='cost for non-spinning reserve',
+                           name='cnsr', tex_name=r'c_{nsr}',
+                           model='NSRCost', src='cnsr',
+                           unit=r'$/(p.u.*h)',
+                           indexer='gen', imodel='StaticGen',)
+        self.dnsrp = RParam(info='non-spinning reserve requirement in percentage',
+                            name='dnsr', tex_name=r'd_{nsr}',
+                            model='NSR', src='demand',
+                            unit='%',)
+        self.prns = Var(info='non-spinning reserve',
+                        name='prns', tex_name=r'p_{r, ns}',
+                        model='StaticGen', nonneg=True,)
+
+        self.dnsrpz = NumOpDual(u=self.pdz, u2=self.dnsrp, fun=np.multiply,
+                                name='dnsrpz', tex_name=r'd_{nsr, p, z}',
+                                info='zonal non-spinning reserve requirement in percentage',)
+        self.dnsr = NumOpDual(u=self.dnsrpz, u2=self.sd, fun=np.multiply,
+                              rfun=np.transpose,
+                              name='dnsr', tex_name=r'd_{nsr}',
+                              info='zonal non-spinning reserve requirement',
+                              no_parse=True,)
+
+        # NOTE: define e_str in dispatch model
+        self.prnsb = Constraint(info='non-spinning reserve balance',
+                                name='prnsb', type='eq',)
+        self.rnsr = Constraint(info='non-spinning reserve requirement',
+                               name='rnsr', type='uq',)
+
+
+class UC(RTEDBase, MPBase, SRBase, NSRBase):
+    """
+    DC-based unit commitment (UC).
+    The bilinear term in the formulation is linearized with big-M method.
+
+    Penalty for unserved load is introduced as ``config.cul`` (:math:`c_{ul, cfg}`),
+    1000 [$/p.u.] by default.
+
+    Constraints include power balance, ramping, spinning reserve, non-spinning reserve,
+    minimum ON/OFF duration.
+    The cost inludes generation cost, startup cost, shutdown cost, spinning reserve cost,
+    non-spinning reserve cost, and unserved energy penalty.
+
+    Method ``_initial_guess`` is used to make initial guess for commitment decision if all
+    generators are online at initial. It is a simple heuristic method, which may not be optimal.
+
+    Notes
+    -----
+    1. Formulations has been adjusted with interval ``config.t``
+
+    3. The tie-line flow has not been implemented in formulations.
+
+    References
+    ----------
+    1. Huang, Y., Pardalos, P. M., & Zheng, Q. P. (2017). Electrical power unit commitment: deterministic and
+    two-stage stochastic programming models and algorithms. Springer.
+
+    2. D. A. Tejada-Arango, S. Lumbreras, P. Sánchez-Martín and A. Ramos, "Which Unit-Commitment Formulation
+    is Best? A Comparison Framework," in IEEE Transactions on Power Systems, vol. 35, no. 4, pp. 2926-2936,
+    July 2020, doi: 10.1109/TPWRS.2019.2962024.
+    """
+
+    def __init__(self, system, config):
+        RTEDBase.__init__(self, system, config)
+        MPBase.__init__(self)
+        SRBase.__init__(self)
+        NSRBase.__init__(self)
+
+        self.config.add(OrderedDict((('t', 1),
+                                     ('cul', 10000),
+                                     )))
+        self.config.add_extra("_help",
+                              t="time interval in hours",
+                              cul="penalty for unserved load, $/p.u.",
+                              )
+
+        self.info = 'unit commitment'
+        self.type = 'DCUC'
+
         self.timeslot.model = 'UCTSlot'
         self.csu = RParam(info='startup cost',
                           name='csu', tex_name=r'c_{su}',
@@ -48,33 +124,32 @@ class UCData(EDData):
         self.timeslot.info = 'Time slot for multi-period UC'
         self.timeslot.model = 'UCTSlot'
 
-        self.cnsr = RParam(info='cost for spinning reserve',
-                           name='cnsr', tex_name=r'c_{nsr}',
-                           model='NSRCost', src='cnsr',
-                           unit=r'$/(p.u.*h)',
-                           indexer='gen', imodel='StaticGen',)
-        self.dnsrp = RParam(info='non-spinning reserve requirement in percentage',
-                            name='dnsr', tex_name=r'd_{nsr}',
-                            model='NSR', src='demand',
-                            unit='%',)
+        self.ug.expand_dims = 1
 
+        # NOTE: extend pg to 2D matrix, where row is gen and col is timeslot
+        self.pg.horizon = self.timeslot
+        self.pg.info = '2D Gen power'
 
-class UCModel(EDModel):
-    """
-    UC model.
-    """
+        self.plf.horizon = self.timeslot
+        self.plf.info = '2D Line flow'
 
-    def __init__(self, system, config):
-        EDModel.__init__(self, system, config)
+        self.prs.horizon = self.timeslot
+        self.prs.info = '2D Spinning reserve'
 
-        self.config.add(OrderedDict((('cul', 1000),
-                                     )))
-        self.config.add_extra("_help",
-                              cul="penalty for unserved load, $/p.u.",
-                              )
+        self.prns.horizon = self.timeslot
+        self.prns.info = '2D Non-spinning reserve'
 
-        self.info = 'unit commitment'
-        self.type = 'DCUC'
+        # TODO: havn't test non-controllability?
+        self.ctrle.u2 = self.tlv
+        self.ctrle.info = 'Reshaped controllability'
+        self.nctrle.u2 = self.tlv
+        self.nctrle.info = 'Reshaped non-controllability'
+        pglb = '-pg + mul(mul(nctrl, pg0), ugd)'
+        pglb += '+ mul(mul(ctrl, pmin), ugd)'
+        self.pglb.e_str = pglb
+        pgub = 'pg - mul(mul(nctrl, pg0), ugd)'
+        pgub += '- mul(mul(ctrl, pmax), ugd)'
+        self.pgub.e_str = pgub
 
         # --- vars ---
         self.ugd = Var(info='commitment decision',
@@ -104,17 +179,30 @@ class UCModel(EDModel):
                                e_str='ugd @ Mr - vgd[:, 1:]',)
         self.actv0 = Constraint(name='actv0', type='eq',
                                 info='initial startup action',
-                                e_str='ugd[:, 0] - ug  - vgd[:, 0]',)
+                                e_str='ugd[:, 0] - ug[:, 0]  - vgd[:, 0]',)
         self.actw = Constraint(name='actw', type='eq',
                                info='shutdown action',
                                e_str='-ugd @ Mr - wgd[:, 1:]',)
         self.actw0 = Constraint(name='actw0', type='eq',
                                 info='initial shutdown action',
-                                e_str='-ugd[:, 0] + ug - wgd[:, 0]',)
+                                e_str='-ugd[:, 0] + ug[:, 0] - wgd[:, 0]',)
 
         # --- constraints ---
-        self.pb.e_str = '- gs @ zug + pds'  # power balance
-        self.pb.type = 'uq'
+        self.pb.e_str = 'gs @ zug - pdsz'  # power balance
+        self.pb.type = 'uq'  # soft constraint
+
+        # spinning reserve
+        self.prsb.e_str = 'mul(ugd, mul(pmax, tlv)) - zug - prs'
+        # spinning reserve requirement
+        self.rsr.e_str = '-gs@prs + dsr'
+
+        # non-spinning reserve
+        self.prnsb.e_str = 'mul(1-ugd, mul(pmax, tlv)) - prns'
+        # non-spinning reserve requirement
+        self.rnsr.e_str = '-gs@prns + dnsr'
+
+        # --- bus power injection ---
+        self.pnb.e_str =  'PTDF@(Cgi@pg - Cli@pds) - plf'
 
         # --- big M for ugd*pg ---
         self.Mzug = NumOp(info='10 times of max of pmax as big M for zug',
@@ -128,26 +216,6 @@ class UCModel(EDModel):
                                 type='uq', e_str='zug - pg - Mzug dot (1 - ugd)')
         self.zugub2 = Constraint(name='zugub2', info='zug upper bound',
                                  type='uq', e_str='zug - Mzug dot ugd')
-
-        # --- reserve ---
-        # 1) non-spinning reserve
-        self.dnsrpz = NumOpDual(u=self.pdz, u2=self.dnsrp, fun=np.multiply,
-                                name='dnsrpz', tex_name=r'd_{nsr, p, z}',
-                                info='zonal non-spinning reserve requirement in percentage',)
-        self.dnsr = NumOpDual(u=self.dnsrpz, u2=self.sd, fun=np.multiply,
-                              rfun=np.transpose,
-                              name='dnsr', tex_name=r'd_{nsr}',
-                              info='zonal non-spinning reserve requirement',)
-        self.nsr = Constraint(name='nsr', info='non-spinning reserve', type='uq',
-                              e_str='-gs@(multiply((1 - ugd), Rpmax)) + dnsr')
-        # 2) spinning reserve
-        self.dsrpz = NumOpDual(u=self.pdz, u2=self.dsrp, fun=np.multiply,
-                               name='dsrpz', tex_name=r'd_{sr, p, z}',
-                               info='zonal spinning reserve requirement in percentage',)
-        self.dsr = NumOpDual(u=self.dsrpz, u2=self.sd, fun=np.multiply,
-                             rfun=np.transpose,
-                             name='dsr', tex_name=r'd_{sr}',
-                             info='zonal spinning reserve requirement',)
 
         # --- minimum ON/OFF duration ---
         self.Con = MinDur(u=self.pg, u2=self.td1,
@@ -163,17 +231,13 @@ class UCModel(EDModel):
                                name='doff', type='uq',
                                e_str='multiply(Coff, wgd) - (1 - ugd)')
 
-        # --- penalty for unserved load ---
-        self.Cgi = NumOp(u=self.Cg, fun=np.linalg.pinv,
-                         name='Cgi', tex_name=r'C_{g}^{-1}',
-                         info='inverse of Cg',)
-
         # --- objective ---
-        gcost = 'sum(c2 @ (t dot zug)**2 + c1 @ (t dot zug) + c0 * ugd)'
-        acost = ' + sum(csu * vgd + csd * wgd)'
-        srcost = ' + sum(csr @ (multiply(Rpmax, ugd) - zug))'
-        nsrcost = ' + sum(cnsr @ multiply((1 - ugd), Rpmax))'
-        dcost = ' + sum(cul dot pos(gs @ pg - pds))'
+        gcost = 'sum(c2 @ (t dot zug)**2 + c1 @ (t dot zug))'
+        gcost += '+ sum(mul(mul(ug, c0), tlv))'
+        acost = ' + sum(csu * vgd + csd * wgd)'  # action
+        srcost = ' + sum(csr @ prs)'  # spinning reserve
+        nsrcost = ' + sum(cnsr @ prns)'  # non-spinning reserve
+        dcost = ' + sum(cul dot pos(pdsz - gs @ pg))'  # unserved load
         self.obj.e_str = gcost + acost + srcost + nsrcost + dcost
 
     def _initial_guess(self):
@@ -212,65 +276,47 @@ class UCModel(EDModel):
             g_idx = priority[0]
             ug0 = 0
         self.system.StaticGen.set(src='u', attr='v', idx=g_idx, value=ug0)
-        logger.warning(f'Turn off StaticGen {g_idx} as initial guess for commitment.')
+        logger.warning(f'Turn off StaticGen {g_idx} as initial commitment guess.')
         return True
 
     def init(self, **kwargs):
         self._initial_guess()
-        super().init(**kwargs)
+        return super().init(**kwargs)
+
+    def dc2ac(self, **kwargs):
+        """
+        AC conversion ``dc2ac`` is not implemented yet for
+        multi-period dispatch.
+        """
+        return NotImplementedError
+
+    def unpack(self, **kwargs):
+        """
+        Multi-period dispatch will not unpack results from
+        solver into devices.
+
+        # TODO: unpack first period results, and allow input
+        # to specify which period to unpack.
+        """
+        return None
 
 
-class UC(UCData, UCModel):
-    """
-    DC-based unit commitment (UC).
-    The bilinear term in the formulation is linearized with big-M method.
-
-    Penalty for unserved load is introduced as ``config.cul`` (:math:`c_{ul, cfg}`),
-    1000 [$/p.u.] by default.
-
-    Constraints include power balance, ramping, spinning reserve, non-spinning reserve,
-    minimum ON/OFF duration.
-    The cost inludes generation cost, startup cost, shutdown cost, spinning reserve cost,
-    non-spinning reserve cost, and unserved energy penalty.
-
-    Method ``_initial_guess`` is used to make initial guess for commitment decision if all
-    generators are online at initial. It is a simple heuristic method, which may not be optimal.
-
-    Notes
-    -----
-    1. Formulations has been adjusted with interval ``config.t``
-
-    3. The tie-line flow has not been implemented in formulations.
-
-    References
-    ----------
-    1. Huang, Y., Pardalos, P. M., & Zheng, Q. P. (2017). Electrical power unit commitment: deterministic and
-    two-stage stochastic programming models and algorithms. Springer.
-
-    2. D. A. Tejada-Arango, S. Lumbreras, P. Sánchez-Martín and A. Ramos, "Which Unit-Commitment Formulation
-    is Best? A Comparison Framework," in IEEE Transactions on Power Systems, vol. 35, no. 4, pp. 2926-2936,
-    July 2020, doi: 10.1109/TPWRS.2019.2962024.
-    """
-
-    def __init__(self, system, config):
-        UCData.__init__(self)
-        UCModel.__init__(self, system, config)
-
-
-class UC2(UCData, UCModel, ESD1Base):
+class UCES(UC, ESD1MPBase):
     """
     UC with energy storage :ref:`ESD1`.
     """
 
     def __init__(self, system, config):
-        UCData.__init__(self)
-        UCModel.__init__(self, system, config)
-        ESD1Base.__init__(self)
+        UC.__init__(self, system, config)
+        ESD1MPBase.__init__(self)
 
         self.info = 'unit commitment with energy storage'
         self.type = 'DCUC'
 
         self.SOC.horizon = self.timeslot
-        self.pge.horizon = self.timeslot
-        self.ued.horizon = self.timeslot
-        self.zue.horizon = self.timeslot
+        self.pce.horizon = self.timeslot
+        self.pde.horizon = self.timeslot
+        self.uce.horizon = self.timeslot
+        self.ude.horizon = self.timeslot
+        self.zce.horizon = self.timeslot
+        self.zde.horizon = self.timeslot

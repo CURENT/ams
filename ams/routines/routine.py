@@ -2,25 +2,26 @@
 Module for routine data.
 """
 
-import logging  # NOQA
-from typing import Optional, Union, Type, Iterable  # NOQA
-from collections import OrderedDict  # NOQA
+import logging
+from typing import Optional, Union, Type, Iterable
+from collections import OrderedDict
 
-import numpy as np  # NOQA
+import numpy as np
+import matplotlib.pyplot as plt
 
-from andes.core import Config  # NOQA
+from andes.core import Config
 from andes.shared import deg2rad  # NOQA
-from andes.utils.misc import elapsed  # NOQA
-from ams.utils import timer  # NOQA
-from ams.core.param import RParam  # NOQA
-from ams.opt.omodel import OModel, Var, Constraint, Objective  # NOQA
+from andes.utils.misc import elapsed
 
-from ams.core.symprocessor import SymProcessor  # NOQA
-from ams.core.documenter import RDocumenter  # NOQA
-from ams.core.service import RBaseService, ValueService  # NOQA
+from ams.core.param import RParam
+from ams.core.symprocessor import SymProcessor
+from ams.core.documenter import RDocumenter
+from ams.core.service import RBaseService, ValueService
+from ams.opt.omodel import OModel, Param, Var, Constraint, Objective
 
-from ams.models.group import GroupBase  # NOQA
-from ams.core.model import Model  # NOQA
+from ams.shared import igraph as ig
+from ams.shared import require_igraph
+
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ class RoutineData:
     """
 
     def __init__(self):
-        self.rparams = OrderedDict()  # list out RParam in a routine
+        pass
 
 
 class RoutineModel:
@@ -43,19 +44,24 @@ class RoutineModel:
         self.system = system
         self.config = Config(self.class_name)
         self.info = None
-        self.tex_names = OrderedDict((('sys_f', 'f_{sys}'),
-                                      ('sys_mva', 'S_{b,sys}'),
-                                      ))
+        self.tex_names = OrderedDict(
+            (
+                ("sys_f", "f_{sys}"),
+                ("sys_mva", "S_{b,sys}"),
+            )
+        )
         self.syms = SymProcessor(self)  # symbolic processor
         self._syms = False  # flag if symbols has been generated
 
+        self.rparams = OrderedDict()  # list out RParam in a routine
         self.services = OrderedDict()  # list out services in a routine
 
+        self.params = OrderedDict()  # list out Params in a routine
         self.vars = OrderedDict()  # list out Vars in a routine
         self.constrs = OrderedDict()
         self.obj = None
         self.initialized = False
-        self.type = 'UndefinedType'
+        self.type = "UndefinedType"
         self.docum = RDocumenter(self)
 
         # --- sync mapping ---
@@ -68,17 +74,24 @@ class RoutineModel:
         if config is not None:
             self.config.load(config)
         # TODO: these default configs might to be revised
-        self.config.add(OrderedDict((('sparselib', 'klu'),
-                                     ('linsolve', 0),
-                                     )))
-        self.config.add_extra("_help",
-                              sparselib="linear sparse solver name",
-                              linsolve="solve symbolic factorization each step (enable when KLU segfaults)",
-                              )
-        self.config.add_extra("_alt",
-                              sparselib=("klu", "umfpack", "spsolve", "cupy"),
-                              linsolve=(0, 1),
-                              )
+        self.config.add(
+            OrderedDict(
+                (
+                    ("sparselib", "klu"),
+                    ("linsolve", 0),
+                )
+            )
+        )
+        self.config.add_extra(
+            "_help",
+            sparselib="linear sparse solver name",
+            linsolve="solve symbolic factorization each step (enable when KLU segfaults)",
+        )
+        self.config.add_extra(
+            "_alt",
+            sparselib=("klu", "umfpack", "spsolve", "cupy"),
+            linsolve=(0, 1),
+        )
 
         self.exec_time = 0.0  # recorded time to execute the routine in seconds
         # TODO: check exit_code of gurobipy or any other similiar solvers
@@ -100,7 +113,8 @@ class RoutineModel:
             return loc
         else:
             idx_none = [idxe for idxe in idx if idxe not in src_idx]
-            raise ValueError(f'Var <{self.class_name}.{src}> does not contain value with idx={idx_none[0]}')
+            msg = f"Var <{self.class_name}.{src}> does not contain value with idx={idx_none}"
+            raise ValueError(msg)
 
     def get_load(self, horizon: Union[int, str],
                  src: str, attr: str = 'v',
@@ -126,22 +140,24 @@ class RoutineModel:
             pq_zone = self.system.PQ.zone.v
             pq0 = self.system.PQ.get(src=src, attr=attr, idx=idx)
         else:
-            pq_zone = self.system.PQ.get(src='zone', attr='v', idx=idx)
+            pq_zone = self.system.PQ.get(src="zone", attr="v", idx=idx)
             pq0 = self.system.PQ.get(src=src, attr=attr, idx=idx)
         col = [all_zone.index(pq_z) for pq_z in pq_zone]
 
         mdl = self.system.__dict__[model]
         if mdl.n == 0:
-            raise ValueError(f'<{model}> does not have data, check input file.')
+            raise ValueError(f"<{model}> does not have data, check input file.")
         if factor not in mdl.__dict__.keys():
-            raise ValueError(f'<{model}> does not have <{factor}>.')
+            raise ValueError(f"<{model}> does not have <{factor}>.")
         sdv = mdl.__dict__[factor].v
 
         horizon_all = mdl.idx.v
         try:
             row = horizon_all.index(horizon)
-        except ValueError:
-            raise ValueError(f'<{model}> does not have horizon with idx=<{horizon}>.')
+        except ValueError as e:
+            msg = f"<{model}> does not have horizon with idx=<{horizon}>. "
+            msg += f"Original error: {e}"
+            raise ValueError(msg)
         pq_factor = np.array(sdv[:, col][row, :])
         pqv = np.multiply(pq0, pq_factor)
         return pqv
@@ -163,16 +179,16 @@ class RoutineModel:
             Horizon index.
         """
         if src not in self.__dict__.keys():
-            raise ValueError(f'<{src}> does not exist in <<{self.class_name}>.')
+            raise ValueError(f"<{src}> does not exist in <<{self.class_name}>.")
         item = self.__dict__[src]
 
         if not hasattr(item, attr):
-            raise ValueError(f'{attr} does not exist in {self.class_name}.{src}.')
+            raise ValueError(f"{attr} does not exist in {self.class_name}.{src}.")
 
         idx_all = item.get_idx()
 
         if idx_all is None:
-            raise ValueError(f'<{self.class_name}> item <{src}> has no idx.')
+            raise ValueError(f"<{self.class_name}> item <{src}> has no idx.")
 
         if isinstance(idx, (str, int)):
             idx = [idx]
@@ -183,12 +199,13 @@ class RoutineModel:
         loc = [idx_all.index(idxe) if idxe in idx_all else None for idxe in idx]
         if None in loc:
             idx_none = [idxe for idxe in idx if idxe not in idx_all]
-            raise ValueError(f'Var <{self.class_name}.{src}> does not contain value with idx={idx_none}')
+            msg = f"Var <{self.class_name}.{src}> does not contain value with idx={idx_none}"
+            raise ValueError(msg)
         out = getattr(item, attr)[loc]
 
         if horizon is not None:
             if item.horizon is None:
-                raise ValueError(f'horizon is not defined for {self.class_name}.{src}.')
+                raise ValueError(f"horizon is not defined for {self.class_name}.{src}.")
             horizon_all = item.horizon.get_idx()
             if isinstance(horizon, int):
                 horizon = [horizon]
@@ -197,16 +214,20 @@ class RoutineModel:
             if isinstance(horizon, np.ndarray):
                 horizon = horizon.tolist()
             if isinstance(horizon, list):
-                loc_h = [horizon_all.index(idxe) if idxe in horizon_all else None for idxe in horizon]
+                loc_h = [
+                    horizon_all.index(idxe) if idxe in horizon_all else None
+                    for idxe in horizon
+                ]
                 if None in loc_h:
                     idx_none = [idxe for idxe in horizon if idxe not in horizon_all]
-                    raise ValueError(f'Var <{self.class_name}.{src}> does not contain horizon with idx={idx_none}')
+                    msg = f"Var <{self.class_name}.{src}> does not contain horizon with idx={idx_none}"
+                    raise ValueError(msg)
                 out = out[:, loc_h]
                 if out.shape[1] == 1:
                     out = out[:, 0]
         return out
 
-    def set(self, src: str, idx, attr: str = 'v', value=0.0):
+    def set(self, src: str, idx, attr: str = "v", value=0.0):
         """
         Set the value of an attribute of a routine parameter.
         """
@@ -215,11 +236,11 @@ class RoutineModel:
             owner = self.__dict__[src].owner
             return owner.set(src=src, idx=idx, attr=attr, value=value)
         else:
-            logger.info(f'Variable {self.name} has no owner.')
+            logger.info(f"Variable {self.name} has no owner.")
             # FIXME: add idx for non-grouped variables
             return None
 
-    def doc(self, max_width=78, export='plain'):
+    def doc(self, max_width=78, export="plain"):
         """
         Retrieve routine documentation as a string.
         """
@@ -248,13 +269,18 @@ class RoutineModel:
                 if rparam.owner.n == 0:
                     no_input.append(rname)
                     owner_list.append(rparam.owner.class_name)
+            # TODO: add more data config check?
+            if rparam.config.pos:
+                if not np.all(rparam.v > 0):
+                    logger.warning(f"RParam <{rname}> should have all positive values.")
         if len(no_input) > 0:
-            logger.error(f"Following models are missing from input file: {set(owner_list)}")
+            msg = f"Following models are missing in input: {set(owner_list)}"
+            logger.warning(msg)
             return False
         # TODO: add data validation for RParam, typical range, etc.
         return True
 
-    def init(self, force=False, no_code=True, **kwargs):
+    def init(self, force=True, no_code=True, **kwargs):
         """
         Setup optimization model.
 
@@ -265,16 +291,16 @@ class RoutineModel:
         no_code: bool
             Whether to show generated code.
         """
-        # TODO: add input check, e.g., if GCost exists
         if not force and self.initialized:
-            logger.debug(f'{self.class_name} has already been initialized.')
+            logger.debug(f"{self.class_name} has already been initialized.")
             return True
         if self._data_check():
-            logger.debug(f'{self.class_name} data check passed.')
+            logger.debug(f"{self.class_name} data check passed.")
         else:
-            logger.warning(f'{self.class_name} data check failed, setup may run into error!')
+            msg = f"{self.class_name} data check failed, setup may run into error!"
+            logger.warning(msg)
         self._constr_check()
-        # FIXME: build the system matrices every init might slow down the process
+        # FIXME: build the system matrices every init might slow down
         self.system.mats.make()
         results, elapsed_time = self.om.setup(no_code=no_code)
         common_msg = f"Routine <{self.class_name}> "
@@ -332,9 +358,12 @@ class RoutineModel:
         self.exit_code = self.syms.status[status]
         self.system.exit_code = self.exit_code
         _, s = elapsed(t0)
-        self.exec_time = float(s.split(' ')[0])
+        self.exec_time = float(s.split(" ")[0])
         sstats = self.om.mdl.solver_stats  # solver stats
-        n_iter = int(sstats.num_iters)
+        if sstats.num_iters is None:
+            n_iter = -1
+        else:
+            n_iter = int(sstats.num_iters)
         n_iter_str = f"{n_iter} iterations " if n_iter > 1 else f"{n_iter} iteration "
         if self.exit_code == 0:
             msg = f"{self.class_name} solved as {status} in {s}, converged after "
@@ -343,7 +372,7 @@ class RoutineModel:
             self.unpack(**kwargs)
             return True
         else:
-            msg = f"{self.class_name} failed after "
+            msg = f"{self.class_name} failed as {status} after "
             msg += n_iter_str + f"using solver {sstats.solver_name}!"
             logger.warning(msg)
             return False
@@ -361,7 +390,7 @@ class RoutineModel:
         raise NotImplementedError
 
     def __repr__(self):
-        return f'{self.class_name} at {hex(id(self))}'
+        return f"{self.class_name} at {hex(id(self))}"
 
     def _ppc2ams(self):
         """
@@ -383,11 +412,12 @@ class RoutineModel:
         """
         if key in self.__dict__:
             existing_keys = []
-            for type in ['constrs', 'vars', 'rparams']:
+            for type in ["constrs", "vars", "rparams", "services"]:
                 if type in self.__dict__:
                     existing_keys += list(self.__dict__[type].keys())
             if key in existing_keys:
-                logger.warning(f"{self.class_name}: redefinition of member <{key}>. Likely a modeling error.")
+                msg = f"Attribute <{key}> already exists in <{self.class_name}>."
+                logger.warning(msg)
 
         # register owner routine instance of following attributes
         if isinstance(value, (RBaseService)):
@@ -408,8 +438,6 @@ class RoutineModel:
         # NOTE: value.id is not in use yet
         if isinstance(value, Var):
             value.id = len(self.vars)
-        elif isinstance(value, RParam):
-            value.id = len(self.rparams)
         self._check_attribute(key, value)
         self._register_attribute(key, value)
 
@@ -422,16 +450,72 @@ class RoutineModel:
         Called within ``__setattr__``, this is where the magic happens.
         Subclass attributes are automatically registered based on the variable type.
         """
-        if isinstance(value, (Var, Constraint, Objective)):
+        if isinstance(value, (Param, Var, Constraint, Objective)):
             value.om = self.om
+            value.rtn = self
+        if isinstance(value, Param):
+            self.params[key] = value
+            self.om.params[key] = None  # cp.Parameter
         if isinstance(value, Var):
             self.vars[key] = value
+            self.om.vars[key] = None  # cp.Variable
         elif isinstance(value, Constraint):
             self.constrs[key] = value
+            self.om.constrs[key] = None  # cp.Constraint
         elif isinstance(value, RParam):
             self.rparams[key] = value
         elif isinstance(value, RBaseService):
             self.services[key] = value
+
+    def update(self, params=None, mat_make=True,):
+        """
+        Update the values of Parameters in the optimization model.
+
+        This method is particularly important when some `RParams` are
+        linked with system matrices. 
+        In such cases, setting `mat_make=True` is necessary to rebuild
+        these matrices for the changes to take effect.
+        This is common in scenarios involving topology changes, connection statuses, 
+        or load value modifications.
+        If unsure, it is advisable to use `mat_make=True` as a precautionary measure.
+
+        Parameters
+        ----------
+        params: Parameter, str, or list
+            Parameter, Parameter name, or a list of parameter names to be updated.
+            If None, all parameters will be updated.
+        mat_make: bool
+            True to rebuild the system matrices. Set to False to speed up the process
+            if no system matrices are changed.
+        """
+        t0, _ = elapsed()
+        re_setup = False
+        # sanitize input
+        sparams = []
+        if params is None:
+            sparams = [val for val in self.params.values()]
+            mat_make = True
+        elif isinstance(params, Param):
+            sparams = [params]
+        elif isinstance(params, str):
+            sparams = [self.params[params]]
+        elif isinstance(params, list):
+            sparams = [self.params[param] for param in params if isinstance(param, str)]
+            for param in params:
+                param.update()
+        for param in sparams:
+            if param.optz is None:  # means no_parse=True
+                re_setup = True
+                break
+        if mat_make:
+            self.system.mats.make()
+        if re_setup:
+            logger.warning(f"Resetup {self.class_name} OModel due to non-parametric change.")        
+            _, _ = self.om.setup(no_code=True)
+        results = self.om.update(params=sparams)
+        t0, s0 = elapsed(t0)
+        logger.debug(f"Update params in {s0}.")
+        return results
 
     def __delattr__(self, name):
         """
@@ -443,7 +527,7 @@ class RoutineModel:
             name of the attribute
         """
         self._unregister_attribute(name)
-        if name == 'obj':
+        if name == "obj":
             self.obj = None
         else:
             super().__delattr__(name)  # Call the superclass implementation
@@ -675,8 +759,6 @@ class RoutineModel:
                 info: Optional[str] = None,
                 src: Optional[str] = None,
                 unit: Optional[str] = None,
-                lb: Optional[str] = None,
-                ub: Optional[str] = None,
                 horizon: Optional[RParam] = None,
                 nonneg: Optional[bool] = False,
                 nonpos: Optional[bool] = False,
@@ -749,11 +831,15 @@ class RoutineModel:
         """
         if model is None and shape is None:
             raise ValueError("Either model or shape must be specified.")
-        item = Var(name=name, tex_name=tex_name, info=info, src=src, unit=unit,
-                   model=model, shape=shape, lb=lb, ub=ub, horizon=horizon, nonneg=nonneg,
-                   nonpos=nonpos, complex=complex, imag=imag, symmetric=symmetric,
-                   diag=diag, psd=psd, nsd=nsd, hermitian=hermitian, bool=bool,
-                   integer=integer, pos=pos, neg=neg, )
+        item = Var(name=name, tex_name=tex_name,
+                   info=info, src=src, unit=unit,
+                   model=model, shape=shape, horizon=horizon,
+                   nonneg=nonneg, nonpos=nonpos,
+                   complex=complex, imag=imag,
+                   symmetric=symmetric, diag=diag,
+                   psd=psd, nsd=nsd, hermitian=hermitian,
+                   bool=bool, integer=integer,
+                   pos=pos, neg=neg, )
 
         # add the variable as an routine attribute
         setattr(self, name, item)
@@ -766,8 +852,10 @@ class RoutineModel:
             elif item.model in self.system.models.keys():
                 item.owner = self.system.models[item.model]
             else:
-                msg = f'Model indicator \'{item.model}\' of <{item.rtn.class_name}.{name}>'
-                msg += ' is not a model or group. Likely a modeling error.'
+                msg = (
+                    f"Model indicator '{item.model}' of <{item.rtn.class_name}.{name}>"
+                )
+                msg += " is not a model or group. Likely a modeling error."
                 logger.warning(msg)
 
         self._post_add_check()
@@ -779,3 +867,221 @@ class RoutineModel:
         Generate initial guess for the optimization model.
         """
         raise NotImplementedError
+
+    @require_igraph
+    def igmake(self, directed=True):
+        """
+        Build an igraph object from the system.
+
+        Parameters
+        ----------
+        directed: bool
+            Whether the graph is directed.
+
+        Returns
+        -------
+        igraph.Graph
+            An igraph object.
+        """
+        system = self.system
+        edges = np.column_stack([system.Bus.idx2uid(system.Line.bus1.v),
+                                 system.Bus.idx2uid(system.Line.bus2.v)])
+        g = ig.Graph(n=system.Bus.n, directed=directed, edges=edges)
+        return g
+
+    @require_igraph
+    def igraph(
+        self,
+        input: Optional[Union[RParam, Var]] = None,
+        ytimes: Optional[float] = None,
+        decimal: Optional[int] = 6,
+        directed: Optional[bool] = True,
+        dpi: Optional[int] = 100,
+        figsize: Optional[tuple] = None,
+        adjust_bus: Optional[bool] = False,
+        gen_color: Optional[str] = "red",
+        rest_color: Optional[str] = "black",
+        vertex_shape: Optional[str] = "circle",
+        vertex_font: Optional[str] = None,
+        no_vertex_label: Optional[bool] = False,
+        vertex_label: Optional[Union[str, list]] = None,
+        vertex_size: Optional[float] = None,
+        vertex_label_size: Optional[float] = None,
+        vertex_label_dist: Optional[float] = 1.5,
+        vertex_label_angle: Optional[float] = 10.2,
+        edge_arrow_size: Optional[float] = None,
+        edge_arrow_width: Optional[float] = None,
+        edge_width: Optional[float] = None,
+        edge_align_label: Optional[bool] = True,
+        edge_background: Optional[str] = None,
+        edge_color: Optional[str] = None,
+        edge_curved: Optional[bool] = False,
+        edge_font: Optional[str] = None,
+        edge_label: Optional[Union[str, list]] = None,
+        layout: Optional[str] = "rt",
+        autocurve: Optional[bool] = True,
+        ax: Optional[plt.Axes] = None,
+        title: Optional[str] = None,
+        title_loc: Optional[str] = None,
+        **visual_style,
+    ):
+        """
+        Plot a system uging `g.plot()` of `igraph`, with optional input.
+        For now, only support plotting of Bus and Line elements as input.
+
+        Examples
+        --------
+        >>> import ams
+        >>> sp = ams.load(ams.get_case('5bus/pjm5bus_uced.xlsx'))
+        >>> sp.DCOPF.run()
+        >>> sp.DCOPF.plot(input=sp.DCOPF.pn,
+        >>>               ytimes=10,
+        >>>               adjust_bus=True,
+        >>>               vertex_size=10,
+        >>>               vertex_label_size=15,
+        >>>               vertex_label_dist=2,
+        >>>               vertex_label_angle=90,
+        >>>               show=False,
+        >>>               edge_align_label=True,
+        >>>               autocurve=True,)
+
+        Parameters
+        ----------
+        input: RParam or Var, optional
+            The variable or parameter to be plotted.
+        ytimes: float, optional
+            The scaling factor of the values.
+        directed: bool, optional
+            Whether the graph is directed.
+        dpi: int, optional
+            Dots per inch.
+        figsize: tuple, optional
+            Figure size.
+        adjust_bus: bool, optional
+            Whether to adjust the bus size.
+        gen_color: str, optional
+            Color of the generator bus.
+        rest_color: str, optional
+            Color of the rest buses.
+        no_vertex_label: bool, optional
+            Whether to show vertex labels.
+        vertex_shape: str, optional
+            Shape of the vertices.
+        vertex_font: str, optional
+            Font of the vertices.
+        vertex_size: float, optional
+            Size of the vertices.
+        vertex_label_size: float, optional
+            Size of the vertex labels.
+        vertex_label_dist: float, optional
+            Distance of the vertex labels.
+        vertex_label_angle: float, optional
+            Angle of the vertex labels.
+        edge_arrow_size: float, optional
+            Size of the edge arrows.
+        edge_arrow_width: float, optional
+            Width of the edge arrows.
+        edge_width: float, optional
+            Width of the edges.
+        edge_align_label: bool, optional
+            Whether to align the edge labels.
+        edge_background: str, optional
+            RGB colored rectangle background of the edge labels.
+        layout: str, optional
+            Layout of the graph, ['rt', 'kk', 'fr', 'drl', 'lgl', 'circle', 'grid_fr'].
+        autocurve: bool, optional
+            Whether to use autocurve.
+        ax: plt.Axes, optional
+            Matplotlib axes.
+        visual_style: dict, optional
+            Visual style, see ``igraph.plot`` for details.
+
+        Returns
+        -------
+        plt.Axes
+            Matplotlib axes.
+        igraph.Graph
+            An igraph object.
+        """
+
+        g = self.igmake(directed=directed)
+
+        # --- visual style ---
+        vstyle = {
+            # layout style
+            "layout": layout,
+            # vertices
+            "vertex_shape": vertex_shape,
+            "vertex_font": vertex_font,
+            "vertex_size": vertex_size,
+            "vertex_label": vertex_label,
+            "vertex_label_size": vertex_label_size,
+            "vertex_label_dist": vertex_label_dist,
+            "vertex_label_angle": vertex_label_angle,
+            # edges
+            "edge_arrow_size": edge_arrow_size,
+            "edge_arrow_width": edge_arrow_width,
+            "edge_width": edge_width,
+            "edge_align_label": edge_align_label,
+            "edge_background": edge_background,
+            "edge_color": edge_color,
+            "edge_curved": edge_curved,
+            "edge_font": edge_font,
+            "edge_label": edge_label,
+            # others
+            **visual_style,
+        }
+        system = self.system
+        # bus name, will be overwritten if input is not None
+        vstyle["vertex_name"] = system.Bus.name.v
+        if vertex_label is None:
+            vstyle["vertex_label"] = None if no_vertex_label else system.Bus.name.v
+
+        # bus size
+        gidx = system.PV.idx.v + system.Slack.idx.v
+        gbus = system.StaticGen.get(src="bus", attr="v", idx=gidx)
+        # initialize all bus size as vertex_size
+        bus_size = [vertex_size] * system.Bus.n
+        if adjust_bus and isinstance(vertex_size, (int, float)):
+            # adjust gen bus size using Sn
+            gsn = system.StaticGen.get(src="Sn", attr="v", idx=gidx)
+            gbsize = vertex_size * gsn / gsn.max()
+            gbus_dict = {bus: size for bus, size in zip(gbus, gbsize)}
+            for key, val in gbus_dict.items():
+                bus_size[system.Bus.idx2uid(key)] = val
+        if isinstance(vertex_size, Iterable):
+            bus_size = vertex_size
+        vstyle["vertex_size"] = bus_size
+
+        # bus colors
+        gbus_uid = system.Bus.idx2uid(gbus)
+        bus_uid = system.Bus.idx2uid(system.Bus.idx.v)
+        g.vs["label"] = system.Bus.name.v
+        g.vs["bus_type"] = ["gen" if bus_i in gbus_uid else "rest" for bus_i in bus_uid]
+        color_dict = {"gen": gen_color, "rest": rest_color}
+        vstyle["vertex_color"] = [color_dict[btype] for btype in g.vs["bus_type"]]
+
+        # --- variables ---
+        k = ytimes if ytimes is not None else 1
+        if input is not None:
+            if input.owner.class_name == "Bus":
+                logger.debug(f"Plotting <{input.name}> as vertex label.")
+                values = [f"${input.tex_name}$={round(k*v, decimal)}" for v in input.v]
+                vstyle["vertex_label"] = values
+            elif input.owner.class_name == "Line":
+                logger.debug(f"Plotting <{input.name}> as edge label.")
+                values = [f"${input.tex_name}$={round(k*v, decimal)}" for v in input.v]
+                elabel = system.Line.name.v
+                eout = [f"{label}" for label, ein in zip(values, elabel)]
+                vstyle["edge_label"] = eout
+            else:
+                logger.error(f"Unsupported input type <{input.owner.class_name}>.")
+
+        if ax is None:
+            _, ax = plt.subplots(figsize=figsize, dpi=dpi)
+        default_name = self.class_name
+        if input is not None:
+            default_name += f"\n${input.tex_name}$" + f" [${input.unit}$]"
+        ax.set_title(title if title else default_name, loc=title_loc)
+        ig.plot(g, autocurve=autocurve, target=ax, **vstyle)
+        return ax, g
