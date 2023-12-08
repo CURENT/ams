@@ -199,9 +199,6 @@ class DCOPFBase(RoutineModel):
 class DCOPF(DCOPFBase):
     """
     Standard DC optimal power flow (DCOPF).
-
-    In this model, the bus injected power ``pn`` is used as internal variable
-    between generator output and load demand.
     """
 
     def __init__(self, system, config):

@@ -66,10 +66,12 @@ class SFRBase:
         self.cru = RParam(info='RegUp reserve coefficient',
                           name='cru', tex_name=r'c_{r,u}',
                           model='SFRCost', src='cru',
+                          indexer='gen', imodel='StaticGen',
                           unit=r'$/(p.u.)',)
         self.crd = RParam(info='RegDown reserve coefficient',
                           name='crd', tex_name=r'c_{r,d}',
                           model='SFRCost', src='crd',
+                          indexer='gen', imodel='StaticGen',
                           unit=r'$/(p.u.)',)
         # --- reserve requirement ---
         self.du = RParam(info='RegUp reserve requirement in percentage',
