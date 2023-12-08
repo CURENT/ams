@@ -1,17 +1,17 @@
 """
 ACOPF routines.
 """
-import logging  # NOQA
-from collections import OrderedDict  # NOQA
+import logging
+from collections import OrderedDict
 
-from ams.pypower import runopf  # NOQA
-from ams.pypower.core import ppoption  # NOQA
+from ams.pypower import runopf
+from ams.pypower.core import ppoption
 
-from ams.io.pypower import system2ppc  # NOQA
-from ams.core.param import RParam  # NOQA
+from ams.io.pypower import system2ppc
+from ams.core.param import RParam
 
-from ams.routines.dcpf import DCPFlowBase  # NOQA
-from ams.opt.omodel import Var, Constraint, Objective  # NOQA
+from ams.routines.dcpf import DCPFlowBase
+from ams.opt.omodel import Var, Constraint, Objective
 
 logger = logging.getLogger(__name__)
 
