@@ -358,15 +358,20 @@ def system2mpc(system) -> dict:
         branch[:, 10] = system.Line.u.v
 
     # --- GCost ---
+    # NOTE: adjust GCost sequence to match the generator sequence
     if system.GCost.n > 0:
+        stg_idx = system.Slack.idx.v + system.PV.idx.v
+        gcost_idx = system.GCost.find_idx(keys=['gen'],
+                                      values=[stg_idx])
+        gcost_uid = system.GCost.idx2uid(gcost_idx)
         gencost = mpc['gencost']
-        gencost[:, 0] = system.GCost.type.v
-        gencost[:, 1] = system.GCost.csu.v
-        gencost[:, 2] = system.GCost.csd.v
+        gencost[:, 0] = system.GCost.type.v[gcost_uid]
+        gencost[:, 1] = system.GCost.csu.v[gcost_uid]
+        gencost[:, 2] = system.GCost.csd.v[gcost_uid]
         gencost[:, 3] = 3
-        gencost[:, 4] = system.GCost.c2.v / base_mva / base_mva
-        gencost[:, 5] = system.GCost.c1.v / base_mva
-        gencost[:, 6] = system.GCost.c0.v / base_mva
+        gencost[:, 4] = system.GCost.c2.v[gcost_uid] / base_mva / base_mva
+        gencost[:, 5] = system.GCost.c1.v[gcost_uid] / base_mva
+        gencost[:, 6] = system.GCost.c0.v[gcost_uid] / base_mva
     else:
         mpc.pop('gencost')
 
