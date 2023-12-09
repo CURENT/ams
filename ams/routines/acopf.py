@@ -118,9 +118,9 @@ class ACOPF(ACOPFBase):
                          unit=r'$', model='GCost',
                          indexer='gen', imodel='StaticGen',
                          no_parse=True)
-        self.ql = RParam(info='reactive power demand (system base)',
-                         name='ql', tex_name=r'q_{l}',
-                         model='mats', src='ql',
+        self.qd = RParam(info='reactive demand',
+                         name='qd', tex_name=r'q_{d}',
+                         model='StaticLoad', src='q0',
                          unit='p.u.',)
         # --- bus ---
         self.aBus = Var(info='Bus voltage angle',
@@ -143,9 +143,8 @@ class ACOPF(ACOPFBase):
         # --- constraints ---
         self.pb = Constraint(name='pb',
                              info='power balance',
-                             e_str='sum(pl) - sum(pg)',
-                             type='eq',
-                             )
+                             e_str='sum(pd) - sum(pg)',
+                             type='eq',)
         # TODO: ACOPF formulation
         # --- objective ---
         self.obj = Objective(name='tc',
