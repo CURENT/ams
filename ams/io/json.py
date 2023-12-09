@@ -74,7 +74,9 @@ def _dump_system(system, skip_empty, orient='records', to_andes=False):
     for name, instance in system.models.items():
         if skip_empty and instance.n == 0:
             continue
-        if to_andes and name in ad_models:
+        if name not in ad_models:
+            continue
+        if to_andes and (name in ad_models):
             # NOTE: ommit parameters that are not in ANDES
             skip_params = []
             ams_params = list(instance.params.keys())
@@ -87,4 +89,5 @@ def _dump_system(system, skip_empty, orient='records', to_andes=False):
 
         df = instance.cache.df_in
         out[name] = df.to_dict(orient=orient)
+    logger.debug(f'Out df: {df.columns}')
     return json.dumps(out, indent=2)
