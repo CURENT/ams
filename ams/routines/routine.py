@@ -255,7 +255,10 @@ class RoutineModel:
             if c.is_disabled:
                 disabled.append(cname)
         if len(disabled) > 0:
-            logger.warning(f"Disabled constraints: {disabled}")
+            msg = "Disabled constraints: "
+            d_str = [f'<{constr}>' for constr in disabled]
+            msg += ", ".join(d_str)
+            logger.warning(msg)
         return True
 
     def _data_check(self):
