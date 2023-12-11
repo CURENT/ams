@@ -44,10 +44,10 @@ class DCPFlowBase(RoutineModel):
                           unit='radian',)
 
         # --- load ---
-        self.pl = RParam(info='nodal active load (system base)',
-                         name='pl', tex_name=r'p_{l}',
+        self.pd = RParam(info='active deman',
+                         name='pd', tex_name=r'p_{d}',
                          unit='p.u.',
-                         model='mats', src='pl')
+                         model='StaticLoad', src='p0')
 
     def unpack(self, res):
         """
@@ -70,7 +70,7 @@ class DCPFlowBase(RoutineModel):
         system.Slack.q.v = res['gen'][:system.Slack.n, 2] / mva     # reactive power
 
         # --- copy results from system algeb into routine algeb ---
-        for raname, var in self.vars.items():
+        for vname, var in self.vars.items():
             owner = getattr(system, var.model)  # instance of owner, Model or Group
             if var.src is None:          # skip if no source variable is specified
                 continue
@@ -81,12 +81,14 @@ class DCPFlowBase(RoutineModel):
                 idx = owner.get_idx()
             else:
                 msg = f"Failed to find valid source variable `{owner.class_name}.{var.src}` for "
-                msg += f"{self.class_name}.{raname}, skip unpacking."
+                msg += f"{self.class_name}.{vname}, skip unpacking."
                 logger.warning(msg)
                 continue
             try:
+                logger.debug(f"Unpacking {vname} into {owner.class_name}.{var.src}.")
                 var.v = owner.get(src=var.src, attr='v', idx=idx)
             except AttributeError:
+                logger.debug(f"Failed to unpack {vname} into {owner.class_name}.{var.src}.")
                 continue
         self.system.recent = self.system.routines[self.class_name]
         return True
@@ -132,13 +134,13 @@ class DCPFlowBase(RoutineModel):
         self.exit_code = 0 if success else 1
         _, s = elapsed(t0)
         self.exec_time = float(s.split(' ')[0])
-        self.unpack(res)
         n_iter = int(sstats['num_iters'])
         n_iter_str = f"{n_iter} iterations " if n_iter > 1 else f"{n_iter} iteration "
         if self.exit_code == 0:
             msg = f"{self.class_name} solved in {s}, converged after "
             msg += n_iter_str + f"using solver {sstats['solver_name']}."
             logger.info(msg)
+            self.unpack(res)
             return True
         else:
             msg = f"{self.class_name} failed after "
