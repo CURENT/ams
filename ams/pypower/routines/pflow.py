@@ -181,6 +181,8 @@ def runpf(casedata, ppopt):
                 # update data matrices with solution
             bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, pv, pq)
 
+            enforce_q_lims = ppopt["ENFORCE_Q_LIMS"]
+            logger.debug(f'ENFORCE_Q_LIMS={enforce_q_lims}')
             if ppopt["ENFORCE_Q_LIMS"]:  # enforce generator Q limits
                 # find gens with violated Q constraints
                 gen_status = gen[:, IDX.gen.GEN_STATUS] > 0
@@ -192,14 +194,17 @@ def runpf(casedata, ppopt):
 
                 if len(mx) > 0 or len(mn) > 0:  # we have some Q limit violations
                     # first check for INFEASIBILITY (all remaining gens violating)
-                    infeas = np.union1d(mx, mn)
-                    remaining = find(gen_status &
-                                     (bus[gen[:, IDX.gen.GEN_BUS], IDX.bus.BUS_TYPE] == IDX.bus.PV |
-                                      bus[gen[:, IDX.gen.GEN_BUS], IDX.bus.BUS_TYPE] == IDX.bus.REF))
-                    if len(infeas) == len(remaining) or all(infeas == remaining):
-                        logger.warning(
-                            'All %d remaining gens exceed to their Q limits: INFEASIBLE PROBLEM\n' % len(infeas))
-
+                    gen_violate = np.union1d(mx, mn)
+                    gen_bus = gen[:, IDX.gen.GEN_BUS].astype(int)
+                    cond_pv = bus[gen_bus, IDX.bus.BUS_TYPE] == IDX.bus.PV
+                    cond_ref = bus[gen_bus, IDX.bus.BUS_TYPE] == IDX.bus.REF
+                    gen_remain = find(gen_status & (cond_pv | cond_ref))
+                    msg = f'gen_violate = {gen_violate}\nremaining = {gen_remain}'
+                    logger.debug(msg)
+                    # TODO: condition can be improved, but not sure now
+                    if len(gen_remain) <= 0:
+                        msg = f'Infeasible: remaining {len(gen_violate)} gens exceed Q limits.'
+                        logger.warning(msg)
                         success = 0
                         break
 
@@ -213,46 +218,50 @@ def runpf(casedata, ppopt):
                         else:
                             mx = mx[k]
                             mn = []
-                    if mx:
-                        logger.debug('Gen ' + ', '.join(str(i + 1)
-                                     for i in mx) + ' at upper Q limit, converting to PQ bus')
-                    if mn:
-                        logger.debug('Gen ' + ', '.join(str(i + 1)
-                                     for i in mn) + ' at lower Q limit, converting to PQ bus')
+
+                    if len(mx) > 0:
+                        msg = 'Following Gen convert to PQ bus because'
+                        msg += ' exceed Q upper limits:\n'
+                        msg += ', '.join(str(i + 1) for i in mx)
+                        logger.debug(msg)
+                    if len(mn) > 0:
+                        msg = 'Following Gen convert to PQ bus because'
+                        msg += ' exceed Q lower limits:\n'
+                        msg += ', '.join(str(i + 1) for i in mn)
+                        logger.debug(msg)
 
                     # save corresponding limit values
                     fixedQg[mx] = gen[mx, IDX.gen.QMAX]
                     fixedQg[mn] = gen[mn, IDX.gen.QMIN]
                     mx = np.r_[mx, mn].astype(int)
 
-                    # convert to IDX.bus.PQ bus
-                    # Convert generators to IDX.bus.PQ bus
+                    # convert to PQ bus
+                    # Convert generators PV bus to PQ bus
                     for i in range(len(mx)):
                         idx = mx[i]
                         gen[idx, IDX.gen.QG] = fixedQg[idx]  # Set Qg to binding
                         gen[idx, IDX.gen.GEN_STATUS] = 0  # Temporarily turn off generator
                         bi = int(gen[idx, IDX.gen.GEN_BUS])  # Get the bus index
-                        bus[bi, [IDX.bus.PD, IDX.bus.QD]] -= gen[idx,
-                                                                 [IDX.gen.PG, IDX.gen.QG]]  # Adjust load
+                        bus[bi, [IDX.bus.PD, IDX.bus.QD]] -= gen[idx, [IDX.gen.PG, IDX.gen.QG]]  # Adjust load
 
                     if len(ref) > 1 and any(bus[gen[mx, IDX.gen.GEN_BUS], IDX.bus.BUS_TYPE] == IDX.bus.REF):
                         raise ValueError("PYPOWER cannot enforce Q limits for systems with multiple slack buses. "
                                          "Please ensure there is only one slack bus in the system.")
 
-                    # & set bus type to IDX.bus.PQ
+                    # set bus type to PQ
                     bus[gen[mx, IDX.gen.GEN_BUS].astype(int), IDX.bus.BUS_TYPE] = IDX.bus.PQ
 
                     # update bus index lists of each type of bus
                     ref_temp = ref
                     ref, pv, pq = putils.bustypes(bus, gen)
 
-                    # previous line can modify lists to select new IDX.bus.REF bus
+                    # previous line can modify lists to select new REF bus
                     # if there was none, so we should update bus with these
                     # just to keep them consistent
                     if ref != ref_temp:
                         bus[ref, IDX.bus.BUS_TYPE] = IDX.bus.REF
                         bus[pv, IDX.bus.BUS_TYPE] = pv
-                        logger.debug('Bus %d is new slack bus\n' % ref)
+                        logger.debug(f'Bus<{ref[0]}> is new slack bus')
 
                     limited = np.r_[limited, mx].astype(int)
                 else:
