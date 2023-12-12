@@ -350,9 +350,9 @@ def system2mpc(system) -> dict:
         branch[:, 2] = system.Line.r.v
         branch[:, 3] = system.Line.x.v
         branch[:, 4] = system.Line.b.v
-        branch[:, 5] = system.Line.rate_a.v
-        branch[:, 6] = system.Line.rate_b.v
-        branch[:, 7] = system.Line.rate_c.v
+        branch[:, 5] = system.Line.rate_a.v * base_mva
+        branch[:, 6] = system.Line.rate_b.v * base_mva
+        branch[:, 7] = system.Line.rate_c.v * base_mva
         branch[:, 8] = system.Line.tap.v
         branch[:, 9] = system.Line.phi.v * rad2deg
         branch[:, 10] = system.Line.u.v
