@@ -75,22 +75,16 @@ class RoutineModel:
             self.config.load(config)
         # TODO: these default configs might to be revised
         self.config.add(
-            OrderedDict(
-                (
-                    ("sparselib", "klu"),
-                    ("linsolve", 0),
-                )
+            OrderedDict((
+                ("sparselib", "klu"),
+            )
             )
         )
         self.config.add_extra(
-            "_help",
-            sparselib="linear sparse solver name",
-            linsolve="solve symbolic factorization each step (enable when KLU segfaults)",
+            "_help", sparselib="linear sparse solver name",
         )
         self.config.add_extra(
-            "_alt",
-            sparselib=("klu", "umfpack", "spsolve", "cupy"),
-            linsolve=(0, 1),
+            "_alt", sparselib=("klu", "umfpack", "spsolve", "cupy"),
         )
 
         self.exec_time = 0.0  # recorded time to execute the routine in seconds
