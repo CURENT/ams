@@ -36,7 +36,10 @@ class PFlow(DCPFlowBase):
         self.config.add(OrderedDict((('qlim', 0),
                                      )))
         self.config.add_extra("_help",
-                              t="Enforce generator q limits",
+                              qlim="Enforce generator q limits",
+                              )
+        self.config.add_extra("_alt",
+                              qlim=(0, 1, 2),
                               )
 
         self.qd = RParam(info="reactive power load in system base",
