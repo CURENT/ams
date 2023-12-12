@@ -5,7 +5,7 @@ import logging
 
 import numpy as np
 from ams.core.param import RParam
-from ams.core.service import NumOp, NumOpDual, VarSelect
+from ams.core.service import NumOp, NumOpDual
 
 from ams.routines.routine import RoutineModel
 
@@ -268,4 +268,4 @@ class DCOPF(DCOPFBase):
                              sense='min',)
         self.obj.e_str = 'sum(mul(c2, power(pg, 2)))' \
                          '+ sum(mul(c1, pg))' \
-                         '+ sum(mul(ug, c0))'
+                         '+ sum(mul(c0, ug))'
