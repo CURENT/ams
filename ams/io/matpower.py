@@ -256,15 +256,21 @@ def system2mpc(system) -> dict:
 
     In the ``gen`` section, slack generators preceeds PV generators.
 
-    This function is revised from ``andes.io.matpower.system2mpc``.
-
-    Compared to the original one, this function includes the
-    generator cost data in the ``gencost`` section.
+    Compared to the ``andes.io.matpower.system2mpc``,
+    this function includes the generator cost data in the ``gencost``
+    section.
+    Additionally, ``c2`` and ``c1`` are scaled by ``base_mva`` to match
+    MATPOWER unit ``MW``.
 
     Parameters
     ----------
     system : ams.core.system.System
         AMS system
+
+    Returns
+    -------
+    mpc: dict
+        MATPOWER mpc dict
     """
 
     mpc = dict(version='2',
@@ -371,7 +377,7 @@ def system2mpc(system) -> dict:
         gencost[:, 3] = 3
         gencost[:, 4] = system.GCost.c2.v[gcost_uid] / base_mva / base_mva
         gencost[:, 5] = system.GCost.c1.v[gcost_uid] / base_mva
-        gencost[:, 6] = system.GCost.c0.v[gcost_uid] / base_mva
+        gencost[:, 6] = system.GCost.c0.v[gcost_uid]
     else:
         mpc.pop('gencost')
 
