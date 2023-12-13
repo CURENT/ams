@@ -129,7 +129,7 @@ class DCOPFBase(RoutineModel):
         """
         Solve the routine optimization model.
         """
-        res = self.om.mdl.solve(**kwargs)
+        res = self.om.prob.solve(**kwargs)
         return res
 
     def run(self, no_code=True, **kwargs):
@@ -204,7 +204,11 @@ class DCOPFBase(RoutineModel):
 
 class DCOPF(DCOPFBase):
     """
-    Standard DC optimal power flow (DCOPF).
+    DC optimal power flow (DCOPF).
+
+    In DCOPF, ``pg`` and ``plf`` are calculated variables.
+    Then, ``vBus`` is fixed to 1, and ``aBus`` is estimated
+    using line flow ``plf`` and line reactance ``x``.
     """
 
     def __init__(self, system, config):
@@ -246,8 +250,8 @@ class DCOPF(DCOPFBase):
         self.pb = Constraint(name='pb', info='power balance',
                              e_str='sum(pd) - sum(pg)',
                              type='eq',)
-        self.aref = Constraint(name='aref', type='eq',
-                                info='bus angle',
+        self.aest = Constraint(name='aest', type='eq',
+                                info='estimated bus angle',
                                 e_str='aBus - Cfti@mul(x, plf)',)
         self.oneBus = NumOp(u=self.zb, fun=np.ones_like,
                             args=dict(dtype=np.float64),
@@ -263,7 +267,7 @@ class DCOPF(DCOPFBase):
                               e_str='PTDF@(Cgi@pg - Cli@pd) - plf',)
 
         # --- objective ---
-        self.obj = Objective(name='tc',
+        self.obj = Objective(name='obj',
                              info='total cost', unit='$',
                              sense='min',)
         self.obj.e_str = 'sum(mul(c2, power(pg, 2)))' \
