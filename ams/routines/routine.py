@@ -351,12 +351,12 @@ class RoutineModel:
         # --- solve optimization ---
         t0, _ = elapsed()
         _ = self.solve(**kwargs)
-        status = self.om.mdl.status
+        status = self.om.prob.status
         self.exit_code = self.syms.status[status]
         self.system.exit_code = self.exit_code
         _, s = elapsed(t0)
         self.exec_time = float(s.split(" ")[0])
-        sstats = self.om.mdl.solver_stats  # solver stats
+        sstats = self.om.prob.solver_stats  # solver stats
         if sstats.num_iters is None:
             n_iter = -1
         else:

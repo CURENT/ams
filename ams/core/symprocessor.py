@@ -96,6 +96,11 @@ class SymProcessor:
             (r'\bsum\b', 'SUM'),
         ])
 
+        # mapping dict for evaluating expressions
+        self.val_map = OrderedDict([
+            (r'\bcp.\b', 'np.'),
+        ])
+
         self.status = {
             'optimal': 0,
             'infeasible': 1,
@@ -130,6 +135,7 @@ class SymProcessor:
             self.inputs_dict[vname] = tmp
             self.sub_map[rf"\b{vname}\b"] = f"self.om.{vname}"
             self.tex_map[rf"\b{vname}\b"] = rf'{var.tex_name}'
+            self.val_map[rf"\b{vname}\b"] = f"rtn.{vname}.v"
 
         # RParams
         for rpname, rparam in self.parent.rparams.items():
@@ -138,6 +144,8 @@ class SymProcessor:
             sub_name = f'self.rtn.{rpname}.v' if rparam.no_parse else f'self.om.{rpname}'
             self.sub_map[rf"\b{rpname}\b"] = sub_name
             self.tex_map[rf"\b{rpname}\b"] = f'{rparam.tex_name}'
+            if not rparam.no_parse:
+                self.val_map[rf"\b{rpname}\b"] = f"rtn.{rpname}.v"
 
         # Routine Services
         for sname, service in self.parent.services.items():
@@ -147,12 +155,15 @@ class SymProcessor:
             sub_name = f'self.rtn.{sname}.v' if service.no_parse else f'self.om.{sname}'
             self.sub_map[rf"\b{sname}\b"] = sub_name
             self.tex_map[rf"\b{sname}\b"] = f'{service.tex_name}'
+            if not service.no_parse:
+                self.val_map[rf"\b{sname}\b"] = f"rtn.{sname}.v"
 
         # store tex names defined in `self.config`
         for key in self.config.as_dict():
             tmp = sp.symbols(key)
             self.sub_map[rf"\b{key}\b"] = f'self.rtn.config.{key}'
             self.tex_map[rf"\b{key}\b"] = f'{key}'
+            self.val_map[rf"\b{key}\b"] = f'self.rtn.config.{key}'
             self.inputs_dict[key] = tmp
             if key in self.config.tex_names:
                 self.tex_names[tmp] = sp.Symbol(self.config.tex_names[key])
