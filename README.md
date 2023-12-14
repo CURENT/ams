@@ -41,6 +41,14 @@ See [GitHub contributors][GitHub contributors] for the contributor list.
 
 AMS is licensed under the [GPL v3 License](./LICENSE).
 
+# Related Projects
+
++ [CVXPY](https://github.com/cvxpy/cvxpy)
++ [Visualizations of Mittelmann benchmarks](https://mattmilten.github.io/mittelmann-plots/)
++ [CBC Solver](https://github.com/coin-or/Cbc)
+
+Some commercial solvers provide free academic licenses, such as GUROBI, CPLEX, and MOSEK.
+
 * * *
 
 [GitHub releases]:       https://github.com/CURENT/ams/releases
