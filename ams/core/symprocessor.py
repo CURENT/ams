@@ -23,34 +23,17 @@ class SymProcessor:
 
     Attributes
     ----------
-    x: sympy.Matrix
-        variables pretty print
-    c : sympy.Matrix
-        pretty print of variables coefficients
-    Aub : sympy.Matrix
-        Aub pretty print
-    Aeq : sympy.Matrix
-        Aeq pretty print
-    bub : sympy.Matrix
-        pretty print of inequality upper bound
-    beq : sympy.Matrix
-        pretty print of equality bound
-    lb : sympy.Matrix
-        pretty print of variables lower bound
-    ub : sympy.Matrix
-        pretty print of variables upper bound
-    inputs_dict : OrderedDict
-        All possible symbols in equations, including variables, parameters, and
-        config flags.
-    vars_dict : OrderedDict
-        variable-only symbols, which are useful when getting the Jacobian matrices.
+    sub_map : dict
+        Substitution map for symbolic processing.
+    tex_map : dict
+        Tex substitution map for documentation.
+    val_map : dict
+        Value substitution map for post-solving value evaluation.
     """
 
     def __init__(self, parent):
         self.parent = parent
         self.inputs_dict = OrderedDict()
-        self.vars_dict = OrderedDict()
-        self.vars_list = list()       # list of variable symbols, corresponding to `self.xy`
         self.services_dict = OrderedDict()
         self.config = parent.config
         self.class_name = parent.class_name
@@ -122,6 +105,7 @@ class SymProcessor:
         if not force_generate and self.parent._syms:
             return True
         logger.debug(f'- Generating symbols for {self.parent.class_name}')
+
         # process tex_names defined in routines
         # -----------------------------------------------------------
         for key in self.parent.tex_names.keys():
@@ -131,7 +115,6 @@ class SymProcessor:
         for vname, var in self.parent.vars.items():
             tmp = sp.symbols(f'{var.name}')
             # tmp = sp.symbols(var.name)
-            self.vars_dict[vname] = tmp
             self.inputs_dict[vname] = tmp
             self.sub_map[rf"\b{vname}\b"] = f"self.om.{vname}"
             self.tex_map[rf"\b{vname}\b"] = rf'{var.tex_name}'
@@ -180,8 +163,6 @@ class SymProcessor:
         # additional variables by conventions that are defined in ``BaseRoutine``
         self.inputs_dict['sys_f'] = sp.symbols('sys_f')
         self.inputs_dict['sys_mva'] = sp.symbols('sys_mva')
-
-        self.vars_list = list(self.vars_dict.values())  # useful for ``.jacobian()``
 
         self.parent._syms = True
 

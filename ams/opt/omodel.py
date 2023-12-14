@@ -11,8 +11,6 @@ import numpy as np
 
 from andes.core.common import Config
 
-from ams.utils import timer
-
 import cvxpy as cp
 
 logger = logging.getLogger(__name__)
@@ -464,7 +462,7 @@ class Constraint(OptzBase):
         if self.type not in ['uq', 'eq']:
             raise ValueError(f'Constraint type {self.type} is not supported.')
         code_constr += " <= 0" if self.type == 'uq' else " == 0"
-        msg = f"Set Constr <{self.name}>: {self.e_str} "
+        msg = f"Parse Constr <{self.name}>: {self.e_str} "
         msg += " <=0 " if self.type == 'uq' else " == 0"
         logger.debug(msg)
         if not no_code:
@@ -624,7 +622,7 @@ class Objective(OptzBase):
             raise ValueError(f'Objective sense {self.sense} is not supported.')
         sense = 'cp.Minimize' if self.sense == 'min' else 'cp.Maximize'
         code_obj = f"self.optz={sense}({code_obj})"
-        logger.debug(f"Set Objective <{self.name}>: {self.sense.upper()}. {self.e_str}")
+        logger.debug(f"Parse Objective <{self.name}>: {self.sense.upper()}. {self.e_str}")
         if not no_code:
             logger.info(f"Code: {code_obj}")
         # set the parsed objective function
@@ -679,7 +677,6 @@ class OModel:
         self.n = 0  # number of decision variables
         self.m = 0  # number of constraints
 
-    @timer
     def setup(self, no_code=True, force_generate=False):
         """
         Set up the optimization model from the symbolic description.

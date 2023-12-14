@@ -291,6 +291,7 @@ class RoutineModel:
         if not force and self.initialized:
             logger.debug(f"{self.class_name} has already been initialized.")
             return True
+        t0, _ = elapsed()
         if self._data_check():
             logger.debug(f"{self.class_name} data check passed.")
         else:
@@ -299,10 +300,14 @@ class RoutineModel:
         self._constr_check()
         # FIXME: build the system matrices every init might slow down
         self.system.mats.make()
-        results, elapsed_time = self.om.setup(no_code=no_code)
+        t_setup, _ = elapsed()
+        results = self.om.setup(no_code=no_code)
+        _, s_setup = elapsed(t_setup)
+        _, s_init = elapsed(t0)
+        logger.debug(f"Set up OModel in {s_setup}.")
         common_msg = f"Routine <{self.class_name}> "
         if results:
-            msg = f"initialized in {elapsed_time}."
+            msg = f"initialized in {s_init}."
             self.initialized = True
         else:
             msg = "initialization failed!"
