@@ -12,6 +12,16 @@ Python Software for Power System Dispatch Modeling and Co-Simulation with Dynani
 
 With the built-in interface with dynamic simulation engine, LTB ANDES, AMS enables Dynamics Interfaced Stability Constrained Production Cost and Market Operation Modeling.
 
+AMS produces credible dispatch results.
+The following table shows the comparison of DC optimal power flow results between AMS and other tools.
+
+|               | AMS GUROBI   | AMS ECOS     | PYPOWER      | pandapower   |
+|---------------|--------------|--------------|--------------|--------------|
+| case39.m      | 41,461.94    | 41,461.94    | 41,461.94    | 41,461.94    |
+| ieee14_uced.xlsx | 45.72     | 45.72        | 45.72        | 45.72        |
+| ieee39_uced.xlsx | 36,513.47 | 36,513.47    | 36,513.47    | 36,513.47    |
+| npcc.m        | 57,664,760.85| 57,664,760.85| 57,664,760.85| 57,664,760.85|
+
 AMS is currently under active development.
 Use the following resources to get involved.
 
@@ -46,8 +56,11 @@ AMS is licensed under the [GPL v3 License](./LICENSE).
 + [CVXPY](https://github.com/cvxpy/cvxpy)
 + [Visualizations of Mittelmann benchmarks](https://mattmilten.github.io/mittelmann-plots/)
 + [CBC Solver](https://github.com/coin-or/Cbc)
++ [MATPOWER](https://github.com/MATPOWER/matpower)
++ [PYPOWER](https://github.com/rwl/PYPOWER)
++ [pandapower](https://github.com/e2nIEE/pandapower)
 
-Some commercial solvers provide free academic licenses, such as GUROBI, CPLEX, and MOSEK.
+Some commercial solvers provide academic licenses, such as COPT, GUROBI, CPLEX, and MOSEK.
 
 * * *
 
