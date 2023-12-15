@@ -78,8 +78,8 @@ class RParam(Param):
         True to set the parameter as positive.
     neg: bool, optional
         True to set the parameter as negative.
-    sparsity: list, optional
-        Sparsity pattern of the parameter.
+    sparse: bool, optional
+        True to set the parameter as sparse.
 
     Examples
     --------
@@ -125,12 +125,12 @@ class RParam(Param):
                  integer: Optional[bool] = False,
                  pos: Optional[bool] = False,
                  neg: Optional[bool] = False,
-                 sparsity: Optional[list] = None,
+                 sparse: Optional[list] = None,
                  ):
         Param.__init__(self, nonneg=nonneg, nonpos=nonpos,
                        complex=complex, imag=imag, symmetric=symmetric,
                        diag=diag, hermitian=hermitian, boolean=boolean,
-                       integer=integer, pos=pos, neg=neg, sparsity=sparsity)
+                       integer=integer, pos=pos, neg=neg, sparse=sparse)
         self.name = name
         self.tex_name = tex_name if (tex_name is not None) else name
         self.info = info

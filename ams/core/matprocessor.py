@@ -49,6 +49,7 @@ class MParam(Param):
                  info: Optional[str] = None,
                  unit: Optional[str] = None,
                  v: Optional[np.ndarray] = None,
+                 sparse: Optional[bool] = False,
                  ):
         Param.__init__(self, name=name, info=info)
         self.name = name
@@ -56,6 +57,7 @@ class MParam(Param):
         self.info = info
         self.unit = unit
         self._v = v
+        self.sparse = sparse
         self.owner = None
 
     @property
@@ -105,24 +107,24 @@ class MatProcessor:
         self.PTDF = MParam(name='PTDF', tex_name=r'P_{TDF}',
                            info='Power transfer distribution factor',
                            v=None)
-        self.Cft = MParam(name='Cft', tex_name=r'C_{ft}',
-                          info='Connectivity matrix',
-                          v=None)
         self.pl = MParam(name='pl', tex_name=r'p_l',
                          info='Nodal active load',
-                         v=None)
+                         v=None, sparse=True)
         self.ql = MParam(name='ql', tex_name=r'q_l',
                          info='Nodal reactive load',
-                         v=None)
+                         v=None, sparse=True)
+        self.Cft = MParam(name='Cft', tex_name=r'C_{ft}',
+                          info='Connectivity matrix',
+                          v=None, sparse=True)
         self.Cg = MParam(name='Cg', tex_name=r'C_g',
                          info='Generator connectivity matrix',
-                         v=None)
+                         v=None, sparse=True)
         self.Cs = MParam(name='Cs', tex_name=r'C_s',
                          info='Slack connectivity matrix',
-                         v=None)
+                         v=None, sparse=True)
         self.Cl = MParam(name='Cl', tex_name=r'Cl',
                          info='Load connectivity matrix',
-                         v=None)
+                         v=None, sparse=True)
 
     def make(self):
         """
@@ -148,7 +150,7 @@ class MatProcessor:
         idx_PD = system.PQ.find_idx(keys="bus", values=all_bus,
                                     allow_none=True, default=None)
         self.pl._v = c_sparse(system.PQ.get(src='p0', attr='v', idx=idx_PD))
-        self.ql._v = np.array(system.PQ.get(src='q0', attr='v', idx=idx_PD))
+        self.ql._v = c_sparse(system.PQ.get(src='q0', attr='v', idx=idx_PD))
 
         row, col = np.meshgrid(all_bus, slack_bus)
         self.Cs._v = c_sparse((row == col).astype(int))
