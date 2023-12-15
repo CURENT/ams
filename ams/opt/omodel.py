@@ -8,8 +8,11 @@ from collections import OrderedDict
 import re
 
 import numpy as np
+import scipy.sparse as spr
+from scipy.sparse import csr_matrix as c_sparse  # NOQA
 
 from andes.core.common import Config
+from andes.utils.misc import elapsed
 
 import cvxpy as cp
 
@@ -122,8 +125,8 @@ class Param(OptzBase):
         True to set the parameter as positive.
     neg: bool, optional
         True to set the parameter as negative.
-    sparsity: list, optional
-        Sparsity pattern of the parameter.
+    sparse: bool, optional
+        True to set the parameter as sparse.
     """
 
     def __init__(self,
@@ -142,11 +145,11 @@ class Param(OptzBase):
                  integer: Optional[bool] = False,
                  pos: Optional[bool] = False,
                  neg: Optional[bool] = False,
-                 sparsity: Optional[list] = None,
+                 sparse: Optional[list] = False,
                  ):
         OptzBase.__init__(self, name=name, info=info, unit=unit)
         self.no_parse = no_parse  # True to skip parsing the parameter
-        self.sparsity = sparsity  # sparsity pattern
+        self.sparse = sparse
 
         self.config = Config(name=self.class_name)  # `config` that can be exported
 
@@ -170,12 +173,19 @@ class Param(OptzBase):
         config = self.config.as_dict()  # NOQA
         sub_map = self.om.rtn.syms.sub_map
         shape = np.shape(self.v)
+        # NOTE: it seems that there is no need to use re.sub here
         code_param = f"self.optz=param(shape={shape}, **config)"
         for pattern, replacement, in sub_map.items():
             code_param = re.sub(pattern, replacement, code_param)
         exec(code_param, globals(), locals())
         try:
-            exec("self.optz.value = self.v", globals(), locals())
+            msg = f"Parameter <{self.name}> is set as sparse, "
+            msg += "but the value is not sparse."
+            val = "self.v"
+            if self.sparse:
+                if not spr.issparse(self.v):
+                    val = "c_sparse(self.v)"
+            exec(f"self.optz.value = {val}", globals(), locals())
         except ValueError:
             msg = f"Parameter <{self.name}> has non-numeric value, "
             msg += "no_parse=True is applied."
@@ -701,6 +711,7 @@ class OModel:
         rtn = self.rtn
         rtn.syms.generate_symbols(force_generate=force_generate)
         # --- add RParams and Services as parameters ---
+        t0, _ = elapsed()
         for key, val in rtn.params.items():
             if not val.no_parse:
                 try:
@@ -710,7 +721,10 @@ class OModel:
                     msg += f"Original error: {e}"
                     raise Exception(msg)
                 setattr(self, key, val.optz)
+        _, s = elapsed(t0)
+        logger.debug(f"Parse Params in {s}")
         # --- add decision variables ---
+        t0, _ = elapsed()
         for key, val in rtn.vars.items():
             try:
                 val.parse()
@@ -719,6 +733,9 @@ class OModel:
                 msg += f"Original error: {e}"
                 raise Exception(msg)
             setattr(self, key, val.optz)
+        _, s = elapsed(t0)
+        logger.debug(f"Parse Vars in {s}")
+        t0, _ = elapsed()
         # --- add constraints ---
         for key, val in rtn.constrs.items():
             try:
@@ -728,6 +745,8 @@ class OModel:
                 msg += f"Original error: {e}"
                 raise Exception(msg)
             setattr(self, key, val.optz)
+        _, s = elapsed(t0)
+        logger.debug(f"Parse Constrs in {s}")
         # --- parse objective functions ---
         if rtn.type == 'PF':
             # NOTE: power flow type has no objective function

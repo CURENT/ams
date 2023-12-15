@@ -9,6 +9,8 @@ from collections import OrderedDict
 
 import sympy as sp
 
+from ams.core.matprocessor import MatProcessor
+
 logger = logging.getLogger(__name__)
 
 
@@ -124,7 +126,17 @@ class SymProcessor:
         for rpname, rparam in self.parent.rparams.items():
             tmp = sp.symbols(f'{rparam.name}')
             self.inputs_dict[rpname] = tmp
-            sub_name = f'self.rtn.{rpname}.v' if rparam.no_parse else f'self.om.{rpname}'
+            sub_name = ''
+            if isinstance(rparam.owner, MatProcessor):
+                # system matrices are accessed from MatProcessor
+                if rparam.sparse:
+                    sub_name = f'self.rtn.system.mats.{rpname}._v'
+                else:
+                    sub_name = f'self.rtn.system.mats.{rpname}.v'
+            elif rparam.no_parse:
+                sub_name = f'self.rtn.{rpname}.v'
+            else:
+                sub_name = f'self.om.{rpname}'
             self.sub_map[rf"\b{rpname}\b"] = sub_name
             self.tex_map[rf"\b{rpname}\b"] = f'{rparam.tex_name}'
             if not rparam.no_parse:

@@ -7,7 +7,6 @@ from typing import Callable, Type
 
 import numpy as np
 import scipy.sparse as spr
-from scipy.sparse import csr_matrix as c_sparse
 
 from andes.core.service import BaseService, BackRef, RefFlatten  # NOQA
 

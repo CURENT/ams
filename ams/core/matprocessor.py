@@ -116,15 +116,27 @@ class MatProcessor:
         self.Cft = MParam(name='Cft', tex_name=r'C_{ft}',
                           info='Connectivity matrix',
                           v=None, sparse=True)
+        self.Cfti = MParam(name='Cfti', tex_name=r'C_{ft}^i',
+                           info='Connectivity matrix',
+                           v=None, sparse=False)
         self.Cg = MParam(name='Cg', tex_name=r'C_g',
                          info='Generator connectivity matrix',
                          v=None, sparse=True)
+        self.Cgi = MParam(name='Cgi', tex_name=r'C_g^i',
+                          info='Generator connectivity matrix',
+                          v=None, sparse=True)
         self.Cs = MParam(name='Cs', tex_name=r'C_s',
                          info='Slack connectivity matrix',
                          v=None, sparse=True)
+        self.Csi = MParam(name='Csi', tex_name=r'C_s^i',
+                          info='Slack connectivity matrix',
+                          v=None, sparse=True)
         self.Cl = MParam(name='Cl', tex_name=r'Cl',
                          info='Load connectivity matrix',
                          v=None, sparse=True)
+        self.Cli = MParam(name='Cli', tex_name=r'Cl^i',
+                          info='Load connectivity matrix',
+                          v=None, sparse=True)
 
     def make(self):
         """
@@ -137,9 +149,8 @@ class MatProcessor:
 
         self.PTDF._v = makePTDF(ppc['baseMVA'], ppc['bus'], ppc['branch'])
         _, _, _, _, self.Cft._v = makeBdc(ppc['baseMVA'], ppc['bus'], ppc['branch'])
+        self.Cfti._v = np.linalg.pinv(self.Cft.v)
 
-        # FIXME: sparsity?
-        # FIXME: hard coded here
         gen_bus = system.StaticGen.get(src='bus', attr='v',
                                        idx=system.StaticGen.get_idx())
         slack_bus = system.Slack.get(src='bus', attr='v',
@@ -153,11 +164,17 @@ class MatProcessor:
         self.ql._v = c_sparse(system.PQ.get(src='q0', attr='v', idx=idx_PD))
 
         row, col = np.meshgrid(all_bus, slack_bus)
-        self.Cs._v = c_sparse((row == col).astype(int))
+        Cs_v = (row == col).astype(int)
+        self.Cs._v = c_sparse(Cs_v)
+        self.Csi._v = c_sparse(np.linalg.pinv(Cs_v))
         row, col = np.meshgrid(all_bus, gen_bus)
-        self.Cg._v = c_sparse((row == col).astype(int))
+        Cg_v = (row == col).astype(int)
+        self.Cg._v = c_sparse(Cg_v)
+        self.Cgi._v = c_sparse(np.linalg.pinv(Cg_v))
         row, col = np.meshgrid(all_bus, load_bus)
-        self.Cl._v = c_sparse((row == col).astype(int))
+        Cl_v = (row == col).astype(int)
+        self.Cl._v = c_sparse(Cl_v)
+        self.Cli._v = c_sparse(np.linalg.pinv(Cl_v))
 
         return True
 
