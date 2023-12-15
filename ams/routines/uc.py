@@ -125,6 +125,7 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
         self.timeslot.model = 'UCTSlot'
 
         self.ug.expand_dims = 1
+        self.x.expand_dims = 1
 
         # NOTE: extend pg to 2D matrix, where row is gen and col is timeslot
         self.pg.horizon = self.timeslot
@@ -138,6 +139,9 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
 
         self.prns.horizon = self.timeslot
         self.prns.info = '2D Non-spinning reserve'
+
+        self.aBus.horizon = self.timeslot
+        self.aBus.info = '2D Bus angle'
 
         # TODO: havn't test non-controllability?
         self.ctrle.u2 = self.tlv
@@ -203,6 +207,13 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
 
         # --- bus power injection ---
         self.pnb.e_str =  'PTDF@(Cgi@pg - Cli@pds) - plf'
+
+        # --- line limits ---
+        self.plflb.e_str = '-plf - mul(rate_a, tlv)'
+        self.plfub.e_str = 'plf - mul(rate_a, tlv)'
+
+        # --- bus angle ---
+        self.aest.e_str = 'aBus - Cfti@mul(mul(x, tlv), plf)'
 
         # --- big M for ugd*pg ---
         self.Mzug = NumOp(info='10 times of max of pmax as big M for zug',

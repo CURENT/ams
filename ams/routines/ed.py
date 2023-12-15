@@ -102,6 +102,7 @@ class MPBase:
         self.pmin.expand_dims = 1
         self.pg0.expand_dims = 1
         self.rate_a.expand_dims = 1
+        self.x.expand_dims = 1
 
 class ED(RTED):
     """
@@ -176,6 +177,9 @@ class ED(RTED):
 
         self.prs.horizon = self.timeslot
 
+        self.aBus.horizon = self.timeslot
+        self.aBus.info = '2D Bus angle'
+
         # --- constraints ---
         # NOTE: Spg @ pg returns a row vector
         self.pb.e_str = '- gs @ pg + pdsz'  # power balance
@@ -189,6 +193,9 @@ class ED(RTED):
         # --- line limits ---
         self.plflb.e_str = '-plf - mul(rate_a, tlv)'
         self.plfub.e_str = 'plf - mul(rate_a, tlv)'
+
+        # --- bus angle ---
+        self.aest.e_str = 'aBus - Cfti@mul(mul(x, tlv), plf)'
 
         # --- ramping ---
         self.rbu.e_str = 'gs@mul(ugt, pru) - mul(dud, tlv)'
