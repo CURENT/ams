@@ -194,9 +194,6 @@ class ED(RTED):
         self.plflb.e_str = '-plf - mul(rate_a, tlv)'
         self.plfub.e_str = 'plf - mul(rate_a, tlv)'
 
-        # --- bus angle ---
-        self.aest.e_str = 'aBus - Cfti@mul(mul(x, tlv), plf)'
-
         # --- ramping ---
         self.rbu.e_str = 'gs@mul(ugt, pru) - mul(dud, tlv)'
         self.rbd.e_str = 'gs@mul(ugt, prd) - mul(ddd, tlv)'
@@ -230,6 +227,23 @@ class ED(RTED):
         multi-period dispatch.
         """
         return NotImplementedError
+
+    def solve(self, **kwargs):
+        """
+        Solve the routine optimization model.
+        """
+        res = self.om.prob.solve(**kwargs)
+        # str output maens solver failed
+        if isinstance(res, str):
+            return res
+        # estimate aBus
+        x_tlv = np.matmul(self.x.v, self.tlv.v)
+        aBus = np.matmul(self.system.mats.Cfti.v,
+                         np.multiply(x_tlv, self.plf.v))
+        self.aBus.optz.value = aBus
+        # set vBus to 1
+        self.vBus.optz.value = np.ones(self.vBus.shape)
+        return None
 
     def unpack(self, **kwargs):
         """

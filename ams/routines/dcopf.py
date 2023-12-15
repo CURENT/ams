@@ -97,39 +97,42 @@ class DCOPFBase(RoutineModel):
         self.Cg = RParam(info='Gen connection matrix',
                          name='Cg', tex_name=r'C_{G}',
                          model='mats', src='Cg',
-                         no_parse=True,)
+                         no_parse=True, sparse=True,)
+        self.Cgi = RParam(info='Gen connection matrix inverse',
+                            name='Cgi', tex_name=r'C_{G}^{-1}',
+                            model='mats', src='Cgi',
+                            no_parse=True, sparse=True,)
         self.Cl = RParam(info='Load connection matrix',
                          name='Cl', tex_name=r'C_{L}',
                          model='mats', src='Cl',
-                         no_parse=True,)
+                         no_parse=True, sparse=True,)
+        self.Cli = RParam(info='Load connection matrix inverse',
+                            name='Cli', tex_name=r'C_{L}^{-1}',
+                            model='mats', src='Cli',
+                            no_parse=True, sparse=True,)
         self.Cft = RParam(info='Line connection matrix',
                           name='Cft', tex_name=r'C_{ft}',
                           model='mats', src='Cft',
-                          no_parse=True,)
+                          no_parse=True, sparse=True,)
         self.PTDF = RParam(info='Power Transfer Distribution Factor',
                            name='PTDF', tex_name=r'P_{TDF}',
                            model='mats', src='PTDF',
                            no_parse=True,)
-
-        self.Cgi = NumOp(u=self.Cg, fun=np.linalg.pinv,
-                         name='Cgi', tex_name=r'C_{G}^{-1}',
-                         info='inverse of Cg',
-                         no_parse=True,)
-        self.Cli = NumOp(u=self.Cl, fun=np.linalg.pinv,
-                         name='Cli', tex_name=r'C_{L}^{-1}',
-                         info='inverse of Cl',
-                         no_parse=True,)
-        self.Cfti = NumOp(u=self.Cft, fun=np.linalg.pinv,
-                          name='Cfti', tex_name=r'C_{ft}^{-1}',
-                          info='inverse of Cft',
-                          no_parse=True,)
-
 
     def solve(self, **kwargs):
         """
         Solve the routine optimization model.
         """
         res = self.om.prob.solve(**kwargs)
+        # str output maens solver failed
+        if isinstance(res, str):
+            return res
+        # estimate aBus
+        aBus = np.matmul(self.system.mats.Cfti.v,
+                         np.multiply(self.x.v, self.plf.v))
+        self.aBus.optz.value = aBus
+        # set vBus to 1
+        self.vBus.optz.value = np.ones(self.vBus.shape)
         return res
 
     def run(self, no_code=True, **kwargs):
@@ -206,9 +209,9 @@ class DCOPF(DCOPFBase):
     """
     DC optimal power flow (DCOPF).
 
-    In DCOPF, ``pg`` and ``plf`` are calculated variables.
-    Then, ``vBus`` is fixed to 1, and ``aBus`` is estimated
-    using line flow ``plf`` and line reactance ``x``.
+    Bus voltage ``vBus`` is fixed to 1.
+    Bus angle ``aBus`` is estimated
+    as ::math:``a_{Bus} = C_{ft}^{-1} \\times x \\times p_{L}``.
     """
 
     def __init__(self, system, config):
@@ -250,17 +253,6 @@ class DCOPF(DCOPFBase):
         self.pb = Constraint(name='pb', info='power balance',
                              e_str='sum(pd) - sum(pg)',
                              type='eq',)
-        self.aest = Constraint(name='aest', type='eq',
-                                info='estimated bus angle',
-                                e_str='aBus - Cfti@mul(x, plf)',)
-        self.oneBus = NumOp(u=self.zb, fun=np.ones_like,
-                            args=dict(dtype=np.float64),
-                            name='oneBus', tex_name=r'\mathbb{1}',
-                            info='vector of ones',
-                            no_parse=True,)
-        self.vBusb = Constraint(name='vBusb', type='eq',
-                                info='set bus voltage to 1',
-                                e_str='vBus - oneBus',)
 
         self.pnb = Constraint(name='pnb', type='eq',
                               info='nodal power injection',
