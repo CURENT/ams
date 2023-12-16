@@ -89,29 +89,19 @@ class DCOPF(RoutineModel):
         self.rate_a = RParam(info='long-term flow limit',
                              name='rate_a', tex_name=r'R_{ATEA}',
                              unit='MVA', model='Line',)
-
         # --- connection matrix ---
-        sparse = True
         self.Cg = RParam(info='Gen connection matrix',
                          name='Cg', tex_name=r'C_{G}',
                          model='mats', src='Cg',
-                         no_parse=True, sparse=sparse,)
-        self.Cgi = RParam(info='Gen connection matrix inverse',
-                          name='Cgi', tex_name=r'C_{G}^{-1}',
-                          model='mats', src='Cgi',
-                          no_parse=True, sparse=sparse,)
+                         no_parse=True, sparse=True,)
         self.Cl = RParam(info='Load connection matrix',
                          name='Cl', tex_name=r'C_{L}',
                          model='mats', src='Cl',
-                         no_parse=True, sparse=sparse,)
-        self.Cli = RParam(info='Load connection matrix inverse',
-                          name='Cli', tex_name=r'C_{L}^{-1}',
-                          model='mats', src='Cli',
-                          no_parse=True, sparse=sparse,)
+                         no_parse=True, sparse=True,)
         self.Cft = RParam(info='Line connection matrix',
                           name='Cft', tex_name=r'C_{ft}',
                           model='mats', src='Cft',
-                          no_parse=True, sparse=sparse,)
+                          no_parse=True, sparse=True,)
         self.PTDF = RParam(info='Power Transfer Distribution Factor',
                            name='PTDF', tex_name=r'P_{TDF}',
                            model='mats', src='PTDF',
@@ -123,6 +113,7 @@ class DCOPF(RoutineModel):
                       name='pg', tex_name=r'p_{G}',
                       model='StaticGen', src='p',
                       v0=self.pg0)
+        # NOTE: Var bounds need to set separately
         pglb = '-pg + mul(nctrle, pg0) + mul(ctrle, pmin)'
         self.pglb = Constraint(name='pglb', info='pg min',
                                e_str=pglb, type='uq',)
@@ -130,16 +121,21 @@ class DCOPF(RoutineModel):
         self.pgub = Constraint(name='pgub', info='pg max',
                                e_str=pgub, type='uq',)
         # --- bus ---
-        self.aBus = Var(info='Bus voltage angle',
-                        name='aBus', tex_name=r'\theta_{Bus}',
-                        unit='rad',
-                        model='Bus', src='a',)
-        self.vBus = Var(info='Bus voltage magnitude',
-                        name='vBus', tex_name=r'v_{Bus}',
-                        unit='p.u.',
-                        model='Bus', src='v')
+        self.png = Var(info='Bus active power from gen',
+                       unit='p.u.',
+                       name='pg', tex_name=r'p_{Bus,G}',
+                       model='Bus',)
+        self.pnd = Var(info='Bus active power from load',
+                       unit='p.u.',
+                       name='pd', tex_name=r'p_{Bus,D}',
+                       model='Bus',)
+        self.pngb = Constraint(name='pngb', type='eq',
+                               e_str='Cg@png - pg',
+                               info='Bus active power from gen',)
+        self.pndb = Constraint(name='pndb', type='eq',
+                               e_str='Cl@pnd - pd',
+                               info='Bus active power from load',)
         # --- line ---
-        # NOTE: Var bounds need to set separately
         # NOTE: `ug*pmin` results in unexpected error
         self.plf = Var(info='Line active power',
                        name='plf', tex_name=r'p_{L}',
@@ -154,7 +150,7 @@ class DCOPF(RoutineModel):
                              type='eq',)
         self.pnb = Constraint(name='pnb', type='eq',
                               info='nodal power injection',
-                              e_str='PTDF@(Cgi@pg - Cli@pd) - plf',)
+                              e_str='PTDF@(png - pnd) - plf',)
         # --- objective ---
         obj = 'sum(mul(c2, power(pg, 2)))' \
             '+ sum(mul(c1, pg))' \
@@ -167,17 +163,7 @@ class DCOPF(RoutineModel):
         """
         Solve the routine optimization model.
         """
-        res = self.om.prob.solve(**kwargs)
-        # str output maens solver failed
-        if isinstance(res, str):
-            return res
-        # estimate aBus
-        aBus = np.matmul(self.system.mats.Cfti.v,
-                         np.multiply(self.x.v, self.plf.v))
-        self.aBus.optz.value = aBus
-        # set vBus to 1
-        self.vBus.optz.value = np.ones(self.vBus.shape)
-        return res
+        return self.om.prob.solve(**kwargs)
 
     def run(self, no_code=True, **kwargs):
         """

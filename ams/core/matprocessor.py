@@ -51,7 +51,6 @@ class MParam(Param):
                  v: Optional[np.ndarray] = None,
                  sparse: Optional[bool] = False,
                  ):
-        Param.__init__(self, name=name, info=info)
         self.name = name
         self.tex_name = tex_name if (tex_name is not None) else name
         self.info = info
@@ -107,36 +106,18 @@ class MatProcessor:
         self.PTDF = MParam(name='PTDF', tex_name=r'P_{TDF}',
                            info='Power transfer distribution factor',
                            v=None)
-        self.pl = MParam(name='pl', tex_name=r'p_l',
-                         info='Nodal active load',
-                         v=None, sparse=True)
-        self.ql = MParam(name='ql', tex_name=r'q_l',
-                         info='Nodal reactive load',
-                         v=None, sparse=True)
         self.Cft = MParam(name='Cft', tex_name=r'C_{ft}',
                           info='Connectivity matrix',
                           v=None, sparse=True)
-        self.Cfti = MParam(name='Cfti', tex_name=r'C_{ft}^i',
-                           info='Connectivity matrix',
-                           v=None, sparse=False)
         self.Cg = MParam(name='Cg', tex_name=r'C_g',
                          info='Generator connectivity matrix',
                          v=None, sparse=True)
-        self.Cgi = MParam(name='Cgi', tex_name=r'C_g^i',
-                          info='Generator connectivity matrix',
-                          v=None, sparse=True)
         self.Cs = MParam(name='Cs', tex_name=r'C_s',
                          info='Slack connectivity matrix',
                          v=None, sparse=True)
-        self.Csi = MParam(name='Csi', tex_name=r'C_s^i',
-                          info='Slack connectivity matrix',
-                          v=None, sparse=True)
         self.Cl = MParam(name='Cl', tex_name=r'Cl',
                          info='Load connectivity matrix',
                          v=None, sparse=True)
-        self.Cli = MParam(name='Cli', tex_name=r'Cl^i',
-                          info='Load connectivity matrix',
-                          v=None, sparse=True)
 
     def make(self):
         """
@@ -146,10 +127,8 @@ class MatProcessor:
         """
         system = self.system
         ppc = system2ppc(system)
-
         self.PTDF._v = makePTDF(ppc['baseMVA'], ppc['bus'], ppc['branch'])
         _, _, _, _, self.Cft._v = makeBdc(ppc['baseMVA'], ppc['bus'], ppc['branch'])
-        self.Cfti._v = np.linalg.pinv(self.Cft.v)
 
         gen_bus = system.StaticGen.get(src='bus', attr='v',
                                        idx=system.StaticGen.get_idx())
@@ -158,23 +137,16 @@ class MatProcessor:
         all_bus = system.Bus.idx.v
         load_bus = system.StaticLoad.get(src='bus', attr='v',
                                          idx=system.StaticLoad.get_idx())
-        idx_PD = system.PQ.find_idx(keys="bus", values=all_bus,
-                                    allow_none=True, default=None)
-        self.pl._v = c_sparse(system.PQ.get(src='p0', attr='v', idx=idx_PD))
-        self.ql._v = c_sparse(system.PQ.get(src='q0', attr='v', idx=idx_PD))
 
         row, col = np.meshgrid(all_bus, slack_bus)
         Cs_v = (row == col).astype(int)
         self.Cs._v = c_sparse(Cs_v)
-        self.Csi._v = c_sparse(np.linalg.pinv(Cs_v))
         row, col = np.meshgrid(all_bus, gen_bus)
         Cg_v = (row == col).astype(int)
         self.Cg._v = c_sparse(Cg_v)
-        self.Cgi._v = c_sparse(np.linalg.pinv(Cg_v))
         row, col = np.meshgrid(all_bus, load_bus)
         Cl_v = (row == col).astype(int)
         self.Cl._v = c_sparse(Cl_v)
-        self.Cli._v = c_sparse(np.linalg.pinv(Cl_v))
 
         return True
 

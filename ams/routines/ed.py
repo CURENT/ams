@@ -64,6 +64,7 @@ class MPBase:
                          name='sd', tex_name=r's_{d}',
                          src='sd', model='EDTSlot')
 
+        # NOTE: update timeslot.model in dispatch model if necessary
         self.timeslot = RParam(info='Time slot for multi-period ED',
                                name='timeslot', tex_name=r't_{s,idx}',
                                src='idx', model='EDTSlot',
@@ -103,6 +104,10 @@ class MPBase:
         self.pg0.expand_dims = 1
         self.rate_a.expand_dims = 1
         self.x.expand_dims = 1
+
+        # NOTE: extend pg to 2D matrix: row for gen and col for timeslot
+        self.pg.horizon = self.timeslot
+        self.pg.info = '2D Gen power'
 
 class ED(RTED):
     """
@@ -147,16 +152,14 @@ class ED(RTED):
         self.dud.expand_dims = 1
         self.ddd.expand_dims = 1
 
-        # --- params ---
+        # --- Data Section ---
         self.ugt = NumOp(u=self.ug, fun=np.transpose,
                          name='ugt', tex_name=r'u_{g}',
                          info='input ug transpose',
                          no_parse=True)
 
-        # --- vars ---
-        # NOTE: extend pg to 2D matrix, where row is gen and col is timeslot
-        self.pg.horizon = self.timeslot
-        self.pg.info = '2D Gen power'
+        # --- Model Section ---
+        # --- gen ---
         self.ctrle.u2 = self.ugt
         self.nctrle.u2 = self.ugt
         pglb = '-pg + mul(mul(nctrle, pg0), tlv) '
@@ -166,33 +169,30 @@ class ED(RTED):
         pgub += '- mul(mul(ctrle, tlv), pmax)'
         self.pgub.e_str = pgub
 
-        self.plf.horizon = self.timeslot
-        self.plf.info = '2D Line flow'
-
         self.pru.horizon = self.timeslot
         self.pru.info = '2D RegUp power'
-
         self.prd.horizon = self.timeslot
         self.prd.info = '2D RegDn power'
 
         self.prs.horizon = self.timeslot
-
-        self.aBus.horizon = self.timeslot
-        self.aBus.info = '2D Bus angle'
-
-        # --- constraints ---
-        # NOTE: Spg @ pg returns a row vector
-        self.pb.e_str = '- gs @ pg + pdsz'  # power balance
-
         self.prsb.e_str = 'mul(ugt, mul(pmax, tlv) - pg) - prs'
         self.rsr.e_str = '-gs@prs + dsr'
 
-        # --- bus power injection ---
-        self.pnb.e_str =  'PTDF@(Cgi@pg - Cli@pds) - plf'
-
-        # --- line limits ---
+        # --- line ---
+        self.plf.horizon = self.timeslot
+        self.plf.info = '2D Line flow'
         self.plflb.e_str = '-plf - mul(rate_a, tlv)'
         self.plfub.e_str = 'plf - mul(rate_a, tlv)'
+
+        # --- power balance ---
+        # NOTE: Spg @ pg returns a row vector
+        self.pb.e_str = '- gs @ pg + pdsz'
+
+        self.png.horizon = self.timeslot
+        self.pnb.e_str =  'PTDF@(png - pnd) - plf'
+
+        self.pnd.horizon = self.timeslot
+        self.pndb.e_str = 'Cl@pnd - pds'
 
         # --- ramping ---
         self.rbu.e_str = 'gs@mul(ugt, pru) - mul(dud, tlv)'
@@ -227,23 +227,6 @@ class ED(RTED):
         multi-period dispatch.
         """
         return NotImplementedError
-
-    def solve(self, **kwargs):
-        """
-        Solve the routine optimization model.
-        """
-        res = self.om.prob.solve(**kwargs)
-        # str output maens solver failed
-        if isinstance(res, str):
-            return res
-        # estimate aBus
-        x_tlv = np.matmul(self.x.v, self.tlv.v)
-        aBus = np.matmul(self.system.mats.Cfti.v,
-                         np.multiply(x_tlv, self.plf.v))
-        self.aBus.optz.value = aBus
-        # set vBus to 1
-        self.vBus.optz.value = np.ones(self.vBus.shape)
-        return None
 
     def unpack(self, **kwargs):
         """

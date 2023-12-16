@@ -298,8 +298,10 @@ class RoutineModel:
             msg = f"{self.class_name} data check failed, setup may run into error!"
             logger.warning(msg)
         self._constr_check()
-        # FIXME: build the system matrices every init might slow down
+        t_mat, _ = elapsed()
         self.system.mats.make()
+        _, s_mat = elapsed(t_mat)
+        logger.debug(f"Built system matrices in {s_mat}.")
         t_setup, _ = elapsed()
         results = self.om.setup(no_code=no_code)
         _, s_setup = elapsed(t_setup)

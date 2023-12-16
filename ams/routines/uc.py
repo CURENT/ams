@@ -100,7 +100,11 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
         self.info = 'unit commitment'
         self.type = 'DCUC'
 
+        # --- Data Section ---
+        # update timeslot model to UCTSlot
+        self.timeslot.info = 'Time slot for multi-period UC'
         self.timeslot.model = 'UCTSlot'
+        # --- reserve cost ---
         self.csu = RParam(info='startup cost',
                           name='csu', tex_name=r'c_{su}',
                           model='GCost', src='csu',
@@ -109,6 +113,7 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
                           name='csd', tex_name=r'c_{sd}',
                           model='GCost', src='csd',
                           unit='$',)
+        # --- gen ---
         self.td1 = RParam(info='minimum ON duration',
                           name='td1', tex_name=r't_{d1}',
                           model='StaticGen', src='td1',
@@ -121,28 +126,14 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
         self.sd.info = 'zonal load factor for UC'
         self.sd.model = 'UCTSlot'
 
-        self.timeslot.info = 'Time slot for multi-period UC'
-        self.timeslot.model = 'UCTSlot'
-
         self.ug.expand_dims = 1
         self.x.expand_dims = 1
 
-        # NOTE: extend pg to 2D matrix, where row is gen and col is timeslot
+        # --- Model Section ---
+        # --- gen ---
+        # NOTE: extend pg to 2D matrix, where row for gen and col for timeslot
         self.pg.horizon = self.timeslot
         self.pg.info = '2D Gen power'
-
-        self.plf.horizon = self.timeslot
-        self.plf.info = '2D Line flow'
-
-        self.prs.horizon = self.timeslot
-        self.prs.info = '2D Spinning reserve'
-
-        self.prns.horizon = self.timeslot
-        self.prns.info = '2D Non-spinning reserve'
-
-        self.aBus.horizon = self.timeslot
-        self.aBus.info = '2D Bus angle'
-
         # TODO: havn't test non-controllability?
         self.ctrle.u2 = self.tlv
         self.ctrle.info = 'Reshaped controllability'
@@ -155,7 +146,6 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
         pgub += '- mul(mul(ctrl, pmax), ugd)'
         self.pgub.e_str = pgub
 
-        # --- vars ---
         self.ugd = Var(info='commitment decision',
                        horizon=self.timeslot,
                        name='ugd', tex_name=r'u_{g,d}',
@@ -171,13 +161,11 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
                        name='wgd', tex_name=r'w_{g,d}',
                        model='StaticGen', src='u',
                        boolean=True,)
-
         self.zug = Var(info='Aux var, :math:`z_{ug} = u_{g,d} * p_g`',
                        horizon=self.timeslot,
                        name='zug', tex_name=r'z_{ug}',
                        model='StaticGen', pos=True,)
-
-        # NOTE: actions have two parts, one for initial status, another for the rest
+        # NOTE: actions have two parts: initial status and the rest
         self.actv = Constraint(name='actv', type='eq',
                                info='startup action',
                                e_str='ugd @ Mr - vgd[:, 1:]',)
@@ -191,9 +179,11 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
                                 info='initial shutdown action',
                                 e_str='-ugd[:, 0] + ug[:, 0] - wgd[:, 0]',)
 
-        # --- constraints ---
-        self.pb.e_str = 'gs @ zug - pdsz'  # power balance
-        self.pb.type = 'uq'  # soft constraint
+        self.prs.horizon = self.timeslot
+        self.prs.info = '2D Spinning reserve'
+
+        self.prns.horizon = self.timeslot
+        self.prns.info = '2D Non-spinning reserve'
 
         # spinning reserve
         self.prsb.e_str = 'mul(ugd, mul(pmax, tlv)) - zug - prs'
@@ -204,13 +194,6 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
         self.prnsb.e_str = 'mul(1-ugd, mul(pmax, tlv)) - prns'
         # non-spinning reserve requirement
         self.rnsr.e_str = '-gs@prns + dnsr'
-
-        # --- bus power injection ---
-        self.pnb.e_str =  'PTDF@(Cgi@pg - Cli@pds) - plf'
-
-        # --- line limits ---
-        self.plflb.e_str = '-plf - mul(rate_a, tlv)'
-        self.plfub.e_str = 'plf - mul(rate_a, tlv)'
 
         # --- big M for ugd*pg ---
         self.Mzug = NumOp(info='10 times of max of pmax as big M for zug',
@@ -238,6 +221,22 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
         self.doff = Constraint(info='minimum offline duration',
                                name='doff', type='uq',
                                e_str='multiply(Coff, wgd) - (1 - ugd)')
+
+        # --- line ---
+        self.plf.horizon = self.timeslot
+        self.plf.info = '2D Line flow'
+        self.plflb.e_str = '-plf - mul(rate_a, tlv)'
+        self.plfub.e_str = 'plf - mul(rate_a, tlv)'
+
+        # --- power balance ---
+        self.pb.e_str = 'gs @ zug - pdsz'  # power balance
+        self.pb.type = 'uq'  # soft constraint
+
+        self.png.horizon = self.timeslot
+        self.pnb.e_str =  'PTDF@(png - pnd) - plf'
+
+        self.pnd.horizon = self.timeslot
+        self.pndb.e_str = 'Cl@pnd - pds'
 
         # --- objective ---
         gcost = 'sum(c2 @ (t dot zug)**2 + c1 @ (t dot zug))'
@@ -297,23 +296,6 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
         multi-period dispatch.
         """
         return NotImplementedError
-
-    def solve(self, **kwargs):
-        """
-        Solve the routine optimization model.
-        """
-        res = self.om.prob.solve(**kwargs)
-        # str output maens solver failed
-        if isinstance(res, str):
-            return res
-        # estimate aBus
-        x_tlv = np.matmul(self.x.v, self.tlv.v)
-        aBus = np.matmul(self.system.mats.Cfti.v,
-                         np.multiply(x_tlv, self.plf.v))
-        self.aBus.optz.value = aBus
-        # set vBus to 1
-        self.vBus.optz.value = np.ones(self.vBus.shape)
-        return None
 
     def unpack(self, **kwargs):
         """
