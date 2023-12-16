@@ -15,36 +15,21 @@ from ams.opt.omodel import Var, Constraint, Objective
 logger = logging.getLogger(__name__)
 
 
-class DCOPFBase(RoutineModel):
+class DCOPF(RoutineModel):
     """
-    Base class for DCOPF dispatch model.
+    DC optimal power flow (DCOPF).
 
-    Overload the ``solve``, ``unpack``, and ``run`` methods.
+    Bus voltage ``vBus`` is fixed to 1.
+    Bus angle ``aBus`` is estimated
+    as ::math:``a_{Bus} = C_{ft}^{-1} \\times x \\times p_{L}``.
     """
 
     def __init__(self, system, config):
         RoutineModel.__init__(self, system, config)
+        self.info = 'DC Optimal Power Flow'
+        self.type = 'DCED'
+        # --- Data Section ---
         # --- generator cost ---
-        self.ug = RParam(info='Gen connection status',
-                         name='ug', tex_name=r'u_{G}',
-                         model='StaticGen', src='u',
-                         no_parse=True)
-        self.ctrl = RParam(info='Gen controllability',
-                           name='ctrl', tex_name=r'c_{trl}',
-                           model='StaticGen', src='ctrl',
-                           no_parse=True)
-        self.ctrle = NumOpDual(info='Effective Gen controllability',
-                               name='ctrle', tex_name=r'c_{trl,e}',
-                               u=self.ctrl, u2=self.ug,
-                               fun=np.multiply, no_parse=True)
-        self.nctrl = NumOp(u=self.ctrl, fun=np.logical_not,
-                           name='nctrl', tex_name=r'c_{trl,n}',
-                           info='Effective Gen uncontrollability',
-                           no_parse=True,)
-        self.nctrle = NumOpDual(info='Effective Gen uncontrollability',
-                                name='nctrle', tex_name=r'c_{trl,e,n}',
-                                u=self.nctrl, u2=self.ug,
-                                fun=np.multiply, no_parse=True)
         self.c2 = RParam(info='Gen cost coefficient 2',
                          name='c2', tex_name=r'c_{2}',
                          unit=r'$/(p.u.^2)', model='GCost',
@@ -60,6 +45,26 @@ class DCOPFBase(RoutineModel):
                          indexer='gen', imodel='StaticGen',
                          no_parse=True)
         # --- generator ---
+        self.ug = RParam(info='Gen connection status',
+                         name='ug', tex_name=r'u_{g}',
+                         model='StaticGen', src='u',
+                         no_parse=True)
+        self.ctrl = RParam(info='Gen controllability',
+                           name='ctrl', tex_name=r'c_{trl}',
+                           model='StaticGen', src='ctrl',
+                           no_parse=True)
+        self.ctrle = NumOpDual(info='Effective Gen controllability',
+                               name='ctrle', tex_name=r'c_{trl, e}',
+                               u=self.ctrl, u2=self.ug,
+                               fun=np.multiply, no_parse=True)
+        self.nctrl = NumOp(u=self.ctrl, fun=np.logical_not,
+                           name='nctrl', tex_name=r'c_{trl,n}',
+                           info='Effective Gen uncontrollability',
+                           no_parse=True,)
+        self.nctrle = NumOpDual(info='Effective Gen uncontrollability',
+                                name='nctrle', tex_name=r'c_{trl,n,e}',
+                                u=self.nctrl, u2=self.ug,
+                                fun=np.multiply, no_parse=True)
         self.pmax = RParam(info='Gen maximum active power',
                            name='pmax', tex_name=r'p_{G, max}',
                            unit='p.u.', model='StaticGen',
@@ -71,13 +76,11 @@ class DCOPFBase(RoutineModel):
         self.pg0 = RParam(info='Gen initial active power',
                           name='p0', tex_name=r'p_{G,0}',
                           unit='p.u.', model='StaticGen',)
-
         # --- load ---
         self.pd = RParam(info='active demand',
                          name='pd', tex_name=r'p_{D}',
                          model='StaticLoad', src='p0',
                          unit='p.u.',)
-
         # --- line ---
         self.x = RParam(info='line reactance',
                         name='x', tex_name=r'x',
@@ -87,37 +90,78 @@ class DCOPFBase(RoutineModel):
                              name='rate_a', tex_name=r'R_{ATEA}',
                              unit='MVA', model='Line',)
 
-        # --- bus ---
-        self.zb = RParam(info='Bus zone',
-                         name='zb', tex_name=r'z_{one,b}',
-                         model='Bus', src='zone',
-                         no_parse=True,)
-
         # --- connection matrix ---
+        sparse = True
         self.Cg = RParam(info='Gen connection matrix',
                          name='Cg', tex_name=r'C_{G}',
                          model='mats', src='Cg',
-                         no_parse=True, sparse=True,)
+                         no_parse=True, sparse=sparse,)
         self.Cgi = RParam(info='Gen connection matrix inverse',
-                            name='Cgi', tex_name=r'C_{G}^{-1}',
-                            model='mats', src='Cgi',
-                            no_parse=True, sparse=True,)
+                          name='Cgi', tex_name=r'C_{G}^{-1}',
+                          model='mats', src='Cgi',
+                          no_parse=True, sparse=sparse,)
         self.Cl = RParam(info='Load connection matrix',
                          name='Cl', tex_name=r'C_{L}',
                          model='mats', src='Cl',
-                         no_parse=True, sparse=True,)
+                         no_parse=True, sparse=sparse,)
         self.Cli = RParam(info='Load connection matrix inverse',
-                            name='Cli', tex_name=r'C_{L}^{-1}',
-                            model='mats', src='Cli',
-                            no_parse=True, sparse=True,)
+                          name='Cli', tex_name=r'C_{L}^{-1}',
+                          model='mats', src='Cli',
+                          no_parse=True, sparse=sparse,)
         self.Cft = RParam(info='Line connection matrix',
                           name='Cft', tex_name=r'C_{ft}',
                           model='mats', src='Cft',
-                          no_parse=True, sparse=True,)
+                          no_parse=True, sparse=sparse,)
         self.PTDF = RParam(info='Power Transfer Distribution Factor',
                            name='PTDF', tex_name=r'P_{TDF}',
                            model='mats', src='PTDF',
                            no_parse=True,)
+        # --- Model Section ---
+        # --- generation ---
+        self.pg = Var(info='Gen active power',
+                      unit='p.u.',
+                      name='pg', tex_name=r'p_{G}',
+                      model='StaticGen', src='p',
+                      v0=self.pg0)
+        pglb = '-pg + mul(nctrle, pg0) + mul(ctrle, pmin)'
+        self.pglb = Constraint(name='pglb', info='pg min',
+                               e_str=pglb, type='uq',)
+        pgub = 'pg - mul(nctrle, pg0) - mul(ctrle, pmax)'
+        self.pgub = Constraint(name='pgub', info='pg max',
+                               e_str=pgub, type='uq',)
+        # --- bus ---
+        self.aBus = Var(info='Bus voltage angle',
+                        name='aBus', tex_name=r'\theta_{Bus}',
+                        unit='rad',
+                        model='Bus', src='a',)
+        self.vBus = Var(info='Bus voltage magnitude',
+                        name='vBus', tex_name=r'v_{Bus}',
+                        unit='p.u.',
+                        model='Bus', src='v')
+        # --- line ---
+        # NOTE: Var bounds need to set separately
+        # NOTE: `ug*pmin` results in unexpected error
+        self.plf = Var(info='Line active power',
+                       name='plf', tex_name=r'p_{L}',
+                       unit='p.u.', model='Line',)
+        self.plflb = Constraint(name='plflb', info='Line power lower bound',
+                                e_str='-plf - rate_a', type='uq',)
+        self.plfub = Constraint(name='plfub', info='Line power upper bound',
+                                e_str='plf - rate_a', type='uq',)
+        # --- power balance ---
+        self.pb = Constraint(name='pb', info='power balance',
+                             e_str='sum(pd) - sum(pg)',
+                             type='eq',)
+        self.pnb = Constraint(name='pnb', type='eq',
+                              info='nodal power injection',
+                              e_str='PTDF@(Cgi@pg - Cli@pd) - plf',)
+        # --- objective ---
+        obj = 'sum(mul(c2, power(pg, 2)))' \
+            '+ sum(mul(c1, pg))' \
+            '+ sum(mul(c0, ug))'
+        self.obj = Objective(name='obj',
+                             info='total cost', unit='$',
+                             sense='min', e_str=obj,)
 
     def solve(self, **kwargs):
         """
@@ -197,71 +241,9 @@ class DCOPFBase(RoutineModel):
                 # NOTE: only unpack the variables that are in the model or group
                 try:
                     var.owner.set(src=var.src, attr='v', idx=idx, value=var.v)
-                except KeyError:  # failed to find source var in the owner (model or group)
+                # failed to find source var in the owner (model or group)
+                except (KeyError, TypeError):  
                     pass
-                except TypeError:  # failed to find source var in the owner (model or group)
-                    pass
+        # label the most recent solved routine
         self.system.recent = self.system.routines[self.class_name]
         return True
-
-
-class DCOPF(DCOPFBase):
-    """
-    DC optimal power flow (DCOPF).
-
-    Bus voltage ``vBus`` is fixed to 1.
-    Bus angle ``aBus`` is estimated
-    as ::math:``a_{Bus} = C_{ft}^{-1} \\times x \\times p_{L}``.
-    """
-
-    def __init__(self, system, config):
-        DCOPFBase.__init__(self, system, config)
-        self.info = 'DC Optimal Power Flow'
-        self.type = 'DCED'
-        # --- vars ---
-        self.pg = Var(info='Gen active power',
-                      unit='p.u.',
-                      name='pg', tex_name=r'p_{G}',
-                      model='StaticGen', src='p',
-                      v0=self.pg0)
-        # NOTE: `ug*pmin` results in unexpected error
-        pglb = '-pg + mul(nctrle, pg0) + mul(ctrle, pmin)'
-        self.pglb = Constraint(name='pglb', info='pg min',
-                               e_str=pglb, type='uq',)
-        pgub = 'pg - mul(nctrle, pg0) - mul(ctrle, pmax)'
-        self.pgub = Constraint(name='pgub', info='pg max',
-                               e_str=pgub, type='uq',)
-
-        self.aBus = Var(info='Bus voltage angle',
-                        name='aBus', tex_name=r'\theta_{Bus}',
-                        unit='rad',
-                        model='Bus', src='a',)
-        self.vBus = Var(info='Bus voltage magnitude',
-                        name='vBus', tex_name=r'v_{Bus}',
-                        unit='p.u.',
-                        model='Bus', src='v')
-
-        self.plf = Var(info='Line active power',
-                       name='plf', tex_name=r'p_{L}',
-                       unit='p.u.', model='Line',)
-        self.plflb = Constraint(name='plflb', info='Line power lower bound',
-                                e_str='-plf - rate_a', type='uq',)
-        self.plfub = Constraint(name='plfub', info='Line power upper bound',
-                                e_str='plf - rate_a', type='uq',)
-
-        # --- constraints ---
-        self.pb = Constraint(name='pb', info='power balance',
-                             e_str='sum(pd) - sum(pg)',
-                             type='eq',)
-
-        self.pnb = Constraint(name='pnb', type='eq',
-                              info='nodal power injection',
-                              e_str='PTDF@(Cgi@pg - Cli@pd) - plf',)
-
-        # --- objective ---
-        self.obj = Objective(name='obj',
-                             info='total cost', unit='$',
-                             sense='min',)
-        self.obj.e_str = 'sum(mul(c2, power(pg, 2)))' \
-                         '+ sum(mul(c1, pg))' \
-                         '+ sum(mul(c0, ug))'

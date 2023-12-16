@@ -7,7 +7,7 @@ import numpy as np  # NOQA
 
 from ams.core.param import RParam  # NOQA
 from ams.core.service import ZonalSum, VarSelect, NumOp, NumOpDual  # NOQA
-from ams.routines.dcopf import DCOPFBase, DCOPF  # NOQA
+from ams.routines.dcopf import DCOPF  # NOQA
 
 from ams.opt.omodel import Var, Constraint  # NOQA
 
