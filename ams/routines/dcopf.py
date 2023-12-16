@@ -22,6 +22,29 @@ class DCOPF(RoutineModel):
     Bus voltage ``vBus`` is fixed to 1.
     Bus angle ``aBus`` is estimated
     as ::math:``a_{Bus} = C_{ft}^{-1} \\times x \\times p_{L}``.
+
+    For large-scale convex problems, the Dual Simplex can be efficient.
+
+    When using the GUROBI solver, the optimization method can be specified 
+    through the `Method` parameter, and all available methods are:
+        - 0: Primal Simplex
+        - 1: Dual Simplex
+        - 2: Barrier
+        - 3: Concurrent
+        - 4: Deterministic Concurrent
+
+    When using the CPLEX solver, the optimization method can also be 
+    specified. 
+    To specify the method in CPLEX, use the `cplex_params` argument with 
+    `solver='CPLEX'` in the solve function. For example, to use the Dual 
+    Simplex method, set `cplex_params={'lpmethod': 1}`.
+    CPLEX supports the following methods:
+        - 0: Primal Simplex
+        - 1: Dual Simplex
+        - 2: Barrier
+        - 3: Non-deterministic Concurrent
+        - 4: Deterministic Concurrent
+        - 5: Network Simplex (suitable for network flow problems)
     """
 
     def __init__(self, system, config):
