@@ -123,11 +123,11 @@ class DCOPF(RoutineModel):
         # --- bus ---
         self.png = Var(info='Bus active power from gen',
                        unit='p.u.',
-                       name='pg', tex_name=r'p_{Bus,G}',
+                       name='png', tex_name=r'p_{Bus,G}',
                        model='Bus',)
         self.pnd = Var(info='Bus active power from load',
                        unit='p.u.',
-                       name='pd', tex_name=r'p_{Bus,D}',
+                       name='pnd', tex_name=r'p_{Bus,D}',
                        model='Bus',)
         self.pngb = Constraint(name='pngb', type='eq',
                                e_str='Cg@png - pg',
