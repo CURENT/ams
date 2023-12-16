@@ -277,7 +277,11 @@ class RoutineModel:
         # TODO: add data validation for RParam, typical range, etc.
         return True
 
-    def init(self, force=True, no_code=True, **kwargs):
+    def init(self,
+             force=True,
+             make_mats=False,
+             no_code=True,
+             **kwargs):
         """
         Setup optimization model.
 
@@ -285,6 +289,8 @@ class RoutineModel:
         ----------
         force: bool
             Whether to force initialization.
+        make_mats: bool
+            Whether to build system matrices.
         no_code: bool
             Whether to show generated code.
         """
@@ -298,10 +304,11 @@ class RoutineModel:
             msg = f"{self.class_name} data check failed, setup may run into error!"
             logger.warning(msg)
         self._constr_check()
-        t_mat, _ = elapsed()
-        self.system.mats.make()
-        _, s_mat = elapsed(t_mat)
-        logger.debug(f"Built system matrices in {s_mat}.")
+        if make_mats:
+            t_mat, _ = elapsed()
+            self.system.mats.make()
+            _, s_mat = elapsed(t_mat)
+            logger.debug(f"Built system matrices in {s_mat}.")
         t_setup, _ = elapsed()
         results = self.om.setup(no_code=no_code)
         _, s_setup = elapsed(t_setup)
