@@ -175,9 +175,9 @@ class DCOPF(RoutineModel):
                               info='nodal power injection',
                               e_str='PTDF@(png - pnd) - plf',)
         # --- objective ---
-        obj = 'sum(mul(c2, power(pg, 2)))' \
-            '+ sum(mul(c1, pg))' \
-            '+ sum(mul(c0, ug))'
+        obj = 'sum(mul(c2, power(pg, 2)))'
+        obj += '+ sum(mul(c1, pg))'
+        obj += '+ sum(mul(c0, ug))'
         self.obj = Objective(name='obj',
                              info='total cost', unit='$',
                              sense='min', e_str=obj,)

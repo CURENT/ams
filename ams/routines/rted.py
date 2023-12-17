@@ -182,7 +182,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.obj.info = 'total generation and reserve cost'
         # NOTE: the product of dt and pg is processed using ``dot``,
         # because dt is a numnber
-        cost = 'sum_squares(mul(c2, pg))'
+        cost = 'sum(mul(c2, power(pg, 2)))'
         cost += '+ sum(c1 @ (t dot pg))'
         cost += '+ ug * c0'  # constant cost
         cost += '+ sum(cru * pru + crd * prd)'  # reserve cost
