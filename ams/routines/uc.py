@@ -8,6 +8,7 @@ import pandas as pd
 
 from ams.core.param import RParam
 from ams.core.service import (NumOp, NumOpDual, MinDur)
+from ams.routines.dcopf import DCOPF
 from ams.routines.rted import RTEDBase
 from ams.routines.ed import SRBase, MPBase, ESD1MPBase
 
@@ -51,7 +52,7 @@ class NSRBase:
                                name='rnsr', type='uq',)
 
 
-class UC(RTEDBase, MPBase, SRBase, NSRBase):
+class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
     """
     DC-based unit commitment (UC).
     The bilinear term in the formulation is linearized with big-M method.
@@ -84,7 +85,8 @@ class UC(RTEDBase, MPBase, SRBase, NSRBase):
     """
 
     def __init__(self, system, config):
-        RTEDBase.__init__(self, system, config)
+        DCOPF.__init__(self, system, config)
+        RTEDBase.__init__(self)
         MPBase.__init__(self)
         SRBase.__init__(self)
         NSRBase.__init__(self)

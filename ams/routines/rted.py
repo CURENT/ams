@@ -14,15 +14,12 @@ from ams.opt.omodel import Var, Constraint  # NOQA
 logger = logging.getLogger(__name__)
 
 
-class RTEDBase(DCOPF):
+class RTEDBase:
     """
     Base class for real-time economic dispatch (RTED).
-
-    Overload ``dc2ac``, ``run``.
     """
 
-    def __init__(self, system, config):
-        DCOPF.__init__(self, system, config)
+    def __init__(self):
         # --- region ---
         self.zg = RParam(info='Gen zone',
                          name='zg', tex_name='z_{one,g}',
@@ -46,7 +43,6 @@ class RTEDBase(DCOPF):
                              name='pdz', tex_name=r'p_{d,z}',
                              unit='p.u.', info='zonal total load',
                              no_parse=True,)
-
         # --- generator ---
         self.R10 = RParam(info='10-min ramp rate',
                           name='R10', tex_name=r'R_{10}',
@@ -60,9 +56,7 @@ class SFRBase:
     """
 
     def __init__(self):
-
-        # 1. reserve
-        #  --- reserve cost ---
+        #  --- SFR cost ---
         self.cru = RParam(info='RegUp reserve coefficient',
                           name='cru', tex_name=r'c_{r,u}',
                           model='SFRCost', src='cru',
@@ -82,9 +76,37 @@ class SFRBase:
                          name='dd', tex_name=r'd_{d}',
                          model='SFR', src='dd',
                          unit='%', no_parse=True,)
+        self.dud = NumOpDual(u=self.pdz, u2=self.du, fun=np.multiply,
+                             rfun=np.reshape, rargs=dict(newshape=(-1,)),
+                             name='dud', tex_name=r'd_{u, d}',
+                             info='zonal RegUp reserve requirement',)
+        self.ddd = NumOpDual(u=self.pdz, u2=self.dd, fun=np.multiply,
+                             rfun=np.reshape, rargs=dict(newshape=(-1,)),
+                             name='ddd', tex_name=r'd_{d, d}',
+                             info='zonal RegDn reserve requirement',)
+        # --- SFR ---
+        self.pru = Var(info='RegUp reserve',
+                       unit='p.u.', name='pru', tex_name=r'p_{r,u}',
+                       model='StaticGen', nonneg=True,)
+        self.prd = Var(info='RegDn reserve',
+                       unit='p.u.', name='prd', tex_name=r'p_{r,d}',
+                       model='StaticGen', nonneg=True,)
+        # NOTE: define e_str in dispatch routine
+        self.rbu = Constraint(name='rbu', type='eq',
+                              info='RegUp reserve balance',)
+        self.rbd = Constraint(name='rbd', type='eq',
+                              info='RegDn reserve balance',)
+        self.rru = Constraint(name='rru', type='uq',
+                              info='RegUp reserve source',)
+        self.rrd = Constraint(name='rrd', type='uq',
+                              info='RegDn reserve source',)
+        self.rgu = Constraint(name='rgu', type='uq',
+                              info='Gen ramping up',)
+        self.rgd = Constraint(name='rgd', type='uq',
+                              info='Gen ramping down',)
 
 
-class RTED(RTEDBase, SFRBase):
+class RTED(DCOPF, RTEDBase, SFRBase):
     """
     DC-based real-time economic dispatch (RTED).
     RTED extends DCOPF with:
@@ -115,7 +137,8 @@ class RTED(RTEDBase, SFRBase):
     """
 
     def __init__(self, system, config):
-        RTEDBase.__init__(self, system, config)
+        DCOPF.__init__(self, system, config)
+        RTEDBase.__init__(self)
         SFRBase.__init__(self)
 
         self.config.add(OrderedDict((('t', 5/60),
@@ -143,41 +166,18 @@ class RTED(RTEDBase, SFRBase):
         self.info = 'Real-time economic dispatch'
         self.type = 'DCED'
 
-        # --- vars ---
-        self.pru = Var(info='RegUp reserve',
-                       unit='p.u.', name='pru', tex_name=r'p_{r,u}',
-                       model='StaticGen', nonneg=True,)
-        self.prd = Var(info='RegDn reserve',
-                       unit='p.u.', name='prd', tex_name=r'p_{r,d}',
-                       model='StaticGen', nonneg=True,)
+        # --- Model Section ---
+        # --- SFR ---
+        # RegUp/Dn reserve balance
+        self.rbu.e_str = 'gs @ mul(ug, pru) - dud'
+        self.rbd.e_str = 'gs @ mul(ug, prd) - ddd'
+        # RegUp/Dn reserve source
+        self.rru.e_str = 'mul(ug, pg + pru) - mul(ug, pmax)'
+        self.rrd.e_str = 'mul(ug, -pg + prd) - mul(ug, pmin)'
+        # Gen ramping up/down
+        self.rgu.e_str = 'mul(ug, pg-pg0-R10)'
+        self.rgd.e_str='mul(ug, -pg+pg0-R10)'
 
-        # --- constraints ---
-        self.dud = NumOpDual(u=self.pdz, u2=self.du, fun=np.multiply,
-                             rfun=np.reshape, rargs=dict(newshape=(-1,)),
-                             name='dud', tex_name=r'd_{u, d}',
-                             info='zonal RegUp reserve requirement',)
-        self.ddd = NumOpDual(u=self.pdz, u2=self.dd, fun=np.multiply,
-                             rfun=np.reshape, rargs=dict(newshape=(-1,)),
-                             name='ddd', tex_name=r'd_{d, d}',
-                             info='zonal RegDn reserve requirement',)
-        self.rbu = Constraint(name='rbu', type='eq',
-                              info='RegUp reserve balance',
-                              e_str='gs @ mul(ug, pru) - dud',)
-        self.rbd = Constraint(name='rbd', type='eq',
-                              info='RegDn reserve balance',
-                              e_str='gs @ mul(ug, prd) - ddd',)
-        self.rru = Constraint(name='rru', type='uq',
-                              info='RegUp reserve source',
-                              e_str='mul(ug, pg + pru) - mul(ug, pmax)',)
-        self.rrd = Constraint(name='rrd', type='uq',
-                              info='RegDn reserve source',
-                              e_str='mul(ug, -pg + prd) - mul(ug, pmin)',)
-        self.rgu = Constraint(name='rgu', type='uq',
-                              info='Gen ramping up',
-                              e_str='mul(ug, pg-pg0-R10)',)
-        self.rgd = Constraint(name='rgd', type='uq',
-                              info='Gen ramping down',
-                              e_str='mul(ug, -pg+pg0-R10)',)
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
         # NOTE: the product of dt and pg is processed using ``dot``,

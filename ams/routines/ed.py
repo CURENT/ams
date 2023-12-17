@@ -20,7 +20,7 @@ class SRBase:
     """
     Base class for spinning reserve.
     """
-    
+
     def __init__(self) -> None:
         self.dsrp = RParam(info='spinning reserve requirement in percentage',
                            name='dsr', tex_name=r'd_{sr}',
