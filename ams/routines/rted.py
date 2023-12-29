@@ -275,6 +275,49 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         return super().run(**kwargs)
 
 
+class DGBase:
+    """
+    Base class for DG used in DCED.
+    """
+    def __init__(self):
+        # --- params ---
+        self.gend = RParam(info='gen of DG',
+                           name='gend', tex_name=r'g_{D}',
+                           model='DG', src='gen',
+                           no_parse=True,)
+        info = 'Ratio of DG.pge w.r.t to that of static generator',
+        self.gammape = RParam(name='gammape', tex_name=r'\gamma_{p,e}',
+                              model='DG', src='gammap',
+                              no_parse=True, info=info)
+
+        # --- vars ---
+        self.cd = VarSelect(u=self.pg, indexer='gend',
+                            name='cd', tex_name=r'C_{D}',
+                            info='Select DG power from pg',
+                            gamma='gammape', no_parse=True,)
+        self.pgd = Var(info='DG output power',
+                       unit='p.u.', name='pgd',
+                       tex_name=r'p_{g,D}',
+                       model='DG',)
+
+        # --- constraints ---
+        self.cde = Constraint(name='cde', type='eq',
+                              info='Select pgd from pg',
+                              e_str='cd @ pg - pgd',)
+
+
+class RTEDDG(RTED, DGBase):
+    """
+    RTED with distributed generator :ref:`DG`.
+    """
+
+    def __init__(self, system, config):
+        RTED.__init__(self, system, config)
+        DGBase.__init__(self)
+        self.info = 'Real-time economic dispatch with DG'
+        self.type = 'DCED'
+
+
 class ESD1Base:
     """
     Base class for ESD1 used in DCED.
