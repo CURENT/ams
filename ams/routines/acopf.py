@@ -1,17 +1,17 @@
 """
 ACOPF routines.
 """
-import logging  # NOQA
-from collections import OrderedDict  # NOQA
+import logging
+from collections import OrderedDict
 
-from ams.pypower import runopf  # NOQA
-from ams.pypower.core import ppoption  # NOQA
+from ams.pypower import runopf
+from ams.pypower.core import ppoption
 
-from ams.io.pypower import system2ppc  # NOQA
-from ams.core.param import RParam  # NOQA
+from ams.io.pypower import system2ppc
+from ams.core.param import RParam
 
-from ams.routines.dcpf import DCPFlowBase  # NOQA
-from ams.opt.omodel import Var, Constraint, Objective  # NOQA
+from ams.routines.dcpf import DCPFlowBase
+from ams.opt.omodel import Var, Constraint, Objective
 
 logger = logging.getLogger(__name__)
 
@@ -118,9 +118,9 @@ class ACOPF(ACOPFBase):
                          unit=r'$', model='GCost',
                          indexer='gen', imodel='StaticGen',
                          no_parse=True)
-        self.ql = RParam(info='reactive power demand (system base)',
-                         name='ql', tex_name=r'q_{l}',
-                         model='mats', src='ql',
+        self.qd = RParam(info='reactive demand',
+                         name='qd', tex_name=r'q_{d}',
+                         model='StaticLoad', src='q0',
                          unit='p.u.',)
         # --- bus ---
         self.aBus = Var(info='Bus voltage angle',
@@ -143,12 +143,11 @@ class ACOPF(ACOPFBase):
         # --- constraints ---
         self.pb = Constraint(name='pb',
                              info='power balance',
-                             e_str='sum(pl) - sum(pg)',
-                             type='eq',
-                             )
+                             e_str='sum(pd) - sum(pg)',
+                             type='eq',)
         # TODO: ACOPF formulation
         # --- objective ---
-        self.obj = Objective(name='tc',
+        self.obj = Objective(name='obj',
                              info='total cost',
                              e_str='sum(c2 * pg**2 + c1 * pg + c0)',
                              sense='min',)

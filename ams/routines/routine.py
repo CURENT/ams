@@ -75,22 +75,16 @@ class RoutineModel:
             self.config.load(config)
         # TODO: these default configs might to be revised
         self.config.add(
-            OrderedDict(
-                (
-                    ("sparselib", "klu"),
-                    ("linsolve", 0),
-                )
+            OrderedDict((
+                ("sparselib", "klu"),
+            )
             )
         )
         self.config.add_extra(
-            "_help",
-            sparselib="linear sparse solver name",
-            linsolve="solve symbolic factorization each step (enable when KLU segfaults)",
+            "_help", sparselib="linear sparse solver name",
         )
         self.config.add_extra(
-            "_alt",
-            sparselib=("klu", "umfpack", "spsolve", "cupy"),
-            linsolve=(0, 1),
+            "_alt", sparselib=("klu", "umfpack", "spsolve", "cupy"),
         )
 
         self.exec_time = 0.0  # recorded time to execute the routine in seconds
@@ -255,7 +249,10 @@ class RoutineModel:
             if c.is_disabled:
                 disabled.append(cname)
         if len(disabled) > 0:
-            logger.warning(f"Disabled constraints: {disabled}")
+            msg = "Disabled constraints: "
+            d_str = [f'<{constr}>' for constr in disabled]
+            msg += ", ".join(d_str)
+            logger.warning(msg)
         return True
 
     def _data_check(self):
@@ -280,7 +277,11 @@ class RoutineModel:
         # TODO: add data validation for RParam, typical range, etc.
         return True
 
-    def init(self, force=True, no_code=True, **kwargs):
+    def init(self,
+             force=True,
+             make_mats=False,
+             no_code=True,
+             **kwargs):
         """
         Setup optimization model.
 
@@ -288,24 +289,34 @@ class RoutineModel:
         ----------
         force: bool
             Whether to force initialization.
+        make_mats: bool
+            Whether to build system matrices.
         no_code: bool
             Whether to show generated code.
         """
         if not force and self.initialized:
             logger.debug(f"{self.class_name} has already been initialized.")
             return True
+        t0, _ = elapsed()
         if self._data_check():
             logger.debug(f"{self.class_name} data check passed.")
         else:
             msg = f"{self.class_name} data check failed, setup may run into error!"
             logger.warning(msg)
         self._constr_check()
-        # FIXME: build the system matrices every init might slow down
-        self.system.mats.make()
-        results, elapsed_time = self.om.setup(no_code=no_code)
+        if make_mats:
+            t_mat, _ = elapsed()
+            self.system.mats.make()
+            _, s_mat = elapsed(t_mat)
+            logger.debug(f"Built system matrices in {s_mat}.")
+        t_setup, _ = elapsed()
+        results = self.om.setup(no_code=no_code)
+        _, s_setup = elapsed(t_setup)
+        _, s_init = elapsed(t0)
+        logger.debug(f"Set up OModel in {s_setup}.")
         common_msg = f"Routine <{self.class_name}> "
         if results:
-            msg = f"initialized in {elapsed_time}."
+            msg = f"initialized in {s_init}."
             self.initialized = True
         else:
             msg = "initialization failed!"
@@ -354,12 +365,12 @@ class RoutineModel:
         # --- solve optimization ---
         t0, _ = elapsed()
         _ = self.solve(**kwargs)
-        status = self.om.mdl.status
+        status = self.om.prob.status
         self.exit_code = self.syms.status[status]
         self.system.exit_code = self.exit_code
         _, s = elapsed(t0)
         self.exec_time = float(s.split(" ")[0])
-        sstats = self.om.mdl.solver_stats  # solver stats
+        sstats = self.om.prob.solver_stats  # solver stats
         if sstats.num_iters is None:
             n_iter = -1
         else:

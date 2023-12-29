@@ -5,7 +5,7 @@ import importlib
 import inspect
 import logging
 from collections import OrderedDict
-from typing import Dict, Optional, Tuple, Union  # NOQA
+from typing import Dict, Optional
 
 import numpy as np
 
@@ -399,13 +399,21 @@ class System(andes_System):
         if not self.link_ext_param():
             ret = False
 
-        if self.Line.rate_a.v.max() == 0:
-            logger.info("Line rate_a is adjusted to large value automatically.")
-            self.Line.rate_a.v = 99
+        # --- model parameters range check ---
+        # TODO: there might be other parameters check?
+        # Line rate
+        adjusted_rate = []
+        default_rate = 999
+        for rate in [self.Line.rate_a, self.Line.rate_b, self.Line.rate_c]:
+            rate.v[rate.v == 0] = default_rate
+            adjusted_rate.append(rate.name)
+        adjusted_rate = ', '.join(adjusted_rate)
+        msg = f"Zero line rates detacted in {adjusted_rate}, "
+        msg += f"adjusted to {default_rate}."
+        msg += "\nIf expect a line outage, please set 'u' to 0."
+        logger.info(msg)
         # === no device addition or removal after this point ===
-        # TODO: double check calc_pu_coeff
         self.calc_pu_coeff()   # calculate parameters in system per units
-        # self.store_existing()  # store models with routine flags
 
         if ret is True:
             self.is_setup = True  # set `is_setup` if no error occurred

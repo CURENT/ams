@@ -9,6 +9,7 @@ from typing import Optional, Iterable
 
 import numpy as np
 from scipy.sparse import issparse
+from scipy.sparse import csr_matrix as c_sparse
 
 from andes.core import BaseParam, DataParam, IdxParam, NumParam, ExtParam  # NOQA
 from andes.models.group import GroupBase  # NOQA
@@ -78,8 +79,8 @@ class RParam(Param):
         True to set the parameter as positive.
     neg: bool, optional
         True to set the parameter as negative.
-    sparsity: list, optional
-        Sparsity pattern of the parameter.
+    sparse: bool, optional
+        True to set the parameter as sparse.
 
     Examples
     --------
@@ -125,12 +126,12 @@ class RParam(Param):
                  integer: Optional[bool] = False,
                  pos: Optional[bool] = False,
                  neg: Optional[bool] = False,
-                 sparsity: Optional[list] = None,
+                 sparse: Optional[list] = None,
                  ):
         Param.__init__(self, nonneg=nonneg, nonpos=nonpos,
                        complex=complex, imag=imag, symmetric=symmetric,
                        diag=diag, hermitian=hermitian, boolean=boolean,
-                       integer=integer, pos=pos, neg=neg, sparsity=sparsity)
+                       integer=integer, pos=pos, neg=neg, sparse=sparse)
         self.name = name
         self.tex_name = tex_name if (tex_name is not None) else name
         self.info = info
@@ -149,6 +150,7 @@ class RParam(Param):
             self._v = v
             self.is_ext = True
 
+    # FIXME: might need a better organization
     @property
     def v(self):
         """
@@ -160,6 +162,9 @@ class RParam(Param):
         - The value will sort by the indexer if indexed, used for optmization modeling.
         """
         out = None
+        if self.sparse and self.expand_dims is not None:
+            msg = 'Sparse matrix does not support expand_dims.'
+            raise NotImplementedError(msg)
         if self.indexer is None:
             if self.is_ext:
                 if issparse(self._v):
@@ -176,7 +181,9 @@ class RParam(Param):
             try:
                 imodel = getattr(self.rtn.system, self.imodel)
             except AttributeError:
-                raise AttributeError(f'Indexer source model <{self.imodel}> not found, likely a modeling error.')
+                msg = f'Indexer source model <{self.imodel}> not found, '
+                msg += 'likely a modeling error.'
+                raise AttributeError(msg)
             try:
                 sorted_idx = self.owner.find_idx(keys=self.indexer, values=imodel.get_idx())
             except AttributeError:
@@ -257,10 +264,13 @@ class RParam(Param):
             try:
                 imodel = getattr(self.rtn.system, self.imodel)
             except AttributeError:
-                raise AttributeError(f'Indexer source model <{self.imodel}> not found, likely a modeling error.')
+                msg = f'Indexer source model <{self.imodel}> not found, '
+                msg += 'likely a modeling error.'
+                raise AttributeError(msg)
             try:
                 sorted_idx = self.owner.find_idx(keys=self.indexer, values=imodel.get_idx())
             except AttributeError:
-                raise AttributeError(f'Indexer <{self.indexer}> not found in <{self.imodel}>, \
-                                     likely a modeling error.')
+                msg = f'Indexer <{self.indexer}> not found in <{self.imodel}>, '
+                msg += 'likely a modeling error.'
+                raise AttributeError(msg)
             return sorted_idx

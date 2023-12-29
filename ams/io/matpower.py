@@ -256,15 +256,21 @@ def system2mpc(system) -> dict:
 
     In the ``gen`` section, slack generators preceeds PV generators.
 
-    This function is revised from ``andes.io.matpower.system2mpc``.
-
-    Compared to the original one, this function includes the
-    generator cost data in the ``gencost`` section.
+    Compared to the ``andes.io.matpower.system2mpc``,
+    this function includes the generator cost data in the ``gencost``
+    section.
+    Additionally, ``c2`` and ``c1`` are scaled by ``base_mva`` to match
+    MATPOWER unit ``MW``.
 
     Parameters
     ----------
     system : ams.core.system.System
         AMS system
+
+    Returns
+    -------
+    mpc: dict
+        MATPOWER mpc dict
     """
 
     mpc = dict(version='2',
@@ -350,23 +356,28 @@ def system2mpc(system) -> dict:
         branch[:, 2] = system.Line.r.v
         branch[:, 3] = system.Line.x.v
         branch[:, 4] = system.Line.b.v
-        branch[:, 5] = system.Line.rate_a.v
-        branch[:, 6] = system.Line.rate_b.v
-        branch[:, 7] = system.Line.rate_c.v
+        branch[:, 5] = system.Line.rate_a.v * base_mva
+        branch[:, 6] = system.Line.rate_b.v * base_mva
+        branch[:, 7] = system.Line.rate_c.v * base_mva
         branch[:, 8] = system.Line.tap.v
         branch[:, 9] = system.Line.phi.v * rad2deg
         branch[:, 10] = system.Line.u.v
 
     # --- GCost ---
+    # NOTE: adjust GCost sequence to match the generator sequence
     if system.GCost.n > 0:
+        stg_idx = system.Slack.idx.v + system.PV.idx.v
+        gcost_idx = system.GCost.find_idx(keys=['gen'],
+                                      values=[stg_idx])
+        gcost_uid = system.GCost.idx2uid(gcost_idx)
         gencost = mpc['gencost']
-        gencost[:, 0] = system.GCost.type.v
-        gencost[:, 1] = system.GCost.csu.v
-        gencost[:, 2] = system.GCost.csd.v
+        gencost[:, 0] = system.GCost.type.v[gcost_uid]
+        gencost[:, 1] = system.GCost.csu.v[gcost_uid]
+        gencost[:, 2] = system.GCost.csd.v[gcost_uid]
         gencost[:, 3] = 3
-        gencost[:, 4] = system.GCost.c2.v / base_mva / base_mva
-        gencost[:, 5] = system.GCost.c1.v / base_mva
-        gencost[:, 6] = system.GCost.c0.v / base_mva
+        gencost[:, 4] = system.GCost.c2.v[gcost_uid] / base_mva / base_mva
+        gencost[:, 5] = system.GCost.c1.v[gcost_uid] / base_mva
+        gencost[:, 6] = system.GCost.c0.v[gcost_uid]
     else:
         mpc.pop('gencost')
 

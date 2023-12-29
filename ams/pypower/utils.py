@@ -58,11 +58,10 @@ def bustypes(bus, gen):
 
     # pick a new reference bus if for some reason there is none (may have been
     # shut down)
-    if len(ref) == 0:
+    if (len(ref) == 0) & (len(pv) > 0):
         ref = np.zeros(1, dtype=int)
         ref[0] = pv[0]      # use the first PV bus
         pv = pv[1:]      # take it off PV list
-
     return ref, pv, pq
 
 

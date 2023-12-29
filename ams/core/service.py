@@ -2,10 +2,11 @@
 Service.
 """
 
-import logging  # NOQA
-from typing import Callable, Optional, Type, Union, Iterable  # NOQA
+import logging
+from typing import Callable, Type
 
-import numpy as np  # NOQA
+import numpy as np
+import scipy.sparse as spr
 
 from andes.core.service import BaseService, BackRef, RefFlatten  # NOQA
 
@@ -36,6 +37,8 @@ class RBaseService(BaseService, Param):
         Model name.
     no_parse: bool, optional
         True to skip parsing the service.
+    sparse: bool, optional
+        True to return output as scipy csr_matrix.
     """
 
     def __init__(self,
@@ -45,6 +48,7 @@ class RBaseService(BaseService, Param):
                  info: str = None,
                  vtype: Type = None,
                  no_parse: bool = False,
+                 sparse: bool = False,
                  ):
         Param.__init__(self, name=name, unit=unit, info=info,
                        no_parse=no_parse)
@@ -53,6 +57,7 @@ class RBaseService(BaseService, Param):
         self.export = False
         self.is_group = False
         self.rtn = None
+        self.sparse = sparse
 
     @property
     def shape(self):
@@ -103,6 +108,8 @@ class ValueService(RBaseService):
         Variable type.
     model : str, optional
         Model name.
+    sparse: bool, optional
+        True to return output as scipy csr_matrix.
     """
 
     def __init__(self,
@@ -113,10 +120,11 @@ class ValueService(RBaseService):
                  info: str = None,
                  vtype: Type = None,
                  no_parse: bool = False,
+                 sparse: bool = False,
                  ):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
-                         no_parse=no_parse)
+                         no_parse=no_parse, sparse=sparse)
         self._v = value
 
     @property
@@ -124,6 +132,8 @@ class ValueService(RBaseService):
         """
         Value of the service.
         """
+        if self.sparse:
+            return spr.csr_matrix(self._v)
         return self._v
 
 
@@ -147,6 +157,8 @@ class ROperationService(RBaseService):
         Variable type.
     model : str, optional
         Model name.
+    sparse: bool, optional
+        True to return output as scipy csr_matrix.
     """
 
     def __init__(self,
@@ -156,10 +168,11 @@ class ROperationService(RBaseService):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 no_parse: bool = False,):
+                 no_parse: bool = False,
+                 sparse: bool = False,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
-                         no_parse=no_parse)
+                         no_parse=no_parse, sparse=sparse)
         self.u = u
 
 
@@ -181,6 +194,8 @@ class LoadScale(ROperationService):
         Unit.
     info : str, optional
         Description.
+    sparse: bool, optional
+        True to return output as scipy csr_matrix.
     """
 
     def __init__(self,
@@ -191,10 +206,12 @@ class LoadScale(ROperationService):
                  unit: str = None,
                  info: str = None,
                  no_parse: bool = False,
+                 sparse: bool = False,
                  ):
         tex_name = tex_name if tex_name is not None else u.tex_name
         super().__init__(name=name, tex_name=tex_name, unit=unit,
-                         info=info, u=u, no_parse=no_parse)
+                         info=info, u=u, no_parse=no_parse,
+                         sparse=sparse)
         self.sd = sd
 
     @property
@@ -206,6 +223,8 @@ class LoadScale(ROperationService):
         u_yloc = np.array(sys.Region.idx2uid(u_zone))
         p0s = np.multiply(self.sd.v[:, u_yloc].transpose(),
                           self.u.v[:, np.newaxis])
+        if self.sparse:
+            return spr.csr_matrix(p0s)
         return p0s
 
 
@@ -242,6 +261,8 @@ class NumOp(ROperationService):
         Expand the dimensions of the output array along a specified axis.
     array_out : bool, optional
         Whether to force the output to be an array.
+    sparse: bool, optional
+        True to return output as scipy csr_matrix.
     """
 
     def __init__(self,
@@ -257,11 +278,12 @@ class NumOp(ROperationService):
                  rargs: dict = {},
                  expand_dims: int = None,
                  array_out=True,
-                 no_parse: bool = False,):
+                 no_parse: bool = False,
+                 sparse: bool = False,):
         tex_name = tex_name if tex_name is not None else u.tex_name
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, u=u,
-                         no_parse=no_parse)
+                         no_parse=no_parse, sparse=sparse)
         self.fun = fun
         self.args = args
         self.rfun = rfun
@@ -271,10 +293,7 @@ class NumOp(ROperationService):
 
     @property
     def v0(self):
-        if isinstance(self.u, Iterable):
-            out = self.fun([u.v for u in self.u], **self.args)
-        else:
-            out = self.fun(self.u.v, **self.args)
+        out = self.fun(self.u.v, **self.args)
         if self.array_out:
             if not isinstance(out, np.ndarray):
                 out = np.array([out])
@@ -290,9 +309,12 @@ class NumOp(ROperationService):
     @property
     def v(self):
         if self.expand_dims is not None:
-            return np.expand_dims(self.v1, axis=int(self.expand_dims))
+            out = np.expand_dims(self.v1, axis=int(self.expand_dims))
         else:
-            return self.v1
+            out = self.v1
+        if self.sparse:
+            return spr.csr_matrix(out)
+        return out
 
 
 class NumExpandDim(NumOp):
@@ -318,6 +340,8 @@ class NumExpandDim(NumOp):
         Variable type.
     array_out : bool, optional
         Whether to force the output to be an array.
+    sparse: bool, optional
+        True to return output as scipy csr_matrix.
     """
 
     def __init__(self,
@@ -330,17 +354,21 @@ class NumExpandDim(NumOp):
                  info: str = None,
                  vtype: Type = None,
                  array_out: bool = True,
-                 no_parse: bool = False,):
+                 no_parse: bool = False,
+                 sparse: bool = False,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=np.expand_dims, args=args,
                          array_out=array_out,
-                         no_parse=no_parse)
+                         no_parse=no_parse, sparse=sparse)
         self.axis = axis
 
     @property
     def v(self):
-        return self.fun(self.u.v, axis=self.axis, **self.args)
+        out = self.fun(self.u.v, axis=self.axis, **self.args)
+        if self.sparse:
+            return spr.csr_matrix(out)
+        return out
 
 
 class NumOpDual(NumOp):
@@ -378,6 +406,8 @@ class NumOpDual(NumOp):
         Expand the dimensions of the output array along a specified axis.
     array_out : bool, optional
         Whether to force the output to be an array.
+    sparse: bool, optional
+        True to return output as scipy csr_matrix.
     """
 
     def __init__(self,
@@ -394,7 +424,8 @@ class NumOpDual(NumOp):
                  rargs: dict = {},
                  expand_dims: int = None,
                  array_out=True,
-                 no_parse: bool = False,):
+                 no_parse: bool = False,
+                 sparse: bool = False,):
         tex_name = tex_name if tex_name is not None else u.tex_name
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
@@ -402,7 +433,7 @@ class NumOpDual(NumOp):
                          rfun=rfun, rargs=rargs,
                          expand_dims=expand_dims,
                          array_out=array_out,
-                         no_parse=no_parse)
+                         no_parse=no_parse, sparse=sparse)
         self.u2 = u2
 
     @property
@@ -411,6 +442,8 @@ class NumOpDual(NumOp):
         if self.array_out:
             if not isinstance(out, np.ndarray):
                 out = np.array([out])
+        if self.sparse:
+            return spr.csr_matrix(out)
         return out
 
 
@@ -433,6 +466,8 @@ class MinDur(NumOpDual):
         Unit.
     info : str, optional
         Description.
+    sparse: bool, optional
+        True to return output as scipy csr_matrix.
     """
 
     def __init__(self,
@@ -443,14 +478,15 @@ class MinDur(NumOpDual):
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
-                 no_parse: bool = False,):
+                 no_parse: bool = False,
+                 sparse: bool = False,):
         tex_name = tex_name if tex_name is not None else u.tex_name
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, u2=u2, fun=None, args=None,
                          rfun=None, rargs=None,
                          expand_dims=None,
-                         no_parse=no_parse)
+                         no_parse=no_parse, sparse=sparse)
         if self.u.horizon is None:
             msg = f'{self.class_name} <{self.name}>.u: <{self.u.name}> '
             msg += 'has no horizon, likely a modeling error.'
@@ -471,6 +507,8 @@ class MinDur(NumOpDual):
         # Create a mask for valid time periods based on minimum duration
         valid_mask = (t + td[i] <= n_ts)
         tout[i[valid_mask], t[valid_mask]] = 1
+        if self.sparse:
+            return spr.csr_matrix(tout)
         return tout
 
 
@@ -500,6 +538,8 @@ class NumHstack(NumOp):
         Variable type.
     model : str, optional
         Model name.
+    sparse: bool, optional
+        True to return output as scipy csr_matrix.
     """
 
     def __init__(self,
@@ -513,12 +553,13 @@ class NumHstack(NumOp):
                  vtype: Type = None,
                  rfun: Callable = None,
                  rargs: dict = {},
-                 no_parse: bool = False,):
+                 no_parse: bool = False,
+                 sparse: bool = False,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=np.hstack, args=args,
                          rfun=rfun, rargs=rargs,
-                         no_parse=no_parse)
+                         no_parse=no_parse, sparse=sparse)
         self.ref = ref
 
     @property
@@ -584,6 +625,8 @@ class ZonalSum(NumOp):
         Variable type.
     model : str
         Model name.
+    sparse: bool, optional
+        True to return output as scipy csr_matrix.
     """
 
     def __init__(self,
@@ -597,12 +640,12 @@ class ZonalSum(NumOp):
                  rfun: Callable = None,
                  rargs: dict = {},
                  no_parse: bool = False,
-                 ):
+                 sparse: bool = False,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=None, args={},
                          rfun=rfun, rargs=rargs,
-                         no_parse=no_parse)
+                         no_parse=no_parse, sparse=sparse)
         self.zone = zone
 
     @property
@@ -665,6 +708,8 @@ class VarSelect(NumOp):
         Keyword arguments to pass to ``rfun``.
     array_out : bool, optional
         Whether to force the output to be an array.
+    sparse: bool, optional
+        True to return output as scipy csr_matrix.
     """
 
     def __init__(self,
@@ -680,12 +725,12 @@ class VarSelect(NumOp):
                  rargs: dict = {},
                  array_out: bool = True,
                  no_parse: bool = False,
-                 **kwargs
-                 ):
+                 sparse: bool = False,
+                 **kwargs):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype, u=u, fun=None,
                          rfun=rfun, rargs=rargs, array_out=array_out,
-                         no_parse=no_parse,
+                         no_parse=no_parse, sparse=sparse,
                          **kwargs)
         self.indexer = indexer
         self.gamma = gamma
@@ -757,6 +802,8 @@ class VarReduction(NumOp):
         The variable type.
     model : str, optional
         The model name associated with the operation.
+    sparse: bool, optional
+        True to return output as scipy csr_matrix.
     """
 
     def __init__(self,
@@ -770,12 +817,12 @@ class VarReduction(NumOp):
                  rfun: Callable = None,
                  rargs: dict = {},
                  no_parse: bool = False,
-                 **kwargs
-                 ):
+                 sparse: bool = False,
+                 **kwargs):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=None, rfun=rfun, rargs=rargs,
-                         no_parse=no_parse,
+                         no_parse=no_parse, sparse=sparse,
                          **kwargs)
         self.fun = fun
 
@@ -813,6 +860,8 @@ class RampSub(NumOp):
         Variable type.
     model : str
         Model name.
+    sparse: bool, optional
+        True to return output as scipy csr_matrix.
     """
 
     def __init__(self,
@@ -825,11 +874,11 @@ class RampSub(NumOp):
                  rfun: Callable = None,
                  rargs: dict = {},
                  no_parse: bool = False,
-                 ):
+                 sparse: bool = False,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=None, rfun=rfun, rargs=rargs,
-                         no_parse=no_parse,)
+                         no_parse=no_parse, sparse=sparse,)
 
     @property
     def v0(self):
@@ -842,4 +891,7 @@ class RampSub(NumOp):
     @property
     def v(self):
         nr = self.u.horizon.n
-        return np.eye(nr, nr-1, k=-1) - np.eye(nr, nr-1, k=0)
+        out = np.eye(nr, nr-1, k=-1) - np.eye(nr, nr-1, k=0)
+        if self.sparse:
+            return spr.csr_matrix(out)
+        return out

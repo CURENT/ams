@@ -26,29 +26,34 @@ class DOPF(DCOPF):
         self.info = 'Linearzied distribution OPF'
         self.type = 'DED'
 
-        # --- params ---
-        self.qd = RParam(info='reactive demand',
-                         name='qd', tex_name=r'q_{d}', unit='p.u.',
-                         model='StaticLoad', src='q0',)
-        self.vmax = RParam(info="Bus voltage upper limit",
-                           name='vmax', tex_name=r'\overline{v}',
-                           unit='p.u.',
-                           model='Bus', src='vmax', no_parse=True,
-                           )
-        self.vmin = RParam(info="Bus voltage lower limit",
-                           name='vmin', tex_name=r'\underline{v}',
-                           unit='p.u.',
-                           model='Bus', src='vmin', no_parse=True,)
-        self.r = RParam(info='line resistance',
-                        name='r', tex_name='r', unit='p.u.',
-                        model='Line', src='r')
+        # -- Data Section --
+        # ---  generator ---
         self.qmax = RParam(info='generator maximum reactive power',
                            name='qmax', tex_name=r'q_{max}', unit='p.u.',
                            model='StaticGen', src='qmax',)
         self.qmin = RParam(info='generator minimum reactive power',
                            name='qmin', tex_name=r'q_{min}', unit='p.u.',
                            model='StaticGen', src='qmin',)
-        # --- vars ---
+        # --- load ---
+        self.qd = RParam(info='reactive demand',
+                         name='qd', tex_name=r'q_{d}', unit='p.u.',
+                         model='StaticLoad', src='q0',)
+        # --- bus ---
+        self.vmax = RParam(info="Bus voltage upper limit",
+                           name='vmax', tex_name=r'v_{max}',
+                           unit='p.u.',
+                           model='Bus', src='vmax', no_parse=True,
+                           )
+        self.vmin = RParam(info="Bus voltage lower limit",
+                           name='vmin', tex_name=r'v_{min}',
+                           unit='p.u.',
+                           model='Bus', src='vmin', no_parse=True,)
+        # --- line ---
+        self.r = RParam(info='line resistance',
+                        name='r', tex_name='r', unit='p.u.',
+                        model='Line', src='r')
+        # --- Model Section ---
+        # --- generator ---
         self.qg = Var(info='Gen reactive power',
                       name='qg', tex_name=r'q_{g}', unit='p.u.',
                       model='StaticGen', src='q',)
@@ -58,7 +63,7 @@ class DOPF(DCOPF):
         self.qgub = Constraint(name='qgub', type='uq',
                                info='qg max',
                                e_str='qg - mul(ug, qmax)',)
-
+        # --- bus ---
         self.vsq = Var(info='square of Bus voltage',
                        name='vsq', tex_name=r'v^{2}', unit='p.u.',
                        model='Bus',)
@@ -70,21 +75,17 @@ class DOPF(DCOPF):
                              info='Voltage lower limit',
                              e_str='-vsq + vmin**2',
                              type='uq',)
-
+        # --- line ---
         self.qlf = Var(info='line reactive power',
                        name='qlf', tex_name=r'q_{lf}',
                        unit='p.u.', model='Line',)
-
-        # --- constraints ---
-        self.pnb.e_str = 'PTDF@(Cgi@pg - Cli@pd) - plf'
-
-        self.qb = Constraint(name='qb', info='reactive power balance',
-                             e_str='sum(qd) - sum(qg)',
-                             type='eq',)
-        self.lvd = Constraint(name='lvd',
-                              info='line voltage drop',
-                              e_str='Cft@vsq - (r * plf + x * qlf)',
-                              type='eq',)
+        self.lvd = Constraint(info='line voltage drop',
+                              name='lvd', type='eq',
+                              e_str='Cft@vsq - (r * plf + x * qlf)',)
+        # --- power balance ---
+        self.qb = Constraint(info='reactive power balance',
+                             name='qb', type='eq',
+                             e_str='sum(qd) - sum(qg)',)
 
         # --- objective ---
         # NOTE: no need to revise objective function

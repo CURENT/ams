@@ -52,12 +52,6 @@ class TestMatProcessor(unittest.TestCase):
         self.assertIsInstance(self.mats.Cft.v, np.ndarray)
         self.assertEqual(self.mats.Cft.v.max(), 1)
 
-    def test_pl(self):
-        """
-        Test `pl`.
-        """
-        self.assertEqual(self.mats.pl.v.ndim, 1)
-
 
 class TestService(unittest.TestCase):
     """
@@ -106,8 +100,8 @@ class TestService(unittest.TestCase):
         """
         Test `NumOpDual`.
         """
-        p_vec = MParam(v=self.ss.mats.pl.v)
-        one_vec = MParam(v=np.ones(self.ss.Bus.n))
+        p_vec = MParam(v=self.ss.DCOPF.pd.v)
+        one_vec = MParam(v=np.ones(self.ss.StaticLoad.n))
         p_sum = NumOpDual(u=p_vec, u2=one_vec,
                           fun=np.multiply, rfun=np.sum)
         self.assertEqual(p_sum.v, self.ss.PQ.p0.v.sum())

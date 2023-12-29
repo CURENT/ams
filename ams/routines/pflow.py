@@ -1,15 +1,16 @@
 """
 Power flow routines.
 """
-import logging  # NOQA
+import logging
+from collections import OrderedDict
 
-from ams.pypower import runpf  # NOQA
+from ams.pypower import runpf
 
-from ams.io.pypower import system2ppc  # NOQA
-from ams.pypower.core import ppoption  # NOQA
-from ams.core.param import RParam  # NOQA
+from ams.io.pypower import system2ppc
+from ams.pypower.core import ppoption
+from ams.core.param import RParam
 
-from ams.routines.dcpf import DCPFlowBase  # NOQA
+from ams.routines.dcpf import DCPFlowBase
 from ams.opt.omodel import Var, Constraint  # NOQA
 
 logger = logging.getLogger(__name__)
@@ -32,49 +33,38 @@ class PFlow(DCPFlowBase):
         self.info = "AC Power Flow"
         self.type = "PF"
 
-        self.qd = RParam(
-            info="reactive power load in system base",
-            name="qd",
-            src="q0",
-            tex_name=r"q_{d}",
-            unit="p.u.",
-            model="PQ",
-        )
+        self.config.add(OrderedDict((('qlim', 0),
+                                     )))
+        self.config.add_extra("_help",
+                              qlim="Enforce generator q limits",
+                              )
+        self.config.add_extra("_alt",
+                              qlim=(0, 1, 2),
+                              )
+
+        self.qd = RParam(info="reactive power load in system base",
+                         name="qd", tex_name=r"q_{d}",
+                         unit="p.u.",
+                         model="StaticLoad", src="q0",)
 
         # --- bus ---
-        self.aBus = Var(
-            info="bus voltage angle",
-            unit="rad",
-            name="aBus",
-            src="a",
-            tex_name=r"a_{Bus}",
-            model="Bus",
-        )
-        self.vBus = Var(
-            info="bus voltage magnitude",
-            unit="p.u.",
-            name="vBus",
-            src="v",
-            tex_name=r"v_{Bus}",
-            model="Bus",
-        )
+        self.aBus = Var(info="bus voltage angle",
+                        unit="rad",
+                        name="aBus", tex_name=r"a_{Bus}",
+                        model="Bus", src="a",)
+        self.vBus = Var(info="bus voltage magnitude",
+                        unit="p.u.",
+                        name="vBus", tex_name=r"v_{Bus}",
+                        model="Bus", src="v",)
         # --- gen ---
-        self.pg = Var(
-            info="active power generation",
-            unit="p.u.",
-            name="pg",
-            src="p",
-            tex_name=r"p_{g}",
-            model="StaticGen",
-        )
-        self.qg = Var(
-            info="reactive power generation",
-            unit="p.u.",
-            name="qg",
-            src="q",
-            tex_name=r"q_{g}",
-            model="StaticGen",
-        )
+        self.pg = Var(info="active power generation",
+                      unit="p.u.",
+                      name="pg", tex_name=r"p_{g}",
+                      model="StaticGen", src="p",)
+        self.qg = Var(info="reactive power generation",
+                      unit="p.u.",
+                      name="qg", tex_name=r"q_{g}",
+                      model="StaticGen", src="q",)
         # NOTE: omit AC power flow formulation here
 
     def solve(self, method="newton"):
@@ -91,7 +81,7 @@ class PFlow(DCPFlowBase):
         if alg is None:
             msg = f"Invalid method `{method}` for PFlow."
             raise ValueError(msg)
-        ppopt = ppoption(PF_ALG=alg)
+        ppopt = ppoption(PF_ALG=alg, ENFORCE_Q_LIMS=self.config.qlim)
 
         res, success, sstats = runpf(casedata=ppc, ppopt=ppopt)
         return res, success, sstats
@@ -126,9 +116,6 @@ class PFlow(DCPFlowBase):
         exit_code : int
             Exit code of the routine.
         """
-        return super().run(
-            force_init=force_init,
-            no_code=no_code,
-            method=method,
-            **kwargs,
-        )
+        return super().run(force_init=force_init,
+                           no_code=no_code, method=method,
+                           **kwargs,)

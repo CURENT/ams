@@ -87,9 +87,9 @@ class Test5Bus(unittest.TestCase):
         """
 
         self.ss.GCost.alter("c1", ['GCost_1', 'GCost_2'], [1500., 3100.])
-        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 4000., 3000.])
+        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1])
         self.ss.ACOPF.run()
-        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 4000., 3000.])
+        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1])
 
     def test_alter_param_after_routine(self):
         """
@@ -98,9 +98,9 @@ class Test5Bus(unittest.TestCase):
 
         self.ss.ACOPF.run()
         self.ss.GCost.alter("c1", ['GCost_1', 'GCost_2'], [1500., 3100.])
-        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 4000., 3000.])
+        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1])
         self.ss.ACOPF.run()
-        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 4000., 3000.])
+        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1])
 
     def test_multiple_disconnected_line(self):
         """
