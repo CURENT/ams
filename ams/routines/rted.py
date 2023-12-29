@@ -281,29 +281,31 @@ class DGBase:
     """
     def __init__(self):
         # --- params ---
-        self.gend = RParam(info='gen of DG',
-                           name='gend', tex_name=r'g_{D}',
-                           model='DG', src='gen',
-                           no_parse=True,)
+        self.gendg = RParam(info='gen of DG',
+                            name='gendg', tex_name=r'g_{DG}',
+                            model='DG', src='gen',
+                            no_parse=True,)
         info = 'Ratio of DG.pge w.r.t to that of static generator',
-        self.gammape = RParam(name='gammape', tex_name=r'\gamma_{p,e}',
-                              model='DG', src='gammap',
-                              no_parse=True, info=info)
+        self.gammapdg = RParam(name='gammapd', tex_name=r'\gamma_{p,DG}',
+                               model='DG', src='gammap',
+                               no_parse=True, info=info)
 
         # --- vars ---
-        self.cd = VarSelect(u=self.pg, indexer='gend',
-                            name='cd', tex_name=r'C_{D}',
-                            info='Select DG power from pg',
-                            gamma='gammape', no_parse=True,)
-        self.pgd = Var(info='DG output power',
-                       unit='p.u.', name='pgd',
-                       tex_name=r'p_{g,D}',
-                       model='DG',)
+        # TODO: maybe there will be constraints on pgd, maybe upper/lower bound?
+        # TODO: this might requre new device like DGSlot
+        self.pgdg = Var(info='DG output power',
+                        unit='p.u.', name='pgdg',
+                        tex_name=r'p_{g,DG}',
+                        model='DG',)
 
         # --- constraints ---
-        self.cde = Constraint(name='cde', type='eq',
-                              info='Select pgd from pg',
-                              e_str='cd @ pg - pgd',)
+        self.cdg = VarSelect(u=self.pg, indexer='gendg',
+                             name='cd', tex_name=r'C_{DG}',
+                             info='Select DG power from pg',
+                             gamma='gammapdg', no_parse=True,)
+        self.cdgb = Constraint(name='cdgb', type='eq',
+                               info='Select DG power from pg',
+                               e_str='cdg @ pg - pgdg',)
 
 
 class RTEDDG(RTED, DGBase):
@@ -318,12 +320,13 @@ class RTEDDG(RTED, DGBase):
         self.type = 'DCED'
 
 
-class ESD1Base:
+class ESD1Base(DGBase):
     """
     Base class for ESD1 used in DCED.
     """
 
     def __init__(self):
+        DGBase.__init__(self)
         # --- params ---
         self.En = RParam(info='Rated energy capacity',
                          name='En', src='En',
@@ -349,14 +352,14 @@ class ESD1Base:
                            name='EtaD', src='EtaD',
                            tex_name=r'\eta_d', unit='%',
                            model='ESD1', no_parse=True,)
-        self.gene = RParam(info='gen of ESD1',
-                           name='gene', tex_name=r'g_{E}',
-                           model='ESD1', src='gen',
-                           no_parse=True,)
+        self.genesd = RParam(info='gen of ESD1',
+                             name='genesd', tex_name=r'g_{ESD}',
+                             model='ESD1', src='gen',
+                             no_parse=True,)
         info = 'Ratio of ESD1.pge w.r.t to that of static generator',
-        self.gammape = RParam(name='gammape', tex_name=r'\gamma_{p,e}',
-                              model='ESD1', src='gammap',
-                              no_parse=True, info=info)
+        self.gammapesd = RParam(name='gammapesd', tex_name=r'\gamma_{p,ESD}',
+                                model='ESD1', src='gammap',
+                                no_parse=True, info=info)
 
         # --- service ---
         self.REtaD = NumOp(name='REtaD', tex_name=r'\frac{1}{\eta_d}',
@@ -378,38 +381,40 @@ class ESD1Base:
         self.SOCub = Constraint(name='SOCub', type='uq',
                                 info='SOC upper bound',
                                 e_str='SOC - SOCmax',)
-        self.ce = VarSelect(u=self.pg, indexer='gene',
-                            name='ce', tex_name=r'C_{E}',
-                            info='Select zue from pg',
-                            gamma='gammape', no_parse=True,)
         self.pce = Var(info='ESD1 charging power',
                        unit='p.u.', name='pce',
-                       tex_name=r'p_{c,E}',
+                       tex_name=r'p_{c,ESD}',
                        model='ESD1', nonneg=True,)
         self.pde = Var(info='ESD1 discharging power',
                        unit='p.u.', name='pde',
-                       tex_name=r'p_{d,E}',
+                       tex_name=r'p_{d,ESD}',
                        model='ESD1', nonneg=True,)
         self.uce = Var(info='ESD1 charging decision',
-                       name='uce', tex_name=r'u_{c,E}',
+                       name='uce', tex_name=r'u_{c,ESD}',
                        model='ESD1', boolean=True,)
         self.ude = Var(info='ESD1 discharging decision',
-                       name='ude', tex_name=r'u_{d,E}',
+                       name='ude', tex_name=r'u_{d,ESD}',
                        model='ESD1', boolean=True,)
-        self.zce = Var(name='zce', tex_name=r'z_{c,E}',
+        self.zce = Var(name='zce', tex_name=r'z_{c,ESD}',
                        model='ESD1', nonneg=True,)
-        self.zce.info = 'Aux var for charging, :math:`z_{c,e}=u_{c,E}*p_{c,E}`'
-        self.zde = Var(name='zde', tex_name=r'z_{d,E}',
+        self.zce.info = 'Aux var for charging, '
+        self.zce.info += ':math:`z_{c,ESD}=u_{c,ESD}*p_{c,ESD}`'
+        self.zde = Var(name='zde', tex_name=r'z_{d,ESD}',
                        model='ESD1', nonneg=True,)
-        self.zde.info = 'Aux var for discharging, :math:`z_{d,e}=u_{d,E}*p_{d,E}`'
+        self.zde.info = 'Aux var for discharging, '
+        self.zde.info += ':math:`z_{d,ESD}=u_{d,ESD}*p_{d,ESD}`'
 
         # --- constraints ---
-        self.ceb = Constraint(name='ceb', type='eq',
+        self.cdb = Constraint(name='cdb', type='eq',
                               info='Charging decision bound',
                               e_str='uce + ude - 1',)
-        self.cpe = Constraint(name='cpe', type='eq',
-                              info='Select pce from pg',
-                              e_str='ce @ pg - zce - zde',)
+        self.ces = VarSelect(u=self.pg, indexer='genesd',
+                             name='ce', tex_name=r'C_{ESD}',
+                             info='Select zue from pg',
+                             gamma='gammapesd', no_parse=True,)
+        self.cesb = Constraint(name='cesb', type='eq',
+                               info='Select ESD1 power from pg',
+                               e_str='ces @ pg - zce - zde',)
 
         self.zce1 = Constraint(name='zce1', type='uq', info='zce bound 1',
                                e_str='-zce + pce',)
