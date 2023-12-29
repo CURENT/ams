@@ -40,12 +40,12 @@ class DOPF(DCOPF):
                          model='StaticLoad', src='q0',)
         # --- bus ---
         self.vmax = RParam(info="Bus voltage upper limit",
-                           name='vmax', tex_name=r'\overline{v}',
+                           name='vmax', tex_name=r'v_{max}',
                            unit='p.u.',
                            model='Bus', src='vmax', no_parse=True,
                            )
         self.vmin = RParam(info="Bus voltage lower limit",
-                           name='vmin', tex_name=r'\underline{v}',
+                           name='vmin', tex_name=r'v_{min}',
                            unit='p.u.',
                            model='Bus', src='vmin', no_parse=True,)
         # --- line ---

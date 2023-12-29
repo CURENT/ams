@@ -18,33 +18,22 @@ logger = logging.getLogger(__name__)
 class DCOPF(RoutineModel):
     """
     DC optimal power flow (DCOPF).
-
-    Bus voltage ``vBus`` is fixed to 1.
-    Bus angle ``aBus`` is estimated
-    as ::math:``a_{Bus} = C_{ft}^{-1} \\times x \\times p_{L}``.
-
     For large-scale convex problems, the Dual Simplex can be efficient.
 
     When using the GUROBI solver, the optimization method can be specified 
     through the `Method` parameter, and all available methods are:
-        - 0: Primal Simplex
-        - 1: Dual Simplex
-        - 2: Barrier
-        - 3: Concurrent
-        - 4: Deterministic Concurrent
+    0: Primal Simplex; 1: Dual Simplex; 2: Barrier;
+    3: Concurrent; 4: Deterministic Concurrent
 
     When using the CPLEX solver, the optimization method can also be 
-    specified. 
+    specified.
     To specify the method in CPLEX, use the `cplex_params` argument with 
     `solver='CPLEX'` in the solve function. For example, to use the Dual 
     Simplex method, set `cplex_params={'lpmethod': 1}`.
     CPLEX supports the following methods:
-        - 0: Primal Simplex
-        - 1: Dual Simplex
-        - 2: Barrier
-        - 3: Non-deterministic Concurrent
-        - 4: Deterministic Concurrent
-        - 5: Network Simplex (suitable for network flow problems)
+    0: Primal Simplex; 1: Dual Simplex; 2: Barrier;
+    3: Non-deterministic Concurrent; 4: Deterministic Concurrent;
+    5: Network Simplex (suitable for network flow problems)
     """
 
     def __init__(self, system, config):
@@ -89,19 +78,19 @@ class DCOPF(RoutineModel):
                                 u=self.nctrl, u2=self.ug,
                                 fun=np.multiply, no_parse=True)
         self.pmax = RParam(info='Gen maximum active power',
-                           name='pmax', tex_name=r'p_{G, max}',
+                           name='pmax', tex_name=r'p_{g, max}',
                            unit='p.u.', model='StaticGen',
                            no_parse=False,)
         self.pmin = RParam(info='Gen minimum active power',
-                           name='pmin', tex_name=r'p_{G, min}',
+                           name='pmin', tex_name=r'p_{g, min}',
                            unit='p.u.', model='StaticGen',
                            no_parse=False,)
         self.pg0 = RParam(info='Gen initial active power',
-                          name='p0', tex_name=r'p_{G,0}',
+                          name='p0', tex_name=r'p_{g, 0}',
                           unit='p.u.', model='StaticGen',)
         # --- load ---
         self.pd = RParam(info='active demand',
-                         name='pd', tex_name=r'p_{D}',
+                         name='pd', tex_name=r'p_{d}',
                          model='StaticLoad', src='p0',
                          unit='p.u.',)
         # --- line ---
@@ -114,11 +103,11 @@ class DCOPF(RoutineModel):
                              unit='MVA', model='Line',)
         # --- connection matrix ---
         self.Cg = RParam(info='Gen connection matrix',
-                         name='Cg', tex_name=r'C_{G}',
+                         name='Cg', tex_name=r'C_{g}',
                          model='mats', src='Cg',
                          no_parse=True, sparse=True,)
         self.Cl = RParam(info='Load connection matrix',
-                         name='Cl', tex_name=r'C_{L}',
+                         name='Cl', tex_name=r'C_{l}',
                          model='mats', src='Cl',
                          no_parse=True, sparse=True,)
         self.Cft = RParam(info='Line connection matrix',
@@ -133,7 +122,7 @@ class DCOPF(RoutineModel):
         # --- generation ---
         self.pg = Var(info='Gen active power',
                       unit='p.u.',
-                      name='pg', tex_name=r'p_{G}',
+                      name='pg', tex_name=r'p_g',
                       model='StaticGen', src='p',
                       v0=self.pg0)
         # NOTE: Var bounds need to set separately
@@ -146,11 +135,11 @@ class DCOPF(RoutineModel):
         # --- bus ---
         self.png = Var(info='Bus active power from gen',
                        unit='p.u.',
-                       name='png', tex_name=r'p_{Bus,G}',
+                       name='png', tex_name=r'p_{ng}',
                        model='Bus',)
         self.pnd = Var(info='Bus active power from load',
                        unit='p.u.',
-                       name='pnd', tex_name=r'p_{Bus,D}',
+                       name='pnd', tex_name=r'p_{nd}',
                        model='Bus',)
         self.pngb = Constraint(name='pngb', type='eq',
                                e_str='Cg@png - pg',
@@ -161,7 +150,7 @@ class DCOPF(RoutineModel):
         # --- line ---
         # NOTE: `ug*pmin` results in unexpected error
         self.plf = Var(info='Line active power',
-                       name='plf', tex_name=r'p_{L}',
+                       name='plf', tex_name=r'p_{lf}',
                        unit='p.u.', model='Line',)
         self.plflb = Constraint(name='plflb', info='Line power lower bound',
                                 e_str='-plf - rate_a', type='uq',)
