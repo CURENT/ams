@@ -337,9 +337,9 @@ class Var(OptzBase):
         """
         Return the CVXPY variable value.
         """
-        if self.name in self.om.vars:
-            out = self.om.vars[self.name].value if self._v is None else self._v
-        else:
+        try:
+            out = self.optz.value
+        except Exception:
             out = None
         return out
 
