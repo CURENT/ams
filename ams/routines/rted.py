@@ -311,6 +311,9 @@ class DGBase:
 class RTEDDG(RTED, DGBase):
     """
     RTED with distributed generator :ref:`DG`.
+
+    Note that RTEDDG only inlcudes DG output power. If ESD1 is included,
+    RTEDES should be used instead, otherwise there is no SOC.
     """
 
     def __init__(self, system, config):
