@@ -10,7 +10,7 @@ from ams.core.param import RParam
 from ams.core.service import (NumOp, NumOpDual, MinDur)
 from ams.routines.dcopf import DCOPF
 from ams.routines.rted import RTEDBase
-from ams.routines.ed import SRBase, MPBase, ESD1MPBase
+from ams.routines.ed import SRBase, MPBase, ESD1MPBase, DGBase
 
 from ams.opt.omodel import Var, Constraint
 
@@ -308,6 +308,25 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         # to specify which period to unpack.
         """
         return None
+
+
+class UCDG(UC, DGBase):
+    """
+    UC with distributed generation :ref:`DG`.
+
+    Note that UCDG only inlcudes DG output power. If ESD1 is included,
+    UCES should be used instead, otherwise there is no SOC.
+    """
+
+    def __init__(self, system, config):
+        UC.__init__(self, system, config)
+        DGBase.__init__(self)
+
+        self.info = 'unit commitment with distributed generation'
+        self.type = 'DCUC'
+
+        # NOTE: extend vars to 2D
+        self.pgdg.horizon = self.timeslot
 
 
 class UCES(UC, ESD1MPBase):
