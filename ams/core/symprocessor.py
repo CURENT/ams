@@ -158,7 +158,6 @@ class SymProcessor:
             tmp = sp.symbols(key)
             self.sub_map[rf"\b{key}\b"] = f'self.rtn.config.{key}'
             self.tex_map[rf"\b{key}\b"] = f'{key}'
-            self.val_map[rf"\b{key}\b"] = f'self.rtn.config.{key}'
             self.inputs_dict[key] = tmp
             if key in self.config.tex_names:
                 self.tex_names[tmp] = sp.Symbol(self.config.tex_names[key])
