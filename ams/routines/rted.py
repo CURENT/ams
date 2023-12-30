@@ -1,15 +1,15 @@
 """
 Real-time economic dispatch.
 """
-import logging  # NOQA
-from collections import OrderedDict  # NOQA
-import numpy as np  # NOQA
+import logging
+from collections import OrderedDict
+import numpy as np
 
-from ams.core.param import RParam  # NOQA
-from ams.core.service import ZonalSum, VarSelect, NumOp, NumOpDual  # NOQA
-from ams.routines.dcopf import DCOPF  # NOQA
+from ams.core.param import RParam
+from ams.core.service import ZonalSum, VarSelect, NumOp, NumOpDual
+from ams.routines.dcopf import DCOPF
 
-from ams.opt.omodel import Var, Constraint  # NOQA
+from ams.opt.omodel import Var, Constraint
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +173,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.rbd.e_str = 'gs @ mul(ug, prd) - ddd'
         # RegUp/Dn reserve source
         self.rru.e_str = 'mul(ug, pg + pru) - mul(ug, pmax)'
-        self.rrd.e_str = 'mul(ug, -pg + prd) - mul(ug, pmin)'
+        self.rrd.e_str = 'mul(ug, -pg + prd) + mul(ug, pmin)'
         # Gen ramping up/down
         self.rgu.e_str = 'mul(ug, pg-pg0-R10)'
         self.rgd.e_str='mul(ug, -pg+pg0-R10)'
@@ -414,7 +414,7 @@ class ESD1Base(DGBase):
                              gamma='gammapesd', no_parse=True,)
         self.cesb = Constraint(name='cesb', type='eq',
                                info='Select ESD1 power from pg',
-                               e_str='ces @ pg - zce - zde',)
+                               e_str='ces @ pg + zce - zde',)
 
         self.zce1 = Constraint(name='zce1', type='uq', info='zce bound 1',
                                e_str='-zce + pce',)
