@@ -117,20 +117,20 @@ class DOPFVIS(DOPF):
         self.cm = RParam(info='Virtual inertia cost',
                          name='cm', src='cm',
                          tex_name=r'c_{m}', unit=r'$/s',
-                         model='REGCV1Cost',
-                         indexer='reg', imodel='REGCV1')
+                         model='VSGCost',
+                         indexer='reg', imodel='VSG')
         self.cd = RParam(info='Virtual damping cost',
                          name='cd', src='cd',
                          tex_name=r'c_{d}', unit=r'$/(p.u.)',
-                         model='REGCV1Cost',
-                         indexer='reg', imodel='REGCV1',)
+                         model='VSGCost',
+                         indexer='reg', imodel='VSG',)
         # --- vars ---
         self.M = Var(info='Emulated startup time constant (M=2H) from REGCV1',
                      name='M', tex_name=r'M', unit='s',
-                     model='REGCV1',)
+                     model='VSG',)
         self.D = Var(info='Emulated damping coefficient from REGCV1',
                      name='D', tex_name=r'D', unit='p.u.',
-                     model='REGCV1',)
+                     model='VSG',)
         obj = 'sum(c2 * pg**2 + c1 * pg + ug * c0 + cm * M + cd * D)'
         self.obj = Objective(name='tc',
                              info='total cost', unit='$',
