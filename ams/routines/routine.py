@@ -250,7 +250,7 @@ class RoutineModel:
                 disabled.append(cname)
         if len(disabled) > 0:
             msg = "Disabled constraints: "
-            d_str = [f'<{constr}>' for constr in disabled]
+            d_str = [f'{constr}' for constr in disabled]
             msg += ", ".join(d_str)
             logger.warning(msg)
         return True
