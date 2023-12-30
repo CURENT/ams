@@ -9,7 +9,7 @@ from ams.core.param import RParam
 from ams.core.service import (NumOpDual, NumHstack,
                               RampSub, NumOp, LoadScale)
 
-from ams.routines.rted import RTED, ESD1Base
+from ams.routines.rted import RTED, DGBase, ESD1Base
 
 from ams.opt.omodel import Var, Constraint
 
@@ -199,7 +199,7 @@ class ED(RTED):
         self.rbd.e_str = 'gs@mul(ugt, prd) - mul(ddd, tlv)'
 
         self.rru.e_str = 'mul(ugt, pg + pru) - mul(pmax, tlv)'
-        self.rrd.e_str = 'mul(ugt, -pg + prd) - mul(pmin, tlv)'
+        self.rrd.e_str = 'mul(ugt, -pg + prd) + mul(pmin, tlv)'
 
         self.rgu.e_str = 'pg @ Mr - t dot RR30'
         self.rgd.e_str = '-pg @ Mr - t dot RR30'
@@ -244,6 +244,27 @@ class ED(RTED):
 # if ``Region``, if ``Bus`` has param ``zone``, optional, if none, auto fill
 
 
+class EDDG(ED, DGBase):
+    """
+    ED with distributed generation :ref:`DG`.
+
+    Note that EDDG only inlcudes DG output power. If ESD1 is included,
+    EDES should be used instead, otherwise there is no SOC.
+    """
+
+    def __init__(self, system, config):
+        ED.__init__(self, system, config)
+        DGBase.__init__(self)
+
+        self.config.t = 1  # dispatch interval in hour
+
+        self.info = 'Economic dispatch with distributed generation'
+        self.type = 'DCED'
+
+        # NOTE: extend vars to 2D
+        self.pgdg.horizon = self.timeslot
+
+
 class ESD1MPBase(ESD1Base):
     """
     Extended base class for energy storage in multi-period dispatch.
@@ -252,7 +273,7 @@ class ESD1MPBase(ESD1Base):
     def __init__(self):
         ESD1Base.__init__(self)
 
-        self.Mre = RampSub(u=self.SOC, name='Mre', tex_name=r'M_{r,E}',
+        self.Mre = RampSub(u=self.SOC, name='Mre', tex_name=r'M_{r,ES}',
                            info='Subtraction matrix for SOC',
                            no_parse=True)
         self.EnR = NumHstack(u=self.En, ref=self.Mre,
@@ -270,7 +291,7 @@ class ESD1MPBase(ESD1Base):
 
         SOCb0 = 'mul(En, SOC[:, 0] - SOCinit) - t dot mul(EtaC, zce[:, 0])'
         SOCb0 += ' + t dot mul(REtaD, zde[:, 0])'
-        self.SOCb0 = Constraint(name='SOCb', type='eq',
+        self.SOCb0 = Constraint(name='SOCb0', type='eq',
                                 info='ESD1 SOC initial balance',
                                 e_str=SOCb0,)
 
@@ -279,7 +300,7 @@ class ESD1MPBase(ESD1Base):
                                e_str='SOC[:, -1] - SOCinit',)
 
 
-class EDES(ED, ESD1Base):
+class EDES(ED, ESD1MPBase):
     """
     ED with energy storage :ref:`ESD1`.
     The bilinear term in the formulation is linearized with big-M method.
@@ -287,7 +308,7 @@ class EDES(ED, ESD1Base):
 
     def __init__(self, system, config):
         ED.__init__(self, system, config)
-        ESD1Base.__init__(self)
+        ESD1MPBase.__init__(self)
 
         self.config.t = 1  # dispatch interval in hour
 
@@ -295,6 +316,7 @@ class EDES(ED, ESD1Base):
         self.type = 'DCED'
 
         # NOTE: extend vars to 2D
+        self.pgdg.horizon = self.timeslot
         self.SOC.horizon = self.timeslot
         self.pce.horizon = self.timeslot
         self.pde.horizon = self.timeslot
