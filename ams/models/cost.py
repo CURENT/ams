@@ -124,7 +124,7 @@ class NSRCost(ModelData, Model):
                              info='cost for non-spinning reserve',)
 
 
-class REGCV1CostData(ModelData):
+class VSGCostData(ModelData):
     def __init__(self):
         super().__init__()
         self.reg = IdxParam(info="Renewable generator idx",
@@ -145,12 +145,12 @@ class REGCV1CostData(ModelData):
                            )
 
 
-class REGCV1Cost(REGCV1CostData, Model):
+class VSGCost(VSGCostData, Model):
     """
-    Linear cost model for :ref:`REGCV1` emulated inertia (M) and damping (D).
+    Linear cost model for VSG emulated inertia (M) and damping (D).
     """
 
     def __init__(self, system, config):
-        REGCV1CostData.__init__(self)
+        VSGCostData.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'Cost'
