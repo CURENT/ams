@@ -71,3 +71,24 @@ class NSR(ReserveData, Model):
         self.demand = NumParam(default=0.1, unit='%',
                                info='Zonal non-spinning reserve demand',
                                tex_name=r'd_{NSR}')
+
+
+class VSGR(ReserveData, Model):
+    """
+    Zonal VSG provided reserve model.
+
+    Notes
+    -----
+    - ``Zone`` model is required for this model, and zone is defined by Param ``Bus.zone``.
+    """
+
+    def __init__(self, system, config):
+        ReserveData.__init__(self)
+        Model.__init__(self, system, config)
+        self.group = 'Reserve'
+        self.dvm = NumParam(default=0, unit='s',
+                            info='Zonal virtual inertia demand',
+                            tex_name=r'd_{VM}')
+        self.dvd = NumParam(default=0, unit='p.u.',
+                            info='Zonal virtual damping demand',
+                            tex_name=r'd_{VD}')

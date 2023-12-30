@@ -15,7 +15,7 @@ ams_file_classes = list([
     ('renewable', ['REGCA1', 'REGCV1', 'REGCV2']),
     ('area', ['Area']),
     ('region', ['Region']),
-    ('reserve', ['SFR', 'SR', 'NSR']),
+    ('reserve', ['SFR', 'SR', 'NSR', 'VSGR']),
     ('cost', ['GCost', 'SFRCost', 'SRCost', 'NSRCost', 'VSGCost']),
     ('timeslot', ['TimeSlot', 'EDTSlot', 'UCTSlot']),
 ])
