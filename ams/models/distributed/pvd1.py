@@ -17,7 +17,7 @@ class PVD1Data(ModelData):
         ModelData.__init__(self)
 
         self.bus = IdxParam(model='Bus',
-                            info="interface bus id",
+                            info="interface bus id (place holder)",
                             mandatory=True,
                             )
 
