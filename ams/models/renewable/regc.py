@@ -2,7 +2,7 @@
 RenGen dispatch model.
 """
 
-from andes.core.param import NumParam, IdxParam
+from andes.core.param import NumParam, IdxParam, ExtParam
 from andes.core.model import ModelData
 from ams.core.model import Model
 
@@ -15,7 +15,7 @@ class REGCData(ModelData):
     def __init__(self):
         ModelData.__init__(self)
         self.bus = IdxParam(model='Bus',
-                            info="interface bus id (place holder)",
+                            info="interface bus idx",
                             mandatory=True,
                             )
         self.gen = IdxParam(info="static generator index",
@@ -55,7 +55,11 @@ class REGCA1(REGCData, Model):
 
 class REGCV1(REGCData, Model):
     """
-    Voltage-controlled converter model (virtual synchronous generator) with inertia emulation.
+    Voltage-controlled converter model (virtual synchronous generator) with
+    inertia emulation.
+
+    Here Mmax and Dmax are assumed to be constant, but they might subject to
+    the operating condition of the converter.
 
     Notes
     -----
@@ -76,9 +80,19 @@ class REGCV1(REGCData, Model):
         REGCData.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'VSG'
+        self.zone = ExtParam(model='Bus', src='zone',
+                             indexer=self.bus, export=False,
+                             info='Retrieved zone idx',
+                             vtype=str, default=None)
+        self.Mmax = NumParam(default=99, tex_name='M_{max}',
+                             info='Maximum inertia emulation',
+                             unit='s',)
+        self.Dmax = NumParam(default=99, tex_name='D_{max}',
+                             info='Maximum damping emulation',
+                             unit='s',)
 
 
-class REGCV2(REGCData, Model):
+class REGCV2(REGCV1):
     """
     Voltage-controlled VSC.
 
@@ -92,6 +106,4 @@ class REGCV2(REGCData, Model):
     """
 
     def __init__(self, system=None, config=None) -> None:
-        REGCData.__init__(self)
-        Model.__init__(self, system, config)
-        self.group = 'VSG'
+        REGCV1.__init__(self, system, config)
