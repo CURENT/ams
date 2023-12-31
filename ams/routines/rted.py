@@ -359,7 +359,7 @@ class ESD1Base(DGBase):
                              name='genesd', tex_name=r'g_{ESD}',
                              model='ESD1', src='gen',
                              no_parse=True,)
-        info = 'Ratio of ESD1.pge w.r.t to that of static generator',
+        info = 'Ratio of ESD1.pge w.r.t to that of static generator'
         self.gammapesd = RParam(name='gammapesd', tex_name=r'\gamma_{p,ESD}',
                                 model='ESD1', src='gammap',
                                 no_parse=True, info=info)
@@ -451,3 +451,96 @@ class RTEDES(RTED, ESD1Base):
         ESD1Base.__init__(self)
         self.info = 'Real-time economic dispatch with energy storage'
         self.type = 'DCED'
+
+
+class VISBase:
+    """
+    Base class for virtual inertia scheduling.
+    """
+
+    def __init__(self) -> None:
+        # --- Data Section ---
+        self.cm = RParam(info='Virtual inertia cost',
+                         name='cm', src='cm',
+                         tex_name=r'c_{m}', unit=r'$/s',
+                         model='VSGCost',
+                         indexer='reg', imodel='VSG')
+        self.cd = RParam(info='Virtual damping cost',
+                         name='cd', src='cd',
+                         tex_name=r'c_{d}', unit=r'$/(p.u.)',
+                         model='VSGCost',
+                         indexer='reg', imodel='VSG',)
+        self.zvsg = RParam(info='VSG zone',
+                           name='zvsg', tex_name='z_{one,vsg}',
+                           model='VSG', src='zone',
+                           no_parse=True)
+        self.Mmax = RParam(info='Maximum inertia emulation',
+                            name='Mmax', tex_name='M_{max}',
+                            model='VSG', src='Mmax',
+                            unit='s',)
+        self.Dmax = RParam(info='Maximum damping emulation',
+                            name='Dmax', tex_name='D_{max}',
+                            model='VSG', src='Dmax',
+                            unit='p.u.',)
+        self.dvm = RParam(info='Emulated inertia requirement',
+                          name='dvm', tex_name=r'd_{v,m}',
+                          unit='s',
+                          model='VSGR', src='dvm',)
+        self.dvd = RParam(info='Emulated damping requirement',
+                          name='dvd', tex_name=r'd_{v,d}',
+                          unit='p.u.',
+                          model='VSGR', src='dvd',)
+
+        # --- Model Section ---
+        self.M = Var(info='Emulated startup time constant (M=2H)',
+                     name='M', tex_name=r'M', unit='s',
+                     model='VSG', nonneg=True,)
+        self.D = Var(info='Emulated damping coefficient',
+                     name='D', tex_name=r'D', unit='p.u.',
+                     model='VSG', nonneg=True,)
+    
+        self.gvsg = ZonalSum(u=self.zvsg, zone='Region',
+                             name='gs', tex_name=r'S_{g}',
+                             info='Sum VSG vars vector in shape of zone')
+        self.Mub = Constraint(name='Mub', type='uq',
+                              info='M upper bound',
+                              e_str='M - Mmax',)
+        self.Dub = Constraint(name='Dub', type='uq',
+                              info='D upper bound',
+                              e_str='D - Dmax',)
+        self.Mreq = Constraint(name='Mreq', type='uq',
+                               info='Emulated inertia requirement',
+                               e_str='-gvsg@M + dvm',)
+        self.Dreq = Constraint(name='Dreq', type='uq',
+                               info='Emulated damping requirement',
+                               e_str='-gvsg@D + dvd',)
+
+        # NOTE: revise the objective function to include virtual inertia cost
+
+
+class RTEDVIS(RTED, VISBase):
+    """
+    RTED with virtual inertia scheduling.
+
+    Reference:
+
+    [1] B. She, F. Li, H. Cui, J. Wang, Q. Zhang and R. Bo, "Virtual
+    Inertia Scheduling (VIS) for Real-time Economic Dispatch of
+    IBRs-penetrated Power Systems," in IEEE Transactions on
+    Sustainable Energy, doi: 10.1109/TSTE.2023.3319307.
+    """
+
+    def __init__(self, system, config):
+        RTED.__init__(self, system, config)
+        VISBase.__init__(self)
+        self.info = 'Real-time economic dispatch with virtual inertia scheduling'
+        self.type = 'DCED'
+
+        # --- objective ---
+        self.obj.info = 'total generation and reserve cost'
+        gcost = 'sum(mul(c2, power(pg, 2)))'
+        gcost += '+ sum(c1 @ (t dot pg))'
+        gcost += '+ ug * c0 '  # constant cost
+        rcost = '+ sum(cru * pru + crd * prd) '  # reserve cost
+        vsgcost = '+ sum(cm * M + cd * D)'
+        self.obj.e_str = gcost + rcost + vsgcost
