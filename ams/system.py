@@ -505,15 +505,9 @@ class System(andes_System):
 
         raise NotImplementedError
 
-    def to_andes(self, setup=True, addfile=None, overwite=None, no_keep=True,
-                 **kwargs):
+    def to_andes(self, setup=True, addfile=None, **kwargs):
         """
         Convert the AMS system to an ANDES system.
-        This function is a wrapper of ``ams.interop.andes.to_andes()``.
-
-        Using the file conversion ``sp.to_andes()`` will automatically
-        link the AMS system instance to the converted ANDES system instance
-        in the AMS system attribute ``sp.dyn``.
 
         Parameters
         ----------
@@ -523,10 +517,6 @@ class System(andes_System):
             Whether to call `setup()` after the conversion. Default is True.
         addfile : str, optional
             The additional file to be converted to ANDES dynamic mdoels.
-        overwrite : bool, optional
-            Whether to overwrite the existing file.
-        no_keep : bool, optional
-            True to remove the converted file after the conversion.
         **kwargs : dict
             Keyword arguments to be passed to `andes.system.System`.
 
@@ -545,7 +535,6 @@ class System(andes_System):
         ...                  overwrite=True, no_keep=True, no_output=True)
         """
         return to_andes(self, setup=setup, addfile=addfile,
-                        overwite=overwite, no_keep=no_keep,
                         **kwargs)
 
 

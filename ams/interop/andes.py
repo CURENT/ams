@@ -2,24 +2,55 @@
 Interface with ANDES
 """
 
-import os  # NOQA
-import logging  # NOQA
-from collections import OrderedDict, Counter  # NOQA
+import os
+import logging
+from collections import OrderedDict, Counter
 
-from andes.shared import pd, np  # NOQA
-from andes.utils.misc import elapsed  # NOQA
-from andes import load as andes_load  # NOQA
+from andes.shared import pd, np
+from andes.utils.misc import elapsed
+from andes.system import System as andes_System
 from andes.interop.pandapower import make_link_table  # NOQA
 
-from ams.io import input_formats, json  # NOQA
-from ams.models.group import StaticGen  # NOQA
-from ams.models.static import PV, Slack  # NOQA
+from ams.io import input_formats
+from ams.models.group import StaticGen
+from ams.models.static import PV, Slack
 
 logger = logging.getLogger(__name__)
 
 
+# Models used in ANDES PFlow
+
+pflow_dict = OrderedDict([
+    ('Bus', ['idx', 'u', 'name',
+             'Vn', 'vmax', 'vmin',
+             'v0', 'a0', 'xcoord', 'ycoord',
+             'area', 'zone', 'owner']),
+    ('PQ', ['idx', 'u', 'name',
+            'bus', 'Vn', 'p0', 'q0',
+            'vmax', 'vmin', 'owner']),
+    ('PV', ['idx', 'u', 'name', 'Sn',
+            'Vn', 'bus', 'busr', 'p0', 'q0',
+            'pmax', 'pmin', 'qmax', 'qmin',
+            'v0', 'vmax', 'vmin', 'ra', 'xs']),
+    ('Slack', ['idx', 'u', 'name', 'Sn',
+               'Vn', 'bus', 'busr', 'p0', 'q0',
+               'pmax', 'pmin', 'qmax', 'qmin',
+               'v0', 'vmax', 'vmin', 'ra', 'xs',
+               'a0']),
+    ('Shunt', ['idx', 'u', 'name', 'Sn',
+               'Vn', 'g', 'b', 'fn']),
+    ('Line', ['idx', 'u', 'name',
+              'bus1', 'bus2', 'Sn',
+              'fn', 'Vn1', 'Vn2',
+              'r', 'x', 'b', 'g', 'b1', 'g1', 'b2', 'g2',
+              'trans', 'tap', 'phi',
+              'rate_a', 'rate_b', 'rate_c',
+              'owner', 'xcoord', 'ycoord']),
+    ('Area', ['idx', 'u', 'name']),
+])
+
+
 def to_andes(system, setup=False, addfile=None,
-             overwrite=None, no_keep=True,
              **kwargs):
     """
     Convert the AMS system to an ANDES system.
@@ -41,10 +72,6 @@ def to_andes(system, setup=False, addfile=None,
         Whether to call `setup()` after the conversion. Default is True.
     addfile : str, optional
         The additional file to be converted to ANDES dynamic mdoels.
-    overwrite : bool, optional
-        Whether to overwrite the existing file.
-    no_keep : bool, optional
-        True to remove the converted file after the conversion.
     **kwargs : dict
         Keyword arguments to be passed to `andes.system.System`.
 
@@ -69,23 +96,17 @@ def to_andes(system, setup=False, addfile=None,
     3. Index in the addfile is automatically adjusted when necessary.
     """
     t0, _ = elapsed()
-    andes_file = system.files.name + '.json'
 
-    json.write(system, andes_file,
-               overwrite=overwrite,
-               to_andes=True,
-               )
+    adsys = andes_System()
+
+    for mdl_name, mdl_cols in pflow_dict.items():
+        mdl = getattr(system, mdl_name)
+        for row in mdl.cache.df_in[mdl_cols].to_dict(orient='records'):
+            adsys.add(mdl_name, row)
 
     _, s = elapsed(t0)
-    logger.info(f'System convert to ANDES in {s}, saved as "{andes_file}".')
 
-    adsys = andes_load(andes_file, setup=False, **kwargs)
-
-    if no_keep:
-        logger.info('Converted file is removed. Set "no_keep=False" to keep it.')
-        os.remove(andes_file)
-
-    # 1. additonal file for dynamic simulation
+    # additonal file for dynamic models
     if addfile:
         t, _ = elapsed()
 
@@ -94,6 +115,8 @@ def to_andes(system, setup=False, addfile=None,
 
         _, s = elapsed(t)
         logger.info('Addfile parsed in %s.', s)
+
+    logger.info(f'System converted to ANDES in {s}.')
 
     # finalize
     system.dyn = Dynamic(amsys=system, adsys=adsys)
@@ -571,6 +594,7 @@ class Dynamic:
                     ams_var = getattr(sp.recent, ams_vname)
                     # NOTE: here we stick with ANDES device idx
                     idx = ams_var.get_idx()
+                    logger.debug(f'Send <{ams_vname}> to {mdl_name} {andes_pname}')
                     v_ams = sp.recent.get(src=ams_vname, attr='v', idx=idx)
                     mdl_andes = getattr(sa, mdl_name)
                     mdl_andes.set(src=andes_pname, idx=idx, attr='v', value=v_ams)
