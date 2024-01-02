@@ -51,8 +51,18 @@ class ACOPFBase(DCPFlowBase):
         """
         super().unpack(res)
 
+        # --- Bus ---
+        bus_idx = self.vBus.get_idx()
+        self.vBus.optz.value = self.system.Bus.get(src='v', attr='v', idx=bus_idx)
+        self.aBus.optz.value = self.system.Bus.get(src='a', attr='v', idx=bus_idx)
+
+        # --- Gen ---
+        gen_idx = self.pg.get_idx()
+        self.pg.optz.value = self.system.StaticGen.get(src='p', attr='v', idx=gen_idx)
+        self.qg.optz.value = self.system.StaticGen.get(src='q', attr='v', idx=gen_idx)
+
         # --- Objective ---
-        self.obj.v = res['f']  # TODO: check unit
+        self.obj.v = res['f']
 
         self.system.recent = self.system.routines[self.class_name]
         return True
