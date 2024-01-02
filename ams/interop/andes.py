@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 
 # Models used in ANDES PFlow
-
 pflow_dict = OrderedDict([
     ('Bus', ['idx', 'u', 'name',
              'Vn', 'vmax', 'vmin',
@@ -48,6 +47,16 @@ pflow_dict = OrderedDict([
               'owner', 'xcoord', 'ycoord']),
     ('Area', ['idx', 'u', 'name']),
 ])
+
+# dict for guessing dynamic models given its idx
+idx_guess = {'rego': 'RenGovernor',
+             'ree': 'RenExciter',
+             'rea': 'RenAerodynamics',
+             'rep': 'RenPitch',
+             'busf': 'BusFreq',
+             'zone': 'Region',
+             'gen': 'StaticGen',
+             'pq': 'PQ', }
 
 
 def to_andes(system, setup=False, addfile=None,
@@ -108,13 +117,13 @@ def to_andes(system, setup=False, addfile=None,
 
     # additonal file for dynamic models
     if addfile:
-        t, _ = elapsed()
+        t_add, _ = elapsed()
 
         # --- parse addfile ---
         adsys = parse_addfile(adsys=adsys, amsys=system, addfile=addfile)
 
-        _, s = elapsed(t)
-        logger.info('Addfile parsed in %s.', s)
+        _, s_add = elapsed(t_add)
+        logger.info('Addfile parsed in %s.', s_add)
 
     logger.info(f'System converted to ANDES in {s}.')
 
@@ -166,21 +175,20 @@ def parse_addfile(adsys, amsys, addfile):
 
     # Try parsing the addfile
     logger.info('Parsing additional file "%s"...', addfile)
-    # FIXME: hard-coded list of power flow models
-    # FIXME: this might be a problem in the future once we add more models
     # FIXME: find a better way to handle this, e.g. REGCV1, or ESD1
-    pflow_mdl = ['Bus', 'PQ', 'PV', 'Slack', 'Shunt', 'Line', 'Area']
-    for mdl in pflow_mdl:
-        am_mdl = getattr(amsys, mdl)
-        if am_mdl.n == 0:
-            pflow_mdl.remove(mdl)
-    idx_map = OrderedDict([])
 
     reader = pd.ExcelFile(addfile)
-    common_elements = set(reader.sheet_names) & set(pflow_mdl)
-    if common_elements:
-        msg = 'Power flow models exist in the addfile.'
-        msg += ' Only dynamic models will be used.'
+
+    pflow_mdl = list(pflow_dict.keys())
+
+    pflow_mdls_overlap = []
+    for mdl_name in pflow_dict.keys():
+        if mdl_name in reader.sheet_names:
+            pflow_mdls_overlap.append(mdl_name)
+
+    if len(pflow_mdls_overlap) > 0:
+        msg = 'Following PFlow models in addfile will be skipped: '
+        msg += ', '.join(pflow_mdls_overlap)
         logger.warning(msg)
 
     pflow_df_models = pd.read_excel(addfile,
@@ -193,6 +201,7 @@ def parse_addfile(adsys, amsys, addfile):
         df.dropna(axis=0, how='all', inplace=True)
 
     # collect idx_map if difference exists
+    idx_map = OrderedDict([])
     for name, df in pflow_df_models.items():
         am_idx = amsys.models[name].idx.v
         ad_idx = df['idx'].values
@@ -214,23 +223,14 @@ def parse_addfile(adsys, amsys, addfile):
             mdl = adsys.models[name]
         except KeyError:
             mdl = adsys.model_aliases[name]
-        # skip if no idx_params
-        if len(mdl.idx_params) == 0:
+        if len(mdl.idx_params) == 0:  # skip if no idx_params
             continue
         for idxn, idxp in mdl.idx_params.items():
             if idxp.model is None:  # make a guess if no model is specified
                 mdl_guess = idxn.capitalize()
                 if mdl_guess not in adsys.models.keys():
-                    typical_map = {'rego': 'RenGovernor',
-                                   'ree': 'RenExciter',
-                                   'rea': 'RenAerodynamics',
-                                   'rep': 'RenPitch',
-                                   'busf': 'BusFreq',
-                                   'zone': 'Region',
-                                   'gen': 'StaticGen',
-                                   'pq': 'PQ', }
                     try:
-                        mdl_guess = typical_map[idxp.name]
+                        mdl_guess = idx_guess[idxp.name]
                     except KeyError:  # set the most frequent string as the model name
                         split_list = []
                         for item in df[idxn].values:
@@ -266,14 +266,34 @@ def parse_addfile(adsys, amsys, addfile):
                 df[idxn] = df[idxn].replace(idx_map[mdl_guess])
                 logger.debug(f'Adjust {idxp.class_name} <{name}.{idxp.name}>')
 
-    # parse addfile and add models to ANDES system
+    # add dynamic models
     for name, df in df_models.items():
         # drop rows that all nan
         df.dropna(axis=0, how='all', inplace=True)
+        # if the dynamic model also exists in AMS, use AMS parameters for overlap
+        if name in amsys.models.keys():
+            if df.shape[0] != amsys.models[name].n:
+                msg = f'<{name}> has different rows in AMS and ANDES.'
+                logger.warning(msg)
+            am_params = set(amsys.models[name].params.keys())
+            ad_params = set(df.columns)
+            overlap_params = list(am_params.intersection(ad_params))
+            ad_rest_params = list(ad_params - am_params) + ['idx']
+            try:
+                overlap_params.remove('Sn')
+            except Exception:
+                pass
+            msg = f'Following ANDES parameters in <{name}> are overwriten: '
+            msg += ', '.join(overlap_params)
+            logger.debug(msg)
+            tmp = amsys.models[name].cache.df_in[overlap_params]
+            df = pd.merge(left=tmp, right=df[ad_rest_params],
+                          on='idx', how='left')
         for row in df.to_dict(orient='records'):
             adsys.add(name, row)
 
     # --- adjust SynGen Vn with Bus Vn ---
+    # NOTE: RenGen and DG have no Vn, so no need to adjust
     syg_idx = []
     for _, syg in adsys.SynGen.models.items():
         if syg.n > 0:
