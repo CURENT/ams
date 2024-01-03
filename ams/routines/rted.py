@@ -211,6 +211,14 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.system.StaticGen.set(src='pmax', attr='v', idx=pr_idx, value=pmax)
         self.system.StaticGen.set(src='p0', attr='v', idx=pr_idx, value=self.pg.v)
         ACOPF.run()
+        if not ACOPF.exit_code == 0:
+            logger.warning('<ACOPF> did not converge, conversion failed.')
+            # NOTE: mock results to fit interface with ANDES
+            self.vBus = ACOPF.vBus
+            self.vBus.optz.value = np.ones(self.system.Bus.n)
+            self.aBus = ACOPF.aBus
+            self.aBus.optz.value = np.zeros(self.system.Bus.n)
+            return False
         self.pg.v = ACOPF.pg.v
 
         # NOTE: mock results to fit interface with ANDES
@@ -224,7 +232,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.system.recent = self
 
         self.is_ac = True
-        logger.warning(f'{self.class_name} is converted to AC.')
+        logger.warning(f'<{self.class_name}> is converted to AC.')
         return True
 
     def run(self, no_code=True, **kwargs):
@@ -546,7 +554,7 @@ class RTEDVIS(RTED, VISBase):
         vsgcost = '+ sum(cm * M + cd * D)'
         self.obj.e_str = gcost + rcost + vsgcost
 
-        self.map1.update({
+        self.map2.update({
             'REGCV1': {
                 'M': 'M',
                 'D': 'D',
