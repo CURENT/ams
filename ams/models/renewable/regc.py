@@ -86,10 +86,12 @@ class REGCV1(REGCData, Model):
                              vtype=str, default=None)
         self.Mmax = NumParam(default=99, tex_name='M_{max}',
                              info='Maximum inertia emulation',
-                             unit='s',)
+                             unit='s',
+                             power=True,)
         self.Dmax = NumParam(default=99, tex_name='D_{max}',
                              info='Maximum damping emulation',
-                             unit='s',)
+                             unit='p.u.',
+                             power=True,)
 
 
 class REGCV2(REGCV1):
