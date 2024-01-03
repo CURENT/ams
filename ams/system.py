@@ -509,6 +509,12 @@ class System(andes_System):
         """
         Convert the AMS system to an ANDES system.
 
+        A preferred dynamic system file to be added has following features:
+        1. The file contains both power flow and dynamic models.
+        2. The file can run in ANDES natively.
+        3. Power flow models are in the same shape as the AMS system.
+        4. Dynamic models, if any, are in the same shape as the AMS system.
+
         Parameters
         ----------
         system : System

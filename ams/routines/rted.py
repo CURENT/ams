@@ -215,6 +215,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
 
         # NOTE: mock results to fit interface with ANDES
         self.vBus = ACOPF.vBus
+        self.aBus = ACOPF.aBus
 
         # reset pmin, pmax, p0
         self.system.StaticGen.set(src='pmin', attr='v', idx=pr_idx, value=pmin0)
@@ -223,7 +224,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.system.recent = self
 
         self.is_ac = True
-        logger.warning('RTED is converted to AC.')
+        logger.warning(f'{self.class_name} is converted to AC.')
         return True
 
     def run(self, no_code=True, **kwargs):
@@ -544,3 +545,10 @@ class RTEDVIS(RTED, VISBase):
         rcost = '+ sum(cru * pru + crd * prd) '  # reserve cost
         vsgcost = '+ sum(cm * M + cd * D)'
         self.obj.e_str = gcost + rcost + vsgcost
+
+        self.map1.update({
+            'REGCV1': {
+                'M': 'M',
+                'D': 'D',
+            },
+        })

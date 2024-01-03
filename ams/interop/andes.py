@@ -37,7 +37,7 @@ pflow_dict = OrderedDict([
                'v0', 'vmax', 'vmin', 'ra', 'xs',
                'a0']),
     ('Shunt', ['idx', 'u', 'name', 'Sn',
-               'Vn', 'g', 'b', 'fn']),
+               'Vn', 'bus', 'g', 'b', 'fn']),
     ('Line', ['idx', 'u', 'name',
               'bus1', 'bus2', 'Sn',
               'fn', 'Vn1', 'Vn2',
@@ -63,6 +63,12 @@ def to_andes(system, setup=False, addfile=None,
              **kwargs):
     """
     Convert the AMS system to an ANDES system.
+
+    A preferred dynamic system file to be added has following features:
+    1. The file contains both power flow and dynamic models.
+    2. The file can run in ANDES natively.
+    3. Power flow models are in the same shape as the AMS system.
+    4. Dynamic models, if any, are in the same shape as the AMS system.
 
     This function is wrapped as the ``System`` class method ``to_andes()``.
     Using the file conversion ``to_andes()`` will automatically
@@ -107,6 +113,9 @@ def to_andes(system, setup=False, addfile=None,
     t0, _ = elapsed()
 
     adsys = andes_System()
+    # FIXME: is there a systematic way to do this? Other config might be needed
+    adsys.config.freq = system.config.freq
+    adsys.config.mva = system.config.mva
 
     for mdl_name, mdl_cols in pflow_dict.items():
         mdl = getattr(system, mdl_name)
@@ -175,7 +184,6 @@ def parse_addfile(adsys, amsys, addfile):
 
     # Try parsing the addfile
     logger.info('Parsing additional file "%s"...', addfile)
-    # FIXME: find a better way to handle this, e.g. REGCV1, or ESD1
 
     reader = pd.ExcelFile(addfile)
 
@@ -187,8 +195,8 @@ def parse_addfile(adsys, amsys, addfile):
             pflow_mdls_overlap.append(mdl_name)
 
     if len(pflow_mdls_overlap) > 0:
-        msg = 'Following PFlow models in addfile will be skipped: '
-        msg += ', '.join(pflow_mdls_overlap)
+        msg = 'Following PFlow models in addfile will be overwritten: '
+        msg += ', '.join([f'<{mdl}>' for mdl in pflow_mdls_overlap])
         logger.warning(msg)
 
     pflow_df_models = pd.read_excel(addfile,
@@ -205,6 +213,9 @@ def parse_addfile(adsys, amsys, addfile):
     for name, df in pflow_df_models.items():
         am_idx = amsys.models[name].idx.v
         ad_idx = df['idx'].values
+        if len(set(am_idx)) != len(set(ad_idx)):
+            msg = f'<{name}> has different number of rows in addfile.'
+            logger.warning(msg)
         if set(am_idx) != set(ad_idx):
             idx_map[name] = dict(zip(ad_idx, am_idx))
 
@@ -273,17 +284,13 @@ def parse_addfile(adsys, amsys, addfile):
         # if the dynamic model also exists in AMS, use AMS parameters for overlap
         if name in amsys.models.keys():
             if df.shape[0] != amsys.models[name].n:
-                msg = f'<{name}> has different rows in AMS and ANDES.'
+                msg = f'<{name}> has different number of rows in addfile.'
                 logger.warning(msg)
             am_params = set(amsys.models[name].params.keys())
             ad_params = set(df.columns)
             overlap_params = list(am_params.intersection(ad_params))
             ad_rest_params = list(ad_params - am_params) + ['idx']
-            try:
-                overlap_params.remove('Sn')
-            except Exception:
-                pass
-            msg = f'Following ANDES parameters in <{name}> are overwriten: '
+            msg = f'Following <{name}> parameters in addfile are overwriten: '
             msg += ', '.join(overlap_params)
             logger.debug(msg)
             tmp = amsys.models[name].cache.df_in[overlap_params]
@@ -545,12 +552,11 @@ class Dynamic:
             if rtn.is_ac:
                 logger.debug(f'{rtn.class_name} results has been converted to AC.')
             else:
-                msg = f'{rtn.class_name} has not been converted'
-                msg += ' to AC, error might occur!'
+                msg = f'<{rtn.class_name}> AC conversion failed or not done yet!'
                 logger.error(msg)
 
         try:
-            logger.warning(f'Send {rtn.class_name} results to ANDES <{hex(id(sa))}>')
+            logger.warning(f'Send <{rtn.class_name}> results to ANDES <{hex(id(sa))}>')
         except AttributeError:
             logger.warning('No solved routine found. Unable to sync with ANDES.')
             return False
