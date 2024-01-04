@@ -87,11 +87,15 @@ def mpc2system(mpc: dict, system) -> bool:
             system.add('Shunt', bus=idx, name='Shunt ' + str(idx), Vn=baseKV, g=gs, b=bs)
 
     gen_idx = 0
-    mpc_gen = mpc['gen']
-    if mpc_gen.shape[1] <= 10:  # missing data
-        mpc_gen = np.hstack((mpc_gen,
-                             np.zeros((mpc_gen.shape[0], 21 - mpc_gen.shape[1]))))
-    logger.debug(f'gen shape: {mpc_gen.shape}')
+    if mpc['gen'].shape[1] <= 10:  # missing data
+        mpc_gen = np.zeros((mpc['gen'].shape[0], 21), dtype=np.float64)
+        mpc_gen[:, :9] = mpc['gen']
+        mpc_gen[:, 16] = system.PV.Ragc.default * mbase / 60
+        mpc_gen[:, 17] = system.PV.R10.default * mbase / 6
+        mpc_gen[:, 18] = system.PV.R30.default * mbase / 2
+        mpc_gen[:, 19] = system.PV.Rq.default * mbase / 60
+    else:
+        mpc_gen = mpc['gen']
     for data in mpc_gen:
         # bus  pg  qg  qmax  qmin  vg  mbase  status  pmax  pmin
         # 0    1   2   3     4     5   6      7       8     9
