@@ -58,7 +58,7 @@ def mpc2system(mpc: dict, system) -> bool:
 
     for data in mpc['bus']:
         # idx  ty   pd   qd  gs  bs  area  vmag  vang  baseKV  zone  vmax  vmin
-        # 0    1    2   3   4   5    6      7     8     9      10    11    12
+        # 0    1    2    3   4   5   6     7     8     9       10    11    12
         idx = int(data[0])
         ty = data[1]
         if ty == 3:
@@ -87,13 +87,18 @@ def mpc2system(mpc: dict, system) -> bool:
             system.add('Shunt', bus=idx, name='Shunt ' + str(idx), Vn=baseKV, g=gs, b=bs)
 
     gen_idx = 0
-    for data in mpc['gen']:
-        # bus  pg  qg  qmax  qmin  vg  mbase  status  pmax  pmin  pc1  pc2
-        #  0   1    2    3         4       5   6          7         8        9       10    11
-        # qc1min  qc1max  qc2min  qc2max  ramp_agc  ramp_10  ramp_30  ramp_q
-        #  12      13           14         15          16            17           18           19
-        # apf
-        #  20
+    mpc_gen = mpc['gen']
+    if mpc_gen.shape[1] <= 10:  # missing data
+        mpc_gen = np.hstack((mpc_gen,
+                             np.zeros((mpc_gen.shape[0], 21 - mpc_gen.shape[1]))))
+    logger.debug(f'gen shape: {mpc_gen.shape}')
+    for data in mpc_gen:
+        # bus  pg  qg  qmax  qmin  vg  mbase  status  pmax  pmin
+        # 0    1   2   3     4     5   6      7       8     9
+        # pc1  pc2  qc1min  qc1max  qc2min  qc2max  ramp_agc  ramp_10
+        # 10   11   12      13      14      15      16        17
+        # ramp_30  ramp_q  apf
+        # 18       19      20
 
         bus_idx = int(data[0])
         gen_idx += 1
