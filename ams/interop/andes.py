@@ -550,30 +550,30 @@ class Dynamic:
         # NOTE:if DC types, check if results are converted
         if rtn.type != 'ACED':
             if rtn.is_ac:
-                logger.debug(f'{rtn.class_name} results has been converted to AC.')
+                logger.info(f'{rtn.class_name} results has been converted to AC.')
             else:
                 msg = f'<{rtn.class_name}> AC conversion failed or not done yet!'
                 logger.error(msg)
 
         try:
-            logger.warning(f'Send <{rtn.class_name}> results to ANDES <{hex(id(sa))}>')
+            logger.info(f'Send <{rtn.class_name}> results to ANDES <{hex(id(sa))}>')
         except AttributeError:
             logger.warning('No solved routine found. Unable to sync with ANDES.')
             return False
 
-        # mapping dict
+        # map-to dict
         map2 = getattr(sp.recent, 'map2')
         if len(map2) == 0:
             logger.warning(f'Mapping dict "map2" of {sp.recent.class_name} is empty.')
             return True
         # check map2
-        pv_slack = 'PV' in map2.keys() and 'SLACK' in map2.keys()
+        pv_slack = 'PV' in map2.keys() and 'Slack' in map2.keys()
         if pv_slack:
-            logger.warning('PV and SLACK are both in map2, this might cause error when mapping.')
+            logger.warning('PV and Slack are both in map2, this might cause error when mapping.')
 
         # 2. sync to dynamic if initialized
         if self.is_tds:
-            logger.warning('TDS is initialized, send to <tds> models.')
+            logger.info('TDS is initialized, send to <tds> models.')
             # 1) send Dynamic generator online status
             self._send_dgu(sa=sa, sp=sp)
             # 2) send other results
@@ -590,7 +590,7 @@ class Dynamic:
                     if not is_tgr_set and isinstance(mdl, (StaticGen, PV, Slack)):
                         self._send_tgr(sa=sa, sp=sp)
                         is_tgr_set = True
-                        logger.warning('Generator power reference are sent to dynamic devices')
+                        logger.info('Generator power reference are sent to dynamic devices')
                         continue
                     # c. others, if any
                     ams_var = getattr(sp.recent, ams_vname)
@@ -610,32 +610,43 @@ class Dynamic:
                 msg = 'ANDES PFlow has been run, please re-run it'
                 msg += ' before running TDS to avoid failed TDS initialization'
                 logger.info(msg)
-            logger.warning('TDS is not initialized, send to <pflow> models')
+            else:
+                logger.warning('TDS is not excuted, send to <pflow> models')
+            # NOTE: mdl_name can be model name or group name
+            # it can be the case that an AMS model or group is not in ANDES
             for mdl_name, pmap in map2.items():
                 for ams_vname, andes_pname in map2[mdl_name].items():
-                    # a. voltage reference
-                    if ams_vname in ['qg']:
+                    # if qg in mapping, raise a warning
+                    if (ams_vname == 'qg') & (mdl_name in ['PV', 'Slack', 'StaticGen']):
                         logger.warning('Setting `qg` to ANDES dynamic does not take effect.')
-                    # b. others, if any
+
                     ams_var = getattr(sp.recent, ams_vname)
-                    # NOTE: here we stick with ANDES device idx
-                    idx = ams_var.get_idx()
-                    logger.debug(f'Send <{ams_vname}> to {mdl_name} {andes_pname}')
+                    idx = ams_var.get_idx()  # use AMS idx
                     v_ams = sp.recent.get(src=ams_vname, attr='v', idx=idx)
-                    mdl_andes = getattr(sa, mdl_name)
+
+                    # try to find the corresponding ANDES model
+                    ad_mdl_grp = list(sa.models.keys()) + list(sa.model_aliases.keys()) + list(sa.groups.keys())
+                    if mdl_name in ad_mdl_grp:
+                        mdl_andes = getattr(sa, mdl_name)
+                    else:
+                        msg = f'<{mdl_name}> is neither a ANDES model nor group!'
+                        logger.error(msg)
+                        continue
+                    logger.debug(f'Send <{ams_vname}> to {mdl_andes.class_name}.{andes_pname}')
                     mdl_andes.set(src=andes_pname, idx=idx, attr='v', value=v_ams)
-                    logger.debug(f'Send <{ams_vname}> to {mdl_andes.class_name} {andes_pname}')
-            # correct StaticGen v0 with Bus v0 if any
-            try:
-                rtn.map2['Bus']['vBus'] == 'v0'
-                logger.warning('Adjust ANDES StaticGen v0 with Bus v0')
-                stg_idx = sa.PV.idx.v + sa.Slack.idx.v
-                stg_bus = sa.PV.bus.v + sa.Slack.bus.v
-                vBus = sp.Bus.get(src='v0', attr='v', idx=stg_bus)
-                sa.StaticGen.set(src='v0', attr='v', idx=stg_idx, value=vBus)
-            except KeyError:
-                msg = 'Skip adjusting ANDES StaticGen v0 because Bus v0 is not found in map2'
-                logger.warning(msg)
+
+            # correct StaticGen v0 with Bus v0 if available
+            if 'Bus' in rtn.map2.keys():
+                if 'vBus' in rtn.map2['Bus'].keys():
+                    try:
+                        logger.warning('Adjust ANDES StaticGen.v0 with Bus.v0')
+                        stg_idx = sa.PV.idx.v + sa.Slack.idx.v
+                        stg_bus = sa.PV.bus.v + sa.Slack.bus.v
+                        vBus = sp.Bus.get(src='v0', attr='v', idx=stg_bus)
+                        sa.StaticGen.set(src='v0', attr='v', idx=stg_idx, value=vBus)
+                    except KeyError:
+                        msg = 'Failed to adjust ANDES StaticGen.v0 with Bus.v0'
+                        logger.warning(msg)
             return True
 
     @require_link
@@ -654,7 +665,7 @@ class Dynamic:
         # 1. information
         try:
             rtn_name = sp.recent.class_name
-            logger.debug(f'Receiving ANDES <{hex(id(sa))}> results to {rtn_name}.')
+            logger.info(f'Receiving ANDES <{hex(id(sa))}> results to {rtn_name}.')
         except AttributeError:
             logger.warning('No target AMS routine found. Failed to sync with ANDES.')
             return False
@@ -668,7 +679,7 @@ class Dynamic:
         # 2. sync dynamic results if dynamic is initialized
         if self.is_tds:
             # TODO: dynamic results
-            logger.debug(f'Receiving <tds> results to {sp.recent.class_name}...')
+            logger.info(f'Receiving <tds> results to {sp.recent.class_name}...')
             # 1) receive models online status
             is_dgu_set = False
             for mname, mdl in self.amsys.models.items():
@@ -678,22 +689,24 @@ class Dynamic:
                 if mdl.n == 0:
                     continue
                 # a. dynamic generator online status
-                if not is_dgu_set and mdl.group in ['StaticGen']:
+                if (not is_dgu_set) & (mdl.group in ['StaticGen']):
                     self._receive_dgu(sa=sa, sp=sp)
                     is_dgu_set = True
-                    logger.warning('Generator online status are received from dynamic generators.')
                     continue
+                # FIXME: in AMS, dynamic generatos `u` is not in effect
+                # how to make this consistent with ANDES?
                 # b. other models online status
                 idx = mdl.idx.v
-                if mname in sa.models:
+                if (mname in sa.models) & (mdl.group not in ['StaticGen']):
                     mdl_andes = getattr(sa, mname)
                     # 1) receive models online status
                     u_andes = mdl_andes.get(src='u', idx=idx, attr='v')
                     mdl.set(src='u', idx=idx, attr='v', value=u_andes)
+                    logger.debug(f'Receive {mdl.class_name}.u from {mname}.u')
             # 2) receive other results
             is_pe_set = False
             for mname, pmap in map1.items():
-                mdl = getattr(sa, mname)
+                ams_vname = getattr(sa, mname)
                 for ams_vname, andes_pname in pmap.items():
                     # a. output power
                     if not is_pe_set and andes_pname == 'p' and mname == 'StaticGen':
@@ -715,7 +728,7 @@ class Dynamic:
             return True
         # 3. sync static results if dynamic is not initialized
         else:
-            logger.debug(f'Receiving <pflow> results to {sp.recent.class_name}...')
+            logger.info(f'Receiving <pflow> results to {sp.recent.class_name}...')
             for mname, mdl in sp.models.items():
                 # NOTE: skip models without idx: ``Summary``
                 if not hasattr(mdl, 'idx'):
@@ -769,6 +782,9 @@ class Dynamic:
                               allow_none=True, default=0,)
         Pe = Pe_sg + Pe_dg + Pe_rg
         idx = sp.dyn.link['stg_idx'].replace(np.NaN, None).to_list()
+        dyg_names = 'SynGen' if sa.SynGen.n > 0 else ''
+        dyg_names += ', DG' if sa.DG.n > 0 else ''
+        dyg_names += ', RenGen' if sa.RenGen.n > 0 else ''
         return Pe, idx
 
     def _receive_dgu(self, sa, sp):
@@ -792,4 +808,8 @@ class Dynamic:
         sp.StaticGen.set(idx=sp.dyn.link['stg_idx'].to_list(),
                          src='u', attr='v',
                          value=u_dyngen,)
+        dyg_names = 'SynGen' if sa.SynGen.n > 0 else ''
+        dyg_names += ', DG' if sa.DG.n > 0 else ''
+        dyg_names += ', RenGen' if sa.RenGen.n > 0 else ''
+        logger.debug(f'Receive StaticGen.u from <u> of {dyg_names}')
         return True
