@@ -138,14 +138,31 @@ class MatProcessor:
         load_bus = system.StaticLoad.get(src='bus', attr='v',
                                          idx=system.StaticLoad.get_idx())
 
+        gen_u = system.StaticGen.get(src='u', attr='v',
+                                     idx=system.StaticGen.get_idx())
+        gen_uid_off = np.where(gen_u == 0)[0]
+
+        slack_u = system.Slack.get(src='u', attr='v',
+                                   idx=system.Slack.idx.v)
+        slack_uid_off = np.where(slack_u == 0)[0]
+
+        load_u = system.StaticLoad.get(src='u', attr='v',
+                                       idx=system.StaticLoad.get_idx())
+        load_uid_off = np.where(load_u == 0)[0]
+
         row, col = np.meshgrid(all_bus, slack_bus)
         Cs_v = (row == col).astype(int)
+        Cs_v[slack_uid_off, :] = 0
         self.Cs._v = c_sparse(Cs_v)
+
         row, col = np.meshgrid(all_bus, gen_bus)
         Cg_v = (row == col).astype(int)
+        Cg_v[gen_uid_off, :] = 0
         self.Cg._v = c_sparse(Cg_v)
+
         row, col = np.meshgrid(all_bus, load_bus)
         Cl_v = (row == col).astype(int)
+        Cl_v[load_uid_off, :] = 0
         self.Cl._v = c_sparse(Cl_v)
 
         return True
