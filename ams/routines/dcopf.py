@@ -87,7 +87,8 @@ class DCOPF(RoutineModel):
                            no_parse=False,)
         self.pg0 = RParam(info='Gen initial active power',
                           name='p0', tex_name=r'p_{g, 0}',
-                          unit='p.u.', model='StaticGen',)
+                          unit='p.u.',
+                          model='StaticGen', src='pg0')
         # --- load ---
         self.pd = RParam(info='active demand',
                          name='pd', tex_name=r'p_{d}',
