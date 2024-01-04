@@ -482,7 +482,7 @@ class Constraint(OptzBase):
         return True
 
     def __repr__(self):
-        enabled = 'ON' if self.name in self.om.constrs else 'OFF'
+        enabled = 'OFF' if self.is_disabled else 'ON'
         out = f"[{enabled}]: {self.e_str}"
         out += " =0" if self.type == 'eq' else " <=0"
         return out
