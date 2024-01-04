@@ -517,10 +517,10 @@ class VISBase:
         self.Dub = Constraint(name='Dub', type='uq',
                               info='D upper bound',
                               e_str='D - Dmax',)
-        self.Mreq = Constraint(name='Mreq', type='uq',
+        self.Mreq = Constraint(name='Mreq', type='eq',
                                info='Emulated inertia requirement',
                                e_str='-gvsg@M + dvm',)
-        self.Dreq = Constraint(name='Dreq', type='uq',
+        self.Dreq = Constraint(name='Dreq', type='eq',
                                info='Emulated damping requirement',
                                e_str='-gvsg@D + dvd',)
 
@@ -555,7 +555,7 @@ class RTEDVIS(RTED, VISBase):
         self.obj.e_str = gcost + rcost + vsgcost
 
         self.map2.update({
-            'REGCV1': {
+            'RenGen': {
                 'M': 'M',
                 'D': 'D',
             },
