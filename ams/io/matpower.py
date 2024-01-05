@@ -89,7 +89,8 @@ def mpc2system(mpc: dict, system) -> bool:
     gen_idx = 0
     if mpc['gen'].shape[1] <= 10:  # missing data
         mpc_gen = np.zeros((mpc['gen'].shape[0], 21), dtype=np.float64)
-        mpc_gen[:, :9] = mpc['gen']
+        mpc_gen[:, :10] = mpc['gen']
+        mbase = base_mva
         mpc_gen[:, 16] = system.PV.Ragc.default * mbase / 60
         mpc_gen[:, 17] = system.PV.R10.default * mbase / 6
         mpc_gen[:, 18] = system.PV.R30.default * mbase / 2
