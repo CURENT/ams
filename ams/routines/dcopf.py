@@ -102,10 +102,6 @@ class DCOPF(RoutineModel):
         self.rate_a = RParam(info='long-term flow limit',
                              name='rate_a', tex_name=r'R_{ATEA}',
                              unit='MVA', model='Line',)
-        # --- shunt ---
-        self.gsh = RParam(info='shunt conductance',
-                          name='gsh', tex_name=r'g_{sh}',
-                          model='Shunt', src='g')
         # --- connection matrix ---
         self.Cg = RParam(info='Gen connection matrix',
                          name='Cg', tex_name=r'C_{g}',
@@ -161,6 +157,11 @@ class DCOPF(RoutineModel):
                                 e_str='-plf - rate_a', type='uq',)
         self.plfub = Constraint(name='plfub', info='Line power upper bound',
                                 e_str='plf - rate_a', type='uq',)
+        # --- shunt ---
+        self.gsh = RParam(info='shunt conductance',
+                          name='gsh', tex_name=r'g_{sh}',
+                          model='Shunt', src='g',
+                          no_parse=True,)
         # --- power balance ---
         self.pb = Constraint(name='pb', info='power balance',
                              e_str='sum(pd) + sum(gsh) - sum(pg)',
