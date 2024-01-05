@@ -184,7 +184,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         # because dt is a numnber
         cost = 'sum(mul(c2, power(pg, 2)))'
         cost += '+ sum(c1 @ (t dot pg))'
-        cost += '+ ug * c0'  # constant cost
+        cost += '+ sum(c0)'  # constant cost
         cost += '+ sum(cru * pru + crd * prd)'  # reserve cost
         self.obj.e_str = cost
 

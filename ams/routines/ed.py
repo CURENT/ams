@@ -216,7 +216,7 @@ class ED(RTED):
         # --- objective ---
         cost = 'sum(c2 @ (t dot pg)**2 + c1 @ (t dot pg))'
         # constant cost
-        cost += '+ sum(mul(ugt, mul(c0, tlv)))'
+        cost += '+ sum(mul(c0, tlv))'
         # spinning reserve cost
         cost += ' + sum(csr@prs)'
         self.obj.e_str = cost

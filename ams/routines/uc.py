@@ -242,7 +242,7 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
 
         # --- objective ---
         gcost = 'sum(c2 @ (t dot zug)**2 + c1 @ (t dot zug))'
-        gcost += '+ sum(mul(mul(ug, c0), tlv))'
+        gcost += '+ sum(mul(c0, tlv))'
         acost = ' + sum(csu * vgd + csd * wgd)'  # action
         srcost = ' + sum(csr @ prs)'  # spinning reserve
         nsrcost = ' + sum(cnsr @ prns)'  # non-spinning reserve

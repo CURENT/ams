@@ -358,6 +358,9 @@ def system2mpc(system) -> dict:
         gen[:system.Slack.n, 8] = system.Slack.pmax.v * base_mva
         gen[:system.Slack.n, 9] = system.Slack.pmin.v * base_mva
 
+    # logger.debug(f'StaticGen idx: {system.Slack.idx.v + system.PV.idx.v}')
+    # logger.debug(f'StaticGen bus: {system.Slack.bus.v + system.PV.bus.v}')
+
     if system.Line.n > 0:
         branch = mpc['branch']
         branch[:, 0] = to_busid(system.Line.bus1.v)
@@ -380,13 +383,20 @@ def system2mpc(system) -> dict:
                                       values=[stg_idx])
         gcost_uid = system.GCost.idx2uid(gcost_idx)
         gencost = mpc['gencost']
-        gencost[:, 0] = system.GCost.type.v[gcost_uid]
-        gencost[:, 1] = system.GCost.csu.v[gcost_uid]
-        gencost[:, 2] = system.GCost.csd.v[gcost_uid]
+        gencost[:, 0] = system.GCost.get(src='type', attr='v', idx=gcost_idx)
+        gencost[:, 1] = system.GCost.get(src='csu', attr='v', idx=gcost_idx)
+        gencost[:, 2] = system.GCost.get(src='csd', attr='v', idx=gcost_idx)
         gencost[:, 3] = 3
-        gencost[:, 4] = system.GCost.c2.v[gcost_uid] / base_mva / base_mva
-        gencost[:, 5] = system.GCost.c1.v[gcost_uid] / base_mva
-        gencost[:, 6] = system.GCost.c0.v[gcost_uid]
+        gencost[:, 4] = system.GCost.get(src='c2', attr='v', idx=gcost_idx) / base_mva / base_mva
+        gencost[:, 5] = system.GCost.get(src='c1', attr='v', idx=gcost_idx) / base_mva
+        gencost[:, 6] = system.GCost.get(src='c0', attr='v', idx=gcost_idx)
+        # gencost[:, 0] = system.GCost.type.v[gcost_uid]
+        # gencost[:, 1] = system.GCost.csu.v[gcost_uid]
+        # gencost[:, 2] = system.GCost.csd.v[gcost_uid]
+        # gencost[:, 3] = 3
+        # gencost[:, 4] = system.GCost.c2.v[gcost_uid] / base_mva / base_mva
+        # gencost[:, 5] = system.GCost.c1.v[gcost_uid] / base_mva
+        # gencost[:, 6] = system.GCost.c0.v[gcost_uid]
     else:
         mpc.pop('gencost')
 
