@@ -80,7 +80,8 @@ def ppc2system(ppc: dict, system) -> bool:
     bool
         True if successful; False otherwise.
     """
-    return mpc2system(ppc, system)
+    mpc2system(ppc, system)
+    return True
 
 
 def system2ppc(system) -> dict:
@@ -94,10 +95,29 @@ def system2ppc(system) -> dict:
     mpc = system2mpc(system)
     np.set_printoptions(suppress=True)
     # Map the original bus indices to consecutive values
+    # Adjust discontinuous bus indices
     BUS_I = mpc['bus'][:, 0].astype(int)
-    bus_map = {busi0: i for i, busi0 in enumerate(BUS_I)}
-    mpc['bus'][:, 0] = np.array([bus_map[busi0] for busi0 in BUS_I])
-    mpc['gen'][:, 0] = np.array([bus_map[busi0] for busi0 in mpc['gen'][:, 0].astype(int)])
-    mpc['branch'][:, 0] = np.array([bus_map[busi0] for busi0 in mpc['branch'][:, 0].astype(int)])
-    mpc['branch'][:, 1] = np.array([bus_map[busi0] for busi0 in mpc['branch'][:, 1].astype(int)])
+    if np.max(mpc['bus'][:, 0]) > mpc['bus'].shape[0]:
+        # Find the unique indices in busi
+        old_bus = np.unique(BUS_I)
+        # Generate a mapping dictionary to map the unique indices to consecutive values
+        mapping = {busi0: i for i, busi0 in enumerate(old_bus)}
+        # Map the original bus indices to consecutive values
+        # BUS_I
+        mpc['bus'][:, 0] = np.array([mapping[busi0] for busi0 in BUS_I])
+        # GEN_BUS
+        GEN_BUS = mpc['gen'][:, 0].astype(int)
+        mpc['gen'][:, 0] = np.array([mapping[busi0] for busi0 in GEN_BUS])
+        # F_BUS
+        F_BUS = mpc['branch'][:, 0].astype(int)
+        mpc['branch'][:, 0] = np.array([mapping[busi0] for busi0 in F_BUS])
+        # T_BUS
+        T_BUS = mpc['branch'][:, 1].astype(int)
+        mpc['branch'][:, 1] = np.array([mapping[busi0] for busi0 in T_BUS])
+    # adjust the bus index to start from 0
+    if np.min(mpc['bus'][:, 0]) > 0:
+        mpc['bus'][:, 0] -= 1   # BUS_I
+        mpc['gen'][:, 0] -= 1   # GEN_BUS
+        mpc['branch'][:, 0] -= 1    # F_BUS
+        mpc['branch'][:, 1] -= 1    # T_BUS
     return mpc
