@@ -7,7 +7,7 @@ import numpy as np
 
 from ams.core.param import RParam
 from ams.core.service import ZonalSum, VarSelect, NumOp, NumOpDual
-from ams.routines.dcopf0 import DCOPF
+from ams.routines.dcopf import DCOPF
 
 from ams.opt.omodel import Var, Constraint
 
@@ -31,7 +31,8 @@ class RTEDBase:
                          no_parse=True)
         self.gs = ZonalSum(u=self.zg, zone='Region',
                            name='gs', tex_name=r'S_{g}',
-                           info='Sum Gen vars vector in shape of zone')
+                           info='Sum Gen vars vector in shape of zone',
+                           no_parse=True, sparse=True)
         self.ds = ZonalSum(u=self.zd, zone='Region',
                            name='ds', tex_name=r'S_{d}',
                            info='Sum pd vector in shape of zone',
@@ -111,19 +112,13 @@ class RTED(DCOPF, RTEDBase, SFRBase):
     DC-based real-time economic dispatch (RTED).
     RTED extends DCOPF with:
 
-    1. Param ``pg0``, which can be retrieved from dynamic simulation results.
-
-    2. RTED has mapping dicts to interface with ANDES.
-
-    3. RTED routine adds a function ``dc2ac`` to do the AC conversion using ACOPF
-
-    4. Vars for zonal SFR reserve: ``pru`` and ``prd``;
-
-    5. Param for linear cost of zonal SFR reserve ``cru`` and ``crd``;
-
-    6. Param for SFR requirement ``du`` and ``dd``;
-
-    7. Param for generator ramping: start point ``pg0`` and ramping limit ``R10``;
+    - Mapping dicts to interface with ANDES
+    - Function ``dc2ac`` to do the AC conversion
+    - Vars for SFR reserve: ``pru`` and ``prd``
+    - Param for linear SFR cost: ``cru`` and ``crd``
+    - Param for SFR requirement: ``du`` and ``dd``
+    - Param for ramping: start point ``pg0`` and ramping limit ``R10``
+    - Param ``pg0``, which can be retrieved from dynamic simulation results.
 
     The function ``dc2ac`` sets the ``vBus`` value from solved ACOPF.
     Without this conversion, dynamic simulation might fail due to the gap between
@@ -176,7 +171,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.rrd.e_str = 'mul(ug, -pg + prd) + mul(ug, pmin)'
         # Gen ramping up/down
         self.rgu.e_str = 'mul(ug, pg-pg0-R10)'
-        self.rgd.e_str='mul(ug, -pg+pg0-R10)'
+        self.rgd.e_str = 'mul(ug, -pg+pg0-R10)'
 
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
@@ -288,6 +283,7 @@ class DGBase:
     """
     Base class for DG used in DCED.
     """
+
     def __init__(self):
         # --- params ---
         self.gendg = RParam(info='gen of DG',
@@ -311,7 +307,8 @@ class DGBase:
         self.cdg = VarSelect(u=self.pg, indexer='gendg',
                              name='cd', tex_name=r'C_{DG}',
                              info='Select DG power from pg',
-                             gamma='gammapdg', no_parse=True,)
+                             gamma='gammapdg',
+                             no_parse=True, sparse=True,)
         self.cdgb = Constraint(name='cdgb', type='eq',
                                info='Select DG power from pg',
                                e_str='cdg @ pg - pgdg',)
@@ -484,13 +481,13 @@ class VISBase:
                            model='VSG', src='zone',
                            no_parse=True)
         self.Mmax = RParam(info='Maximum inertia emulation',
-                            name='Mmax', tex_name='M_{max}',
-                            model='VSG', src='Mmax',
-                            unit='s',)
+                           name='Mmax', tex_name='M_{max}',
+                           model='VSG', src='Mmax',
+                           unit='s',)
         self.Dmax = RParam(info='Maximum damping emulation',
-                            name='Dmax', tex_name='D_{max}',
-                            model='VSG', src='Dmax',
-                            unit='p.u.',)
+                           name='Dmax', tex_name='D_{max}',
+                           model='VSG', src='Dmax',
+                           unit='p.u.',)
         self.dvm = RParam(info='Emulated inertia requirement',
                           name='dvm', tex_name=r'd_{v,m}',
                           unit='s',
@@ -507,10 +504,11 @@ class VISBase:
         self.D = Var(info='Emulated damping coefficient',
                      name='D', tex_name=r'D', unit='p.u.',
                      model='VSG', nonneg=True,)
-    
+
         self.gvsg = ZonalSum(u=self.zvsg, zone='Region',
-                             name='gs', tex_name=r'S_{g}',
-                             info='Sum VSG vars vector in shape of zone')
+                             name='gvsg', tex_name=r'S_{g}',
+                             info='Sum VSG vars vector in shape of zone',
+                             no_parse=True)
         self.Mub = Constraint(name='Mub', type='uq',
                               info='M upper bound',
                               e_str='M - Mmax',)
