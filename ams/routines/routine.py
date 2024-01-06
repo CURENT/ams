@@ -263,7 +263,10 @@ class RoutineModel:
         owner_list = []
         for rname, rparam in self.rparams.items():
             if rparam.owner is not None:
-                if rparam.owner.n == 0:
+                # NOTE: skip checking Shunt.g
+                if (rparam.owner.class_name == 'Shunt') and (rparam.src == 'g'):
+                    pass
+                elif rparam.owner.n == 0:
                     no_input.append(rname)
                     owner_list.append(rparam.owner.class_name)
             # TODO: add more data config check?
