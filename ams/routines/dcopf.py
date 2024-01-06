@@ -19,20 +19,8 @@ class DCOPF(RoutineModel):
     """
     DC optimal power flow (DCOPF).
 
-    When using the GUROBI solver, the optimization method can be specified 
-    through the `Method` parameter, and all available methods are:
-    0: Primal Simplex; 1: Dual Simplex; 2: Barrier; 3: Concurrent;
-    4: Deterministic Concurrent
-
-    When using the CPLEX solver, the optimization method can also be 
-    specified.
-    To specify the method in CPLEX, use the `cplex_params` argument with 
-    `solver='CPLEX'` in the solve function. For example, to use the Dual 
-    Simplex method, set `cplex_params={'lpmethod': 1}`.
-    CPLEX supports the following methods:
-    0: Primal Simplex; 1: Dual Simplex; 2: Barrier;
-    3: Non-deterministic Concurrent; 4: Deterministic Concurrent;
-    5: Network Simplex (suitable for network flow problems)
+    Line flow variable `plf` is calculated after solving the problem
+    in ``_post_solve()``.
     """
 
     def __init__(self, system, config):
@@ -164,9 +152,6 @@ class DCOPF(RoutineModel):
                        unit='p.u.',
                        name='plf', tex_name=r'p_{lf}',
                        model='Line',)
-        self.plfb = Constraint(info='line flow calculation',
-                               name='plfb', type='eq',
-                               e_str='Bf@aBus + Pfinj - plf',)
         self.plflb = Constraint(info='line flow lower bound',
                                 name='plflb', type='uq',
                                 e_str='-Bf@aBus - Pfinj - rate_a',)
@@ -229,11 +214,18 @@ class DCOPF(RoutineModel):
         """
         return RoutineModel.run(self, no_code=no_code, **kwargs)
 
+    def _post_solve(self):
+        # --- post-solving calculations ---
+        # line flow: Bf@aBus + Pfinj
+        mats = self.system.mats  # using sparse matrix in MatProcessor is faster
+        self.plf.optz.value = mats.Bf._v@self.aBus.v + mats.Pfinj._v
+        return True
+
     def unpack(self, **kwargs):
         """
         Unpack the results from CVXPY model.
         """
-        # --- copy results from solver into routine algeb ---
+        # --- solver results to routine algeb ---
         for _, var in self.vars.items():
             # --- copy results from routine algeb into system algeb ---
             if var.model is None:          # if no owner
@@ -253,6 +245,7 @@ class DCOPF(RoutineModel):
                 # failed to find source var in the owner (model or group)
                 except (KeyError, TypeError):  
                     pass
+
         # label the most recent solved routine
         self.system.recent = self.system.routines[self.class_name]
         return True

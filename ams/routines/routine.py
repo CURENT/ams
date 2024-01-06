@@ -334,12 +334,17 @@ class RoutineModel:
         """
         Solve the routine optimization model.
         """
-        pass
         return True
 
     def unpack(self, **kwargs):
         """
         Unpack the results.
+        """
+        return None
+
+    def _post_solve(self):
+        """
+        Post-solve calculation.
         """
         return None
 
@@ -381,6 +386,7 @@ class RoutineModel:
             msg += n_iter_str + f"using solver {sstats.solver_name}."
             logger.warning(msg)
             self.unpack(**kwargs)
+            self._post_solve()
             return True
         else:
             msg = f"{self.class_name} failed as {status} after "
