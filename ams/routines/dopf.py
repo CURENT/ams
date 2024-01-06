@@ -5,7 +5,7 @@ import numpy as np
 
 from ams.core.param import RParam
 
-from ams.routines.dcopf import DCOPF
+from ams.routines.dcopf0 import DCOPF
 
 from ams.opt.omodel import Var, Constraint, Objective
 

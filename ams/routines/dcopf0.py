@@ -18,11 +18,12 @@ logger = logging.getLogger(__name__)
 class DCOPF(RoutineModel):
     """
     DC optimal power flow (DCOPF).
+    For large-scale convex problems, the Dual Simplex can be efficient.
 
     When using the GUROBI solver, the optimization method can be specified 
     through the `Method` parameter, and all available methods are:
-    0: Primal Simplex; 1: Dual Simplex; 2: Barrier; 3: Concurrent;
-    4: Deterministic Concurrent
+    0: Primal Simplex; 1: Dual Simplex; 2: Barrier;
+    3: Concurrent; 4: Deterministic Concurrent
 
     When using the CPLEX solver, the optimization method can also be 
     specified.
@@ -45,7 +46,7 @@ class DCOPF(RoutineModel):
                          name='c2', tex_name=r'c_{2}',
                          unit=r'$/(p.u.^2)', model='GCost',
                          indexer='gen', imodel='StaticGen',
-                         nonneg=True, no_parse=True)
+                         nonneg=True)
         self.c1 = RParam(info='Gen cost coefficient 1',
                          name='c1', tex_name=r'c_{1}',
                          unit=r'$/(p.u.)', model='GCost',
@@ -94,14 +95,13 @@ class DCOPF(RoutineModel):
                          model='StaticLoad', src='p0',
                          unit='p.u.',)
         # --- line ---
+        self.x = RParam(info='line reactance',
+                        name='x', tex_name=r'x',
+                        model='Line', src='x',
+                        unit='p.u.', no_parse=True,)
         self.rate_a = RParam(info='long-term flow limit',
                              name='rate_a', tex_name=r'R_{ATEA}',
                              unit='MVA', model='Line',)
-        # --- shunt ---
-        self.gsh = RParam(info='shunt conductance',
-                          name='gsh', tex_name=r'g_{sh}',
-                          model='Shunt', src='g',
-                          no_parse=True,)
         # --- connection matrix ---
         self.Cg = RParam(info='Gen connection matrix',
                          name='Cg', tex_name=r'C_{g}',
@@ -115,28 +115,10 @@ class DCOPF(RoutineModel):
                           name='Cft', tex_name=r'C_{ft}',
                           model='mats', src='Cft',
                           no_parse=True, sparse=True,)
-        self.Csh = RParam(info='Shunt connection matrix',
-                          name='Csh', tex_name=r'C_{sh}',
-                          model='mats', src='Csh',
-                          no_parse=True, sparse=True,)
-        # --- system matrix ---
-        self.Bbus = RParam(info='Bus admittance matrix',
-                           name='Bbus', tex_name=r'B_{bus}',
-                           model='mats', src='Bbus',
-                           no_parse=True, sparse=True,)
-        self.Bf = RParam(info='Bf matrix',
-                         name='Bf', tex_name=r'B_{f}',
-                         model='mats', src='Bf',
-                         no_parse=True, sparse=True,)
-        self.Pbusinj = RParam(info='Bus power injection vector',
-                              name='Pbusinj', tex_name=r'P_{bus}^{inj}',
-                              model='mats', src='Pbusinj',
-                              no_parse=True,)
-        self.Pfinj = RParam(info='Line power injection vector',
-                            name='Pfinj', tex_name=r'P_{f}^{inj}',
-                            model='mats', src='Pfinj',
-                            no_parse=True,)
-
+        self.PTDF = RParam(info='Power Transfer Distribution Factor',
+                           name='PTDF', tex_name=r'P_{TDF}',
+                           model='mats', src='PTDF',
+                           no_parse=True,)
         # --- Model Section ---
         # --- generation ---
         self.pg = Var(info='Gen active power',
@@ -144,6 +126,7 @@ class DCOPF(RoutineModel):
                       name='pg', tex_name=r'p_g',
                       model='StaticGen', src='p',
                       v0=self.pg0)
+        # NOTE: Var bounds need to set separately
         pglb = '-pg + mul(nctrle, pg0) + mul(ctrle, pmin)'
         self.pglb = Constraint(name='pglb', info='pg min',
                                e_str=pglb, type='uq',)
@@ -151,33 +134,45 @@ class DCOPF(RoutineModel):
         self.pgub = Constraint(name='pgub', info='pg max',
                                e_str=pgub, type='uq',)
         # --- bus ---
-        self.aBus = Var(info='Bus voltage angle',
-                        unit='rad',
-                        name='aBus', tex_name=r'\theta_{bus}',
-                        model='Bus', src='a',)
-        # --- power balance ---
-        pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
-        self.pb = Constraint(name='pb', info='power balance',
-                             e_str=pb, type='eq',)
-        # --- line flow ---
-        self.plf = Var(info='Line flow',
+        self.png = Var(info='Bus active power from gen',
                        unit='p.u.',
+                       name='png', tex_name=r'p_{ng}',
+                       model='Bus',)
+        self.pnd = Var(info='Bus active power from load',
+                       unit='p.u.',
+                       name='pnd', tex_name=r'p_{nd}',
+                       model='Bus',)
+        self.pngb = Constraint(name='pngb', type='eq',
+                               e_str='Cg@png - pg',
+                               info='Bus active power from gen',)
+        self.pndb = Constraint(name='pndb', type='eq',
+                               e_str='Cl@pnd - pd',
+                               info='Bus active power from load',)
+        # --- line ---
+        # NOTE: `ug*pmin` results in unexpected error
+        self.plf = Var(info='Line active power',
                        name='plf', tex_name=r'p_{lf}',
-                       model='Line',)
-        self.plfb = Constraint(info='line flow calculation',
-                               name='plfb', type='eq',
-                               e_str='Bf@aBus + Pfinj - plf',)
-        self.plflb = Constraint(info='line flow lower bound',
-                                name='plflb', type='uq',
-                                e_str='-Bf@aBus - Pfinj - rate_a',)
-        self.plfub = Constraint(info='line flow upper bound',
-                                name='plfub', type='uq',
-                                e_str='Bf@aBus + Pfinj - rate_a',)
-
+                       unit='p.u.', model='Line',)
+        self.plflb = Constraint(name='plflb', info='Line power lower bound',
+                                e_str='-plf - rate_a', type='uq',)
+        self.plfub = Constraint(name='plfub', info='Line power upper bound',
+                                e_str='plf - rate_a', type='uq',)
+        # --- shunt ---
+        self.gsh = RParam(info='shunt conductance',
+                          name='gsh', tex_name=r'g_{sh}',
+                          model='Shunt', src='g',
+                          no_parse=True,)
+        # --- power balance ---
+        self.pb = Constraint(name='pb', info='power balance',
+                             e_str='sum(pd) + sum(gsh) - sum(pg)',
+                             type='eq',)
+        self.pnb = Constraint(name='pnb', type='eq',
+                              info='nodal power injection',
+                              e_str='PTDF@(png - pnd) - plf',)
         # --- objective ---
         obj = 'sum(mul(c2, power(pg, 2)))'
         obj += '+ sum(mul(c1, pg))'
-        obj += '+ sum(mul(ug, c0))'
+        obj += '+ sum(c0)'
         self.obj = Objective(name='obj',
                              info='total cost', unit='$',
                              sense='min', e_str=obj,)
