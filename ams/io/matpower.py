@@ -161,9 +161,9 @@ def mpc2system(mpc: dict, system) -> bool:
 
     for data in mpc['branch']:
         # fbus	tbus	r	x	b	rateA	rateB	rateC	ratio	angle
-        #  0     1        2  3   4   5         6         7         8        9
+        # 0     1       2   3   4   5       6       7       8       9
         # status	angmin	angmax	Pf	Qf	Pt	Qt
-        # 10        11          12         13  14 15 16
+        # 10        11      12      13  14  15  16
         fbus = int(data[0])
         tbus = int(data[1])
         r = data[2]
@@ -205,7 +205,7 @@ def mpc2system(mpc: dict, system) -> bool:
     for data, gen in zip(mpc['gencost'], gen_idx):
         # NOTE: only type 2 costs are supported for now
         # type  startup shutdown	n	c2  c1  c0
-        # 0     1           2               3   4   5   6
+        # 0     1       2           3   4   5   6
         if data[0] != 2:
             raise ValueError('Only MODEL 2 costs are supported')
         # TODO: Add Model 1
