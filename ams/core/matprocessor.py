@@ -10,7 +10,7 @@ import numpy as np
 from scipy.sparse import csr_matrix as c_sparse
 from scipy.sparse import lil_matrix as l_sparse
 
-from ams.pypower.make import makePTDF, makeBdc
+from ams.pypower.make import makePTDF
 from ams.io.pypower import system2ppc
 
 from ams.opt.omodel import Param
@@ -276,11 +276,3 @@ class MatProcessor:
 
         self.Cg._v, self.Cl._v, self.Cft._v, self.Csh._v = Cg, Cl, Cft, Csh
         return True
-
-    def mY(self):
-        """
-        Return the matrix of Ybus.
-        """
-        nl = self.system.Line.n
-        Y = np.zeros((nl, nl))
-        return Y
