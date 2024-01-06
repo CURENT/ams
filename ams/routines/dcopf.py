@@ -217,8 +217,8 @@ class DCOPF(RoutineModel):
     def _post_solve(self):
         # --- post-solving calculations ---
         # line flow: Bf@aBus + Pfinj
-        mats = self.system.mats  # using sparse matrix in MatProcessor is faster
-        self.plf.optz.value = mats.Bf._v@self.aBus.v + mats.Pfinj._v
+        # using sparse matrix in MatProcessor is faster
+        self.plf.optz.value = self.system.mats.Bf._v@self.aBus.v + self.Pfinj.v
         return True
 
     def unpack(self, **kwargs):
