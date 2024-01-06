@@ -128,11 +128,12 @@ class SymProcessor:
             self.inputs_dict[rpname] = tmp
             sub_name = ''
             if isinstance(rparam.owner, MatProcessor):
-                # system matrices are accessed from MatProcessor
+                # sparse matrices are accessed from MatProcessor
+                # otherwise, dense matrices are accessed from Routine
                 if rparam.sparse:
                     sub_name = f'self.rtn.system.mats.{rpname}._v'
                 else:
-                    sub_name = f'self.rtn.system.mats.{rpname}.v'
+                    sub_name = f'self.rtn.{rpname}.v'
             elif rparam.no_parse:
                 sub_name = f'self.rtn.{rpname}.v'
             else:
