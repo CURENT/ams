@@ -70,12 +70,6 @@ class MPBase:
                                src='idx', model='EDTSlot',
                                no_parse=True)
 
-        self.pdsz = NumOpDual(u=self.sd, u2=self.pdz,
-                             fun=np.multiply, rfun=np.transpose,
-                             name='pds', tex_name=r'p_{d,s,z}',
-                             unit='p.u.',
-                             info='Scaled zonal total load')
-
         self.tlv = NumOp(u=self.timeslot, fun=np.ones_like,
                          args=dict(dtype=float),
                          expand_dims=0,
@@ -90,12 +84,13 @@ class MPBase:
         self.R30 = RParam(info='30-min ramp rate',
                           name='R30', tex_name=r'R_{30}',
                           src='R30', unit='p.u./min',
-                          model='StaticGen')
+                          model='StaticGen', no_parse=True,)
         self.Mr = RampSub(u=self.pg, name='Mr', tex_name=r'M_{r}',
-                          info='Subtraction matrix for ramping',)
+                          info='Subtraction matrix for ramping',
+                          no_parse=True, sparse=True,)
         self.RR30 = NumHstack(u=self.R30, ref=self.Mr,
                               name='RR30', tex_name=r'R_{30,R}',
-                              info='Repeated ramp rate',)
+                              info='Repeated ramp rate', no_parse=True,)
 
         self.ctrl.expand_dims = 1
         self.c0.expand_dims = 1
@@ -103,11 +98,14 @@ class MPBase:
         self.pmin.expand_dims = 1
         self.pg0.expand_dims = 1
         self.rate_a.expand_dims = 1
-        self.x.expand_dims = 1
+        self.Pfinj.expand_dims = 1
+        self.Pbusinj.expand_dims = 1
 
         # NOTE: extend pg to 2D matrix: row for gen and col for timeslot
         self.pg.horizon = self.timeslot
         self.pg.info = '2D Gen power'
+        self.aBus.horizon = self.timeslot
+        self.aBus.info = '2D Bus angle'
 
 class ED(RTED):
     """
@@ -175,24 +173,18 @@ class ED(RTED):
         self.prd.info = '2D RegDn power'
 
         self.prs.horizon = self.timeslot
-        self.prsb.e_str = 'mul(ugt, mul(pmax, tlv) - pg) - prs'
+        self.prsb.e_str = 'mul(ugt, pmax@tlv - pg) - prs'
         self.rsr.e_str = '-gs@prs + dsr'
 
         # --- line ---
         self.plf.horizon = self.timeslot
         self.plf.info = '2D Line flow'
-        self.plflb.e_str = '-plf - mul(rate_a, tlv)'
-        self.plfub.e_str = 'plf - mul(rate_a, tlv)'
+        # FIXME:
+        self.plflb.e_str = '-Bf@aBus - Pfinj@tlv - rate_a@tlv'
+        self.plfub.e_str = 'Bf@aBus + Pfinj@tlv - rate_a@tlv'
 
         # --- power balance ---
-        # NOTE: Spg @ pg returns a row vector
-        self.pb.e_str = '- gs @ pg + pdsz'
-
-        self.png.horizon = self.timeslot
-        self.pnb.e_str =  'PTDF@(png - pnd) - plf'
-
-        self.pnd.horizon = self.timeslot
-        self.pndb.e_str = 'Cl@pnd - pds'
+        self.pb.e_str = 'Bbus@aBus + Pbusinj@tlv + Cl@pds + Csh@gsh - Cg@pg'
 
         # --- ramping ---
         self.rbu.e_str = 'gs@mul(ugt, pru) - mul(dud, tlv)'
@@ -220,6 +212,16 @@ class ED(RTED):
         # spinning reserve cost
         cost += ' + sum(csr@prs)'
         self.obj.e_str = cost
+
+    def _post_solve(self):
+        """
+        Overwrite ``_post_solve``.
+        """
+        # --- post-solving calculations ---
+        # line flow: Bf@aBus + Pfinj
+        mats = self.system.mats
+        self.plf.optz.value = mats.Bf._v@self.aBus.v + self.Pfinj.v@self.tlv.v
+        return True
 
     def dc2ac(self, **kwargs):
         """
@@ -275,7 +277,7 @@ class ESD1MPBase(ESD1Base):
 
         self.Mre = RampSub(u=self.SOC, name='Mre', tex_name=r'M_{r,ES}',
                            info='Subtraction matrix for SOC',
-                           no_parse=True)
+                           no_parse=True, sparse=True,)
         self.EnR = NumHstack(u=self.En, ref=self.Mre,
                              name='EnR', tex_name=r'E_{n,R}',
                              info='Repeated En as 2D matrix, (ng, ng-1)')
