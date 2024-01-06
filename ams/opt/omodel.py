@@ -473,7 +473,7 @@ class Constraint(OptzBase):
             raise ValueError(f'Constraint type {self.type} is not supported.')
         code_constr += " <= 0" if self.type == 'uq' else " == 0"
         msg = f"Parse Constr <{self.name}>: {self.e_str} "
-        msg += " <=0 " if self.type == 'uq' else " == 0"
+        msg += " <= 0" if self.type == 'uq' else " == 0"
         logger.debug(msg)
         if not no_code:
             logger.info(f"Code: {code_constr}")
