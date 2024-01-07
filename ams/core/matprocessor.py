@@ -122,6 +122,9 @@ class MatProcessor:
         self.Cft = MParam(name='Cft', tex_name=r'C_{ft}',
                           info='Line connectivity matrix',
                           v=None, sparse=True)
+        self.CftT = MParam(name='CftT', tex_name=r'C_{ft}^{T}',
+                           info='Line connectivity matrix transpose',
+                           v=None, sparse=True)
         self.Cg = MParam(name='Cg', tex_name=r'C_g',
                          info='Generator connectivity matrix',
                          v=None, sparse=True)
@@ -275,4 +278,5 @@ class MatProcessor:
         Csh = c_sparse((np.ones(len(on_shunt_idx)), (row, col)), (nb, nsh))
 
         self.Cg._v, self.Cl._v, self.Cft._v, self.Csh._v = Cg, Cl, Cft, Csh
+        self.CftT._v = Cft.T
         return True
