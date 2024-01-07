@@ -483,8 +483,7 @@ class Constraint(OptzBase):
 
     def __repr__(self):
         enabled = 'OFF' if self.is_disabled else 'ON'
-        out = f"[{enabled}]: {self.e_str}"
-        out += " =0" if self.type == 'eq' else " <=0"
+        out = f"{self.class_name}: {self.name} [{enabled}]"
         return out
 
     @property
@@ -641,13 +640,7 @@ class Objective(OptzBase):
         return True
 
     def __repr__(self):
-        name_str = f"{self.name}=" if self.name is not None else "obj="
-        try:
-            v = self.v
-        except Exception:
-            v = None
-        value_str = f"{v:.4f}, " if v is not None else ""
-        return f"{name_str}{value_str}{self.e_str}"
+        return f"{self.class_name}: {self.name} [{self.sense.upper()}]"
 
 
 class OModel:
