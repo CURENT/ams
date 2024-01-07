@@ -100,6 +100,7 @@ class MPBase:
         self.rate_a.expand_dims = 1
         self.Pfinj.expand_dims = 1
         self.Pbusinj.expand_dims = 1
+        self.gsh.expand_dims = 1
 
         # NOTE: extend pg to 2D matrix: row for gen and col for timeslot
         self.pg.horizon = self.timeslot
@@ -115,11 +116,9 @@ class ED(RTED):
 
     ED extends DCOPF as follows:
 
-    1. Vars ``pg``, ``pru``, ``prd`` are extended to 2D
-
-    2. 2D Vars ``rgu`` and ``rgd`` are introduced
-
-    3. Param ``ug`` is sourced from ``EDTSlot.ug`` as commitment decisions
+    - Vars ``pg``, ``pru``, ``prd`` are extended to 2D
+    - 2D Vars ``rgu`` and ``rgd`` are introduced
+    - Param ``ug`` is sourced from ``EDTSlot.ug`` as commitment decisions
 
     Notes
     -----
@@ -179,12 +178,11 @@ class ED(RTED):
         # --- line ---
         self.plf.horizon = self.timeslot
         self.plf.info = '2D Line flow'
-        # FIXME:
         self.plflb.e_str = '-Bf@aBus - Pfinj@tlv - rate_a@tlv'
         self.plfub.e_str = 'Bf@aBus + Pfinj@tlv - rate_a@tlv'
 
         # --- power balance ---
-        self.pb.e_str = 'Bbus@aBus + Pbusinj@tlv + Cl@pds + Csh@gsh - Cg@pg'
+        self.pb.e_str = 'Bbus@aBus + Pbusinj@tlv + Cl@pds + Csh@gsh@tlv - Cg@pg'
 
         # --- ramping ---
         self.rbu.e_str = 'gs@mul(ugt, pru) - mul(dud, tlv)'
@@ -239,11 +237,6 @@ class ED(RTED):
         # to specify which period to unpack.
         """
         return None
-
-# TODO: add data check
-# if has model ``TimeSlot``, mandatory
-# if has model ``Region``, optional
-# if ``Region``, if ``Bus`` has param ``zone``, optional, if none, auto fill
 
 
 class EDDG(ED, DGBase):

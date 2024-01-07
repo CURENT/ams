@@ -8,7 +8,7 @@ import pandas as pd
 
 from ams.core.param import RParam
 from ams.core.service import (NumOp, NumOpDual, MinDur)
-from ams.routines.dcopf0 import DCOPF
+from ams.routines.dcopf import DCOPF
 from ams.routines.rted import RTEDBase
 from ams.routines.ed import SRBase, MPBase, ESD1MPBase, DGBase
 
@@ -57,8 +57,7 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
     DC-based unit commitment (UC).
     The bilinear term in the formulation is linearized with big-M method.
 
-    Penalty for unserved load is introduced as ``config.cul`` (:math:`c_{ul, cfg}`),
-    1000 [$/p.u.] by default.
+    Penalty for unserved load is introduced as ``DCost.cdp``.
 
     Constraints include power balance, ramping, spinning reserve, non-spinning reserve,
     minimum ON/OFF duration.
@@ -92,11 +91,9 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         NSRBase.__init__(self)
 
         self.config.add(OrderedDict((('t', 1),
-                                     ('cul', 10000),
                                      )))
         self.config.add_extra("_help",
                               t="time interval in hours",
-                              cul="penalty for unserved load, $/p.u.",
                               )
 
         self.info = 'unit commitment'
@@ -115,6 +112,16 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
                           name='csd', tex_name=r'c_{sd}',
                           model='GCost', src='csd',
                           unit='$',)
+        # --- load ---
+        self.cdp = RParam(info='penalty for unserved load',
+                          name='cdp', tex_name=r'c_{d,p}',
+                          model='DCost', src='cdp',
+                          unit=r'$/(p.u.*h)',)
+        self.dctrl = RParam(info='load controllability',
+                            name='dctrl', tex_name=r'c_{trl,d}',
+                            model='StaticLoad', src='ctrl',
+                            expand_dims=1,
+                            no_parse=True,)
         # --- gen ---
         self.td1 = RParam(info='minimum ON duration',
                           name='td1', tex_name=r't_{d1}',
@@ -129,7 +136,6 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         self.sd.model = 'UCTSlot'
 
         self.ug.expand_dims = 1
-        self.x.expand_dims = 1
 
         # --- Model Section ---
         # --- gen ---
@@ -230,15 +236,19 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         self.plflb.e_str = '-plf - mul(rate_a, tlv)'
         self.plfub.e_str = 'plf - mul(rate_a, tlv)'
 
+        # --- unserved load ---
+        self.pdu = Var(info='unserved demand',
+                       name='pdu', tex_name=r'p_{d,u}',
+                       model='StaticLoad', unit='p.u.',
+                       horizon=self.timeslot,
+                       nonneg=True,)
+        self.pdumax = Constraint(info='unserved demand upper bound',
+                                 name='pdumax', type='uq',
+                                 e_str='pdu - mul(pds, dctrl@tlv)')
         # --- power balance ---
-        self.pb.e_str = 'gs @ zug - pdsz'  # power balance
-        self.pb.type = 'uq'  # soft constraint
-
-        self.png.horizon = self.timeslot
-        self.pnb.e_str =  'PTDF@(png - pnd) - plf'
-
-        self.pnd.horizon = self.timeslot
-        self.pndb.e_str = 'Cl@pnd - pds'
+        # NOTE: nodal balance is also contributed by unserved load
+        pb = 'Bbus@aBus + Pbusinj@tlv + Cl@pds + Csh@gsh@tlv + Cl@pdu - Cg@pg - Cl@pdu'
+        self.pb.e_str = pb
 
         # --- objective ---
         gcost = 'sum(c2 @ (t dot zug)**2 + c1 @ (t dot zug))'
@@ -246,7 +256,7 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         acost = ' + sum(csu * vgd + csd * wgd)'  # action
         srcost = ' + sum(csr @ prs)'  # spinning reserve
         nsrcost = ' + sum(cnsr @ prns)'  # non-spinning reserve
-        dcost = ' + sum(cul dot pos(pdsz - gs @ pg))'  # unserved load
+        dcost = ' + sum(cdp @ pdu)'  # unserved load
         self.obj.e_str = gcost + acost + srcost + nsrcost + dcost
 
     def _initial_guess(self):
@@ -286,6 +296,16 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
             ug0 = 0
         self.system.StaticGen.set(src='u', attr='v', idx=g_idx, value=ug0)
         logger.warning(f'Turn off StaticGen {g_idx} as initial commitment guess.')
+        return True
+
+    def _post_solve(self):
+        """
+        Overwrite ``_post_solve``.
+        """
+        # --- post-solving calculations ---
+        # line flow: Bf@aBus + Pfinj
+        mats = self.system.mats
+        self.plf.optz.value = mats.Bf._v@self.aBus.v + self.Pfinj.v@self.tlv.v
         return True
 
     def init(self, **kwargs):
