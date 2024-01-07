@@ -61,7 +61,6 @@ class RoutineModel:
         self.constrs = OrderedDict()
         self.obj = None
         self.initialized = False
-        self.prepared = False  # whether data check and mat_make are done
         self.type = "UndefinedType"
         self.docum = RDocumenter(self)
 
@@ -281,8 +280,7 @@ class RoutineModel:
         # TODO: add data validation for RParam, typical range, etc.
         return True
 
-    def init(self, force=False, make_mats=False, no_code=True,
-             **kwargs):
+    def init(self, force=False, no_code=True, **kwargs):
         """
         Setup optimization model.
 
@@ -290,13 +288,10 @@ class RoutineModel:
         ----------
         force: bool
             Whether to force initialization.
-        make_mats: bool
-            Whether to build system matrices.
         no_code: bool
             Whether to show generated code.
         """
         skip_all = (not force) and self.initialized and self.om.initialized
-        skip_prep = (not force) and self.prepared
         skip_ominit = (not force) and self.om.initialized
 
         if skip_all:
@@ -304,19 +299,17 @@ class RoutineModel:
             return True
 
         t0, _ = elapsed()
-        if not skip_prep:
-            if self._data_check():
-                logger.debug(f"{self.class_name} data check passed.")
-            else:
-                msg = f"{self.class_name} data check failed, setup may run into error!"
-                logger.warning(msg)
-            self._constr_check()
-            if make_mats:
-                t_mat, _ = elapsed()
-                self.system.mats.make()
-                _, s_mat = elapsed(t_mat)
-                logger.debug(f"Built system matrices in {s_mat}.")
-            self.prepared = True
+        if self._data_check():
+            logger.debug(f"{self.class_name} data check passed.")
+        else:
+            msg = f"{self.class_name} data check failed, setup may run into error!"
+            logger.warning(msg)
+        self._constr_check()
+        if force:
+            t_mat, _ = elapsed()
+            self.system.mats.make()
+            _, s_mat = elapsed(t_mat)
+            logger.debug(f"Built system matrices in {s_mat}.")
 
         if not skip_ominit:
             om_init = self.om.init(no_code=no_code)
@@ -330,8 +323,9 @@ class RoutineModel:
             self.initialized = True
         else:
             msg += "initialization failed!"
+            self.initialized = False
         logger.info(msg)
-        return True
+        return self.initialized
 
     def prepare(self):
         """
