@@ -84,10 +84,10 @@ class SFRCost(ModelData, Model):
         self.gen = IdxParam(info="static generator index",
                             model='StaticGen',
                             mandatory=True,)
-        self.cru = NumParam(default=0, power=False,
+        self.cru = NumParam(default=0,
                             tex_name=r'c_{r}', unit=r'$/(p.u.*h)',
                             info='cost for RegUp reserve',)
-        self.crd = NumParam(default=0,  power=False,
+        self.crd = NumParam(default=0,
                             tex_name=r'c_{r}', unit=r'$/(p.u.*h)',
                             info='cost for RegDn reserve',)
 
@@ -103,7 +103,7 @@ class SRCost(ModelData, Model):
         self.gen = IdxParam(info="static generator index",
                             model='StaticGen',
                             mandatory=True,)
-        self.csr = NumParam(default=0, power=False,
+        self.csr = NumParam(default=0,
                             tex_name=r'c_{sr}', unit=r'$/(p.u.*h)',
                             info='cost for spinning reserve',)
 
@@ -119,9 +119,24 @@ class NSRCost(ModelData, Model):
         self.gen = IdxParam(info="static generator index",
                             model='StaticGen',
                             mandatory=True,)
-        self.cnsr = NumParam(default=0, power=False,
+        self.cnsr = NumParam(default=0,
                              tex_name=r'c_{nsr}', unit=r'$/(p.u.*h)',
                              info='cost for non-spinning reserve',)
+
+
+class DCost(ModelData, Model):
+    """
+    Linear cost model for dispatchable loads.
+    """
+    def __init__(self, system, config):
+        ModelData.__init__(self)
+        Model.__init__(self, system, config)
+        self.group = 'Cost'
+        self.pq = IdxParam(info="static load index",
+                           mandatory=True,)
+        self.cdp = NumParam(default=999,
+                            tex_name=r'c_{d,p}', unit=r'$/(p.u.*h)',
+                            info='cost for unserve load penalty',)
 
 
 class VSGCostData(ModelData):
@@ -133,13 +148,11 @@ class VSGCostData(ModelData):
                             )
         self.cm = NumParam(default=0,
                            info='cost for emulated inertia (M)',
-                           power=False,
                            tex_name=r'c_{r}',
                            unit=r'$/s',
                            )
         self.cd = NumParam(default=0,
                            info='cost for emulated damping (D)',
-                           power=False,
                            tex_name=r'c_{r}',
                            unit=r'$/p.u.',
                            )
