@@ -565,7 +565,7 @@ class Objective(OptzBase):
         OptzBase.__init__(self, name=name, info=info, unit=unit)
         self.e_str = e_str
         self.sense = sense
-        self._v = None
+        self._v = 0
         self.code = None
 
     @property
@@ -664,10 +664,6 @@ class OModel:
         Constraints.
     obj: Objective
         Objective function.
-    n: int
-        Number of decision variables.
-    m: int
-        Number of constraints.
     """
 
     def __init__(self, routine):
@@ -677,32 +673,22 @@ class OModel:
         self.vars = OrderedDict()
         self.constrs = OrderedDict()
         self.obj = None
-        self.n = 0  # number of decision variables
-        self.m = 0  # number of constraints
-
-    def setup(self, no_code=True, force_generate=False):
+        self.initialized = False
+        self._parsed = False
+        
+    def _parse(self, no_code=True):
         """
-        Set up the optimization model from the symbolic description.
-
-        This method initializes the optimization model by parsing decision variables,
-        constraints, and the objective function from the associated routine.
-
+        Parse the optimization model from the symbolic description.
+    
         Parameters
         ----------
         no_code : bool, optional
             Flag indicating if the parsing code should be displayed,
             True by default.
-        force_generate : bool, optional
-            If True, forces the regeneration of symbolic expressions,
-            True by default.
-
-        Returns
-        -------
-        bool
-            Returns True if the setup is successful, False otherwise.
         """
         rtn = self.rtn
-        rtn.syms.generate_symbols(force_generate=force_generate)
+        rtn.syms.generate_symbols(force_generate=False)
+
         # --- add RParams and Services as parameters ---
         t0, _ = elapsed()
         for key, val in rtn.params.items():
@@ -716,6 +702,7 @@ class OModel:
                 setattr(self, key, val.optz)
         _, s = elapsed(t0)
         logger.debug(f"Parse Params in {s}")
+
         # --- add decision variables ---
         t0, _ = elapsed()
         for key, val in rtn.vars.items():
@@ -728,8 +715,9 @@ class OModel:
             setattr(self, key, val.optz)
         _, s = elapsed(t0)
         logger.debug(f"Parse Vars in {s}")
-        t0, _ = elapsed()
+
         # --- add constraints ---
+        t0, _ = elapsed()
         for key, val in rtn.constrs.items():
             try:
                 val.parse(no_code=no_code)
@@ -740,36 +728,76 @@ class OModel:
             setattr(self, key, val.optz)
         _, s = elapsed(t0)
         logger.debug(f"Parse Constrs in {s}")
-        # --- parse objective functions ---
-        if rtn.type == 'PF':
-            # NOTE: power flow type has no objective function
-            pass
-        elif rtn.obj is not None:
-            try:
-                rtn.obj.parse(no_code=no_code)
-            except Exception as e:
-                msg = f"Failed to parse Objective <{rtn.obj.name}>. "
-                msg += f"Original error: {e}"
-                raise Exception(msg)
 
+        # --- parse objective functions ---
+        t0, _ = elapsed()
+        if rtn.type != 'PF':
+            if rtn.obj is not None:
+                try:
+                    rtn.obj.parse(no_code=no_code)
+                except Exception as e:
+                    msg = f"Failed to parse Objective <{rtn.obj.name}>. "
+                    msg += f"Original error: {e}"
+                    raise Exception(msg)
+            else:
+                logger.warning(f"{rtn.class_name} has no objective function!")
+                _, s = elapsed(t0)
+                self._parsed = False
+                return self._parsed
+        _, s = elapsed(t0)
+        logger.debug(f"Parse Objective in {s}")
+
+        self._parsed = True
+        return self._parsed
+
+    def init(self, no_code=True):
+        """
+        Set up the optimization model from the symbolic description.
+
+        This method initializes the optimization model by parsing decision variables,
+        constraints, and the objective function from the associated routine.
+
+        Parameters
+        ----------
+        no_code : bool, optional
+            Flag indicating if the parsing code should be displayed,
+            True by default.
+
+        Returns
+        -------
+        bool
+            Returns True if the setup is successful, False otherwise.
+        """
+        t_setup, _ = elapsed()
+
+        if not self._parsed:
+            self._parse(no_code=no_code)
+
+        if self.rtn.type != 'PF':
             # --- finalize the optimziation formulation ---
-            code_prob = "self.prob = problem(self.obj,"
-            code_prob += "[constr for constr in self.constrs.values()])"
+            code_prob = "self.prob = problem(self.obj, "
+            constrs_skip = []
+            constrs_add = []
+            for key, val in self.rtn.constrs.items():
+                if (val is None) or (val.is_disabled):
+                    constrs_skip.append(f'<{key}>')
+                else:
+                    constrs_add.append(val.optz)
+            code_prob += f"[constr for constr in constrs_add])"
             for pattern, replacement in self.rtn.syms.sub_map.items():
                 code_prob = re.sub(pattern, replacement, code_prob)
+            msg = f"Finalize: {code_prob}"
+            if len(constrs_skip) > 0:
+                msg += f"; Skipped constrs: "
+                msg += ", ".join(constrs_skip)
+            logger.info(msg)
             exec(code_prob, globals(), locals())
 
-        # --- count ---
-        n_list = [cpvar.size for cpvar in self.vars.values()]
-        self.n = np.sum(n_list)  # number of decision variables
-        m_list = [cpconstr.size for cpconstr in self.constrs.values()]
-        self.m = np.sum(m_list)  # number of constraints
+        _, s_setup = elapsed(t_setup)
+        self.initialized = True
+        logger.debug(f"OModel for <{self.rtn.class_name}> initialized in {s_setup}.")
 
-        if rtn.type != 'PF' and rtn.obj is None:
-            logger.warning(f"{rtn.class_name} has no objective function.")
-            return False
-
-        return True
+        return self.initialized
 
     @property
     def class_name(self):
