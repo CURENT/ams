@@ -1,7 +1,7 @@
-from collections import OrderedDict  # NOQA
+from collections import OrderedDict
 
-from andes.core.param import ExtParam  # NOQA
-from andes.models.static.pq import PQData  # NOQA
+from andes.core.param import NumParam, ExtParam
+from andes.models.static.pq import PQData
 
 from ams.core.model import Model
 
@@ -56,3 +56,6 @@ class PQ(PQData, Model):
         self.zone = ExtParam(model='Bus', src='zone', indexer=self.bus, export=False,
                              info='Retrieved zone idx', vtype=str, default=None,
                              )
+        self.ctrl = NumParam(default=1,
+                             info="load controllability",
+                             tex_name=r'c_{trl}',)
