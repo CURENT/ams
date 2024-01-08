@@ -337,14 +337,18 @@ class Var(OptzBase):
         """
         Return the CVXPY variable value.
         """
-        try:
-            out = self.optz.value
-        except Exception:
-            out = None
-        return out
+        if self.optz.value is None:
+            try:
+                shape = self.optz.shape
+                return np.zeros(shape)
+            except AttributeError:
+                return None
+        else:
+            return self.optz.value
 
     @v.setter
     def v(self, value):
+        # FIXME: is this safe?
         self._v = value
 
     def get_idx(self):
@@ -521,10 +525,14 @@ class Constraint(OptzBase):
         """
         Return the CVXPY constraint LHS value.
         """
-        if self.name in self.om.constrs:
-            return self.om.constrs[self.name]._expr.value
+        if self._expr.value is None:
+            try:
+                shape = self._expr.shape
+                return np.zeros(shape)
+            except AttributeError:
+                return None
         else:
-            return None
+            return self._expr.value
 
 
 class Objective(OptzBase):
