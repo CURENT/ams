@@ -54,15 +54,15 @@ class NSRBase:
 
 class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
     """
-    DC-based unit commitment (UC).
+    DC-based unit commitment (UC):
     The bilinear term in the formulation is linearized with big-M method.
 
-    Penalty for unserved load is introduced as ``DCost.cdp``.
+    Non-negative var `pdu` is introduced as unserved load with its penalty `cdp`.
 
     Constraints include power balance, ramping, spinning reserve, non-spinning reserve,
     minimum ON/OFF duration.
     The cost inludes generation cost, startup cost, shutdown cost, spinning reserve cost,
-    non-spinning reserve cost, and unserved energy penalty.
+    non-spinning reserve cost, and unserved load penalty.
 
     Method ``_initial_guess`` is used to make initial guess for commitment decision if all
     generators are online at initial. It is a simple heuristic method, which may not be optimal.
@@ -116,6 +116,7 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         self.cdp = RParam(info='penalty for unserved load',
                           name='cdp', tex_name=r'c_{d,p}',
                           model='DCost', src='cdp',
+                          no_parse=True,
                           unit=r'$/(p.u.*h)',)
         self.dctrl = RParam(info='load controllability',
                             name='dctrl', tex_name=r'c_{trl,d}',
@@ -242,12 +243,16 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
                        model='StaticLoad', unit='p.u.',
                        horizon=self.timeslot,
                        nonneg=True,)
+        self.pdsp = NumOp(u=self.pds, fun=np.clip,
+                          args=dict(a_min=0, a_max=None),
+                          info='positive demand',
+                          name='pdsp', tex_name=r'p_{d,s}^{+}',)
         self.pdumax = Constraint(info='unserved demand upper bound',
                                  name='pdumax', type='uq',
-                                 e_str='pdu - mul(pds, dctrl@tlv)')
+                                 e_str='pdu - mul(pdsp, dctrl@tlv)')
         # --- power balance ---
         # NOTE: nodal balance is also contributed by unserved load
-        pb = 'Bbus@aBus + Pbusinj@tlv + Cl@pds + Csh@gsh@tlv + Cl@pdu - Cg@pg - Cl@pdu'
+        pb = 'Bbus@aBus + Pbusinj@tlv + Cl@(pds-pdu) + Csh@gsh@tlv - Cg@pg'
         self.pb.e_str = pb
 
         # --- objective ---
