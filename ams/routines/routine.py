@@ -282,7 +282,12 @@ class RoutineModel:
 
     def init(self, force=False, no_code=True, **kwargs):
         """
-        Setup optimization model.
+        Initialize the routine.
+
+        Force initialization (`force=True`) will do the following:
+        - Rebuild the system matrices
+        - Enable all constraints
+        - Reinitialize the optimization model
 
         Parameters
         ----------
@@ -304,12 +309,14 @@ class RoutineModel:
         else:
             msg = f"{self.class_name} data check failed, setup may run into error!"
             logger.warning(msg)
-        self._constr_check()
         if force:
             t_mat, _ = elapsed()
             self.system.mats.make()
             _, s_mat = elapsed(t_mat)
             logger.debug(f"Built system matrices in {s_mat}.")
+            for constr in self.constrs.values():
+                constr.is_disabled = False
+        self._constr_check()
 
         if not skip_ominit:
             om_init = self.om.init(no_code=no_code)
@@ -356,6 +363,11 @@ class RoutineModel:
         """
         Run the routine.
 
+        Force initialization (`force_init=True`) will do the following:
+        - Rebuild the system matrices
+        - Enable all constraints
+        - Reinitialize the optimization model
+
         Parameters
         ----------
         force_init: bool
@@ -365,12 +377,6 @@ class RoutineModel:
         """
         # --- setup check ---
         self.init(force=force_init, no_code=no_code)
-        # NOTE: if the model data is altered, we need to re-setup the model
-        # this implementation if not efficient at large-scale
-        # FIXME: find a more efficient way to update the OModel values if
-        # the system data is altered
-        # elif self.exec_time > 0:
-        #     self.init(no_code=no_code)
         # --- solve optimization ---
         t0, _ = elapsed()
         _ = self.solve(**kwargs)
