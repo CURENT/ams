@@ -255,9 +255,14 @@ class RoutineModel:
             logger.warning(msg)
         return True
 
-    def _data_check(self):
+    def _data_check(self, info=True):
         """
         Check if data is valid for a routine.
+
+        Parameters
+        ----------
+        info: bool
+            Whether to print warning messages.
         """
         no_input = []
         owner_list = []
@@ -274,8 +279,9 @@ class RoutineModel:
                 if not np.all(rparam.v > 0):
                     logger.warning(f"RParam <{rname}> should have all positive values.")
         if len(no_input) > 0:
-            msg = f"Following models are missing in input: {set(owner_list)}"
-            logger.warning(msg)
+            if info:
+                msg = f"Following models are missing in input: {set(owner_list)}"
+                logger.warning(msg)
             return False
         # TODO: add data validation for RParam, typical range, etc.
         return True

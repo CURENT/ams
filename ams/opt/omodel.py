@@ -480,7 +480,7 @@ class Constraint(OptzBase):
         msg += " <= 0" if self.type == 'uq' else " == 0"
         logger.debug(msg)
         if not no_code:
-            logger.info(f"Code: {code_constr}")
+            logger.info(f"<{self.name}> code: {code_constr}")
         # set the parsed constraint
         exec(code_constr, globals(), locals())
         return True
@@ -798,7 +798,7 @@ class OModel:
             if len(constrs_skip) > 0:
                 msg += f"; Skipped constrs: "
                 msg += ", ".join(constrs_skip)
-            logger.info(msg)
+            logger.debug(msg)
             exec(code_prob, globals(), locals())
 
         _, s_setup = elapsed(t_setup)
