@@ -337,6 +337,8 @@ class Var(OptzBase):
         """
         Return the CVXPY variable value.
         """
+        if self.optz is None:
+            return None
         if self.optz.value is None:
             try:
                 shape = self.optz.shape
@@ -525,14 +527,16 @@ class Constraint(OptzBase):
         """
         Return the CVXPY constraint LHS value.
         """
-        if self._expr.value is None:
+        if self.optz is None:
+            return None
+        if self.optz._expr.value is None:
             try:
                 shape = self._expr.shape
                 return np.zeros(shape)
             except AttributeError:
                 return None
         else:
-            return self._expr.value
+            return self.optz._expr.value
 
 
 class Objective(OptzBase):
@@ -611,6 +615,8 @@ class Objective(OptzBase):
         """
         Return the CVXPY objective value.
         """
+        if self.optz is None:
+            return None
         out = self.om.obj.value
         out = self._v if out is None else out
         return out
