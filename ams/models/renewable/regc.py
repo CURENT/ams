@@ -65,7 +65,7 @@ class REGCV1(REGCData, Model):
     -----
     - The generation is defined by group :ref:`StaticGen`
     - Generation cost is defined by model :ref:`GCost`
-    - Inertia emulation cost is defined by model :ref:`REGCV1Cost`
+    - Inertia emulation cost is defined by model :ref:`VSGCost`
 
     Reference:
 
