@@ -33,11 +33,27 @@ class TestRoutineMethods(unittest.TestCase):
     """
     Test methods of `Routine`.
     """
+
     def setUp(self) -> None:
-        self.ss = ams.load(ams.get_case("ieee39/ieee39_uced_esd1.xlsx"),
+        self.ss = ams.load(ams.get_case("ieee39/ieee39_uced.xlsx"),
                            default_config=True,
                            no_output=True,
                            )
+
+    def test_data_check(self):
+        """
+        Test `Routine._data_check()` method.
+        """
+
+        self.assertTrue(self.ss.DCOPF._data_check())
+        self.assertFalse(self.ss.RTEDES._data_check())
+
+    def test_get_off_constrs(self):
+        """
+        Test `Routine._get_off_constrs()` method.
+        """
+
+        self.assertIsInstance(self.ss.DCOPF._get_off_constrs(), list)
 
     def test_routine_set(self):
         """
@@ -61,33 +77,12 @@ class TestRoutineMethods(unittest.TestCase):
         np.testing.assert_equal(self.ss.DCOPF.get('pg', 'PV_30', 'v'),
                                 self.ss.StaticGen.get('p', 'PV_30', 'v'))
 
-
-class TestRoutineInit(unittest.TestCase):
-    """
-    Test solving routines.
-    """
-    def setUp(self) -> None:
-        self.s1 = ams.load(ams.get_case("ieee39/ieee39_uced_esd1.xlsx"),
-                           default_config=True,
-                           no_output=True,
-                           )
-        self.s2 = ams.load(ams.get_case("ieee123/ieee123_regcv1.xlsx"),
-                           default_config=True,
-                           no_output=True,
-                           )
-
-    def test_Init(self):
+    def test_rouine_init(self):
         """
-        Test `routine.init()`.
+        Test `Routine.init()` method.
         """
-        # NOTE: for DED, using ieee123 as a test case
-        for rtn in self.s1.routines.values():
-            if not rtn._data_check():
-                rtn = getattr(self.s2, rtn.class_name)
-                if not rtn._data_check():
-                    continue  # TODO: here should be a warning?
-            self.assertTrue(rtn.init(force=True),
-                            f"{rtn.class_name} initialization failed!")
+
+        self.assertTrue(self.ss.DCOPF.init(), "DCOPF initialization failed!")
 
 
 @unittest.skipUnless(HAVE_IGRAPH, "igraph not available")
