@@ -240,20 +240,15 @@ class RoutineModel:
         """
         return self.docum.get(max_width=max_width, export=export)
 
-    def _constr_check(self):
+    def _get_off_constrs(self):
         """
-        Chcek if constraints are in-use.
+        Chcek if constraints are turned off.
         """
         disabled = []
         for cname, c in self.constrs.items():
             if c.is_disabled:
                 disabled.append(cname)
-        if len(disabled) > 0:
-            msg = "Disabled constraints: "
-            d_str = [f'{constr}' for constr in disabled]
-            msg += ", ".join(d_str)
-            logger.warning(msg)
-        return True
+        return disabled
 
     def _data_check(self, info=True):
         """
@@ -310,11 +305,14 @@ class RoutineModel:
             return True
 
         t0, _ = elapsed()
+        # --- data check ---
         if self._data_check():
             logger.debug(f"{self.class_name} data check passed.")
         else:
             msg = f"{self.class_name} data check failed, setup may run into error!"
             logger.warning(msg)
+
+        # --- matrix build ---
         if force:
             t_mat, _ = elapsed()
             self.system.mats.make()
@@ -322,7 +320,14 @@ class RoutineModel:
             logger.debug(f"Built system matrices in {s_mat}.")
             for constr in self.constrs.values():
                 constr.is_disabled = False
-        self._constr_check()
+
+        # --- constraint check ---
+        disabled = self._get_off_constrs()
+        if len(disabled) > 0:
+            msg = "Disabled constraints: "
+            d_str = [f'{constr}' for constr in disabled]
+            msg += ", ".join(d_str)
+            logger.warning(msg)
 
         if not skip_ominit:
             om_init = self.om.init(no_code=no_code)
