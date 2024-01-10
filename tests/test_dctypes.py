@@ -12,8 +12,7 @@ def require_MIP_solver(f):
     """
     def wrapper(*args, **kwargs):
         all_solvers = cp.installed_solvers()
-        mip_solvers = ['CBC', 'COPT', 'GLPK_MI', 'CPLEX', 'GUROBI',
-                       'MOSEK', 'SCIP', 'XPRESS', 'SCIPY']
+        mip_solvers = ['CPLEX', 'GUROBI', 'MOSEK']
         if any(s in mip_solvers for s in all_solvers):
             pass
         else:
