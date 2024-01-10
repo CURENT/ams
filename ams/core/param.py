@@ -146,6 +146,7 @@ class RParam(Param):
         self.owner = None  # instance of the owner model or group
         self.rtn = None  # instance of the owner routine
         self.is_ext = False  # indicate if the value is set externally
+        self._v = None  # external value
         if v is not None:
             self._v = v
             self.is_ext = True

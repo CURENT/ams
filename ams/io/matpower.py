@@ -58,7 +58,7 @@ def mpc2system(mpc: dict, system) -> bool:
 
     for data in mpc['bus']:
         # idx  ty   pd   qd  gs  bs  area  vmag  vang  baseKV  zone  vmax  vmin
-        # 0    1    2   3   4   5    6      7     8     9      10    11    12
+        # 0    1    2    3   4   5   6     7     8     9       10    11    12
         idx = int(data[0])
         ty = data[1]
         if ty == 3:
@@ -87,13 +87,23 @@ def mpc2system(mpc: dict, system) -> bool:
             system.add('Shunt', bus=idx, name='Shunt ' + str(idx), Vn=baseKV, g=gs, b=bs)
 
     gen_idx = 0
-    for data in mpc['gen']:
-        # bus  pg  qg  qmax  qmin  vg  mbase  status  pmax  pmin  pc1  pc2
-        #  0   1    2    3         4       5   6          7         8        9       10    11
-        # qc1min  qc1max  qc2min  qc2max  ramp_agc  ramp_10  ramp_30  ramp_q
-        #  12      13           14         15          16            17           18           19
-        # apf
-        #  20
+    if mpc['gen'].shape[1] <= 10:  # missing data
+        mpc_gen = np.zeros((mpc['gen'].shape[0], 21), dtype=np.float64)
+        mpc_gen[:, :10] = mpc['gen']
+        mbase = base_mva
+        mpc_gen[:, 16] = system.PV.Ragc.default * mbase / 60
+        mpc_gen[:, 17] = system.PV.R10.default * mbase / 6
+        mpc_gen[:, 18] = system.PV.R30.default * mbase / 2
+        mpc_gen[:, 19] = system.PV.Rq.default * mbase / 60
+    else:
+        mpc_gen = mpc['gen']
+    for data in mpc_gen:
+        # bus  pg  qg  qmax  qmin  vg  mbase  status  pmax  pmin
+        # 0    1   2   3     4     5   6      7       8     9
+        # pc1  pc2  qc1min  qc1max  qc2min  qc2max  ramp_agc  ramp_10
+        # 10   11   12      13      14      15      16        17
+        # ramp_30  ramp_q  apf
+        # 18       19      20
 
         bus_idx = int(data[0])
         gen_idx += 1
@@ -151,9 +161,9 @@ def mpc2system(mpc: dict, system) -> bool:
 
     for data in mpc['branch']:
         # fbus	tbus	r	x	b	rateA	rateB	rateC	ratio	angle
-        #  0     1        2  3   4   5         6         7         8        9
+        # 0     1       2   3   4   5       6       7       8       9
         # status	angmin	angmax	Pf	Qf	Pt	Qt
-        # 10        11          12         13  14 15 16
+        # 10        11      12      13  14  15  16
         fbus = int(data[0])
         tbus = int(data[1])
         r = data[2]
@@ -195,7 +205,7 @@ def mpc2system(mpc: dict, system) -> bool:
     for data, gen in zip(mpc['gencost'], gen_idx):
         # NOTE: only type 2 costs are supported for now
         # type  startup shutdown	n	c2  c1  c0
-        # 0     1           2               3   4   5   6
+        # 0     1       2           3   4   5   6
         if data[0] != 2:
             raise ValueError('Only MODEL 2 costs are supported')
         # TODO: Add Model 1

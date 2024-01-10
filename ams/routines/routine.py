@@ -240,30 +240,33 @@ class RoutineModel:
         """
         return self.docum.get(max_width=max_width, export=export)
 
-    def _constr_check(self):
+    def _get_off_constrs(self):
         """
-        Chcek if constraints are in-use.
+        Chcek if constraints are turned off.
         """
         disabled = []
         for cname, c in self.constrs.items():
             if c.is_disabled:
                 disabled.append(cname)
-        if len(disabled) > 0:
-            msg = "Disabled constraints: "
-            d_str = [f'<{constr}>' for constr in disabled]
-            msg += ", ".join(d_str)
-            logger.warning(msg)
-        return True
+        return disabled
 
-    def _data_check(self):
+    def _data_check(self, info=True):
         """
         Check if data is valid for a routine.
+
+        Parameters
+        ----------
+        info: bool
+            Whether to print warning messages.
         """
         no_input = []
         owner_list = []
         for rname, rparam in self.rparams.items():
             if rparam.owner is not None:
-                if rparam.owner.n == 0:
+                # NOTE: skip checking Shunt.g
+                if (rparam.owner.class_name == 'Shunt') and (rparam.src == 'g'):
+                    pass
+                elif rparam.owner.n == 0:
                     no_input.append(rname)
                     owner_list.append(rparam.owner.class_name)
             # TODO: add more data config check?
@@ -271,57 +274,76 @@ class RoutineModel:
                 if not np.all(rparam.v > 0):
                     logger.warning(f"RParam <{rname}> should have all positive values.")
         if len(no_input) > 0:
-            msg = f"Following models are missing in input: {set(owner_list)}"
-            logger.warning(msg)
+            if info:
+                msg = f"Following models are missing in input: {set(owner_list)}"
+                logger.warning(msg)
             return False
         # TODO: add data validation for RParam, typical range, etc.
         return True
 
-    def init(self,
-             force=True,
-             make_mats=False,
-             no_code=True,
-             **kwargs):
+    def init(self, force=False, no_code=True, **kwargs):
         """
-        Setup optimization model.
+        Initialize the routine.
+
+        Force initialization (`force=True`) will do the following:
+        - Rebuild the system matrices
+        - Enable all constraints
+        - Reinitialize the optimization model
 
         Parameters
         ----------
         force: bool
             Whether to force initialization.
-        make_mats: bool
-            Whether to build system matrices.
         no_code: bool
             Whether to show generated code.
         """
-        if not force and self.initialized:
+        skip_all = (not force) and self.initialized and self.om.initialized
+        skip_ominit = (not force) and self.om.initialized
+
+        if skip_all:
             logger.debug(f"{self.class_name} has already been initialized.")
             return True
+
         t0, _ = elapsed()
+        # --- data check ---
         if self._data_check():
             logger.debug(f"{self.class_name} data check passed.")
         else:
             msg = f"{self.class_name} data check failed, setup may run into error!"
             logger.warning(msg)
-        self._constr_check()
-        if make_mats:
+
+        # --- matrix build ---
+        if force:
             t_mat, _ = elapsed()
             self.system.mats.make()
             _, s_mat = elapsed(t_mat)
             logger.debug(f"Built system matrices in {s_mat}.")
-        t_setup, _ = elapsed()
-        results = self.om.setup(no_code=no_code)
-        _, s_setup = elapsed(t_setup)
+            for constr in self.constrs.values():
+                constr.is_disabled = False
+
+        # --- constraint check ---
+        disabled = self._get_off_constrs()
+        if len(disabled) > 0:
+            msg = "Disabled constraints: "
+            d_str = [f'{constr}' for constr in disabled]
+            msg += ", ".join(d_str)
+            logger.warning(msg)
+
+        if not skip_ominit:
+            om_init = self.om.init(no_code=no_code)
+        else:
+            om_init = True
         _, s_init = elapsed(t0)
-        logger.debug(f"Set up OModel in {s_setup}.")
-        common_msg = f"Routine <{self.class_name}> "
-        if results:
-            msg = f"initialized in {s_init}."
+
+        msg = f"Routine <{self.class_name}> "
+        if om_init:
+            msg += f"initialized in {s_init}."
             self.initialized = True
         else:
-            msg = "initialization failed!"
-        logger.info(common_msg + msg)
-        return results
+            msg += "initialization failed!"
+            self.initialized = False
+        logger.info(msg)
+        return self.initialized
 
     def prepare(self):
         """
@@ -334,7 +356,6 @@ class RoutineModel:
         """
         Solve the routine optimization model.
         """
-        pass
         return True
 
     def unpack(self, **kwargs):
@@ -343,9 +364,20 @@ class RoutineModel:
         """
         return None
 
+    def _post_solve(self):
+        """
+        Post-solve calculation.
+        """
+        return None
+
     def run(self, force_init=False, no_code=True, **kwargs):
         """
         Run the routine.
+
+        Force initialization (`force_init=True`) will do the following:
+        - Rebuild the system matrices
+        - Enable all constraints
+        - Reinitialize the optimization model
 
         Parameters
         ----------
@@ -356,12 +388,6 @@ class RoutineModel:
         """
         # --- setup check ---
         self.init(force=force_init, no_code=no_code)
-        # NOTE: if the model data is altered, we need to re-setup the model
-        # this implementation if not efficient at large-scale
-        # FIXME: find a more efficient way to update the OModel values if
-        # the system data is altered
-        # elif self.exec_time > 0:
-        #     self.init(no_code=no_code)
         # --- solve optimization ---
         t0, _ = elapsed()
         _ = self.solve(**kwargs)
@@ -381,6 +407,7 @@ class RoutineModel:
             msg += n_iter_str + f"using solver {sstats.solver_name}."
             logger.warning(msg)
             self.unpack(**kwargs)
+            self._post_solve()
             return True
         else:
             msg = f"{self.class_name} failed as {status} after "
@@ -606,12 +633,11 @@ class RoutineModel:
             for n in name:
                 if n not in self.constrs:
                     logger.warning(f"Constraint <{n}> not found.")
-                    continue
-                if self.constrs[n].is_disabled:
+                elif self.constrs[n].is_disabled:
                     logger.warning(f"Constraint <{n}> has already been disabled.")
-                    continue
-                self.constrs[n].is_disabled = True
-                self.initialized = False
+                else:
+                    self.constrs[n].is_disabled = True
+                    self.om.initialized = False
             return True
 
         if name in self.constrs:
@@ -619,7 +645,7 @@ class RoutineModel:
                 logger.warning(f"Constraint <{name}> has already been disabled.")
             else:
                 self.constrs[name].is_disabled = True
-                self.initialized = False
+                self.om.initialized = False
                 logger.warning(f"Disable constraint <{name}>.")
             return True
 

@@ -1,15 +1,15 @@
 """
 Real-time economic dispatch.
 """
-import logging  # NOQA
-from collections import OrderedDict  # NOQA
-import numpy as np  # NOQA
+import logging
+from collections import OrderedDict
+import numpy as np
 
-from ams.core.param import RParam  # NOQA
-from ams.core.service import ZonalSum, VarSelect, NumOp, NumOpDual  # NOQA
-from ams.routines.dcopf import DCOPF  # NOQA
+from ams.core.param import RParam
+from ams.core.service import ZonalSum, VarSelect, NumOp, NumOpDual
+from ams.routines.dcopf import DCOPF
 
-from ams.opt.omodel import Var, Constraint  # NOQA
+from ams.opt.omodel import Var, Constraint
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,8 @@ class RTEDBase:
                          no_parse=True)
         self.gs = ZonalSum(u=self.zg, zone='Region',
                            name='gs', tex_name=r'S_{g}',
-                           info='Sum Gen vars vector in shape of zone')
+                           info='Sum Gen vars vector in shape of zone',
+                           no_parse=True, sparse=True)
         self.ds = ZonalSum(u=self.zd, zone='Region',
                            name='ds', tex_name=r'S_{d}',
                            info='Sum pd vector in shape of zone',
@@ -111,19 +112,13 @@ class RTED(DCOPF, RTEDBase, SFRBase):
     DC-based real-time economic dispatch (RTED).
     RTED extends DCOPF with:
 
-    1. Param ``pg0``, which can be retrieved from dynamic simulation results.
-
-    2. RTED has mapping dicts to interface with ANDES.
-
-    3. RTED routine adds a function ``dc2ac`` to do the AC conversion using ACOPF
-
-    4. Vars for zonal SFR reserve: ``pru`` and ``prd``;
-
-    5. Param for linear cost of zonal SFR reserve ``cru`` and ``crd``;
-
-    6. Param for SFR requirement ``du`` and ``dd``;
-
-    7. Param for generator ramping: start point ``pg0`` and ramping limit ``R10``;
+    - Mapping dicts to interface with ANDES
+    - Function ``dc2ac`` to do the AC conversion
+    - Vars for SFR reserve: ``pru`` and ``prd``
+    - Param for linear SFR cost: ``cru`` and ``crd``
+    - Param for SFR requirement: ``du`` and ``dd``
+    - Param for ramping: start point ``pg0`` and ramping limit ``R10``
+    - Param ``pg0``, which can be retrieved from dynamic simulation results.
 
     The function ``dc2ac`` sets the ``vBus`` value from solved ACOPF.
     Without this conversion, dynamic simulation might fail due to the gap between
@@ -173,10 +168,10 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.rbd.e_str = 'gs @ mul(ug, prd) - ddd'
         # RegUp/Dn reserve source
         self.rru.e_str = 'mul(ug, pg + pru) - mul(ug, pmax)'
-        self.rrd.e_str = 'mul(ug, -pg + prd) - mul(ug, pmin)'
+        self.rrd.e_str = 'mul(ug, -pg + prd) + mul(ug, pmin)'
         # Gen ramping up/down
         self.rgu.e_str = 'mul(ug, pg-pg0-R10)'
-        self.rgd.e_str='mul(ug, -pg+pg0-R10)'
+        self.rgd.e_str = 'mul(ug, -pg+pg0-R10)'
 
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
@@ -211,10 +206,19 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.system.StaticGen.set(src='pmax', attr='v', idx=pr_idx, value=pmax)
         self.system.StaticGen.set(src='p0', attr='v', idx=pr_idx, value=self.pg.v)
         ACOPF.run()
+        if not ACOPF.exit_code == 0:
+            logger.warning('<ACOPF> did not converge, conversion failed.')
+            # NOTE: mock results to fit interface with ANDES
+            self.vBus = ACOPF.vBus
+            self.vBus.optz.value = np.ones(self.system.Bus.n)
+            self.aBus = ACOPF.aBus
+            self.aBus.optz.value = np.zeros(self.system.Bus.n)
+            return False
         self.pg.v = ACOPF.pg.v
 
         # NOTE: mock results to fit interface with ANDES
         self.vBus = ACOPF.vBus
+        self.aBus = ACOPF.aBus
 
         # reset pmin, pmax, p0
         self.system.StaticGen.set(src='pmin', attr='v', idx=pr_idx, value=pmin0)
@@ -223,7 +227,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.system.recent = self
 
         self.is_ac = True
-        logger.warning('RTED is converted to AC.')
+        logger.warning(f'<{self.class_name}> is converted to AC.')
         return True
 
     def run(self, no_code=True, **kwargs):
@@ -275,12 +279,63 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         return super().run(**kwargs)
 
 
-class ESD1Base:
+class DGBase:
+    """
+    Base class for DG used in DCED.
+    """
+
+    def __init__(self):
+        # --- params ---
+        self.gendg = RParam(info='gen of DG',
+                            name='gendg', tex_name=r'g_{DG}',
+                            model='DG', src='gen',
+                            no_parse=True,)
+        info = 'Ratio of DG.pge w.r.t to that of static generator',
+        self.gammapdg = RParam(name='gammapd', tex_name=r'\gamma_{p,DG}',
+                               model='DG', src='gammap',
+                               no_parse=True, info=info)
+
+        # --- vars ---
+        # TODO: maybe there will be constraints on pgd, maybe upper/lower bound?
+        # TODO: this might requre new device like DGSlot
+        self.pgdg = Var(info='DG output power',
+                        unit='p.u.', name='pgdg',
+                        tex_name=r'p_{g,DG}',
+                        model='DG',)
+
+        # --- constraints ---
+        self.cdg = VarSelect(u=self.pg, indexer='gendg',
+                             name='cd', tex_name=r'C_{DG}',
+                             info='Select DG power from pg',
+                             gamma='gammapdg',
+                             no_parse=True, sparse=True,)
+        self.cdgb = Constraint(name='cdgb', type='eq',
+                               info='Select DG power from pg',
+                               e_str='cdg @ pg - pgdg',)
+
+
+class RTEDDG(RTED, DGBase):
+    """
+    RTED with distributed generator :ref:`DG`.
+
+    Note that RTEDDG only inlcudes DG output power. If ESD1 is included,
+    RTEDES should be used instead, otherwise there is no SOC.
+    """
+
+    def __init__(self, system, config):
+        RTED.__init__(self, system, config)
+        DGBase.__init__(self)
+        self.info = 'Real-time economic dispatch with DG'
+        self.type = 'DCED'
+
+
+class ESD1Base(DGBase):
     """
     Base class for ESD1 used in DCED.
     """
 
     def __init__(self):
+        DGBase.__init__(self)
         # --- params ---
         self.En = RParam(info='Rated energy capacity',
                          name='En', src='En',
@@ -306,14 +361,14 @@ class ESD1Base:
                            name='EtaD', src='EtaD',
                            tex_name=r'\eta_d', unit='%',
                            model='ESD1', no_parse=True,)
-        self.gene = RParam(info='gen of ESD1',
-                           name='gene', tex_name=r'g_{E}',
-                           model='ESD1', src='gen',
-                           no_parse=True,)
-        info = 'Ratio of ESD1.pge w.r.t to that of static generator',
-        self.gammape = RParam(name='gammape', tex_name=r'\gamma_{p,e}',
-                              model='ESD1', src='gammap',
-                              no_parse=True, info=info)
+        self.genesd = RParam(info='gen of ESD1',
+                             name='genesd', tex_name=r'g_{ESD}',
+                             model='ESD1', src='gen',
+                             no_parse=True,)
+        info = 'Ratio of ESD1.pge w.r.t to that of static generator'
+        self.gammapesd = RParam(name='gammapesd', tex_name=r'\gamma_{p,ESD}',
+                                model='ESD1', src='gammap',
+                                no_parse=True, info=info)
 
         # --- service ---
         self.REtaD = NumOp(name='REtaD', tex_name=r'\frac{1}{\eta_d}',
@@ -335,38 +390,40 @@ class ESD1Base:
         self.SOCub = Constraint(name='SOCub', type='uq',
                                 info='SOC upper bound',
                                 e_str='SOC - SOCmax',)
-        self.ce = VarSelect(u=self.pg, indexer='gene',
-                            name='ce', tex_name=r'C_{E}',
-                            info='Select zue from pg',
-                            gamma='gammape', no_parse=True,)
         self.pce = Var(info='ESD1 charging power',
                        unit='p.u.', name='pce',
-                       tex_name=r'p_{c,E}',
+                       tex_name=r'p_{c,ESD}',
                        model='ESD1', nonneg=True,)
         self.pde = Var(info='ESD1 discharging power',
                        unit='p.u.', name='pde',
-                       tex_name=r'p_{d,E}',
+                       tex_name=r'p_{d,ESD}',
                        model='ESD1', nonneg=True,)
         self.uce = Var(info='ESD1 charging decision',
-                       name='uce', tex_name=r'u_{c,E}',
+                       name='uce', tex_name=r'u_{c,ESD}',
                        model='ESD1', boolean=True,)
         self.ude = Var(info='ESD1 discharging decision',
-                       name='ude', tex_name=r'u_{d,E}',
+                       name='ude', tex_name=r'u_{d,ESD}',
                        model='ESD1', boolean=True,)
-        self.zce = Var(name='zce', tex_name=r'z_{c,E}',
+        self.zce = Var(name='zce', tex_name=r'z_{c,ESD}',
                        model='ESD1', nonneg=True,)
-        self.zce.info = 'Aux var for charging, :math:`z_{c,e}=u_{c,E}*p_{c,E}`'
-        self.zde = Var(name='zde', tex_name=r'z_{d,E}',
+        self.zce.info = 'Aux var for charging, '
+        self.zce.info += ':math:`z_{c,ESD}=u_{c,ESD}*p_{c,ESD}`'
+        self.zde = Var(name='zde', tex_name=r'z_{d,ESD}',
                        model='ESD1', nonneg=True,)
-        self.zde.info = 'Aux var for discharging, :math:`z_{d,e}=u_{d,E}*p_{d,E}`'
+        self.zde.info = 'Aux var for discharging, '
+        self.zde.info += ':math:`z_{d,ESD}=u_{d,ESD}*p_{d,ESD}`'
 
         # --- constraints ---
-        self.ceb = Constraint(name='ceb', type='eq',
+        self.cdb = Constraint(name='cdb', type='eq',
                               info='Charging decision bound',
                               e_str='uce + ude - 1',)
-        self.cpe = Constraint(name='cpe', type='eq',
-                              info='Select pce from pg',
-                              e_str='ce @ pg - zce - zde',)
+        self.ces = VarSelect(u=self.pg, indexer='genesd',
+                             name='ce', tex_name=r'C_{ESD}',
+                             info='Select zue from pg',
+                             gamma='gammapesd', no_parse=True,)
+        self.cesb = Constraint(name='cesb', type='eq',
+                               info='Select ESD1 power from pg',
+                               e_str='ces @ pg + zce - zde',)
 
         self.zce1 = Constraint(name='zce1', type='uq', info='zce bound 1',
                                e_str='-zce + pce',)
@@ -400,3 +457,104 @@ class RTEDES(RTED, ESD1Base):
         ESD1Base.__init__(self)
         self.info = 'Real-time economic dispatch with energy storage'
         self.type = 'DCED'
+
+
+class VISBase:
+    """
+    Base class for virtual inertia scheduling.
+    """
+
+    def __init__(self) -> None:
+        # --- Data Section ---
+        self.cm = RParam(info='Virtual inertia cost',
+                         name='cm', src='cm',
+                         tex_name=r'c_{m}', unit=r'$/s',
+                         model='VSGCost',
+                         indexer='reg', imodel='VSG')
+        self.cd = RParam(info='Virtual damping cost',
+                         name='cd', src='cd',
+                         tex_name=r'c_{d}', unit=r'$/(p.u.)',
+                         model='VSGCost',
+                         indexer='reg', imodel='VSG',)
+        self.zvsg = RParam(info='VSG zone',
+                           name='zvsg', tex_name='z_{one,vsg}',
+                           model='VSG', src='zone',
+                           no_parse=True)
+        self.Mmax = RParam(info='Maximum inertia emulation',
+                           name='Mmax', tex_name='M_{max}',
+                           model='VSG', src='Mmax',
+                           unit='s',)
+        self.Dmax = RParam(info='Maximum damping emulation',
+                           name='Dmax', tex_name='D_{max}',
+                           model='VSG', src='Dmax',
+                           unit='p.u.',)
+        self.dvm = RParam(info='Emulated inertia requirement',
+                          name='dvm', tex_name=r'd_{v,m}',
+                          unit='s',
+                          model='VSGR', src='dvm',)
+        self.dvd = RParam(info='Emulated damping requirement',
+                          name='dvd', tex_name=r'd_{v,d}',
+                          unit='p.u.',
+                          model='VSGR', src='dvd',)
+
+        # --- Model Section ---
+        self.M = Var(info='Emulated startup time constant (M=2H)',
+                     name='M', tex_name=r'M', unit='s',
+                     model='VSG', nonneg=True,)
+        self.D = Var(info='Emulated damping coefficient',
+                     name='D', tex_name=r'D', unit='p.u.',
+                     model='VSG', nonneg=True,)
+
+        self.gvsg = ZonalSum(u=self.zvsg, zone='Region',
+                             name='gvsg', tex_name=r'S_{g}',
+                             info='Sum VSG vars vector in shape of zone',
+                             no_parse=True)
+        self.Mub = Constraint(name='Mub', type='uq',
+                              info='M upper bound',
+                              e_str='M - Mmax',)
+        self.Dub = Constraint(name='Dub', type='uq',
+                              info='D upper bound',
+                              e_str='D - Dmax',)
+        self.Mreq = Constraint(name='Mreq', type='eq',
+                               info='Emulated inertia requirement',
+                               e_str='-gvsg@M + dvm',)
+        self.Dreq = Constraint(name='Dreq', type='eq',
+                               info='Emulated damping requirement',
+                               e_str='-gvsg@D + dvd',)
+
+        # NOTE: revise the objective function to include virtual inertia cost
+
+
+class RTEDVIS(RTED, VISBase):
+    """
+    RTED with virtual inertia scheduling.
+
+    Reference:
+
+    [1] B. She, F. Li, H. Cui, J. Wang, Q. Zhang and R. Bo, "Virtual
+    Inertia Scheduling (VIS) for Real-time Economic Dispatch of
+    IBRs-penetrated Power Systems," in IEEE Transactions on
+    Sustainable Energy, doi: 10.1109/TSTE.2023.3319307.
+    """
+
+    def __init__(self, system, config):
+        RTED.__init__(self, system, config)
+        VISBase.__init__(self)
+        self.info = 'Real-time economic dispatch with virtual inertia scheduling'
+        self.type = 'DCED'
+
+        # --- objective ---
+        self.obj.info = 'total generation and reserve cost'
+        gcost = 'sum(mul(c2, power(pg, 2)))'
+        gcost += '+ sum(c1 @ (t dot pg))'
+        gcost += '+ ug * c0 '  # constant cost
+        rcost = '+ sum(cru * pru + crd * prd) '  # reserve cost
+        vsgcost = '+ sum(cm * M + cd * D)'
+        self.obj.e_str = gcost + rcost + vsgcost
+
+        self.map2.update({
+            'RenGen': {
+                'M': 'M',
+                'D': 'D',
+            },
+        })

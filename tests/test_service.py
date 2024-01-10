@@ -1,8 +1,8 @@
 import unittest
 import numpy as np
 
-from scipy.sparse import csr_matrix as c_sparse  # NOQA
-from scipy.sparse import lil_matrix as l_sparse  # NOQA
+from scipy.sparse import csr_matrix as c_sparse
+from scipy.sparse import lil_matrix as l_sparse
 
 import ams
 from ams.core.matprocessor import MatProcessor, MParam
@@ -50,7 +50,9 @@ class TestMatProcessor(unittest.TestCase):
         """
         self.assertIsInstance(self.mats.Cft._v, (c_sparse, l_sparse))
         self.assertIsInstance(self.mats.Cft.v, np.ndarray)
-        self.assertEqual(self.mats.Cft.v.max(), 1)
+        self.assertEqual(self.mats.Cft._v.max(), 1)
+        np.testing.assert_equal(self.mats.Cft._v.sum(axis=0),
+                                np.zeros((1, self.nl)))
 
 
 class TestService(unittest.TestCase):

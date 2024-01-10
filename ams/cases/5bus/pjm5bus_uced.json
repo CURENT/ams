@@ -110,7 +110,8 @@
       "q0": 0.9861,
       "vmax": 1.1,
       "vmin": 0.9,
-      "owner": null
+      "owner": null,
+      "ctrl": 1.0
     },
     {
       "idx": "PQ_2",
@@ -122,7 +123,8 @@
       "q0": 0.9861,
       "vmax": 1.1,
       "vmin": 0.9,
-      "owner": null
+      "owner": null,
+      "ctrl": 1.0
     },
     {
       "idx": "PQ_3",
@@ -134,7 +136,8 @@
       "q0": 1.3147,
       "vmax": 1.1,
       "vmin": 0.9,
-      "owner": null
+      "owner": null,
+      "ctrl": 1.0
     }
   ],
   "PV": [
@@ -715,6 +718,29 @@
       "name": "NSRC_4",
       "gen": "Slack_4",
       "cnsr": 0.1
+    }
+  ],
+  "DCost": [
+    {
+      "idx": "DCost_1",
+      "u": 1.0,
+      "name": "Dcost 1",
+      "pq": "PQ_1",
+      "cdp": 1000.0
+    },
+    {
+      "idx": "DCost_2",
+      "u": 1.0,
+      "name": "Dcost 2",
+      "pq": "PQ_2",
+      "cdp": 1000.0
+    },
+    {
+      "idx": "DCost_3",
+      "u": 1.0,
+      "name": "Dcost 3",
+      "pq": "PQ_3",
+      "cdp": 1000.0
     }
   ],
   "EDTSlot": [

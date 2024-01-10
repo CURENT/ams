@@ -126,6 +126,19 @@ class RenGen(GroupBase):
         self.common_vars.extend(('Pe', 'Qe'))
 
 
+class VSG(GroupBase):
+    """
+    Renewable generator with virtual synchronous generator (VSG) control group.
+
+    Note that this is a group separate from ``RenGen`` for VSG dispatch study.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.common_params.extend(('bus', 'gen', 'Sn'))
+        self.common_vars.extend(('Pe', 'Qe'))
+
+
 class DG(GroupBase):
     """
     Distributed generation (small-scale).

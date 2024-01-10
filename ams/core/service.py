@@ -64,7 +64,7 @@ class RBaseService(BaseService, Param):
         """
         Return the shape of the service.
         """
-        if isinstance(self.v, np.ndarray):
+        if isinstance(self.v, (np.ndarray, spr.csr_matrix)):
             return self.v.shape
         else:
             raise TypeError(f'{self.class_name}: {self.name} is not an array.')

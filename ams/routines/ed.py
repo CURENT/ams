@@ -9,7 +9,7 @@ from ams.core.param import RParam
 from ams.core.service import (NumOpDual, NumHstack,
                               RampSub, NumOp, LoadScale)
 
-from ams.routines.rted import RTED, ESD1Base
+from ams.routines.rted import RTED, DGBase, ESD1Base
 
 from ams.opt.omodel import Var, Constraint
 
@@ -70,12 +70,6 @@ class MPBase:
                                src='idx', model='EDTSlot',
                                no_parse=True)
 
-        self.pdsz = NumOpDual(u=self.sd, u2=self.pdz,
-                             fun=np.multiply, rfun=np.transpose,
-                             name='pds', tex_name=r'p_{d,s,z}',
-                             unit='p.u.',
-                             info='Scaled zonal total load')
-
         self.tlv = NumOp(u=self.timeslot, fun=np.ones_like,
                          args=dict(dtype=float),
                          expand_dims=0,
@@ -90,12 +84,13 @@ class MPBase:
         self.R30 = RParam(info='30-min ramp rate',
                           name='R30', tex_name=r'R_{30}',
                           src='R30', unit='p.u./min',
-                          model='StaticGen')
+                          model='StaticGen', no_parse=True,)
         self.Mr = RampSub(u=self.pg, name='Mr', tex_name=r'M_{r}',
-                          info='Subtraction matrix for ramping',)
+                          info='Subtraction matrix for ramping',
+                          no_parse=True, sparse=True,)
         self.RR30 = NumHstack(u=self.R30, ref=self.Mr,
                               name='RR30', tex_name=r'R_{30,R}',
-                              info='Repeated ramp rate',)
+                              info='Repeated ramp rate', no_parse=True,)
 
         self.ctrl.expand_dims = 1
         self.c0.expand_dims = 1
@@ -103,11 +98,15 @@ class MPBase:
         self.pmin.expand_dims = 1
         self.pg0.expand_dims = 1
         self.rate_a.expand_dims = 1
-        self.x.expand_dims = 1
+        self.Pfinj.expand_dims = 1
+        self.Pbusinj.expand_dims = 1
+        self.gsh.expand_dims = 1
 
         # NOTE: extend pg to 2D matrix: row for gen and col for timeslot
         self.pg.horizon = self.timeslot
         self.pg.info = '2D Gen power'
+        self.aBus.horizon = self.timeslot
+        self.aBus.info = '2D Bus angle'
 
 class ED(RTED):
     """
@@ -117,11 +116,9 @@ class ED(RTED):
 
     ED extends DCOPF as follows:
 
-    1. Vars ``pg``, ``pru``, ``prd`` are extended to 2D
-
-    2. 2D Vars ``rgu`` and ``rgd`` are introduced
-
-    3. Param ``ug`` is sourced from ``EDTSlot.ug`` as commitment decisions
+    - Vars ``pg``, ``pru``, ``prd`` are extended to 2D
+    - 2D Vars ``rgu`` and ``rgd`` are introduced
+    - Param ``ug`` is sourced from ``EDTSlot.ug`` as commitment decisions
 
     Notes
     -----
@@ -175,31 +172,24 @@ class ED(RTED):
         self.prd.info = '2D RegDn power'
 
         self.prs.horizon = self.timeslot
-        self.prsb.e_str = 'mul(ugt, mul(pmax, tlv) - pg) - prs'
+        self.prsb.e_str = 'mul(ugt, pmax@tlv - pg) - prs'
         self.rsr.e_str = '-gs@prs + dsr'
 
         # --- line ---
         self.plf.horizon = self.timeslot
         self.plf.info = '2D Line flow'
-        self.plflb.e_str = '-plf - mul(rate_a, tlv)'
-        self.plfub.e_str = 'plf - mul(rate_a, tlv)'
+        self.plflb.e_str = '-Bf@aBus - Pfinj@tlv - rate_a@tlv'
+        self.plfub.e_str = 'Bf@aBus + Pfinj@tlv - rate_a@tlv'
 
         # --- power balance ---
-        # NOTE: Spg @ pg returns a row vector
-        self.pb.e_str = '- gs @ pg + pdsz'
-
-        self.png.horizon = self.timeslot
-        self.pnb.e_str =  'PTDF@(png - pnd) - plf'
-
-        self.pnd.horizon = self.timeslot
-        self.pndb.e_str = 'Cl@pnd - pds'
+        self.pb.e_str = 'Bbus@aBus + Pbusinj@tlv + Cl@pds + Csh@gsh@tlv - Cg@pg'
 
         # --- ramping ---
         self.rbu.e_str = 'gs@mul(ugt, pru) - mul(dud, tlv)'
         self.rbd.e_str = 'gs@mul(ugt, prd) - mul(ddd, tlv)'
 
         self.rru.e_str = 'mul(ugt, pg + pru) - mul(pmax, tlv)'
-        self.rrd.e_str = 'mul(ugt, -pg + prd) - mul(pmin, tlv)'
+        self.rrd.e_str = 'mul(ugt, -pg + prd) + mul(pmin, tlv)'
 
         self.rgu.e_str = 'pg @ Mr - t dot RR30'
         self.rgd.e_str = '-pg @ Mr - t dot RR30'
@@ -221,6 +211,16 @@ class ED(RTED):
         cost += ' + sum(csr@prs)'
         self.obj.e_str = cost
 
+    def _post_solve(self):
+        """
+        Overwrite ``_post_solve``.
+        """
+        # --- post-solving calculations ---
+        # line flow: Bf@aBus + Pfinj
+        mats = self.system.mats
+        self.plf.optz.value = mats.Bf._v@self.aBus.v + self.Pfinj.v@self.tlv.v
+        return True
+
     def dc2ac(self, **kwargs):
         """
         AC conversion ``dc2ac`` is not implemented yet for
@@ -238,10 +238,26 @@ class ED(RTED):
         """
         return None
 
-# TODO: add data check
-# if has model ``TimeSlot``, mandatory
-# if has model ``Region``, optional
-# if ``Region``, if ``Bus`` has param ``zone``, optional, if none, auto fill
+
+class EDDG(ED, DGBase):
+    """
+    ED with distributed generation :ref:`DG`.
+
+    Note that EDDG only inlcudes DG output power. If ESD1 is included,
+    EDES should be used instead, otherwise there is no SOC.
+    """
+
+    def __init__(self, system, config):
+        ED.__init__(self, system, config)
+        DGBase.__init__(self)
+
+        self.config.t = 1  # dispatch interval in hour
+
+        self.info = 'Economic dispatch with distributed generation'
+        self.type = 'DCED'
+
+        # NOTE: extend vars to 2D
+        self.pgdg.horizon = self.timeslot
 
 
 class ESD1MPBase(ESD1Base):
@@ -252,9 +268,9 @@ class ESD1MPBase(ESD1Base):
     def __init__(self):
         ESD1Base.__init__(self)
 
-        self.Mre = RampSub(u=self.SOC, name='Mre', tex_name=r'M_{r,E}',
+        self.Mre = RampSub(u=self.SOC, name='Mre', tex_name=r'M_{r,ES}',
                            info='Subtraction matrix for SOC',
-                           no_parse=True)
+                           no_parse=True, sparse=True,)
         self.EnR = NumHstack(u=self.En, ref=self.Mre,
                              name='EnR', tex_name=r'E_{n,R}',
                              info='Repeated En as 2D matrix, (ng, ng-1)')
@@ -270,7 +286,7 @@ class ESD1MPBase(ESD1Base):
 
         SOCb0 = 'mul(En, SOC[:, 0] - SOCinit) - t dot mul(EtaC, zce[:, 0])'
         SOCb0 += ' + t dot mul(REtaD, zde[:, 0])'
-        self.SOCb0 = Constraint(name='SOCb', type='eq',
+        self.SOCb0 = Constraint(name='SOCb0', type='eq',
                                 info='ESD1 SOC initial balance',
                                 e_str=SOCb0,)
 
@@ -279,7 +295,7 @@ class ESD1MPBase(ESD1Base):
                                e_str='SOC[:, -1] - SOCinit',)
 
 
-class EDES(ED, ESD1Base):
+class EDES(ED, ESD1MPBase):
     """
     ED with energy storage :ref:`ESD1`.
     The bilinear term in the formulation is linearized with big-M method.
@@ -287,7 +303,7 @@ class EDES(ED, ESD1Base):
 
     def __init__(self, system, config):
         ED.__init__(self, system, config)
-        ESD1Base.__init__(self)
+        ESD1MPBase.__init__(self)
 
         self.config.t = 1  # dispatch interval in hour
 
@@ -295,6 +311,7 @@ class EDES(ED, ESD1Base):
         self.type = 'DCED'
 
         # NOTE: extend vars to 2D
+        self.pgdg.horizon = self.timeslot
         self.SOC.horizon = self.timeslot
         self.pce.horizon = self.timeslot
         self.pde.horizon = self.timeslot

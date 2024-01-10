@@ -9,6 +9,11 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.8.0 (2024-01-09)
+-------------------
+
+- Refactor ``DCED`` routines to improve performance
+
 v0.7.5 (2023-12-28)
 -------------------
 

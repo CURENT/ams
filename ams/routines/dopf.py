@@ -14,6 +14,8 @@ class DOPF(DCOPF):
     """
     Linearzied distribution OPF, where power loss are ignored.
 
+    UNDER DEVELOPMENT!
+
     Reference:
 
     [1] L. Bai, J. Wang, C. Wang, C. Chen, and F. Li, “Distribution Locational Marginal Pricing (DLMP)
@@ -34,6 +36,9 @@ class DOPF(DCOPF):
         self.qmin = RParam(info='generator minimum reactive power',
                            name='qmin', tex_name=r'q_{min}', unit='p.u.',
                            model='StaticGen', src='qmin',)
+        self.CftT = RParam(info='Line connectivity matrix transpose',
+                           name='CftT', tex_name=r'C_{ft}^{T}',
+                           model='mats', src='CftT', no_parse=True,)
         # --- load ---
         self.qd = RParam(info='reactive demand',
                          name='qd', tex_name=r'q_{d}', unit='p.u.',
@@ -51,7 +56,12 @@ class DOPF(DCOPF):
         # --- line ---
         self.r = RParam(info='line resistance',
                         name='r', tex_name='r', unit='p.u.',
-                        model='Line', src='r')
+                        model='Line', src='r',
+                        no_parse=True,)
+        self.x = RParam(info='line reactance',
+                        name='x', tex_name='x', unit='p.u.',
+                        model='Line', src='x',
+                        no_parse=True,)
         # --- Model Section ---
         # --- generator ---
         self.qg = Var(info='Gen reactive power',
@@ -64,6 +74,10 @@ class DOPF(DCOPF):
                                info='qg max',
                                e_str='qg - mul(ug, qmax)',)
         # --- bus ---
+        self.v = Var(info='Bus voltage',
+                     name='v', tex_name=r'v',
+                     unit='p.u.',
+                     model='Bus', src='v')
         self.vsq = Var(info='square of Bus voltage',
                        name='vsq', tex_name=r'v^{2}', unit='p.u.',
                        model='Bus',)
@@ -81,8 +95,10 @@ class DOPF(DCOPF):
                        unit='p.u.', model='Line',)
         self.lvd = Constraint(info='line voltage drop',
                               name='lvd', type='eq',
-                              e_str='Cft@vsq - (r * plf + x * qlf)',)
+                              e_str='CftT@vsq - (r * plf + x * qlf)',)
         # --- power balance ---
+        # NOTE: following Eqn seems to be wrong, double check
+        # g_Q(\Theta, V, Q_g) = B_{bus}V\Theta + Q_{bus,shift} + Q_d + B_{sh} - C_gQ_g = 0
         self.qb = Constraint(info='reactive power balance',
                              name='qb', type='eq',
                              e_str='sum(qd) - sum(qg)',)
@@ -90,10 +106,9 @@ class DOPF(DCOPF):
         # --- objective ---
         # NOTE: no need to revise objective function
 
-    def unpack(self, **kwargs):
-        super().unpack(**kwargs)
-        vBus = np.sqrt(self.vsq.v)
-        self.system.Bus.set(src='v', attr='v', value=vBus, idx=self.vsq.get_idx())
+    def _post_solve(self):
+        self.v.optz.value = np.sqrt(self.vsq.optz.value)
+        return super()._post_solve()
 
 
 class DOPFVIS(DOPF):
@@ -117,20 +132,20 @@ class DOPFVIS(DOPF):
         self.cm = RParam(info='Virtual inertia cost',
                          name='cm', src='cm',
                          tex_name=r'c_{m}', unit=r'$/s',
-                         model='REGCV1Cost',
-                         indexer='reg', imodel='REGCV1')
+                         model='VSGCost',
+                         indexer='reg', imodel='VSG')
         self.cd = RParam(info='Virtual damping cost',
                          name='cd', src='cd',
                          tex_name=r'c_{d}', unit=r'$/(p.u.)',
-                         model='REGCV1Cost',
-                         indexer='reg', imodel='REGCV1',)
+                         model='VSGCost',
+                         indexer='reg', imodel='VSG',)
         # --- vars ---
         self.M = Var(info='Emulated startup time constant (M=2H) from REGCV1',
                      name='M', tex_name=r'M', unit='s',
-                     model='REGCV1',)
+                     model='VSG',)
         self.D = Var(info='Emulated damping coefficient from REGCV1',
                      name='D', tex_name=r'D', unit='p.u.',
-                     model='REGCV1',)
+                     model='VSG',)
         obj = 'sum(c2 * pg**2 + c1 * pg + ug * c0 + cm * M + cd * D)'
         self.obj = Objective(name='tc',
                              info='total cost', unit='$',

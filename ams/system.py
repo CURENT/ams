@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 def disable_method(func):
     def wrapper(*args, **kwargs):
-        logger.warning(f"Method `{func.__name__}` is included in ANDES System but not supported in AMS System.")
+        logger.warning("This method is included in ANDES but not supported in AMS.")
         return None
     return wrapper
 
@@ -126,7 +126,7 @@ class System(andes_System):
             '_p_restore', '_store_calls', '_store_tf', '_to_orddct', '_v_to_dae',
             'save_config', 'collect_config', 'e_clear', 'f_update',
             'fg_to_dae', 'from_ipysheet', 'g_islands', 'g_update', 'get_z',
-            'init', 'j_islands', 'j_update', 'l_update_eq', 'summary',
+            'init', 'j_islands', 'j_update', 'l_update_eq',
             'l_update_var', 'precompile', 'prepare', 'reload', 'remove_pycapsule',
             's_update_post', 's_update_var', 'store_adder_setter', 'store_no_check_init',
             'store_sparse_pattern', 'store_switch_times', 'switch_action', 'to_ipysheet',
@@ -505,15 +505,15 @@ class System(andes_System):
 
         raise NotImplementedError
 
-    def to_andes(self, setup=True, addfile=None, overwite=None, no_keep=True,
-                 **kwargs):
+    def to_andes(self, setup=True, addfile=None, **kwargs):
         """
         Convert the AMS system to an ANDES system.
-        This function is a wrapper of ``ams.interop.andes.to_andes()``.
 
-        Using the file conversion ``sp.to_andes()`` will automatically
-        link the AMS system instance to the converted ANDES system instance
-        in the AMS system attribute ``sp.dyn``.
+        A preferred dynamic system file to be added has following features:
+        1. The file contains both power flow and dynamic models.
+        2. The file can run in ANDES natively.
+        3. Power flow models are in the same shape as the AMS system.
+        4. Dynamic models, if any, are in the same shape as the AMS system.
 
         Parameters
         ----------
@@ -523,10 +523,6 @@ class System(andes_System):
             Whether to call `setup()` after the conversion. Default is True.
         addfile : str, optional
             The additional file to be converted to ANDES dynamic mdoels.
-        overwrite : bool, optional
-            Whether to overwrite the existing file.
-        no_keep : bool, optional
-            True to remove the converted file after the conversion.
         **kwargs : dict
             Keyword arguments to be passed to `andes.system.System`.
 
@@ -545,8 +541,44 @@ class System(andes_System):
         ...                  overwrite=True, no_keep=True, no_output=True)
         """
         return to_andes(self, setup=setup, addfile=addfile,
-                        overwite=overwite, no_keep=no_keep,
                         **kwargs)
+
+    def summary(self):
+        """
+        Print out system summary.
+        """
+        # FIXME: add system connectivity check
+        # logger.info("-> System connectivity check results:")
+        rtn_check = OrderedDict((key, val._data_check(info=False)) for key, val in self.routines.items())
+        rtn_types = OrderedDict({tp: [] for tp in self.types.keys()})
+
+        for name, data_pass in rtn_check.items():
+            if data_pass:
+                type = self.routines[name].type
+                rtn_types[type].append(name)
+
+        nb = self.Bus.n
+        nl = self.Line.n
+        ng = self.StaticGen.n
+
+        pd = self.PQ.p0.v.sum() * self.config.mva
+        qd = self.PQ.q0.v.sum() * self.config.mva
+
+        out = list()
+
+        out.append(f"-> Systen size:")
+        out.append(f"{nb} Buses; {nl} Lines; {ng} Generators")
+        out.append(f"Active load: {pd:,.2f} MW; Reactive load: {qd:,.2f} MVar")
+
+        out.append("-> Data check results:")
+        for type, names in rtn_types.items():
+            if len(names) == 0:
+                continue
+            names = ", ".join(names)
+            out.append(f"{type}: {names}")
+
+        out_str = '\n'.join(out)
+        logger.info(out_str)
 
 
 # --------------- Helper Functions ---------------
