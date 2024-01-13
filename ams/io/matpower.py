@@ -201,27 +201,27 @@ def mpc2system(mpc: dict, system) -> bool:
         system.Bus.name.v[:] = mpc['bus_name']
 
     gcost_idx = 0
-    gen_idx = system.PV.idx.v + system.Slack.idx.v
+    gen_idx = np.arange(mpc['gen'].shape[0]) + 1
     for data, gen in zip(mpc['gencost'], gen_idx):
         # NOTE: only type 2 costs are supported for now
         # type  startup shutdown	n	c2  c1  c0
         # 0     1       2           3   4   5   6
         if data[0] != 2:
             raise ValueError('Only MODEL 2 costs are supported')
-        # TODO: Add Model 1
+        gcost_idx += 1
         type = int(data[0])
         startup = data[1]
         shutdown = data[2]
         c2 = data[4] * base_mva ** 2
         c1 = data[5] * base_mva
-        c0 = data[6] * base_mva
+        c0 = data[6]
         system.add('GCost', gen=int(gen),
-                   u=1, name=f'GCost_{gcost_idx}',
-                   type=type,
+                   u=1, type=type,
+                   idx=gcost_idx,
+                   name=f'GCost {gcost_idx}',
                    csu=startup, csd=shutdown,
                    c2=c2, c1=c1, c0=c0
                    )
-        gcost_idx += 1
 
     # --- region ---
     zone_id = np.unique(system.Bus.zone.v).astype(int)
