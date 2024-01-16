@@ -37,13 +37,6 @@ class TestMatProcessor(unittest.TestCase):
         # check if `v` is 1D-array
         self.assertEqual(one_vec.v.shape, (self.ss.Bus.n,))
 
-    def test_PTDF(self):
-        """
-        Test `PTDF`.
-        """
-        self.assertIsInstance(self.mats.PTDF.v, np.ndarray)
-        self.assertEqual(self.mats.PTDF.v.shape, (self.nl, self.nB))
-
     def test_Cft(self):
         """
         Test `Cft`.

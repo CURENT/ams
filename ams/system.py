@@ -428,19 +428,6 @@ class System(andes_System):
                 algeb.a = np.arange(a0, a0 + algeb.owner.n)
                 a0 += algeb.owner.n
 
-        # set up matrix processor
-        self.mats.make()
-
-        # NOTE: initialize om for all routines
-        for _, rtn in self.routines.items():
-            # rtn.setup()  # not setup optimization model in system setup stage
-            a0 = 0
-            for _, var in rtn.vars.items():
-                var.a = np.arange(a0, a0 + var.owner.n)
-                a0 += var.owner.n
-            for rpname, rparam in rtn.rparams.items():
-                rparam.rtn = rtn
-
         _, s = elapsed(t0)
         logger.info('System set up in %s.', s)
 

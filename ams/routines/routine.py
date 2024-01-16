@@ -313,11 +313,8 @@ class RoutineModel:
             logger.warning(msg)
 
         # --- matrix build ---
-        if force:
-            t_mat, _ = elapsed()
+        if force or isinstance(self.system.mats.Cft._v, type(None)):
             self.system.mats.make()
-            _, s_mat = elapsed(t_mat)
-            logger.debug(f"Built system matrices in {s_mat}.")
             for constr in self.constrs.values():
                 constr.is_disabled = False
 
@@ -539,7 +536,7 @@ class RoutineModel:
             sparams = [self.params[params]]
         elif isinstance(params, list):
             sparams = [self.params[param] for param in params if isinstance(param, str)]
-            for param in params:
+            for param in sparams:
                 param.update()
         for param in sparams:
             if param.optz is None:  # means no_parse=True

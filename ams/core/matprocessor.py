@@ -10,8 +10,7 @@ import numpy as np
 from scipy.sparse import csr_matrix as c_sparse
 from scipy.sparse import lil_matrix as l_sparse
 
-from ams.pypower.make import makePTDF
-from ams.io.pypower import system2ppc
+from andes.utils.misc import elapsed
 
 from ams.opt.omodel import Param
 
@@ -144,13 +143,11 @@ class MatProcessor:
 
         Note that this method will update all matrices in the class.
         """
-        system = self.system
-        ppc = system2ppc(system)
-        # FIXME: PTDF sequence okay?
-        self.PTDF._v = makePTDF(ppc['baseMVA'], ppc['bus'], ppc['branch'])
-
+        t_mat, _ = elapsed()
         self._makeC()
         self._makeBdc()
+        _, s_mat = elapsed(t_mat)
+        logger.debug(f"Built system matrices in {s_mat}.")
 
         return True
 
