@@ -548,14 +548,15 @@ class System(andes_System):
         nl = self.Line.n
         ng = self.StaticGen.n
 
-        pd = self.PQ.p0.v.sum() * self.config.mva
-        qd = self.PQ.q0.v.sum() * self.config.mva
+        pd = self.PQ.p0.v.sum()
+        qd = self.PQ.q0.v.sum()
 
         out = list()
 
         out.append(f"-> Systen size:")
-        out.append(f"{nb} Buses; {nl} Lines; {ng} Generators")
-        out.append(f"Active load: {pd:,.2f} MW; Reactive load: {qd:,.2f} MVar")
+        out.append(f"Base: {self.config.mva} MVA; Frequency: {self.config.freq} Hz")
+        out.append(f"{nb} Buses; {nl} Lines; {ng} Static Generators")
+        out.append(f"Active load: {pd:,.2f} p.u.; Reactive load: {qd:,.2f} p.u.")
 
         out.append("-> Data check results:")
         for type, names in rtn_types.items():
