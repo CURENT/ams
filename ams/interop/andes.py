@@ -134,6 +134,9 @@ def to_andes(system, setup=False, addfile=None,
         _, s_add = elapsed(t_add)
         logger.info('Addfile parsed in %s.', s_add)
 
+    # fake FileManaer attributes
+    adsys.files = system.files
+
     logger.info(f'System converted to ANDES in {s}.')
 
     # finalize
