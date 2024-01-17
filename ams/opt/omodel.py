@@ -784,8 +784,7 @@ class OModel:
         """
         t_setup, _ = elapsed()
 
-        if not self._parsed:
-            self._parse(no_code=no_code)
+        self._parse(no_code=no_code)
 
         if self.rtn.type != 'PF':
             # --- finalize the optimziation formulation ---
