@@ -199,8 +199,10 @@ def parse_addfile(adsys, amsys, addfile):
         msg += ', '.join([f'<{mdl}>' for mdl in pflow_mdls_overlap])
         logger.warning(msg)
 
+    pflow_mdl_nonempty = [mdl for mdl in pflow_mdl if amsys.models[mdl].n > 0]
+    logger.debug(f"Non-empty PFlow models: {pflow_mdl}")
     pflow_df_models = pd.read_excel(addfile,
-                                    sheet_name=pflow_mdl,
+                                    sheet_name=pflow_mdl_nonempty,
                                     index_col=0,
                                     engine='openpyxl',
                                     )
