@@ -752,10 +752,15 @@ def _dest_check(mname, pname, idx, adsys):
     # --- check param ---
     mdl = getattr(adsys, mname)
     _is_grp = mname in adsys.groups.keys()
-    # if it is a group, use the first model in the group
-    mdl_grp_name = list(adsys.groups[mname].models.keys())[0] if _is_grp else mname
-    mdl_to_check = getattr(adsys, mdl_grp_name)
-    if not hasattr(mdl_to_check, pname):
+    # if it is a group, iterate through all models in the group
+    mdls_grp_name = list(adsys.groups[mname].models.keys()) if _is_grp else [mname]
+    n_no_mdl = 0
+    for mdl_name in mdls_grp_name:
+        mdl_to_check = getattr(adsys, mdl_name, None)
+        if mdl_to_check is not None and hasattr(mdl_to_check, pname):
+            break   # found the param in any one of the models, break
+        n_no_mdl += 1
+    if n_no_mdl == len(mdls_grp_name):
         raise ValueError(f'Param error: ANDES <{mdl.class_name}> has no <{pname}>')
 
     # --- check idx ---

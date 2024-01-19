@@ -550,8 +550,6 @@ class RTEDVIS(RTED, VISBase):
         self.obj.e_str = gcost + rcost + vsgcost
 
         self.map2.update({
-            'RenGen': {
-                'M': 'M',
-                'D': 'D',
-            },
+            'M': ('RenGen', 'M'),
+            'D': ('RenGen', 'D'),
         })
