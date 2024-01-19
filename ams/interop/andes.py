@@ -693,9 +693,11 @@ class Dynamic:
                     continue
                 if mdl.n == 0:
                     continue
-                # a. dynamic generator online status
+                # a. dynamic generator online status `u`
                 if (not is_dgu_set) & (mdl.group in ['StaticGen']):
-                    self._receive_dgu(sa=sa, sp=sp)
+                    u_dyg, idx_dyg, names_dyg = self._receive_dgu(sa=sa, sp=sp)
+                    sp.StaticGen.set(src='u', attr='v', idx=idx_dyg, value=u_dyg)
+                    logger.debug(f'Receive StaticGen.u from <u> of {names_dyg}')
                     is_dgu_set = True
                     continue
                 # FIXME: in AMS, dynamic generatos `u` is not in effect
@@ -711,24 +713,23 @@ class Dynamic:
             # 2) receive other results
             is_pe_set = False
             for mname, pmap in map1.items():
-                ams_vname = getattr(sa, mname)
                 for ams_vname, andes_pname in pmap.items():
                     # a. output power
-                    if not is_pe_set and andes_pname == 'p' and mname == 'StaticGen':
-                        Pe, idx = self._receive_pe(sa=sa, sp=sp)
-                        sp.recent.set(src=ams_vname, idx=idx, attr='v', value=Pe)
+                    if not is_pe_set and andes_pname == 'Pe' and mname == 'StaticGen':
+                        Pe_dyg, idx_dyg, names_dyg = self._receive_pe(sa=sa, sp=sp)
+                        sp.StaticGen.set(src=ams_vname, attr='v', idx=idx_dyg, value=Pe_dyg)
                         is_pe_set = True
-                        logger.warning('Generator output power are received from dynamic generators.')
+                        logger.debug(f'Receive {mname}.{ams_vname} from <Pe> of {names_dyg}')
                         continue
                     # b. others, if any
-                    ams_var = getattr(sp.recent, ams_vname)
-                    v_ams = sp.recent.get(src=ams_vname, attr='v',
-                                          idx=ams_var.get_idx())
+                    idx = self.amsys.recent.__dict__[ams_vname].get_idx()  # use AMS idx
+                    mdl_andes = getattr(sa, mname)
+                    v_andes = mdl_andes.get(src=andes_pname, idx=idx, attr='v')
                     try:
-                        mdl.set(src=andes_pname, attr='v',
-                                idx=ams_var.get_idx(), value=v_ams)
+                        mdl.set(src=andes_pname, attr='v', idx=idx, value=v_andes)
+                        logger.debug(f'Receive {mdl.class_name}.{ams_vname} from {mname}.{andes_pname}')
                     except KeyError:
-                        logger.warning(f'Param {andes_pname} not found in ANDES model <{mname}>.')
+                        logger.warning(f'Param {andes_pname} not found in AMS model <{mname}>.')
                         continue
             return True
         # 3. sync static results if dynamic is not initialized
@@ -758,7 +759,7 @@ class Dynamic:
                     for ams_vname, andes_pname in map1[mname].items():
                         v_andes = mdl_andes.get(src=andes_pname, idx=idx, attr='v')
                         sp.recent.set(src=ams_vname, idx=idx, attr='v', value=v_andes)
-            return True
+            return self.amsys.recent.update()
 
     def _receive_pe(self, sa, sp):
         """
@@ -785,12 +786,13 @@ class Dynamic:
         Pe_rg = sa.RenGen.get(idx=sp.dyn.link['rg_idx'].replace(np.NaN, None).to_list(),
                               src='Pe', attr='v',
                               allow_none=True, default=0,)
-        Pe = Pe_sg + Pe_dg + Pe_rg
-        idx = sp.dyn.link['stg_idx'].replace(np.NaN, None).to_list()
-        dyg_names = 'SynGen' if sa.SynGen.n > 0 else ''
-        dyg_names += ', DG' if sa.DG.n > 0 else ''
-        dyg_names += ', RenGen' if sa.RenGen.n > 0 else ''
-        return Pe, idx
+        # --- output ---
+        Pe_dyg = Pe_sg + Pe_dg + Pe_rg
+        idx_dyg = sp.dyn.link['stg_idx'].replace(np.NaN, None).to_list()
+        names_dyg = 'SynGen' if sa.SynGen.n > 0 else ''
+        names_dyg += ', DG' if sa.DG.n > 0 else ''
+        names_dyg += ', RenGen' if sa.RenGen.n > 0 else ''
+        return Pe_dyg, idx_dyg, names_dyg
 
     def _receive_dgu(self, sa, sp):
         """
@@ -808,13 +810,10 @@ class Dynamic:
         u_rg = sa.RenGen.get(idx=sp.dyn.link['rg_idx'].replace(np.NaN, None).to_list(),
                              src='u', attr='v',
                              allow_none=True, default=0,)
-        # --- sync into AMS ---
-        u_dyngen = u_sg + u_rg + u_dg
-        sp.StaticGen.set(idx=sp.dyn.link['stg_idx'].to_list(),
-                         src='u', attr='v',
-                         value=u_dyngen,)
-        dyg_names = 'SynGen' if sa.SynGen.n > 0 else ''
-        dyg_names += ', DG' if sa.DG.n > 0 else ''
-        dyg_names += ', RenGen' if sa.RenGen.n > 0 else ''
-        logger.debug(f'Receive StaticGen.u from <u> of {dyg_names}')
-        return True
+        # --- output ---
+        u_dyg = u_sg + u_rg + u_dg
+        idx_dyg = sp.dyn.link['stg_idx'].to_list()
+        names_dyg = 'SynGen' if sa.SynGen.n > 0 else ''
+        names_dyg += ', DG' if sa.DG.n > 0 else ''
+        names_dyg += ', RenGen' if sa.RenGen.n > 0 else ''
+        return u_dyg, idx_dyg, names_dyg

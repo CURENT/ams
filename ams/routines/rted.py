@@ -144,7 +144,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
 
         self.map1 = OrderedDict([
             ('StaticGen', {
-                'pg0': 'p',
+                'pg0': 'Pe',
             }),
         ])
         # NOTE: define map2
