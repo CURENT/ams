@@ -541,10 +541,8 @@ class Dynamic:
 
         # NOTE: ads is short for ANDES
         for vname_ams, (mname_ads, pname_ads) in map2.items():
-            # TODO: DELETE
-            logger.debug(f'--- Item: {vname_ams} -> {mname_ads}.{pname_ads} ---')
             mdl_ads = getattr(sa, mname_ads)  # ANDES model or group
-            
+
             # --- skipping scenarios ---
             if mdl_ads.n == 0:
                 logger.debug(f'ANDES model <{mname_ads}> is empty.')
@@ -567,7 +565,7 @@ class Dynamic:
                 continue
 
             # 3. gen power reference; in TDS running, pg should go to TurbineGov
-            cond_ads_stg_p0  = (mname_ads in ['StaticGen', 'PV', 'Sclak']) and (pname_ads == 'p0')
+            cond_ads_stg_p0 = (mname_ads in ['StaticGen', 'PV', 'Sclak']) and (pname_ads == 'p0')
             if cond_ads_stg_p0 and (self.is_tds):
                 # --- SynGen: TurbineGov.pref0 ---
                 syg_idx = sp.dyn.link['syg_idx'].dropna().tolist()  # SynGen idx
@@ -612,168 +610,124 @@ class Dynamic:
                 logger.warning(f'Send <{vname_ams}> to {mname_ads}.{pname_ads}')
         return True
 
-    def receive(self, adsys=None):
+    def receive(self, adsys=None, routine=None):
         """
-        Receive the results from the target ANDES system.
+        Receive ANDES system results to AMS devices.
 
         Parameters
         ----------
         adsys : adsys.System.system, optional
             The target ANDES dynamic system instance. If not provided, use the
             linked ANDES system isntance (``sp.dyn.adsys``).
+        routine : str, optional
+            The routine to be received from ANDES. If None, ``recent`` will be used.
         """
         sa = adsys if adsys is not None else self.adsys
         sp = self.amsys
-        # 1. information
-        try:
-            rtn_name = sp.recent.class_name
-            logger.info(f'Receiving ANDES <{hex(id(sa))}> results to {rtn_name}.')
-        except AttributeError:
-            logger.warning('No target AMS routine found. Failed to sync with ANDES.')
+        self._sync_check(amsys=sp, adsys=sa)
+
+        #  --- Information: not necessary in receive ---
+        rtn = sp.recent if routine is None else getattr(sp, routine)
+        if rtn is None:
+            logger.warning('No assigned or recent solved routine found, quit receive.')
             return False
 
-        # mapping dict
-        map1 = getattr(sp.recent, 'map1')
+        # --- Mapping ---
+        map1 = getattr(rtn, 'map1')     # mapping-from dict
         if len(map1) == 0:
-            logger.warning(f'Mapping dict "map1" of {sp.recent.class_name} is empty.')
+            logger.warning(f'{rtn.class_name} has empty map1, quit receive.')
             return True
 
-        # 2. sync dynamic results if dynamic is initialized
-        if self.is_tds:
-            # TODO: dynamic results
-            logger.info(f'Receiving <tds> results to {sp.recent.class_name}...')
-            # 1) receive models online status
-            is_dgu_set = False
-            for mname, mdl in self.amsys.models.items():
-                # NOTE: skip models without idx: ``Summary``
-                if not hasattr(mdl, 'idx'):
-                    continue
-                if mdl.n == 0:
-                    continue
-                # a. dynamic generator online status `u`
-                if (not is_dgu_set) & (mdl.group in ['StaticGen']):
-                    u_dyg, idx_dyg, names_dyg = self._receive_dgu(sa=sa, sp=sp)
-                    sp.StaticGen.set(src='u', attr='v', idx=idx_dyg, value=u_dyg)
-                    logger.debug(f'Receive StaticGen.u from <u> of {names_dyg}')
-                    is_dgu_set = True
-                    continue
-                # FIXME: in AMS, dynamic generatos `u` is not in effect
-                # how to make this consistent with ANDES?
-                # b. other models online status
-                idx = mdl.idx.v
-                if (mname in sa.models) & (mdl.group not in ['StaticGen']):
-                    mdl_andes = getattr(sa, mname)
-                    # 1) receive models online status
-                    u_andes = mdl_andes.get(src='u', idx=idx, attr='v')
-                    mdl.set(src='u', idx=idx, attr='v', value=u_andes)
-                    logger.debug(f'Receive {mdl.class_name}.u from {mname}.u')
-            # 2) receive other results
-            is_pe_set = False
-            for mname, pmap in map1.items():
-                for ams_vname, andes_pname in pmap.items():
-                    # a. output power
-                    if not is_pe_set and andes_pname == 'Pe' and mname == 'StaticGen':
-                        Pe_dyg, idx_dyg, names_dyg = self._receive_pe(sa=sa, sp=sp)
-                        sp.StaticGen.set(src=ams_vname, attr='v', idx=idx_dyg, value=Pe_dyg)
-                        is_pe_set = True
-                        logger.debug(f'Receive {mname}.{ams_vname} from <Pe> of {names_dyg}')
-                        continue
-                    # b. others, if any
-                    idx = self.amsys.recent.__dict__[ams_vname].get_idx()  # use AMS idx
-                    mdl_andes = getattr(sa, mname)
-                    v_andes = mdl_andes.get(src=andes_pname, idx=idx, attr='v')
-                    try:
-                        mdl.set(src=andes_pname, attr='v', idx=idx, value=v_andes)
-                        logger.debug(f'Receive {mdl.class_name}.{ams_vname} from {mname}.{andes_pname}')
-                    except KeyError:
-                        logger.warning(f'Param {andes_pname} not found in AMS model <{mname}>.')
-                        continue
-            return True
-        # 3. sync static results if dynamic is not initialized
-        else:
-            logger.info(f'Receiving <pflow> results to {sp.recent.class_name}...')
-            for mname, mdl in sp.models.items():
-                # NOTE: skip models without idx: ``Summary``
-                if not hasattr(mdl, 'idx'):
-                    continue
-                if mdl.n == 0:
-                    continue
-                # 1) receive models online status
-                idx = mdl.idx.v
-                if mname in sa.models:
-                    mdl_andes = getattr(sa, mname)
-                    u_andes = mdl_andes.get(src='u', idx=idx, attr='v')
-                    mdl.set(src='u', idx=idx, attr='v', value=u_andes)
-                    # update routine variables if any
-                    for vname, var in sp.recent.vars.items():
-                        if var.src == 'u':
-                            sp.recent.set(src=vname, idx=idx, attr='v', value=u_andes)
-                        else:
-                            continue
-                # 2) receive other results
-                # NOTE: receive output power to rotuine
-                if mname in map1.keys():
-                    for ams_vname, andes_pname in map1[mname].items():
-                        v_andes = mdl_andes.get(src=andes_pname, idx=idx, attr='v')
-                        sp.recent.set(src=ams_vname, idx=idx, attr='v', value=v_andes)
-            return self.amsys.recent.update()
+        link = sp.dyn.link      # link table
+        for vname_ams, (mname_ads, pname_ads) in map1.items():
+            mdl_ads = getattr(sa, mname_ads)  # ANDES model or group
 
-    def _receive_pe(self, sa, sp):
-        """
-        Get the dynamic generator output power.
-        """
-        if not self.is_tds:     # sync dynamic device
-            logger.warning('Dynamic is not running, receiving Pe is skipped.')
-            return True
-        # 1) SynGen
-        Pe_sg = sa.SynGen.get(idx=sp.dyn.link['syg_idx'].replace(np.NaN, None).to_list(),
-                              src='Pe', attr='v',
-                              allow_none=True, default=0,)
+            # --- skipping scenarios ---
+            if mdl_ads.n == 0:
+                logger.debug(f'ANDES model <{mname_ads}> is empty.')
+                continue
 
-        # 2) DG
-        Ie_dg = sa.DG.get(src='Ipout_y', attr='v',
-                          idx=sp.dyn.link['dg_idx'].replace(np.NaN, None).to_list(),
-                          allow_none=True, default=0,)
-        v_dg = sa.DG.get(src='v', attr='v',
-                         idx=sp.dyn.link['dg_idx'].replace(np.NaN, None).to_list(),
-                         allow_none=True, default=0,)
-        Pe_dg = v_dg * Ie_dg
+            idx_ads = rtn.__dict__[vname_ams].get_idx()  # use AMS idx as target ANDES idx
 
-        # 3) RenGen
-        Pe_rg = sa.RenGen.get(idx=sp.dyn.link['rg_idx'].replace(np.NaN, None).to_list(),
-                              src='Pe', attr='v',
-                              allow_none=True, default=0,)
-        # --- output ---
-        Pe_dyg = Pe_sg + Pe_dg + Pe_rg
-        idx_dyg = sp.dyn.link['stg_idx'].replace(np.NaN, None).to_list()
-        names_dyg = 'SynGen' if sa.SynGen.n > 0 else ''
-        names_dyg += ', DG' if sa.DG.n > 0 else ''
-        names_dyg += ', RenGen' if sa.RenGen.n > 0 else ''
-        return Pe_dyg, idx_dyg, names_dyg
+            # --- special scenarios ---
+            # 1. gen online status; in TDS running, take from dynamic generator
+            cond_ads_stg_u = (mname_ads in ['StaticGen', 'PV', 'Sclak']) and (pname_ads == 'u')
+            if cond_ads_stg_u and (self.is_tds):
+                # --- SynGen ---
+                u_sg = sa.SynGen.get(idx=link['syg_idx'].replace(np.NaN, None).to_list(),
+                                     src='u', attr='v',
+                                     allow_none=True, default=0,)
+                # --- DG ---
+                u_dg = sa.DG.get(idx=link['dg_idx'].replace(np.NaN, None).to_list(),
+                                 src='u', attr='v',
+                                 allow_none=True, default=0,)
+                # --- RenGen ---
+                u_rg = sa.RenGen.get(idx=link['rg_idx'].replace(np.NaN, None).to_list(),
+                                     src='u', attr='v',
+                                     allow_none=True, default=0,)
+                # --- output ---
+                u_dyg = u_sg + u_rg + u_dg
+                # NOTE: StaticGen that has no dynamic generator
+                # Sync StaticGen.u first, then overwrite the ones with dynamic generator
+                u_stg = sa.StaticGen.get(src='u', attr='v',
+                                         idx=link['stg_idx'].values)
+                rtn.set(src=vname_ams, attr='v', value=u_stg,
+                        idx=link['stg_idx'].values)
+                rtn.set(src=vname_ams, attr='v', value=u_dyg,
+                        idx=link['stg_idx'].values)
 
-    def _receive_dgu(self, sa, sp):
-        """
-        Get the dynamic generator online status.
-        """
-        # 1) SynGen
-        u_sg = sa.SynGen.get(idx=sp.dyn.link['syg_idx'].replace(np.NaN, None).to_list(),
-                             src='u', attr='v',
-                             allow_none=True, default=0,)
-        # 2) DG
-        u_dg = sa.DG.get(idx=sp.dyn.link['dg_idx'].replace(np.NaN, None).to_list(),
-                         src='u', attr='v',
-                         allow_none=True, default=0,)
-        # 3) RenGen
-        u_rg = sa.RenGen.get(idx=sp.dyn.link['rg_idx'].replace(np.NaN, None).to_list(),
-                             src='u', attr='v',
-                             allow_none=True, default=0,)
-        # --- output ---
-        u_dyg = u_sg + u_rg + u_dg
-        idx_dyg = sp.dyn.link['stg_idx'].to_list()
-        names_dyg = 'SynGen' if sa.SynGen.n > 0 else ''
-        names_dyg += ', DG' if sa.DG.n > 0 else ''
-        names_dyg += ', RenGen' if sa.RenGen.n > 0 else ''
-        return u_dyg, idx_dyg, names_dyg
+                var_dest = ''
+                var_dest += 'SynGen.u' if sa.SynGen.n > 0 else ''
+                var_dest += ', DG.u' if sa.DG.n > 0 else ''
+                var_dest += ', RenGen.u' if sa.RenGen.n > 0 else ''
+                var_dest += ', StaicGen.u' if sa.RenGen.n+sa.SynGen.n+sa.DG.n < sa.StaticGen.n else ''
+                logger.info(f'Receive <{vname_ams}> from {var_dest}')
+                continue
+
+            # 2. gen output power; in TDS running, take from dynamic generator
+            cond_ads_stg_p = (mname_ads in ['StaticGen', 'PV', 'Sclak']) and (pname_ads == 'p')
+            if cond_ads_stg_p and (self.is_tds):
+                # --- SynGen ---
+                p_sg = sa.SynGen.get(idx=link['syg_idx'].replace(np.NaN, None).to_list(),
+                                     src='Pe', attr='v',
+                                     allow_none=True, default=0,)
+                # --- DG ---
+                Ie_dg = sa.DG.get(idx=link['dg_idx'].replace(np.NaN, None).to_list(),
+                                  src='Ipout_y', attr='v',
+                                  allow_none=True, default=0,)
+                v_dg = sa.DG.get(idx=link['dg_idx'].replace(np.NaN, None).to_list(),
+                                 src='v', attr='v',
+                                 allow_none=True, default=0,)
+                p_dg = Ie_dg * v_dg
+                # --- RenGen ---
+                p_rg = sa.RenGen.get(idx=link['rg_idx'].replace(np.NaN, None).to_list(),
+                                     src='Pe', attr='v',
+                                     allow_none=True, default=0,)
+                # --- output ---
+                p_dyg = p_sg + p_rg + p_dg
+                # NOTE: StaticGen that has no dynamic generator
+                # Sync StaticGen.p first, then overwrite the ones with dynamic generator
+                p_stg = sa.StaticGen.get(src='p', attr='v',
+                                         idx=link['stg_idx'].values)
+                rtn.set(src=vname_ams, attr='v', value=p_stg,
+                        idx=link['stg_idx'].values)
+                rtn.set(src=vname_ams, attr='v', value=p_dyg,
+                        idx=link['stg_idx'].values)
+
+                var_dest = ''
+                var_dest += 'SynGen.Pe' if sa.SynGen.n > 0 else ''
+                var_dest += ', DG.Pe' if sa.DG.n > 0 else ''
+                var_dest += ', RenGen.Pe' if sa.RenGen.n > 0 else ''
+                var_dest += ', StaicGen.p' if sa.RenGen.n+sa.SynGen.n+sa.DG.n < sa.StaticGen.n else ''
+                logger.info(f'Receive <{vname_ams}> from {var_dest}')
+                continue
+
+            # --- other scenarios ---
+            if _dest_check(mname=mname_ads, pname=pname_ads, idx=idx_ads, adsys=sa):
+                v_ads = mdl_ads.get(src=pname_ads, attr='v', idx=idx_ads)
+                rtn.set(src=vname_ams, attr='v', idx=idx_ads, value=v_ads)
+                logger.warning(f'Receive <{vname_ams}> from {mname_ads}.{pname_ads}')
+        return True
 
 
 def _dest_check(mname, pname, idx, adsys):
