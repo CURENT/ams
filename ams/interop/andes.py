@@ -9,7 +9,6 @@ from collections import OrderedDict, Counter
 from andes.shared import pd, np
 from andes.utils.misc import elapsed
 from andes.system import System as andes_System
-from andes.interop.pandapower import make_link_table  # NOQA
 
 from ams.io import input_formats
 from ams.models.group import StaticGen
@@ -141,12 +140,9 @@ def to_andes(system, setup=False, addfile=None,
 
     # finalize
     system.dyn = Dynamic(amsys=system, adsys=adsys)
+    system.dyn.link_andes(adsys=adsys)
     if setup:
         adsys.setup()
-        system.dyn.link_andes(adsys=adsys)
-    else:
-        msg = 'System has not been linked to ANDES. Call ``dyn.link_andes(adsys=sa)`` after setup ANDES system.'
-        logger.warning(msg)
     return adsys
 
 
@@ -375,12 +371,17 @@ class Dynamic:
             The ANDES system instance.
         """
         self.adsys = adsys
-        if self.adsys.is_setup:
-            self.make_link()
-            logger.warning(f'AMS system {hex(id(self.amsys))} is linked to the ANDES system {hex(id(adsys))}.')
-        else:
-            msg = 'ANDES system is not setup yet.'
-            logger.warning(msg)
+        
+        link = make_link_table(self.adsys)
+        # re-order columns
+        cols = ['stg_idx', 'bus_idx',               # static gen
+                'syg_idx', 'gov_idx',               # syn gen
+                'dg_idx',                           # distributed gen
+                'rg_idx',                           # renewable gen
+                'gammap', 'gammaq',                 # gamma
+                ]
+        self.link = link[cols]
+        logger.warning(f'AMS system {hex(id(self.amsys))} is linked to the ANDES system {hex(id(adsys))}.')
 
     @property
     def is_tds(self):
@@ -411,22 +412,6 @@ class Dynamic:
             else:
                 return func(self, **kwargs)
         return wrapper
-
-    def make_link(self):
-        """
-        Make the link table of the ANDES system.
-
-        A wrapper of `adsys.interop.pandapower.make_link_table`.
-        """
-        self.link = make_link_table(self.adsys)
-        # adjust columns
-        cols = ['stg_idx', 'bus_idx',               # static gen
-                'syg_idx', 'gov_idx',               # syn gen
-                'dg_idx',                           # distributed gen
-                'rg_idx',                           # renewable gen
-                'gammap', 'gammaq',                 # gamma
-                ]
-        self.link = self.link[cols]
 
     def _send_tgr(self, sa, sp):
         """
@@ -547,112 +532,146 @@ class Dynamic:
         """
         sa = adsys if adsys is not None else self.adsys
         sp = self.amsys
-        # 1. information
+
+        # --- Information ---
         rtn = sp.recent if routine is None else getattr(sp, routine)
-        if rtn.exit_code != 0:
-            logger.warning(f'{sp.recent.class_name} is not solved optimally.')
+        if rtn is None:     # quit if no routine is found
+            logger.warning('No assigned or recent solved routine found, quit send.')
             return False
-        # NOTE:if DC types, check if results are converted
-        if rtn.type != 'ACED':
-            if rtn.is_ac:
-                logger.info(f'{rtn.class_name} results has been converted to AC.')
-            else:
-                msg = f'<{rtn.class_name}> AC conversion failed or not done yet!'
-                logger.error(msg)
-
-        try:
-            logger.info(f'Send <{rtn.class_name}> results to ANDES <{hex(id(sa))}>')
-        except AttributeError:
-            logger.warning('No solved routine found. Unable to sync with ANDES.')
+        elif rtn.exit_code != 0:    # quit if routine is not solved at optimal
+            logger.warning(f'{sp.recent.class_name} is not solved at optimal, quit send.')
             return False
-
-        # map-to dict
-        map2 = getattr(sp.recent, 'map2')
-        if len(map2) == 0:
-            logger.warning(f'Mapping dict "map2" of {sp.recent.class_name} is empty.')
-            return True
-        # check map2
-        pv_slack = 'PV' in map2.keys() and 'Slack' in map2.keys()
-        if pv_slack:
-            logger.warning('PV and Slack are both in map2, this might cause error when mapping.')
-
-        # 2. sync to dynamic if initialized
-        if self.is_tds:
-            logger.info('TDS is initialized, send to <tds> models.')
-            # 1) send Dynamic generator online status
-            self._send_dgu(sa=sa, sp=sp)
-            # 2) send other results
-            is_tgr_set = False
-            for mname, pmap in map2.items():
-                mdl = getattr(sa, mname)
-                for ams_vname, andes_pname in pmap.items():
-                    if andes_pname in mdl.vars.keys():
-                        logger.warning('Setting values to ANDES var is not allowed!')
-                        continue
-                    # a. power reference
-                    # FIXME: in this implementation, PV and Slack are only sync once, this might
-                    # cause problem if PV and Slack are mapped separately
-                    if not is_tgr_set and isinstance(mdl, (StaticGen, PV, Slack)):
-                        self._send_tgr(sa=sa, sp=sp)
-                        is_tgr_set = True
-                        logger.info('Generator power reference are sent to dynamic devices')
-                        continue
-                    # c. others, if any
-                    ams_var = getattr(sp.recent, ams_vname)
-                    v_ams = sp.recent.get(src=ams_vname, attr='v',
-                                          idx=ams_var.get_idx())
-                    try:
-                        mdl.set(src=andes_pname, attr='v',
-                                idx=ams_var.get_idx(), value=v_ams)
-                    except KeyError:
-                        logger.warning(f'Param {andes_pname} not found in ANDES model <{mname}>.')
-                        continue
-            return True
-
-        # 3. sync to static if not initialized
         else:
-            if sa.PFlow.exec_time > 0:
-                msg = 'ANDES PFlow has been run, please re-run it'
-                msg += ' before running TDS to avoid failed TDS initialization'
-                logger.info(msg)
-            else:
-                logger.warning('TDS is not excuted, send to <pflow> models')
-            # NOTE: mdl_name can be model name or group name
-            # it can be the case that an AMS model or group is not in ANDES
-            for mdl_name, pmap in map2.items():
-                for ams_vname, andes_pname in map2[mdl_name].items():
-                    # if qg in mapping, raise a warning
-                    if (ams_vname == 'qg') & (mdl_name in ['PV', 'Slack', 'StaticGen']):
-                        logger.warning('Setting `qg` to ANDES dynamic does not take effect.')
+            logger.info(f'Send <{rtn.class_name}> results to ANDES <{hex(id(sa))}>...')
 
-                    ams_var = getattr(sp.recent, ams_vname)
-                    idx = ams_var.get_idx()  # use AMS idx
-                    v_ams = sp.recent.get(src=ams_vname, attr='v', idx=idx)
+        # NOTE:if DC types, check if results are converted
+        if (rtn.type != 'ACED') and (not rtn.is_ac):
+            logger.error(f'<{rtn.class_name}> AC conversion failed or not done yet!')
 
-                    # try to find the corresponding ANDES model
-                    ad_mdl_grp = list(sa.models.keys()) + list(sa.model_aliases.keys()) + list(sa.groups.keys())
-                    if mdl_name in ad_mdl_grp:
-                        mdl_andes = getattr(sa, mdl_name)
-                    else:
-                        msg = f'<{mdl_name}> is neither a ANDES model nor group!'
-                        logger.error(msg)
-                        continue
-                    logger.debug(f'Send <{ams_vname}> to {mdl_andes.class_name}.{andes_pname}')
-                    mdl_andes.set(src=andes_pname, idx=idx, attr='v', value=v_ams)
-
-            # correct StaticGen v0 with Bus v0 if available
-            if 'Bus' in rtn.map2.keys():
-                if 'vBus' in rtn.map2['Bus'].keys():
-                    try:
-                        logger.warning('Adjust ANDES StaticGen.v0 with Bus.v0')
-                        stg_idx = sa.PV.idx.v + sa.Slack.idx.v
-                        stg_bus = sa.PV.bus.v + sa.Slack.bus.v
-                        vBus = sp.Bus.get(src='v0', attr='v', idx=stg_bus)
-                        sa.StaticGen.set(src='v0', attr='v', idx=stg_idx, value=vBus)
-                    except KeyError:
-                        msg = 'Failed to adjust ANDES StaticGen.v0 with Bus.v0'
-                        logger.warning(msg)
+        # --- Mapping ---
+        map2 = getattr(rtn, 'map2')     # mapping-to dict
+        if len(map2) == 0:
+            logger.warning(f'{rtn.class_name} has empty map2, quit send.')
             return True
+
+        # TODO: consider the type check or something else
+        # for example, set values into ANDES var is invalid
+        # NOTE: ads is short for ANDES
+        for vname_ams, (mname_ads, pname_ads) in map2.items():
+            # TODO: DELETE
+            logger.debug(f'--- Item: {vname_ams} -> {mname_ads}.{pname_ads} ---')
+            mdl_ads = getattr(sa, mname_ads)  # ANDES model or group
+            
+            # --- skipping scenarios ---
+            if mdl_ads.n == 0:
+                logger.debug(f'ANDES model <{mname_ads}> is empty.')
+                continue
+
+            var_ams = getattr(rtn, vname_ams)  # instance of AMS routine var
+            idx_ads = var_ams.get_idx()  # use AMS idx as target ANDES idx
+
+            # --- special scenarios ---
+            # 1. gen power reference; in TDS running, pg should go to TurbineGov
+            cond_ads_stg_p0  = (mname_ads in ['StaticGen', 'PV', 'Sclak']) and (pname_ads == 'p0')
+            if cond_ads_stg_p0 and (self.is_tds):
+                pass
+                # TODO: send to TurbineGov
+
+            # 2. gen online status; in TDS running, setting u is invalid
+            cond_ads_stg_u = (mname_ads in ['StaticGen', 'PV', 'Sclak']) and (pname_ads == 'u')
+            if cond_ads_stg_u and (self.is_tds):
+                logger.info('Setting StaticGen.u during TDS is invalid, skip.')
+                continue
+
+            # 3. Bus voltage
+            cond_ads_bus_v0 = (mname_ads == 'Bus') and (pname_ads == 'v0')
+            if cond_ads_bus_v0 and (self.is_tds):
+                logger.info('Setting Bus.v0 during TDS is invalid, skip.')
+                continue
+
+            # --- other scenarios ---
+            if _dest_check(mname=mname_ads, pname=pname_ads, idx=idx_ads, adsys=sa):
+                mdl_ads.set(src=pname_ads, attr='v', idx=idx_ads, value=var_ams.v)
+                logger.warning(f'Send <{vname_ams}> to {mname_ads}.{pname_ads}')
+        return True
+
+        # # 2. send to dynamic if initialized
+        # if self.is_tds:
+        #     logger.info('TDS is initialized, send to <tds> models.')
+        #     # 1) send Dynamic generator online status
+        #     self._send_dgu(sa=sa, sp=sp)
+        #     # 2) send other results
+        #     is_tgr_set = False
+        #     for mname, pmap in map2.items():
+        #         mdl = getattr(sa, mname)
+        #         for ams_vname, andes_pname in pmap.items():
+        #             if andes_pname in mdl.vars.keys():
+        #                 logger.warning('Setting values to ANDES var is not allowed!')
+        #                 continue
+        #             # a. power reference
+        #             # FIXME: in this implementation, PV and Slack are only sync once, this might
+        #             # cause problem if PV and Slack are mapped separately
+        #             if not is_tgr_set and isinstance(mdl, (StaticGen, PV, Slack)):
+        #                 self._send_tgr(sa=sa, sp=sp)
+        #                 is_tgr_set = True
+        #                 logger.info('Generator power reference are sent to dynamic devices')
+        #                 continue
+        #             # c. others, if any
+        #             ams_var = getattr(sp.recent, ams_vname)
+        #             v_ams = sp.recent.get(src=ams_vname, attr='v',
+        #                                   idx=ams_var.get_idx())
+        #             try:
+        #                 mdl.set(src=andes_pname, attr='v',
+        #                         idx=ams_var.get_idx(), value=v_ams)
+        #             except KeyError:
+        #                 logger.warning(f'Param {andes_pname} not found in ANDES model <{mname}>.')
+        #                 continue
+        #     return True
+
+        # # 3. sync to static if not initialized
+        # else:
+        #     if sa.PFlow.exec_time > 0:
+        #         msg = 'ANDES PFlow has been run, please re-run it'
+        #         msg += ' before running TDS to avoid failed TDS initialization'
+        #         logger.info(msg)
+        #     else:
+        #         logger.warning('TDS is not excuted, send to <pflow> models')
+        #     # NOTE: mdl_name can be model name or group name
+        #     # it can be the case that an AMS model or group is not in ANDES
+        #     for mdl_name, pmap in map2.items():
+        #         for ams_vname, andes_pname in map2[mdl_name].items():
+        #             # if qg in mapping, raise a warning
+        #             if (ams_vname == 'qg') & (mdl_name in ['PV', 'Slack', 'StaticGen']):
+        #                 logger.warning('Setting `qg` to ANDES dynamic does not take effect.')
+
+        #             ams_var = getattr(sp.recent, ams_vname)
+        #             idx = ams_var.get_idx()  # use AMS idx
+        #             v_ams = sp.recent.get(src=ams_vname, attr='v', idx=idx)
+
+        #             # try to find the corresponding ANDES model
+        #             ad_mdl_grp = list(sa.models.keys()) + list(sa.model_aliases.keys()) + list(sa.groups.keys())
+        #             if mdl_name in ad_mdl_grp:
+        #                 mdl_andes = getattr(sa, mdl_name)
+        #             else:
+        #                 msg = f'<{mdl_name}> is neither a ANDES model nor group!'
+        #                 logger.error(msg)
+        #                 continue
+        #             logger.debug(f'Send <{ams_vname}> to {mdl_andes.class_name}.{andes_pname}')
+        #             mdl_andes.set(src=andes_pname, idx=idx, attr='v', value=v_ams)
+
+        #     # correct StaticGen v0 with Bus v0 if available
+        #     if 'Bus' in rtn.map2.keys():
+        #         if 'vBus' in rtn.map2['Bus'].keys():
+        #             try:
+        #                 logger.warning('Adjust ANDES StaticGen.v0 with Bus.v0')
+        #                 stg_idx = sa.PV.idx.v + sa.Slack.idx.v
+        #                 stg_bus = sa.PV.bus.v + sa.Slack.bus.v
+        #                 vBus = sp.Bus.get(src='v0', attr='v', idx=stg_bus)
+        #                 sa.StaticGen.set(src='v0', attr='v', idx=stg_idx, value=vBus)
+        #             except KeyError:
+        #                 msg = 'Failed to adjust ANDES StaticGen.v0 with Bus.v0'
+        #                 logger.warning(msg)
+            # return True
 
     @require_link
     def receive(self, adsys=None):
@@ -817,3 +836,177 @@ class Dynamic:
         names_dyg += ', DG' if sa.DG.n > 0 else ''
         names_dyg += ', RenGen' if sa.RenGen.n > 0 else ''
         return u_dyg, idx_dyg, names_dyg
+
+
+def _dest_check(mname, pname, idx, adsys):
+    """
+    Check if destination is valid.
+
+    Parameters
+    ----------
+    mname : str
+        Target ANDES model/group name.
+    pname : str
+        Target ANDES parameter name.
+    idx : list
+        Target idx.
+    adsys : ANDES.system.System
+        Target ANDES system.
+    """
+    # --- check model ---
+    if not hasattr(adsys, mname):
+        raise ValueError(f'Model error: ANDES system <{hex(adsys)}> has no <{mname}>')
+
+    # --- check param ---
+    mdl = getattr(adsys, mname)
+    _is_grp = mname in adsys.groups.keys()
+    # if it is a group, use the first model in the group
+    mdl_grp_name = list(adsys.groups[mname].models.keys())[0] if _is_grp else mname
+    mdl_to_check = getattr(adsys, mdl_grp_name)
+    if not hasattr(mdl_to_check, pname):
+        raise ValueError(f'Param error: ANDES <{mdl.class_name}> has no <{pname}>')
+
+    # --- check idx ---
+    if _is_grp:
+        _ads_idx = [v for mdl in mdl.models.values() for v in mdl.idx.v]
+    else:
+        _ads_idx = mdl.idx.v
+    if not set(idx).issubset(set(_ads_idx)):
+        idx_gap = set(idx) - set(_ads_idx)
+        raise ValueError(f'Idx error: ANDES <{mdl.class_name}> has no idx: {idx_gap}')
+
+    return True
+
+
+def build_group_table(adsys, grp_name, param_name, mdl_name=[]):
+    """
+    Build the table for devices in a group in an ANDES System.
+
+    Parameters
+    ----------
+    adsys : andes.system.System
+        The ANDES system to build the table
+    grp_name : string
+        The ANDES group
+    param_name : list of string
+        The common columns of a group that to be included in the table.
+    mdl_name : list of string
+        The list of models that to be included in the table. Default as all models.
+
+    Returns
+    -------
+    DataFrame
+
+        The output Dataframe contains the columns from the device
+    """
+    grp_df = pd.DataFrame(columns=param_name)
+    grp = getattr(adsys, grp_name)  # get the group instance
+
+    mdl_to_add = mdl_name if mdl_name else list(grp.models.keys())
+    mdl_dfs = [getattr(adsys, mdl).as_df()[param_name] for mdl in mdl_to_add]
+
+    grp_df = pd.concat(mdl_dfs, axis=0, ignore_index=True)
+
+    # --- type sanity check ---
+    mdl_1st = adsys.models[mdl_to_add[0]]
+    # NOTE: force IdxParam to be string type
+    cols_to_convert = [col for col in param_name if
+                       (mdl_1st.params[col].class_name == 'IdxParam') and
+                       (pd.api.types.is_numeric_dtype(grp_df[col]))]
+    # NOTE: if 'idx' is included, force it to be string type
+    if ('idx' in param_name) and pd.api.types.is_numeric_dtype(grp_df['idx']):
+        cols_to_convert.append('idx')
+
+    grp_df[cols_to_convert] = grp_df[cols_to_convert].astype(int).astype(str)
+    return grp_df
+
+
+def make_link_table(adsys):
+    """
+    Build the link table for generators and generator controllers in an ANDES
+    System, including ``SynGen`` and ``DG`` for now.
+
+    Parameters
+    ----------
+    adsys : andes.system.System
+        The ANDES system to link
+
+    Returns
+    -------
+    DataFrame
+
+        Each column in the output Dataframe contains the ``idx`` of linked
+        ``StaticGen``, ``Bus``, ``DG``, ``RenGen``, ``RenExciter``, ``SynGen``,
+        ``Exciter``, and ``TurbineGov``, ``gammap``, ``gammaq``.
+    """
+    # --- build group tables ---
+    # 1) StaticGen
+    ssa_stg = build_group_table(adsys=adsys, grp_name='StaticGen',
+                                param_name=['u', 'name', 'idx', 'bus'],
+                                mdl_name=[])
+    # 2) TurbineGov
+    ssa_gov = build_group_table(adsys=adsys, grp_name='TurbineGov',
+                                param_name=['idx', 'syn'],
+                                mdl_name=[])
+    # 3) Exciter
+    ssa_exc = build_group_table(adsys=adsys, grp_name='Exciter',
+                                param_name=['idx', 'syn'],
+                                mdl_name=[])
+    # 4) SynGen
+    ssa_syg = build_group_table(adsys=adsys, grp_name='SynGen', mdl_name=['GENCLS', 'GENROU'],
+                                param_name=['idx', 'bus', 'gen', 'gammap', 'gammaq'])
+    # 5) DG
+    ssa_dg = build_group_table(adsys=adsys, grp_name='DG', mdl_name=[],
+                               param_name=['idx', 'bus', 'gen', 'gammap', 'gammaq'])
+    # 6) RenGen
+    ssa_rg = build_group_table(adsys=adsys, grp_name='RenGen', mdl_name=[],
+                               param_name=['idx', 'bus', 'gen', 'gammap', 'gammaq'])
+    # 7) RenExciter
+    ssa_rexc = build_group_table(adsys=adsys, grp_name='RenExciter', mdl_name=[],
+                                 param_name=['idx', 'reg'])
+
+    # --- build link table ---
+    # NOTE: use bus index as unique identifier
+    ssa_bus = build_group_table(adsys=adsys, grp_name='ACTopology', mdl_name=['Bus'],
+                                param_name=['name', 'idx'])
+    # 1) StaticGen
+    ssa_key = pd.merge(left=ssa_stg.rename(columns={'name': 'stg_name', 'idx': 'stg_idx',
+                                                    'bus': 'bus_idx', 'u': 'stg_u'}),
+                       right=ssa_bus.rename(columns={'name': 'bus_name', 'idx': 'bus_idx'}),
+                       how='left', on='bus_idx')
+    # 2) Dynamic Generators
+    ssa_syg = pd.merge(left=ssa_key, how='right', on='stg_idx',
+                       right=ssa_syg.rename(columns={'idx': 'syg_idx', 'gen': 'stg_idx'}))
+    ssa_dg = pd.merge(left=ssa_key, how='right', on='stg_idx',
+                      right=ssa_dg.rename(columns={'idx': 'dg_idx', 'gen': 'stg_idx'}))
+    ssa_rg = pd.merge(left=ssa_key, how='right', on='stg_idx',
+                      right=ssa_rg.rename(columns={'idx': 'rg_idx', 'gen': 'stg_idx'}))
+
+    # NOTE: for StaticGen without Dynamic Generator, fill gammap and gammaq as 1
+    ssa_key0 = pd.merge(left=ssa_key, how='left', on='stg_idx',
+                        right=ssa_syg[['stg_idx', 'syg_idx']])
+    ssa_key0 = pd.merge(left=ssa_key0, how='left', on='stg_idx',
+                        right=ssa_dg[['stg_idx', 'dg_idx']])
+    ssa_key0 = pd.merge(left=ssa_key0, how='left', on='stg_idx',
+                        right=ssa_rg[['stg_idx', 'rg_idx']])
+
+    ssa_key0.fillna(False, inplace=True)
+    dyr = ssa_key0['syg_idx'].astype(bool) + ssa_key0['dg_idx'].astype(bool) + ssa_key0['rg_idx'].astype(bool)
+    non_dyr = np.logical_not(dyr)
+    ssa_dyr0 = ssa_key0[non_dyr]
+    ssa_dyr0['gammap'] = 1
+    ssa_dyr0['gammaq'] = 1
+
+    ssa_key = pd.concat([ssa_syg, ssa_dg, ssa_rg, ssa_dyr0], axis=0)
+    ssa_key = pd.merge(left=ssa_key,
+                       right=ssa_exc.rename(columns={'idx': 'exc_idx', 'syn': 'syg_idx'}),
+                       how='left', on='syg_idx')
+    ssa_key = pd.merge(left=ssa_key,
+                       right=ssa_gov.rename(columns={'idx': 'gov_idx', 'syn': 'syg_idx'}),
+                       how='left', on='syg_idx')
+    ssa_key = pd.merge(left=ssa_key, how='left', on='rg_idx',
+                       right=ssa_rexc.rename(columns={'idx': 'rexc_idx', 'reg': 'rg_idx'}))
+
+    cols = ['stg_name', 'stg_u', 'stg_idx', 'bus_idx', 'dg_idx', 'rg_idx', 'rexc_idx',
+            'syg_idx', 'exc_idx', 'gov_idx', 'bus_name', 'gammap', 'gammaq']
+    return ssa_key[cols].reset_index(drop=True)
