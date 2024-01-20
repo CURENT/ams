@@ -504,8 +504,6 @@ class System(andes_System):
 
         Parameters
         ----------
-        system : System
-            The AMS system to be converted to ANDES format.
         setup : bool, optional
             Whether to call `setup()` after the conversion. Default is True.
         addfile : str, optional
