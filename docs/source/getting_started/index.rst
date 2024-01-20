@@ -24,11 +24,13 @@ Getting started
     install
     formats/index
     testcase
+    verification
+    copyright
 
 Quick install
 =============
 
-**Before AGVis comes to conda-forge and PyPI, you can install it from source,**
+**Before AMS comes to conda-forge and PyPI, you can install it from source,**
 check the guide in :ref:`Develop Install`.
 
 .. panels::

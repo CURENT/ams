@@ -228,11 +228,21 @@ class RoutineModel:
         if self.__dict__[src].owner is not None:
             # TODO: fit to `_v` type param in the future
             owner = self.__dict__[src].owner
-            return owner.set(src=src, idx=idx, attr=attr, value=value)
+            src0 = self.__dict__[src].src
+            src_owner = src0 if src0 is not None else src
+            try:
+                res = owner.set(src=src_owner, idx=idx, attr=attr, value=value)
+                return res
+            except KeyError as e:
+                msg = f"Failed to set <{src0}> in <{owner.class_name}>. "
+                msg += f"Original error: {e}"
+                raise KeyError(msg)
+            else:
+                logger.info(f"Failed to set <{src0}> in <{owner.class_name}>.")
+                return None
         else:
-            logger.info(f"Variable {self.name} has no owner.")
             # FIXME: add idx for non-grouped variables
-            return None
+            raise TypeError(f"Variable {self.name} has no owner.")
 
     def doc(self, max_width=78, export="plain"):
         """
@@ -313,11 +323,8 @@ class RoutineModel:
             logger.warning(msg)
 
         # --- matrix build ---
-        if force:
-            t_mat, _ = elapsed()
+        if force or isinstance(self.system.mats.Cft._v, type(None)):
             self.system.mats.make()
-            _, s_mat = elapsed(t_mat)
-            logger.debug(f"Built system matrices in {s_mat}.")
             for constr in self.constrs.values():
                 constr.is_disabled = False
 
@@ -539,7 +546,7 @@ class RoutineModel:
             sparams = [self.params[params]]
         elif isinstance(params, list):
             sparams = [self.params[param] for param in params if isinstance(param, str)]
-            for param in params:
+            for param in sparams:
                 param.update()
         for param in sparams:
             if param.optz is None:  # means no_parse=True
@@ -548,8 +555,8 @@ class RoutineModel:
         if mat_make:
             self.system.mats.make()
         if re_setup:
-            logger.warning(f"Resetup {self.class_name} OModel due to non-parametric change.")        
-            _, _ = self.om.setup(no_code=True)
+            logger.warning(f"Re-init {self.class_name} OModel due to non-parametric change.")
+            _ = self.om.init(no_code=True)
         results = self.om.update(params=sparams)
         t0, s0 = elapsed(t0)
         logger.debug(f"Update params in {s0}.")
@@ -600,6 +607,7 @@ class RoutineModel:
             name of the constraint to be enabled
         """
         if isinstance(name, list):
+            constr_act = []
             for n in name:
                 if n not in self.constrs:
                     logger.warning(f"Constraint <{n}> not found.")
@@ -608,7 +616,11 @@ class RoutineModel:
                     logger.warning(f"Constraint <{n}> has already been enabled.")
                     continue
                 self.constrs[n].is_disabled = False
-                self.initialized = False
+                self.om.initialized = False
+                constr_act.append(n)
+            if len(constr_act) > 0:
+                msg = ", ".join(constr_act)
+                logger.warning(f"Turn on constraints: {msg}")
             return True
 
         if name in self.constrs:
@@ -616,8 +628,8 @@ class RoutineModel:
                 logger.warning(f"Constraint <{name}> has already been enabled.")
             else:
                 self.constrs[name].is_disabled = False
-                self.initialized = False
-                logger.warning(f"Enable constraint <{name}>.")
+                self.om.initialized = False
+                logger.warning(f"Turn on constraint <{name}>.")
             return True
 
     def disable(self, name):
@@ -630,6 +642,7 @@ class RoutineModel:
             name of the constraint to be disabled
         """
         if isinstance(name, list):
+            constr_act = []
             for n in name:
                 if n not in self.constrs:
                     logger.warning(f"Constraint <{n}> not found.")
@@ -638,6 +651,10 @@ class RoutineModel:
                 else:
                     self.constrs[n].is_disabled = True
                     self.om.initialized = False
+                    constr_act.append(n)
+            if len(constr_act) > 0:
+                msg = ", ".join(constr_act)
+                logger.warning(f"Turn off constraints: {msg}")
             return True
 
         if name in self.constrs:
@@ -646,7 +663,7 @@ class RoutineModel:
             else:
                 self.constrs[name].is_disabled = True
                 self.om.initialized = False
-                logger.warning(f"Disable constraint <{name}>.")
+                logger.warning(f"Turn off constraint <{name}>.")
             return True
 
         logger.warning(f"Constraint <{name}> not found.")

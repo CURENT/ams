@@ -428,19 +428,6 @@ class System(andes_System):
                 algeb.a = np.arange(a0, a0 + algeb.owner.n)
                 a0 += algeb.owner.n
 
-        # set up matrix processor
-        self.mats.make()
-
-        # NOTE: initialize om for all routines
-        for _, rtn in self.routines.items():
-            # rtn.setup()  # not setup optimization model in system setup stage
-            a0 = 0
-            for _, var in rtn.vars.items():
-                var.a = np.arange(a0, a0 + var.owner.n)
-                a0 += var.owner.n
-            for rpname, rparam in rtn.rparams.items():
-                rparam.rtn = rtn
-
         _, s = elapsed(t0)
         logger.info('System set up in %s.', s)
 
@@ -517,8 +504,6 @@ class System(andes_System):
 
         Parameters
         ----------
-        system : System
-            The AMS system to be converted to ANDES format.
         setup : bool, optional
             Whether to call `setup()` after the conversion. Default is True.
         addfile : str, optional
@@ -561,14 +546,15 @@ class System(andes_System):
         nl = self.Line.n
         ng = self.StaticGen.n
 
-        pd = self.PQ.p0.v.sum() * self.config.mva
-        qd = self.PQ.q0.v.sum() * self.config.mva
+        pd = self.PQ.p0.v.sum()
+        qd = self.PQ.q0.v.sum()
 
         out = list()
 
         out.append(f"-> Systen size:")
-        out.append(f"{nb} Buses; {nl} Lines; {ng} Generators")
-        out.append(f"Active load: {pd:,.2f} MW; Reactive load: {qd:,.2f} MVar")
+        out.append(f"Base: {self.config.mva} MVA; Frequency: {self.config.freq} Hz")
+        out.append(f"{nb} Buses; {nl} Lines; {ng} Static Generators")
+        out.append(f"Active load: {pd:,.2f} p.u.; Reactive load: {qd:,.2f} p.u.")
 
         out.append("-> Data check results:")
         for type, names in rtn_types.items():

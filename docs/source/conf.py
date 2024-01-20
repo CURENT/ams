@@ -60,7 +60,7 @@ language = "en"
 
 # General information about the project.
 project = 'AMS'
-copyright = '2023, Jinning Wang'
+copyright = '2023-2024, Jinning Wang'
 author = 'Jinning Wang'
 
 # TODO: fix the version later on
@@ -93,7 +93,7 @@ html_theme_options = {
 
 html_context = {
     "github_url": "https://github.com",
-    "github_user": "jinningwang",
+    "github_user": "CURENT",
     "github_repo": "ams",
     "github_version": "master",
     "doc_path": "docs/source",

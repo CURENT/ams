@@ -10,11 +10,11 @@
 pytest==7.0.1 #                 dev
 flake8 #                        dev
 igraph #                        dev
-sphinx #                        dev, doc
+sphinx>=5.0 #                        dev, doc
 pydata-sphinx-theme #           dev, doc
 numpydoc #                      dev, doc
 sphinx-copybutton #             dev, doc
 sphinx-panels #                 dev, doc
 pydata-sphinx-theme #           dev, doc
-myst-parser==0.15.2 #           dev, doc
+myst-parser #           dev, doc
 myst-nb #                       dev, doc

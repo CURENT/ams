@@ -19,7 +19,7 @@ to a single bus, branch, gen, etc. The format of the data is similar to the PTI 
 
 
 Example Case9
---------------------
+~~~~~~~~~~~~~~~~~~
 
 .. code:: python
 
@@ -84,7 +84,7 @@ Example Case9
 
 
 Version Information
--------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 There are two versions of the PYPOWER case file format. The current
 version of PYPOWER uses version 2 of the PYPOWER case format
@@ -113,7 +113,7 @@ and, given an appropriate 'savecase' callback function (see doc for
 
 
 Bus
----
+~~~~~~~~~
 
 #.  bus number (positive integer)
 #.  bus type
@@ -134,7 +134,7 @@ Bus
 #.  ``minVm``, minimum voltage magnitude (p.u.)
 
 Generator
----------
+~~~~~~~~~~~~~~~~~~
 
 #.  bus number
 #.  ``Pg``, real power output (MW)
@@ -162,7 +162,7 @@ Generator
 
 
 Branch
-------
+~~~~~~~~~
 
 #.  ``f``, from bus number
 #.  ``t``, to bus number
@@ -185,7 +185,7 @@ Branch
 
 
 Generator Cost
---------------
+~~~~~~~~~~~~~~~~~~
 
 .. note::
 
@@ -213,7 +213,7 @@ Generator Cost
 
 
 Area (deprecated)
------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. note::
 
@@ -221,4 +221,3 @@ Area (deprecated)
 
 #.  ``i``, area number
 #.  ``price_ref_bus``, reference bus for that area
-

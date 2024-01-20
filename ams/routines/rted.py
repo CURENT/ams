@@ -142,24 +142,21 @@ class RTED(DCOPF, RTEDBase, SFRBase):
                               t="time interval in hours",
                               )
 
-        self.map1 = OrderedDict([
-            ('StaticGen', {
-                'pg0': 'p',
-            }),
-        ])
-        # NOTE: define map2
-        # DC-based RTED assume bus voltage to be 1
-        # here we mock the ACOPF bus voltage results to fit the interface
-        self.map2 = OrderedDict([
-            ('Bus', {
-                'vBus': 'v0',
-            }),
-            ('StaticGen', {
-                'pg': 'p0',
-            }),
-        ])
         self.info = 'Real-time economic dispatch'
         self.type = 'DCED'
+
+        # --- Mapping Section ---
+        # --- from map ---
+        self.map1.update({
+            'ug': ('StaticGen', 'u'),
+            'pg0': ('StaticGen', 'p'),
+        })
+        # --- to map ---
+        self.map2.update({
+            'vBus': ('Bus', 'v0'),
+            'ug': ('StaticGen', 'u'),
+            'pg': ('StaticGen', 'p0'),
+        })
 
         # --- Model Section ---
         # --- SFR ---
@@ -553,8 +550,6 @@ class RTEDVIS(RTED, VISBase):
         self.obj.e_str = gcost + rcost + vsgcost
 
         self.map2.update({
-            'RenGen': {
-                'M': 'M',
-                'D': 'D',
-            },
+            'M': ('RenGen', 'M'),
+            'D': ('RenGen', 'D'),
         })

@@ -10,29 +10,32 @@ Python Software for Power System Dispatch Modeling and Co-Simulation with Dynani
 
 # Why AMS
 
-With the built-in interface with dynamic simulation engine, LTB ANDES, AMS enables Dynamics Interfaced Stability Constrained Production Cost and Market Operation Modeling.
+With the built-in interface with dynamic simulation engine, ANDES, AMS enables Dynamics Interfaced Stability Constrained Production Cost and Market Operation Modeling.
 
-AMS produces credible dispatch results.
-The following table shows the comparison of DC optimal power flow results between AMS and other tools.
+AMS produces credible dispatch results and competitive performance.
+The following results show the comparison of DCOPF between AMS and other tools.
 
-|               | AMS GUROBI   | AMS ECOS     | PYPOWER      | pandapower   |
-|---------------|--------------|--------------|--------------|--------------|
-| case39.m      | 41,461.94    | 41,461.94    | 41,461.94    | 41,461.94    |
-| ieee14_uced.xlsx | 45.72     | 45.72        | 45.72        | 45.72        |
-| ieee39_uced.xlsx | 36,513.47 | 36,513.47    | 36,513.47    | 36,513.47    |
-| npcc.m        | 57,664,760.85| 57,664,760.85| 57,664,760.85| 57,664,760.85|
+| Cost [\$]       |      AMS       |  MATPOWER   | pandapower |
+|----------------:|--------------:|------------:|-----------:|
+| PEGASE 1354-Bus |  1,173,590.63  |  1,173,590.63 |  1,173,590.63 |
+| PEGASE 2869-Bus |  2,338,915.61  |  2,338,915.61 |  2,338,915.61 |
+| GOC 4020-Bus    |    793,634.11  |    793,634.11 |    793,634.11 |
+| EPIGRIDS 5658-Bus| 1,195,466.12  |  1,195,466.12 |  1,195,466.12 |
+| EPIGRIDS 7336-Bus| 1,855,870.94  |  1,855,870.94 |  1,855,870.94 |
+
+<img src="docs/source/images/dcopf_time.png" alt="DCOPF Time" width="400" height="auto">
 
 AMS is currently under active development.
 Use the following resources to get involved.
 
 + Start from the [documentation][readthedocs] for installation and tutorial.
 + Check out examples in the [examples folder][examples]
++ Read the model verification results in the [examples/verification folder][verification]
++ Ask a question in the [GitHub Discussions][Github Discussions]
 + Report bugs or issues by submitting a [GitHub issue][GitHub issues]
 + Submit contributions using [pull requests][GitHub pull requests]
 + Read release notes highlighted [here][release notes]
-<!-- + Read the model verification results in the [examples/verification folder][verification] -->
 <!-- + Try in Jupyter Notebook on [Binder][Binder] -->
-<!-- + Ask a question in the [GitHub Discussions][Github Discussions] -->
 <!-- + Check out and and cite our [paper][arxiv paper] -->
 
 # Sponsors and Contributors
