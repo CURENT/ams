@@ -12,7 +12,9 @@ Pre-v1.0.0
 v0.8.1 (2024-01-xx)
 -------------------
 
-- Mimprove ``MatProcessor``
+- Improve ``MatProcessor``
+- Add more examples
+- Improve ANDES interface
 
 v0.8.0 (2024-01-09)
 -------------------
