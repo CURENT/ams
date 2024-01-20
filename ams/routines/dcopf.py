@@ -85,6 +85,12 @@ class DCOPF(RoutineModel):
         self.rate_a = RParam(info='long-term flow limit',
                              name='rate_a', tex_name=r'R_{ATEA}',
                              unit='MVA', model='Line',)
+        # --- line angle difference ---
+        self.amax = NumOp(u=self.rate_a, fun=np.ones_like,
+                          rfun=np.dot, rargs=dict(b=np.pi),
+                          name='amax', tex_name=r'\theta_{max}',
+                          info='max line angle difference',
+                          no_parse=True,)
         # --- shunt ---
         self.gsh = RParam(info='shunt conductance',
                           name='gsh', tex_name=r'g_{sh}',
@@ -99,9 +105,9 @@ class DCOPF(RoutineModel):
                          name='Cl', tex_name=r'C_{l}',
                          model='mats', src='Cl',
                          no_parse=True, sparse=True,)
-        self.Cft = RParam(info='Line connection matrix',
-                          name='Cft', tex_name=r'C_{ft}',
-                          model='mats', src='Cft',
+        self.CftT = RParam(info='Transpose of line connection matrix',
+                           name='CftT', tex_name=r'C_{ft}^T',
+                           model='mats', src='CftT',
                           no_parse=True, sparse=True,)
         self.Csh = RParam(info='Shunt connection matrix',
                           name='Csh', tex_name=r'C_{sh}',
@@ -158,6 +164,12 @@ class DCOPF(RoutineModel):
         self.plfub = Constraint(info='line flow upper bound',
                                 name='plfub', type='uq',
                                 e_str='Bf@aBus + Pfinj - rate_a',)
+        self.alflb = Constraint(info='line angle difference lower bound',
+                                name='alflb', type='uq',
+                                e_str='-CftT@aBus - amax',)
+        self.alfub = Constraint(info='line angle difference upper bound',
+                                name='alfub', type='uq',
+                                e_str='CftT@aBus - amax',)
 
         # --- objective ---
         obj = 'sum(mul(c2, power(pg, 2)))'
