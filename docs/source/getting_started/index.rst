@@ -24,6 +24,8 @@ Getting started
     install
     formats/index
     testcase
+    verification
+    copyright
 
 Quick install
 =============
