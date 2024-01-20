@@ -30,11 +30,11 @@ Use the following resources to get involved.
 
 + Start from the [documentation][readthedocs] for installation and tutorial.
 + Check out examples in the [examples folder][examples]
++ Read the model verification results in the [examples/verification folder][verification]
++ Ask a question in the [GitHub Discussions][Github Discussions]
 + Report bugs or issues by submitting a [GitHub issue][GitHub issues]
 + Submit contributions using [pull requests][GitHub pull requests]
 + Read release notes highlighted [here][release notes]
-+ Ask a question in the [GitHub Discussions][Github Discussions]
-<!-- + Read the model verification results in the [examples/verification folder][verification] -->
 <!-- + Try in Jupyter Notebook on [Binder][Binder] -->
 <!-- + Check out and and cite our [paper][arxiv paper] -->
 
