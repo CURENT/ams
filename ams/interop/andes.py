@@ -610,7 +610,7 @@ class Dynamic:
                 logger.warning(f'Send <{vname_ams}> to {mname_ads}.{pname_ads}')
         return True
 
-    def receive(self, adsys=None, routine=None):
+    def receive(self, adsys=None, routine=None, no_update=False):
         """
         Receive ANDES system results to AMS devices.
 
@@ -621,6 +621,8 @@ class Dynamic:
             linked ANDES system isntance (``sp.dyn.adsys``).
         routine : str, optional
             The routine to be received from ANDES. If None, ``recent`` will be used.
+        no_update : bool, optional
+            True to skip update the AMS routine parameters after sync. Default is False.
         """
         sa = adsys if adsys is not None else self.adsys
         sp = self.amsys
@@ -639,6 +641,7 @@ class Dynamic:
             return True
 
         link = sp.dyn.link      # link table
+        pname_to_update = []    # list of parameters to be updated
         for vname_ams, (mname_ads, pname_ads) in map1.items():
             mdl_ads = getattr(sa, mname_ads)  # ANDES model or group
 
@@ -671,11 +674,15 @@ class Dynamic:
                 # Sync StaticGen.u first, then overwrite the ones with dynamic generator
                 u_stg = sa.StaticGen.get(src='u', attr='v',
                                          idx=link['stg_idx'].values)
+                # NOTE: only update u if changed actually
+                u0_rtn = rtn.get(src=vname_ams, attr='v', idx=link['stg_idx'].values).copy()
                 rtn.set(src=vname_ams, attr='v', value=u_stg,
                         idx=link['stg_idx'].values)
                 rtn.set(src=vname_ams, attr='v', value=u_dyg,
                         idx=link['stg_idx'].values)
-
+                u_rtn = rtn.get(src=vname_ams, attr='v', idx=link['stg_idx'].values).copy()
+                if not np.array_equal(u0_rtn, u_rtn):
+                    pname_to_update.append(vname_ams)
                 var_dest = ''
                 var_dest += 'SynGen.u' if sa.SynGen.n > 0 else ''
                 var_dest += ', DG.u' if sa.DG.n > 0 else ''
@@ -714,6 +721,8 @@ class Dynamic:
                 rtn.set(src=vname_ams, attr='v', value=p_dyg,
                         idx=link['stg_idx'].values)
 
+                pname_to_update.append(vname_ams)
+
                 var_dest = ''
                 var_dest += 'SynGen.Pe' if sa.SynGen.n > 0 else ''
                 var_dest += ', DG.Pe' if sa.DG.n > 0 else ''
@@ -726,7 +735,14 @@ class Dynamic:
             if _dest_check(mname=mname_ads, pname=pname_ads, idx=idx_ads, adsys=sa):
                 v_ads = mdl_ads.get(src=pname_ads, attr='v', idx=idx_ads)
                 rtn.set(src=vname_ams, attr='v', idx=idx_ads, value=v_ads)
+                pname_to_update.append(vname_ams)
                 logger.warning(f'Receive <{vname_ams}> from {mname_ads}.{pname_ads}')
+
+        # --- update routine parameters ---
+        if no_update and (len(pname_to_update) > 0):
+            logger.info(f'Please update <{rtn.class_name}> parameters: {pname_to_update}')
+        elif len(pname_to_update) > 0:
+            rtn.update(params=pname_to_update, mat_make=False)
         return True
 
 
