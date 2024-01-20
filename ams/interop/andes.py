@@ -99,7 +99,7 @@ def to_andes(system, setup=False, addfile=None,
     >>> sp = ams.load(ams.get_case('ieee14/ieee14_rted.xlsx'), setup=True)
     >>> sa = sp.to_andes(setup=False,
     ...                  addfile=andes.get_case('ieee14/ieee14_wt3.xlsx'),
-    ...                  overwrite=True, no_keep=True, no_output=True)
+    ...                  overwrite=True, no_output=True)
 
     Notes
     -----
