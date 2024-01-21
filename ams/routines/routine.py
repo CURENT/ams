@@ -169,7 +169,7 @@ class RoutineModel:
             Index of the variable or parameter.
         attr: str
             Attribute name.
-        horizon: int, str, or list, optional
+        horizon: list, optional
             Horizon index.
         """
         if src not in self.__dict__.keys():
@@ -201,24 +201,19 @@ class RoutineModel:
             if item.horizon is None:
                 raise ValueError(f"horizon is not defined for {self.class_name}.{src}.")
             horizon_all = item.horizon.get_idx()
-            if isinstance(horizon, int):
-                horizon = [horizon]
-            if isinstance(horizon, str):
-                horizon = [int(horizon)]
-            if isinstance(horizon, np.ndarray):
-                horizon = horizon.tolist()
-            if isinstance(horizon, list):
-                loc_h = [
-                    horizon_all.index(idxe) if idxe in horizon_all else None
-                    for idxe in horizon
-                ]
-                if None in loc_h:
-                    idx_none = [idxe for idxe in horizon if idxe not in horizon_all]
-                    msg = f"Var <{self.class_name}.{src}> does not contain horizon with idx={idx_none}"
-                    raise ValueError(msg)
-                out = out[:, loc_h]
-                if out.shape[1] == 1:
-                    out = out[:, 0]
+            if not isinstance(horizon, list):
+                raise TypeError(f"horizon must be a list, not {type(horizon)}.")
+            loc_h = [
+                horizon_all.index(idxe) if idxe in horizon_all else None
+                for idxe in horizon
+            ]
+            if None in loc_h:
+                idx_none = [idxe for idxe in horizon if idxe not in horizon_all]
+                msg = f"Var <{self.class_name}.{src}> does not contain horizon with idx={idx_none}"
+                raise ValueError(msg)
+            out = out[:, loc_h]
+            if out.shape[1] == 1:
+                out = out[:, 0]
         return out
 
     def set(self, src: str, idx, attr: str = "v", value=0.0):
