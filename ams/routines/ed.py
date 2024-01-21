@@ -180,6 +180,8 @@ class ED(RTED):
         self.plf.info = '2D Line flow'
         self.plflb.e_str = '-Bf@aBus - Pfinj@tlv - rate_a@tlv'
         self.plfub.e_str = 'Bf@aBus + Pfinj@tlv - rate_a@tlv'
+        self.alflb.e_str = '-CftT@aBus - amax@tlv'
+        self.alfub.e_str = 'CftT@aBus - amax@tlv'
 
         # --- power balance ---
         self.pb.e_str = 'Bbus@aBus + Pbusinj@tlv + Cl@pds + Csh@gsh@tlv - Cg@pg'

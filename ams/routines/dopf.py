@@ -36,9 +36,6 @@ class DOPF(DCOPF):
         self.qmin = RParam(info='generator minimum reactive power',
                            name='qmin', tex_name=r'q_{min}', unit='p.u.',
                            model='StaticGen', src='qmin',)
-        self.CftT = RParam(info='Line connectivity matrix transpose',
-                           name='CftT', tex_name=r'C_{ft}^{T}',
-                           model='mats', src='CftT', no_parse=True,)
         # --- load ---
         self.qd = RParam(info='reactive demand',
                          name='qd', tex_name=r'q_{d}', unit='p.u.',
