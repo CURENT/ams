@@ -9,9 +9,8 @@
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-# TODO: fix the importing error later on
 import ams
-# import shutil
+import shutil
 
 extensions = [
     'sphinx.ext.autodoc',
@@ -61,7 +60,7 @@ language = "en"
 
 # General information about the project.
 project = 'AMS'
-copyright = '2023, Jinning Wang'
+copyright = '2023-2024, Jinning Wang'
 author = 'Jinning Wang'
 
 # TODO: fix the version later on
@@ -94,7 +93,7 @@ html_theme_options = {
 
 html_context = {
     "github_url": "https://github.com",
-    "github_user": "jinningwang",
+    "github_user": "CURENT",
     "github_repo": "ams",
     "github_version": "master",
     "doc_path": "docs/source",
@@ -184,11 +183,12 @@ smartquotes = False
 exec(open("genmodelref.py").read())
 exec(open("genroutineref.py").read())
 
-jupyter_execute_notebooks = "off"
-
 # import and execute model reference generation script
-# TODO: use this for routines doumentation later on
-# exec(open("genroutineref.py").read())
+shutil.rmtree("_examples", ignore_errors=True)
+shutil.copytree("../../examples", "_examples", )
+shutil.rmtree("_examples/demonstration")
+
+jupyter_execute_notebooks = "off"
 
 # sphinx-panels shouldn't add bootstrap css since the pydata-sphinx-theme
 # already loads it

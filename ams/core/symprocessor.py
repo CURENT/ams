@@ -4,10 +4,12 @@ Symbolic processor class for AMS routines.
 This module is revised from ``andes.core.symprocessor``.
 """
 
-import logging  # NOQA
-from collections import OrderedDict  # NOQA
+import logging
+from collections import OrderedDict
 
-import sympy as sp  # NOQA
+import sympy as sp
+
+from ams.core.matprocessor import MatProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -23,34 +25,17 @@ class SymProcessor:
 
     Attributes
     ----------
-    x: sympy.Matrix
-        variables pretty print
-    c : sympy.Matrix
-        pretty print of variables coefficients
-    Aub : sympy.Matrix
-        Aub pretty print
-    Aeq : sympy.Matrix
-        Aeq pretty print
-    bub : sympy.Matrix
-        pretty print of inequality upper bound
-    beq : sympy.Matrix
-        pretty print of equality bound
-    lb : sympy.Matrix
-        pretty print of variables lower bound
-    ub : sympy.Matrix
-        pretty print of variables upper bound
-    inputs_dict : OrderedDict
-        All possible symbols in equations, including variables, parameters, and
-        config flags.
-    vars_dict : OrderedDict
-        variable-only symbols, which are useful when getting the Jacobian matrices.
+    sub_map : dict
+        Substitution map for symbolic processing.
+    tex_map : dict
+        Tex substitution map for documentation.
+    val_map : dict
+        Value substitution map for post-solving value evaluation.
     """
 
     def __init__(self, parent):
         self.parent = parent
         self.inputs_dict = OrderedDict()
-        self.vars_dict = OrderedDict()
-        self.vars_list = list()       # list of variable symbols, corresponding to `self.xy`
         self.services_dict = OrderedDict()
         self.config = parent.config
         self.class_name = parent.class_name
@@ -65,13 +50,21 @@ class SymProcessor:
             (r' dot ', r' * '),
             (r'\bsum\b', f'{lang}.sum'),
             (r'\bvar\b', f'{lang}.Variable'),
+            (r'\bparam\b', f'{lang}.Parameter'),
+            (r'\bconst\b', f'{lang}.Constant'),
             (r'\bproblem\b', f'{lang}.Problem'),
             (r'\bmultiply\b', f'{lang}.multiply'),
+            (r'\bmul\b', f'{lang}.multiply'),  # alias for multiply
             (r'\bvstack\b', f'{lang}.vstack'),
             (r'\bnorm\b', f'{lang}.norm'),
             (r'\bpos\b', f'{lang}.pos'),
             (r'\bpower\b', f'{lang}.power'),
             (r'\bsign\b', f'{lang}.sign'),
+            (r'\bsquare\b', f'{lang}.square'),
+            (r'\bquad_over_lin\b', f'{lang}.quad_over_lin'),
+            (r'\bdiag\b', f'{lang}.diag'),
+            (r'\bquad_form\b', f'{lang}.quad_form'),
+            (r'\bsum_squares\b', f'{lang}.sum_squares'),
         ])
 
         self.tex_map = OrderedDict([
@@ -79,9 +72,18 @@ class SymProcessor:
             (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 \2'),
             (r'\@', r' '),
             (r'dot', r' '),
+            (r'sum_squares\((.*?)\)', r"SUM((\1))^2"),
             (r'multiply\(([^,]+), ([^)]+)\)', r'\1 \2'),
             (r'\bnp.linalg.pinv(\d+)', r'\1^{\-1}'),
             (r'\bpos\b', 'F^{+}'),
+            (r'mul\((.*?),\s*(.*?)\)', r'\1 \2'),
+            (r'\bmul\b\((.*?),\s*(.*?)\)', r'\1 \2'),
+            (r'\bsum\b', 'SUM'),
+        ])
+
+        # mapping dict for evaluating expressions
+        self.val_map = OrderedDict([
+            (r'\bcp.\b', 'np.'),
         ])
 
         self.status = {
@@ -105,6 +107,7 @@ class SymProcessor:
         if not force_generate and self.parent._syms:
             return True
         logger.debug(f'- Generating symbols for {self.parent.class_name}')
+
         # process tex_names defined in routines
         # -----------------------------------------------------------
         for key in self.parent.tex_names.keys():
@@ -114,25 +117,42 @@ class SymProcessor:
         for vname, var in self.parent.vars.items():
             tmp = sp.symbols(f'{var.name}')
             # tmp = sp.symbols(var.name)
-            self.vars_dict[vname] = tmp
             self.inputs_dict[vname] = tmp
             self.sub_map[rf"\b{vname}\b"] = f"self.om.{vname}"
             self.tex_map[rf"\b{vname}\b"] = rf'{var.tex_name}'
+            self.val_map[rf"\b{vname}\b"] = f"rtn.{vname}.v"
 
         # RParams
         for rpname, rparam in self.parent.rparams.items():
             tmp = sp.symbols(f'{rparam.name}')
             self.inputs_dict[rpname] = tmp
-            self.sub_map[rf"\b{rpname}\b"] = f'self.om.rtn.{rpname}.v'
+            sub_name = ''
+            if isinstance(rparam.owner, MatProcessor):
+                # sparse matrices are accessed from MatProcessor
+                # otherwise, dense matrices are accessed from Routine
+                if rparam.sparse:
+                    sub_name = f'self.rtn.system.mats.{rpname}._v'
+                else:
+                    sub_name = f'self.rtn.{rpname}.v'
+            elif rparam.no_parse:
+                sub_name = f'self.rtn.{rpname}.v'
+            else:
+                sub_name = f'self.om.{rpname}'
+            self.sub_map[rf"\b{rpname}\b"] = sub_name
             self.tex_map[rf"\b{rpname}\b"] = f'{rparam.tex_name}'
+            if not rparam.no_parse:
+                self.val_map[rf"\b{rpname}\b"] = f"rtn.{rpname}.v"
 
         # Routine Services
         for sname, service in self.parent.services.items():
             tmp = sp.symbols(f'{service.name}')
             self.services_dict[sname] = tmp
             self.inputs_dict[sname] = tmp
-            self.sub_map[rf"\b{sname}\b"] = f'self.om.rtn.{sname}.v'
+            sub_name = f'self.rtn.{sname}.v' if service.no_parse else f'self.om.{sname}'
+            self.sub_map[rf"\b{sname}\b"] = sub_name
             self.tex_map[rf"\b{sname}\b"] = f'{service.tex_name}'
+            if not service.no_parse:
+                self.val_map[rf"\b{sname}\b"] = f"rtn.{sname}.v"
 
         # store tex names defined in `self.config`
         for key in self.config.as_dict():
@@ -155,8 +175,6 @@ class SymProcessor:
         # additional variables by conventions that are defined in ``BaseRoutine``
         self.inputs_dict['sys_f'] = sp.symbols('sys_f')
         self.inputs_dict['sys_mva'] = sp.symbols('sys_mva')
-
-        self.vars_list = list(self.vars_dict.values())  # useful for ``.jacobian()``
 
         self.parent._syms = True
 

@@ -87,9 +87,9 @@ class Test5Bus(unittest.TestCase):
         """
 
         self.ss.GCost.alter("c1", ['GCost_1', 'GCost_2'], [1500., 3100.])
-        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 4000., 3000.])
+        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1])
         self.ss.ACOPF.run()
-        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 4000., 3000.])
+        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1])
 
     def test_alter_param_after_routine(self):
         """
@@ -98,9 +98,9 @@ class Test5Bus(unittest.TestCase):
 
         self.ss.ACOPF.run()
         self.ss.GCost.alter("c1", ['GCost_1', 'GCost_2'], [1500., 3100.])
-        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 4000., 3000.])
+        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1])
         self.ss.ACOPF.run()
-        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 4000., 3000.])
+        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1])
 
     def test_multiple_disconnected_line(self):
         """
@@ -237,8 +237,8 @@ class TestCaseInit(unittest.TestCase):
             default_config=True,
             no_output=True,
         )
-        ss.ED2.init()
-        ss.UC2.init()
+        ss.EDES.init()
+        ss.UCES.init()
 
-        self.assertEqual(ss.ED2.exit_code, 0, "Exit code is not 0.")
-        self.assertEqual(ss.UC2.exit_code, 0, "Exit code is not 0.")
+        self.assertEqual(ss.EDES.exit_code, 0, "Exit code is not 0.")
+        self.assertEqual(ss.UCES.exit_code, 0, "Exit code is not 0.")

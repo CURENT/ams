@@ -2,4 +2,4 @@
 Top-level package for renewable models.
 """
 
-from ams.models.renewable.regcv1 import REGCV1  # NOQA
+from ams.models.renewable.regc import REGCA1, REGCV1, REGCV2  # NOQA

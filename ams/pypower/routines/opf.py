@@ -2,29 +2,28 @@
 Module to solve OPF.
 """
 
-import logging  # NOQA
-from copy import deepcopy  # NOQA
+import logging
+from copy import deepcopy
 
-import numpy as np  # NOQA
-from numpy import flatnonzero as find  # NOQA
+import numpy as np
+from numpy import flatnonzero as find
 
-import scipy.sparse as sp  # NOQA
-from scipy.sparse import csr_matrix as c_sparse  # NOQA
+import scipy.sparse as sp
+from scipy.sparse import csr_matrix as c_sparse
 
-from andes.shared import deg2rad  # NOQA
-from andes.utils.misc import elapsed  # NOQA
+from andes.shared import deg2rad
+from andes.utils.misc import elapsed
 
-from ams.pypower.core import ppoption, pipsopf_solver, ipoptopf_solver  # NOQA
-from ams.pypower.utils import isload, fairmax  # NOQA
-from ams.pypower.idx import IDX  # NOQA
-from ams.pypower.io import loadcase  # NOQA
-import ams.pypower.utils as putil  # NOQA
+from ams.pypower.core import (ppoption, pipsopf_solver, ipoptopf_solver)
+from ams.pypower.utils import isload, fairmax
+from ams.pypower.idx import IDX
+from ams.pypower.io import loadcase
 from ams.pypower.make import (makeYbus, makeAvl, makeApq,
-                              makeAang, makeAy)  # NOQA
+                              makeAang, makeAy)
 
-import ams.pypower.routines.opffcns as opfcn  # NOQA
+import ams.pypower.routines.opffcns as opfcn
 
-from ams.pypower.toggle import toggle_reserves  # NOQA
+from ams.pypower.toggle import toggle_reserves
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +39,6 @@ def runopf(casedata, ppopt):
     sstats = dict(solver_name='PYPOWER',
                   num_iters=1)  # solver stats
     ppopt = ppoption(ppopt)
-
-    # -----  run the optimal power flow  -----
     r = fopf(casedata, ppopt)
     sstats['solver_name'] = 'PYPOWER-PIPS'
     sstats['num_iters'] = r['raw']['output']['iterations']
@@ -1204,7 +1201,7 @@ class opf_model(object):
 #            nnzA = nnzA + nnz(self.lin["data"].A.(self.lin.order{k}))
 
         if self.lin["N"]:
-            A = scipy.sparse.lil_matrix((self.lin["N"], self.var["N"]))
+            A = sp.sparse.lil_matrix((self.lin["N"], self.var["N"]))
             u = np.Inf * np.ones(self.lin["N"])
             l = -u
         else:
@@ -1258,7 +1255,6 @@ class opf_model(object):
                 return self.user_data[name]
             else:
                 return np.array([])
-
 
 def opf_execute(om, ppopt):
     """

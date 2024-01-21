@@ -1,33 +1,29 @@
 """
 Continuous power flow routine.
 """
-import logging  # NOQA
+import logging
 
-from ams.pypower import runcpf  # NOQA
+from ams.pypower import runcpf
 
-from ams.io.pypower import system2ppc  # NOQA
-from ams.pypower.core import ppoption  # NOQA
+from ams.io.pypower import system2ppc
+from ams.pypower.core import ppoption
 
-from ams.routines.pflow import PFlowData, PFlowModel  # NOQA
+from ams.routines.pflow import PFlow
 
 logger = logging.getLogger(__name__)
 
 
-class CPFModel(PFlowModel):
+class CPF(PFlow):
     """
-    Model for continuous power flow.
+    Continuous power flow.
+
+    Still under development, not ready for use.
     """
 
     def __init__(self, system, config):
-        PFlowModel.__init__(self, system, config)
+        PFlow.__init__(self, system, config)
         self.info = 'AC continuous power flow'
         self.type = 'PF'
-        # TODO: delete vars, constraints, and objectives
-        # FIXME: how?
-        # for v, _ in self.vars.items():
-        #     delattr(self, v)
-        # for c, _ in self.constraints.items():
-        #     delattr(self, c)
 
     def solve(self, method=None, **kwargs):
         """
@@ -67,15 +63,3 @@ class CPFModel(PFlowModel):
         super().run(force_init=force_init,
                     no_code=no_code, method=method,
                     **kwargs, )
-
-
-class CPF(PFlowData, CPFModel):
-    """
-    Continuous power flow.
-
-    Still under development, not ready for use.
-    """
-
-    def __init__(self, system=None, config=None):
-        PFlowData.__init__(self)
-        CPFModel.__init__(self, system, config)

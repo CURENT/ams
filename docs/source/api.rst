@@ -43,7 +43,7 @@ Routines
    :caption: Routines
    :template: autosummary/module_toctree.rst
 
-   ams.routines
+   ams.routines.routine
 
 
 Optimization

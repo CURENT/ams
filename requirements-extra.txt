@@ -8,17 +8,13 @@
 # Only one `#` is allowed per line. Lines starting with `#` are ignored.
 
 pytest==7.0.1 #                 dev
-flake8 #                             dev
-sphinx #                dev, doc
-pydata-sphinx-theme #       dev, doc
-numpydoc #                       dev, doc
-sphinx-copybutton #           dev, doc
-sphinx-panels #                  dev, doc
-pydata-sphinx-theme #       dev, doc
-myst-parser==0.15.2 #      dev, doc
-myst-nb #           dev, doc
-graphviz #                         doc
-pydeps #                           doc
-scip #                             opt
-pyscipopt #                      opt
-gurobipy #                        opt
+flake8 #                        dev
+igraph #                        dev
+sphinx>=5.0 #                        dev, doc
+pydata-sphinx-theme #           dev, doc
+numpydoc #                      dev, doc
+sphinx-copybutton #             dev, doc
+sphinx-panels #                 dev, doc
+pydata-sphinx-theme #           dev, doc
+myst-parser #           dev, doc
+myst-nb #                       dev, doc

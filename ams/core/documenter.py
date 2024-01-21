@@ -498,23 +498,32 @@ def _tex_pre(docm, p, tex_map):
     """
 
     # NOTE: in the future, there might occur special math symbols
-    special_map = OrderedDict([
+    map_before = OrderedDict([
+        ('sum', 'SUM'),
+        (r'\sum', 'SUM'),
+        (r'\eta', 'ETA'),
+        (r'\gamma', 'GAMMA'),
+        (r'\theta', 'THETA'),
+        (r'\frac', 'FRAC'),
+        (r'\overline', 'OVERLINE'),
+        (r'\underline', 'UNDERLINE'),
+    ])
+    map_post = OrderedDict([
         ('SUM', r'\sum'),
+        ('THETA', r'\theta'),
         ('ETA', r'\eta'),
+        ('GAMMA', r'\gamma'),
         ('FRAC', r'\frac'),
+        ('OVERLINE', r'\overline'),
+        ('UNDERLINE', r'\underline'),
     ])
 
     expr = p.e_str
 
     for pattern, replacement in tex_map.items():
-        if r'\sum' in replacement:
-            replacement = replacement.replace(r'\sum', 'SUM')
-        if r'sum' in expr:
-            expr = expr.replace('sum', 'SUM')
-        if '\eta' in replacement:
-            replacement = replacement.replace('\eta', 'ETA')
-        if r'\frac' in replacement:
-            replacement = replacement.replace(r'\frac', 'FRAC')
+        for key, val in map_before.items():
+            if key in replacement:
+                replacement = replacement.replace(key, val)
         if r'\p' in replacement:
             continue
         try:
@@ -529,7 +538,7 @@ def _tex_pre(docm, p, tex_map):
         except re.error:
             logger.error('Remains '*' in the expression.')
 
-    for pattern, replacement in special_map.items():
+    for pattern, replacement in map_post.items():
         expr = expr.replace(pattern, replacement)
 
     return expr

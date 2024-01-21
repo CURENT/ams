@@ -4,26 +4,27 @@ Main entry point for the AMS CLI and scripting interfaces.
 
 import cProfile
 import io
-import logging  # NOQA
-import os  # NOQA
-import platform  # NOQA
+import logging
+import os
+import platform
 import pstats
 import sys
 from functools import partial
-from subprocess import call  # NOQA
+from subprocess import call
 from time import sleep
-from typing import Optional, Union  # NOQA
+from typing import Optional, Union
+import textwrap
 
 from ._version import get_versions
 
-from andes.main import _find_cases  # NOQA
-from andes.shared import Pool, Process, coloredlogs, unittest, NCPUS_PHYSICAL # NOQA
-from andes.utils.misc import elapsed, is_interactive  # NOQA
+from andes.main import _find_cases
+from andes.shared import Pool, Process, coloredlogs, unittest, NCPUS_PHYSICAL
+from andes.utils.misc import elapsed, is_interactive
 
-import ams  # NOQA
+import ams
 from ams.routines import routine_cli
-from ams.system import System  # NOQA
-from ams.utils.paths import get_config_path, get_log_dir, tests_root  # NOQA
+from ams.system import System
+from ams.utils.paths import get_config_path, get_log_dir, tests_root
 
 logger = logging.getLogger(__name__)
 
@@ -515,24 +516,21 @@ def versioninfo():
     import numpy as np
     import cvxpy
     import andes
+    from ams.shared import INSTALLED_SOLVERS
 
     versions = {'Python': platform.python_version(),
                 'ams': get_versions()['version'],
                 'andes': andes.__version__,
                 'numpy': np.__version__,
                 'cvxpy': cvxpy.__version__,
+                'solvers': ', '.join(INSTALLED_SOLVERS),
                 }
     maxwidth = max([len(k) for k in versions.keys()])
 
-    try:
-        import numba
-    except ImportError:
-        numba = None
-
-    if numba is not None:
-        versions["numba"] = numba.__version__
-
     for key, val in versions.items():
+        if key == 'solvers':
+            val = textwrap.fill(val, width=30)  # Wrap solvers to a new line if too long
+            val = val.replace('\n', '\n' + ' ' * (maxwidth + 2))
         print(f"{key: <{maxwidth}}  {val}")
 
 

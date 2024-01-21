@@ -5,7 +5,7 @@ import importlib
 import inspect
 import logging
 from collections import OrderedDict
-from typing import Dict, Optional, Tuple, Union  # NOQA
+from typing import Dict, Optional
 
 import numpy as np
 
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 def disable_method(func):
     def wrapper(*args, **kwargs):
-        logger.warning(f"Method `{func.__name__}` is included in ANDES System but not supported in AMS System.")
+        logger.warning("This method is included in ANDES but not supported in AMS.")
         return None
     return wrapper
 
@@ -126,7 +126,7 @@ class System(andes_System):
             '_p_restore', '_store_calls', '_store_tf', '_to_orddct', '_v_to_dae',
             'save_config', 'collect_config', 'e_clear', 'f_update',
             'fg_to_dae', 'from_ipysheet', 'g_islands', 'g_update', 'get_z',
-            'init', 'j_islands', 'j_update', 'l_update_eq', 'summary',
+            'init', 'j_islands', 'j_update', 'l_update_eq',
             'l_update_var', 'precompile', 'prepare', 'reload', 'remove_pycapsule',
             's_update_post', 's_update_var', 'store_adder_setter', 'store_no_check_init',
             'store_sparse_pattern', 'store_switch_times', 'switch_action', 'to_ipysheet',
@@ -399,13 +399,21 @@ class System(andes_System):
         if not self.link_ext_param():
             ret = False
 
-        if self.Line.rate_a.v.max() == 0:
-            logger.info("Line rate_a is adjusted to large value automatically.")
-            self.Line.rate_a.v = 99
+        # --- model parameters range check ---
+        # TODO: there might be other parameters check?
+        # Line rate
+        adjusted_rate = []
+        default_rate = 999
+        for rate in [self.Line.rate_a, self.Line.rate_b, self.Line.rate_c]:
+            rate.v[rate.v == 0] = default_rate
+            adjusted_rate.append(rate.name)
+        adjusted_rate = ', '.join(adjusted_rate)
+        msg = f"Zero line rates detacted in {adjusted_rate}, "
+        msg += f"adjusted to {default_rate}."
+        msg += "\nIf expect a line outage, please set 'u' to 0."
+        logger.info(msg)
         # === no device addition or removal after this point ===
-        # TODO: double check calc_pu_coeff
         self.calc_pu_coeff()   # calculate parameters in system per units
-        # self.store_existing()  # store models with routine flags
 
         if ret is True:
             self.is_setup = True  # set `is_setup` if no error occurred
@@ -419,19 +427,6 @@ class System(andes_System):
                 algeb.v = np.zeros(algeb.owner.n)
                 algeb.a = np.arange(a0, a0 + algeb.owner.n)
                 a0 += algeb.owner.n
-
-        # set up matrix processor
-        self.mats.make()
-
-        # NOTE: initialize om for all routines
-        for _, rtn in self.routines.items():
-            # rtn.setup()  # not setup optimization model in system setup stage
-            a0 = 0
-            for _, var in rtn.vars.items():
-                var.a = np.arange(a0, a0 + var.owner.n)
-                a0 += var.owner.n
-            for rpname, rparam in rtn.rparams.items():
-                rparam.rtn = rtn
 
         _, s = elapsed(t0)
         logger.info('System set up in %s.', s)
@@ -497,28 +492,22 @@ class System(andes_System):
 
         raise NotImplementedError
 
-    def to_andes(self, setup=True, addfile=None, overwite=None, no_keep=True,
-                 **kwargs):
+    def to_andes(self, setup=True, addfile=None, **kwargs):
         """
         Convert the AMS system to an ANDES system.
-        This function is a wrapper of ``ams.interop.andes.to_andes()``.
 
-        Using the file conversion ``sp.to_andes()`` will automatically
-        link the AMS system instance to the converted ANDES system instance
-        in the AMS system attribute ``sp.dyn``.
+        A preferred dynamic system file to be added has following features:
+        1. The file contains both power flow and dynamic models.
+        2. The file can run in ANDES natively.
+        3. Power flow models are in the same shape as the AMS system.
+        4. Dynamic models, if any, are in the same shape as the AMS system.
 
         Parameters
         ----------
-        system : System
-            The AMS system to be converted to ANDES format.
         setup : bool, optional
             Whether to call `setup()` after the conversion. Default is True.
         addfile : str, optional
             The additional file to be converted to ANDES dynamic mdoels.
-        overwrite : bool, optional
-            Whether to overwrite the existing file.
-        no_keep : bool, optional
-            True to remove the converted file after the conversion.
         **kwargs : dict
             Keyword arguments to be passed to `andes.system.System`.
 
@@ -537,8 +526,45 @@ class System(andes_System):
         ...                  overwrite=True, no_keep=True, no_output=True)
         """
         return to_andes(self, setup=setup, addfile=addfile,
-                        overwite=overwite, no_keep=no_keep,
                         **kwargs)
+
+    def summary(self):
+        """
+        Print out system summary.
+        """
+        # FIXME: add system connectivity check
+        # logger.info("-> System connectivity check results:")
+        rtn_check = OrderedDict((key, val._data_check(info=False)) for key, val in self.routines.items())
+        rtn_types = OrderedDict({tp: [] for tp in self.types.keys()})
+
+        for name, data_pass in rtn_check.items():
+            if data_pass:
+                type = self.routines[name].type
+                rtn_types[type].append(name)
+
+        nb = self.Bus.n
+        nl = self.Line.n
+        ng = self.StaticGen.n
+
+        pd = self.PQ.p0.v.sum()
+        qd = self.PQ.q0.v.sum()
+
+        out = list()
+
+        out.append(f"-> Systen size:")
+        out.append(f"Base: {self.config.mva} MVA; Frequency: {self.config.freq} Hz")
+        out.append(f"{nb} Buses; {nl} Lines; {ng} Static Generators")
+        out.append(f"Active load: {pd:,.2f} p.u.; Reactive load: {qd:,.2f} p.u.")
+
+        out.append("-> Data check results:")
+        for type, names in rtn_types.items():
+            if len(names) == 0:
+                continue
+            names = ", ".join(names)
+            out.append(f"{type}: {names}")
+
+        out_str = '\n'.join(out)
+        logger.info(out_str)
 
 
 # --------------- Helper Functions ---------------

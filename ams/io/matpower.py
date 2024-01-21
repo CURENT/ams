@@ -58,7 +58,7 @@ def mpc2system(mpc: dict, system) -> bool:
 
     for data in mpc['bus']:
         # idx  ty   pd   qd  gs  bs  area  vmag  vang  baseKV  zone  vmax  vmin
-        # 0    1    2   3   4   5    6      7     8     9      10    11    12
+        # 0    1    2    3   4   5   6     7     8     9       10    11    12
         idx = int(data[0])
         ty = data[1]
         if ty == 3:
@@ -87,13 +87,23 @@ def mpc2system(mpc: dict, system) -> bool:
             system.add('Shunt', bus=idx, name='Shunt ' + str(idx), Vn=baseKV, g=gs, b=bs)
 
     gen_idx = 0
-    for data in mpc['gen']:
-        # bus  pg  qg  qmax  qmin  vg  mbase  status  pmax  pmin  pc1  pc2
-        #  0   1    2    3         4       5   6          7         8        9       10    11
-        # qc1min  qc1max  qc2min  qc2max  ramp_agc  ramp_10  ramp_30  ramp_q
-        #  12      13           14         15          16            17           18           19
-        # apf
-        #  20
+    if mpc['gen'].shape[1] <= 10:  # missing data
+        mpc_gen = np.zeros((mpc['gen'].shape[0], 21), dtype=np.float64)
+        mpc_gen[:, :10] = mpc['gen']
+        mbase = base_mva
+        mpc_gen[:, 16] = system.PV.Ragc.default * mbase / 60
+        mpc_gen[:, 17] = system.PV.R10.default * mbase / 6
+        mpc_gen[:, 18] = system.PV.R30.default * mbase / 2
+        mpc_gen[:, 19] = system.PV.Rq.default * mbase / 60
+    else:
+        mpc_gen = mpc['gen']
+    for data in mpc_gen:
+        # bus  pg  qg  qmax  qmin  vg  mbase  status  pmax  pmin
+        # 0    1   2   3     4     5   6      7       8     9
+        # pc1  pc2  qc1min  qc1max  qc2min  qc2max  ramp_agc  ramp_10
+        # 10   11   12      13      14      15      16        17
+        # ramp_30  ramp_q  apf
+        # 18       19      20
 
         bus_idx = int(data[0])
         gen_idx += 1
@@ -151,9 +161,9 @@ def mpc2system(mpc: dict, system) -> bool:
 
     for data in mpc['branch']:
         # fbus	tbus	r	x	b	rateA	rateB	rateC	ratio	angle
-        #  0     1        2  3   4   5         6         7         8        9
+        # 0     1       2   3   4   5       6       7       8       9
         # status	angmin	angmax	Pf	Qf	Pt	Qt
-        # 10        11          12         13  14 15 16
+        # 10        11      12      13  14  15  16
         fbus = int(data[0])
         tbus = int(data[1])
         r = data[2]
@@ -191,27 +201,27 @@ def mpc2system(mpc: dict, system) -> bool:
         system.Bus.name.v[:] = mpc['bus_name']
 
     gcost_idx = 0
-    gen_idx = system.PV.idx.v + system.Slack.idx.v
+    gen_idx = np.arange(mpc['gen'].shape[0]) + 1
     for data, gen in zip(mpc['gencost'], gen_idx):
         # NOTE: only type 2 costs are supported for now
         # type  startup shutdown	n	c2  c1  c0
-        # 0     1           2               3   4   5   6
+        # 0     1       2           3   4   5   6
         if data[0] != 2:
             raise ValueError('Only MODEL 2 costs are supported')
-        # TODO: Add Model 1
+        gcost_idx += 1
         type = int(data[0])
         startup = data[1]
         shutdown = data[2]
         c2 = data[4] * base_mva ** 2
         c1 = data[5] * base_mva
-        c0 = data[6] * base_mva
+        c0 = data[6]
         system.add('GCost', gen=int(gen),
-                   u=1, name=f'GCost_{gcost_idx}',
-                   type=type,
+                   u=1, type=type,
+                   idx=gcost_idx,
+                   name=f'GCost {gcost_idx}',
                    csu=startup, csd=shutdown,
                    c2=c2, c1=c1, c0=c0
                    )
-        gcost_idx += 1
 
     # --- region ---
     zone_id = np.unique(system.Bus.zone.v).astype(int)
@@ -256,15 +266,21 @@ def system2mpc(system) -> dict:
 
     In the ``gen`` section, slack generators preceeds PV generators.
 
-    This function is revised from ``andes.io.matpower.system2mpc``.
-
-    Compared to the original one, this function includes the
-    generator cost data in the ``gencost`` section.
+    Compared to the ``andes.io.matpower.system2mpc``,
+    this function includes the generator cost data in the ``gencost``
+    section.
+    Additionally, ``c2`` and ``c1`` are scaled by ``base_mva`` to match
+    MATPOWER unit ``MW``.
 
     Parameters
     ----------
     system : ams.core.system.System
         AMS system
+
+    Returns
+    -------
+    mpc: dict
+        MATPOWER mpc dict
     """
 
     mpc = dict(version='2',
@@ -350,23 +366,28 @@ def system2mpc(system) -> dict:
         branch[:, 2] = system.Line.r.v
         branch[:, 3] = system.Line.x.v
         branch[:, 4] = system.Line.b.v
-        branch[:, 5] = system.Line.rate_a.v
-        branch[:, 6] = system.Line.rate_b.v
-        branch[:, 7] = system.Line.rate_c.v
+        branch[:, 5] = system.Line.rate_a.v * base_mva
+        branch[:, 6] = system.Line.rate_b.v * base_mva
+        branch[:, 7] = system.Line.rate_c.v * base_mva
         branch[:, 8] = system.Line.tap.v
         branch[:, 9] = system.Line.phi.v * rad2deg
         branch[:, 10] = system.Line.u.v
 
     # --- GCost ---
+    # NOTE: adjust GCost sequence to match the generator sequence
     if system.GCost.n > 0:
+        stg_idx = system.Slack.idx.v + system.PV.idx.v
+        gcost_idx = system.GCost.find_idx(keys=['gen'],
+                                      values=[stg_idx])
+        gcost_uid = system.GCost.idx2uid(gcost_idx)
         gencost = mpc['gencost']
-        gencost[:, 0] = system.GCost.type.v
-        gencost[:, 1] = system.GCost.csu.v
-        gencost[:, 2] = system.GCost.csd.v
+        gencost[:, 0] = system.GCost.type.v[gcost_uid]
+        gencost[:, 1] = system.GCost.csu.v[gcost_uid]
+        gencost[:, 2] = system.GCost.csd.v[gcost_uid]
         gencost[:, 3] = 3
-        gencost[:, 4] = system.GCost.c2.v / base_mva / base_mva
-        gencost[:, 5] = system.GCost.c1.v / base_mva
-        gencost[:, 6] = system.GCost.c0.v / base_mva
+        gencost[:, 4] = system.GCost.c2.v[gcost_uid] / base_mva / base_mva
+        gencost[:, 5] = system.GCost.c1.v[gcost_uid] / base_mva
+        gencost[:, 6] = system.GCost.c0.v[gcost_uid]
     else:
         mpc.pop('gencost')
 

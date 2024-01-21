@@ -2,8 +2,8 @@
 Dispatch routines.
 """
 
-from collections import OrderedDict  # NOQA
-from andes.utils.func import list_flatten  # NOQA
+from collections import OrderedDict
+from andes.utils.func import list_flatten
 from ams.routines.routine import RoutineData, RoutineModel  # NOQA
 
 all_routines = OrderedDict([
@@ -12,10 +12,10 @@ all_routines = OrderedDict([
     ('cpf', ['CPF']),
     ('acopf', ['ACOPF']),
     ('dcopf', ['DCOPF']),
-    ('ed', ['ED', 'ED2']),
-    ('rted', ['RTED', 'RTED2']),
-    ('uc', ['UC', 'UC2']),
-    ('dopf', ['LDOPF', 'LDOPF2']),
+    ('ed', ['ED', 'EDDG', 'EDES']),
+    ('rted', ['RTED', 'RTEDDG', 'RTEDES', 'RTEDVIS']),
+    ('uc', ['UC', 'UCDG', 'UCES']),
+    ('dopf', ['DOPF', 'DOPFVIS']),
 ])
 
 class_names = list_flatten(list(all_routines.values()))

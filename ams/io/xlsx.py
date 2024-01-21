@@ -61,7 +61,6 @@ def _write_system(system, writer, skip_empty, to_andes=False):
 
     Rewrite function ``andes.io.xlsx._write_system`` to skip non-andes sheets.
     """
-    skip_params = []
     ad_models = []
     if to_andes:
         # Instantiate an ANDES system
@@ -73,13 +72,16 @@ def _write_system(system, writer, skip_empty, to_andes=False):
         if skip_empty and instance.n == 0:
             continue
         instance.cache.refresh("df_in")
-        df = instance.cache.df_in
-        if to_andes and name in ad_models:
+        if to_andes:
+            if name not in ad_models:
+                continue
             # NOTE: ommit parameters that are not in ANDES
             skip_params = []
             ams_params = list(instance.params.keys())
             andes_params = list(sa.models[name].params.keys())
             skip_params = list(set(ams_params) - set(andes_params))
             df = instance.cache.df_in.drop(skip_params, axis=1, errors='ignore')
+        else:
+            df = instance.cache.df_in
         df.to_excel(writer, sheet_name=name, freeze_panes=(1, 0))
     return writer

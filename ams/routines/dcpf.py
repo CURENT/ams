@@ -1,30 +1,35 @@
 """
 Power flow routines.
 """
-import logging  # NOQA
+import logging
 
-from andes.shared import deg2rad  # NOQA
-from andes.utils.misc import elapsed  # NOQA
+from andes.shared import deg2rad
+from andes.utils.misc import elapsed
 
-from ams.routines.routine import RoutineData, RoutineModel  # NOQA
-from ams.opt.omodel import Var  # NOQA
-from ams.pypower import runpf  # NOQA
-from ams.pypower.core import ppoption  # NOQA
+from ams.routines.routine import RoutineModel
+from ams.opt.omodel import Var
+from ams.pypower import runpf
+from ams.pypower.core import ppoption
 
-from ams.io.pypower import system2ppc  # NOQA
-from ams.core.param import RParam  # NOQA
+from ams.io.pypower import system2ppc
+from ams.core.param import RParam
 
 logger = logging.getLogger(__name__)
 
 
-class DCPFlowData(RoutineData):
+class DCPFlowBase(RoutineModel):
     """
-    Data class for power flow routines.
+    Base class for power flow.
+
+    Overload the ``solve``, ``unpack``, and ``run`` methods.
     """
 
-    def __init__(self):
-        RoutineData.__init__(self)
-        # --- line ---
+    def __init__(self, system, config):
+        RoutineModel.__init__(self, system, config)
+        self.info = 'DC Power Flow'
+        self.type = 'PF'
+
+        # --- routine data ---
         self.x = RParam(info="line reactance",
                         name='x', tex_name='x',
                         unit='p.u.',
@@ -39,23 +44,10 @@ class DCPFlowData(RoutineData):
                           unit='radian',)
 
         # --- load ---
-        self.pl = RParam(info='nodal active load (system base)',
-                         name='pl', tex_name=r'p_{l}',
+        self.pd = RParam(info='active deman',
+                         name='pd', tex_name=r'p_{d}',
                          unit='p.u.',
-                         model='mats', src='pl')
-
-
-class DCPFlowBase(RoutineModel):
-    """
-    Base class for power flow.
-
-    Overload the ``solve``, ``unpack``, and ``run`` methods.
-    """
-
-    def __init__(self, system, config):
-        RoutineModel.__init__(self, system, config)
-        self.info = 'DC Power Flow'
-        self.type = 'PF'
+                         model='StaticLoad', src='p0')
 
     def unpack(self, res):
         """
@@ -78,7 +70,7 @@ class DCPFlowBase(RoutineModel):
         system.Slack.q.v = res['gen'][:system.Slack.n, 2] / mva     # reactive power
 
         # --- copy results from system algeb into routine algeb ---
-        for raname, var in self.vars.items():
+        for vname, var in self.vars.items():
             owner = getattr(system, var.model)  # instance of owner, Model or Group
             if var.src is None:          # skip if no source variable is specified
                 continue
@@ -89,12 +81,14 @@ class DCPFlowBase(RoutineModel):
                 idx = owner.get_idx()
             else:
                 msg = f"Failed to find valid source variable `{owner.class_name}.{var.src}` for "
-                msg += f"{self.class_name}.{raname}, skip unpacking."
+                msg += f"{self.class_name}.{vname}, skip unpacking."
                 logger.warning(msg)
                 continue
             try:
+                logger.debug(f"Unpacking {vname} into {owner.class_name}.{var.src}.")
                 var.v = owner.get(src=var.src, attr='v', idx=idx)
             except AttributeError:
+                logger.debug(f"Failed to unpack {vname} into {owner.class_name}.{var.src}.")
                 continue
         self.system.recent = self.system.routines[self.class_name]
         return True
@@ -140,13 +134,13 @@ class DCPFlowBase(RoutineModel):
         self.exit_code = 0 if success else 1
         _, s = elapsed(t0)
         self.exec_time = float(s.split(' ')[0])
-        self.unpack(res)
         n_iter = int(sstats['num_iters'])
         n_iter_str = f"{n_iter} iterations " if n_iter > 1 else f"{n_iter} iteration "
         if self.exit_code == 0:
             msg = f"{self.class_name} solved in {s}, converged after "
             msg += n_iter_str + f"using solver {sstats['solver_name']}."
             logger.info(msg)
+            self.unpack(res)
             return True
         else:
             msg = f"{self.class_name} failed after "
@@ -174,9 +168,15 @@ class DCPFlowBase(RoutineModel):
         raise NotImplementedError
 
 
-class DCPFlowModel(DCPFlowBase):
+class DCPF(DCPFlowBase):
     """
-    Base class for power flow model.
+    DC power flow.
+
+    Notes
+    -----
+    1. DCPF is solved with PYPOWER ``runpf`` function.
+    2. DCPF formulation is not complete yet, but this does not affect the
+       results because the data are passed to PYPOWER for solving.
     """
 
     def __init__(self, system, config):
@@ -193,19 +193,3 @@ class DCPFlowModel(DCPFlowBase):
                       unit='p.u.',
                       name='pg', tex_name=r'p_{g}',
                       model='StaticGen', src='p',)
-
-
-class DCPF(DCPFlowData, DCPFlowModel):
-    """
-    DC power flow.
-
-    Notes
-    -----
-    1. DCPF is solved with PYPOWER ``runpf`` function.
-    2. DCPF formulation is not complete yet, but this does not affect the
-       results because the data are passed to PYPOWER for solving.
-    """
-
-    def __init__(self, system=None, config=None):
-        DCPFlowData.__init__(self)
-        DCPFlowModel.__init__(self, system, config)

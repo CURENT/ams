@@ -9,6 +9,33 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.8.1 (2024-01-20)
+-------------------
+
+- Improve ``MatProcessor``
+- Add more examples
+- Improve ANDES interface
+
+v0.8.0 (2024-01-09)
+-------------------
+
+- Refactor ``DCED`` routines to improve performance
+
+v0.7.5 (2023-12-28)
+-------------------
+
+- Refactor ``MatProcessor`` and ``DCED`` routines to improve performance
+- Integrate sparsity pattern in ``RParam``
+- Rename energy storage routines ``RTED2``, ``ED2`` and ``UC2`` to ``RTEDES``, ``EDES`` and ``UCES``
+
+v0.7.4 (2023-11-29)
+-------------------
+
+- Refactor routins and optimization models to improve performance
+- Fix routines modeling
+- Add examples
+- Fix built-in cases
+
 v0.7.3 (2023-11-3)
 -------------------
 
