@@ -11,7 +11,7 @@ pytest==7.4 #                   dev
 flake8 #                        dev
 ipython #                       dev
 igraph #                        dev
-sphinx>=5.0 #                   dev, doc
+sphinx #                        dev, doc
 pydata-sphinx-theme #           dev, doc
 numpydoc #                      dev, doc
 sphinx-copybutton #             dev, doc
