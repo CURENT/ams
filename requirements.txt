@@ -8,4 +8,3 @@ psutil
 openpyxl
 andes
 cvxpy
-cvxopt
