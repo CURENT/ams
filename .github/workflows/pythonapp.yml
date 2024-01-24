@@ -40,7 +40,7 @@ jobs:
     - shell: bash -el {0}
       name: Test notebooks.
       run: |
-        pytest --nbmake examples --ignore "examples/verification examples/demonstration"
+        pytest --nbmake examples --ignore=examples/demonstration
     # - name: Build a distribution if tagged
     #   if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
     #   run: |
