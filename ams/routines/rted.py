@@ -49,6 +49,10 @@ class RTEDBase:
                           name='R10', tex_name=r'R_{10}',
                           model='StaticGen', src='R10',
                           unit='p.u./h',)
+        # NOTE: need to change args in dispatch routine using config.t
+        self.R10e = NumOp(info='Adjusted 10-min ramp rate',
+                          name='R10e', tex_name=r'R_{10,e}',
+                          u=self.R10, fun=np.dot,)
 
 
 class SFRBase:
@@ -167,14 +171,15 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.rru.e_str = 'mul(ug, pg + pru) - mul(ug, pmax)'
         self.rrd.e_str = 'mul(ug, -pg + prd) + mul(ug, pmin)'
         # Gen ramping up/down
-        self.rgu.e_str = 'mul(ug, pg-pg0-R10)'
-        self.rgd.e_str = 'mul(ug, -pg+pg0-R10)'
+        self.R10e.args = dict(b=360*self.config.t)
+        self.rgu.e_str = 'mul(ug, pg-pg0-R10e)'
+        self.rgd.e_str = 'mul(ug, -pg+pg0-R10e)'
 
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
         # NOTE: the product of dt and pg is processed using ``dot``,
         # because dt is a numnber
-        cost = 'sum(mul(c2, power(pg, 2)))'
+        cost = 'sum(mul(c2, power(t dot pg, 2)))'
         cost += '+ sum(c1 @ (t dot pg))'
         cost += '+ ug * c0'  # constant cost
         cost += '+ sum(cru * pru + crd * prd)'  # reserve cost
@@ -545,7 +550,7 @@ class RTEDVIS(RTED, VISBase):
         gcost = 'sum(mul(c2, power(pg, 2)))'
         gcost += '+ sum(c1 @ (t dot pg))'
         gcost += '+ ug * c0 '  # constant cost
-        rcost = '+ sum(cru * pru + crd * prd) '  # reserve cost
+        rcost = '+ sum(cru * (t dot pru) + crd * (t dot prd)) '  # reserve cost
         vsgcost = '+ sum(cm * M + cd * D)'
         self.obj.e_str = gcost + rcost + vsgcost
 
