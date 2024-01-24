@@ -92,8 +92,8 @@ def mpc2system(mpc: dict, system) -> bool:
         mpc_gen[:, :10] = mpc['gen']
         mbase = base_mva
         mpc_gen[:, 16] = system.PV.Ragc.default * mbase / 60
-        mpc_gen[:, 17] = system.PV.R10.default * mbase / 6
-        mpc_gen[:, 18] = system.PV.R30.default * mbase / 2
+        mpc_gen[:, 17] = system.PV.R10.default * mbase
+        mpc_gen[:, 18] = system.PV.R30.default * mbase
         mpc_gen[:, 19] = system.PV.Rq.default * mbase / 60
     else:
         mpc_gen = mpc['gen']
@@ -123,8 +123,8 @@ def mpc2system(mpc: dict, system) -> bool:
         qc2min = data[14] / mbase
         qc2max = data[15] / mbase
         ramp_agc = 60 * data[16] / mbase  # from MW/min to MW/h
-        ramp_10 = 6 * data[17] / mbase  # from MW/10min to MW/h
-        ramp_30 = 2 * data[18] / mbase  # from MW/30min to MW/h
+        ramp_10 = data[17] / mbase  # from MW to MW/h
+        ramp_30 = data[18] / mbase  # from MW to MW/h
         ramp_q = 60 * data[19] / mbase  # from MVAr/min to MVAr/h
         apf = data[20]
 
@@ -341,6 +341,10 @@ def system2mpc(system) -> dict:
         gen[system.Slack.n:, 7] = PV.u.v
         gen[system.Slack.n:, 8] = (PV.ctrl.v * PV.pmax.v + (1 - PV.ctrl.v) * PV.pmax.v) * base_mva
         gen[system.Slack.n:, 9] = (PV.ctrl.v * PV.pmin.v + (1 - PV.ctrl.v) * PV.pmin.v) * base_mva
+        gen[system.Slack.n:, 16] = PV.Ragc.v * base_mva * 60    # from MW/h to MW/min
+        gen[system.Slack.n:, 17] = PV.R10.v * base_mva
+        gen[system.Slack.n:, 18] = PV.R30.v * base_mva
+        gen[system.Slack.n:, 19] = PV.Rq.v * base_mva * 60  # from MVAr/h to MVAr/min
 
     # --- Slack ---
     if system.Slack.n > 0:
@@ -358,6 +362,10 @@ def system2mpc(system) -> dict:
         gen[:system.Slack.n, 7] = system.Slack.u.v
         gen[:system.Slack.n, 8] = system.Slack.pmax.v * base_mva
         gen[:system.Slack.n, 9] = system.Slack.pmin.v * base_mva
+        gen[:system.Slack.n, 16] = system.Slack.Ragc.v * base_mva * 60    # from MW/h to MW/min
+        gen[:system.Slack.n, 17] = system.Slack.R10.v * base_mva
+        gen[:system.Slack.n, 18] = system.Slack.R30.v * base_mva
+        gen[:system.Slack.n, 19] = system.Slack.Rq.v * base_mva * 60    # from MVAr/h to MVAr/min
 
     if system.Line.n > 0:
         branch = mpc['branch']

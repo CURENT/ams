@@ -174,7 +174,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.obj.info = 'total generation and reserve cost'
         # NOTE: the product of dt and pg is processed using ``dot``,
         # because dt is a numnber
-        cost = 'sum(mul(c2, power(pg, 2)))'
+        cost = 'sum(mul(c2, power(t dot pg, 2)))'
         cost += '+ sum(c1 @ (t dot pg))'
         cost += '+ ug * c0'  # constant cost
         cost += '+ sum(cru * pru + crd * prd)'  # reserve cost
@@ -545,7 +545,7 @@ class RTEDVIS(RTED, VISBase):
         gcost = 'sum(mul(c2, power(pg, 2)))'
         gcost += '+ sum(c1 @ (t dot pg))'
         gcost += '+ ug * c0 '  # constant cost
-        rcost = '+ sum(cru * pru + crd * prd) '  # reserve cost
+        rcost = '+ sum(cru * (t dot pru) + crd * (t dot prd)) '  # reserve cost
         vsgcost = '+ sum(cm * M + cd * D)'
         self.obj.e_str = gcost + rcost + vsgcost
 
