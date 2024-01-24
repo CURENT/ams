@@ -83,7 +83,7 @@ class MPBase:
 
         self.R30 = RParam(info='30-min ramp rate',
                           name='R30', tex_name=r'R_{30}',
-                          src='R30', unit='p.u./min',
+                          src='R30', unit='p.u./h',
                           model='StaticGen', no_parse=True,)
         self.Mr = RampSub(u=self.pg, name='Mr', tex_name=r'M_{r}',
                           info='Subtraction matrix for ramping',
@@ -210,7 +210,7 @@ class ED(RTED):
         # constant cost
         cost += '+ sum(mul(ugt, mul(c0, tlv)))'
         # spinning reserve cost
-        cost += ' + sum(csr@prs)'
+        cost += ' + sum(csr@(t dot prs))'
         self.obj.e_str = cost
 
     def _post_solve(self):
