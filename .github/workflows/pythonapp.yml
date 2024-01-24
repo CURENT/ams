@@ -41,6 +41,10 @@ jobs:
       name: Test notebooks.
       run: |
         pytest --nbmake examples --ignore=examples/demonstration
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     # - name: Build a distribution if tagged
     #   if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
     #   run: |
