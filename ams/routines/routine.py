@@ -73,19 +73,6 @@ class RoutineModel:
 
         if config is not None:
             self.config.load(config)
-        # TODO: these default configs might to be revised
-        self.config.add(
-            OrderedDict((
-                ("sparselib", "klu"),
-            )
-            )
-        )
-        self.config.add_extra(
-            "_help", sparselib="linear sparse solver name",
-        )
-        self.config.add_extra(
-            "_alt", sparselib=("klu", "umfpack", "spsolve", "cupy"),
-        )
 
         self.exec_time = 0.0  # recorded time to execute the routine in seconds
         # TODO: check exit_code of gurobipy or any other similiar solvers
