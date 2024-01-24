@@ -7,14 +7,15 @@
 #
 # Only one `#` is allowed per line. Lines starting with `#` are ignored.
 
-pytest==7.0.1 #                 dev
+pytest==7.4 #                   dev
 flake8 #                        dev
+ipython #                       dev
 igraph #                        dev
-sphinx>=5.0 #                        dev, doc
+sphinx>=5.0 #                   dev, doc
 pydata-sphinx-theme #           dev, doc
 numpydoc #                      dev, doc
 sphinx-copybutton #             dev, doc
 sphinx-panels #                 dev, doc
 pydata-sphinx-theme #           dev, doc
-myst-parser #           dev, doc
+myst-parser #                   dev, doc
 myst-nb #                       dev, doc
