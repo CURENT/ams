@@ -49,10 +49,6 @@ class RTEDBase:
                           name='R10', tex_name=r'R_{10}',
                           model='StaticGen', src='R10',
                           unit='p.u./h',)
-        # NOTE: need to change args in dispatch routine using config.t
-        self.R10e = NumOp(info='Adjusted 10-min ramp rate',
-                          name='R10e', tex_name=r'R_{10,e}',
-                          u=self.R10, fun=np.dot,)
 
 
 class SFRBase:
@@ -171,9 +167,8 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.rru.e_str = 'mul(ug, pg + pru) - mul(ug, pmax)'
         self.rrd.e_str = 'mul(ug, -pg + prd) + mul(ug, pmin)'
         # Gen ramping up/down
-        self.R10e.args = dict(b=360*self.config.t)
-        self.rgu.e_str = 'mul(ug, pg-pg0-R10e)'
-        self.rgd.e_str = 'mul(ug, -pg+pg0-R10e)'
+        self.rgu.e_str = 'mul(ug, pg-pg0-R10)'
+        self.rgd.e_str = 'mul(ug, -pg+pg0-R10)'
 
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
