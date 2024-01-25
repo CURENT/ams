@@ -26,15 +26,6 @@ from ams.shared import require_igraph
 logger = logging.getLogger(__name__)
 
 
-class RoutineData:
-    """
-    Class to hold routine parameters.
-    """
-
-    def __init__(self):
-        pass
-
-
 class RoutineModel:
     """
     Class to hold descriptive routine models and data mapping.
