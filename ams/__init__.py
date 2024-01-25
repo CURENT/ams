@@ -8,6 +8,7 @@ from ams import system    # NOQA
 from ams import routines  # NOQA
 from ams import opt       # NOQA
 from ams import pypower  # NOQA
+from ams import report  # NOQA
 
 from ams.main import config_logger, load, run  # NOQA
 from ams.utils.paths import get_case  # NOQA
