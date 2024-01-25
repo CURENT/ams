@@ -14,9 +14,8 @@ Python Software for Power System Dispatch Modeling and Co-Simulation with Dynani
 | Try on Binder | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/curent/ams/master)                                                                                                                                                 |                                                                                                                                                                                                            |
 | Code Quality  |[![Codacy Badge](https://app.codacy.com/project/badge/Grade/69456da1b8634f2f984bd769e35f0050)](https://app.codacy.com/gh/CURENT/ams/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)| [![codecov](https://codecov.io/gh/CURENT/ams/graph/badge.svg?token=RZI5GLLBQH)](https://codecov.io/gh/CURENT/ams)                                                                          |
 | Build Status  | [![GitHub Action Status](https://github.com/CURENT/ams/workflows/Python%20application/badge.svg)](https://github.com/curent/ams/actions)  |
+| Structure   | [![Structure](https://img.shields.io/badge/code_base-visualize-blue)](https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=CURENT%2Fams)
 
-Fingerprint
-![Visualization of the codebase](./diagram.svg)
 
 # Why AMS
 
@@ -45,11 +44,10 @@ Use the following resources to get involved.
 + Report bugs or issues by submitting a [GitHub issue][GitHub issues]
 + Submit contributions using [pull requests][GitHub pull requests]
 + Read release notes highlighted [here][release notes]
-<!-- + Try in Jupyter Notebook on [Binder][Binder] -->
++ Try in Jupyter Notebook on [Binder][Binder]
 <!-- + Check out and and cite our [paper][arxiv paper] -->
 
 # Sponsors and Contributors
-
 AMS is the dispatch simulation engine for the CURENT Largescale Testbed (LTB).
 More information about CURENT LTB can be found at the [LTB Repository](https://github.com/CURENT/ltb).
 
@@ -61,11 +59,9 @@ This work was supported in part by the Advanced Grid Research and Development Pr
 See [GitHub contributors][GitHub contributors] for the contributor list.
 
 # License
-
 AMS is licensed under the [GPL v3 License](./LICENSE).
 
 # Related Projects
-
 + [CVXPY](https://github.com/cvxpy/cvxpy)
 + [Visualizations of Mittelmann benchmarks](https://mattmilten.github.io/mittelmann-plots/)
 + [CBC Solver](https://github.com/coin-or/Cbc)
@@ -86,4 +82,6 @@ Some commercial solvers provide academic licenses, such as COPT, GUROBI, CPLEX, 
 [readthedocs]:           https://ams.readthedocs.io
 [release notes]:         https://ams.readthedocs.io/en/latest/release-notes.html
 [examples]:              https://github.com/CURENT/ams/tree/master/examples
-[LTB Repository]:       https://github.com/CURENT
+[verification]:          https://github.com/CURENT/ams/tree/master/examples/verification
+[Binder]:                https://mybinder.org/v2/gh/curent/ams/master
+[LTB Repository]:        https://github.com/CURENT
