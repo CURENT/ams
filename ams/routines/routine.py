@@ -402,12 +402,6 @@ class RoutineModel:
         """
         raise NotImplementedError
 
-    def report(self, **kwargs):
-        """
-        Report interface.
-        """
-        raise NotImplementedError
-
     def __repr__(self):
         return f"{self.class_name} at {hex(id(self))}"
 

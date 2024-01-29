@@ -156,12 +156,6 @@ class DCPFlowBase(RoutineModel):
         """
         pass
 
-    def report(self, **kwargs):
-        """
-        Print power flow report.
-        """
-        pass
-
     def enable(self, name):
         raise NotImplementedError
 

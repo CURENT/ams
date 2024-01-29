@@ -26,6 +26,7 @@ from ams.routines import all_routines
 from ams.utils.paths import get_config_path
 from ams.core.matprocessor import MatProcessor
 from ams.interop.andes import to_andes
+from ams.report import Report
 
 logger = logging.getLogger(__name__)
 
@@ -565,6 +566,22 @@ class System(andes_System):
 
         out_str = '\n'.join(out)
         logger.info(out_str)
+
+    def report(self):
+        """
+        Write system routine reports to a plain-text file.
+
+        Returns
+        -------
+        bool
+            True if the report is written successfully.
+        """
+        if self.files.no_output is False:
+            r = Report(self)
+            r.write()
+            return True
+
+        return False
 
 
 # --------------- Helper Functions ---------------
