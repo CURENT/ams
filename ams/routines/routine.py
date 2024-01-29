@@ -3,6 +3,7 @@ Module for routine data.
 """
 
 import logging
+import os
 from typing import Optional, Union, Type, Iterable
 from collections import OrderedDict
 
@@ -10,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from andes.core import Config
-from andes.shared import deg2rad  # NOQA
+from andes.shared import pd
 from andes.utils.misc import elapsed
 
 from ams.core.param import RParam
@@ -395,6 +396,58 @@ class RoutineModel:
             msg += n_iter_str + f"using solver {sstats.solver_name}!"
             logger.warning(msg)
             return False
+
+    def export_csv(self, path=None):
+        """
+        Export dispatch results to a csv file.
+        For multi-period routines, the column "Time" is the time index of
+        ``timeslot.v``, which usually comes from ``EDTSlot`` or ``UCTSlot``.
+        The rest columns are the variables registered in ``vars``.
+
+        For single-period routines, the column "Time" have a pseduo value of "T1".
+
+        Parameters
+        ----------
+        path : str
+            path of the csv file to save
+
+        Returns
+        -------
+        str
+            The path of the exported csv file
+        """
+        if not self.converged:
+            logger.warning("Routine did not converge, aborting export.")
+            return None
+        if not path:
+            if self.system.files.fullname is None:
+                logger.info("Input file name not detacted. Using `Untitled`.")
+                file_name = 'Untitled'
+            else:
+                file_name = os.path.splitext(self.system.files.fullname)[0]
+                file_name += f'_{self.class_name}'
+            path = os.path.join(os.getcwd(), file_name + '.csv')
+
+        idxes = [var.get_idx() for var in self.vars.values()]
+        vars = [var for var in self.vars.keys()]
+
+        if hasattr(self, 'timeslot'):
+            timeslot = self.timeslot.v.copy()
+            data_dict = OrderedDict([('Time', timeslot)])
+        else:
+            timeslot = None
+            data_dict = OrderedDict([('Time', 'T1')])
+
+        for var, idx in zip(vars, idxes):
+            header = [f'{var} {dev}' for dev in idx]
+            data = self.get(src=var, idx=idx, horizon=timeslot).round(6)
+            data_dict.update(OrderedDict(zip(header, data)))
+
+        if timeslot is None:
+            data_dict = OrderedDict([(k, [v]) for k, v in data_dict.items()])
+
+        pd.DataFrame(data_dict).to_csv(path, index=False)
+        return path
 
     def summary(self, **kwargs):
         """
