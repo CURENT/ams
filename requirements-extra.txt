@@ -8,9 +8,9 @@
 # Only one `#` is allowed per line. Lines starting with `#` are ignored.
 
 pytest==7.4 #                   dev
+coverage #                      dev
 flake8 #                        dev
 ipython #                       dev
-igraph #                        dev
 sphinx #                        dev, doc
 pydata-sphinx-theme #           dev, doc
 numpydoc #                      dev, doc
