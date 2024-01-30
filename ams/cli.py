@@ -100,7 +100,7 @@ def create_parser():
     misc.add_argument('--version', action='store_true', help='Display version information')
 
     # TODO: add quick or extra options for selftest
-    selftest = sub_parsers.add_parser('selftest', aliases=command_aliases['selftest'])
+    selftest = sub_parsers.add_parser('selftest', aliases=command_aliases['selftest'])  # NOQA
 
     return parser
 

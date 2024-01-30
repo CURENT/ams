@@ -46,7 +46,7 @@ class Test5Bus(unittest.TestCase):
         self.assertEqual(self.ss.UCTSlot.n, 24)
 
         # test idx values
-        self.assertSequenceEqual(self.ss.Bus.idx.v, [0, 1, 2, 3, 4])
+        self.assertSequenceEqual(self.ss.Bus.idx.v, ['Bus_1', 'Bus_2', 'Bus_3', 'Bus_4', 'Bus_5'])
         self.assertSequenceEqual(self.ss.Area.idx.v, [1, 2, 3])
 
         # test cache refreshing

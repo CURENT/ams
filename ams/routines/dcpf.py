@@ -101,7 +101,8 @@ class DCPFlowBase(RoutineModel):
         ppopt = ppoption(PF_DC=True)
 
         res, success, sstats = runpf(casedata=ppc, ppopt=ppopt)
-        return res, success, sstats
+        self.converged = bool(success)
+        return res, self.converged, sstats
 
     def run(self, force_init=False, no_code=True,
             method=None, **kwargs):
@@ -152,12 +153,6 @@ class DCPFlowBase(RoutineModel):
     def summary(self, **kwargs):
         """
         # TODO: Print power flow summary.
-        """
-        pass
-
-    def report(self, **kwargs):
-        """
-        Print power flow report.
         """
         pass
 

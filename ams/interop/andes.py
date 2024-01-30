@@ -369,7 +369,7 @@ class Dynamic:
             The ANDES system instance.
         """
         self.adsys = adsys
-        
+
         self.link = make_link_table(self.adsys)
         logger.warning(f'AMS system {hex(id(self.amsys))} is linked to the ANDES system {hex(id(adsys))}.')
 
