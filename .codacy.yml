@@ -1,5 +1,10 @@
+---
 engines:
   flake8:
     enabled: true
-    exclude_paths:
-      - ams/pypower/
+exclude_paths:
+  - "versioneer.py"
+  - "ams/pypower/**"
+  - "ams/_version.py"
+  - ".github/**"
+  - "README.md"
