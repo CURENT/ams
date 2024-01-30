@@ -1,3 +1,17 @@
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+cli:
+  plugins:
+    pycoverage:
+      report_type: "json"
+
 codecov: 
  token: 55cb1850-3367-48c7-8f78-ab0fa7f4526c
 ignore:
