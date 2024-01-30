@@ -101,7 +101,9 @@ class UndefinedType(TypeBase):
     """
     The undefined type.
     """
-    pass
+
+    def __init__(self):
+        TypeBase.__init__(self)
 
 
 class PF(TypeBase):
