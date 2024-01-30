@@ -236,13 +236,7 @@ def mpc2system(mpc: dict, system) -> bool:
 
 def _get_bus_id_caller(bus):
     """
-    Helper function to get the bus id. If any of bus ``idx`` is a string, use
-    ``uid`` + 1. Otherwise, use ``idx``.
-
-    This function is revised from ``andes.io.matpower._get_bus_id_caller``.
-
-    Compared to the original one, this function fixed the NumPy compatibility
-    issue by replacing ``np.object`` with ``object``.
+    Helper function to get the bus id. Force bus id to be uid+1.
 
     Parameters
     ----------
@@ -254,10 +248,10 @@ def _get_bus_id_caller(bus):
     lambda function to that takes bus idx and returns bus id for matpower case
     """
 
-    if np.array(bus.idx.v).dtype == object:
-        return lambda x: bus.idx2uid(x) + 1
-    else:
+    if np.array(bus.idx.v).dtype in ['int', 'float']:
         return lambda x: x
+    else:
+        return lambda x: list(np.array(bus.idx2uid(x)) + 1)
 
 
 def system2mpc(system) -> dict:
@@ -294,11 +288,11 @@ def system2mpc(system) -> dict:
 
     base_mva = system.config.mva
 
-    to_busid = _get_bus_id_caller(system.Bus)
-
     # --- bus ---
     bus = mpc['bus']
     gen = mpc['gen']
+
+    to_busid = _get_bus_id_caller(system.Bus)
 
     bus[:, 0] = to_busid(system.Bus.idx.v)
     bus[:, 1] = 1
