@@ -72,7 +72,7 @@ extras_require = get_extra_requires("requirements-extra.txt")
 # --- update `extras_conda` to include packages only available in PyPI ---
 
 setup(
-    name='ams',
+    name='ltbams',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     description="Python software for dispatch modeling and co-simulation with dynanic.",
