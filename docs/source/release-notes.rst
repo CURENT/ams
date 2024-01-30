@@ -9,6 +9,10 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.8.3 (2024-01-30)
+
+- Release to PyPI
+
 v0.8.2 (2024-01-30)
 -------------------
 
