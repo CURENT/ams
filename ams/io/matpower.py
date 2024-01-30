@@ -209,14 +209,14 @@ def mpc2system(mpc: dict, system) -> bool:
         if data[0] != 2:
             raise ValueError('Only MODEL 2 costs are supported')
         gcost_idx += 1
-        type = int(data[0])
+        gctype = int(data[0])
         startup = data[1]
         shutdown = data[2]
         c2 = data[4] * base_mva ** 2
         c1 = data[5] * base_mva
         c0 = data[6]
         system.add('GCost', gen=int(gen),
-                   u=1, type=type,
+                   u=1, type=gctype,
                    idx=gcost_idx,
                    name=f'GCost {gcost_idx}',
                    csu=startup, csd=shutdown,
