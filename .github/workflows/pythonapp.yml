@@ -35,15 +35,17 @@ jobs:
         # stop the build if there are Python syntax errors or undefined names
         flake8 .
     - shell: bash -el {0}
-      name: Test with pytest and collect coverage
-      run: |
-        pytest  --cov=ams --cov-report html:coverage_report
-    - shell: bash -el {0}
       name: Test notebooks.
       run: |
         pytest --nbmake examples --ignore=examples/demonstration
+    - shell: bash -el {0}
+      name: Test with pytest and collect coverage
+      run: |
+        pytest  --cov=ams --cov-report html:coverage_report
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3
+      with:
+        directory: /home/runner/work/ams
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
