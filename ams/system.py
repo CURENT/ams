@@ -275,9 +275,9 @@ class System(andes_System):
                     # Collect rparams
                     rparams = getattr(rtn, 'rparams')
                     self._collect_group_data(rparams)
-                    # Collect vars
-                    vars = getattr(rtn, 'vars')
-                    self._collect_group_data(vars)
+                    # Collect routine vars
+                    r_vars = getattr(rtn, 'vars')
+                    self._collect_group_data(r_vars)
 
     def import_groups(self):
         """
@@ -540,8 +540,8 @@ class System(andes_System):
 
         for name, data_pass in rtn_check.items():
             if data_pass:
-                type = self.routines[name].type
-                rtn_types[type].append(name)
+                r_type = self.routines[name].type
+                rtn_types[r_type].append(name)
 
         nb = self.Bus.n
         nl = self.Line.n

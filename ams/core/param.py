@@ -11,9 +11,7 @@ import numpy as np
 from scipy.sparse import issparse
 
 from andes.core import BaseParam, DataParam, IdxParam, NumParam, ExtParam  # NOQA
-from andes.models.group import GroupBase  # NOQA
 
-from ams.core.var import Algeb  # NOQA
 from ams.opt.omodel import Param
 
 logger = logging.getLogger(__name__)

@@ -791,7 +791,7 @@ def _dest_check(mname, pname, idx, adsys):
     return True
 
 
-def build_group_table(adsys, grp_name, param_name, mdl_name=[]):
+def build_group_table(adsys, grp_name, param_name, mdl_name=None):
     """
     Build the table for devices in a group in an ANDES System.
 
