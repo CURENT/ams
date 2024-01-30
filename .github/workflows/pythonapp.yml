@@ -41,11 +41,9 @@ jobs:
     - shell: bash -el {0}
       name: Test with pytest and collect coverage
       run: |
-        pytest  --cov=ams --cov-report html:coverage_report
+        pytest  --cov --cov-report html:coverage_report
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3
-      with:
-        directory: /home/runner/work/ams
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
