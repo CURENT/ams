@@ -538,10 +538,10 @@ class RoutineModel:
         Update the values of Parameters in the optimization model.
 
         This method is particularly important when some `RParams` are
-        linked with system matrices. 
+        linked with system matrices.
         In such cases, setting `mat_make=True` is necessary to rebuild
         these matrices for the changes to take effect.
-        This is common in scenarios involving topology changes, connection statuses, 
+        This is common in scenarios involving topology changes, connection statuses,
         or load value modifications.
         If unsure, it is advisable to use `mat_make=True` as a precautionary measure.
 

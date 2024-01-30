@@ -54,7 +54,6 @@ class Report:
             'Regions': system.Region.n,
         })
 
-
     def collect(self, rtn, horizon=None):
         """
         Collect report data.

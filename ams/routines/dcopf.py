@@ -108,7 +108,7 @@ class DCOPF(RoutineModel):
         self.CftT = RParam(info='Transpose of line connection matrix',
                            name='CftT', tex_name=r'C_{ft}^T',
                            model='mats', src='CftT',
-                          no_parse=True, sparse=True,)
+                           no_parse=True, sparse=True,)
         self.Csh = RParam(info='Shunt connection matrix',
                           name='Csh', tex_name=r'C_{sh}',
                           model='mats', src='Csh',
@@ -255,7 +255,7 @@ class DCOPF(RoutineModel):
                 try:
                     var.owner.set(src=var.src, attr='v', idx=idx, value=var.v)
                 # failed to find source var in the owner (model or group)
-                except (KeyError, TypeError):  
+                except (KeyError, TypeError):
                     pass
 
         # label the most recent solved routine

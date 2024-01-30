@@ -108,6 +108,7 @@ class MPBase:
         self.aBus.horizon = self.timeslot
         self.aBus.info = '2D Bus angle'
 
+
 class ED(RTED):
     """
     DC-based multi-period economic dispatch (ED).

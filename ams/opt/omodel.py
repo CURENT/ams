@@ -689,11 +689,11 @@ class OModel:
         self.obj = None
         self.initialized = False
         self._parsed = False
-        
+
     def _parse(self, no_code=True):
         """
         Parse the optimization model from the symbolic description.
-    
+
         Parameters
         ----------
         no_code : bool, optional
@@ -796,12 +796,12 @@ class OModel:
                     constrs_skip.append(f'<{key}>')
                 else:
                     constrs_add.append(val.optz)
-            code_prob += f"[constr for constr in constrs_add])"
+            code_prob += "[constr for constr in constrs_add])"
             for pattern, replacement in self.rtn.syms.sub_map.items():
                 code_prob = re.sub(pattern, replacement, code_prob)
             msg = f"Finalize: {code_prob}"
             if len(constrs_skip) > 0:
-                msg += f"; Skipped constrs: "
+                msg += "; Skipped constrs: "
                 msg += ", ".join(constrs_skip)
             logger.debug(msg)
             exec(code_prob, globals(), locals())

@@ -483,6 +483,7 @@ class RDocumenter:
                               plain_dict=plain_dict,
                               rest_dict=rest_dict)
 
+
 def _tex_pre(docm, p, tex_map):
     """
     Prepare the expression for pretty printing.

@@ -552,7 +552,7 @@ class System(andes_System):
 
         out = list()
 
-        out.append(f"-> Systen size:")
+        out.append("-> Systen size:")
         out.append(f"Base: {self.config.mva} MVA; Frequency: {self.config.freq} Hz")
         out.append(f"{nb} Buses; {nl} Lines; {ng} Static Generators")
         out.append(f"Active load: {pd:,.2f} p.u.; Reactive load: {qd:,.2f} p.u.")

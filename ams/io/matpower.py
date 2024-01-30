@@ -379,8 +379,7 @@ def system2mpc(system) -> dict:
     # NOTE: adjust GCost sequence to match the generator sequence
     if system.GCost.n > 0:
         stg_idx = system.Slack.idx.v + system.PV.idx.v
-        gcost_idx = system.GCost.find_idx(keys=['gen'],
-                                      values=[stg_idx])
+        gcost_idx = system.GCost.find_idx(keys=['gen'], values=[stg_idx])
         gcost_uid = system.GCost.idx2uid(gcost_idx)
         gencost = mpc['gencost']
         gencost[:, 0] = system.GCost.type.v[gcost_uid]
