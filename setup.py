@@ -80,7 +80,7 @@ setup(
     long_description_content_type='text/markdown',
     author="Jinning Wang",
     author_email='jinninggm@gmail.com',
-    url='https://github.com/jinningwang/ams',
+    url='https://github.com/CURENT/ams',
     packages=find_packages(exclude=[]),
     entry_points={
         'console_scripts': [
@@ -89,7 +89,7 @@ setup(
     },
     include_package_data=True,
     package_data={
-        'ams': [
+        'ltbams': [
             # When adding files here, remember to update MANIFEST.in as well,
             # or else they will not be included in the distribution on PyPI!
             # 'path/to/data_file',
