@@ -37,7 +37,7 @@ jobs:
     - shell: bash -el {0}
       name: Test with pytest and collect coverage
       run: |
-        pytest  --cov=<ltbams> --cov-report html:coverage_report
+        pytest  --cov=ltbams --cov-report html:coverage_report
     - shell: bash -el {0}
       name: Test notebooks.
       run: |
