@@ -422,7 +422,7 @@ class RoutineModel:
         if not path:
             if self.system.files.fullname is None:
                 logger.info("Input file name not detacted. Using `Untitled`.")
-                file_name = 'Untitled'
+                file_name = f'Untitled_{self.class_name}'
             else:
                 file_name = os.path.splitext(self.system.files.fullname)[0]
                 file_name += f'_{self.class_name}'
@@ -447,7 +447,7 @@ class RoutineModel:
             data_dict = OrderedDict([(k, [v]) for k, v in data_dict.items()])
 
         pd.DataFrame(data_dict).to_csv(path, index=False)
-        return path
+        return file_name + '.csv'
 
     def summary(self, **kwargs):
         """
