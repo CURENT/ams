@@ -72,7 +72,7 @@ class TestRoutineMethods(unittest.TestCase):
         np.testing.assert_equal(self.ss.DCOPF.get('ug', 'PV_30'), 1)
 
         # get an unpacked var value
-        self.ss.DCOPF.run()
+        self.ss.DCOPF.run(solver='ECOS')
         self.assertEqual(self.ss.DCOPF.exit_code, 0, "Exit code is not 0.")
         np.testing.assert_equal(self.ss.DCOPF.get('pg', 'PV_30', 'v'),
                                 self.ss.StaticGen.get('p', 'PV_30', 'v'))
