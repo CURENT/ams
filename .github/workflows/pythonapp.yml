@@ -47,11 +47,11 @@ jobs:
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     - name: Build a distribution if tagged
-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && matrix.python-version == '3.9'
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9'
       run: |
         python setup.py sdist
     - name: Publish a Python distribution to PyPI if tagged
-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && matrix.python-version == '3.9'
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9'
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
