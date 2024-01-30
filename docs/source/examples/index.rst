@@ -22,3 +22,4 @@ folder of the repository
    ../_examples/ex4.ipynb
    ../_examples/ex5.ipynb
    ../_examples/ex6.ipynb
+   ../_examples/ex7.ipynb

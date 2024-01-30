@@ -13,6 +13,7 @@ v0.8.2 (2024-01-xx)
 -------------------
 
 - Improve examples
+- Add report module and export_csv for results export
 
 v0.8.1 (2024-01-20)
 -------------------
