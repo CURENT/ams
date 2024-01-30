@@ -286,6 +286,14 @@ class Model:
         """
         return self.docum.get(max_width=max_width, export=export)
 
+    def get_idx(self):
+        """
+        Return the index of the model instance.
+        Equivalent to ``self.idx.v``, develoepd for consistency with group method
+        ``get_idx``.
+        """
+        return self.idx.v
+
     def __repr__(self):
         dev_text = 'device' if self.n == 1 else 'devices'
 

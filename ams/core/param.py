@@ -9,7 +9,6 @@ from typing import Optional, Iterable
 
 import numpy as np
 from scipy.sparse import issparse
-from scipy.sparse import csr_matrix as c_sparse
 
 from andes.core import BaseParam, DataParam, IdxParam, NumParam, ExtParam  # NOQA
 from andes.models.group import GroupBase  # NOQA

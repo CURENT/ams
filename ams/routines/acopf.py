@@ -23,14 +23,11 @@ class ACOPFBase(DCPFlowBase):
 
     def __init__(self, system, config):
         DCPFlowBase.__init__(self, system, config)
-        # NOTE: ACOPF does not receive data from dynamic
-        self.map1 = OrderedDict()
+        self.map1 = OrderedDict()   # ACOPF does not receive
         self.map2 = OrderedDict([
             ('Bus', {
                 'vBus': 'v0',
             }),
-            # NOTE: separating PV and Slack rather than using StaticGen
-            # might introduce error when sync with ANDES dynamic
             ('StaticGen', {
                 'pg': 'p0',
             }),
@@ -43,7 +40,8 @@ class ACOPFBase(DCPFlowBase):
         ppc = system2ppc(self.system)
         ppopt = ppoption()
         res, sstats = runopf(casedata=ppc, ppopt=ppopt, **kwargs)
-        return res, res['success'], sstats
+        self.converged = res['success']
+        return res, self.converged, sstats
 
     def unpack(self, res):
         """

@@ -163,7 +163,7 @@ class SymProcessor:
             if key in self.config.tex_names:
                 self.tex_names[tmp] = sp.Symbol(self.config.tex_names[key])
 
-        # NOTE: hard-coded config 't' tex name as 'T_{cfg}' for clarity in doc 
+        # NOTE: hard-coded config 't' tex name as 'T_{cfg}' for clarity in doc
         self.tex_map['\\bt\\b'] = 'T_{cfg}'
         self.tex_map['\\bcul\\b'] = 'c_{ul, cfg}'
 

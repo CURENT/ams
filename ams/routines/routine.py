@@ -3,6 +3,7 @@ Module for routine data.
 """
 
 import logging
+import os
 from typing import Optional, Union, Type, Iterable
 from collections import OrderedDict
 
@@ -10,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from andes.core import Config
-from andes.shared import deg2rad  # NOQA
+from andes.shared import pd
 from andes.utils.misc import elapsed
 
 from ams.core.param import RParam
@@ -24,15 +25,6 @@ from ams.shared import require_igraph
 
 
 logger = logging.getLogger(__name__)
-
-
-class RoutineData:
-    """
-    Class to hold routine parameters.
-    """
-
-    def __init__(self):
-        pass
 
 
 class RoutineModel:
@@ -50,48 +42,36 @@ class RoutineModel:
                 ("sys_mva", "S_{b,sys}"),
             )
         )
-        self.syms = SymProcessor(self)  # symbolic processor
-        self._syms = False  # flag if symbols has been generated
+        self.syms = SymProcessor(self)      # symbolic processor
+        self._syms = False                  # symbol generation flag
 
-        self.rparams = OrderedDict()  # list out RParam in a routine
-        self.services = OrderedDict()  # list out services in a routine
-
-        self.params = OrderedDict()  # list out Params in a routine
-        self.vars = OrderedDict()  # list out Vars in a routine
-        self.constrs = OrderedDict()
-        self.obj = None
-        self.initialized = False
-        self.type = "UndefinedType"
-        self.docum = RDocumenter(self)
+        self.rparams = OrderedDict()        # RParam registry
+        self.services = OrderedDict()       # Service registry
+        self.params = OrderedDict()         # Param registry
+        self.vars = OrderedDict()           # Var registry
+        self.constrs = OrderedDict()        # Constraint registry
+        self.obj = None                     # Objective
+        self.initialized = False            # initialization flag
+        self.type = "UndefinedType"         # routine type
+        self.docum = RDocumenter(self)      # documentation generator
 
         # --- sync mapping ---
         self.map1 = OrderedDict()  # from ANDES
         self.map2 = OrderedDict()  # to ANDES
 
         # --- optimization modeling ---
-        self.om = OModel(routine=self)
+        self.om = OModel(routine=self)      # optimization model
 
         if config is not None:
             self.config.load(config)
-        # TODO: these default configs might to be revised
-        self.config.add(
-            OrderedDict((
-                ("sparselib", "klu"),
-            )
-            )
-        )
-        self.config.add_extra(
-            "_help", sparselib="linear sparse solver name",
-        )
-        self.config.add_extra(
-            "_alt", sparselib=("klu", "umfpack", "spsolve", "cupy"),
-        )
 
-        self.exec_time = 0.0  # recorded time to execute the routine in seconds
-        # TODO: check exit_code of gurobipy or any other similiar solvers
-        self.exit_code = 0  # exit code of the routine;
-
-        self.is_ac = False  # whether the routine is converted to AC
+        # NOTE: the difference between exit_code and converged is that
+        # exit_code is the solver exit code, while converged is the
+        # convergence flag of the routine.
+        self.exec_time = 0.0        # running time
+        self.exit_code = 0          # exit code
+        self.converged = False      # convergence flag
+        self.is_ac = False          # AC conversion flag
 
     @property
     def class_name(self):
@@ -395,7 +375,7 @@ class RoutineModel:
         _ = self.solve(**kwargs)
         status = self.om.prob.status
         self.exit_code = self.syms.status[status]
-        self.system.exit_code = self.exit_code
+        self.converged = self.exit_code == 0
         _, s = elapsed(t0)
         self.exec_time = float(s.split(" ")[0])
         sstats = self.om.prob.solver_stats  # solver stats
@@ -417,15 +397,61 @@ class RoutineModel:
             logger.warning(msg)
             return False
 
+    def export_csv(self, path=None):
+        """
+        Export dispatch results to a csv file.
+        For multi-period routines, the column "Time" is the time index of
+        ``timeslot.v``, which usually comes from ``EDTSlot`` or ``UCTSlot``.
+        The rest columns are the variables registered in ``vars``.
+
+        For single-period routines, the column "Time" have a pseduo value of "T1".
+
+        Parameters
+        ----------
+        path : str
+            path of the csv file to save
+
+        Returns
+        -------
+        str
+            The path of the exported csv file
+        """
+        if not self.converged:
+            logger.warning("Routine did not converge, aborting export.")
+            return None
+        if not path:
+            if self.system.files.fullname is None:
+                logger.info("Input file name not detacted. Using `Untitled`.")
+                file_name = f'Untitled_{self.class_name}'
+            else:
+                file_name = os.path.splitext(self.system.files.fullname)[0]
+                file_name += f'_{self.class_name}'
+            path = os.path.join(os.getcwd(), file_name + '.csv')
+
+        idxes = [var.get_idx() for var in self.vars.values()]
+        var_names = [var for var in self.vars.keys()]
+
+        if hasattr(self, 'timeslot'):
+            timeslot = self.timeslot.v.copy()
+            data_dict = OrderedDict([('Time', timeslot)])
+        else:
+            timeslot = None
+            data_dict = OrderedDict([('Time', 'T1')])
+
+        for var, idx in zip(var_names, idxes):
+            header = [f'{var} {dev}' for dev in idx]
+            data = self.get(src=var, idx=idx, horizon=timeslot).round(6)
+            data_dict.update(OrderedDict(zip(header, data)))
+
+        if timeslot is None:
+            data_dict = OrderedDict([(k, [v]) for k, v in data_dict.items()])
+
+        pd.DataFrame(data_dict).to_csv(path, index=False)
+        return file_name + '.csv'
+
     def summary(self, **kwargs):
         """
         Summary interface
-        """
-        raise NotImplementedError
-
-    def report(self, **kwargs):
-        """
-        Report interface.
         """
         raise NotImplementedError
 
@@ -512,10 +538,10 @@ class RoutineModel:
         Update the values of Parameters in the optimization model.
 
         This method is particularly important when some `RParams` are
-        linked with system matrices. 
+        linked with system matrices.
         In such cases, setting `mat_make=True` is necessary to rebuild
         these matrices for the changes to take effect.
-        This is common in scenarios involving topology changes, connection statuses, 
+        This is common in scenarios involving topology changes, connection statuses,
         or load value modifications.
         If unsure, it is advisable to use `mat_make=True` as a precautionary measure.
 

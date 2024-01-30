@@ -25,6 +25,7 @@ import ams
 from ams.routines import routine_cli
 from ams.system import System
 from ams.utils.paths import get_config_path, get_log_dir, tests_root
+from ams.shared import copyright_msg
 
 logger = logging.getLogger(__name__)
 
@@ -542,7 +543,7 @@ def print_license():
     print(f"""
     AMS version {ams.__version__}
 
-    Copyright (c) 2023 Jinning Wang
+    {copyright_msg}
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

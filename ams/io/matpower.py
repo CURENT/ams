@@ -92,8 +92,8 @@ def mpc2system(mpc: dict, system) -> bool:
         mpc_gen[:, :10] = mpc['gen']
         mbase = base_mva
         mpc_gen[:, 16] = system.PV.Ragc.default * mbase / 60
-        mpc_gen[:, 17] = system.PV.R10.default * mbase / 6
-        mpc_gen[:, 18] = system.PV.R30.default * mbase / 2
+        mpc_gen[:, 17] = system.PV.R10.default * mbase
+        mpc_gen[:, 18] = system.PV.R30.default * mbase
         mpc_gen[:, 19] = system.PV.Rq.default * mbase / 60
     else:
         mpc_gen = mpc['gen']
@@ -123,8 +123,8 @@ def mpc2system(mpc: dict, system) -> bool:
         qc2min = data[14] / mbase
         qc2max = data[15] / mbase
         ramp_agc = 60 * data[16] / mbase  # from MW/min to MW/h
-        ramp_10 = 6 * data[17] / mbase  # from MW/10min to MW/h
-        ramp_30 = 2 * data[18] / mbase  # from MW/30min to MW/h
+        ramp_10 = data[17] / mbase  # from MW to MW/h
+        ramp_30 = data[18] / mbase  # from MW to MW/h
         ramp_q = 60 * data[19] / mbase  # from MVAr/min to MVAr/h
         apf = data[20]
 
@@ -236,13 +236,7 @@ def mpc2system(mpc: dict, system) -> bool:
 
 def _get_bus_id_caller(bus):
     """
-    Helper function to get the bus id. If any of bus ``idx`` is a string, use
-    ``uid`` + 1. Otherwise, use ``idx``.
-
-    This function is revised from ``andes.io.matpower._get_bus_id_caller``.
-
-    Compared to the original one, this function fixed the NumPy compatibility
-    issue by replacing ``np.object`` with ``object``.
+    Helper function to get the bus id. Force bus id to be uid+1.
 
     Parameters
     ----------
@@ -254,10 +248,10 @@ def _get_bus_id_caller(bus):
     lambda function to that takes bus idx and returns bus id for matpower case
     """
 
-    if np.array(bus.idx.v).dtype == object:
-        return lambda x: bus.idx2uid(x) + 1
-    else:
+    if np.array(bus.idx.v).dtype in ['int', 'float']:
         return lambda x: x
+    else:
+        return lambda x: list(np.array(bus.idx2uid(x)) + 1)
 
 
 def system2mpc(system) -> dict:
@@ -294,11 +288,11 @@ def system2mpc(system) -> dict:
 
     base_mva = system.config.mva
 
-    to_busid = _get_bus_id_caller(system.Bus)
-
     # --- bus ---
     bus = mpc['bus']
     gen = mpc['gen']
+
+    to_busid = _get_bus_id_caller(system.Bus)
 
     bus[:, 0] = to_busid(system.Bus.idx.v)
     bus[:, 1] = 1
@@ -341,6 +335,10 @@ def system2mpc(system) -> dict:
         gen[system.Slack.n:, 7] = PV.u.v
         gen[system.Slack.n:, 8] = (PV.ctrl.v * PV.pmax.v + (1 - PV.ctrl.v) * PV.pmax.v) * base_mva
         gen[system.Slack.n:, 9] = (PV.ctrl.v * PV.pmin.v + (1 - PV.ctrl.v) * PV.pmin.v) * base_mva
+        gen[system.Slack.n:, 16] = PV.Ragc.v * base_mva * 60    # from MW/h to MW/min
+        gen[system.Slack.n:, 17] = PV.R10.v * base_mva
+        gen[system.Slack.n:, 18] = PV.R30.v * base_mva
+        gen[system.Slack.n:, 19] = PV.Rq.v * base_mva * 60  # from MVAr/h to MVAr/min
 
     # --- Slack ---
     if system.Slack.n > 0:
@@ -358,6 +356,10 @@ def system2mpc(system) -> dict:
         gen[:system.Slack.n, 7] = system.Slack.u.v
         gen[:system.Slack.n, 8] = system.Slack.pmax.v * base_mva
         gen[:system.Slack.n, 9] = system.Slack.pmin.v * base_mva
+        gen[:system.Slack.n, 16] = system.Slack.Ragc.v * base_mva * 60    # from MW/h to MW/min
+        gen[:system.Slack.n, 17] = system.Slack.R10.v * base_mva
+        gen[:system.Slack.n, 18] = system.Slack.R30.v * base_mva
+        gen[:system.Slack.n, 19] = system.Slack.Rq.v * base_mva * 60    # from MVAr/h to MVAr/min
 
     if system.Line.n > 0:
         branch = mpc['branch']
@@ -377,8 +379,7 @@ def system2mpc(system) -> dict:
     # NOTE: adjust GCost sequence to match the generator sequence
     if system.GCost.n > 0:
         stg_idx = system.Slack.idx.v + system.PV.idx.v
-        gcost_idx = system.GCost.find_idx(keys=['gen'],
-                                      values=[stg_idx])
+        gcost_idx = system.GCost.find_idx(keys=['gen'], values=[stg_idx])
         gcost_uid = system.GCost.idx2uid(gcost_idx)
         gencost = mpc['gencost']
         gencost[:, 0] = system.GCost.type.v[gcost_uid]
