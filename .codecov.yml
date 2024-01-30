@@ -13,7 +13,7 @@ cli:
       report_type: "xml"
 
 codecov: 
-  token: 55cb1850-3367-48c7-8f78-ab0fa7f4526c
+  token: 5fc2d41f-bcba-455d-a843-f85beb76d28f
 ignore:
   - "ams/_version.py"
   - "ams/pypower/**"
