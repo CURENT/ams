@@ -37,14 +37,14 @@ The following results show the comparison of DCOPF between AMS and other tools.
 AMS is currently under active development.
 Use the following resources to get involved.
 
-+ Start from the [documentation][readthedocs] for installation and tutorial.
-+ Check out examples in the [examples folder][examples]
-+ Read the model verification results in the [examples/verification folder][verification]
-+ Ask a question in the [GitHub Discussions][Github Discussions]
-+ Report bugs or issues by submitting a [GitHub issue][GitHub issues]
-+ Submit contributions using [pull requests][GitHub pull requests]
-+ Read release notes highlighted [here][release notes]
-+ Try in Jupyter Notebook on [Binder][Binder]
+- Start from the [documentation][readthedocs] for installation and tutorial.
+- Check out examples in the [examples folder][examples]
+- Read the model verification results in the [examples/verification folder][verification]
+- Ask a question in the [GitHub Discussions][Github Discussions]
+- Report bugs or issues by submitting a [GitHub issue][GitHub issues]
+- Submit contributions using [pull requests][GitHub pull requests]
+- Read release notes highlighted [here][release notes]
+- Try in Jupyter Notebook on [Binder][Binder]
 <!-- + Check out and and cite our [paper][arxiv paper] -->
 
 # Sponsors and Contributors

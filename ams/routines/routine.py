@@ -429,7 +429,7 @@ class RoutineModel:
             path = os.path.join(os.getcwd(), file_name + '.csv')
 
         idxes = [var.get_idx() for var in self.vars.values()]
-        vars = [var for var in self.vars.keys()]
+        var_names = [var for var in self.vars.keys()]
 
         if hasattr(self, 'timeslot'):
             timeslot = self.timeslot.v.copy()
@@ -438,7 +438,7 @@ class RoutineModel:
             timeslot = None
             data_dict = OrderedDict([('Time', 'T1')])
 
-        for var, idx in zip(vars, idxes):
+        for var, idx in zip(var_names, idxes):
             header = [f'{var} {dev}' for dev in idx]
             data = self.get(src=var, idx=idx, horizon=timeslot).round(6)
             data_dict.update(OrderedDict(zip(header, data)))

@@ -142,7 +142,7 @@ class Report:
         data.append(None)
 
         # --- system summary section ---
-        text.append(['='*10 + f' System Statistics ' + '='*10 + '\n'])
+        text.append(['='*10 + ' System Statistics ' + '='*10 + '\n'])
         header.append(None)
         row_name.append(self.basic.keys())
         data.append(list(self.basic.values()))
