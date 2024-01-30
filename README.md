@@ -37,14 +37,14 @@ The following results show the comparison of DCOPF between AMS and other tools.
 AMS is currently under active development.
 Use the following resources to get involved.
 
-- Start from the [documentation][readthedocs] for installation and tutorial.
-- Check out examples in the [examples folder][examples]
-- Read the model verification results in the [examples/verification folder][verification]
-- Ask a question in the [GitHub Discussions][Github Discussions]
-- Report bugs or issues by submitting a [GitHub issue][GitHub issues]
-- Submit contributions using [pull requests][GitHub pull requests]
-- Read release notes highlighted [here][release notes]
-- Try in Jupyter Notebook on [Binder][Binder]
+-  Start from the [documentation][readthedocs] for installation and tutorial.
+-  Check out examples in the [examples folder][examples]
+-  Read the model verification results in the [examples/verification folder][verification]
+-  Ask a question in the [GitHub Discussions][Github Discussions]
+-  Report bugs or issues by submitting a [GitHub issue][GitHub issues]
+-  Submit contributions using [pull requests][GitHub pull requests]
+-  Read release notes highlighted [here][release notes]
+-  Try in Jupyter Notebook on [Binder][Binder]
 <!-- + Check out and and cite our [paper][arxiv paper] -->
 
 # Sponsors and Contributors
@@ -62,12 +62,12 @@ See [GitHub contributors][GitHub contributors] for the contributor list.
 AMS is licensed under the [GPL v3 License](./LICENSE).
 
 # Related Projects
-+ [CVXPY](https://github.com/cvxpy/cvxpy)
-+ [Visualizations of Mittelmann benchmarks](https://mattmilten.github.io/mittelmann-plots/)
-+ [CBC Solver](https://github.com/coin-or/Cbc)
-+ [MATPOWER](https://github.com/MATPOWER/matpower)
-+ [PYPOWER](https://github.com/rwl/PYPOWER)
-+ [pandapower](https://github.com/e2nIEE/pandapower)
+-  [CVXPY](https://github.com/cvxpy/cvxpy)
+-  [Visualizations of Mittelmann benchmarks](https://mattmilten.github.io/mittelmann-plots/)
+-  [CBC Solver](https://github.com/coin-or/Cbc)
+-  [MATPOWER](https://github.com/MATPOWER/matpower)
+-  [PYPOWER](https://github.com/rwl/PYPOWER)
+-  [pandapower](https://github.com/e2nIEE/pandapower)
 
 Some commercial solvers provide academic licenses, such as COPT, GUROBI, CPLEX, and MOSEK.
 
