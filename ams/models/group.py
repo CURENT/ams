@@ -15,14 +15,10 @@ class GroupBase(andes_GroupBase):
 
     This class is revised from ``andes.models.group.GroupBase``.
     """
-    pass
 
     def __init__(self):
         super().__init__()
         self.common_params.extend(('idx',))
-
-    # TODO: revise ``set`` method to make sure Group.params are
-    # also updated if model.params are updated
 
     def get_idx(self):
         """

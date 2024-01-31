@@ -10,7 +10,7 @@ from time import strftime
 
 from andes.shared import NCPUS_PHYSICAL
 
-from ams.main import config_logger, find_log_path  # NOQA
+from ams.main import config_logger
 from ams.utils.paths import get_log_dir
 from ams.routines import routine_cli
 

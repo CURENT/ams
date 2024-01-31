@@ -82,13 +82,13 @@ To install packages in the ``dev`` when installing AMS, do:
 
 .. code:: bash
 
-    pip install ams[dev]
+    pip install ltbams[dev]
 
 To install all extra packages, do:
 
 .. code:: bash
 
-    pip install ams[all]
+    pip install ltbams[all]
 
 One can also inspect the ``requirements-extra.txt`` to identify the packages
 for manual installation.
@@ -110,7 +110,7 @@ from either your fork or the original repository. Clone the repository with
 
 .. code:: bash
 
-    git clone https://github.com/jinningwang/ams
+    git clone https://github.com/CURENT/ams
 
 .. note::
 
@@ -118,7 +118,7 @@ from either your fork or the original repository. Clone the repository with
     update the source code and perform version control.
 
 Alternatively, you can download the AMS source code from
-https://github.com/jinningwang/ams and extract all files to the path of your
+https://github.com/CURENT/ams and extract all files to the path of your
 choice. Although works, this method is discouraged because tracking changes and
 pushing back code edits will require significant manual efforts.
 
@@ -191,19 +191,19 @@ It is recommended to use the latest version for bug fixes and new features.
 We also recommended you to check the :ref:`ReleaseNotes` before updating to stay informed
 of changes that might break your downstream code.
 
-Depending you how you installed ANS, you will use one of the following ways to upgrade.
+Depending you how you installed AMS, you will use one of the following ways to upgrade.
 
 If you installed it from mamba or conda, run
 
 .. code:: bash
 
-    conda install -c conda-forge --yes ams
+    conda install -c conda-forge --yes ltbams
 
 If you install it from PyPI (namely, through ``pip``), run
 
 .. code:: bash
 
-    python3 -m pip install --yes ams
+    python3 -m pip install --yes ltbams
 
 
 Uninstall Multiple Copies

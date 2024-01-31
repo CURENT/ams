@@ -30,7 +30,7 @@ Getting started
 Quick install
 =============
 
-**Before AMS comes to conda-forge and PyPI, you can install it from source,**
+**Before AMS comes to conda-forge and PyPI, you can install it from PyPI or source,**
 check the guide in :ref:`Develop Install`.
 
 .. panels::
@@ -53,13 +53,13 @@ check the guide in :ref:`Develop Install`.
     Prefer pip?
     ^^^^^^^^^^^
 
-    AMS will be installed via pip from `PyPI <https://pypi.org/project/pandas>`__.
+    AMS will be installed via pip from `PyPI <https://pypi.org/project/ltbams>`__.
 
     ++++
 
     .. code-block:: bash
 
-        pip install ams
+        pip install ltbams
 
     ---
     :column: col-12 p-3
