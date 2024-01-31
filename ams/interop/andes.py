@@ -903,7 +903,8 @@ def make_link_table(adsys):
     ssa_key0 = pd.merge(left=ssa_key0, how='left', on='stg_idx',
                         right=ssa_rg[['stg_idx', 'rg_idx']])
 
-    ssa_key0.fillna(False, inplace=True)
+    pd.set_option('future.no_silent_downcasting', True)
+    ssa_key0 = ssa_key0.fillna(value=False)
     dyr = ssa_key0['syg_idx'].astype(bool) + ssa_key0['dg_idx'].astype(bool) + ssa_key0['rg_idx'].astype(bool)
     non_dyr = np.logical_not(dyr)
     ssa_dyr0 = ssa_key0[non_dyr]

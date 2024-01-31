@@ -9,6 +9,11 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.8.5 (2024-01-31)
+
+- Improve quality of coverage and format
+- Fix dependency issue
+
 v0.8.4 (2024-01-30)
 
 - Version cleanup
