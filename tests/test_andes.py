@@ -72,6 +72,7 @@ class TestInteropBase(unittest.TestCase):
             # set2 includes set1, ensure GENROU.gen are all in StaticGen.idx
             self.assertEqual(set1, set1 & set2)
 
+
 class TestANDES(unittest.TestCase):
     """
     Tests for ANDES interface.
