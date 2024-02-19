@@ -25,6 +25,7 @@ jobs:
     - shell: bash -el {0}
       name: Debug Codacy token command structure
       run: |
+        export CODACY_PROJECT_TOKEN=${{ secrets.CODACY_AMS_TOKEN }}
         echo "bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml --project-token \${CODACY_AMS_TOKEN:+[TOKEN_PRESENT]}"
       env:
         CODACY_AMS_TOKEN: ${{ secrets.CODACY_AMS_TOKEN }}
