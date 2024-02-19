@@ -6,6 +6,7 @@ jobs:
   codacy-coverage-reporter:
     runs-on: ubuntu-latest
     name: codacy-coverage-reporter
+    environment: codacy
     steps:
       - uses: actions/checkout@v2
       - name: Debug token presence
@@ -15,12 +16,25 @@ jobs:
           else
             echo "CODACY_PROJECT_TOKEN is set"
           fi
-      - name: Debug token presence another name
+      - name: Run codacy-coverage-reporter
+        uses: codacy/codacy-coverage-reporter-action@v1.3.0
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          coverage-reports: coverage.xml
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+
+  codacy-coverage-reporter-bechmark:
+    runs-on: ubuntu-latest
+    name: codacy-coverage-reporter
+    steps:
+      - uses: actions/checkout@v2
+      - name: Debug token presence
         run: |
-          if [ -z "${{ secrets.JAX_TOKEN }}" ]; then
-            echo "JAX_TOKEN is unset or empty"
+          if [ -z "${{ secrets.CODACY_PROJECT_TOKEN }}" ]; then
+            echo "CODACY_PROJECT_TOKEN is unset or empty"
           else
-            echo "JAX_TOKEN is set"
+            echo "CODACY_PROJECT_TOKEN is set"
           fi
       - name: Run codacy-coverage-reporter
         uses: codacy/codacy-coverage-reporter-action@v1.3.0
