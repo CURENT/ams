@@ -9,59 +9,9 @@ jobs:
     environment: codacy
     steps:
       - uses: actions/checkout@v2
-      - name: Debug token presence with PYPI
-        run: |
-          if [ -z "${{ secrets.PYPI_PASSWORD }}" ]; then
-            echo "PYPI_PASSWORD is unset or empty"
-          else
-            echo "PYPI_PASSWORD is set"
-          fi
-      - name: Test
-        run: |
-          export CODACY_PROJECT_TOKEN="${{ secrets.CODACY_PROJECT_TOKEN }}"
-          curl -X GET 'https://api.codacy.com/api/v3/user/organizations/gh' -H api-token: $CODACY_PROJECT_TOKEN
-      - name: Debug token presence
-        run: |
-          if [ -z "${{ secrets.CODACY_PROJECT_TOKEN }}" ]; then
-            echo "CODACY_PROJECT_TOKEN is unset or empty"
-          else
-            echo "CODACY_PROJECT_TOKEN is set"
-          fi
       - name: Run codacy-coverage-reporter
         uses: codacy/codacy-coverage-reporter-action@v1.3.0
         with:
-          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          coverage-reports: coverage.xml
-        env:
-          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
-
-  codacy-coverage-reporter-bechmark:
-    runs-on: ubuntu-latest
-    name: codacy-coverage-reporter-benchmark
-    steps:
-      - uses: actions/checkout@v2
-      - name: Debug token presence with PYPI
-        run: |
-          if [ -z "${{ secrets.PYPI_PASSWORD }}" ]; then
-            echo "PYPI_PASSWORD is unset or empty"
-          else
-            echo "PYPI_PASSWORD is set"
-          fi
-      - name: Test
-        run: |
-          export CODACY_PROJECT_TOKEN="${{ secrets.CODACY_PROJECT_TOKEN }}"
-          curl -X GET 'https://api.codacy.com/api/v3/user/organizations/gh' -H api-token: $CODACY_PROJECT_TOKEN
-      - name: Debug token presence
-        run: |
-          if [ -z "${{ secrets.CODACY_PROJECT_TOKEN }}" ]; then
-            echo "CODACY_PROJECT_TOKEN is unset or empty"
-          else
-            echo "CODACY_PROJECT_TOKEN is set"
-          fi
-      - name: Run codacy-coverage-reporter
-        uses: codacy/codacy-coverage-reporter-action@v1.3.0
-        with:
-          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
           coverage-reports: coverage.xml
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
