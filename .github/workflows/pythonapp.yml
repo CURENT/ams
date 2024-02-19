@@ -27,7 +27,7 @@ jobs:
       run: |
         echo "bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml --project-token \${CODACY_PROJECT_TOKEN:+[TOKEN_PRESENT]}"
       env:
-        CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_AMS_TOKEN }}
     - shell: bash -el {0}
       name: Install dependencies
       run: |
