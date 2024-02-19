@@ -15,3 +15,10 @@ jobs:
           coverage-reports: coverage.xml
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+      - name: Debug token presence
+        run: |
+          if [ -z "${{ secrets.CODACY_PROJECT_TOKEN }}" ]; then
+            echo "CODACY_PROJECT_TOKEN is unset or empty"
+          else
+            echo "CODACY_PROJECT_TOKEN is set"
+          fi
