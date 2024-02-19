@@ -9,6 +9,13 @@ jobs:
     environment: codacy
     steps:
       - uses: actions/checkout@v2
+      - name: Debug token presence with PYPI
+        run: |
+          if [ -z "${{ secrets.PYPI_PASSWORD }}" ]; then
+            echo "PYPI_PASSWORD is unset or empty"
+          else
+            echo "PYPI_PASSWORD is set"
+          fi
       - name: Test
         run: |
           export CODACY_PROJECT_TOKEN="${{ secrets.CODACY_PROJECT_TOKEN }}"
@@ -33,6 +40,13 @@ jobs:
     name: codacy-coverage-reporter-benchmark
     steps:
       - uses: actions/checkout@v2
+      - name: Debug token presence with PYPI
+        run: |
+          if [ -z "${{ secrets.PYPI_PASSWORD }}" ]; then
+            echo "PYPI_PASSWORD is unset or empty"
+          else
+            echo "PYPI_PASSWORD is set"
+          fi
       - name: Test
         run: |
           export CODACY_PROJECT_TOKEN="${{ secrets.CODACY_PROJECT_TOKEN }}"
