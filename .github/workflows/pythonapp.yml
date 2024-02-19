@@ -22,17 +22,17 @@ jobs:
         channels: conda-forge,defaults
         channel-priority: true
         activate-environment: anaconda-client-env
+    - name: Debug Codacy token command structure
+      run: |
+        echo "bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml --project-token \${CODACY_PROJECT_TOKEN:+[TOKEN_PRESENT]}"
+      env:
+        CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
     - shell: bash -el {0}
       name: Install dependencies
       run: |
         mamba install -y nbmake pytest-xdist line_profiler  # add'l packages for notebook tests.
         mamba install --file requirements.txt --file requirements-extra.txt
         python -m pip install -e .
-    - name: Debug Codacy token command structure
-      run: |
-        echo "bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml --project-token \${CODACY_PROJECT_TOKEN:+[TOKEN_PRESENT]}"
-      env:
-        CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
     - name: Lint with flake8 for pull requests
       if: github.event_name == 'pull_request'
       run: |
