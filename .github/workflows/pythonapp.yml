@@ -22,7 +22,8 @@ jobs:
         channels: conda-forge,defaults
         channel-priority: true
         activate-environment: anaconda-client-env
-    - name: Debug Codacy token command structure
+    - shell: bash -el {0}
+      name: Debug Codacy token command structure
       run: |
         echo "bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml --project-token \${CODACY_PROJECT_TOKEN:+[TOKEN_PRESENT]}"
       env:
