@@ -51,7 +51,7 @@ jobs:
         pytest --cov=./ --cov-report=xml
     - name: Upload coverage to Codacy
       run: |
-        bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml
+        bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml  --project-token ${{ secrets.CODACY_AMS_TOKEN }}
       env:
         CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_AMS_TOKEN }}
     - name: Build a distribution if tagged
