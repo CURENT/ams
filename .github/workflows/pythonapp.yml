@@ -48,7 +48,9 @@ jobs:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     - name: Upload coverage to Codacy
       run: |
-        bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml --project-token ${{ secrets.CODACY_PROJECT_TOKEN }}
+        bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml --project-token "$CODACY_PROJECT_TOKEN"
+      env:
+        CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
     - name: Build a distribution if tagged
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9'
       run: |
