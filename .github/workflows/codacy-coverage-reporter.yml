@@ -9,6 +9,9 @@ jobs:
     environment: codacy
     steps:
       - uses: actions/checkout@v2
+      - name: Test
+        run: |
+          curl -X GET 'https://api.codacy.com/api/v3/user/organizations/gh' -H ${{ secrets.CODACY_PROJECT_TOKEN }}
       - name: Debug token presence
         run: |
           if [ -z "${{ secrets.CODACY_PROJECT_TOKEN }}" ]; then
@@ -26,9 +29,12 @@ jobs:
 
   codacy-coverage-reporter-bechmark:
     runs-on: ubuntu-latest
-    name: codacy-coverage-reporter
+    name: codacy-coverage-reporter-benchmark
     steps:
       - uses: actions/checkout@v2
+      - name: Test
+        run: |
+          curl -X GET 'https://api.codacy.com/api/v3/user/organizations/gh' -H ${{ secrets.CODACY_PROJECT_TOKEN }}
       - name: Debug token presence
         run: |
           if [ -z "${{ secrets.CODACY_PROJECT_TOKEN }}" ]; then
