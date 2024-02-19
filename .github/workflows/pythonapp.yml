@@ -23,14 +23,6 @@ jobs:
         channel-priority: true
         activate-environment: anaconda-client-env
     - shell: bash -el {0}
-      name: Debug Codacy token command structure
-      run: |
-        export CODACY_PROJECT_TOKEN=${{ secrets.CODACY_AMS_TOKEN }}
-        echo "bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml --project-token \${CODACY_AMS_TOKEN:+[TOKEN_PRESENT]}"
-      env:
-        CODACY_AMS_TOKEN: ${{ secrets.CODACY_AMS_TOKEN }}
-        CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_AMS_TOKEN }}
-    - shell: bash -el {0}
       name: Install dependencies
       run: |
         mamba install -y nbmake pytest-xdist line_profiler  # add'l packages for notebook tests.
@@ -50,12 +42,11 @@ jobs:
       name: Test with pytest and collect coverage
       run: |
         pytest --cov=./ --cov-report=xml
-    - name: Upload coverage to Codacy
-      run: |
-        export CODACY_PROJECT_TOKEN=${{ secrets.CODACY_PROJECT_TOKEN }}
-        bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml  --project-token $CODACY_PROJECT_TOKEN
-      env:
-        CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+    - name: Codacy Coverage Reporter
+      uses: codacy/codacy-coverage-reporter-action@v1.3.0
+      with:
+        project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        coverage-reports: coverage.xml
     - name: Build a distribution if tagged
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9'
       run: |
