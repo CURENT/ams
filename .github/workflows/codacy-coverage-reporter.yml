@@ -11,7 +11,8 @@ jobs:
       - uses: actions/checkout@v2
       - name: Test
         run: |
-          curl -X GET 'https://api.codacy.com/api/v3/user/organizations/gh' -H ${{ secrets.CODACY_PROJECT_TOKEN }}
+          export CODACY_PROJECT_TOKEN="${{ secrets.CODACY_PROJECT_TOKEN }}"
+          curl -X GET 'https://api.codacy.com/api/v3/user/organizations/gh' -H api-token: $CODACY_PROJECT_TOKEN
       - name: Debug token presence
         run: |
           if [ -z "${{ secrets.CODACY_PROJECT_TOKEN }}" ]; then
@@ -34,7 +35,8 @@ jobs:
       - uses: actions/checkout@v2
       - name: Test
         run: |
-          curl -X GET 'https://api.codacy.com/api/v3/user/organizations/gh' -H ${{ secrets.CODACY_PROJECT_TOKEN }}
+          export CODACY_PROJECT_TOKEN="${{ secrets.CODACY_PROJECT_TOKEN }}"
+          curl -X GET 'https://api.codacy.com/api/v3/user/organizations/gh' -H api-token: $CODACY_PROJECT_TOKEN
       - name: Debug token presence
         run: |
           if [ -z "${{ secrets.CODACY_PROJECT_TOKEN }}" ]; then
