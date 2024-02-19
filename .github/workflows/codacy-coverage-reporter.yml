@@ -8,13 +8,6 @@ jobs:
     name: codacy-coverage-reporter
     steps:
       - uses: actions/checkout@v2
-      - name: Run codacy-coverage-reporter
-        uses: codacy/codacy-coverage-reporter-action@v1.3.0
-        with:
-          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          coverage-reports: coverage.xml
-        env:
-          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
       - name: Debug token presence
         run: |
           if [ -z "${{ secrets.CODACY_PROJECT_TOKEN }}" ]; then
@@ -22,3 +15,10 @@ jobs:
           else
             echo "CODACY_PROJECT_TOKEN is set"
           fi
+      - name: Run codacy-coverage-reporter
+        uses: codacy/codacy-coverage-reporter-action@v1.3.0
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          coverage-reports: coverage.xml
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
