@@ -42,8 +42,14 @@ jobs:
       name: Test with pytest and collect coverage
       run: |
         pytest --cov=./ --cov-report=xml
+    - name: Debug Codacy token command structure
+      run: |
+        echo "bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml --project-token \${CODACY_PROJECT_TOKEN:+[TOKEN_PRESENT]}"
+      env:
+        CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
     - name: Upload coverage to Codacy
       run: |
+        bash export CODACY_PROJECT_TOKEN=$CODACY_PROJECT_TOKEN
         bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml
       env:
         CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
