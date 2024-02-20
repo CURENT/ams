@@ -9,9 +9,9 @@ AMS documentation
 **Useful Links**: `Source Repository`_ | `Report Issues`_ | `Q&A`_  | `LTB Repository`_
 | `ANDES Repository`_
 
-.. _`Source Repository`: https://github.com/CURENT/ams
-.. _`Report Issues`: https://github.com/CURENT/ams/issues
-.. _`Q&A`: https://github.com/CURENT/ams/discussions
+.. _`Source Repository`: https://github.com/jinningwang/ams
+.. _`Report Issues`: https://github.com/jinningwang/ams/issues
+.. _`Q&A`: https://github.com/jinningwang/ams/discussions
 .. _`ANDES Repository`: https://github.com/CURENT/andes
 .. _`LTB Repository`: https://github.com/CURENT/
 
