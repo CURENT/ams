@@ -6,7 +6,7 @@ import logging
 from andes.shared import deg2rad
 from andes.utils.misc import elapsed
 
-from ams.routines.routine import RoutineModel
+from ams.routines.routine import RoutineBase
 from ams.opt.omodel import Var
 from ams.pypower import runpf
 from ams.pypower.core import ppoption
@@ -17,7 +17,7 @@ from ams.core.param import RParam
 logger = logging.getLogger(__name__)
 
 
-class DCPFlowBase(RoutineModel):
+class DCPFlowBase(RoutineBase):
     """
     Base class for power flow.
 
@@ -25,7 +25,7 @@ class DCPFlowBase(RoutineModel):
     """
 
     def __init__(self, system, config):
-        RoutineModel.__init__(self, system, config)
+        RoutineBase.__init__(self, system, config)
         self.info = 'DC Power Flow'
         self.type = 'PF'
 
