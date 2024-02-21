@@ -7,7 +7,7 @@ import numpy as np
 from ams.core.param import RParam
 from ams.core.service import NumOp, NumOpDual
 
-from ams.routines.routine import RoutineModel
+from ams.routines.routine import RoutineBase
 
 from ams.opt.omodel import Var, Constraint, Objective
 
@@ -15,7 +15,7 @@ from ams.opt.omodel import Var, Constraint, Objective
 logger = logging.getLogger(__name__)
 
 
-class DCOPF(RoutineModel):
+class DCOPF(RoutineBase):
     """
     DC optimal power flow (DCOPF).
 
@@ -24,7 +24,7 @@ class DCOPF(RoutineModel):
     """
 
     def __init__(self, system, config):
-        RoutineModel.__init__(self, system, config)
+        RoutineBase.__init__(self, system, config)
         self.info = 'DC Optimal Power Flow'
         self.type = 'DCED'
         # --- Data Section ---
@@ -224,7 +224,7 @@ class DCOPF(RoutineModel):
         kwargs : keywords, optional
             Additional solver specific arguments. See CVXPY documentation for details.
         """
-        return RoutineModel.run(self, no_code=no_code, **kwargs)
+        return RoutineBase.run(self, no_code=no_code, **kwargs)
 
     def _post_solve(self):
         # --- post-solving calculations ---

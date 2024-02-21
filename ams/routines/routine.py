@@ -27,7 +27,7 @@ from ams.shared import require_igraph
 logger = logging.getLogger(__name__)
 
 
-class RoutineModel:
+class RoutineBase:
     """
     Class to hold descriptive routine models and data mapping.
     """
@@ -507,7 +507,7 @@ class RoutineModel:
         self._check_attribute(key, value)
         self._register_attribute(key, value)
 
-        super(RoutineModel, self).__setattr__(key, value)
+        super(RoutineBase, self).__setattr__(key, value)
 
     def _register_attribute(self, key, value):
         """

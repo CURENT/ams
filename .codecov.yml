@@ -13,5 +13,10 @@ cli:
       report_type: "xml"
 
 ignore:
-  - "ams/_version.py"
+  - "setup.py"
+  - "versioneer.py"
   - "ams/pypower/**"
+  - "ams/_version.py"
+  - ".github/**"
+  - "README.md"
+  - "tests/**"
