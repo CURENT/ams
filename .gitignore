@@ -39,3 +39,7 @@ icebar
 
 # conda
 .conda/*
+
+# coverage
+.coverage
+coverage.xml

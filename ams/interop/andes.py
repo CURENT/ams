@@ -96,9 +96,9 @@ def to_andes(system, setup=False, addfile=None,
     --------
     >>> import ams
     >>> import andes
-    >>> sp = ams.load(ams.get_case('ieee14/ieee14_rted.xlsx'), setup=True)
+    >>> sp = ams.load(ams.get_case('ieee14/ieee14_uced.xlsx'), setup=True)
     >>> sa = sp.to_andes(setup=False,
-    ...                  addfile=andes.get_case('ieee14/ieee14_wt3.xlsx'),
+    ...                  addfile=andes.get_case('ieee14/ieee14_full.xlsx'),
     ...                  overwrite=True, no_output=True)
 
     Notes
@@ -279,9 +279,10 @@ def parse_addfile(adsys, amsys, addfile):
     # add dynamic models
     for name, df in df_models.items():
         # drop rows that all nan
+        df.replace(['', ' '], np.NaN, inplace=True)  # replace empty string with nan
         df.dropna(axis=0, how='all', inplace=True)
         # if the dynamic model also exists in AMS, use AMS parameters for overlap
-        if name in amsys.models.keys():
+        if (name in amsys.models.keys()) and amsys.models[name].n > 0:
             if df.shape[0] != amsys.models[name].n:
                 msg = f'<{name}> has different number of rows in addfile.'
                 logger.warning(msg)
@@ -903,7 +904,6 @@ def make_link_table(adsys):
     ssa_key0 = pd.merge(left=ssa_key0, how='left', on='stg_idx',
                         right=ssa_rg[['stg_idx', 'rg_idx']])
 
-    pd.set_option('future.no_silent_downcasting', True)
     ssa_key0 = ssa_key0.fillna(value=False)
     dyr = ssa_key0['syg_idx'].astype(bool) + ssa_key0['dg_idx'].astype(bool) + ssa_key0['rg_idx'].astype(bool)
     non_dyr = np.logical_not(dyr)
