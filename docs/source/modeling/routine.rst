@@ -15,8 +15,13 @@ Further, to facilitate the routine definition, AMS developed a class
 .. autoclass:: ams.core.param.RParam
     :noindex:
 
-.. autoclass:: ams.routines.RoutineModel
-    :noindex:
+.. currentmodule:: ams.routines
+.. autosummary::
+      :recursive:
+      :toctree: _generated
+
+      RoutineData
+      RoutineModel
 
 Optimization model
 ------------------

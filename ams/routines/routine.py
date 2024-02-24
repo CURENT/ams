@@ -693,14 +693,9 @@ class RoutineBase:
         """
         Post-addition check.
         """
-        # --- reset routine status ---
         self.initialized = False
         self.exec_time = 0.0
         self.exit_code = 0
-        # --- reset symprocessor status ---
-        self._syms = False
-        # --- reset optimization model status ---
-        self.om.initialized = False
 
     def addRParam(self,
                   name: str,
@@ -791,9 +786,8 @@ class RoutineBase:
         model : str, optional
             Model name.
         """
-        item = ValueService(name=name, tex_name=tex_name,
-                            unit=unit, info=info,
-                            vtype=vtype, value=value)
+        item = ValueService(name=name, value=value, tex_name=tex_name, unit=unit,
+                            info=info, vtype=vtype, model=model)
         # add the service as an routine attribute
         setattr(self, name, item)
 

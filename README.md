@@ -13,7 +13,7 @@ Python Software for Power System Dispatch Modeling and Co-Simulation with Dynani
 |---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Downloads     | [![PyPI Version](https://img.shields.io/pypi/v/ltbams.svg)](https://pypi.python.org/pypi/ltbams)         | [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ltbams/badges/version.svg)](https://anaconda.org/conda-forge/ltbams) |
 | Try on Binder | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/curent/ams/master)                                                                                                                                                 |                                                                                                                                                                                                            |
-| Code Quality  |[![Codacy Badge](https://app.codacy.com/project/badge/Grade/69456da1b8634f2f984bd769e35f0050)](https://app.codacy.com/gh/CURENT/ams/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)| [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/69456da1b8634f2f984bd769e35f0050)](https://app.codacy.com/gh/CURENT/ams/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)                                                                          |
+| Code Quality  |[![Codacy Badge](https://app.codacy.com/project/badge/Grade/69456da1b8634f2f984bd769e35f0050)](https://app.codacy.com/gh/CURENT/ams/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)| [![codecov](https://codecov.io/gh/CURENT/ams/graph/badge.svg?token=RZI5GLLBQH)](https://codecov.io/gh/CURENT/ams)                                                                          |
 | Build Status  | [![GitHub Action Status](https://github.com/CURENT/ams/workflows/Python%20application/badge.svg)](https://github.com/curent/ams/actions)  |
 | Structure   | [![Structure](https://img.shields.io/badge/code_base-visualize-blue)](https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=CURENT%2Fams)
 
@@ -84,9 +84,12 @@ See [GitHub contributors][GitHub contributors] for the contributor list.
 AMS is licensed under the [GPL v3 License](./LICENSE).
 
 # Related Projects
-- [Popular Open Source Libraries for Power System Analysis](https://github.com/jinningwang/best-of-ps)
-- [G-PST Tools Portal](https://g-pst.github.io/tools/): An open tools portal with a classification approach
-- [Open Source Software (OSS) for Electricity Market Research, Teaching, and Training](https://www2.econ.iastate.edu/tesfatsi/ElectricOSS.htm)
+-  [CVXPY](https://github.com/cvxpy/cvxpy)
+-  [Visualizations of Mittelmann benchmarks](https://mattmilten.github.io/mittelmann-plots/)
+-  [CBC Solver](https://github.com/coin-or/Cbc)
+-  [MATPOWER](https://github.com/MATPOWER/matpower)
+-  [PYPOWER](https://github.com/rwl/PYPOWER)
+-  [pandapower](https://github.com/e2nIEE/pandapower)
 
 Some commercial solvers provide academic licenses, such as COPT, GUROBI, CPLEX, and MOSEK.
 
