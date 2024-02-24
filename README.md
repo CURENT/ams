@@ -84,12 +84,9 @@ See [GitHub contributors][GitHub contributors] for the contributor list.
 AMS is licensed under the [GPL v3 License](./LICENSE).
 
 # Related Projects
--  [CVXPY](https://github.com/cvxpy/cvxpy)
--  [Visualizations of Mittelmann benchmarks](https://mattmilten.github.io/mittelmann-plots/)
--  [CBC Solver](https://github.com/coin-or/Cbc)
--  [MATPOWER](https://github.com/MATPOWER/matpower)
--  [PYPOWER](https://github.com/rwl/PYPOWER)
--  [pandapower](https://github.com/e2nIEE/pandapower)
+- [Popular Open Source Libraries for Power System Analysis](https://github.com/jinningwang/best-of-ps)
+- [G-PST Tools Portal](https://g-pst.github.io/tools/): An open tools portal with a classification approach
+- [Open Source Software (OSS) for Electricity Market Research, Teaching, and Training](https://www2.econ.iastate.edu/tesfatsi/ElectricOSS.htm)
 
 Some commercial solvers provide academic licenses, such as COPT, GUROBI, CPLEX, and MOSEK.
 
