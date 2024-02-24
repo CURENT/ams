@@ -9,7 +9,7 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v0.8.6 (2024-02-xx)
+v0.8.6 (2024-02-24)
 
 - Add ex8 to demonstrate how to customize existing formulations
 - Fix ``addService``
