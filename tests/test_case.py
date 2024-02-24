@@ -141,6 +141,28 @@ class TestIEEE14RAW(unittest.TestCase):
         os.remove(ss.files.dump)
         self.assertEqual(ss.exit_code, 0, "Exit code is not 0.")
 
+    def test_ieee14_raw2xlsx(self):
+        ss = ams.load(
+            get_case("ieee14/ieee14.raw"),
+            setup=True,
+            no_output=True,
+            default_config=True,
+        )
+        ams.io.xlsx.write(ss, "ieee14.xlsx")
+        self.assertTrue(os.path.exists("ieee14.xlsx"))
+        os.remove("ieee14.xlsx")
+
+    def test_ieee14_raw2json(self):
+        ss = ams.load(
+            get_case("ieee14/ieee14.raw"),
+            setup=True,
+            no_output=True,
+            default_config=True,
+        )
+        ams.io.json.write(ss, "ieee14.json")
+        self.assertTrue(os.path.exists("ieee14.json"))
+        os.remove("ieee14.json")
+
     def test_ieee14_raw2json_convert(self):
         ss = ams.run(
             get_case("ieee14/ieee14.raw"),

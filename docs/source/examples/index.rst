@@ -23,3 +23,4 @@ folder of the repository
    ../_examples/ex5.ipynb
    ../_examples/ex6.ipynb
    ../_examples/ex7.ipynb
+   ../_examples/ex8.ipynb

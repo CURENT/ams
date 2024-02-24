@@ -27,7 +27,7 @@ from ams.shared import require_igraph
 logger = logging.getLogger(__name__)
 
 
-class RoutineModel:
+class RoutineBase:
     """
     Class to hold descriptive routine models and data mapping.
     """
@@ -507,7 +507,7 @@ class RoutineModel:
         self._check_attribute(key, value)
         self._register_attribute(key, value)
 
-        super(RoutineModel, self).__setattr__(key, value)
+        super(RoutineBase, self).__setattr__(key, value)
 
     def _register_attribute(self, key, value):
         """
@@ -693,9 +693,14 @@ class RoutineModel:
         """
         Post-addition check.
         """
+        # --- reset routine status ---
         self.initialized = False
         self.exec_time = 0.0
         self.exit_code = 0
+        # --- reset symprocessor status ---
+        self._syms = False
+        # --- reset optimization model status ---
+        self.om.initialized = False
 
     def addRParam(self,
                   name: str,
@@ -786,8 +791,9 @@ class RoutineModel:
         model : str, optional
             Model name.
         """
-        item = ValueService(name=name, value=value, tex_name=tex_name, unit=unit,
-                            info=info, vtype=vtype, model=model)
+        item = ValueService(name=name, tex_name=tex_name,
+                            unit=unit, info=info,
+                            vtype=vtype, value=value)
         # add the service as an routine attribute
         setattr(self, name, item)
 

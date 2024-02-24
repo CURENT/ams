@@ -11,7 +11,7 @@ Python Software for Power System Dispatch Modeling and Co-Simulation with Dynani
 
 | Badges        |                                                                                                                                                                                                                                                     |                                                                                                                                                                                                            |
 |---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Downloads     | [![PyPI Version](https://img.shields.io/pypi/v/ltbams.svg)](https://pypi.python.org/pypi/ltbams)                                                                
+| Downloads     | [![PyPI Version](https://img.shields.io/pypi/v/ltbams.svg)](https://pypi.python.org/pypi/ltbams)         | [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ltbams/badges/version.svg)](https://anaconda.org/conda-forge/ltbams) |
 | Try on Binder | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/curent/ams/master)                                                                                                                                                 |                                                                                                                                                                                                            |
 | Code Quality  |[![Codacy Badge](https://app.codacy.com/project/badge/Grade/69456da1b8634f2f984bd769e35f0050)](https://app.codacy.com/gh/CURENT/ams/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)| [![codecov](https://codecov.io/gh/CURENT/ams/graph/badge.svg?token=RZI5GLLBQH)](https://codecov.io/gh/CURENT/ams)                                                                          |
 | Build Status  | [![GitHub Action Status](https://github.com/CURENT/ams/workflows/Python%20application/badge.svg)](https://github.com/curent/ams/actions)  |
@@ -47,6 +47,27 @@ Use the following resources to get involved.
 -  Read release notes highlighted [here][release notes]
 -  Try in Jupyter Notebook on [Binder][Binder]
 <!-- + Check out and and cite our [paper][arxiv paper] -->
+
+# Installation
+
+AMS is released as ``ltbams`` on PyPI and conda-forge.
+Install from PyPI using pip:
+
+```bash
+pip install ltbams
+```
+
+Install from conda-forge using conda:
+
+```bash
+conda install conda-forge::ltbams
+```
+
+Install from GitHub source:
+
+```bash
+pip install git+https://github.com/CURENT/ams.git
+```
 
 # Sponsors and Contributors
 AMS is the dispatch simulation engine for the CURENT Largescale Testbed (LTB).
