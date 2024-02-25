@@ -761,7 +761,7 @@ class RoutineBase:
                 logger.warning(msg)
 
         self._post_add_check()
-        return True
+        return item
 
     def addService(self,
                    name: str,
@@ -799,7 +799,7 @@ class RoutineBase:
 
         self._post_add_check()
 
-        return True
+        return item
 
     def addConstrs(self,
                    name: str,
@@ -830,7 +830,7 @@ class RoutineBase:
 
         self._post_add_check()
 
-        return True
+        return item
 
     def addVars(self,
                 name: str,
@@ -908,7 +908,6 @@ class RoutineBase:
             Positive variable
         neg : bool, optional
             Negative variable
-
         """
         if model is None and shape is None:
             raise ValueError("Either model or shape must be specified.")
@@ -919,7 +918,7 @@ class RoutineBase:
                    complex=complex, imag=imag,
                    symmetric=symmetric, diag=diag,
                    psd=psd, nsd=nsd, hermitian=hermitian,
-                   bool=bool, integer=integer,
+                   boolean=bool, integer=integer,
                    pos=pos, neg=neg, )
 
         # add the variable as an routine attribute
@@ -941,7 +940,7 @@ class RoutineBase:
 
         self._post_add_check()
 
-        return True
+        return item
 
     def _initial_guess(self):
         """
