@@ -231,8 +231,9 @@ class RParam(Param):
         return self.__class__.__name__
 
     def __repr__(self):
+        owner = self.owner.__class__.__name__ if self.owner is not None else self.rtn.__class__.__name__
         postfix = '' if self.src is None else f'.{self.src}'
-        return f'{self.__class__.__name__}: {self.owner.__class__.__name__}' + postfix
+        return f'{self.__class__.__name__}: {owner}' + postfix
 
     def get_idx(self):
         """
