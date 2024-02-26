@@ -1,25 +1,22 @@
-from collections import OrderedDict  # NOQA
+from collections import OrderedDict
 
 from andes.core.param import NumParam, ExtParam
-from andes.models.static.pv import PVData  # NOQA
-from andes.models.static.slack import SlackData  # NOQA
+from andes.models.static.pv import PVData
+from andes.models.static.slack import SlackData
 
 from ams.core.model import Model
-from ams.core.var import Algeb  # NOQA
+from ams.core.var import Algeb
 
 
 class GenParam:
     """
     Additional parameters for static generators.
-
-    TODO: check default values
     """
 
     def __init__(self) -> None:
         self.ctrl = NumParam(default=1,
                              info="generator controllability",
-                             tex_name=r'c_{trl}',
-                             unit='boolean')
+                             tex_name=r'c_{trl}',)
         self.Pc1 = NumParam(default=0.0,
                             info="lower real power output of PQ capability curve",
                             tex_name=r'P_{c1}',

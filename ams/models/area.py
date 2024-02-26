@@ -1,6 +1,6 @@
 import logging
 
-from andes.models.area import AreaData  # NOQA
+from andes.models.area import AreaData
 from andes.utils.tab import Tab
 from ams.core.model import Model
 from ams.core.service import BackRef
