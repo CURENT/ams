@@ -11,7 +11,7 @@ jobs:
   strategy:
     matrix:
       Python311:
-        python_version: '3.11'
+        python.version: '3.11'
 
   steps:
   - task: UsePythonVersion@0
@@ -40,7 +40,7 @@ jobs:
   timeoutInMinutes: 360
   strategy:
     matrix:
-      macos_python3.9:
+      macos_python3.10:
         python.version: '3.10'
 
   steps:
