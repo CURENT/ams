@@ -3,10 +3,6 @@
 # Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/python
 
-trigger:
-- master
-- develop
-
 jobs:
 - job: LinuxTests
   pool:
@@ -14,14 +10,9 @@ jobs:
   timeoutInMinutes: 360
   strategy:
     matrix:
-      Python39:
-        python_version: '3.9'
-      Python310:
-        python_version: '3.10'
       Python311:
-        python_version: '3.11'
-      Python312:
-        python_version: '3.12'
+        python.version: '3.11'
+
   steps:
   - task: UsePythonVersion@0
     inputs:
@@ -30,7 +21,7 @@ jobs:
 
   - script: |
       python -m pip install --upgrade pip
-      pip install .[all]
+      pip install .[dev,doc]
     displayName: 'Install dependencies'
 
   - script: |
@@ -39,18 +30,14 @@ jobs:
       coverage report -m  # Generate test coverage report.
     displayName: 'pytest and coverage'
 
-  - script: |
-      make -C docs html  # Build the documentation.
-    displayName: 'make documentation'
-
 - job: MacOSTests
   pool:
     vmImage: macOS-latest
   timeoutInMinutes: 360
   strategy:
     matrix:
-      macos_python3.9:
-        python.version: '3.9'
+      macos_python3.10:
+        python.version: '3.10'
 
   steps:
   - task: UsePythonVersion@0

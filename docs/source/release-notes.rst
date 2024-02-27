@@ -9,7 +9,7 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v0.8.6 (2024-02-xx)
+v09.0 (2024-02-27)
 -------------------
 
 - Add ex8 to demonstrate customize existing formulations via API
