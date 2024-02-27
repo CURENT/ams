@@ -30,10 +30,6 @@ jobs:
       coverage report -m  # Generate test coverage report.
     displayName: 'pytest and coverage'
 
-  - script: |
-      make html  # Build the documentation.
-    displayName: 'make documentation'
-
 - job: MacOSTests
   pool:
     vmImage: macOS-latest
