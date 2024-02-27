@@ -31,7 +31,7 @@ jobs:
     displayName: 'pytest and coverage'
 
   - script: |
-      make -C docs html  # Build the documentation.
+      make html  # Build the documentation.
     displayName: 'make documentation'
 
 - job: MacOSTests
