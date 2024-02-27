@@ -14,14 +14,9 @@ jobs:
   timeoutInMinutes: 360
   strategy:
     matrix:
-      Python39:
-        python_version: '3.9'
-      Python310:
-        python_version: '3.10'
       Python311:
         python_version: '3.11'
-      Python312:
-        python_version: '3.12'
+
   steps:
   - task: UsePythonVersion@0
     inputs:
@@ -30,7 +25,7 @@ jobs:
 
   - script: |
       python -m pip install --upgrade pip
-      pip install .[all]
+      pip install .[dev,doc]
     displayName: 'Install dependencies'
 
   - script: |
@@ -50,7 +45,7 @@ jobs:
   strategy:
     matrix:
       macos_python3.9:
-        python.version: '3.9'
+        python.version: '3.10'
 
   steps:
   - task: UsePythonVersion@0
