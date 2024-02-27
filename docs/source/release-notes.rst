@@ -17,6 +17,7 @@ v0.8.6 (2024-02-xx)
 - Fix ``addService``, ``addVars``
 - Rename ``RoutineModel`` to ``RoutineBase`` for better naming
 - Fix ANDES file converter issue
+- Initial release to conda-forge
 
 v0.8.5 (2024-01-31)
 -------------------
@@ -32,7 +33,7 @@ v0.8.4 (2024-01-30)
 v0.8.3 (2024-01-30)
 -------------------
 
-- Release to PyPI
+- Initial release to PyPI
 
 v0.8.2 (2024-01-30)
 -------------------
