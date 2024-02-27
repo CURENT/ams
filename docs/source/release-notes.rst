@@ -12,7 +12,8 @@ Pre-v1.0.0
 v0.8.6 (2024-02-xx)
 -------------------
 
-- Add ex8 to demonstrate how to customize existing formulations
+- Add ex8 to demonstrate customize existing formulations via API
+- Improve Development documentation
 - Fix ``addService``, ``addVars``
 - Rename ``RoutineModel`` to ``RoutineBase`` for better naming
 - Fix ANDES file converter issue
