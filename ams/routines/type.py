@@ -1,6 +1,6 @@
-import logging  # NOQA
-import inspect  # NOQA
-from collections import OrderedDict  # NOQA
+import logging
+import inspect
+from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 

@@ -11,9 +11,9 @@ from andes.core.common import Config
 from andes.utils.func import list_flatten
 
 from ams.core.documenter import Documenter
-from ams.core.var import Algeb  # NOQA
-from ams.core.param import ExtParam  # NOQA
-from ams.core.service import BaseService, BackRef  # NOQA
+from ams.core.var import Algeb
+from ams.core.param import ExtParam
+from ams.core.service import BaseService, BackRef
 
 logger = logging.getLogger(__name__)
 

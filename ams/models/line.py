@@ -1,9 +1,8 @@
-from andes.models.line.line import LineData  # NOQA
-from andes.core.param import NumParam  # NOQA
-from andes.shared import deg2rad  # NOQA
+from andes.models.line.line import LineData
+from andes.core.param import NumParam
+from andes.shared import deg2rad
 
-from ams.core.model import Model  # NOQA
-from ams.core.var import Algeb  # NOQA
+from ams.core.model import Model
 
 
 class Line(LineData, Model):

@@ -9,24 +9,31 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v0.8.6 (2024-02-24)
+v0.8.6 (2024-02-xx)
+-------------------
 
-- Add ex8 to demonstrate how to customize existing formulations
-- Fix ``addService``
+- Add ex8 to demonstrate customize existing formulations via API
+- Improve Development documentation
+- Fix ``addService``, ``addVars``
+- Rename ``RoutineModel`` to ``RoutineBase`` for better naming
 - Fix ANDES file converter issue
+- Initial release to conda-forge
 
 v0.8.5 (2024-01-31)
+-------------------
 
 - Improve quality of coverage and format
 - Fix dependency issue
 
 v0.8.4 (2024-01-30)
+-------------------
 
 - Version cleanup
 
 v0.8.3 (2024-01-30)
+-------------------
 
-- Release to PyPI
+- Initial release to PyPI
 
 v0.8.2 (2024-01-30)
 -------------------
@@ -61,7 +68,7 @@ v0.7.4 (2023-11-29)
 - Add examples
 - Fix built-in cases
 
-v0.7.3 (2023-11-3)
+v0.7.3 (2023-11-03)
 -------------------
 
 - Add tests

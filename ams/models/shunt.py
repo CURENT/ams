@@ -1,4 +1,4 @@
-from andes.models.shunt.shunt import ShuntData  # NOQA
+from andes.models.shunt.shunt import ShuntData
 
 from ams.core.model import Model
 

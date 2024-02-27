@@ -1,8 +1,8 @@
 import logging  # NOQA
 
-from andes.models.group import GroupBase as andes_GroupBase  # NOQA
+from andes.models.group import GroupBase as andes_GroupBase
 
-from ams.core.service import BackRef  # NOQA
+from ams.core.service import BackRef
 
 logger = logging.getLogger(__name__)
 

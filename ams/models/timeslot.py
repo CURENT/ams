@@ -2,9 +2,9 @@
 Model for rolling horizon used in dispatch.
 """
 
-from andes.core import (ModelData, NumParam, DataParam)  # NOQA
-from andes.models.timeseries import (str_list_iconv)  # NOQA
-from ams.core.model import Model  # NOQA
+from andes.core import ModelData, NumParam
+from andes.models.timeseries import str_list_iconv
+from ams.core.model import Model
 
 
 def str_list_oconv(x):

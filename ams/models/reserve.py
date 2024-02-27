@@ -2,9 +2,9 @@
 Reserve model.
 """
 
-from andes.core import (ModelData, IdxParam, NumParam)  # NOQA
+from andes.core import (ModelData, IdxParam, NumParam)
 
-from ams.core.model import Model  # NOQA
+from ams.core.model import Model
 
 
 class ReserveData(ModelData):

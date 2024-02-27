@@ -27,13 +27,13 @@ following examples.
     :noindex:
 
 
-Models
------------
-AMS follows the model organization design of ANDES.
+Device-level Models
+------------------------
+AMS follows a similar device-level model organization of ANDES with a few differences.
 
 
-Routines
------------
+Routine-level Models
+------------------------
 In AMS, routines are responsible for collecting data, defining optimization
 problems, and solving them.
 
@@ -41,8 +41,9 @@ problems, and solving them.
 Optimization
 --------------------------------------------
 
-In AMS, the dispatch is formulated as `CVXPY <https://www.cvxpy.org/>`_
-optimization problem with ``Vars``, ``Constraints``, and ``Objective``.
+Within the ``Routine``, the descriptive formulation are translated into
+`CVXPY <https://www.cvxpy.org/>`_ optimization problem with
+``Vars``, ``Constraints``, and ``Objective``.
 The full API reference of them can be found in :py:mod:`ams.opt.Var`,
 :py:mod:`ams.opt.Constraint`, and :py:mod:`ams.opt.Objective`.
 

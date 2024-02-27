@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from andes.models.bus import BusData  # NOQA
+from andes.models.bus import BusData
 
 from ams.core.var import Algeb
 from ams.core.model import Model
