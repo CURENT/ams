@@ -10,6 +10,7 @@ Pre-v1.0.0
 ==========
 
 v0.8.6 (2024-02-xx)
+-------------------
 
 - Add ex8 to demonstrate how to customize existing formulations
 - Fix ``addService``, ``addVars``
@@ -17,15 +18,18 @@ v0.8.6 (2024-02-xx)
 - Fix ANDES file converter issue
 
 v0.8.5 (2024-01-31)
+-------------------
 
 - Improve quality of coverage and format
 - Fix dependency issue
 
 v0.8.4 (2024-01-30)
+-------------------
 
 - Version cleanup
 
 v0.8.3 (2024-01-30)
+-------------------
 
 - Release to PyPI
 
@@ -62,7 +66,7 @@ v0.7.4 (2023-11-29)
 - Add examples
 - Fix built-in cases
 
-v0.7.3 (2023-11-3)
+v0.7.3 (2023-11-03)
 -------------------
 
 - Add tests
