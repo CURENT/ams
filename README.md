@@ -34,9 +34,7 @@ The following results show the comparison of DCOPF between AMS and other tools.
 | EPIGRIDS 5658-Bus| 1,195,466.12  |  1,195,466.12 |  1,195,466.12 |
 | EPIGRIDS 7336-Bus| 1,855,870.94  |  1,855,870.94 |  1,855,870.94 |
 
-<div align="center">
-  <img src="docs/source/images/dcopf_time.png" alt="DCOPF Time" width="400" height="auto">
-</div>
+<img src="docs/source/images/dcopf_time.png" alt="DCOPF Time" width="400" height="auto">
 
 AMS is currently under active development.
 Use the following resources to get involved.
