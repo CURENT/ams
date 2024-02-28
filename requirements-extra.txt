@@ -20,3 +20,4 @@ sphinx-panels #                 dev, doc
 pydata-sphinx-theme #           dev, doc
 myst-parser #                   dev, doc
 myst-nb #                       dev, doc
+nbsphinx #                      dev, doc

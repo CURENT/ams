@@ -162,10 +162,10 @@ htmlhelp_basename = 'ams'
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),
-    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),  # Updated URL for numpy
     'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable', None),
-    'matplotlib': ('https://matplotlib.org', None),
+    'matplotlib': ('https://matplotlib.org/stable/', None),  # Updated URL for matplotlib
 }
 
 # --- Options for primary sidebar ------------------------------------------
@@ -188,8 +188,6 @@ exec(open("genroutineref.py").read())
 shutil.rmtree("_examples", ignore_errors=True)
 shutil.copytree("../../examples", "_examples", )
 shutil.rmtree("_examples/demonstration")
-
-jupyter_execute_notebooks = "off"
 
 # sphinx-panels shouldn't add bootstrap css since the pydata-sphinx-theme
 # already loads it
