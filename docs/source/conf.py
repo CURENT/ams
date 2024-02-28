@@ -27,9 +27,10 @@ extensions = [
     'matplotlib.sphinxext.plot_directive',
     'numpydoc',
     'sphinx_copybutton',
-    'myst_nb',
     "nbsphinx",
 ]
+
+mathjax_path = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'
 
 # Configuration options for plot_directive. See:
 # https://github.com/matplotlib/matplotlib/blob/f3ed922d935751e08494e5fb5311d3050a3b637b/lib/matplotlib/sphinxext/plot_directive.py#L81
@@ -78,6 +79,10 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
+# Use a different latex engine due to possible Unicode characters in the documentation:
+# https://docs.readthedocs.io/en/stable/guides/pdf-non-ascii-languages.html
+latex_engine = "xelatex"
+
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
@@ -112,52 +117,52 @@ htmlhelp_basename = 'ams'
 
 # -- Options for LaTeX output ---------------------------------------------
 
-# latex_elements = {
-#     # The paper size ('letterpaper' or 'a4paper').
-#     #
-#     'preamble': r'\DeclareUnicodeCharacter{2588}{-}',
-#     'papersize': 'letterpaper',
+latex_elements = {
+    # The paper size ('letterpaper' or 'a4paper').
+    #
+    'preamble': r'\DeclareUnicodeCharacter{2588}{-}',
+    'papersize': 'letterpaper',
 
-#     # The font size ('10pt', '11pt' or '12pt').
-#     #
-#     'pointsize': '11pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    #
+    'pointsize': '11pt',
 
-#     # Additional stuff for the LaTeX preamble.
-#     #
-#     # 'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    #
+    # 'preamble': '',
 
-#     # Latex figure (float) alignment
-#     #
-#     # 'figure_align': 'htbp',
-# }
+    # Latex figure (float) alignment
+    #
+    # 'figure_align': 'htbp',
+}
 
-# # Grouping the document tree into LaTeX files. List of tuples
-# # (source start file, target name, title,
-# #  author, documentclass [howto, manual, or own class]).
-# latex_documents = [
-#     (master_doc, 'ams.tex', 'AMS Manual',
-#      'Jinning Wang', 'manual'),
-# ]
+# Grouping the document tree into LaTeX files. List of tuples
+# (source start file, target name, title,
+#  author, documentclass [howto, manual, or own class]).
+latex_documents = [
+    (master_doc, 'ams.tex', 'AMS Manual',
+     'Jinning Wang', 'manual'),
+]
 
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-# man_pages = [
-#     (master_doc, 'ams', 'AMS Manual',
-#      [author], 1)
-# ]
+man_pages = [
+    (master_doc, 'ams', 'AMS Manual',
+     [author], 1)
+]
 
 # -- Options for Texinfo output -------------------------------------------
 
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
-# texinfo_documents = [
-#     (master_doc, 'ams', 'AMS Manual',
-#      author, 'ams', 'Python Software for Dispatch Modeling and Co-Simulation with Dynanic',
-#      'Miscellaneous'),
-# ]
+texinfo_documents = [
+    (master_doc, 'ams', 'AMS Manual',
+     author, 'ams', 'Python Software for Dispatch Modeling and Co-Simulation with Dynanic',
+     'Miscellaneous'),
+]
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
