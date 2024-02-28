@@ -28,6 +28,7 @@ extensions = [
     'numpydoc',
     'sphinx_copybutton',
     'myst_nb',
+    "nbsphinx",
 ]
 
 # Configuration options for plot_directive. See:
