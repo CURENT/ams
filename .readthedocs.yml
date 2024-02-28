@@ -21,4 +21,3 @@ python:
         - doc
     - method: setuptools
       path: .
-    use_math: true
