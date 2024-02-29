@@ -79,6 +79,7 @@ class SymProcessor:
             (r'mul\((.*?),\s*(.*?)\)', r'\1 \2'),
             (r'\bmul\b\((.*?),\s*(.*?)\)', r'\1 \2'),
             (r'\bsum\b', 'SUM'),
+            (r'power\((.*?),\s*(\d+)\)', r'\1^\2'),
         ])
 
         # mapping dict for evaluating expressions
