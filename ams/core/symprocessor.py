@@ -159,14 +159,14 @@ class SymProcessor:
         for key in self.config.as_dict():
             tmp = sp.symbols(key)
             self.sub_map[rf"\b{key}\b"] = f'self.rtn.config.{key}'
-            self.tex_map[rf"\b{key}\b"] = f'{key}'
+            if key not in self.config.tex_names.keys():
+                logger.debug(f'No tex name for config.{key}')
+                self.tex_map[rf"\b{key}\b"] = key
+            else:
+                self.tex_map[rf"\b{key}\b"] = self.config.tex_names[key]
             self.inputs_dict[key] = tmp
             if key in self.config.tex_names:
                 self.tex_names[tmp] = sp.Symbol(self.config.tex_names[key])
-
-        # NOTE: hard-coded config 't' tex name as 'T_{cfg}' for clarity in doc
-        self.tex_map['\\bt\\b'] = 'T_{cfg}'
-        self.tex_map['\\bcul\\b'] = 'c_{ul, cfg}'
 
         # store tex names for pretty printing replacement later
         for var in self.inputs_dict:
