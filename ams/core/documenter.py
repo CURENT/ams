@@ -288,7 +288,7 @@ class RDocumenter:
                 if p.type == 'eq':
                     expr = f'{expr} = 0'
                 elif p.type == 'uq':
-                    expr = f'{expr} <= 0'
+                    expr = f'{expr} \leq 0'
                 logger.debug(f'{p.name} math: {expr}')
                 expressions.append(expr)
 
