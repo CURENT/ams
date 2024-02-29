@@ -141,6 +141,9 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.config.add_extra("_help",
                               t="time interval in hours",
                               )
+        self.config.add_extra("_tex",
+                              t='T_{cfg}',
+                              )
 
         self.info = 'Real-time economic dispatch'
         self.type = 'DCED'
@@ -172,12 +175,10 @@ class RTED(DCOPF, RTEDBase, SFRBase):
 
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
-        # NOTE: the product of dt and pg is processed using ``dot``,
-        # because dt is a numnber
-        cost = 'sum(mul(c2, power(t dot pg, 2)))'
-        cost += '+ sum(c1 @ (t dot pg))'
-        cost += '+ ug * c0'  # constant cost
-        cost += '+ sum(cru * pru + crd * prd)'  # reserve cost
+        # NOTE: the product involved t should use ``dot``
+        cost = 't**2 dot sum(mul(c2, pg**2)) + sum(ug * c0)'
+        _to_sum = 'c1 @ pg + cru * pru + crd * prd'
+        cost += f'+ t dot sum({_to_sum})'
         self.obj.e_str = cost
 
     def dc2ac(self, **kwargs):
@@ -542,12 +543,8 @@ class RTEDVIS(RTED, VISBase):
 
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
-        gcost = 'sum(mul(c2, power(pg, 2)))'
-        gcost += '+ sum(c1 @ (t dot pg))'
-        gcost += '+ ug * c0 '  # constant cost
-        rcost = '+ sum(cru * (t dot pru) + crd * (t dot prd)) '  # reserve cost
-        vsgcost = '+ sum(cm * M + cd * D)'
-        self.obj.e_str = gcost + rcost + vsgcost
+        vsgcost = '+ t dot sum(cm * M + cd * D)'
+        self.obj.e_str += vsgcost
 
         self.map2.update({
             'M': ('RenGen', 'M'),

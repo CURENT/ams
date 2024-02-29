@@ -207,11 +207,9 @@ class ED(RTED):
                                type='uq',)
 
         # --- objective ---
-        cost = 'sum(c2 @ (t dot pg)**2 + c1 @ (t dot pg))'
-        # constant cost
+        cost = 'sum(t**2 dot c2 @ pg**2)'
+        cost += '+ t dot sum(c1 @ pg + csr @ prs)'
         cost += '+ sum(mul(ugt, mul(c0, tlv)))'
-        # spinning reserve cost
-        cost += ' + sum(csr@(t dot prs))'
         self.obj.e_str = cost
 
     def _post_solve(self):

@@ -227,6 +227,7 @@ class RDocumenter:
         out += self._var_doc(max_width=max_width, export=export)
         out += self._service_doc(max_width=max_width, export=export)
         out += self._param_doc(max_width=max_width, export=export)
+        out += self.config.doc(max_width=max_width, export=export)
 
         return out
 
@@ -288,7 +289,7 @@ class RDocumenter:
                 if p.type == 'eq':
                     expr = f'{expr} = 0'
                 elif p.type == 'uq':
-                    expr = f'{expr} <= 0'
+                    expr = f'{expr} \\leq 0'
                 logger.debug(f'{p.name} math: {expr}')
                 expressions.append(expr)
 
@@ -319,13 +320,9 @@ class RDocumenter:
             return ''
 
         # prepare temporary lists
-        names, class_names, info = list(), list(), list()
         units, units_rest = list(), list()
 
         p = self.parent.obj
-        names.append(p.name)
-        class_names.append(p.class_name)
-        info.append(p.info if p.info else '')
         units.append(p.unit if p.unit else '')
         units_rest.append(f'*{p.unit}*' if p.unit else '')
 
@@ -339,13 +336,9 @@ class RDocumenter:
         else:
             title = 'Objective'
 
-        plain_dict = OrderedDict([('Name', names),
-                                  ('Unit', units),
-                                  ('Description', info)])
+        plain_dict = OrderedDict([('Unit', units),])
 
-        rest_dict = OrderedDict([('Name', names),
-                                 ('Description', info),
-                                 ('Unit', units_rest),
+        rest_dict = OrderedDict([('Unit', units_rest),
                                  ('Expression', expr)])
 
         # convert to rows and export as table

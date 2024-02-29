@@ -13,6 +13,9 @@ v0.9.1 (2024-xx-xx)
 -------------------
 
 - Change sphinx extension myst_nb to nbsphinx for math rendering in ex8
+- Improve ``symprocessor`` to include routine config
+- Add config to Routine reference
+- Fix symbol processor issue with power operator
 
 v0.9.0 (2024-02-27)
 -------------------
