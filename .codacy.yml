@@ -9,4 +9,5 @@ exclude_paths:
   - "ams/_version.py"
   - ".github/**"
   - "README.md"
+  - "CODE_OF_CONDUCT.md"
   - "tests/**"
