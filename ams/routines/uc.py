@@ -95,6 +95,9 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         self.config.add_extra("_help",
                               t="time interval in hours",
                               )
+        self.config.add_extra("_tex",
+                              t='T_{cfg}',
+                              )
 
         self.info = 'unit commitment'
         self.type = 'DCUC'
@@ -258,13 +261,11 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         self.pb.e_str = pb
 
         # --- objective ---
-        gcost = 'sum(c2 @ (t dot zug)**2 + c1 @ (t dot zug))'
-        gcost += '+ sum(mul(mul(ug, c0), tlv))'
-        acost = ' + sum(csu * vgd + csd * wgd)'  # action
-        srcost = ' + sum(csr @ prs)'  # spinning reserve
-        nsrcost = ' + sum(cnsr @ prns)'  # non-spinning reserve
-        dcost = ' + sum(cdp @ pdu)'  # unserved load
-        self.obj.e_str = gcost + acost + srcost + nsrcost + dcost
+        cost = 't**2 dot sum(c2 @ zug**2 + t dot c1 @ zug)'
+        cost += '+ sum(mul(ug, c0) @ tlv)'
+        _to_sum = 'csu * vgd + csd * wgd + csr @ prs + cnsr @ prns + cdp @ pdu'
+        cost += f' + t dot sum({_to_sum})'
+        self.obj.e_str = cost
 
     def _initial_guess(self):
         """

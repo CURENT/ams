@@ -88,7 +88,7 @@ class DCOPF(RoutineBase):
         # --- line angle difference ---
         self.amax = NumOp(u=self.rate_a, fun=np.ones_like,
                           rfun=np.dot, rargs=dict(b=np.pi),
-                          name='amax', tex_name=r'\theta_{max}',
+                          name='amax', tex_name=r'\theta_{bus, max}',
                           info='max line angle difference',
                           no_parse=True,)
         # --- shunt ---

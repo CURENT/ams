@@ -9,7 +9,15 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v09.0 (2024-02-27)
+v0.9.1 (2024-03-02)
+-------------------
+
+- Change sphinx extension myst_nb to nbsphinx for math rendering in ex8
+- Improve ``symprocessor`` to include routine config
+- Add config to Routine reference
+- Fix symbol processor issue with power operator
+
+v0.9.0 (2024-02-27)
 -------------------
 
 - Add ex8 to demonstrate customize existing formulations via API
