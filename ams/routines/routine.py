@@ -853,7 +853,7 @@ class RoutineBase:
                 psd: Optional[bool] = False,
                 nsd: Optional[bool] = False,
                 hermitian: Optional[bool] = False,
-                bool: Optional[bool] = False,
+                boolean: Optional[bool] = False,
                 integer: Optional[bool] = False,
                 pos: Optional[bool] = False,
                 neg: Optional[bool] = False,):
@@ -921,7 +921,7 @@ class RoutineBase:
                    complex=cplx, imag=imag,
                    symmetric=symmetric, diag=diag,
                    psd=psd, nsd=nsd, hermitian=hermitian,
-                   boolean=bool, integer=integer,
+                   boolean=boolean, integer=integer,
                    pos=pos, neg=neg, )
 
         # add the variable as an routine attribute
