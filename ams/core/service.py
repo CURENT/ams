@@ -268,14 +268,14 @@ class NumOp(ROperationService):
     def __init__(self,
                  u: Callable,
                  fun: Callable,
-                 args: dict = dict(),
+                 args: dict = None,
                  name: str = None,
                  tex_name: str = None,
                  unit: str = None,
                  info: str = None,
                  vtype: Type = None,
                  rfun: Callable = None,
-                 rargs: dict = dict(),
+                 rargs: dict = None,
                  expand_dims: int = None,
                  array_out=True,
                  no_parse: bool = False,
@@ -285,9 +285,9 @@ class NumOp(ROperationService):
                          info=info, vtype=vtype, u=u,
                          no_parse=no_parse, sparse=sparse)
         self.fun = fun
-        self.args = args
+        self.args = {} if args is None else args
         self.rfun = rfun
-        self.rargs = rargs
+        self.rargs = {} if rargs is None else rargs
         self.expand_dims = expand_dims
         self.array_out = array_out
 
