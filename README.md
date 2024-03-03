@@ -2,6 +2,17 @@
 
 Python Software for Power System Dispatch Modeling and Co-Simulation with Dynanic, serving as the market simulator for the [CURENT Largescale Testbed][LTB Repository].
 
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](https://github.com/CURENT/ams/blob/master/LICENSE)
+![platforms](https://anaconda.org/conda-forge/ltbams/badges/platforms.svg)
+[![Python Versions](https://img.shields.io/badge/Python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/)
+![Repo Size](https://img.shields.io/github/repo-size/CURENT/ams)
+![Code Lines](https://tokei.rs/b1/github/CURENT/ams?category=code)
+![Files](https://tokei.rs/b1/github/CURENT/ams?category=files)
+![GitHub Last Commit](https://img.shields.io/github/last-commit/CURENT/ams)
+[![HitCount](https://hits.dwyl.com/CURENT/ams.svg)](https://hits.dwyl.com/CURENT/ams)
+[![libraries](https://img.shields.io/librariesio/release/pypi/ltbams)](https://libraries.io/pypi/ltbams)
+[![Structure](https://img.shields.io/badge/code_base-visualize-blue)](https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=CURENT%2Fams)
+
 <img src="docs/source/images/sponsors/CURENT_Logo_NameOnTrans.png" alt="CURENT ERC Logo" width="300" height="auto">
 
 |               | Latest                                                                                                                                        | Stable                                                                                                                                        |
@@ -15,8 +26,6 @@ Python Software for Power System Dispatch Modeling and Co-Simulation with Dynani
 | Try on Binder | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/curent/ams/master)                                                                                                                                                 |                                                                                                                                                                                                            |
 | Code Quality  |[![Codacy Badge](https://app.codacy.com/project/badge/Grade/69456da1b8634f2f984bd769e35f0050)](https://app.codacy.com/gh/CURENT/ams/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)| [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/69456da1b8634f2f984bd769e35f0050)](https://app.codacy.com/gh/CURENT/ams/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage) |
 | Build Status  | [![GitHub Action Status](https://github.com/CURENT/ams/workflows/Python%20application/badge.svg)](https://github.com/curent/ams/actions)  | [![Build Status](https://dev.azure.com/curentltb/ams/_apis/build/status%2FCURENT.ams?branchName=master)](https://dev.azure.com/curentltb/ams/_build/latest?definitionId=2&branchName=master) |
-| Structure   | [![Structure](https://img.shields.io/badge/code_base-visualize-blue)](https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=CURENT%2Fams)
-| Python Version | [![Python Versions](https://img.shields.io/badge/Python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/) |
 
 
 # Why AMS
