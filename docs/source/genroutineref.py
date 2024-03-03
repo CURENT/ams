@@ -32,8 +32,8 @@ and view details.
 
     file_tpl = '    typedoc/{}\n'
 
-    for type in ss.types.values():
-        out += file_tpl.format(type.class_name)
+    for rtn_type in ss.types.values():
+        out += file_tpl.format(rtn_type.class_name)
 
     with open('routineref.rst', 'w') as f:
         f.write(out)
@@ -42,6 +42,6 @@ and view details.
 
     os.makedirs('typedoc', exist_ok=True)
 
-    for type in ss.types.values():
-        with open(f'typedoc/{type.class_name}.rst', 'w') as f:
-            f.write(type.doc_all(export='rest'))
+    for rtn_type in ss.types.values():
+        with open(f'typedoc/{rtn_type.class_name}.rst', 'w') as f:
+            f.write(rtn_type.doc_all(export='rest'))
