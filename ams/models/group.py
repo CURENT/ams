@@ -166,7 +166,9 @@ class Collection(GroupBase):
     """
     Collection of topology models
     """
-    pass
+
+    def __init__(self):
+        super().__init__()
 
 
 class Horizon(GroupBase):
