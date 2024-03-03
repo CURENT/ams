@@ -3,7 +3,6 @@ PYPOWER reader for AMS.
 """
 import logging
 
-from numpy import array  # NOQA
 import numpy as np
 
 from ams.io.matpower import mpc2system, system2mpc
