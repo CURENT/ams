@@ -58,7 +58,7 @@ class RParam(Param):
         True to set the parameter as non-negative.
     nonpos: bool, optional
         True to set the parameter as non-positive.
-    complex: bool, optional
+    cplx: bool, optional
         True to set the parameter as complex.
     imag: bool, optional
         True to set the parameter as imaginary.
@@ -114,7 +114,7 @@ class RParam(Param):
                  no_parse: Optional[bool] = False,
                  nonneg: Optional[bool] = False,
                  nonpos: Optional[bool] = False,
-                 complex: Optional[bool] = False,
+                 cplx: Optional[bool] = False,
                  imag: Optional[bool] = False,
                  symmetric: Optional[bool] = False,
                  diag: Optional[bool] = False,
@@ -126,7 +126,7 @@ class RParam(Param):
                  sparse: Optional[list] = None,
                  ):
         Param.__init__(self, nonneg=nonneg, nonpos=nonpos,
-                       complex=complex, imag=imag, symmetric=symmetric,
+                       cplx=cplx, imag=imag, symmetric=symmetric,
                        diag=diag, hermitian=hermitian, boolean=boolean,
                        integer=integer, pos=pos, neg=neg, sparse=sparse)
         self.name = name

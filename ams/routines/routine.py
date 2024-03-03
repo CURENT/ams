@@ -846,7 +846,7 @@ class RoutineBase:
                 horizon: Optional[RParam] = None,
                 nonneg: Optional[bool] = False,
                 nonpos: Optional[bool] = False,
-                complex: Optional[bool] = False,
+                cplx: Optional[bool] = False,
                 imag: Optional[bool] = False,
                 symmetric: Optional[bool] = False,
                 diag: Optional[bool] = False,
@@ -889,7 +889,7 @@ class RoutineBase:
             Non-negative variable
         nonpos : bool, optional
             Non-positive variable
-        complex : bool, optional
+        cplx : bool, optional
             Complex variable
         imag : bool, optional
             Imaginary variable
@@ -918,7 +918,7 @@ class RoutineBase:
                    info=info, src=src, unit=unit,
                    model=model, shape=shape, horizon=horizon,
                    nonneg=nonneg, nonpos=nonpos,
-                   complex=complex, imag=imag,
+                   complex=cplx, imag=imag,
                    symmetric=symmetric, diag=diag,
                    psd=psd, nsd=nsd, hermitian=hermitian,
                    boolean=bool, integer=integer,

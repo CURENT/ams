@@ -168,8 +168,8 @@ class Param(OptzBase):
         True to set the parameter as non-negative.
     nonpos: bool, optional
         True to set the parameter as non-positive.
-    complex: bool, optional
-        True to set the parameter as complex.
+    cplx: bool, optional
+        True to set the parameter as complex, avoiding the use of `complex`.
     imag: bool, optional
         True to set the parameter as imaginary.
     symmetric: bool, optional
@@ -197,7 +197,7 @@ class Param(OptzBase):
                  no_parse: Optional[bool] = False,
                  nonneg: Optional[bool] = False,
                  nonpos: Optional[bool] = False,
-                 complex: Optional[bool] = False,
+                 cplx: Optional[bool] = False,
                  imag: Optional[bool] = False,
                  symmetric: Optional[bool] = False,
                  diag: Optional[bool] = False,
@@ -216,7 +216,7 @@ class Param(OptzBase):
 
         self.config.add(OrderedDict((('nonneg', nonneg),
                                      ('nonpos', nonpos),
-                                     ('complex', complex),
+                                     ('complex', cplx),
                                      ('imag', imag),
                                      ('symmetric', symmetric),
                                      ('diag', diag),
@@ -299,7 +299,7 @@ class Var(OptzBase):
         Non-negative variable
     nonpos : bool, optional
         Non-positive variable
-    complex : bool, optional
+    cplx : bool, optional
         Complex variable
     imag : bool, optional
         Imaginary variable
@@ -344,7 +344,7 @@ class Var(OptzBase):
                  horizon=None,
                  nonneg: Optional[bool] = False,
                  nonpos: Optional[bool] = False,
-                 complex: Optional[bool] = False,
+                 cplx: Optional[bool] = False,
                  imag: Optional[bool] = False,
                  symmetric: Optional[bool] = False,
                  diag: Optional[bool] = False,
@@ -380,7 +380,7 @@ class Var(OptzBase):
 
         self.config.add(OrderedDict((('nonneg', nonneg),
                                      ('nonpos', nonpos),
-                                     ('complex', complex),
+                                     ('complex', cplx),
                                      ('imag', imag),
                                      ('symmetric', symmetric),
                                      ('diag', diag),
