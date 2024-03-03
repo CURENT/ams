@@ -17,7 +17,6 @@ from ams.routines import routine_cli
 logger = logging.getLogger(__name__)
 
 command_aliases = {
-    'prepare': ['prep'],
     'selftest': ['st'],
 }
 
@@ -41,10 +40,8 @@ def create_parser():
         type=int, default=20, choices=(1, 10, 20, 30, 40))
 
     sub_parsers = parser.add_subparsers(dest='command', help='[run] run simulation routine; '
-                                                             '[plot] plot results; '
                                                              '[doc] quick documentation; '
                                                              '[misc] misc. functions; '
-                                                             '[prepare] prepare the numerical code; '
                                                              '[selftest] run self test; '
                                         )
 
@@ -139,7 +136,7 @@ def main():
 
     module = importlib.import_module('ams.main')
 
-    if args.command in ('plot', 'doc', 'misc'):
+    if args.command in ('doc', 'misc'):
         pass
     elif args.command == 'run' and args.no_preamble is True:
         pass
