@@ -65,13 +65,8 @@ project = 'AMS'
 copyright = '2023-2024, Jinning Wang'
 author = 'Jinning Wang'
 
-# TODO: fix the version later on
 version = ams.__version__
 release = ams.__version__
-# # The short X.Y version.
-# version = ams.__version__
-# # The full version, including alpha/beta/rc tags.
-# release = ams.__version__
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
