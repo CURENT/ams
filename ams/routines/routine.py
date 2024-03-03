@@ -479,9 +479,9 @@ class RoutineBase:
         """
         if key in self.__dict__:
             existing_keys = []
-            for type in ["constrs", "vars", "rparams", "services"]:
-                if type in self.__dict__:
-                    existing_keys += list(self.__dict__[type].keys())
+            for rtn_type in ["constrs", "vars", "rparams", "services"]:
+                if rtn_type in self.__dict__:
+                    existing_keys += list(self.__dict__[rtn_type].keys())
             if key in existing_keys:
                 msg = f"Attribute <{key}> already exists in <{self.class_name}>."
                 logger.warning(msg)
