@@ -93,17 +93,17 @@ class SFRBase:
                        unit='p.u.', name='prd', tex_name=r'p_{r,d}',
                        model='StaticGen', nonneg=True,)
         # NOTE: define e_str in dispatch routine
-        self.rbu = Constraint(name='rbu', type='eq',
+        self.rbu = Constraint(name='rbu', is_eq=True,
                               info='RegUp reserve balance',)
-        self.rbd = Constraint(name='rbd', type='eq',
+        self.rbd = Constraint(name='rbd', is_eq=True,
                               info='RegDn reserve balance',)
-        self.rru = Constraint(name='rru', type='uq',
+        self.rru = Constraint(name='rru', is_eq=False,
                               info='RegUp reserve source',)
-        self.rrd = Constraint(name='rrd', type='uq',
+        self.rrd = Constraint(name='rrd', is_eq=False,
                               info='RegDn reserve source',)
-        self.rgu = Constraint(name='rgu', type='uq',
+        self.rgu = Constraint(name='rgu', is_eq=False,
                               info='Gen ramping up',)
-        self.rgd = Constraint(name='rgd', type='uq',
+        self.rgd = Constraint(name='rgd', is_eq=False,
                               info='Gen ramping down',)
 
 
@@ -307,7 +307,7 @@ class DGBase:
                              info='Select DG power from pg',
                              gamma='gammapdg',
                              no_parse=True, sparse=True,)
-        self.cdgb = Constraint(name='cdgb', type='eq',
+        self.cdgb = Constraint(name='cdgb', is_eq=True,
                                info='Select DG power from pg',
                                e_str='cdg @ pg - pgdg',)
 
@@ -382,10 +382,10 @@ class ESD1Base(DGBase):
                        name='SOC', tex_name=r'SOC',
                        model='ESD1', pos=True,
                        v0=self.SOCinit,)
-        self.SOClb = Constraint(name='SOClb', type='uq',
+        self.SOClb = Constraint(name='SOClb', is_eq=False,
                                 info='SOC lower bound',
                                 e_str='-SOC + SOCmin',)
-        self.SOCub = Constraint(name='SOCub', type='uq',
+        self.SOCub = Constraint(name='SOCub', is_eq=False,
                                 info='SOC upper bound',
                                 e_str='SOC - SOCmax',)
         self.pce = Var(info='ESD1 charging power',
@@ -412,34 +412,34 @@ class ESD1Base(DGBase):
         self.zde.info += ':math:`z_{d,ESD}=u_{d,ESD}*p_{d,ESD}`'
 
         # --- constraints ---
-        self.cdb = Constraint(name='cdb', type='eq',
+        self.cdb = Constraint(name='cdb', is_eq=True,
                               info='Charging decision bound',
                               e_str='uce + ude - 1',)
         self.ces = VarSelect(u=self.pg, indexer='genesd',
                              name='ce', tex_name=r'C_{ESD}',
                              info='Select zue from pg',
                              gamma='gammapesd', no_parse=True,)
-        self.cesb = Constraint(name='cesb', type='eq',
+        self.cesb = Constraint(name='cesb', is_eq=True,
                                info='Select ESD1 power from pg',
                                e_str='ces @ pg + zce - zde',)
 
-        self.zce1 = Constraint(name='zce1', type='uq', info='zce bound 1',
+        self.zce1 = Constraint(name='zce1', is_eq=False, info='zce bound 1',
                                e_str='-zce + pce',)
-        self.zce2 = Constraint(name='zce2', type='uq', info='zce bound 2',
+        self.zce2 = Constraint(name='zce2', is_eq=False, info='zce bound 2',
                                e_str='zce - pce - Mb dot (1-uce)',)
-        self.zce3 = Constraint(name='zce3', type='uq', info='zce bound 3',
+        self.zce3 = Constraint(name='zce3', is_eq=False, info='zce bound 3',
                                e_str='zce - Mb dot uce',)
 
-        self.zde1 = Constraint(name='zde1', type='uq', info='zde bound 1',
+        self.zde1 = Constraint(name='zde1', is_eq=False, info='zde bound 1',
                                e_str='-zde + pde',)
-        self.zde2 = Constraint(name='zde2', type='uq', info='zde bound 2',
+        self.zde2 = Constraint(name='zde2', is_eq=False, info='zde bound 2',
                                e_str='zde - pde - Mb dot (1-ude)',)
-        self.zde3 = Constraint(name='zde3', type='uq', info='zde bound 3',
+        self.zde3 = Constraint(name='zde3', is_eq=False, info='zde bound 3',
                                e_str='zde - Mb dot ude',)
 
         SOCb = 'mul(En, (SOC - SOCinit)) - t dot mul(EtaC, zce)'
         SOCb += '+ t dot mul(REtaD, zde)'
-        self.SOCb = Constraint(name='SOCb', type='eq',
+        self.SOCb = Constraint(name='SOCb', is_eq=True,
                                info='ESD1 SOC balance',
                                e_str=SOCb,)
 
@@ -507,16 +507,16 @@ class VISBase:
                              name='gvsg', tex_name=r'S_{g}',
                              info='Sum VSG vars vector in shape of zone',
                              no_parse=True)
-        self.Mub = Constraint(name='Mub', type='uq',
+        self.Mub = Constraint(name='Mub', is_eq=False,
                               info='M upper bound',
                               e_str='M - Mmax',)
-        self.Dub = Constraint(name='Dub', type='uq',
+        self.Dub = Constraint(name='Dub', is_eq=False,
                               info='D upper bound',
                               e_str='D - Dmax',)
-        self.Mreq = Constraint(name='Mreq', type='eq',
+        self.Mreq = Constraint(name='Mreq', is_eq=True,
                                info='Emulated inertia requirement',
                                e_str='-gvsg@M + dvm',)
-        self.Dreq = Constraint(name='Dreq', type='eq',
+        self.Dreq = Constraint(name='Dreq', is_eq=True,
                                info='Emulated damping requirement',
                                e_str='-gvsg@D + dvd',)
 

@@ -487,9 +487,9 @@ class Constraint(OptzBase):
         A mathematical expression representing the constraint.
     info : str, optional
         Additional informational text about the constraint.
-    type : str, optional
-        The type of constraint, which determines the mathematical relationship.
-        Possible values include 'uq' (inequality, default) and 'eq' (equality).
+    is_eq : str, optional
+        Flag indicating if the constraint is an equality constraint. False indicates
+        an inequality constraint in the form of `<= 0`.
 
     Attributes
     ----------
@@ -503,11 +503,11 @@ class Constraint(OptzBase):
                  name: Optional[str] = None,
                  e_str: Optional[str] = None,
                  info: Optional[str] = None,
-                 type: Optional[str] = 'uq',
+                 is_eq: Optional[str] = False,
                  ):
         OptzBase.__init__(self, name=name, info=info)
         self.e_str = e_str
-        self.type = type
+        self.is_eq = is_eq
         self.is_disabled = False
         self.dual = None
         self.code = None
@@ -537,11 +537,9 @@ class Constraint(OptzBase):
         self.code = code_constr
         # parse the constraint type
         code_constr = "self.optz=" + code_constr
-        if self.type not in ['uq', 'eq']:
-            raise ValueError(f'Constraint type {self.type} is not supported.')
-        code_constr += " <= 0" if self.type == 'uq' else " == 0"
+        code_constr += " == 0" if self.is_eq else " <= 0"
         msg = f"Parse Constr <{self.name}>: {self.e_str} "
-        msg += " <= 0" if self.type == 'uq' else " == 0"
+        msg += " == 0" if self.is_eq else " <= 0"
         logger.debug(msg)
         if not no_code:
             logger.info(f"<{self.name}> code: {code_constr}")

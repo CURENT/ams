@@ -804,7 +804,7 @@ class RoutineBase:
                    name: str,
                    e_str: str,
                    info: Optional[str] = None,
-                   type: Optional[str] = 'uq',
+                   is_eq: Optional[str] = False,
                    ):
         """
         Add `Constraint` to the routine. to the routine.
@@ -819,11 +819,11 @@ class RoutineBase:
             Constraint expression string.
         info : str, optional
             Descriptive information
-        type : str, optional
-            Constraint type, ``uq`` for uncertain, ``eq`` for equality, ``ineq`` for inequality.
-
+        is_eq : str, optional
+            Flag indicating if the constraint is an equality constraint. False indicates
+            an inequality constraint in the form of `<= 0`.
         """
-        item = Constraint(name=name, e_str=e_str, info=info, type=type)
+        item = Constraint(name=name, e_str=e_str, info=info, is_eq=is_eq)
         # add the constraint as an routine attribute
         setattr(self, name, item)
 
