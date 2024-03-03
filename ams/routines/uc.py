@@ -306,16 +306,6 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         logger.warning(f'Turn off StaticGen {g_idx} as initial commitment guess.')
         return True
 
-    def _post_solve(self):
-        """
-        Overwrite ``_post_solve``.
-        """
-        # --- post-solving calculations ---
-        # line flow: Bf@aBus + Pfinj
-        mats = self.system.mats
-        self.plf.optz.value = mats.Bf._v@self.aBus.v + self.Pfinj.v@self.tlv.v
-        return True
-
     def init(self, **kwargs):
         self._initial_guess()
         return super().init(**kwargs)

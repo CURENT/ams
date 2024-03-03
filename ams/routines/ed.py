@@ -184,6 +184,8 @@ class ED(RTED):
         self.alflb.e_str = '-CftT@aBus - amax@tlv'
         self.alfub.e_str = 'CftT@aBus - amax@tlv'
 
+        self.plfc.e_str = 'Bf@aBus + Pfinj@tlv'
+
         # --- power balance ---
         self.pb.e_str = 'Bbus@aBus + Pbusinj@tlv + Cl@pds + Csh@gsh@tlv - Cg@pg'
 
@@ -211,16 +213,6 @@ class ED(RTED):
         cost += '+ t dot sum(c1 @ pg + csr @ prs)'
         cost += '+ sum(mul(ugt, mul(c0, tlv)))'
         self.obj.e_str = cost
-
-    def _post_solve(self):
-        """
-        Overwrite ``_post_solve``.
-        """
-        # --- post-solving calculations ---
-        # line flow: Bf@aBus + Pfinj
-        mats = self.system.mats
-        self.plf.optz.value = mats.Bf._v@self.aBus.v + self.Pfinj.v@self.tlv.v
-        return True
 
     def dc2ac(self, **kwargs):
         """
