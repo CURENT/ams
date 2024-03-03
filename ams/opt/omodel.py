@@ -882,7 +882,7 @@ class OModel:
         """
         return self.__class__.__name__
 
-    def __register_attribute(self, key, value):
+    def _register_attribute(self, key, value):
         """
         Register a pair of attributes to OModel instance.
 
@@ -897,7 +897,7 @@ class OModel:
             self.params[key] = value
 
     def __setattr__(self, __name: str, __value: Any):
-        self.__register_attribute(__name, __value)
+        self._register_attribute(__name, __value)
         super().__setattr__(__name, __value)
 
     def update(self, params):
