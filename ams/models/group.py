@@ -89,7 +89,9 @@ class Undefined(GroupBase):
     """
     The undefined group. Holds models with no ``group``.
     """
-    pass
+
+    def __init__(self):
+        super().__init__()
 
 
 class ACTopology(GroupBase):
