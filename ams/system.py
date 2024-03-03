@@ -16,7 +16,6 @@ from andes.variables import FileMan
 
 from andes.utils.misc import elapsed
 from andes.utils.tab import Tab
-from andes.shared import (matrix, np, sparse, spmatrix)  # NOQA
 
 import ams.io
 from ams.models.group import GroupBase
