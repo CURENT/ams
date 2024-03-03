@@ -31,7 +31,7 @@ jobs:
         with:
           excluded_paths: "ignore,.github,ams/pypower,ams/_version.py"
           root_path: "ams/"
-          output_file: "docs/images/diagram.svg"
+          output_file: "docs/source/images/diagram.svg"
 
       - name: Commit and push if there are changes
         run: |
