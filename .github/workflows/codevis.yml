@@ -37,7 +37,7 @@ jobs:
         run: |
           git add docs/images/diagram.svg
           git commit -m "Update codebase diagram" || echo "No changes to commit"
-          git push origin update-diagram
+          git push --set-upstream origin update-diagram
 
       - name: Create Pull Request
         uses: repo-sync/pull-request@v2
