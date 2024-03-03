@@ -1,11 +1,6 @@
 name: Codebase visualizer
 
-on:
-  workflow_dispatch: {}
-  push:
-    branches:
-      - master
-      - develop
+on: [push, pull_request]
 
 jobs:
   update_diagram:
@@ -36,8 +31,23 @@ jobs:
       - name: Commit and push if there are changes
         run: |
           git add docs/images/diagram.svg
-          git commit -m "Update codebase diagram" || echo "No changes to commit"
-          git push --set-upstream origin update-diagram
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update codebase diagram"
+            # Retry push up to 3 times in case of failure
+            MAX_RETRIES=3
+            for attempt in $(seq 1 $MAX_RETRIES); do
+              echo "Attempting to push (Attempt $attempt of $MAX_RETRIES)..."
+              git push --set-upstream origin update-diagram && break || echo "Push failed, retrying..."
+              if [ "$attempt" -lt "$MAX_RETRIES" ]; then
+                sleep 5 # Wait for 5 seconds before retrying
+              else
+                echo "Push failed after $MAX_RETRIES attempts."
+                exit 1 # Exit with error if the push fails after max retries
+              fi
+            done
+          fi
 
       - name: Create Pull Request
         uses: repo-sync/pull-request@v2
