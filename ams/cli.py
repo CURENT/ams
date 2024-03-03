@@ -73,10 +73,7 @@ def create_parser():
                      type=str, default='', nargs='*')
 
     doc = sub_parsers.add_parser('doc')
-    # TODO: fit to AMS
-    # doc.add_argument('attribute', help='System attribute name to get documentation', nargs='?')
-    # doc.add_argument('--config', '-c', help='Config help')
-    doc.add_argument('--list', '-l', help='List supported models and groups', action='store_true',
+    doc.add_argument('--list', '-l', help='List supported routines', action='store_true',
                      dest='list_supported')
 
     misc = sub_parsers.add_parser('misc')
@@ -89,15 +86,9 @@ def create_parser():
     misc.add_argument('-C', '--clean', help='Clean output files', action='store_true')
     misc.add_argument('-r', '--recursive', help='Recursively clean outputs (combined useage with --clean)',
                       action='store_true')
-    # TODO: fit to AMS
-    misc.add_argument('-O', '--config-option',
-                      help='Set configuration option specificied by '
-                      'NAME.FIELD=VALUE with no space. For example, "TDS.tf=2"',
-                      type=str, default='', nargs='*')
     misc.add_argument('--version', action='store_true', help='Display version information')
 
-    # TODO: add quick or extra options for selftest
-    selftest = sub_parsers.add_parser('selftest', aliases=command_aliases['selftest'])  # NOQA
+    sub_parsers.add_parser('selftest', aliases=command_aliases['selftest'])  # NOQA
 
     return parser
 
