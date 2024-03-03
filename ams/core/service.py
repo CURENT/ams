@@ -8,7 +8,7 @@ from typing import Callable, Type
 import numpy as np
 import scipy.sparse as spr
 
-from andes.core.service import BaseService, BackRef, RefFlatten  # NOQA
+from andes.core.service import BaseService
 
 from ams.opt.omodel import Param
 
