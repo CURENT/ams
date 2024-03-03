@@ -9,7 +9,7 @@ from ams.core.service import NumOp, NumOpDual
 
 from ams.routines.routine import RoutineBase
 
-from ams.opt.omodel import Var, Constraint, Objective
+from ams.opt.omodel import Var, Constraint, Objective, ExpressionCalc
 
 
 logger = logging.getLogger(__name__)
@@ -170,6 +170,9 @@ class DCOPF(RoutineBase):
         self.alfub = Constraint(info='line angle difference upper bound',
                                 name='alfub', type='uq',
                                 e_str='CftT@aBus - amax',)
+        self.plfc = ExpressionCalc(info='plf calculation',
+                                   name='plfc', var='plf',
+                                   e_str='Bf@aBus + Pfinj')
 
         # --- objective ---
         obj = 'sum(mul(c2, power(pg, 2)))'
@@ -227,10 +230,16 @@ class DCOPF(RoutineBase):
         return RoutineBase.run(self, no_code=no_code, **kwargs)
 
     def _post_solve(self):
-        # --- post-solving calculations ---
-        # line flow: Bf@aBus + Pfinj
-        # using sparse matrix in MatProcessor is faster
-        self.plf.optz.value = self.system.mats.Bf._v@self.aBus.v + self.Pfinj.v
+        """
+        Post-solve calculations.
+        """
+        for expr in self.exprs.values():
+            try:
+                var = getattr(self, expr.var)
+                var.optz.value = expr.v
+                logger.debug(f'Post solve: {var} = {expr.e_str}')
+            except AttributeError:
+                raise AttributeError(f'No such variable {expr.var}')
         return True
 
     def unpack(self, **kwargs):
