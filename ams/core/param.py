@@ -10,7 +10,7 @@ from typing import Optional, Iterable
 import numpy as np
 from scipy.sparse import issparse
 
-from andes.core import BaseParam, DataParam, IdxParam, NumParam, ExtParam  # NOQA
+from andes.core import DataParam, IdxParam, NumParam, ExtParam  # NOQA
 
 from ams.opt.omodel import Param
 
