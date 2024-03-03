@@ -18,7 +18,7 @@ from ams.core.param import RParam
 from ams.core.symprocessor import SymProcessor
 from ams.core.documenter import RDocumenter
 from ams.core.service import RBaseService, ValueService
-from ams.opt.omodel import OModel, Param, Var, Constraint, Objective
+from ams.opt.omodel import OModel, Param, Var, Constraint, Objective, ExpressionCalc
 
 from ams.shared import igraph as ig
 from ams.shared import require_igraph
@@ -50,6 +50,7 @@ class RoutineBase:
         self.params = OrderedDict()         # Param registry
         self.vars = OrderedDict()           # Var registry
         self.constrs = OrderedDict()        # Constraint registry
+        self.exprs = OrderedDict()          # Expression registry
         self.obj = None                     # Objective
         self.initialized = False            # initialization flag
         self.type = "UndefinedType"         # routine type
@@ -516,7 +517,7 @@ class RoutineBase:
         Called within ``__setattr__``, this is where the magic happens.
         Subclass attributes are automatically registered based on the variable type.
         """
-        if isinstance(value, (Param, Var, Constraint, Objective)):
+        if isinstance(value, (Param, Var, Constraint, Objective, ExpressionCalc)):
             value.om = self.om
             value.rtn = self
         if isinstance(value, Param):
@@ -528,6 +529,8 @@ class RoutineBase:
         elif isinstance(value, Constraint):
             self.constrs[key] = value
             self.om.constrs[key] = None  # cp.Constraint
+        elif isinstance(value, ExpressionCalc):
+            self.exprs[key] = value
         elif isinstance(value, RParam):
             self.rparams[key] = value
         elif isinstance(value, RBaseService):

@@ -95,6 +95,67 @@ class OptzBase:
             return None
 
 
+class ExpressionCalc(OptzBase):
+    """
+    Expression for calculation.
+    """
+
+    def __init__(self,
+                 name: Optional[str] = None,
+                 info: Optional[str] = None,
+                 unit: Optional[str] = None,
+                 var: Optional[str] = None,
+                 e_str: Optional[str] = None,
+                 ):
+        OptzBase.__init__(self, name=name, info=info, unit=unit)
+        self.optz = None
+        self.var = var
+        self.e_str = e_str
+        self.code = None
+
+    def parse(self, no_code=True):
+        """
+        Parse the Expression.
+
+        Parameters
+        ----------
+        no_code : bool, optional
+            Flag indicating if the code should be shown, True by default.
+        """
+        # parse the expression str
+        sub_map = self.om.rtn.syms.sub_map
+        code_expr = self.e_str
+        for pattern, replacement in sub_map.items():
+            try:
+                code_expr = re.sub(pattern, replacement, code_expr)
+            except TypeError as e:
+                logger.error(f"Error in parsing expr <{self.name}>.")
+                raise e
+        # store the parsed expression str code
+        self.code = code_expr
+        code_expr = "self.optz = " + code_expr
+        msg = f"Parse ExpressionCalc <{self.name}>: {self.e_str} "
+        logger.debug(msg)
+        if not no_code:
+            logger.info(f"<{self.name}> code: {code_expr}")
+        # execute the expression
+        exec(code_expr, globals(), locals())
+        return True
+
+    @property
+    def v(self):
+        """
+        Return the CVXPY expression value.
+        """
+        if self.optz is None:
+            return None
+        else:
+            return self.optz.value
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}: {self.name}'
+
+
 class Param(OptzBase):
     """
     Base class for parameters used in a routine.
@@ -805,6 +866,8 @@ class OModel:
                 msg += ", ".join(constrs_skip)
             logger.debug(msg)
             exec(code_prob, globals(), locals())
+            for key, val in self.rtn.exprs.items():
+                val.parse()
 
         _, s_setup = elapsed(t_setup)
         self.initialized = True
