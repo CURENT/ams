@@ -11,7 +11,7 @@ from ams.pypower.core import ppoption
 from ams.core.param import RParam
 
 from ams.routines.dcpf import DCPFlowBase
-from ams.opt.omodel import Var, Constraint  # NOQA
+from ams.opt.omodel import Var
 
 logger = logging.getLogger(__name__)
 
