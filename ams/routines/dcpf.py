@@ -154,7 +154,7 @@ class DCPFlowBase(RoutineBase):
         """
         # TODO: Print power flow summary.
         """
-        pass
+        raise NotImplementedError
 
     def enable(self, name):
         raise NotImplementedError
