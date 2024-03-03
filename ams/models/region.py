@@ -2,8 +2,9 @@ import logging
 
 from andes.core.model import ModelData
 from andes.utils.tab import Tab
+from andes.core.service import BackRef
+
 from ams.core.model import Model
-from ams.core.service import BackRef
 
 logger = logging.getLogger(__name__)
 
