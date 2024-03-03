@@ -914,7 +914,7 @@ class RoutineBase:
                    info=info, src=src, unit=unit,
                    model=model, shape=shape, horizon=horizon,
                    nonneg=nonneg, nonpos=nonpos,
-                   complex=cplx, imag=imag,
+                   cplx=cplx, imag=imag,
                    symmetric=symmetric, diag=diag,
                    psd=psd, nsd=nsd, hermitian=hermitian,
                    boolean=boolean, integer=integer,
