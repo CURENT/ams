@@ -1,0 +1,19 @@
+name: codebase-diagram
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - master
+      - develop
+jobs:
+  get_data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@master
+      - name: Update diagram
+        uses: githubocto/repo-visualizer@main
+        with:
+          excluded_paths: "ignore,.github,ams/pypower,ams/_version.py"
+          root_path: "ams/"
+          output_file: "docs/images/diagram.svg"
