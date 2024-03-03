@@ -18,9 +18,6 @@ logger = logging.getLogger(__name__)
 class DCOPF(RoutineBase):
     """
     DC optimal power flow (DCOPF).
-
-    Line flow variable `plf` is calculated as ``Bf@aBus + Pfinj``
-    after solving the problem in ``_post_solve()`` .
     """
 
     def __init__(self, system, config):
