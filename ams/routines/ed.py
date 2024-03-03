@@ -109,7 +109,7 @@ class MPBase:
         self.aBus.info = '2D Bus angle'
 
 
-class ED(RTED):
+class ED(RTED, MPBase, SRBase):
     """
     DC-based multi-period economic dispatch (ED).
     Dispath interval ``config.t`` (:math:`T_{cfg}`) is introduced,
