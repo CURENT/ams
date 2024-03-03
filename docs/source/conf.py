@@ -189,10 +189,10 @@ smartquotes = False
 exec(open("genmodelref.py").read())
 exec(open("genroutineref.py").read())
 
-# import and execute model reference generation script
 shutil.rmtree("_examples", ignore_errors=True)
 shutil.copytree("../../examples", "_examples", )
 shutil.rmtree("_examples/demonstration")
+shutil.copytree("../../examples/demonstration", "_examples/demo", )
 
 # sphinx-panels shouldn't add bootstrap css since the pydata-sphinx-theme
 # already loads it
