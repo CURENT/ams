@@ -9,6 +9,11 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.9.2 (2024-xx-xx)
+-------------------
+
+- Add ``ExpressionCalc`` to handle post-solving calculation
+
 v0.9.1 (2024-03-02)
 -------------------
 
