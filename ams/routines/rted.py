@@ -209,14 +209,17 @@ class RTED(DCOPF, RTEDBase, SFRBase):
             # NOTE: mock results to fit interface with ANDES
             self.vBus = ACOPF.vBus
             self.vBus.optz.value = np.ones(self.system.Bus.n)
-            self.aBus = ACOPF.aBus
             self.aBus.optz.value = np.zeros(self.system.Bus.n)
             return False
         self.pg.v = ACOPF.pg.v
 
         # NOTE: mock results to fit interface with ANDES
-        self.vBus = ACOPF.vBus
-        self.aBus = ACOPF.aBus
+        self.addVars(name='vBus',
+                     info='Bus voltage', unit='p.u.', 
+                     model='Bus', src='v',)
+        # FIXME: vBus value setting is differnt from aBus, bad implementation
+        self.vBus.v = ACOPF.vBus.v
+        self.aBus.optz.value = ACOPF.aBus.v
 
         # reset pmin, pmax, p0
         self.system.StaticGen.set(src='pmin', attr='v', idx=pr_idx, value=pmin0)
