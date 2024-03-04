@@ -215,7 +215,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
 
         # NOTE: mock results to fit interface with ANDES
         self.addVars(name='vBus',
-                     info='Bus voltage', unit='p.u.', 
+                     info='Bus voltage', unit='p.u.',
                      model='Bus', src='v',)
         self.vBus.parse()
         self.vBus.optz.value = ACOPF.vBus.v
