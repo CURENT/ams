@@ -8,7 +8,6 @@ from typing import Optional, Union, Type, Iterable
 from collections import OrderedDict
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from andes.core import Config
 from andes.shared import pd
@@ -18,10 +17,7 @@ from ams.core.param import RParam
 from ams.core.symprocessor import SymProcessor
 from ams.core.documenter import RDocumenter
 from ams.core.service import RBaseService, ValueService
-from ams.opt.omodel import OModel, Param, Var, Constraint, Objective
-
-from ams.shared import igraph as ig
-from ams.shared import require_igraph
+from ams.opt.omodel import OModel, Param, Var, Constraint, Objective, ExpressionCalc
 
 
 logger = logging.getLogger(__name__)
@@ -50,6 +46,7 @@ class RoutineBase:
         self.params = OrderedDict()         # Param registry
         self.vars = OrderedDict()           # Var registry
         self.constrs = OrderedDict()        # Constraint registry
+        self.exprs = OrderedDict()          # Expression registry
         self.obj = None                     # Objective
         self.initialized = False            # initialization flag
         self.type = "UndefinedType"         # routine type
@@ -478,9 +475,9 @@ class RoutineBase:
         """
         if key in self.__dict__:
             existing_keys = []
-            for type in ["constrs", "vars", "rparams", "services"]:
-                if type in self.__dict__:
-                    existing_keys += list(self.__dict__[type].keys())
+            for rtn_type in ["constrs", "vars", "rparams", "services"]:
+                if rtn_type in self.__dict__:
+                    existing_keys += list(self.__dict__[rtn_type].keys())
             if key in existing_keys:
                 msg = f"Attribute <{key}> already exists in <{self.class_name}>."
                 logger.warning(msg)
@@ -516,7 +513,7 @@ class RoutineBase:
         Called within ``__setattr__``, this is where the magic happens.
         Subclass attributes are automatically registered based on the variable type.
         """
-        if isinstance(value, (Param, Var, Constraint, Objective)):
+        if isinstance(value, (Param, Var, Constraint, Objective, ExpressionCalc)):
             value.om = self.om
             value.rtn = self
         if isinstance(value, Param):
@@ -528,6 +525,8 @@ class RoutineBase:
         elif isinstance(value, Constraint):
             self.constrs[key] = value
             self.om.constrs[key] = None  # cp.Constraint
+        elif isinstance(value, ExpressionCalc):
+            self.exprs[key] = value
         elif isinstance(value, RParam):
             self.rparams[key] = value
         elif isinstance(value, RBaseService):
@@ -805,7 +804,7 @@ class RoutineBase:
                    name: str,
                    e_str: str,
                    info: Optional[str] = None,
-                   type: Optional[str] = 'uq',
+                   is_eq: Optional[str] = False,
                    ):
         """
         Add `Constraint` to the routine. to the routine.
@@ -820,11 +819,11 @@ class RoutineBase:
             Constraint expression string.
         info : str, optional
             Descriptive information
-        type : str, optional
-            Constraint type, ``uq`` for uncertain, ``eq`` for equality, ``ineq`` for inequality.
-
+        is_eq : str, optional
+            Flag indicating if the constraint is an equality constraint. False indicates
+            an inequality constraint in the form of `<= 0`.
         """
-        item = Constraint(name=name, e_str=e_str, info=info, type=type)
+        item = Constraint(name=name, e_str=e_str, info=info, is_eq=is_eq)
         # add the constraint as an routine attribute
         setattr(self, name, item)
 
@@ -843,14 +842,14 @@ class RoutineBase:
                 horizon: Optional[RParam] = None,
                 nonneg: Optional[bool] = False,
                 nonpos: Optional[bool] = False,
-                complex: Optional[bool] = False,
+                cplx: Optional[bool] = False,
                 imag: Optional[bool] = False,
                 symmetric: Optional[bool] = False,
                 diag: Optional[bool] = False,
                 psd: Optional[bool] = False,
                 nsd: Optional[bool] = False,
                 hermitian: Optional[bool] = False,
-                bool: Optional[bool] = False,
+                boolean: Optional[bool] = False,
                 integer: Optional[bool] = False,
                 pos: Optional[bool] = False,
                 neg: Optional[bool] = False,):
@@ -886,7 +885,7 @@ class RoutineBase:
             Non-negative variable
         nonpos : bool, optional
             Non-positive variable
-        complex : bool, optional
+        cplx : bool, optional
             Complex variable
         imag : bool, optional
             Imaginary variable
@@ -915,10 +914,10 @@ class RoutineBase:
                    info=info, src=src, unit=unit,
                    model=model, shape=shape, horizon=horizon,
                    nonneg=nonneg, nonpos=nonpos,
-                   complex=complex, imag=imag,
+                   cplx=cplx, imag=imag,
                    symmetric=symmetric, diag=diag,
                    psd=psd, nsd=nsd, hermitian=hermitian,
-                   boolean=bool, integer=integer,
+                   boolean=boolean, integer=integer,
                    pos=pos, neg=neg, )
 
         # add the variable as an routine attribute
@@ -947,221 +946,3 @@ class RoutineBase:
         Generate initial guess for the optimization model.
         """
         raise NotImplementedError
-
-    @require_igraph
-    def igmake(self, directed=True):
-        """
-        Build an igraph object from the system.
-
-        Parameters
-        ----------
-        directed: bool
-            Whether the graph is directed.
-
-        Returns
-        -------
-        igraph.Graph
-            An igraph object.
-        """
-        system = self.system
-        edges = np.column_stack([system.Bus.idx2uid(system.Line.bus1.v),
-                                 system.Bus.idx2uid(system.Line.bus2.v)])
-        g = ig.Graph(n=system.Bus.n, directed=directed, edges=edges)
-        return g
-
-    @require_igraph
-    def igraph(
-        self,
-        input: Optional[Union[RParam, Var]] = None,
-        ytimes: Optional[float] = None,
-        decimal: Optional[int] = 6,
-        directed: Optional[bool] = True,
-        dpi: Optional[int] = 100,
-        figsize: Optional[tuple] = None,
-        adjust_bus: Optional[bool] = False,
-        gen_color: Optional[str] = "red",
-        rest_color: Optional[str] = "black",
-        vertex_shape: Optional[str] = "circle",
-        vertex_font: Optional[str] = None,
-        no_vertex_label: Optional[bool] = False,
-        vertex_label: Optional[Union[str, list]] = None,
-        vertex_size: Optional[float] = None,
-        vertex_label_size: Optional[float] = None,
-        vertex_label_dist: Optional[float] = 1.5,
-        vertex_label_angle: Optional[float] = 10.2,
-        edge_arrow_size: Optional[float] = None,
-        edge_arrow_width: Optional[float] = None,
-        edge_width: Optional[float] = None,
-        edge_align_label: Optional[bool] = True,
-        edge_background: Optional[str] = None,
-        edge_color: Optional[str] = None,
-        edge_curved: Optional[bool] = False,
-        edge_font: Optional[str] = None,
-        edge_label: Optional[Union[str, list]] = None,
-        layout: Optional[str] = "rt",
-        autocurve: Optional[bool] = True,
-        ax: Optional[plt.Axes] = None,
-        title: Optional[str] = None,
-        title_loc: Optional[str] = None,
-        **visual_style,
-    ):
-        """
-        Plot a system uging `g.plot()` of `igraph`, with optional input.
-        For now, only support plotting of Bus and Line elements as input.
-
-        Examples
-        --------
-        >>> import ams
-        >>> sp = ams.load(ams.get_case('5bus/pjm5bus_uced.xlsx'))
-        >>> sp.DCOPF.run()
-        >>> sp.DCOPF.plot(input=sp.DCOPF.pn,
-        >>>               ytimes=10,
-        >>>               adjust_bus=True,
-        >>>               vertex_size=10,
-        >>>               vertex_label_size=15,
-        >>>               vertex_label_dist=2,
-        >>>               vertex_label_angle=90,
-        >>>               show=False,
-        >>>               edge_align_label=True,
-        >>>               autocurve=True,)
-
-        Parameters
-        ----------
-        input: RParam or Var, optional
-            The variable or parameter to be plotted.
-        ytimes: float, optional
-            The scaling factor of the values.
-        directed: bool, optional
-            Whether the graph is directed.
-        dpi: int, optional
-            Dots per inch.
-        figsize: tuple, optional
-            Figure size.
-        adjust_bus: bool, optional
-            Whether to adjust the bus size.
-        gen_color: str, optional
-            Color of the generator bus.
-        rest_color: str, optional
-            Color of the rest buses.
-        no_vertex_label: bool, optional
-            Whether to show vertex labels.
-        vertex_shape: str, optional
-            Shape of the vertices.
-        vertex_font: str, optional
-            Font of the vertices.
-        vertex_size: float, optional
-            Size of the vertices.
-        vertex_label_size: float, optional
-            Size of the vertex labels.
-        vertex_label_dist: float, optional
-            Distance of the vertex labels.
-        vertex_label_angle: float, optional
-            Angle of the vertex labels.
-        edge_arrow_size: float, optional
-            Size of the edge arrows.
-        edge_arrow_width: float, optional
-            Width of the edge arrows.
-        edge_width: float, optional
-            Width of the edges.
-        edge_align_label: bool, optional
-            Whether to align the edge labels.
-        edge_background: str, optional
-            RGB colored rectangle background of the edge labels.
-        layout: str, optional
-            Layout of the graph, ['rt', 'kk', 'fr', 'drl', 'lgl', 'circle', 'grid_fr'].
-        autocurve: bool, optional
-            Whether to use autocurve.
-        ax: plt.Axes, optional
-            Matplotlib axes.
-        visual_style: dict, optional
-            Visual style, see ``igraph.plot`` for details.
-
-        Returns
-        -------
-        plt.Axes
-            Matplotlib axes.
-        igraph.Graph
-            An igraph object.
-        """
-
-        g = self.igmake(directed=directed)
-
-        # --- visual style ---
-        vstyle = {
-            # layout style
-            "layout": layout,
-            # vertices
-            "vertex_shape": vertex_shape,
-            "vertex_font": vertex_font,
-            "vertex_size": vertex_size,
-            "vertex_label": vertex_label,
-            "vertex_label_size": vertex_label_size,
-            "vertex_label_dist": vertex_label_dist,
-            "vertex_label_angle": vertex_label_angle,
-            # edges
-            "edge_arrow_size": edge_arrow_size,
-            "edge_arrow_width": edge_arrow_width,
-            "edge_width": edge_width,
-            "edge_align_label": edge_align_label,
-            "edge_background": edge_background,
-            "edge_color": edge_color,
-            "edge_curved": edge_curved,
-            "edge_font": edge_font,
-            "edge_label": edge_label,
-            # others
-            **visual_style,
-        }
-        system = self.system
-        # bus name, will be overwritten if input is not None
-        vstyle["vertex_name"] = system.Bus.name.v
-        if vertex_label is None:
-            vstyle["vertex_label"] = None if no_vertex_label else system.Bus.name.v
-
-        # bus size
-        gidx = system.PV.idx.v + system.Slack.idx.v
-        gbus = system.StaticGen.get(src="bus", attr="v", idx=gidx)
-        # initialize all bus size as vertex_size
-        bus_size = [vertex_size] * system.Bus.n
-        if adjust_bus and isinstance(vertex_size, (int, float)):
-            # adjust gen bus size using Sn
-            gsn = system.StaticGen.get(src="Sn", attr="v", idx=gidx)
-            gbsize = vertex_size * gsn / gsn.max()
-            gbus_dict = {bus: size for bus, size in zip(gbus, gbsize)}
-            for key, val in gbus_dict.items():
-                bus_size[system.Bus.idx2uid(key)] = val
-        if isinstance(vertex_size, Iterable):
-            bus_size = vertex_size
-        vstyle["vertex_size"] = bus_size
-
-        # bus colors
-        gbus_uid = system.Bus.idx2uid(gbus)
-        bus_uid = system.Bus.idx2uid(system.Bus.idx.v)
-        g.vs["label"] = system.Bus.name.v
-        g.vs["bus_type"] = ["gen" if bus_i in gbus_uid else "rest" for bus_i in bus_uid]
-        color_dict = {"gen": gen_color, "rest": rest_color}
-        vstyle["vertex_color"] = [color_dict[btype] for btype in g.vs["bus_type"]]
-
-        # --- variables ---
-        k = ytimes if ytimes is not None else 1
-        if input is not None:
-            if input.owner.class_name == "Bus":
-                logger.debug(f"Plotting <{input.name}> as vertex label.")
-                values = [f"${input.tex_name}$={round(k*v, decimal)}" for v in input.v]
-                vstyle["vertex_label"] = values
-            elif input.owner.class_name == "Line":
-                logger.debug(f"Plotting <{input.name}> as edge label.")
-                values = [f"${input.tex_name}$={round(k*v, decimal)}" for v in input.v]
-                elabel = system.Line.name.v
-                eout = [f"{label}" for label, ein in zip(values, elabel)]
-                vstyle["edge_label"] = eout
-            else:
-                logger.error(f"Unsupported input type <{input.owner.class_name}>.")
-
-        if ax is None:
-            _, ax = plt.subplots(figsize=figsize, dpi=dpi)
-        default_name = self.class_name
-        if input is not None:
-            default_name += f"\n${input.tex_name}$" + f" [${input.unit}$]"
-        ax.set_title(title if title else default_name, loc=title_loc)
-        ig.plot(g, autocurve=autocurve, target=ax, **vstyle)
-        return ax, g

@@ -24,3 +24,10 @@ folder of the repository
    ../_examples/ex6.ipynb
    ../_examples/ex7.ipynb
    ../_examples/ex8.ipynb
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Demonstration
+
+   ../_examples/demo/demo_ESD1.ipynb
+   ../_examples/demo/demo_AGC.ipynb

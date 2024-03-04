@@ -1,32 +1,7 @@
 import unittest
-from functools import wraps
 import numpy as np
 
 import ams
-
-try:
-    from ams.shared import igraph
-    getattr(igraph, '__version__')
-    HAVE_IGRAPH = True
-except (ImportError, AttributeError):
-    HAVE_IGRAPH = False
-
-
-def require_igraph(f):
-    """
-    Decorator for functions that require igraph.
-    """
-
-    @wraps(f)
-    def wrapper(*args, **kwds):
-        try:
-            getattr(igraph, '__version__')
-        except AttributeError:
-            raise ModuleNotFoundError("igraph needs to be manually installed.")
-
-        return f(*args, **kwds)
-
-    return wrapper
 
 
 class TestRoutineMethods(unittest.TestCase):
@@ -83,65 +58,3 @@ class TestRoutineMethods(unittest.TestCase):
         """
 
         self.assertTrue(self.ss.DCOPF.init(), "DCOPF initialization failed!")
-
-
-@unittest.skipUnless(HAVE_IGRAPH, "igraph not available")
-class TestRoutineGraph(unittest.TestCase):
-    """
-    Test routine graph.
-    """
-
-    def test_5bus_graph(self):
-        """
-        Test routine graph of PJM 5-bus system.
-        """
-        ss = ams.load(ams.get_case("5bus/pjm5bus_uced.xlsx"),
-                      default_config=True,
-                      no_output=True,
-                      )
-        _, g = ss.DCOPF.igraph()
-        self.assertGreaterEqual(np.min(g.degree()), 1)
-
-    def test_ieee14_graph(self):
-        """
-        Test routine graph of IEEE 14-bus system.
-        """
-        ss = ams.load(ams.get_case("ieee14/ieee14_uced.xlsx"),
-                      default_config=True,
-                      no_output=True,
-                      )
-        _, g = ss.DCOPF.igraph()
-        self.assertGreaterEqual(np.min(g.degree()), 1)
-
-    def test_ieee39_graph(self):
-        """
-        Test routine graph of IEEE 39-bus system.
-        """
-        ss = ams.load(ams.get_case("ieee39/ieee39_uced_esd1.xlsx"),
-                      default_config=True,
-                      no_output=True,
-                      )
-        _, g = ss.DCOPF.igraph()
-        self.assertGreaterEqual(np.min(g.degree()), 1)
-
-    def test_npcc_graph(self):
-        """
-        Test routine graph of NPCC 140-bus system.
-        """
-        ss = ams.load(ams.get_case("npcc/npcc_uced.xlsx"),
-                      default_config=True,
-                      no_output=True,
-                      )
-        _, g = ss.DCOPF.igraph()
-        self.assertGreaterEqual(np.min(g.degree()), 1)
-
-    def test_wecc_graph(self):
-        """
-        Test routine graph of WECC 179-bus system.
-        """
-        ss = ams.load(ams.get_case("wecc/wecc_uced.xlsx"),
-                      default_config=True,
-                      no_output=True,
-                      )
-        _, g = ss.DCOPF.igraph()
-        self.assertGreaterEqual(np.min(g.degree()), 1)

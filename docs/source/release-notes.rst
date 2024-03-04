@@ -9,6 +9,14 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.9.2 (2024-03-04)
+-------------------
+
+- Add demo_AGC to demonstrate detailed SFR study
+- Add ``ExpressionCalc`` to handle post-solving calculation
+- Rename ``type='eq'`` to ``is_eq=False`` in ``Constraint`` to avoid overriding built-in attribute
+- Several formatting improvements
+
 v0.9.1 (2024-03-02)
 -------------------
 

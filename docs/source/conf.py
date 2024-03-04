@@ -65,13 +65,8 @@ project = 'AMS'
 copyright = '2023-2024, Jinning Wang'
 author = 'Jinning Wang'
 
-# TODO: fix the version later on
 version = ams.__version__
 release = ams.__version__
-# # The short X.Y version.
-# version = ams.__version__
-# # The full version, including alpha/beta/rc tags.
-# release = ams.__version__
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -120,7 +115,7 @@ htmlhelp_basename = 'ams'
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
-    'preamble': r'\DeclareUnicodeCharacter{2588}{-}',
+    # 'preamble': r'\DeclareUnicodeCharacter{2588}{-}',
     'papersize': 'letterpaper',
 
     # The font size ('10pt', '11pt' or '12pt').
@@ -189,10 +184,10 @@ smartquotes = False
 exec(open("genmodelref.py").read())
 exec(open("genroutineref.py").read())
 
-# import and execute model reference generation script
 shutil.rmtree("_examples", ignore_errors=True)
 shutil.copytree("../../examples", "_examples", )
 shutil.rmtree("_examples/demonstration")
+shutil.copytree("../../examples/demonstration", "_examples/demo", )
 
 # sphinx-panels shouldn't add bootstrap css since the pydata-sphinx-theme
 # already loads it

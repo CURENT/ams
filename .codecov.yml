@@ -21,4 +21,6 @@ ignore:
   - "ams/_version.py"
   - ".github/**"
   - "README.md"
+  - "CODE_OF_CONDUCT.md"
   - "tests/**"
+  - "docs/**"

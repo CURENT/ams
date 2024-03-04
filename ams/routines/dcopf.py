@@ -9,7 +9,7 @@ from ams.core.service import NumOp, NumOpDual
 
 from ams.routines.routine import RoutineBase
 
-from ams.opt.omodel import Var, Constraint, Objective
+from ams.opt.omodel import Var, Constraint, Objective, ExpressionCalc
 
 
 logger = logging.getLogger(__name__)
@@ -18,9 +18,6 @@ logger = logging.getLogger(__name__)
 class DCOPF(RoutineBase):
     """
     DC optimal power flow (DCOPF).
-
-    Line flow variable `plf` is calculated as ``Bf@aBus + Pfinj``
-    after solving the problem in ``_post_solve()`` .
     """
 
     def __init__(self, system, config):
@@ -140,10 +137,10 @@ class DCOPF(RoutineBase):
                       v0=self.pg0)
         pglb = '-pg + mul(nctrle, pg0) + mul(ctrle, pmin)'
         self.pglb = Constraint(name='pglb', info='pg min',
-                               e_str=pglb, type='uq',)
+                               e_str=pglb, is_eq=False,)
         pgub = 'pg - mul(nctrle, pg0) - mul(ctrle, pmax)'
         self.pgub = Constraint(name='pgub', info='pg max',
-                               e_str=pgub, type='uq',)
+                               e_str=pgub, is_eq=False,)
         # --- bus ---
         self.aBus = Var(info='Bus voltage angle',
                         unit='rad',
@@ -152,24 +149,27 @@ class DCOPF(RoutineBase):
         # --- power balance ---
         pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
         self.pb = Constraint(name='pb', info='power balance',
-                             e_str=pb, type='eq',)
+                             e_str=pb, is_eq=True,)
         # --- line flow ---
         self.plf = Var(info='Line flow',
                        unit='p.u.',
                        name='plf', tex_name=r'p_{lf}',
                        model='Line',)
         self.plflb = Constraint(info='line flow lower bound',
-                                name='plflb', type='uq',
+                                name='plflb', is_eq=False,
                                 e_str='-Bf@aBus - Pfinj - rate_a',)
         self.plfub = Constraint(info='line flow upper bound',
-                                name='plfub', type='uq',
+                                name='plfub', is_eq=False,
                                 e_str='Bf@aBus + Pfinj - rate_a',)
         self.alflb = Constraint(info='line angle difference lower bound',
-                                name='alflb', type='uq',
+                                name='alflb', is_eq=False,
                                 e_str='-CftT@aBus - amax',)
         self.alfub = Constraint(info='line angle difference upper bound',
-                                name='alfub', type='uq',
+                                name='alfub', is_eq=False,
                                 e_str='CftT@aBus - amax',)
+        self.plfc = ExpressionCalc(info='plf calculation',
+                                   name='plfc', var='plf',
+                                   e_str='Bf@aBus + Pfinj')
 
         # --- objective ---
         obj = 'sum(mul(c2, power(pg, 2)))'
@@ -227,10 +227,16 @@ class DCOPF(RoutineBase):
         return RoutineBase.run(self, no_code=no_code, **kwargs)
 
     def _post_solve(self):
-        # --- post-solving calculations ---
-        # line flow: Bf@aBus + Pfinj
-        # using sparse matrix in MatProcessor is faster
-        self.plf.optz.value = self.system.mats.Bf._v@self.aBus.v + self.Pfinj.v
+        """
+        Post-solve calculations.
+        """
+        for expr in self.exprs.values():
+            try:
+                var = getattr(self, expr.var)
+                var.optz.value = expr.v
+                logger.debug(f'Post solve: {var} = {expr.e_str}')
+            except AttributeError:
+                raise AttributeError(f'No such variable {expr.var}')
         return True
 
     def unpack(self, **kwargs):

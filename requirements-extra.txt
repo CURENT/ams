@@ -11,6 +11,7 @@ pytest==7.4 #                   dev
 pytest-cov #                    dev
 coverage #                      dev
 flake8 #                        dev
+pyscipopt #                     dev
 ipython #                       dev, doc
 sphinx #                        dev, doc
 pydata-sphinx-theme #           dev, doc

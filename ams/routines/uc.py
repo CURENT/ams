@@ -47,9 +47,9 @@ class NSRBase:
 
         # NOTE: define e_str in dispatch model
         self.prnsb = Constraint(info='non-spinning reserve balance',
-                                name='prnsb', type='eq',)
+                                name='prnsb', is_eq=True,)
         self.rnsr = Constraint(info='non-spinning reserve requirement',
-                               name='rnsr', type='uq',)
+                               name='rnsr', is_eq=False,)
 
 
 class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
@@ -178,16 +178,16 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
                        name='zug', tex_name=r'z_{ug}',
                        model='StaticGen', pos=True,)
         # NOTE: actions have two parts: initial status and the rest
-        self.actv = Constraint(name='actv', type='eq',
+        self.actv = Constraint(name='actv', is_eq=True,
                                info='startup action',
                                e_str='ugd @ Mr - vgd[:, 1:]',)
-        self.actv0 = Constraint(name='actv0', type='eq',
+        self.actv0 = Constraint(name='actv0', is_eq=True,
                                 info='initial startup action',
                                 e_str='ugd[:, 0] - ug[:, 0]  - vgd[:, 0]',)
-        self.actw = Constraint(name='actw', type='eq',
+        self.actw = Constraint(name='actw', is_eq=True,
                                info='shutdown action',
                                e_str='-ugd @ Mr - wgd[:, 1:]',)
-        self.actw0 = Constraint(name='actw0', type='eq',
+        self.actw0 = Constraint(name='actw0', is_eq=True,
                                 info='initial shutdown action',
                                 e_str='-ugd[:, 0] + ug[:, 0] - wgd[:, 0]',)
 
@@ -214,24 +214,24 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
                           rfun=np.dot, rargs=dict(b=10),
                           array_out=False,)
         self.zuglb = Constraint(name='zuglb', info='zug lower bound',
-                                type='uq', e_str='- zug + pg')
+                                is_eq=False, e_str='- zug + pg')
         self.zugub = Constraint(name='zugub', info='zug upper bound',
-                                type='uq', e_str='zug - pg - Mzug dot (1 - ugd)')
+                                is_eq=False, e_str='zug - pg - Mzug dot (1 - ugd)')
         self.zugub2 = Constraint(name='zugub2', info='zug upper bound',
-                                 type='uq', e_str='zug - Mzug dot ugd')
+                                 is_eq=False, e_str='zug - Mzug dot ugd')
 
         # --- minimum ON/OFF duration ---
         self.Con = MinDur(u=self.pg, u2=self.td1,
                           name='Con', tex_name=r'T_{on}',
                           info='minimum ON coefficient',)
         self.don = Constraint(info='minimum online duration',
-                              name='don', type='uq',
+                              name='don', is_eq=False,
                               e_str='multiply(Con, vgd) - ugd')
         self.Coff = MinDur(u=self.pg, u2=self.td2,
                            name='Coff', tex_name=r'T_{off}',
                            info='minimum OFF coefficient',)
         self.doff = Constraint(info='minimum offline duration',
-                               name='doff', type='uq',
+                               name='doff', is_eq=False,
                                e_str='multiply(Coff, wgd) - (1 - ugd)')
 
         # --- line ---
@@ -253,7 +253,7 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
                           info='positive demand',
                           name='pdsp', tex_name=r'p_{d,s}^{+}',)
         self.pdumax = Constraint(info='unserved demand upper bound',
-                                 name='pdumax', type='uq',
+                                 name='pdumax', is_eq=False,
                                  e_str='pdu - mul(pdsp, dctrl@tlv)')
         # --- power balance ---
         # NOTE: nodal balance is also contributed by unserved load
@@ -306,19 +306,9 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         logger.warning(f'Turn off StaticGen {g_idx} as initial commitment guess.')
         return True
 
-    def _post_solve(self):
-        """
-        Overwrite ``_post_solve``.
-        """
-        # --- post-solving calculations ---
-        # line flow: Bf@aBus + Pfinj
-        mats = self.system.mats
-        self.plf.optz.value = mats.Bf._v@self.aBus.v + self.Pfinj.v@self.tlv.v
-        return True
-
-    def init(self, **kwargs):
+    def init(self, force=False, no_code=True, **kwargs):
         self._initial_guess()
-        return super().init(**kwargs)
+        return super().init(force=force, no_code=no_code, **kwargs)
 
     def dc2ac(self, **kwargs):
         """

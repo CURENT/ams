@@ -46,9 +46,9 @@ class SRBase:
 
         # NOTE: define e_str in dispatch model
         self.prsb = Constraint(info='spinning reserve balance',
-                               name='prsb', type='eq',)
+                               name='prsb', is_eq=True,)
         self.rsr = Constraint(info='spinning reserve requirement',
-                              name='rsr', type='uq',)
+                              name='rsr', is_eq=False,)
 
 
 class MPBase:
@@ -109,7 +109,7 @@ class MPBase:
         self.aBus.info = '2D Bus angle'
 
 
-class ED(RTED):
+class ED(RTED, MPBase, SRBase):
     """
     DC-based multi-period economic dispatch (ED).
     Dispath interval ``config.t`` (:math:`T_{cfg}`) is introduced,
@@ -184,6 +184,8 @@ class ED(RTED):
         self.alflb.e_str = '-CftT@aBus - amax@tlv'
         self.alfub.e_str = 'CftT@aBus - amax@tlv'
 
+        self.plfc.e_str = 'Bf@aBus + Pfinj@tlv'
+
         # --- power balance ---
         self.pb.e_str = 'Bbus@aBus + Pbusinj@tlv + Cl@pds + Csh@gsh@tlv - Cg@pg'
 
@@ -200,27 +202,17 @@ class ED(RTED):
         self.rgu0 = Constraint(name='rgu0',
                                info='Initial gen ramping up',
                                e_str='pg[:, 0] - pg0[:, 0] - R30',
-                               type='uq',)
+                               is_eq=False,)
         self.rgd0 = Constraint(name='rgd0',
                                info='Initial gen ramping down',
                                e_str='- pg[:, 0] + pg0[:, 0] - R30',
-                               type='uq',)
+                               is_eq=False,)
 
         # --- objective ---
         cost = 'sum(t**2 dot c2 @ pg**2)'
         cost += '+ t dot sum(c1 @ pg + csr @ prs)'
         cost += '+ sum(mul(ugt, mul(c0, tlv)))'
         self.obj.e_str = cost
-
-    def _post_solve(self):
-        """
-        Overwrite ``_post_solve``.
-        """
-        # --- post-solving calculations ---
-        # line flow: Bf@aBus + Pfinj
-        mats = self.system.mats
-        self.plf.optz.value = mats.Bf._v@self.aBus.v + self.Pfinj.v@self.tlv.v
-        return True
 
     def dc2ac(self, **kwargs):
         """
@@ -287,11 +279,11 @@ class ESD1MPBase(ESD1Base):
 
         SOCb0 = 'mul(En, SOC[:, 0] - SOCinit) - t dot mul(EtaC, zce[:, 0])'
         SOCb0 += ' + t dot mul(REtaD, zde[:, 0])'
-        self.SOCb0 = Constraint(name='SOCb0', type='eq',
+        self.SOCb0 = Constraint(name='SOCb0', is_eq=True,
                                 info='ESD1 SOC initial balance',
                                 e_str=SOCb0,)
 
-        self.SOCr = Constraint(name='SOCr', type='eq',
+        self.SOCr = Constraint(name='SOCr', is_eq=True,
                                info='SOC requirement',
                                e_str='SOC[:, -1] - SOCinit',)
 

@@ -64,10 +64,10 @@ class DOPF(DCOPF):
         self.qg = Var(info='Gen reactive power',
                       name='qg', tex_name=r'q_{g}', unit='p.u.',
                       model='StaticGen', src='q',)
-        self.qglb = Constraint(name='qglb', type='uq',
+        self.qglb = Constraint(name='qglb', is_eq=False,
                                info='qg min',
                                e_str='-qg + mul(ug, qmin)',)
-        self.qgub = Constraint(name='qgub', type='uq',
+        self.qgub = Constraint(name='qgub', is_eq=False,
                                info='qg max',
                                e_str='qg - mul(ug, qmax)',)
         # --- bus ---
@@ -81,23 +81,23 @@ class DOPF(DCOPF):
         self.vu = Constraint(name='vu',
                              info='Voltage upper limit',
                              e_str='vsq - vmax**2',
-                             type='uq',)
+                             is_eq=False,)
         self.vl = Constraint(name='vl',
                              info='Voltage lower limit',
                              e_str='-vsq + vmin**2',
-                             type='uq',)
+                             is_eq=False,)
         # --- line ---
         self.qlf = Var(info='line reactive power',
                        name='qlf', tex_name=r'q_{lf}',
                        unit='p.u.', model='Line',)
         self.lvd = Constraint(info='line voltage drop',
-                              name='lvd', type='eq',
+                              name='lvd', is_eq=True,
                               e_str='CftT@vsq - (r * plf + x * qlf)',)
         # --- power balance ---
         # NOTE: following Eqn seems to be wrong, double check
         # g_Q(\Theta, V, Q_g) = B_{bus}V\Theta + Q_{bus,shift} + Q_d + B_{sh} - C_gQ_g = 0
         self.qb = Constraint(info='reactive power balance',
-                             name='qb', type='eq',
+                             name='qb', is_eq=True,
                              e_str='sum(qd) - sum(qg)',)
 
         # --- objective ---
