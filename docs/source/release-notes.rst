@@ -12,6 +12,7 @@ Pre-v1.0.0
 v0.9.2 (2024-xx-xx)
 -------------------
 
+- Add demo_AGC to demonstrate detailed SFR study
 - Add ``ExpressionCalc`` to handle post-solving calculation
 - Rename ``type='eq'`` to ``is_eq=False`` in ``Constraint`` to avoid overriding built-in attribute
 - Several formatting improvements
