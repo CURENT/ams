@@ -17,7 +17,6 @@ from ams.routines import routine_cli
 logger = logging.getLogger(__name__)
 
 command_aliases = {
-    'prepare': ['prep'],
     'selftest': ['st'],
 }
 
@@ -41,10 +40,8 @@ def create_parser():
         type=int, default=20, choices=(1, 10, 20, 30, 40))
 
     sub_parsers = parser.add_subparsers(dest='command', help='[run] run simulation routine; '
-                                                             '[plot] plot results; '
                                                              '[doc] quick documentation; '
                                                              '[misc] misc. functions; '
-                                                             '[prepare] prepare the numerical code; '
                                                              '[selftest] run self test; '
                                         )
 
@@ -76,10 +73,7 @@ def create_parser():
                      type=str, default='', nargs='*')
 
     doc = sub_parsers.add_parser('doc')
-    # TODO: fit to AMS
-    # doc.add_argument('attribute', help='System attribute name to get documentation', nargs='?')
-    # doc.add_argument('--config', '-c', help='Config help')
-    doc.add_argument('--list', '-l', help='List supported models and groups', action='store_true',
+    doc.add_argument('--list', '-l', help='List supported routines', action='store_true',
                      dest='list_supported')
 
     misc = sub_parsers.add_parser('misc')
@@ -92,15 +86,9 @@ def create_parser():
     misc.add_argument('-C', '--clean', help='Clean output files', action='store_true')
     misc.add_argument('-r', '--recursive', help='Recursively clean outputs (combined useage with --clean)',
                       action='store_true')
-    # TODO: fit to AMS
-    misc.add_argument('-O', '--config-option',
-                      help='Set configuration option specificied by '
-                      'NAME.FIELD=VALUE with no space. For example, "TDS.tf=2"',
-                      type=str, default='', nargs='*')
     misc.add_argument('--version', action='store_true', help='Display version information')
 
-    # TODO: add quick or extra options for selftest
-    selftest = sub_parsers.add_parser('selftest', aliases=command_aliases['selftest'])  # NOQA
+    sub_parsers.add_parser('selftest', aliases=command_aliases['selftest'])  # NOQA
 
     return parser
 
@@ -139,7 +127,7 @@ def main():
 
     module = importlib.import_module('ams.main')
 
-    if args.command in ('plot', 'doc', 'misc'):
+    if args.command in ('doc', 'misc'):
         pass
     elif args.command == 'run' and args.no_preamble is True:
         pass

@@ -287,9 +287,9 @@ class RDocumenter:
         if export == 'rest':
             for p in self.constrs.values():
                 expr = _tex_pre(self, p, self.parent.syms.tex_map)
-                if p.type == 'eq':
+                if p.is_eq:
                     expr = f'{expr} = 0'
-                elif p.type == 'uq':
+                else:
                     expr = f'{expr} \\leq 0'
                 logger.debug(f'{p.name} math: {expr}')
                 expressions.append(expr)

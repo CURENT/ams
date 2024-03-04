@@ -6,6 +6,7 @@ import logging
 from typing import Any, Optional, Union
 from collections import OrderedDict
 import re
+import ast
 
 import numpy as np
 import scipy.sparse as spr
@@ -168,8 +169,8 @@ class Param(OptzBase):
         True to set the parameter as non-negative.
     nonpos: bool, optional
         True to set the parameter as non-positive.
-    complex: bool, optional
-        True to set the parameter as complex.
+    cplx: bool, optional
+        True to set the parameter as complex, avoiding the use of `complex`.
     imag: bool, optional
         True to set the parameter as imaginary.
     symmetric: bool, optional
@@ -197,7 +198,7 @@ class Param(OptzBase):
                  no_parse: Optional[bool] = False,
                  nonneg: Optional[bool] = False,
                  nonpos: Optional[bool] = False,
-                 complex: Optional[bool] = False,
+                 cplx: Optional[bool] = False,
                  imag: Optional[bool] = False,
                  symmetric: Optional[bool] = False,
                  diag: Optional[bool] = False,
@@ -216,7 +217,7 @@ class Param(OptzBase):
 
         self.config.add(OrderedDict((('nonneg', nonneg),
                                      ('nonpos', nonpos),
-                                     ('complex', complex),
+                                     ('complex', cplx),
                                      ('imag', imag),
                                      ('symmetric', symmetric),
                                      ('diag', diag),
@@ -299,7 +300,7 @@ class Var(OptzBase):
         Non-negative variable
     nonpos : bool, optional
         Non-positive variable
-    complex : bool, optional
+    cplx : bool, optional
         Complex variable
     imag : bool, optional
         Imaginary variable
@@ -344,7 +345,7 @@ class Var(OptzBase):
                  horizon=None,
                  nonneg: Optional[bool] = False,
                  nonpos: Optional[bool] = False,
-                 complex: Optional[bool] = False,
+                 cplx: Optional[bool] = False,
                  imag: Optional[bool] = False,
                  symmetric: Optional[bool] = False,
                  diag: Optional[bool] = False,
@@ -380,7 +381,7 @@ class Var(OptzBase):
 
         self.config.add(OrderedDict((('nonneg', nonneg),
                                      ('nonpos', nonpos),
-                                     ('complex', complex),
+                                     ('complex', cplx),
                                      ('imag', imag),
                                      ('symmetric', symmetric),
                                      ('diag', diag),
@@ -486,9 +487,9 @@ class Constraint(OptzBase):
         A mathematical expression representing the constraint.
     info : str, optional
         Additional informational text about the constraint.
-    type : str, optional
-        The type of constraint, which determines the mathematical relationship.
-        Possible values include 'uq' (inequality, default) and 'eq' (equality).
+    is_eq : str, optional
+        Flag indicating if the constraint is an equality constraint. False indicates
+        an inequality constraint in the form of `<= 0`.
 
     Attributes
     ----------
@@ -502,11 +503,11 @@ class Constraint(OptzBase):
                  name: Optional[str] = None,
                  e_str: Optional[str] = None,
                  info: Optional[str] = None,
-                 type: Optional[str] = 'uq',
+                 is_eq: Optional[str] = False,
                  ):
         OptzBase.__init__(self, name=name, info=info)
         self.e_str = e_str
-        self.type = type
+        self.is_eq = is_eq
         self.is_disabled = False
         self.dual = None
         self.code = None
@@ -536,11 +537,9 @@ class Constraint(OptzBase):
         self.code = code_constr
         # parse the constraint type
         code_constr = "self.optz=" + code_constr
-        if self.type not in ['uq', 'eq']:
-            raise ValueError(f'Constraint type {self.type} is not supported.')
-        code_constr += " <= 0" if self.type == 'uq' else " == 0"
+        code_constr += " == 0" if self.is_eq else " <= 0"
         msg = f"Parse Constr <{self.name}>: {self.e_str} "
-        msg += " <= 0" if self.type == 'uq' else " == 0"
+        msg += " == 0" if self.is_eq else " <= 0"
         logger.debug(msg)
         if not no_code:
             logger.info(f"<{self.name}> code: {code_constr}")
@@ -576,7 +575,7 @@ class Constraint(OptzBase):
 
         try:
             logger.debug(f"Value code: {code}")
-            out = eval(code)
+            out = ast.literal_eval(code)
             return out
         except Exception as e:
             logger.error(f"Error in calculating constr <{self.name}>.")
@@ -664,7 +663,7 @@ class Objective(OptzBase):
 
         try:
             logger.debug(f"Value code: {code}")
-            out = eval(code)
+            out = ast.literal_eval(code)
             return out
         except Exception as e:
             logger.error(f"Error in calculating obj <{self.name}>.")

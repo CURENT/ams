@@ -13,6 +13,8 @@ v0.9.2 (2024-xx-xx)
 -------------------
 
 - Add ``ExpressionCalc`` to handle post-solving calculation
+- Rename ``type='eq'`` to ``is_eq=False`` in ``Constraint`` to avoid overriding built-in attribute
+- Several formatting improvements
 
 v0.9.1 (2024-03-02)
 -------------------

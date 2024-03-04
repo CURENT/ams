@@ -152,7 +152,7 @@ class ACOPF(ACOPFBase):
         self.pb = Constraint(name='pb',
                              info='power balance',
                              e_str='sum(pd) - sum(pg)',
-                             type='eq',)
+                             is_eq=True,)
         # TODO: ACOPF formulation
         # --- objective ---
         self.obj = Objective(name='obj',

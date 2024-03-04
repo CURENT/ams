@@ -16,7 +16,6 @@ from andes.variables import FileMan
 
 from andes.utils.misc import elapsed
 from andes.utils.tab import Tab
-from andes.shared import (matrix, np, sparse, spmatrix)  # NOQA
 
 import ams.io
 from ams.models.group import GroupBase
@@ -558,11 +557,11 @@ class System(andes_System):
         out.append(f"Active load: {pd:,.2f} p.u.; Reactive load: {qd:,.2f} p.u.")
 
         out.append("-> Data check results:")
-        for type, names in rtn_types.items():
+        for rtn_type, names in rtn_types.items():
             if len(names) == 0:
                 continue
             names = ", ".join(names)
-            out.append(f"{type}: {names}")
+            out.append(f"{rtn_type}: {names}")
 
         out_str = '\n'.join(out)
         logger.info(out_str)

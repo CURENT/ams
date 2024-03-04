@@ -137,10 +137,10 @@ class DCOPF(RoutineBase):
                       v0=self.pg0)
         pglb = '-pg + mul(nctrle, pg0) + mul(ctrle, pmin)'
         self.pglb = Constraint(name='pglb', info='pg min',
-                               e_str=pglb, type='uq',)
+                               e_str=pglb, is_eq=False,)
         pgub = 'pg - mul(nctrle, pg0) - mul(ctrle, pmax)'
         self.pgub = Constraint(name='pgub', info='pg max',
-                               e_str=pgub, type='uq',)
+                               e_str=pgub, is_eq=False,)
         # --- bus ---
         self.aBus = Var(info='Bus voltage angle',
                         unit='rad',
@@ -149,23 +149,23 @@ class DCOPF(RoutineBase):
         # --- power balance ---
         pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
         self.pb = Constraint(name='pb', info='power balance',
-                             e_str=pb, type='eq',)
+                             e_str=pb, is_eq=True,)
         # --- line flow ---
         self.plf = Var(info='Line flow',
                        unit='p.u.',
                        name='plf', tex_name=r'p_{lf}',
                        model='Line',)
         self.plflb = Constraint(info='line flow lower bound',
-                                name='plflb', type='uq',
+                                name='plflb', is_eq=False,
                                 e_str='-Bf@aBus - Pfinj - rate_a',)
         self.plfub = Constraint(info='line flow upper bound',
-                                name='plfub', type='uq',
+                                name='plfub', is_eq=False,
                                 e_str='Bf@aBus + Pfinj - rate_a',)
         self.alflb = Constraint(info='line angle difference lower bound',
-                                name='alflb', type='uq',
+                                name='alflb', is_eq=False,
                                 e_str='-CftT@aBus - amax',)
         self.alfub = Constraint(info='line angle difference upper bound',
-                                name='alfub', type='uq',
+                                name='alfub', is_eq=False,
                                 e_str='CftT@aBus - amax',)
         self.plfc = ExpressionCalc(info='plf calculation',
                                    name='plfc', var='plf',

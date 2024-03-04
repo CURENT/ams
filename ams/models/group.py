@@ -1,8 +1,7 @@
 import logging  # NOQA
 
 from andes.models.group import GroupBase as andes_GroupBase
-
-from ams.core.service import BackRef
+from andes.core.service import BackRef
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +54,7 @@ class GroupBase(andes_GroupBase):
         Disable debug logging in dispath modeling.
         """
         if src not in self.common_vars + self.common_params:
-            pass
-            # logger.debug(f'Group <{self.class_name}> does not share property <{src}>.')
+            logger.debug(f'Group <{self.class_name}> does not share property <{src}>.')
 
     def __repr__(self):
         dev_text = 'device' if self.n == 1 else 'devices'
@@ -91,7 +89,9 @@ class Undefined(GroupBase):
     """
     The undefined group. Holds models with no ``group``.
     """
-    pass
+
+    def __init__(self):
+        super().__init__()
 
 
 class ACTopology(GroupBase):
@@ -166,7 +166,9 @@ class Collection(GroupBase):
     """
     Collection of topology models
     """
-    pass
+
+    def __init__(self):
+        super().__init__()
 
 
 class Horizon(GroupBase):
