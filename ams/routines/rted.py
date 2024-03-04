@@ -217,8 +217,8 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.addVars(name='vBus',
                      info='Bus voltage', unit='p.u.', 
                      model='Bus', src='v',)
-        # FIXME: vBus value setting is differnt from aBus, bad implementation
-        self.vBus.v = ACOPF.vBus.v
+        self.vBus.parse()
+        self.vBus.optz.value = ACOPF.vBus.v
         self.aBus.optz.value = ACOPF.aBus.v
 
         # reset pmin, pmax, p0
