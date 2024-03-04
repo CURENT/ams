@@ -30,3 +30,4 @@ folder of the repository
    :caption: Demonstration
 
    ../_examples/demo/demo_ESD1.ipynb
+   ../_examples/demo/demo_AGC.ipynb
