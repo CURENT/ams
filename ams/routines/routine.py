@@ -382,7 +382,7 @@ class RoutineBase:
             n_iter = int(sstats.num_iters)
         n_iter_str = f"{n_iter} iterations " if n_iter > 1 else f"{n_iter} iteration "
         if self.exit_code == 0:
-            msg = f"{self.class_name} solved as {status} in {s}, converged after "
+            msg = f"<{self.class_name}> solved as {status} in {s}, converged after "
             msg += n_iter_str + f"using solver {sstats.solver_name}."
             logger.warning(msg)
             self.unpack(**kwargs)
