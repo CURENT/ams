@@ -575,7 +575,7 @@ class RoutineBase:
         if mat_make:
             self.system.mats.make()
         if re_setup:
-            logger.warning(f"Re-init {self.class_name} OModel due to non-parametric change.")
+            logger.warning(f"Re-init <{self.class_name}> OModel due to non-parametric change.")
             _ = self.om.init(no_code=True)
         results = self.om.update(params=sparams)
         t0, s0 = elapsed(t0)
