@@ -228,7 +228,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.system.recent = self
 
         self.is_ac = True
-        logger.warning(f'<{self.class_name}> is converted to AC.')
+        logger.warning(f'<{self.class_name}> converted to AC.')
         return True
 
     def run(self, no_code=True, **kwargs):
