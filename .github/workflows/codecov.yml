@@ -1,14 +1,6 @@
 name: Code coverage
 
-on:
-  push:
-    branches:
-      - master
-      - develop
-  pull_request:
-    branches:
-      - master
-      - develop
+on: [push, pull_request]
 
 jobs:
   build:
@@ -16,6 +8,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Exit if the branch is misc
+      run: |
+        if [[ "${{ github.ref }}" == "refs/heads/misc" ]]; then
+          echo "Branch is misc, exiting."
+          exit 0
+        fi
     - uses: actions/checkout@v4
     - uses: conda-incubator/setup-miniconda@v3
       with:
