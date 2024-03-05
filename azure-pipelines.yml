@@ -19,6 +19,8 @@ jobs:
       Python311:
         python.version: '3.11'
 
+    if: ${{ github.ref != 'refs/heads/misc' }}
+
   steps:
   - task: UsePythonVersion@0
     inputs:

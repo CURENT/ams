@@ -12,13 +12,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    if: ${{ github.ref != 'refs/heads/misc' }}
+
     steps:
-    - name: Exit if the branch is misc
-      run: |
-        if [[ "${{ github.ref }}" == "refs/heads/misc" ]]; then
-          echo "Branch is misc, exiting."
-          exit 0
-        fi
     - uses: actions/checkout@v4
     - uses: conda-incubator/setup-miniconda@v3
       with:
