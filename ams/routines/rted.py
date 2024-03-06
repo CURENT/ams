@@ -211,7 +211,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
             self.vBus.optz.value = np.ones(self.system.Bus.n)
             self.aBus.optz.value = np.zeros(self.system.Bus.n)
             return False
-        self.pg.v = ACOPF.pg.v
+        self.pg.optz.value = ACOPF.pg.v
 
         # NOTE: mock results to fit interface with ANDES
         self.addVars(name='vBus',
