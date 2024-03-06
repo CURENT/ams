@@ -74,65 +74,6 @@ class RoutineBase:
     def class_name(self):
         return self.__class__.__name__
 
-    def _loc(self, src: str, idx, allow_none=False):
-        """
-        Helper function to index a variable or parameter in a routine.
-        """
-        src_idx = self.__dict__[src].get_idx()
-        loc = [src_idx.index(idxe) if idxe in src_idx else None for idxe in idx]
-        if None not in loc:
-            return loc
-        else:
-            idx_none = [idxe for idxe in idx if idxe not in src_idx]
-            msg = f"Var <{self.class_name}.{src}> does not contain value with idx={idx_none}"
-            raise ValueError(msg)
-
-    def get_load(self, horizon: Union[int, str],
-                 src: str, attr: str = 'v',
-                 idx=None, model: str = 'EDTSlot', factor: str = 'sd',):
-        """
-        Get the load value by applying zonal scaling factor defined in ``Horizon``.
-
-        Parameters
-        ----------
-        idx: int, str, or list
-            Index of the desired load.
-        attr: str
-            Attribute name.
-        model: str
-            Scaling factor owner, ``EDTSlot`` or ``UCTSlot``.
-        factor: str
-            Scaling factor name, usually ``sd``.
-        horizon: int or str
-            Horizon single index.
-        """
-        all_zone = self.system.Region.idx.v
-        if idx is None:
-            pq_zone = self.system.PQ.zone.v
-            pq0 = self.system.PQ.get(src=src, attr=attr, idx=idx)
-        else:
-            pq_zone = self.system.PQ.get(src="zone", attr="v", idx=idx)
-            pq0 = self.system.PQ.get(src=src, attr=attr, idx=idx)
-        col = [all_zone.index(pq_z) for pq_z in pq_zone]
-
-        mdl = self.system.__dict__[model]
-        if mdl.n == 0:
-            raise ValueError(f"<{model}> does not have data, check input file.")
-        if factor not in mdl.__dict__.keys():
-            raise ValueError(f"<{model}> does not have <{factor}>.")
-        sdv = mdl.__dict__[factor].v
-
-        horizon_all = mdl.idx.v
-        try:
-            row = horizon_all.index(horizon)
-        except ValueError as e:
-            msg = f"<{model}> does not have horizon with idx=<{horizon}>. "
-            msg += f"Original error: {e}"
-            raise ValueError(msg)
-        pq_factor = np.array(sdv[:, col][row, :])
-        pqv = np.multiply(pq0, pq_factor)
-        return pqv
-
     def get(self, src: str, idx, attr: str = 'v',
             horizon: Optional[Union[int, str, Iterable]] = None):
         """
