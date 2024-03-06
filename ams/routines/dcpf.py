@@ -138,14 +138,14 @@ class DCPFlowBase(RoutineBase):
         n_iter = int(sstats['num_iters'])
         n_iter_str = f"{n_iter} iterations " if n_iter > 1 else f"{n_iter} iteration "
         if self.exit_code == 0:
-            msg = f"{self.class_name} solved in {s}, converged after "
-            msg += n_iter_str + f"using solver {sstats['solver_name']}."
+            msg = f"<{self.class_name}> solved in {s}, converged in "
+            msg += n_iter_str + f"with {sstats['solver_name']}."
             logger.info(msg)
             self.unpack(res)
             return True
         else:
-            msg = f"{self.class_name} failed after "
-            msg += f"{int(sstats['num_iters'])} iterations using solver "
+            msg = f"{self.class_name} failed in "
+            msg += f"{int(sstats['num_iters'])} iterations with "
             msg += f"{sstats['solver_name']}!"
             logger.warning(msg)
             return False

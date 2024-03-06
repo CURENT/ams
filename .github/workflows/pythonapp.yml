@@ -12,6 +12,8 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    if: ${{ github.ref != 'refs/heads/misc' }}
+
     steps:
     - uses: actions/checkout@v4
     - uses: conda-incubator/setup-miniconda@v3

@@ -74,65 +74,6 @@ class RoutineBase:
     def class_name(self):
         return self.__class__.__name__
 
-    def _loc(self, src: str, idx, allow_none=False):
-        """
-        Helper function to index a variable or parameter in a routine.
-        """
-        src_idx = self.__dict__[src].get_idx()
-        loc = [src_idx.index(idxe) if idxe in src_idx else None for idxe in idx]
-        if None not in loc:
-            return loc
-        else:
-            idx_none = [idxe for idxe in idx if idxe not in src_idx]
-            msg = f"Var <{self.class_name}.{src}> does not contain value with idx={idx_none}"
-            raise ValueError(msg)
-
-    def get_load(self, horizon: Union[int, str],
-                 src: str, attr: str = 'v',
-                 idx=None, model: str = 'EDTSlot', factor: str = 'sd',):
-        """
-        Get the load value by applying zonal scaling factor defined in ``Horizon``.
-
-        Parameters
-        ----------
-        idx: int, str, or list
-            Index of the desired load.
-        attr: str
-            Attribute name.
-        model: str
-            Scaling factor owner, ``EDTSlot`` or ``UCTSlot``.
-        factor: str
-            Scaling factor name, usually ``sd``.
-        horizon: int or str
-            Horizon single index.
-        """
-        all_zone = self.system.Region.idx.v
-        if idx is None:
-            pq_zone = self.system.PQ.zone.v
-            pq0 = self.system.PQ.get(src=src, attr=attr, idx=idx)
-        else:
-            pq_zone = self.system.PQ.get(src="zone", attr="v", idx=idx)
-            pq0 = self.system.PQ.get(src=src, attr=attr, idx=idx)
-        col = [all_zone.index(pq_z) for pq_z in pq_zone]
-
-        mdl = self.system.__dict__[model]
-        if mdl.n == 0:
-            raise ValueError(f"<{model}> does not have data, check input file.")
-        if factor not in mdl.__dict__.keys():
-            raise ValueError(f"<{model}> does not have <{factor}>.")
-        sdv = mdl.__dict__[factor].v
-
-        horizon_all = mdl.idx.v
-        try:
-            row = horizon_all.index(horizon)
-        except ValueError as e:
-            msg = f"<{model}> does not have horizon with idx=<{horizon}>. "
-            msg += f"Original error: {e}"
-            raise ValueError(msg)
-        pq_factor = np.array(sdv[:, col][row, :])
-        pqv = np.multiply(pq0, pq_factor)
-        return pqv
-
     def get(self, src: str, idx, attr: str = 'v',
             horizon: Optional[Union[int, str, Iterable]] = None):
         """
@@ -314,7 +255,7 @@ class RoutineBase:
             om_init = True
         _, s_init = elapsed(t0)
 
-        msg = f"Routine <{self.class_name}> "
+        msg = f"<{self.class_name}> "
         if om_init:
             msg += f"initialized in {s_init}."
             self.initialized = True
@@ -382,15 +323,15 @@ class RoutineBase:
             n_iter = int(sstats.num_iters)
         n_iter_str = f"{n_iter} iterations " if n_iter > 1 else f"{n_iter} iteration "
         if self.exit_code == 0:
-            msg = f"{self.class_name} solved as {status} in {s}, converged after "
-            msg += n_iter_str + f"using solver {sstats.solver_name}."
+            msg = f"<{self.class_name}> solved as {status} in {s}, converged in "
+            msg += n_iter_str + f"with {sstats.solver_name}."
             logger.warning(msg)
             self.unpack(**kwargs)
             self._post_solve()
             return True
         else:
-            msg = f"{self.class_name} failed as {status} after "
-            msg += n_iter_str + f"using solver {sstats.solver_name}!"
+            msg = f"{self.class_name} failed as {status} in "
+            msg += n_iter_str + f"with {sstats.solver_name}!"
             logger.warning(msg)
             return False
 
@@ -575,7 +516,7 @@ class RoutineBase:
         if mat_make:
             self.system.mats.make()
         if re_setup:
-            logger.warning(f"Re-init {self.class_name} OModel due to non-parametric change.")
+            logger.warning(f"<{self.class_name}> reinit OModel due to non-parametric change.")
             _ = self.om.init(no_code=True)
         results = self.om.update(params=sparams)
         t0, s0 = elapsed(t0)

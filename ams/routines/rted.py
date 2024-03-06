@@ -211,7 +211,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
             self.vBus.optz.value = np.ones(self.system.Bus.n)
             self.aBus.optz.value = np.zeros(self.system.Bus.n)
             return False
-        self.pg.v = ACOPF.pg.v
+        self.pg.optz.value = ACOPF.pg.v
 
         # NOTE: mock results to fit interface with ANDES
         self.addVars(name='vBus',
@@ -228,7 +228,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.system.recent = self
 
         self.is_ac = True
-        logger.warning(f'<{self.class_name}> is converted to AC.')
+        logger.warning(f'<{self.class_name}> converted to AC.')
         return True
 
     def run(self, no_code=True, **kwargs):

@@ -3,7 +3,7 @@
 PYPOWER
 --------
 
-AMS includes `PYPOWER cases <https://github.com/jinningwang/ams/tree/develop/ams/cases/pypower>`_
+AMS includes `PYPOWER cases <https://github.com/CURENT/ams/tree/develop/ams/cases/pypower>`_
 in version 2 for dispatch modeling and analysis. PYPOWER cases follow the same format as MATPOWER.
 
 The PYPOWER case is defined as a Python dictionary that includes ``bus``, ``gen``, ``branch``,
