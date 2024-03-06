@@ -74,19 +74,6 @@ class RoutineBase:
     def class_name(self):
         return self.__class__.__name__
 
-    def _loc(self, src: str, idx, allow_none=False):
-        """
-        Helper function to index a variable or parameter in a routine.
-        """
-        src_idx = self.__dict__[src].get_idx()
-        loc = [src_idx.index(idxe) if idxe in src_idx else None for idxe in idx]
-        if None not in loc:
-            return loc
-        else:
-            idx_none = [idxe for idxe in idx if idxe not in src_idx]
-            msg = f"Var <{self.class_name}.{src}> does not contain value with idx={idx_none}"
-            raise ValueError(msg)
-
     def get_load(self, horizon: Union[int, str],
                  src: str, attr: str = 'v',
                  idx=None, model: str = 'EDTSlot', factor: str = 'sd',):
