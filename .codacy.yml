@@ -12,3 +12,4 @@ exclude_paths:
   - "CODE_OF_CONDUCT.md"
   - "tests/**"
   - "docs/**"
+  - "examples/**"
