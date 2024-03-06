@@ -314,7 +314,7 @@ class RoutineBase:
             om_init = True
         _, s_init = elapsed(t0)
 
-        msg = f"Routine <{self.class_name}> "
+        msg = f"<{self.class_name}> "
         if om_init:
             msg += f"initialized in {s_init}."
             self.initialized = True
@@ -382,15 +382,15 @@ class RoutineBase:
             n_iter = int(sstats.num_iters)
         n_iter_str = f"{n_iter} iterations " if n_iter > 1 else f"{n_iter} iteration "
         if self.exit_code == 0:
-            msg = f"{self.class_name} solved as {status} in {s}, converged after "
-            msg += n_iter_str + f"using solver {sstats.solver_name}."
+            msg = f"<{self.class_name}> solved as {status} in {s}, converged in "
+            msg += n_iter_str + f"with {sstats.solver_name}."
             logger.warning(msg)
             self.unpack(**kwargs)
             self._post_solve()
             return True
         else:
-            msg = f"{self.class_name} failed as {status} after "
-            msg += n_iter_str + f"using solver {sstats.solver_name}!"
+            msg = f"{self.class_name} failed as {status} in "
+            msg += n_iter_str + f"with {sstats.solver_name}!"
             logger.warning(msg)
             return False
 
@@ -575,7 +575,7 @@ class RoutineBase:
         if mat_make:
             self.system.mats.make()
         if re_setup:
-            logger.warning(f"Re-init {self.class_name} OModel due to non-parametric change.")
+            logger.warning(f"<{self.class_name}> reinit OModel due to non-parametric change.")
             _ = self.om.init(no_code=True)
         results = self.om.update(params=sparams)
         t0, s0 = elapsed(t0)

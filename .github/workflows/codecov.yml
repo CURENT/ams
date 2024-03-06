@@ -1,19 +1,13 @@
 name: Code coverage
 
-on:
-  push:
-    branches:
-      - master
-      - develop
-  pull_request:
-    branches:
-      - master
-      - develop
+on: [push, pull_request]
 
 jobs:
   build:
     name: Report coverage
     runs-on: ubuntu-latest
+
+    if: ${{ github.ref != 'refs/heads/misc' }}
 
     steps:
     - uses: actions/checkout@v4
