@@ -6,8 +6,6 @@ Python Software for Power System Dispatch Modeling and Co-Simulation with Dynani
 ![platforms](https://anaconda.org/conda-forge/ltbams/badges/platforms.svg)
 [![Python Versions](https://img.shields.io/badge/Python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/)
 ![Repo Size](https://img.shields.io/github/repo-size/CURENT/ams)
-![Code Lines](https://tokei.rs/b1/github/CURENT/ams?category=code)
-![Files](https://tokei.rs/b1/github/CURENT/ams?category=files)
 [![GitHub last commit (master)](https://img.shields.io/github/last-commit/CURENT/ams/master?label=last%20commit%20to%20master)](https://github.com/CURENT/ams/commits/master/)
 [![GitHub last commit (develop)](https://img.shields.io/github/last-commit/CURENT/ams/develop?label=last%20commit%20to%20develop)](https://github.com/CURENT/ams/commits/develop/)
 [![HitCount](https://hits.dwyl.com/CURENT/ams.svg)](https://hits.dwyl.com/CURENT/ams)
