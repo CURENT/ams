@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 class DCOPF(RoutineBase):
     """
     DC optimal power flow (DCOPF).
+
+    Note that Var ``pi`` is the dual variable of the power balance constraint ``pb``.
     """
 
     def __init__(self, system, config):
@@ -146,6 +148,10 @@ class DCOPF(RoutineBase):
                         unit='rad',
                         name='aBus', tex_name=r'\theta_{bus}',
                         model='Bus', src='a',)
+        self.pi = Var(info='dual of power balance constr pb',
+                      name='pi', tex_name=r'\pi',
+                      unit='$/p.u.',
+                      model='Bus',)
         # --- power balance ---
         pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
         self.pb = Constraint(name='pb', info='power balance',
@@ -170,6 +176,10 @@ class DCOPF(RoutineBase):
         self.plfc = ExpressionCalc(info='plf calculation',
                                    name='plfc', var='plf',
                                    e_str='Bf@aBus + Pfinj')
+        # NOTE: in CVXPY, dual_variables returns a list
+        self.pic = ExpressionCalc(info='pi calculation',
+                                  name='pic', var='pi',
+                                  e_str='pb.dual_variables[0]')
 
         # --- objective ---
         obj = 'sum(mul(c2, power(pg, 2)))'
