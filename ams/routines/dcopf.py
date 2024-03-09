@@ -18,8 +18,6 @@ logger = logging.getLogger(__name__)
 class DCOPF(RoutineBase):
     """
     DC optimal power flow (DCOPF).
-
-    Note that Var ``pi`` is the dual variable of the power balance constraint ``pb``.
     """
 
     def __init__(self, system, config):
@@ -104,6 +102,10 @@ class DCOPF(RoutineBase):
                          name='Cl', tex_name=r'C_{l}',
                          model='mats', src='Cl',
                          no_parse=True, sparse=True,)
+        self.Cft = RParam(info='Line connection matrix',
+                            name='Cft', tex_name=r'C_{ft}',
+                            model='mats', src='Cft',
+                            no_parse=True, sparse=True,)
         self.CftT = RParam(info='Transpose of line connection matrix',
                            name='CftT', tex_name=r'C_{ft}^T',
                            model='mats', src='CftT',
@@ -148,7 +150,7 @@ class DCOPF(RoutineBase):
                         unit='rad',
                         name='aBus', tex_name=r'\theta_{bus}',
                         model='Bus', src='a',)
-        self.pi = Var(info='dual of power balance constr pb',
+        self.pi = Var(info='nodal price',
                       name='pi', tex_name=r'\pi',
                       unit='$/p.u.',
                       model='Bus',)
@@ -177,9 +179,11 @@ class DCOPF(RoutineBase):
                                    name='plfc', var='plf',
                                    e_str='Bf@aBus + Pfinj')
         # NOTE: in CVXPY, dual_variables returns a list
+        pic = 'pb.dual_variables[0] '
+        pic += '+ Cft @ (plfub.dual_variables[0] + plflb.dual_variables[0])'
         self.pic = ExpressionCalc(info='pi calculation',
                                   name='pic', var='pi',
-                                  e_str='pb.dual_variables[0]')
+                                  e_str=pic)
 
         # --- objective ---
         obj = 'sum(mul(c2, pg**2))'
