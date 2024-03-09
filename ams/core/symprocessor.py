@@ -80,6 +80,7 @@ class SymProcessor:
             (r'\bmul\b\((.*?),\s*(.*?)\)', r'\1 \2'),
             (r'\bsum\b', 'SUM'),
             (r'power\((.*?),\s*(\d+)\)', r'\1^\2'),
+            (r'(\w+).dual_variables\[0\]', r'\phi: \1'),
         ])
 
         # mapping dict for evaluating expressions
@@ -154,6 +155,12 @@ class SymProcessor:
             self.tex_map[rf"\b{sname}\b"] = f'{service.tex_name}'
             if not service.no_parse:
                 self.val_map[rf"\b{sname}\b"] = f"rtn.{sname}.v"
+
+        # Constraints
+        # NOTE: constraints are included in sub_map for ExpressionCalc
+        # thus, they don't have the suffix `.v`
+        for cname, constraint in self.parent.constrs.items():
+            self.sub_map[rf"\b{cname}\b"] = f'self.rtn.{cname}.optz'
 
         # store tex names defined in `self.config`
         for key in self.config.as_dict():
