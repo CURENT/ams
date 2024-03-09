@@ -103,9 +103,9 @@ class DCOPF(RoutineBase):
                          model='mats', src='Cl',
                          no_parse=True, sparse=True,)
         self.Cft = RParam(info='Line connection matrix',
-                            name='Cft', tex_name=r'C_{ft}',
-                            model='mats', src='Cft',
-                            no_parse=True, sparse=True,)
+                          name='Cft', tex_name=r'C_{ft}',
+                          model='mats', src='Cft',
+                          no_parse=True, sparse=True,)
         self.CftT = RParam(info='Transpose of line connection matrix',
                            name='CftT', tex_name=r'C_{ft}^T',
                            model='mats', src='CftT',
