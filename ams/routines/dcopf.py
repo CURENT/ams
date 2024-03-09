@@ -182,7 +182,7 @@ class DCOPF(RoutineBase):
                                   e_str='pb.dual_variables[0]')
 
         # --- objective ---
-        obj = 'sum(mul(c2, power(pg, 2)))'
+        obj = 'sum(mul(c2, pg**2))'
         obj += '+ sum(mul(c1, pg))'
         obj += '+ sum(mul(ug, c0))'
         self.obj = Objective(name='obj',
