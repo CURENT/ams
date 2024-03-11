@@ -13,6 +13,7 @@ v0.9.4 (2024-xx-xx)
 -------------------
 
 - Add Var ``pi`` and ExpressionCalc ``pic`` to store the dual of constraint power balance
+- Add Param ``M`` and ``D`` to model ``REGCV1``
 
 v0.9.3 (2024-03-06)
 -------------------
