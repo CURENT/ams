@@ -11,3 +11,5 @@ updates:
       interval: "weekly"
     target:
       branch: "misc"
+    ignore:
+      - dependency-name: "pytest"
