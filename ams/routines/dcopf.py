@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 class DCOPF(RoutineBase):
     """
     DC optimal power flow (DCOPF).
+
+    The nodal price is calculated as ``pi`` in ``pic``.
     """
 
     def __init__(self, system, config):
@@ -102,10 +104,6 @@ class DCOPF(RoutineBase):
                          name='Cl', tex_name=r'C_{l}',
                          model='mats', src='Cl',
                          no_parse=True, sparse=True,)
-        self.Cft = RParam(info='Line connection matrix',
-                          name='Cft', tex_name=r'C_{ft}',
-                          model='mats', src='Cft',
-                          no_parse=True, sparse=True,)
         self.CftT = RParam(info='Transpose of line connection matrix',
                            name='CftT', tex_name=r'C_{ft}^T',
                            model='mats', src='CftT',
@@ -179,11 +177,9 @@ class DCOPF(RoutineBase):
                                    name='plfc', var='plf',
                                    e_str='Bf@aBus + Pfinj')
         # NOTE: in CVXPY, dual_variables returns a list
-        pic = 'pb.dual_variables[0] '
-        pic += '+ Cft @ (plfub.dual_variables[0] + plflb.dual_variables[0])'
-        self.pic = ExpressionCalc(info='pi calculation',
+        self.pic = ExpressionCalc(info='dual of Constraint pb',
                                   name='pic', var='pi',
-                                  e_str=pic)
+                                  e_str='pb.dual_variables[0]')
 
         # --- objective ---
         obj = 'sum(mul(c2, pg**2))'

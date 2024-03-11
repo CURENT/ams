@@ -501,10 +501,12 @@ class VISBase:
         # --- Model Section ---
         self.M = Var(info='Emulated startup time constant (M=2H)',
                      name='M', tex_name=r'M', unit='s',
-                     model='VSG', nonneg=True,)
+                     model='VSG', src='M',
+                     nonneg=True,)
         self.D = Var(info='Emulated damping coefficient',
                      name='D', tex_name=r'D', unit='p.u.',
-                     model='VSG', nonneg=True,)
+                     model='VSG', src='D',
+                     nonneg=True,)
 
         self.gvsg = ZonalSum(u=self.zvsg, zone='Region',
                              name='gvsg', tex_name=r'S_{g}',
@@ -529,6 +531,9 @@ class VISBase:
 class RTEDVIS(RTED, VISBase):
     """
     RTED with virtual inertia scheduling.
+
+    This class implements real-time economic dispatch with virtual inertia scheduling.
+    Please ensure that the parameters `dvm` and `dvd` are set according to the system base.
 
     Reference:
 
