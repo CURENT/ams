@@ -84,6 +84,14 @@ class REGCV1(REGCData, Model):
                              indexer=self.bus, export=False,
                              info='Retrieved zone idx',
                              vtype=str, default=None)
+        self.M = NumParam(default=10, tex_name='M',
+                          info='Inertia emulation',
+                          unit='s',
+                          power=True,)
+        self.D = NumParam(default=0, tex_name='D',
+                          info='Damping emulation',
+                          unit='p.u.',
+                          power=True,)
         self.Mmax = NumParam(default=99, tex_name='M_{max}',
                              info='Maximum inertia emulation',
                              unit='s',
