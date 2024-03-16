@@ -866,7 +866,7 @@ class OModel:
             logger.debug(msg)
             exec(code_prob, globals(), locals())
             for key, val in self.rtn.exprs.items():
-                val.parse()
+                val.parse(no_code=no_code)
 
         _, s_setup = elapsed(t_setup)
         self.initialized = True

@@ -107,6 +107,7 @@ class MPBase:
         self.pg.info = '2D Gen power'
         self.aBus.horizon = self.timeslot
         self.aBus.info = '2D Bus angle'
+        self.pi.horizon = self.timeslot
 
 
 class ED(RTED, MPBase, SRBase):
