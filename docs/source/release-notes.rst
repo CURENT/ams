@@ -9,11 +9,12 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v0.9.4 (2024-xx-xx)
+v0.9.4 (2024-03-16)
 -------------------
 
 - Add Var ``pi`` and ExpressionCalc ``pic`` to store the dual of constraint power balance
 - Add Param ``M`` and ``D`` to model ``REGCV1``
+- Add CPS1 score calculation in demo_AGC
 
 v0.9.3 (2024-03-06)
 -------------------
