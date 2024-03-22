@@ -169,11 +169,11 @@ def mpc2system(mpc: dict, system) -> bool:
         r = data[2]
         x = data[3]
         b = data[4]
-        rate_a = data[5]
-        rate_b = data[6]
-        rate_c = data[7]
-        amin = data[11]
-        amax = data[12]
+        rate_a = data[5] / mbase
+        rate_b = data[6] / mbase
+        rate_c = data[7] / mbase
+        amin = data[11] * deg2rad
+        amax = data[12] * deg2rad
 
         status = int(data[10])
 

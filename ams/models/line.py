@@ -33,6 +33,9 @@ class Line(LineData, Model):
                              unit='rad',
                              tex_name=r'a_{max}',
                              )
+        self.rate_a.unit = 'p.u.'
+        self.rate_b.unit = 'p.u.'
+        self.rate_c.unit = 'p.u.'
         self.rate_a.default = 999.0
         self.rate_b.default = 999.0
         self.rate_c.default = 999.0
