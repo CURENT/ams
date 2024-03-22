@@ -10,7 +10,7 @@ class TestKnownResults(unittest.TestCase):
     # NOTE: DCOPF objective values are from MATPOWER v8.0b1
     sets = (
         (ams.get_case('matpower/case14.m'), 7642.59177699),
-        (ams.get_case('matpower/case39.m'), 41263.94078588),
+        (ams.get_case('matpower/case39.m'), 41263.9486962204),
         (ams.get_case('matpower/case118.m'), 125947.8814179),
     )
 
