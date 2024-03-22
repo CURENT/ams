@@ -402,16 +402,18 @@ class System(andes_System):
         # --- model parameters range check ---
         # TODO: there might be other parameters check?
         # Line rate
-        adjusted_rate = []
+        adjust_rate = []
         default_rate = 999
         for rate in [self.Line.rate_a, self.Line.rate_b, self.Line.rate_c]:
-            rate.v[rate.v == 0] = default_rate
-            adjusted_rate.append(rate.name)
-        adjusted_rate = ', '.join(adjusted_rate)
-        msg = f"Zero line rates detacted in {adjusted_rate}, "
-        msg += f"adjusted to {default_rate}."
-        msg += "\nIf expect a line outage, please set 'u' to 0."
-        logger.info(msg)
+            if np.all(rate.v == 0):
+                adjust_rate.append(rate.name)
+                rate.v[rate.v == 0] = default_rate
+        if adjust_rate:
+            adjusted_rate = ', '.join(adjust_rate)
+            msg = f"Zero line rates detacted in {adjusted_rate}, "
+            msg += f"adjusted to {default_rate}."
+            msg += "\nIf expect a line outage, please set 'u' to 0."
+            logger.info(msg)
         # === no device addition or removal after this point ===
         self.calc_pu_coeff()   # calculate parameters in system per units
 
