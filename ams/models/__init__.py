@@ -8,7 +8,7 @@ The file_classes includes the list of file classes and their corresponding class
 ams_file_classes = list([
     ('info', ['Summary']),
     ('bus', ['Bus']),
-    ('static', ['PQ', 'PV', 'Slack']),
+    ('static', ['PQ', 'Slack', 'PV']),
     ('shunt', ['Shunt']),
     ('line', ['Line']),
     ('distributed', ['PVD1', 'ESD1']),
