@@ -13,6 +13,11 @@ v0.9.5 (2024-xx-xx)
 -------------------
 
 - Add more plots in demo_AGC
+- Improve line rating adjustment
+- Adjust static import sequence in `models.__init__.py`
+- Adjust pjm5bus case line rate_a
+- Fix formulation of constraint line angle diff
+- Add amin amax conversion to MATPOWER converter
 
 v0.9.4 (2024-03-16)
 -------------------
