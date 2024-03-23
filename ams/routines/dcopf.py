@@ -85,11 +85,14 @@ class DCOPF(RoutineBase):
                              name='rate_a', tex_name=r'R_{ATEA}',
                              unit='MVA', model='Line',)
         # --- line angle difference ---
-        self.amax = NumOp(u=self.rate_a, fun=np.ones_like,
-                          rfun=np.dot, rargs=dict(b=np.pi),
-                          name='amax', tex_name=r'\theta_{bus, max}',
-                          info='max line angle difference',
-                          no_parse=True,)
+        self.amax = RParam(model='Line', src='amax',
+                           name='amax', tex_name=r'\theta_{bus, max}',
+                           info='max line angle difference',
+                           no_parse=True,)
+        self.amin = RParam(model='Line', src='amin',
+                           name='amin', tex_name=r'\theta_{bus, min}',
+                           info='min line angle difference',
+                           no_parse=True,)
         # --- shunt ---
         self.gsh = RParam(info='shunt conductance',
                           name='gsh', tex_name=r'g_{sh}',
@@ -169,7 +172,7 @@ class DCOPF(RoutineBase):
                                 e_str='Bf@aBus + Pfinj - rate_a',)
         self.alflb = Constraint(info='line angle difference lower bound',
                                 name='alflb', is_eq=False,
-                                e_str='-CftT@aBus - amax',)
+                                e_str='-CftT@aBus + amin',)
         self.alfub = Constraint(info='line angle difference upper bound',
                                 name='alfub', is_eq=False,
                                 e_str='CftT@aBus - amax',)
