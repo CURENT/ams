@@ -150,6 +150,8 @@ class ED(RTED, MPBase, SRBase):
 
         self.dud.expand_dims = 1
         self.ddd.expand_dims = 1
+        self.amin.expand_dims = 1
+        self.amax.expand_dims = 1
 
         # --- Data Section ---
         self.ugt = NumOp(u=self.ug, fun=np.transpose,
@@ -182,7 +184,7 @@ class ED(RTED, MPBase, SRBase):
         self.plf.info = '2D Line flow'
         self.plflb.e_str = '-Bf@aBus - Pfinj@tlv - rate_a@tlv'
         self.plfub.e_str = 'Bf@aBus + Pfinj@tlv - rate_a@tlv'
-        self.alflb.e_str = '-CftT@aBus - amax@tlv'
+        self.alflb.e_str = '-CftT@aBus + amin@tlv'
         self.alfub.e_str = 'CftT@aBus - amax@tlv'
 
         self.plfc.e_str = 'Bf@aBus + Pfinj@tlv'

@@ -374,6 +374,8 @@ def system2mpc(system) -> dict:
         branch[:, 8] = system.Line.tap.v
         branch[:, 9] = system.Line.phi.v * rad2deg
         branch[:, 10] = system.Line.u.v
+        branch[:, 11] = system.Line.amin.v * rad2deg
+        branch[:, 12] = system.Line.amax.v * rad2deg
 
     # --- GCost ---
     # NOTE: adjust GCost sequence to match the generator sequence

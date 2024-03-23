@@ -140,6 +140,8 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         self.sd.model = 'UCTSlot'
 
         self.ug.expand_dims = 1
+        self.amin.expand_dims = 1
+        self.amax.expand_dims = 1
 
         # --- Model Section ---
         # --- gen ---
