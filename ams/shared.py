@@ -45,7 +45,7 @@ ppc_cols = OrderedDict([
              'baseKV', 'zone', 'vmax', 'vmin', 'lam_p', 'lam_q',
              'mu_vmax', 'mu_vmin']),
     ('branch', ['fbus', 'tbus', 'r', 'x', 'b', 'rate_a', 'rateB_b', 'rate_c',
-                'ratio', 'angle', 'status', 'angmin',
+                'tap', 'shift', 'status', 'angmin',
                 'angmax', 'pf', 'qf', 'pt', 'qt', 'mu_sf', 'mu_st',
                 'mu_angmin', 'mu_angmax']),
     ('gen', ['bus', 'pg', 'qg', 'qmax', 'qmin', 'vg', 'mbase', 'status',
