@@ -169,9 +169,9 @@ def mpc2system(mpc: dict, system) -> bool:
         r = data[2]
         x = data[3]
         b = data[4]
-        rate_a = data[5] / mbase
-        rate_b = data[6] / mbase
-        rate_c = data[7] / mbase
+        rate_a = data[5]
+        rate_b = data[6]
+        rate_c = data[7]
         amin = data[11] * deg2rad
         amax = data[12] * deg2rad
 
@@ -368,9 +368,9 @@ def system2mpc(system) -> dict:
         branch[:, 2] = system.Line.r.v
         branch[:, 3] = system.Line.x.v
         branch[:, 4] = system.Line.b.v
-        branch[:, 5] = system.Line.rate_a.v * base_mva
-        branch[:, 6] = system.Line.rate_b.v * base_mva
-        branch[:, 7] = system.Line.rate_c.v * base_mva
+        branch[:, 5] = system.Line.rate_a.v
+        branch[:, 6] = system.Line.rate_b.v
+        branch[:, 7] = system.Line.rate_c.v
         branch[:, 8] = system.Line.tap.v
         branch[:, 9] = system.Line.phi.v * rad2deg
         branch[:, 10] = system.Line.u.v
