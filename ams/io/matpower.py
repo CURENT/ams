@@ -90,7 +90,7 @@ def mpc2system(mpc: dict, system) -> bool:
     if mpc['gen'].shape[1] <= 10:  # missing data
         mpc_gen = np.zeros((mpc['gen'].shape[0], 21), dtype=np.float64)
         mpc_gen[:, :10] = mpc['gen']
-        mbase = base_mva
+        mbase = mpc['gen'][:, 6]
         mpc_gen[:, 16] = system.PV.Ragc.default * mbase / 60
         mpc_gen[:, 17] = system.PV.R10.default * mbase
         mpc_gen[:, 18] = system.PV.R30.default * mbase
@@ -109,7 +109,7 @@ def mpc2system(mpc: dict, system) -> bool:
         gen_idx += 1
         vg = data[5]
         status = int(data[7])
-        mbase = base_mva
+        mbase = data[6]
         pg = data[1] / mbase
         qg = data[2] / mbase
         qmax = data[3] / mbase
@@ -169,9 +169,9 @@ def mpc2system(mpc: dict, system) -> bool:
         r = data[2]
         x = data[3]
         b = data[4]
-        rate_a = data[5]
-        rate_b = data[6]
-        rate_c = data[7]
+        rate_a = data[5] / base_mva
+        rate_b = data[6] / base_mva
+        rate_c = data[7] / base_mva
         amin = data[11] * deg2rad
         amax = data[12] * deg2rad
 
@@ -368,9 +368,9 @@ def system2mpc(system) -> dict:
         branch[:, 2] = system.Line.r.v
         branch[:, 3] = system.Line.x.v
         branch[:, 4] = system.Line.b.v
-        branch[:, 5] = system.Line.rate_a.v
-        branch[:, 6] = system.Line.rate_b.v
-        branch[:, 7] = system.Line.rate_c.v
+        branch[:, 5] = system.Line.rate_a.v * base_mva
+        branch[:, 6] = system.Line.rate_b.v * base_mva
+        branch[:, 7] = system.Line.rate_c.v * base_mva
         branch[:, 8] = system.Line.tap.v
         branch[:, 9] = system.Line.phi.v * rad2deg
         branch[:, 10] = system.Line.u.v
