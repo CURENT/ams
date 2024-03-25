@@ -234,7 +234,7 @@ class MatProcessor:
         on_gen_bus_idx = system.StaticGen.get(src='bus', attr='v', idx=on_gen_idx)
 
         row = np.array([system.Bus.idx2uid(x) for x in on_gen_bus_idx])
-        col = np.array([system.StaticGen.idx2uid(x) for x in on_gen_idx])
+        col = np.array([idx_gen.index(x) for x in on_gen_idx])
         Cg = c_sparse((np.ones(len(on_gen_idx)), (row, col)), (nb, ng))
 
         # --- Cl ---
