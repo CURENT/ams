@@ -171,6 +171,11 @@ class RoutineBase:
         for cname, c in self.constrs.items():
             if c.is_disabled:
                 disabled.append(cname)
+        if len(disabled) > 0:
+            msg = "Disabled constraints: "
+            d_str = [f'{constr}' for constr in disabled]
+            msg += ", ".join(d_str)
+            logger.warning(msg)
         return disabled
 
     def _data_check(self, info=True):
@@ -221,7 +226,6 @@ class RoutineBase:
             Whether to show generated code.
         """
         skip_all = (not force) and self.initialized and self.om.initialized
-        skip_ominit = (not force) and self.om.initialized
 
         if skip_all:
             logger.debug(f"{self.class_name} has already been initialized.")
@@ -235,24 +239,20 @@ class RoutineBase:
             msg = f"{self.class_name} data check failed, setup may run into error!"
             logger.warning(msg)
 
-        # --- matrix build ---
-        if force or isinstance(self.system.mats.Cft._v, type(None)):
+        # --- force initialization ---
+        if force:
             self.system.mats.make()
             for constr in self.constrs.values():
                 constr.is_disabled = False
 
-        # --- constraint check ---
-        disabled = self._get_off_constrs()
-        if len(disabled) > 0:
-            msg = "Disabled constraints: "
-            d_str = [f'{constr}' for constr in disabled]
-            msg += ", ".join(d_str)
-            logger.warning(msg)
+        # --- matrix build ---
+        if not self.system.mats.initialized:
+            self.system.mats.make()
 
-        if not skip_ominit:
-            om_init = self.om.init(no_code=no_code)
-        else:
-            om_init = True
+        # --- constraint check ---
+        _ = self._get_off_constrs()
+
+        om_init = self.om.init(no_code=no_code)
         _, s_init = elapsed(t0)
 
         msg = f"<{self.class_name}> "

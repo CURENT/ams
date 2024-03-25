@@ -102,6 +102,7 @@ class MatProcessor:
 
     def __init__(self, system):
         self.system = system
+        self.initialized = False
         self.Bbus = MParam(name='Bbus', tex_name=r'B_{bus}',
                            info='Bus admittance matrix',
                            v=None, sparse=True)
@@ -148,7 +149,7 @@ class MatProcessor:
         self._makeBdc()
         _, s_mat = elapsed(t_mat)
         logger.debug(f"Built system matrices in {s_mat}.")
-
+        self.initialized = True
         return True
 
     @property
