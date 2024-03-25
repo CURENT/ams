@@ -83,7 +83,7 @@ class DCOPF(RoutineBase):
         # --- line ---
         self.rate_a = RParam(info='long-term flow limit',
                              name='rate_a', tex_name=r'R_{ATEA}',
-                             unit='MVA', model='Line',)
+                             unit='p.u.', model='Line',)
         # --- line angle difference ---
         self.amax = RParam(model='Line', src='amax',
                            name='amax', tex_name=r'\theta_{bus, max}',
