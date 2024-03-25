@@ -8,6 +8,7 @@ from typing import Optional
 import numpy as np
 
 from scipy.sparse import csr_matrix as c_sparse
+from scipy.sparse import csc_matrix as csc_sparse
 from scipy.sparse import lil_matrix as l_sparse
 
 from andes.utils.misc import elapsed
@@ -65,7 +66,7 @@ class MParam(Param):
         """
         # NOTE: scipy.sparse matrix will return 2D array
         # so we squeeze it here if only one row
-        if isinstance(self._v, (c_sparse, l_sparse)):
+        if isinstance(self._v, (c_sparse, l_sparse, csc_sparse)):
             out = self._v.toarray()
             if out.shape[0] == 1:
                 return np.squeeze(out)
