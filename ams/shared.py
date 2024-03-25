@@ -52,7 +52,7 @@ ppc_cols = OrderedDict([
              'pmax', 'pmin', 'pc1', 'pc2', 'qc1min', 'qc1max', 'qc2min',
              'qc2max', 'ramp_agc', 'ramp_10', 'ramp_30', 'ramp_q',
              'apf', 'mu_pmax', 'mu_pmin', 'mu_qmax', 'mu_qmin']),
-    ('gencost', ['model', 'startup', 'shutdown', 'n', 'c', 'coeffs'])
+    ('gencost', ['model', 'startup', 'shutdown', 'n', 'c2', 'c1', 'c0']),
 ])
 
 
