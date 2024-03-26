@@ -641,6 +641,8 @@ class RoutineBase:
         self._syms = False
         # --- reset optimization model status ---
         self.om.initialized = False
+        # --- reset OModel parser status ---
+        self.om._parsed = False
 
     def addRParam(self,
                   name: str,
