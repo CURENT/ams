@@ -17,7 +17,9 @@ v0.9.5 (2024-xx-xx)
 - Adjust static import sequence in `models.__init__.py`
 - Adjust pjm5bus case line rate_a
 - Fix formulation of constraint line angle diff
-- Add amin amax conversion to MATPOWER converter
+- Align slack bus angle to zero in `DCOPF`
+- Align StaticGen idx sequence with converted MATPOWER case
+- Fix several issues in MATPOWER converter
 
 v0.9.4 (2024-03-16)
 -------------------
