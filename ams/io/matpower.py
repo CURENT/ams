@@ -38,6 +38,9 @@ def mpc2system(mpc: dict, system) -> bool:
 
     Compared to the original one, this function includes the generator cost data.
 
+    Note that `mbase` in mpc is converted to `Sn`, but it is not actually used in
+    MATPOWER nor AMS.
+
     Parameters
     ----------
     system : andes.system.System
@@ -90,11 +93,10 @@ def mpc2system(mpc: dict, system) -> bool:
     if mpc['gen'].shape[1] <= 10:  # missing data
         mpc_gen = np.zeros((mpc['gen'].shape[0], 21), dtype=np.float64)
         mpc_gen[:, :10] = mpc['gen']
-        mbase = base_mva
-        mpc_gen[:, 16] = system.PV.Ragc.default * mbase / 60
-        mpc_gen[:, 17] = system.PV.R10.default * mbase
-        mpc_gen[:, 18] = system.PV.R30.default * mbase
-        mpc_gen[:, 19] = system.PV.Rq.default * mbase / 60
+        mpc_gen[:, 16] = system.PV.Ragc.default * base_mva / 60
+        mpc_gen[:, 17] = system.PV.R10.default * base_mva
+        mpc_gen[:, 18] = system.PV.R30.default * base_mva
+        mpc_gen[:, 19] = system.PV.Rq.default * base_mva / 60
     else:
         mpc_gen = mpc['gen']
     for data in mpc_gen:
@@ -104,28 +106,26 @@ def mpc2system(mpc: dict, system) -> bool:
         # 10   11   12      13      14      15      16        17
         # ramp_30  ramp_q  apf
         # 18       19      20
-
         bus_idx = int(data[0])
         gen_idx += 1
         vg = data[5]
         status = int(data[7])
-        mbase = base_mva
-        pg = data[1] / mbase
-        qg = data[2] / mbase
-        qmax = data[3] / mbase
-        qmin = data[4] / mbase
-        pmax = data[8] / mbase
-        pmin = data[9] / mbase
-        pc1 = data[10] / mbase
-        pc2 = data[11] / mbase
-        qc1min = data[12] / mbase
-        qc1max = data[13] / mbase
-        qc2min = data[14] / mbase
-        qc2max = data[15] / mbase
-        ramp_agc = 60 * data[16] / mbase  # from MW/min to MW/h
-        ramp_10 = data[17] / mbase  # from MW to MW/h
-        ramp_30 = data[18] / mbase  # from MW to MW/h
-        ramp_q = 60 * data[19] / mbase  # from MVAr/min to MVAr/h
+        pg = data[1] / base_mva
+        qg = data[2] / base_mva
+        qmax = data[3] / base_mva
+        qmin = data[4] / base_mva
+        pmax = data[8] / base_mva
+        pmin = data[9] / base_mva
+        pc1 = data[10] / base_mva
+        pc2 = data[11] / base_mva
+        qc1min = data[12] / base_mva
+        qc1max = data[13] / base_mva
+        qc2min = data[14] / base_mva
+        qc2max = data[15] / base_mva
+        ramp_agc = 60 * data[16] / base_mva  # MW/min -> MW/h
+        ramp_10 = data[17] / base_mva  # MW -> MW/h
+        ramp_30 = data[18] / base_mva  # MW -> MW/h
+        ramp_q = 60 * data[19] / base_mva  # MVAr/min -> MVAr/h
         apf = data[20]
 
         uid = system.Bus.idx2uid(bus_idx)
@@ -135,7 +135,7 @@ def mpc2system(mpc: dict, system) -> bool:
         if bus_idx in sw:
             system.add('Slack', idx=gen_idx, bus=bus_idx, busr=bus_idx,
                        name='Slack ' + str(bus_idx),
-                       u=status,
+                       u=status, Sn=data[6],
                        Vn=vn, v0=vg, p0=pg, q0=qg, a0=a0,
                        pmax=pmax, pmin=pmin,
                        qmax=qmax, qmin=qmin,
@@ -148,7 +148,7 @@ def mpc2system(mpc: dict, system) -> bool:
         else:
             system.add('PV', idx=gen_idx, bus=bus_idx, busr=bus_idx,
                        name='PV ' + str(bus_idx),
-                       u=status,
+                       u=status, Sn=data[6],
                        Vn=vn, v0=vg, p0=pg, q0=qg,
                        pmax=pmax, pmin=pmin,
                        qmax=qmax, qmin=qmin,
@@ -169,9 +169,9 @@ def mpc2system(mpc: dict, system) -> bool:
         r = data[2]
         x = data[3]
         b = data[4]
-        rate_a = data[5] / mbase
-        rate_b = data[6] / mbase
-        rate_c = data[7] / mbase
+        rate_a = data[5] / base_mva
+        rate_b = data[6] / base_mva
+        rate_c = data[7] / base_mva
         amin = data[11] * deg2rad
         amax = data[12] * deg2rad
 
@@ -331,35 +331,34 @@ def system2mpc(system) -> dict:
         gen[system.Slack.n:, 3] = PV.qmax.v * base_mva
         gen[system.Slack.n:, 4] = PV.qmin.v * base_mva
         gen[system.Slack.n:, 5] = PV.v0.v
-        gen[system.Slack.n:, 6] = base_mva
+        gen[system.Slack.n:, 6] = PV.Sn.v
         gen[system.Slack.n:, 7] = PV.u.v
-        gen[system.Slack.n:, 8] = (PV.ctrl.v * PV.pmax.v + (1 - PV.ctrl.v) * PV.pmax.v) * base_mva
-        gen[system.Slack.n:, 9] = (PV.ctrl.v * PV.pmin.v + (1 - PV.ctrl.v) * PV.pmin.v) * base_mva
-        gen[system.Slack.n:, 16] = PV.Ragc.v * base_mva * 60    # from MW/h to MW/min
+        gen[system.Slack.n:, 8] = (PV.ctrl.v * PV.pmax.v + (1 - PV.ctrl.v) * PV.p0.v) * base_mva
+        gen[system.Slack.n:, 9] = (PV.ctrl.v * PV.pmin.v + (1 - PV.ctrl.v) * PV.p0.v) * base_mva
+        gen[system.Slack.n:, 16] = PV.Ragc.v * base_mva * 60    # MW/h -> MW/min
         gen[system.Slack.n:, 17] = PV.R10.v * base_mva
         gen[system.Slack.n:, 18] = PV.R30.v * base_mva
-        gen[system.Slack.n:, 19] = PV.Rq.v * base_mva * 60  # from MVAr/h to MVAr/min
+        gen[system.Slack.n:, 19] = PV.Rq.v * base_mva * 60  # MVAr/h -> MVAr/min
 
     # --- Slack ---
     if system.Slack.n > 0:
         slack_pos = system.Bus.idx2uid(system.Slack.bus.v)
         bus[slack_pos, 1] = 3
         bus[slack_pos, 8] = system.Slack.a0.v * rad2deg
-
         gen[:system.Slack.n, 0] = to_busid(system.Slack.bus.v)
         gen[:system.Slack.n, 1] = system.Slack.p0.v * base_mva
         gen[:system.Slack.n, 2] = system.Slack.q0.v * base_mva
         gen[:system.Slack.n, 3] = system.Slack.qmax.v * base_mva
         gen[:system.Slack.n, 4] = system.Slack.qmin.v * base_mva
         gen[:system.Slack.n, 5] = system.Slack.v0.v
-        gen[:system.Slack.n, 6] = base_mva
+        gen[:system.Slack.n, 6] = system.Slack.Sn.v
         gen[:system.Slack.n, 7] = system.Slack.u.v
         gen[:system.Slack.n, 8] = system.Slack.pmax.v * base_mva
         gen[:system.Slack.n, 9] = system.Slack.pmin.v * base_mva
-        gen[:system.Slack.n, 16] = system.Slack.Ragc.v * base_mva * 60    # from MW/h to MW/min
+        gen[:system.Slack.n, 16] = system.Slack.Ragc.v * base_mva * 60    # MW/h -> MW/min
         gen[:system.Slack.n, 17] = system.Slack.R10.v * base_mva
         gen[:system.Slack.n, 18] = system.Slack.R30.v * base_mva
-        gen[:system.Slack.n, 19] = system.Slack.Rq.v * base_mva * 60    # from MVAr/h to MVAr/min
+        gen[:system.Slack.n, 19] = system.Slack.Rq.v * base_mva * 60    # MVAr/h -> MVAr/min
 
     if system.Line.n > 0:
         branch = mpc['branch']

@@ -199,13 +199,14 @@ class StaticGen(GroupBase):
 
     def __init__(self):
         super().__init__()
-        self.common_params.extend(('Sn', 'Vn', 'p0', 'q0', 'ra', 'xs', 'subidx'))
+        self.common_params.extend(('Sn', 'Vn', 'p0', 'q0', 'ra', 'xs', 'subidx',
+                                   'bus', 'pmax', 'pmin', 'pg0', 'ctrl'))
         self.common_vars.extend(('p', 'q'))
 
 
 class ACLine(GroupBase):
     def __init__(self):
-        super(ACLine, self).__init__()
+        super().__init__()
         self.common_params.extend(('bus1', 'bus2', 'r', 'x'))
 
 
@@ -213,7 +214,10 @@ class StaticLoad(GroupBase):
     """
     Static load group.
     """
-    pass
+
+    def __init__(self):
+        super().__init__()
+        self.common_params.extend(('p0',))
 
 
 class StaticShunt(GroupBase):

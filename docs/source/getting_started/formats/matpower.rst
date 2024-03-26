@@ -46,7 +46,7 @@ Bus Data
 +----------------+--------+-----------------------------------------------------------------+
 
 
-#. Included in OPF output, typically not included (or ignored) in input matrix.Here we assume the objective function has units :math:`u`.
+#. Included in OPF output, typically not included (or ignored) in input matrix. Here we assume the objective function has units :math:`u`.
 
 Generator Data
 ~~~~~~~~~~~~~~

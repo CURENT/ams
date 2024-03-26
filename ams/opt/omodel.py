@@ -135,7 +135,7 @@ class ExpressionCalc(OptzBase):
         # store the parsed expression str code
         self.code = code_expr
         code_expr = "self.optz = " + code_expr
-        msg = f"Parse ExpressionCalc <{self.name}>: {self.e_str} "
+        msg = f"- Parse ExpressionCalc <{self.name}>: {self.e_str} "
         logger.debug(msg)
         if not no_code:
             logger.info(f"<{self.name}> code: {code_expr}")
@@ -522,8 +522,6 @@ class Constraint(OptzBase):
         no_code : bool, optional
             Flag indicating if the code should be shown, True by default.
         """
-        if self.is_disabled:
-            return True
         # parse the expression str
         sub_map = self.om.rtn.syms.sub_map
         code_constr = self.e_str
@@ -538,8 +536,8 @@ class Constraint(OptzBase):
         # parse the constraint type
         code_constr = "self.optz=" + code_constr
         code_constr += " == 0" if self.is_eq else " <= 0"
-        msg = f"Parse Constr <{self.name}>: {self.e_str} "
-        msg += " == 0" if self.is_eq else " <= 0"
+        msg = f"- Parse Constr <{self.name}>: {self.e_str} "
+        msg += "== 0" if self.is_eq else "<= 0"
         logger.debug(msg)
         if not no_code:
             logger.info(f"<{self.name}> code: {code_constr}")
@@ -765,6 +763,7 @@ class OModel:
 
         # --- add RParams and Services as parameters ---
         t0, _ = elapsed()
+        logger.debug(f'Parsing OModel for {rtn.class_name}')
         for key, val in rtn.params.items():
             if not val.no_parse:
                 try:
@@ -821,6 +820,13 @@ class OModel:
         _, s = elapsed(t0)
         logger.debug(f"Parse Objective in {s}")
 
+        # --- parse expressions ---
+        t0, _ = elapsed()
+        for key, val in self.rtn.exprs.items():
+            val.parse(no_code=no_code)
+        _, s = elapsed(t0)
+        logger.debug(f"Parse Expressions in {s}")
+
         self._parsed = True
         return self._parsed
 
@@ -844,29 +850,32 @@ class OModel:
         """
         t_setup, _ = elapsed()
 
-        self._parse(no_code=no_code)
+        if not self._parsed:
+            self._parse(no_code=no_code)
 
-        if self.rtn.type != 'PF':
-            # --- finalize the optimziation formulation ---
-            code_prob = "self.prob = problem(self.obj, "
-            constrs_skip = []
-            constrs_add = []
-            for key, val in self.rtn.constrs.items():
-                if (val is None) or (val.is_disabled):
-                    constrs_skip.append(f'<{key}>')
-                else:
-                    constrs_add.append(val.optz)
-            code_prob += "[constr for constr in constrs_add])"
-            for pattern, replacement in self.rtn.syms.sub_map.items():
-                code_prob = re.sub(pattern, replacement, code_prob)
-            msg = f"Finalize: {code_prob}"
-            if len(constrs_skip) > 0:
-                msg += "; Skipped constrs: "
-                msg += ", ".join(constrs_skip)
-            logger.debug(msg)
-            exec(code_prob, globals(), locals())
-            for key, val in self.rtn.exprs.items():
-                val.parse(no_code=no_code)
+        if self.rtn.type == 'PF':
+            _, s_setup = elapsed(t_setup)
+            self.initialized = True
+            logger.debug(f"OModel for <{self.rtn.class_name}> initialized in {s_setup}.")
+            return self.initialized
+
+        # --- finalize the optimziation formulation ---
+        code_prob = "self.prob = problem(self.obj, "
+        constrs_skip = []
+        constrs_add = []
+        for key, val in self.rtn.constrs.items():
+            if (val.is_disabled) or (val is None):
+                constrs_skip.append(f'<{key}>')
+            else:
+                constrs_add.append(val.optz)
+        code_prob += "[constr for constr in constrs_add])"
+        for pattern, replacement in self.rtn.syms.sub_map.items():
+            code_prob = re.sub(pattern, replacement, code_prob)
+
+        t_final, _ = elapsed()
+        exec(code_prob, globals(), locals())
+        _, s_final = elapsed(t_final)
+        logger.debug(f"Finalize in {s_final}")
 
         _, s_setup = elapsed(t_setup)
         self.initialized = True

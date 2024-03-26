@@ -12,6 +12,7 @@ from ams import report  # NOQA
 
 from ams.main import config_logger, load, run  # NOQA
 from ams.utils.paths import get_case  # NOQA
+from ams.shared import ppc2df  # NOQA
 
 __author__ = 'Jining Wang'
 

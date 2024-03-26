@@ -8,6 +8,7 @@ from typing import Optional
 import numpy as np
 
 from scipy.sparse import csr_matrix as c_sparse
+from scipy.sparse import csc_matrix as csc_sparse
 from scipy.sparse import lil_matrix as l_sparse
 
 from andes.utils.misc import elapsed
@@ -65,7 +66,7 @@ class MParam(Param):
         """
         # NOTE: scipy.sparse matrix will return 2D array
         # so we squeeze it here if only one row
-        if isinstance(self._v, (c_sparse, l_sparse)):
+        if isinstance(self._v, (c_sparse, l_sparse, csc_sparse)):
             out = self._v.toarray()
             if out.shape[0] == 1:
                 return np.squeeze(out)
@@ -102,6 +103,7 @@ class MatProcessor:
 
     def __init__(self, system):
         self.system = system
+        self.initialized = False
         self.Bbus = MParam(name='Bbus', tex_name=r'B_{bus}',
                            info='Bus admittance matrix',
                            v=None, sparse=True)
@@ -148,7 +150,7 @@ class MatProcessor:
         self._makeBdc()
         _, s_mat = elapsed(t_mat)
         logger.debug(f"Built system matrices in {s_mat}.")
-
+        self.initialized = True
         return True
 
     @property
@@ -232,7 +234,7 @@ class MatProcessor:
         on_gen_bus_idx = system.StaticGen.get(src='bus', attr='v', idx=on_gen_idx)
 
         row = np.array([system.Bus.idx2uid(x) for x in on_gen_bus_idx])
-        col = np.array([system.StaticGen.idx2uid(x) for x in on_gen_idx])
+        col = np.array([idx_gen.index(x) for x in on_gen_idx])
         Cg = c_sparse((np.ones(len(on_gen_idx)), (row, col)), (nb, ng))
 
         # --- Cl ---
