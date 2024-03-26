@@ -100,6 +100,7 @@ class SymProcessor:
             'interrupted': 8,
             'unknown': 9,
             'infeasible_or_unbounded': 1.5,
+            'user_limit': 10,
         }
 
     def generate_symbols(self, force_generate=False):

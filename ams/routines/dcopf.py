@@ -5,7 +5,7 @@ import logging
 
 import numpy as np
 from ams.core.param import RParam
-from ams.core.service import NumOp, NumOpDual
+from ams.core.service import NumOp, NumOpDual, VarSelect
 
 from ams.routines.routine import RoutineBase
 
@@ -75,6 +75,11 @@ class DCOPF(RoutineBase):
                           name='p0', tex_name=r'p_{g, 0}',
                           unit='p.u.',
                           model='StaticGen', src='pg0')
+        # --- bus ---
+        self.buss = RParam(info='Bus slack',
+                           name='buss', tex_name=r'B_{us,s}',
+                           model='Slack', src='bus',
+                           no_parse=True,)
         # --- load ---
         self.pd = RParam(info='active demand',
                          name='pd', tex_name=r'p_{d}',
@@ -83,13 +88,16 @@ class DCOPF(RoutineBase):
         # --- line ---
         self.rate_a = RParam(info='long-term flow limit',
                              name='rate_a', tex_name=r'R_{ATEA}',
-                             unit='MVA', model='Line',)
+                             unit='p.u.', model='Line',)
         # --- line angle difference ---
-        self.amax = NumOp(u=self.rate_a, fun=np.ones_like,
-                          rfun=np.dot, rargs=dict(b=np.pi),
-                          name='amax', tex_name=r'\theta_{bus, max}',
-                          info='max line angle difference',
-                          no_parse=True,)
+        self.amax = RParam(model='Line', src='amax',
+                           name='amax', tex_name=r'\theta_{bus, max}',
+                           info='max line angle difference',
+                           no_parse=True,)
+        self.amin = RParam(model='Line', src='amin',
+                           name='amin', tex_name=r'\theta_{bus, min}',
+                           info='min line angle difference',
+                           no_parse=True,)
         # --- shunt ---
         self.gsh = RParam(info='shunt conductance',
                           name='gsh', tex_name=r'g_{sh}',
@@ -148,6 +156,13 @@ class DCOPF(RoutineBase):
                         unit='rad',
                         name='aBus', tex_name=r'\theta_{bus}',
                         model='Bus', src='a',)
+        self.csb = VarSelect(info='select slack bus',
+                             name='csb', tex_name=r'c_{sb}',
+                             u=self.aBus, indexer='buss',
+                             no_parse=True,)
+        self.sba = Constraint(info='align slack bus angle',
+                              name='sbus', is_eq=True,
+                              e_str='csb@aBus',)
         self.pi = Var(info='nodal price',
                       name='pi', tex_name=r'\pi',
                       unit='$/p.u.',
@@ -169,7 +184,7 @@ class DCOPF(RoutineBase):
                                 e_str='Bf@aBus + Pfinj - rate_a',)
         self.alflb = Constraint(info='line angle difference lower bound',
                                 name='alflb', is_eq=False,
-                                e_str='-CftT@aBus - amax',)
+                                e_str='-CftT@aBus + amin',)
         self.alfub = Constraint(info='line angle difference upper bound',
                                 name='alfub', is_eq=False,
                                 e_str='CftT@aBus - amax',)

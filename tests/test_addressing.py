@@ -27,14 +27,14 @@ class TestAddressing(unittest.TestCase):
 
         # external variable indices
         np.testing.assert_array_equal(ss.PV.ud.a,
-                                      np.array([28, 29, 30, 31]))
+                                      np.array([31, 32, 33, 34]))
         np.testing.assert_array_equal(ss.PV.p.a,
-                                      np.array([32, 33, 34, 35]))
+                                      np.array([35, 36, 37, 38]))
         np.testing.assert_array_equal(ss.PV.q.a,
-                                      np.array([36, 37, 38, 39]))
+                                      np.array([39, 40, 41, 42]))
         np.testing.assert_array_equal(ss.Slack.ud.a,
-                                      np.array([40]))
+                                      np.array([28]))
         np.testing.assert_array_equal(ss.Slack.p.a,
-                                      np.array([41]))
+                                      np.array([29]))
         np.testing.assert_array_equal(ss.Slack.q.a,
-                                      np.array([42]))
+                                      np.array([30]))

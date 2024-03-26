@@ -43,7 +43,4 @@ Likewise, one can convert PSS/E files to AMS xlsx:
 
     ams run kundur.raw -c
 
-This will convert all models in the RAW files. 
-
-To load PSS/E files into a scripting environment, see Example - "Working with
-Data".
+This will convert all models in the RAW files.
