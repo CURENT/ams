@@ -9,7 +9,7 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v0.9.5 (2024-xx-xx)
+v0.9.5 (2024-03-25)
 -------------------
 
 - Add more plots in demo_AGC
