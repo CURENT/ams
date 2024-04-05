@@ -10,13 +10,13 @@ from ams.io.pypower import system2ppc
 from ams.pypower.core import ppoption
 from ams.core.param import RParam
 
-from ams.routines.dcpf import DCPFlowBase
+from ams.routines.dcpf import DCPF
 from ams.opt.omodel import Var
 
 logger = logging.getLogger(__name__)
 
 
-class PFlow(DCPFlowBase):
+class PFlow(DCPF):
     """
     AC Power Flow routine.
 
@@ -29,7 +29,7 @@ class PFlow(DCPFlowBase):
     """
 
     def __init__(self, system, config):
-        DCPFlowBase.__init__(self, system, config)
+        DCPF.__init__(self, system, config)
         self.info = "AC Power Flow"
         self.type = "PF"
 
@@ -48,19 +48,11 @@ class PFlow(DCPFlowBase):
                          model="StaticLoad", src="q0",)
 
         # --- bus ---
-        self.aBus = Var(info="bus voltage angle",
-                        unit="rad",
-                        name="aBus", tex_name=r"a_{Bus}",
-                        model="Bus", src="a",)
         self.vBus = Var(info="bus voltage magnitude",
                         unit="p.u.",
                         name="vBus", tex_name=r"v_{Bus}",
                         model="Bus", src="v",)
         # --- gen ---
-        self.pg = Var(info="active power generation",
-                      unit="p.u.",
-                      name="pg", tex_name=r"p_{g}",
-                      model="StaticGen", src="p",)
         self.qg = Var(info="reactive power generation",
                       unit="p.u.",
                       name="qg", tex_name=r"q_{g}",
