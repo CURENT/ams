@@ -9,6 +9,13 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.9.6 (2024-xx-xx)
+-------------------
+
+- Refactor DCPF, PFlow, and ACOPF
+- Fix parameter update issue in ANDES interface
+- Add a loss factor in ``RTED.dc2ac()``
+
 v0.9.5 (2024-03-25)
 -------------------
 
