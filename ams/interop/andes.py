@@ -56,8 +56,9 @@ idx_guess = {'rego': 'RenGovernor',
              'pq': 'PQ', }
 
 
-def to_andes(system, setup=False, addfile=None,
-             **kwargs):
+def to_andes(system, addfile=None,
+             setup=False, no_output=False,
+             default_config=True):
     """
     Convert the AMS system to an ANDES system.
 
@@ -80,12 +81,14 @@ def to_andes(system, setup=False, addfile=None,
     ----------
     system : System
         The AMS system to be converted to ANDES format.
-    setup : bool, optional
-        Whether to call `setup()` after the conversion. Default is True.
     addfile : str, optional
         The additional file to be converted to ANDES dynamic mdoels.
-    **kwargs : dict
-        Keyword arguments to be passed to `andes.system.System`.
+    setup : bool, optional
+        Whether to call `setup()` after the conversion. Default is True.
+    no_output : bool, optional
+        To ANDES system.
+    default_config : bool, optional
+        To ANDES system.
 
     Returns
     -------
@@ -109,7 +112,8 @@ def to_andes(system, setup=False, addfile=None,
     """
     t0, _ = elapsed()
 
-    adsys = andes_System()
+    adsys = andes_System(no_output=no_output,
+                         default_config=default_config)
     # FIXME: is there a systematic way to do this? Other config might be needed
     adsys.config.freq = system.config.freq
     adsys.config.mva = system.config.mva
