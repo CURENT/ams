@@ -58,7 +58,8 @@ idx_guess = {'rego': 'RenGovernor',
 
 def to_andes(system, addfile=None,
              setup=False, no_output=False,
-             default_config=True):
+             default_config=True,
+             verify=True, tol=1e-4):
     """
     Convert the AMS system to an ANDES system.
 
@@ -89,6 +90,11 @@ def to_andes(system, addfile=None,
         To ANDES system.
     default_config : bool, optional
         To ANDES system.
+    verify : bool
+        If True, the converted ANDES system will be verified with the source
+        AMS system using AC power flow.
+    tol : float
+        The tolerance of error.
 
     Returns
     -------
@@ -100,9 +106,8 @@ def to_andes(system, addfile=None,
     >>> import ams
     >>> import andes
     >>> sp = ams.load(ams.get_case('ieee14/ieee14_uced.xlsx'), setup=True)
-    >>> sa = sp.to_andes(setup=False,
-    ...                  addfile=andes.get_case('ieee14/ieee14_full.xlsx'),
-    ...                  overwrite=True, no_output=True)
+    >>> sa = sp.to_andes(addfile=andes.get_case('ieee14/ieee14_full.xlsx'),
+    ...                  setup=False, overwrite=True, no_output=True)
 
     Notes
     -----
@@ -145,8 +150,14 @@ def to_andes(system, addfile=None,
     # finalize
     system.dyn = Dynamic(amsys=system, adsys=adsys)
     system.dyn.link_andes(adsys=adsys)
+
     if setup:
         adsys.setup()
+    elif verify:
+        logger.warning('PFlow verification is skipped due to no setup.')
+        return adsys
+    if verify:
+        verify_pf(amsys=system, adsys=adsys, tol=tol)
     return adsys
 
 
@@ -949,3 +960,35 @@ def make_link_table(adsys):
             ]
     out = ssa_key[cols].sort_values(by='stg_idx', ascending=False).reset_index(drop=True)
     return out
+
+
+def verify_pf(amsys, adsys, tol=1e-4):
+    """
+    Verify the power flow results between AMS and ANDES.
+
+    Parameters
+    ----------
+    sp : ams.System
+        The AMS system.
+    sa : andes.System
+        The ANDES system.
+
+    Returns
+    -------
+    bool
+        True if the power flow results are consistent; False otherwise.
+    """
+    amsys.PFlow.run()
+    if adsys.is_setup:
+        adsys.PFlow.run()
+    else:
+        logger.info('ANDES system is not setup, quit verification.')
+        return False
+    v_check = np.allclose(amsys.Bus.v.v, adsys.Bus.v.v, atol=tol)
+    a_check = np.allclose(amsys.Bus.a.v, adsys.Bus.a.v, atol=tol)
+    check = v_check and a_check
+    if check:
+        logger.info('Power flow results are consistent.')
+    else:
+        logger.warning('Power flow results are inconsistent!')
+    return check
