@@ -116,8 +116,9 @@ def to_andes(system, setup=False, addfile=None,
 
     for mdl_name, mdl_cols in pflow_dict.items():
         mdl = getattr(system, mdl_name)
-        # use as_df() rather than cache.df_in in case of updated
-        for row in mdl.as_df()[mdl_cols].to_dict(orient='records'):
+        # refresh cache to get the latest data
+        mdl.cache.refresh("df_in")
+        for row in mdl.cache.df_in[mdl_cols].to_dict(orient='records'):
             adsys.add(mdl_name, row)
 
     _, s = elapsed(t0)
