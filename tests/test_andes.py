@@ -18,10 +18,12 @@ class TestInteropBase(unittest.TestCase):
     ad_cases = [
         'ieee14/ieee14_full.xlsx',
         'ieee39/ieee39_full.xlsx',
+        'npcc/npcc.xlsx',
     ]
     am_cases = [
         'ieee14/ieee14.json',
         'ieee39/ieee39.xlsx',
+        'npcc/npcc_uced.xlsx',
     ]
 
     def setUp(self) -> None:
@@ -84,6 +86,11 @@ class TestInteropBase(unittest.TestCase):
             set2 = set(sp.StaticGen.get_idx())
             # set2 includes set1, ensure GENROU.gen are all in StaticGen.idx
             self.assertEqual(set1, set1 & set2)
+
+            # ensure PFlow models consistency
+            pflow_mdls = list(sa.PFlow.models.keys())
+            for mdl in pflow_mdls:
+                self.assertTrue(sp.models[mdl].as_df().equals(sa.PFlow.models[mdl].as_df()))
 
     def test_extra_dyn(self):
         """
