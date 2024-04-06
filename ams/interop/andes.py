@@ -116,6 +116,8 @@ def to_andes(system, setup=False, addfile=None,
 
     for mdl_name, mdl_cols in pflow_dict.items():
         mdl = getattr(system, mdl_name)
+        # refresh cache to get the latest data
+        mdl.cache.refresh("df_in")
         for row in mdl.cache.df_in[mdl_cols].to_dict(orient='records'):
             adsys.add(mdl_name, row)
 
@@ -553,16 +555,26 @@ class Dynamic:
             idx_ads = var_ams.get_idx()  # use AMS idx as target ANDES idx
 
             # --- special scenarios ---
+            # 0. send PV bus voltage to StaticGen.v0 if not PFlow yet and AC converted
+            cond_vpv = (mname_ads == 'Bus') and (pname_ads == 'v0')
+            if cond_vpv and (not self.is_tds) and (rtn.is_ac):
+                # --- StaticGen ---
+                stg_idx = sp.StaticGen.get_idx()
+                bus_stg = sp.StaticGen.get(src='bus', attr='v', idx=stg_idx)
+                vBus = rtn.get(src='vBus', attr='v', idx=bus_stg)
+                sa.StaticGen.set(value=vBus, idx=stg_idx, src='v0', attr='v')
+                logger.info(f'*Send <{vname_ams}> to StaticGen.v0')
+
             # 1. gen online status; in TDS running, setting u is invalid
             cond_ads_stg_u = (mname_ads in ['StaticGen', 'PV', 'Sclak']) and (pname_ads == 'u')
             if cond_ads_stg_u and (self.is_tds):
-                logger.info(f'Skip sending {vname_ams} to StaticGen.u during TDS')
+                logger.info(f'*Skip sending {vname_ams} to StaticGen.u during TDS')
                 continue
 
             # 2. Bus voltage
             cond_ads_bus_v0 = (mname_ads == 'Bus') and (pname_ads == 'v0')
             if cond_ads_bus_v0 and (self.is_tds):
-                logger.info(f'Skip sending {vname_ams} t0 Bus.v0 during TDS')
+                logger.info(f'*Skip sending {vname_ams} t0 Bus.v0 during TDS')
                 continue
 
             # 3. gen power reference; in TDS running, pg should go to TurbineGov
@@ -602,7 +614,7 @@ class Dynamic:
                     var_dest = 'TurbineGov.pref0'
                 if len(dg_ams) > 0:
                     var_dest += ' and DG.pref0'
-                logger.warning(f'Send <{vname_ams}> to {var_dest}')
+                logger.warning(f'*Send <{vname_ams}> to {var_dest}')
                 continue
 
             # --- other scenarios ---

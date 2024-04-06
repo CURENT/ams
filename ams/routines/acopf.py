@@ -10,19 +10,29 @@ from ams.pypower.core import ppoption
 from ams.io.pypower import system2ppc
 from ams.core.param import RParam
 
-from ams.routines.dcpf import DCPFlowBase
+from ams.routines.dcpf import DCPF
 from ams.opt.omodel import Var, Constraint, Objective
 
 logger = logging.getLogger(__name__)
 
 
-class ACOPFBase(DCPFlowBase):
+class ACOPF(DCPF):
     """
-    Base class for ACOPF model.
+    Standard AC optimal power flow.
+
+    Notes
+    -----
+    1. ACOPF is solved with PYPOWER ``runopf`` function.
+    2. ACOPF formulation in AMS style is NOT DONE YET,
+       but this does not affect the results
+       because the data are passed to PYPOWER for solving.
     """
 
     def __init__(self, system, config):
-        DCPFlowBase.__init__(self, system, config)
+        DCPF.__init__(self, system, config)
+        self.info = 'AC Optimal Power Flow'
+        self.type = 'ACED'
+
         self.map1 = OrderedDict()   # ACOPF does not receive
         self.map2 = OrderedDict([
             ('Bus', {
@@ -33,6 +43,47 @@ class ACOPFBase(DCPFlowBase):
             }),
         ])
 
+        # --- params ---
+        self.c2 = RParam(info='Gen cost coefficient 2',
+                         name='c2', tex_name=r'c_{2}',
+                         unit=r'$/(p.u.^2)', model='GCost',
+                         indexer='gen', imodel='StaticGen',
+                         nonneg=True)
+        self.c1 = RParam(info='Gen cost coefficient 1',
+                         name='c1', tex_name=r'c_{1}',
+                         unit=r'$/(p.u.)', model='GCost',
+                         indexer='gen', imodel='StaticGen',)
+        self.c0 = RParam(info='Gen cost coefficient 0',
+                         name='c0', tex_name=r'c_{0}',
+                         unit=r'$', model='GCost',
+                         indexer='gen', imodel='StaticGen',
+                         no_parse=True)
+        self.qd = RParam(info='reactive demand',
+                         name='qd', tex_name=r'q_{d}',
+                         model='StaticLoad', src='q0',
+                         unit='p.u.',)
+        # --- bus ---
+        self.vBus = Var(info='Bus voltage magnitude',
+                        unit='p.u.',
+                        name='vBus', tex_name=r'v_{Bus}',
+                        src='v', model='Bus',)
+        # --- gen ---
+        self.qg = Var(info='Gen reactive power',
+                      unit='p.u.',
+                      name='qg', tex_name=r'q_{g}',
+                      model='StaticGen', src='q',)
+        # --- constraints ---
+        self.pb = Constraint(name='pb',
+                             info='power balance',
+                             e_str='sum(pd) - sum(pg)',
+                             is_eq=True,)
+        # TODO: ACOPF formulation
+        # --- objective ---
+        self.obj = Objective(name='obj',
+                             info='total cost',
+                             e_str='sum(c2 * pg**2 + c1 * pg + c0)',
+                             sense='min',)
+
     def solve(self, method=None, **kwargs):
         """
         Solve ACOPF using PYPOWER with PIPS.
@@ -42,28 +93,6 @@ class ACOPFBase(DCPFlowBase):
         res, sstats = runopf(casedata=ppc, ppopt=ppopt, **kwargs)
         self.converged = res['success']
         return res, self.converged, sstats
-
-    def unpack(self, res):
-        """
-        Unpack results from PYPOWER.
-        """
-        super().unpack(res)
-
-        # --- Bus ---
-        bus_idx = self.vBus.get_idx()
-        self.vBus.optz.value = self.system.Bus.get(src='v', attr='v', idx=bus_idx)
-        self.aBus.optz.value = self.system.Bus.get(src='a', attr='v', idx=bus_idx)
-
-        # --- Gen ---
-        gen_idx = self.pg.get_idx()
-        self.pg.optz.value = self.system.StaticGen.get(src='p', attr='v', idx=gen_idx)
-        self.qg.optz.value = self.system.StaticGen.get(src='q', attr='v', idx=gen_idx)
-
-        # --- Objective ---
-        self.obj.v = res['f']
-
-        self.system.recent = self.system.routines[self.class_name]
-        return True
 
     def run(self, force_init=False, no_code=True,
             method=None, **kwargs):
@@ -92,70 +121,3 @@ class ACOPFBase(DCPFlowBase):
         super().run(force_init=force_init,
                     no_code=no_code, method=method,
                     **kwargs, )
-
-
-class ACOPF(ACOPFBase):
-    """
-    Standard AC optimal power flow.
-
-    Notes
-    -----
-    1. ACOPF is solved with PYPOWER ``runopf`` function.
-    2. ACOPF formulation in AMS style is NOT DONE YET,
-       but this does not affect the results
-       because the data are passed to PYPOWER for solving.
-    """
-
-    def __init__(self, system, config):
-        ACOPFBase.__init__(self, system, config)
-        self.info = 'AC Optimal Power Flow'
-        self.type = 'ACED'
-
-        # --- params ---
-        self.c2 = RParam(info='Gen cost coefficient 2',
-                         name='c2', tex_name=r'c_{2}',
-                         unit=r'$/(p.u.^2)', model='GCost',
-                         indexer='gen', imodel='StaticGen',
-                         nonneg=True)
-        self.c1 = RParam(info='Gen cost coefficient 1',
-                         name='c1', tex_name=r'c_{1}',
-                         unit=r'$/(p.u.)', model='GCost',
-                         indexer='gen', imodel='StaticGen',)
-        self.c0 = RParam(info='Gen cost coefficient 0',
-                         name='c0', tex_name=r'c_{0}',
-                         unit=r'$', model='GCost',
-                         indexer='gen', imodel='StaticGen',
-                         no_parse=True)
-        self.qd = RParam(info='reactive demand',
-                         name='qd', tex_name=r'q_{d}',
-                         model='StaticLoad', src='q0',
-                         unit='p.u.',)
-        # --- bus ---
-        self.aBus = Var(info='Bus voltage angle',
-                        unit='rad',
-                        name='aBus', tex_name=r'a_{Bus}',
-                        model='Bus', src='a',)
-        self.vBus = Var(info='Bus voltage magnitude',
-                        unit='p.u.',
-                        name='vBus', tex_name=r'v_{Bus}',
-                        src='v', model='Bus',)
-        # --- gen ---
-        self.pg = Var(info='Gen active power',
-                      unit='p.u.',
-                      name='pg', tex_name=r'p_{g}',
-                      model='StaticGen', src='p',)
-        self.qg = Var(info='Gen reactive power',
-                      unit='p.u.',
-                      name='qg', tex_name=r'q_{g}',
-                      model='StaticGen', src='q',)
-        # --- constraints ---
-        self.pb = Constraint(name='pb',
-                             info='power balance',
-                             e_str='sum(pd) - sum(pg)',
-                             is_eq=True,)
-        # TODO: ACOPF formulation
-        # --- objective ---
-        self.obj = Objective(name='obj',
-                             info='total cost',
-                             e_str='sum(c2 * pg**2 + c1 * pg + c0)',
-                             sense='min',)

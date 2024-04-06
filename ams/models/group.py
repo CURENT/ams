@@ -118,7 +118,7 @@ class RenGen(GroupBase):
 
     def __init__(self):
         super().__init__()
-        self.common_params.extend(('bus', 'gen', 'Sn'))
+        self.common_params.extend(('bus', 'gen', 'Sn', 'q0'))
         self.common_vars.extend(('Pe', 'Qe'))
 
 
@@ -217,7 +217,7 @@ class StaticLoad(GroupBase):
 
     def __init__(self):
         super().__init__()
-        self.common_params.extend(('p0',))
+        self.common_params.extend(('p0', 'q0'))
 
 
 class StaticShunt(GroupBase):
