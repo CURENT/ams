@@ -533,7 +533,7 @@ class Dynamic:
             logger.info(f'Send <{rtn.class_name}> results to ANDES <{hex(id(sa))}>...')
 
         # NOTE: if DC type, check if results are converted
-        if (rtn.type != 'ACED') and (not rtn.is_ac):
+        if (rtn.type != 'ACED') and (not rtn.converted):
             logger.error(f'<{rtn.class_name}> AC conversion failed or not done yet!')
 
         # --- Mapping ---
@@ -557,7 +557,7 @@ class Dynamic:
             # --- special scenarios ---
             # 0. send PV bus voltage to StaticGen.v0 if not PFlow yet and AC converted
             cond_vpv = (mname_ads == 'Bus') and (pname_ads == 'v0')
-            if cond_vpv and (not self.is_tds) and (rtn.is_ac):
+            if cond_vpv and (not self.is_tds) and (rtn.converted):
                 # --- StaticGen ---
                 stg_idx = sp.StaticGen.get_idx()
                 bus_stg = sp.StaticGen.get(src='bus', attr='v', idx=stg_idx)

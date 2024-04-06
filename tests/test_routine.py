@@ -78,7 +78,7 @@ class TestRTED(unittest.TestCase):
         Test `RTED.init()` method.
         """
         self.ss.RTED.dc2ac()
-        self.assertTrue(self.ss.RTED.is_ac, "AC conversion failed!")
+        self.assertTrue(self.ss.RTED.converted, "AC conversion failed!")
 
         stg_idx = self.ss.StaticGen.get_idx()
         pg_rted = self.ss.RTED.get(src='pg', attr='v', idx=stg_idx)
