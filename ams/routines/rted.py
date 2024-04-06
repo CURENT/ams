@@ -149,17 +149,11 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.type = 'DCED'
 
         # --- Mapping Section ---
-        # --- from map ---
+        # Add p -> pg0 in from map
         self.map1.update({
-            'ug': ('StaticGen', 'u'),
             'pg0': ('StaticGen', 'p'),
         })
-        # --- to map ---
-        self.map2.update({
-            'vBus': ('Bus', 'v0'),
-            'ug': ('StaticGen', 'u'),
-            'pg': ('StaticGen', 'p0'),
-        })
+        # nothing to do with to map
 
         # --- Model Section ---
         # --- SFR ---
@@ -191,7 +185,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
             The loss factor for the conversion. Defaults to 1.2.
         """
         if self.exec_time == 0 or self.exit_code != 0:
-            logger.warning('RTED is not executed successfully, quit conversion.')
+            logger.warning(f'{self.class_name} is not executed successfully, quit conversion.')
             return False
         # set pru and prd into pmin and pmax
         pr_idx = self.pru.get_idx()
@@ -239,9 +233,10 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.system.StaticGen.set(src='pmin', attr='v', idx=pr_idx, value=pmin0)
         self.system.StaticGen.set(src='pmax', attr='v', idx=pr_idx, value=pmax0)
         self.system.StaticGen.set(src='p0', attr='v', idx=pr_idx, value=p00)
-        self.system.recent = self
 
-        self.is_ac = True
+        # --- set status ---
+        self.system.recent = self
+        self.converted = True
         logger.warning(f'<{self.class_name}> converted to AC.')
         return True
 
@@ -288,9 +283,9 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         -----
         1. remove ``vBus`` if has been converted with ``dc2ac``
         """
-        if self.is_ac:
+        if self.converted:
             delattr(self, 'vBus')
-            self.is_ac = False
+            self.converted = False
         return super().run(**kwargs)
 
 

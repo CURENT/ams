@@ -68,7 +68,7 @@ class RoutineBase:
         self.exec_time = 0.0        # running time
         self.exit_code = 0          # exit code
         self.converged = False      # convergence flag
-        self.is_ac = False          # AC conversion flag
+        self.converted = False          # AC conversion flag
 
     @property
     def class_name(self):

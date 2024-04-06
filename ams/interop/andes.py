@@ -56,8 +56,10 @@ idx_guess = {'rego': 'RenGovernor',
              'pq': 'PQ', }
 
 
-def to_andes(system, setup=False, addfile=None,
-             **kwargs):
+def to_andes(system, addfile=None,
+             setup=False, no_output=False,
+             default_config=True,
+             verify=True, tol=1e-3):
     """
     Convert the AMS system to an ANDES system.
 
@@ -80,12 +82,19 @@ def to_andes(system, setup=False, addfile=None,
     ----------
     system : System
         The AMS system to be converted to ANDES format.
-    setup : bool, optional
-        Whether to call `setup()` after the conversion. Default is True.
     addfile : str, optional
         The additional file to be converted to ANDES dynamic mdoels.
-    **kwargs : dict
-        Keyword arguments to be passed to `andes.system.System`.
+    setup : bool, optional
+        Whether to call `setup()` after the conversion. Default is True.
+    no_output : bool, optional
+        To ANDES system.
+    default_config : bool, optional
+        To ANDES system.
+    verify : bool
+        If True, the converted ANDES system will be verified with the source
+        AMS system using AC power flow.
+    tol : float
+        The tolerance of error.
 
     Returns
     -------
@@ -97,9 +106,8 @@ def to_andes(system, setup=False, addfile=None,
     >>> import ams
     >>> import andes
     >>> sp = ams.load(ams.get_case('ieee14/ieee14_uced.xlsx'), setup=True)
-    >>> sa = sp.to_andes(setup=False,
-    ...                  addfile=andes.get_case('ieee14/ieee14_full.xlsx'),
-    ...                  overwrite=True, no_output=True)
+    >>> sa = sp.to_andes(addfile=andes.get_case('ieee14/ieee14_full.xlsx'),
+    ...                  setup=False, overwrite=True, no_output=True)
 
     Notes
     -----
@@ -109,7 +117,8 @@ def to_andes(system, setup=False, addfile=None,
     """
     t0, _ = elapsed()
 
-    adsys = andes_System()
+    adsys = andes_System(no_output=no_output,
+                         default_config=default_config)
     # FIXME: is there a systematic way to do this? Other config might be needed
     adsys.config.freq = system.config.freq
     adsys.config.mva = system.config.mva
@@ -141,8 +150,14 @@ def to_andes(system, setup=False, addfile=None,
     # finalize
     system.dyn = Dynamic(amsys=system, adsys=adsys)
     system.dyn.link_andes(adsys=adsys)
+
     if setup:
         adsys.setup()
+    elif verify:
+        logger.warning('PFlow verification is skipped due to no setup.')
+        return adsys
+    if verify:
+        verify_pf(amsys=system, adsys=adsys, tol=tol)
     return adsys
 
 
@@ -533,7 +548,7 @@ class Dynamic:
             logger.info(f'Send <{rtn.class_name}> results to ANDES <{hex(id(sa))}>...')
 
         # NOTE: if DC type, check if results are converted
-        if (rtn.type != 'ACED') and (not rtn.is_ac):
+        if (rtn.type != 'ACED') and (not rtn.converted):
             logger.error(f'<{rtn.class_name}> AC conversion failed or not done yet!')
 
         # --- Mapping ---
@@ -557,7 +572,7 @@ class Dynamic:
             # --- special scenarios ---
             # 0. send PV bus voltage to StaticGen.v0 if not PFlow yet and AC converted
             cond_vpv = (mname_ads == 'Bus') and (pname_ads == 'v0')
-            if cond_vpv and (not self.is_tds) and (rtn.is_ac):
+            if cond_vpv and (not self.is_tds) and (rtn.converted):
                 # --- StaticGen ---
                 stg_idx = sp.StaticGen.get_idx()
                 bus_stg = sp.StaticGen.get(src='bus', attr='v', idx=stg_idx)
@@ -945,3 +960,43 @@ def make_link_table(adsys):
             ]
     out = ssa_key[cols].sort_values(by='stg_idx', ascending=False).reset_index(drop=True)
     return out
+
+
+def verify_pf(amsys, adsys, tol=1e-3):
+    """
+    Verify the power flow results between AMS and ANDES.
+    Note that this function will run PFlow in both systems.
+
+    Parameters
+    ----------
+    sp : ams.System
+        The AMS system.
+    sa : andes.System
+        The ANDES system.
+
+    Returns
+    -------
+    bool
+        True if the power flow results are consistent; False otherwise.
+    """
+    amsys.PFlow.run()
+    if adsys.is_setup:
+        adsys.PFlow.run()
+    else:
+        logger.info('ANDES system is not setup, quit verification.')
+        return False
+    v_check = np.allclose(amsys.Bus.v.v, adsys.Bus.v.v, atol=tol)
+    a_check = np.allclose(amsys.Bus.a.v, adsys.Bus.a.v, atol=tol)
+    check = v_check and a_check
+
+    v_diff_max = np.max(np.abs(amsys.Bus.v.v - adsys.Bus.v.v))
+    a_diff_max = np.max(np.abs(amsys.Bus.a.v - adsys.Bus.a.v))
+    diff_msg = f'Voltage diff max: {v_diff_max}, Angle diff max: {a_diff_max}'
+    logger.debug(diff_msg)
+    if check:
+        logger.info('Power flow results are consistent.')
+    else:
+        msg = 'Power flow results are inconsistent!'
+        logger.warning(msg)
+        logger.warning(diff_msg)
+    return check
