@@ -8,7 +8,8 @@ import numpy as np
 import andes
 import ams
 
-from ams.interop.andes import build_group_table, make_link_table, to_andes, parse_addfile
+from ams.interop.andes import (build_group_table, make_link_table, to_andes,
+                               parse_addfile, verify_pf)
 
 
 class TestInteropBase(unittest.TestCase):
@@ -37,9 +38,7 @@ class TestInteropBase(unittest.TestCase):
         """
         for ad_case in self.ad_cases:
             sa = andes.load(andes.get_case(ad_case),
-                            setup=True,
-                            no_output=True,
-                            default_config=True,)
+                            setup=True, no_output=True, default_config=True,)
             # --- test build_group_table ---
             ssa_stg = build_group_table(adsys=sa,
                                         grp_name='StaticGen',
@@ -68,9 +67,7 @@ class TestInteropBase(unittest.TestCase):
         """
         for ad_case, am_case in zip(self.ad_cases, self.am_cases):
             sp = ams.load(ams.get_case(am_case),
-                          setup=True,
-                          no_output=True,
-                          default_config=True,)
+                          setup=True, no_output=True, default_config=True,)
             # before addfile
             sa = to_andes(sp, setup=False)
             self.assertEqual(set(sp.PV.idx.v), set(sa.PV.idx.v))
@@ -97,12 +94,24 @@ class TestInteropBase(unittest.TestCase):
         Test conversion when extra dynamic models exist.
         """
         sp = ams.load(ams.get_case('ieee14/ieee14_uced.xlsx'),
-                      setup=True,
-                      no_output=True,
-                      default_config=True,)
-        sa = to_andes(sp, setup=True, addfile=andes.get_case('ieee14/ieee14_full.xlsx'))
-
+                      setup=True, no_output=True, default_config=True,)
+        sa = to_andes(sp, addfile=andes.get_case('ieee14/ieee14_full.xlsx'),
+                      setup=True, no_output=True, default_config=True,
+                      verify=False, tol=1e-3)
         self.assertGreaterEqual(sa.PVD1.n, 0)
+
+    def test_verify_pf(self):
+        """
+        Test verification of power flow results.
+        """
+        sp = ams.load(ams.get_case('matpower/case300.m'),
+                      setup=True, no_output=True, default_config=True,)
+        sa = to_andes(sp,
+                      setup=True, no_output=True, default_config=True,
+                      verify=False, tol=1e-3)
+        # NOTE: it is known that there is 1e-7~1e-6 diff in case300.m
+        self.assertFalse(verify_pf(amsys=sp, adsys=sa, tol=1e-6))
+        self.assertTrue(verify_pf(amsys=sp, adsys=sa, tol=1e-3))
 
 
 class TestDataExchange(unittest.TestCase):
