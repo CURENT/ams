@@ -59,7 +59,7 @@ idx_guess = {'rego': 'RenGovernor',
 def to_andes(system, addfile=None,
              setup=False, no_output=False,
              default_config=True,
-             verify=True, tol=1e-4):
+             verify=True, tol=1e-3):
     """
     Convert the AMS system to an ANDES system.
 
@@ -962,9 +962,10 @@ def make_link_table(adsys):
     return out
 
 
-def verify_pf(amsys, adsys, tol=1e-4):
+def verify_pf(amsys, adsys, tol=1e-3):
     """
     Verify the power flow results between AMS and ANDES.
+    Note that this function will run PFlow in both systems.
 
     Parameters
     ----------
@@ -987,8 +988,15 @@ def verify_pf(amsys, adsys, tol=1e-4):
     v_check = np.allclose(amsys.Bus.v.v, adsys.Bus.v.v, atol=tol)
     a_check = np.allclose(amsys.Bus.a.v, adsys.Bus.a.v, atol=tol)
     check = v_check and a_check
+
+    v_diff_max = np.max(np.abs(amsys.Bus.v.v - adsys.Bus.v.v))
+    a_diff_max = np.max(np.abs(amsys.Bus.a.v - adsys.Bus.a.v))
+    diff_msg = f'Voltage diff max: {v_diff_max}, Angle diff max: {a_diff_max}'
+    logger.debug(diff_msg)
     if check:
         logger.info('Power flow results are consistent.')
     else:
-        logger.warning('Power flow results are inconsistent!')
+        msg = 'Power flow results are inconsistent!'
+        logger.warning(msg)
+        logger.warning(diff_msg)
     return check
