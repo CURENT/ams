@@ -137,22 +137,43 @@ class RoutineBase:
     def set(self, src: str, idx, attr: str = "v", value=0.0):
         """
         Set the value of an attribute of a routine parameter.
+
+        Performs ``self.<src>.<attr>[idx] = value``. This method will not modify
+        the input values from the case file that have not been converted to the
+        system base. As a result, changes applied by this method will not affect
+        the dumped case file.
+
+        To alter parameters and reflect it in the case file, use :meth:`alter`
+        instead.
+
+        Parameters
+        ----------
+        src : str
+            Name of the model property
+        idx : str, int, float, array-like
+            Indices of the devices
+        attr : str, optional, default='v'
+            The internal attribute of the property to get.
+            ``v`` for values, ``a`` for address, and ``e`` for equation value.
+        value : array-like
+            New values to be set
+
+        Returns
+        -------
+        bool
+            True when successful.
         """
         if self.__dict__[src].owner is not None:
             # TODO: fit to `_v` type param in the future
             owner = self.__dict__[src].owner
             src0 = self.__dict__[src].src
-            src_owner = src0 if src0 is not None else src
             try:
-                res = owner.set(src=src_owner, idx=idx, attr=attr, value=value)
+                res = owner.set(src=src0, idx=idx, attr=attr, value=value)
                 return res
             except KeyError as e:
                 msg = f"Failed to set <{src0}> in <{owner.class_name}>. "
                 msg += f"Original error: {e}"
                 raise KeyError(msg)
-            else:
-                logger.info(f"Failed to set <{src0}> in <{owner.class_name}>.")
-                return None
         else:
             # FIXME: add idx for non-grouped variables
             raise TypeError(f"Variable {self.name} has no owner.")
