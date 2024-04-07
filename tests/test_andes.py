@@ -93,7 +93,7 @@ class TestInteropBase(unittest.TestCase):
         """
         Test conversion from AMS case to ANDES case after updating parameters.
         """
-        for ad_case, am_case in zip(self.ad_cases, self.am_cases):
+        for am_case in self.am_cases:
             sp = ams.load(ams.get_case(am_case),
                           setup=True, no_output=True, default_config=True,)
         # record initial values
@@ -103,7 +103,7 @@ class TestInteropBase(unittest.TestCase):
         # before update
         np.testing.assert_array_equal(sp.PQ.p0.v, sa.PQ.p0.v)
         # after update
-        sp.PQ.set(src='p0', attr='v', idx=pq_idx, value=0.9*p0)
+        sp.PQ.alter(src='p0', idx=pq_idx, value=0.9*p0)
         sa = to_andes(sp, setup=False, no_output=True, default_config=True)
         np.testing.assert_array_equal(sp.PQ.p0.v, sa.PQ.p0.v)
 
