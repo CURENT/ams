@@ -125,10 +125,15 @@ def to_andes(system, addfile=None,
 
     for mdl_name, mdl_cols in pflow_dict.items():
         mdl = getattr(system, mdl_name)
-        # refresh cache to get the latest data
-        mdl.cache.refresh("df_in")
+        mdl.cache.refresh("df_in")  # refresh cache
         for row in mdl.cache.df_in[mdl_cols].to_dict(orient='records'):
             adsys.add(mdl_name, row)
+        # FIXME: this is a temporary fix to ensure parameters are latest values
+        # the reason is in ANDES, model.cache.df_in is not the latest values
+        # if altered, even after cache.refresh("df_in")
+        for num_name, num_param in adsys.models[mdl_name].num_params.items():
+            if num_name in mdl.__dict__.keys():
+                num_param.v = mdl.__dict__[num_name].v
 
     _, s = elapsed(t0)
 
