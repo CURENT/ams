@@ -13,8 +13,8 @@ v0.9.6 (2024-xx-xx)
 -------------------
 
 - Refactor DCPF, PFlow, and ACOPF
-- Fix parameter update issue in ANDES interface
 - Add a loss factor in ``RTED.dc2ac()``
+- Add ``DCOPF.dc2ac()``
 
 v0.9.5 (2024-03-25)
 -------------------
