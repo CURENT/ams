@@ -306,7 +306,7 @@ class DCOPF(RoutineBase):
         self.system.recent = self.system.routines[self.class_name]
         return True
 
-    def dc2ac(self, kloss=1.1, **kwargs):
+    def dc2ac(self, kloss=1.0, **kwargs):
         """
         Convert the DCOPF results with ACOPF.
 

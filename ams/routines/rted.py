@@ -175,7 +175,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         cost += f'+ t dot sum({_to_sum})'
         self.obj.e_str = cost
 
-    def dc2ac(self, kloss=1.1, **kwargs):
+    def dc2ac(self, kloss=1.0, **kwargs):
         """
         Convert the RTED results with ACOPF.
 
