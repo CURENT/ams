@@ -48,6 +48,13 @@ class Line(LineData, Model):
         self.a1a = None
         self.a2a = None
 
+    # NOTE: following code are minly copied from `andes.models.line.Line`
+    # and they are not fully verified
+    # potential issues:
+    # `build_Bp` contains 'fdxb', which is not included in the input parameters
+    # `build_Bpp` ignores the line resistance for all three methods
+    # `build_Bdc` results are the negative of `Bbus` from `makeBdc` in PYPOWER
+
     def build_y(self):
         """
         Build bus admittance matrix. Copied from ``andes.models.line.line.Line``.
