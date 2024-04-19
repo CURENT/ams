@@ -429,6 +429,11 @@ class System(andes_System):
                 algeb.a = np.arange(a0, a0 + algeb.owner.n)
                 a0 += algeb.owner.n
 
+        # NOTE: this is a temporary solution for building Y matrix
+        # consider refator this part if any other similar cases occur in the future
+        self.Line.a1a = self.Bus.get(src='a', attr='a', idx=self.Line.bus1.v)
+        self.Line.a2a = self.Bus.get(src='a', attr='a', idx=self.Line.bus2.v)
+
         _, s = elapsed(t0)
         logger.info('System set up in %s.', s)
 
