@@ -51,9 +51,11 @@ class Line(LineData, Model):
     # NOTE: following code are minly copied from `andes.models.line.Line`
     # and they are not fully verified
     # potential issues:
-    # `build_Bp` contains 'fdxb', which is not included in the input parameters
+    # `build_Bp` contains 'fdxb', which is not included in the input parameters,
+    # and the results are the negative of `Bbus` from `makeBdc` in PYPOWER
     # `build_Bpp` ignores the line resistance for all three methods
     # `build_Bdc` results are the negative of `Bbus` from `makeBdc` in PYPOWER
+    # `build_y` results have inignorable differences at diagonal elements with `makeYbus` in PYPOWER
 
     def build_y(self):
         """
