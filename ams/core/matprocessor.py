@@ -129,9 +129,6 @@ class MatProcessor:
         self.Cg = MParam(name='Cg', tex_name=r'C_g',
                          info='Generator connectivity matrix',
                          v=None, sparse=True)
-        self.Cs = MParam(name='Cs', tex_name=r'C_s',
-                         info='Slack connectivity matrix',
-                         v=None, sparse=True)
         self.Cl = MParam(name='Cl', tex_name=r'Cl',
                          info='Load connectivity matrix',
                          v=None, sparse=True)
@@ -139,14 +136,19 @@ class MatProcessor:
                           info='Shunt connectivity matrix',
                           v=None, sparse=True)
 
-    def make(self):
+    def build(self):
         """
-        Make the system matrices.
-
-        Note that this method will update all matrices in the class.
+        Build the system matrices.
+        It includes connectivity matrices: Cg, Cl, Csh, Cft, and CftT,
+        and bus matrices: Bbus, Bf, Pbusinj, and Pfinj.
         """
         t_mat, _ = elapsed()
-        self._makeC()
+        # --- connectivity matrices ---
+        _ = self.build_cg()
+        _ = self.build_cl()
+        _ = self.build_csh()
+        _ = self.build_cft()
+        # --- bus matrices ---
         self._makeBdc()
         _, s_mat = elapsed(t_mat)
         logger.debug(f"Built system matrices in {s_mat}.")
@@ -212,70 +214,115 @@ class MatProcessor:
         self.Bbus._v, self.Bf._v, self.Pbusinj._v, self.Pfinj._v = Bbus, Bf, Pbusinj, Pfinj
         return True
 
-    def _makeC(self):
+    def build_cg(self):
         """
-        Make connectivity matrix.
+        Build generator connectivity matrix Cg, and store it in the MParam `Cg`.
+
+        Returns
+        -------
+        Cg : spmatrix
+            Generator connectivity matrix.
         """
         system = self.system
 
         # common variables
         nb = system.Bus.n
         ng = system.StaticGen.n
-        nl = system.Line.n
-        npq = system.PQ.n
-        nsh = system.Shunt.n
 
-        # --- Cg ---
         # bus indices: idx -> uid
         idx_gen = system.StaticGen.get_idx()
         u_gen = system.StaticGen.get(src='u', attr='v', idx=idx_gen)
         on_gen = np.flatnonzero(u_gen)  # uid of online generators
         on_gen_idx = [idx_gen[i] for i in on_gen]  # idx of online generators
-        on_gen_bus_idx = system.StaticGen.get(src='bus', attr='v', idx=on_gen_idx)
+        on_gen_bus = system.StaticGen.get(src='bus', attr='v', idx=on_gen_idx)
 
-        row = np.array([system.Bus.idx2uid(x) for x in on_gen_bus_idx])
+        row = np.array([system.Bus.idx2uid(x) for x in on_gen_bus])
         col = np.array([idx_gen.index(x) for x in on_gen_idx])
-        Cg = c_sparse((np.ones(len(on_gen_idx)), (row, col)), (nb, ng))
+        self.Cg._v = c_sparse((np.ones(len(on_gen_idx)), (row, col)), (nb, ng))
+        return self.Cg._v
 
-        # --- Cl ---
+    def build_cl(self):
+        """
+        Build load connectivity matrix Cl, and store it in the MParam `Cl`.
+
+        Returns
+        -------
+        Cl : spmatrix
+            Load connectivity matrix.
+        """
+        system = self.system
+
+        # common variables
+        nb = system.Bus.n
+        npq = system.PQ.n
+
         # load indices: idx -> uid
         idx_load = system.PQ.idx.v
         u_load = system.PQ.get(src='u', attr='v', idx=idx_load)
-        on_load = np.flatnonzero(u_load)  # uid of online loads
-        on_load_idx = [idx_load[i] for i in on_load]  # idx of online loads
-        on_load_bus_idx = system.PQ.get(src='bus', attr='v', idx=on_load_idx)
+        on_load = np.flatnonzero(u_load)
+        on_load_idx = [idx_load[i] for i in on_load]
+        on_load_bus = system.PQ.get(src='bus', attr='v', idx=on_load_idx)
 
-        row = np.array([system.Bus.idx2uid(x) for x in on_load_bus_idx])
+        row = np.array([system.Bus.idx2uid(x) for x in on_load_bus])
         col = np.array([system.PQ.idx2uid(x) for x in on_load_idx])
-        Cl = c_sparse((np.ones(len(on_load_idx)), (row, col)), (nb, npq))
+        self.Cl._v = c_sparse((np.ones(len(on_load_idx)), (row, col)), (nb, npq))
+        return self.Cl._v
 
-        # --- Cft ---
-        # line indices: idx -> uid
-        idx_line = system.Line.idx.v
-        u_line = system.Line.get(src='u', attr='v', idx=idx_line)
-        on_line = np.flatnonzero(u_line)  # uid of online lines
-        on_line_idx = [idx_line[i] for i in on_line]  # idx of online lines
-        on_line_bus1_idx = system.Line.get(src='bus1', attr='v', idx=on_line_idx)
-        on_line_bus2_idx = system.Line.get(src='bus2', attr='v', idx=on_line_idx)
+    def build_csh(self):
+        """
+        Build shunt connectivity matrix Csh, and store it in the MParam `Csh`.
 
-        data_line = np.ones(2*len(on_line_idx))
-        data_line[len(on_line_idx):] = -1
-        row_line = np.array([system.Bus.idx2uid(x) for x in on_line_bus1_idx + on_line_bus2_idx])
-        col_line = np.array([system.Line.idx2uid(x) for x in on_line_idx + on_line_idx])
-        Cft = c_sparse((data_line, (row_line, col_line)), (nb, nl))
+        Returns
+        -------
+        Csh : spmatrix
+            Shunt connectivity matrix.
+        """
+        system = self.system
 
-        # --- Csh ---
+        # common variables
+        nb = system.Bus.n
+        nsh = system.Shunt.n
+
         # shunt indices: idx -> uid
         idx_shunt = system.Shunt.idx.v
         u_shunt = system.Shunt.get(src='u', attr='v', idx=idx_shunt)
-        on_shunt = np.flatnonzero(u_shunt)  # uid of online shunts
-        on_shunt_idx = [idx_shunt[i] for i in on_shunt]  # idx of online shunts
-        on_shunt_bus_idx = system.Shunt.get(src='bus', attr='v', idx=on_shunt_idx)
+        on_shunt = np.flatnonzero(u_shunt)
+        on_shunt_idx = [idx_shunt[i] for i in on_shunt]
+        on_shunt_bus = system.Shunt.get(src='bus', attr='v', idx=on_shunt_idx)
 
-        row = np.array([system.Bus.idx2uid(x) for x in on_shunt_bus_idx])
+        row = np.array([system.Bus.idx2uid(x) for x in on_shunt_bus])
         col = np.array([system.Shunt.idx2uid(x) for x in on_shunt_idx])
-        Csh = c_sparse((np.ones(len(on_shunt_idx)), (row, col)), (nb, nsh))
+        self.Csh._v = c_sparse((np.ones(len(on_shunt_idx)), (row, col)), (nb, nsh))
+        return self.Csh._v
 
-        self.Cg._v, self.Cl._v, self.Cft._v, self.Csh._v = Cg, Cl, Cft, Csh
-        self.CftT._v = Cft.T
-        return True
+    def build_cft(self):
+        """
+        Build line connectivity matrix Cft and its transpose CftT.
+        The Cft and CftT are stored in the MParam `Cft` and `CftT`, respectively.
+
+        Returns
+        -------
+        Cft : spmatrix
+            Line connectivity matrix.
+        """
+        system = self.system
+
+        # common variables
+        nb = system.Bus.n
+        nl = system.Line.n
+
+        # line indices: idx -> uid
+        idx_line = system.Line.idx.v
+        u_line = system.Line.get(src='u', attr='v', idx=idx_line)
+        on_line = np.flatnonzero(u_line)
+        on_line_idx = [idx_line[i] for i in on_line]
+        on_line_bus1 = system.Line.get(src='bus1', attr='v', idx=on_line_idx)
+        on_line_bus2 = system.Line.get(src='bus2', attr='v', idx=on_line_idx)
+
+        data_line = np.ones(2*len(on_line_idx))
+        data_line[len(on_line_idx):] = -1
+        row_line = np.array([system.Bus.idx2uid(x) for x in on_line_bus1 + on_line_bus2])
+        col_line = np.array([system.Line.idx2uid(x) for x in on_line_idx + on_line_idx])
+        self.Cft._v = c_sparse((data_line, (row_line, col_line)), (nb, nl))
+        self.CftT._v = self.Cft._v.T
+        return self.Cft._v

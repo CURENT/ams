@@ -25,7 +25,7 @@ class TestMatProcessor(unittest.TestCase):
         self.nl = self.ss.Line.n
 
         self.mats = MatProcessor(self.ss)
-        self.mats.make()
+        self.mats.build()
 
     def test_MParam(self):
         """
