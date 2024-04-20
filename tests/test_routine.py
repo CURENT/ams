@@ -42,7 +42,7 @@ class TestRoutineMethods(unittest.TestCase):
         """
         Test `Routine.get()` method.
         """
-
+        # --- single period routine ---
         # get an rparam value
         np.testing.assert_equal(self.ss.DCOPF.get('ug', 'PV_30'), 1)
 
@@ -51,6 +51,16 @@ class TestRoutineMethods(unittest.TestCase):
         self.assertEqual(self.ss.DCOPF.exit_code, 0, "Exit code is not 0.")
         np.testing.assert_equal(self.ss.DCOPF.get('pg', 'PV_30', 'v'),
                                 self.ss.StaticGen.get('p', 'PV_30', 'v'))
+
+        # test return type
+        self.assertIsInstance(self.ss.DCOPF.get('pg', 'PV_30', 'v'), float)
+        self.assertIsInstance(self.ss.DCOPF.get('pg', ['PV_30'], 'v'), np.ndarray)
+
+        # --- multi period routine ---
+        self.ss.ED.run(solver='ECOS')
+        self.assertEqual(self.ss.ED.exit_code, 0, "Exit code is not 0.")
+        np.testing.assert_equal(self.ss.ED.get('pg', 'PV_30', 'v').ndim, 1)
+        np.testing.assert_equal(self.ss.ED.get('pg', ['PV_30'], 'v').ndim, 2)
 
     def test_rouine_init(self):
         """
