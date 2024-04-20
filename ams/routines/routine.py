@@ -516,7 +516,7 @@ class RoutineBase:
             if no system matrices are changed.
         """
         t0, _ = elapsed()
-        re_setup = False
+        re_init = False
         # sanitize input
         sparams = []
         if params is None:
@@ -532,12 +532,13 @@ class RoutineBase:
                 param.update()
         for param in sparams:
             if param.optz is None:  # means no_parse=True
-                re_setup = True
+                re_init = True
                 break
         if mat_make:
             self.system.mats.make()
-        if re_setup:
+        if re_init:
             logger.warning(f"<{self.class_name}> reinit OModel due to non-parametric change.")
+            self.om.parsed = False
             _ = self.om.init(no_code=True)
         results = self.om.update(params=sparams)
         t0, s0 = elapsed(t0)
@@ -663,7 +664,7 @@ class RoutineBase:
         # --- reset optimization model status ---
         self.om.initialized = False
         # --- reset OModel parser status ---
-        self.om._parsed = False
+        self.om.parsed = False
 
     def addRParam(self,
                   name: str,
