@@ -14,14 +14,14 @@ class TestMatProcessor(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.ss = ams.load(
-            ams.get_case("ieee39/ieee39_uced_esd1.xlsx"),
-            default_config=True,
-            no_output=True,
-        )
+        self.ss = ams.load(ams.get_case("matpower/case300.m"),
+                           default_config=True, no_output=True)
         self.nR = self.ss.Region.n
         self.nB = self.ss.Bus.n
         self.nl = self.ss.Line.n
+        self.nG = self.ss.StaticGen.n
+        self.nsh = self.ss.Shunt.n
+        self.nD = self.ss.StaticLoad.n
 
         self.mats = MatProcessor(self.ss)
         self.mats.build()
@@ -36,7 +36,37 @@ class TestMatProcessor(unittest.TestCase):
         # check if `v` is 1D-array
         self.assertEqual(one_vec.v.shape, (self.ss.Bus.n,))
 
-    def test_Cft(self):
+    def test_cg(self):
+        """
+        Test `Cg`.
+        """
+        self.assertIsInstance(self.mats.Cg._v, (c_sparse, l_sparse))
+        self.assertIsInstance(self.mats.Cg.v, np.ndarray)
+        self.assertEqual(self.mats.Cg._v.max(), 1)
+        np.testing.assert_equal(self.mats.Cg._v.sum(axis=0),
+                                np.ones((1, self.nG)))
+
+    def test_cl(self):
+        """
+        Test `Cl`.
+        """
+        self.assertIsInstance(self.mats.Cl._v, (c_sparse, l_sparse))
+        self.assertIsInstance(self.mats.Cl.v, np.ndarray)
+        self.assertEqual(self.mats.Cl._v.max(), 1)
+        np.testing.assert_equal(self.mats.Cl._v.sum(axis=0),
+                                np.ones((1, self.nD)))
+
+    def test_csh(self):
+        """
+        Test `Csh`.
+        """
+        self.assertIsInstance(self.mats.Csh._v, (c_sparse, l_sparse))
+        self.assertIsInstance(self.mats.Csh.v, np.ndarray)
+        self.assertEqual(self.mats.Csh._v.max(), 1)
+        np.testing.assert_equal(self.mats.Csh._v.sum(axis=0),
+                                np.ones((1, self.nsh)))
+
+    def test_cft(self):
         """
         Test `Cft`.
         """
