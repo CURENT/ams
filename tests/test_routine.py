@@ -69,6 +69,14 @@ class TestRoutineMethods(unittest.TestCase):
 
         self.assertTrue(self.ss.DCOPF.init(), "DCOPF initialization failed!")
 
+    def test_generate_symbols(self):
+        """
+        Test symbol generation.
+        """
+
+        self.ss.DCOPF.syms.generate_symbols()
+        self.assertTrue(self.ss.DCOPF._syms, "Symbol generation failed!")
+
 
 class TestRTED(unittest.TestCase):
     """
