@@ -15,6 +15,10 @@ v0.9.6 (2024-xx-xx)
 - Refactor DCPF, PFlow, and ACOPF
 - Add a loss factor in ``RTED.dc2ac()``
 - Add ``DCOPF.dc2ac()``
+- Fix OModel parse status to ensure no_parsed params can be updated
+- Fix and rerun ex2
+- Format ``Routine.get()`` return type to be consistent with input idx type
+- Remove unused ``Routine.prepare()``
 
 v0.9.5 (2024-03-25)
 -------------------
