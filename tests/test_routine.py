@@ -77,6 +77,21 @@ class TestRoutineMethods(unittest.TestCase):
         self.ss.DCOPF.syms.generate_symbols()
         self.assertTrue(self.ss.DCOPF._syms, "Symbol generation failed!")
 
+    def test_value_method(self):
+        """
+        Test Contraint and Objective values.
+        """
+
+        self.ss.DCOPF.run(solver='ECOS')
+        self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge!")
+
+        # --- constraint values ---
+        for constr in self.ss.DCOPF.constrs.values():
+            np.testing.assert_almost_equal(constr.v, constr.v2, decimal=6)
+
+        # --- objective value ---
+        self.assertAlmostEqual(self.ss.DCOPF.obj.v, self.ss.DCOPF.obj.v2, places=6)
+
 
 class TestOModel(unittest.TestCase):
     """
