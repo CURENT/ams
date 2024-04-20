@@ -102,15 +102,19 @@ class RoutineBase:
         if idx_all is None:
             raise ValueError(f"<{self.class_name}> item <{src}> has no idx.")
 
+        is_format = False  # whether the idx is formatted as a list
+        idx_u = None
         if isinstance(idx, (str, int)):
-            idx = [idx]
+            idx_u = [idx]
+            is_format = True
+        elif isinstance(idx, np.ndarray):
+            idx_u = idx.tolist()
+        elif isinstance(idx, list):
+            idx_u = idx.copy()
 
-        if isinstance(idx, np.ndarray):
-            idx = idx.tolist()
-
-        loc = [idx_all.index(idxe) if idxe in idx_all else None for idxe in idx]
+        loc = [idx_all.index(idxe) if idxe in idx_all else None for idxe in idx_u]
         if None in loc:
-            idx_none = [idxe for idxe in idx if idxe not in idx_all]
+            idx_none = [idxe for idxe in idx_u if idxe not in idx_all]
             msg = f"Var <{self.class_name}.{src}> does not contain value with idx={idx_none}"
             raise ValueError(msg)
         out = getattr(item, attr)[loc]
@@ -132,7 +136,8 @@ class RoutineBase:
             out = out[:, loc_h]
             if out.shape[1] == 1:
                 out = out[:, 0]
-        return out
+
+        return out[0] if is_format else out
 
     def set(self, src: str, idx, attr: str = "v", value=0.0):
         """
