@@ -6,7 +6,6 @@ import logging
 from typing import Any, Optional, Union
 from collections import OrderedDict
 import re
-import ast
 
 import numpy as np
 import scipy.sparse as spr
@@ -573,8 +572,7 @@ class Constraint(OptzBase):
 
         try:
             logger.debug(f"Value code: {code}")
-            out = ast.literal_eval(code)
-            return out
+            return eval(code)
         except Exception as e:
             logger.error(f"Error in calculating constr <{self.name}>.")
             logger.error(f"Original error: {e}")
@@ -661,8 +659,7 @@ class Objective(OptzBase):
 
         try:
             logger.debug(f"Value code: {code}")
-            out = ast.literal_eval(code)
-            return out
+            return eval(code)
         except Exception as e:
             logger.error(f"Error in calculating obj <{self.name}>.")
             logger.error(f"Original error: {e}")
