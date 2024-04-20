@@ -78,6 +78,52 @@ class TestRoutineMethods(unittest.TestCase):
         self.assertTrue(self.ss.DCOPF._syms, "Symbol generation failed!")
 
 
+class TestOModel(unittest.TestCase):
+    """
+    Test methods of `RTED`.
+    """
+
+    def setUp(self) -> None:
+        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.xlsx"),
+                           setup=True, default_config=True, no_output=True)
+        # decrease load first
+        self.ss.PQ.set(src='p0', attr='v', idx=['PQ_1', 'PQ_2'], value=[0.3, 0.3])
+
+    def test_trip(self):
+        """
+        Test generator trip.
+        """
+        # --- run DCOPF ---
+        self.ss.DCOPF.run(solver='ECOS')
+        obj = self.ss.DCOPF.obj.v
+
+        # --- generator trip ---
+        self.ss.StaticGen.set(src='u', attr='v', idx='PV_1', value=0)
+
+        self.ss.DCOPF.update()
+
+        self.ss.DCOPF.run(solver='ECOS')
+        self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge under generator trip!")
+        obj_gt = self.ss.DCOPF.obj.v
+        self.assertGreater(obj_gt, obj)
+
+        pg_trip = self.ss.DCOPF.get(src='pg', attr='v', idx='PV_1')
+        np.testing.assert_almost_equal(pg_trip, 0, decimal=6)
+
+        # --- trip line ---
+        self.ss.Line.set(src='u', attr='v', idx='Line_4', value=0)
+
+        self.ss.DCOPF.update()
+
+        self.ss.DCOPF.run(solver='ECOS')
+        self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge under line trip!")
+        obj_lt = self.ss.DCOPF.obj.v
+        self.assertGreater(obj_lt, obj_gt)
+
+        plf_trip = self.ss.DCOPF.get(src='plf', attr='v', idx='Line_4')
+        np.testing.assert_almost_equal(plf_trip, 0, decimal=6)
+
+
 class TestRTED(unittest.TestCase):
     """
     Test methods of `RTED`.
