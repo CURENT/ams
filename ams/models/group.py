@@ -200,7 +200,7 @@ class StaticGen(GroupBase):
     def __init__(self):
         super().__init__()
         self.common_params.extend(('Sn', 'Vn', 'p0', 'q0', 'ra', 'xs', 'subidx',
-                                   'bus', 'pmax', 'pmin', 'pg0', 'ctrl'))
+                                   'bus', 'pmax', 'pmin', 'pg0', 'ctrl', 'R10'))
         self.common_vars.extend(('p', 'q'))
 
 
@@ -217,7 +217,7 @@ class StaticLoad(GroupBase):
 
     def __init__(self):
         super().__init__()
-        self.common_params.extend(('p0', 'q0'))
+        self.common_params.extend(('p0', 'q0', 'zone'))
 
 
 class StaticShunt(GroupBase):
