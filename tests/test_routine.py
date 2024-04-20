@@ -42,7 +42,7 @@ class TestRoutineMethods(unittest.TestCase):
         """
         Test `Routine.get()` method.
         """
-
+        # --- single period routine ---
         # get an rparam value
         np.testing.assert_equal(self.ss.DCOPF.get('ug', 'PV_30'), 1)
 
@@ -52,12 +52,91 @@ class TestRoutineMethods(unittest.TestCase):
         np.testing.assert_equal(self.ss.DCOPF.get('pg', 'PV_30', 'v'),
                                 self.ss.StaticGen.get('p', 'PV_30', 'v'))
 
+        # test return type
+        self.assertIsInstance(self.ss.DCOPF.get('pg', 'PV_30', 'v'), float)
+        self.assertIsInstance(self.ss.DCOPF.get('pg', ['PV_30'], 'v'), np.ndarray)
+
+        # --- multi period routine ---
+        self.ss.ED.run(solver='ECOS')
+        self.assertEqual(self.ss.ED.exit_code, 0, "Exit code is not 0.")
+        np.testing.assert_equal(self.ss.ED.get('pg', 'PV_30', 'v').ndim, 1)
+        np.testing.assert_equal(self.ss.ED.get('pg', ['PV_30'], 'v').ndim, 2)
+
     def test_rouine_init(self):
         """
         Test `Routine.init()` method.
         """
 
         self.assertTrue(self.ss.DCOPF.init(), "DCOPF initialization failed!")
+
+    def test_generate_symbols(self):
+        """
+        Test symbol generation.
+        """
+
+        self.ss.DCOPF.syms.generate_symbols()
+        self.assertTrue(self.ss.DCOPF._syms, "Symbol generation failed!")
+
+    def test_value_method(self):
+        """
+        Test Contraint and Objective values.
+        """
+
+        self.ss.DCOPF.run(solver='ECOS')
+        self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge!")
+
+        # --- constraint values ---
+        for constr in self.ss.DCOPF.constrs.values():
+            np.testing.assert_almost_equal(constr.v, constr.v2, decimal=6)
+
+        # --- objective value ---
+        self.assertAlmostEqual(self.ss.DCOPF.obj.v, self.ss.DCOPF.obj.v2, places=6)
+
+
+class TestOModel(unittest.TestCase):
+    """
+    Test methods of `RTED`.
+    """
+
+    def setUp(self) -> None:
+        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.xlsx"),
+                           setup=True, default_config=True, no_output=True)
+        # decrease load first
+        self.ss.PQ.set(src='p0', attr='v', idx=['PQ_1', 'PQ_2'], value=[0.3, 0.3])
+
+    def test_trip(self):
+        """
+        Test generator trip.
+        """
+        # --- run DCOPF ---
+        self.ss.DCOPF.run(solver='ECOS')
+        obj = self.ss.DCOPF.obj.v
+
+        # --- generator trip ---
+        self.ss.StaticGen.set(src='u', attr='v', idx='PV_1', value=0)
+
+        self.ss.DCOPF.update()
+
+        self.ss.DCOPF.run(solver='ECOS')
+        self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge under generator trip!")
+        obj_gt = self.ss.DCOPF.obj.v
+        self.assertGreater(obj_gt, obj)
+
+        pg_trip = self.ss.DCOPF.get(src='pg', attr='v', idx='PV_1')
+        np.testing.assert_almost_equal(pg_trip, 0, decimal=6)
+
+        # --- trip line ---
+        self.ss.Line.set(src='u', attr='v', idx='Line_4', value=0)
+
+        self.ss.DCOPF.update()
+
+        self.ss.DCOPF.run(solver='ECOS')
+        self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge under line trip!")
+        obj_lt = self.ss.DCOPF.obj.v
+        self.assertGreater(obj_lt, obj_gt)
+
+        plf_trip = self.ss.DCOPF.get(src='plf', attr='v', idx='Line_4')
+        np.testing.assert_almost_equal(plf_trip, 0, decimal=6)
 
 
 class TestRTED(unittest.TestCase):

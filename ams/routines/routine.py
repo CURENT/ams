@@ -102,15 +102,19 @@ class RoutineBase:
         if idx_all is None:
             raise ValueError(f"<{self.class_name}> item <{src}> has no idx.")
 
+        is_format = False  # whether the idx is formatted as a list
+        idx_u = None
         if isinstance(idx, (str, int)):
-            idx = [idx]
+            idx_u = [idx]
+            is_format = True
+        elif isinstance(idx, np.ndarray):
+            idx_u = idx.tolist()
+        elif isinstance(idx, list):
+            idx_u = idx.copy()
 
-        if isinstance(idx, np.ndarray):
-            idx = idx.tolist()
-
-        loc = [idx_all.index(idxe) if idxe in idx_all else None for idxe in idx]
+        loc = [idx_all.index(idxe) if idxe in idx_all else None for idxe in idx_u]
         if None in loc:
-            idx_none = [idxe for idxe in idx if idxe not in idx_all]
+            idx_none = [idxe for idxe in idx_u if idxe not in idx_all]
             msg = f"Var <{self.class_name}.{src}> does not contain value with idx={idx_none}"
             raise ValueError(msg)
         out = getattr(item, attr)[loc]
@@ -132,7 +136,8 @@ class RoutineBase:
             out = out[:, loc_h]
             if out.shape[1] == 1:
                 out = out[:, 0]
-        return out
+
+        return out[0] if is_format else out
 
     def set(self, src: str, idx, attr: str = "v", value=0.0):
         """
@@ -285,13 +290,6 @@ class RoutineBase:
             self.initialized = False
         logger.info(msg)
         return self.initialized
-
-    def prepare(self):
-        """
-        Prepare the routine.
-        """
-        logger.debug("Generating code for %s", self.class_name)
-        self.syms.generate_symbols()
 
     def solve(self, **kwargs):
         """
@@ -516,7 +514,7 @@ class RoutineBase:
             if no system matrices are changed.
         """
         t0, _ = elapsed()
-        re_setup = False
+        re_init = False
         # sanitize input
         sparams = []
         if params is None:
@@ -532,12 +530,13 @@ class RoutineBase:
                 param.update()
         for param in sparams:
             if param.optz is None:  # means no_parse=True
-                re_setup = True
+                re_init = True
                 break
         if mat_make:
             self.system.mats.make()
-        if re_setup:
+        if re_init:
             logger.warning(f"<{self.class_name}> reinit OModel due to non-parametric change.")
+            self.om.parsed = False
             _ = self.om.init(no_code=True)
         results = self.om.update(params=sparams)
         t0, s0 = elapsed(t0)
@@ -663,7 +662,7 @@ class RoutineBase:
         # --- reset optimization model status ---
         self.om.initialized = False
         # --- reset OModel parser status ---
-        self.om._parsed = False
+        self.om.parsed = False
 
     def addRParam(self,
                   name: str,
