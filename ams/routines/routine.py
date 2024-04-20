@@ -286,13 +286,6 @@ class RoutineBase:
         logger.info(msg)
         return self.initialized
 
-    def prepare(self):
-        """
-        Prepare the routine.
-        """
-        logger.debug("Generating code for %s", self.class_name)
-        self.syms.generate_symbols()
-
     def solve(self, **kwargs):
         """
         Solve the routine optimization model.
