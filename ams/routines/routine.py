@@ -107,7 +107,7 @@ class RoutineBase:
         if isinstance(idx, (str, int)):
             idx_u = [idx]
             is_format = True
-        elif isinstance(idx, np.ndarray):
+        elif isinstance(idx, (np.ndarray, pd.Series)):
             idx_u = idx.tolist()
         elif isinstance(idx, list):
             idx_u = idx.copy()
