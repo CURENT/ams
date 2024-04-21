@@ -385,3 +385,43 @@ class MatProcessor:
         b = b / tap  # adjusted series susceptance
 
         return b
+
+    def build_ptdf(self):
+        """
+        Build the DC PTDF matrix and store it in the MParam `PTDF`.
+
+        Returns
+        -------
+        PTDF : np.ndarray
+            Power transfer distribution factor.
+        """
+        system = self.system
+
+        # common variables
+        nb = system.Bus.n
+        nl = system.Line.n
+
+        # use first slack bus as reference slack bus
+        slack = system.Slack.bus.v[0]
+
+        # use first bus for voltage angle reference
+        noref_idx = system.Bus.idx.v[1:]
+        noref = system.Bus.idx2uid(noref_idx)
+
+        noslack = [system.Bus.idx2uid(bus) for bus in system.Bus.idx.v if bus != slack]
+
+        # build other matrices if not built
+        if not self.initialized:
+            logger.debug("System matrices are not built. Building now.")
+            self.build()
+        # use dense representation
+        Bbus, Bf = self.Bbus.v, self.Bf.v
+
+        # initialize PTDF matrix
+        H = np.zeros((nl, nb))
+        # calculate PTDF
+        H[:, noslack] = np.linalg.solve(Bbus[np.ix_(noslack, noref)].T, Bf[:, noref].T).T
+        # store PTDF
+        self.PTDF._v = H
+
+        return self.PTDF._v
