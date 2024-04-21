@@ -9,7 +9,7 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v0.9.6 (2024-xx-xx)
+v0.9.6 (2024-04-21)
 -------------------
 
 This patch release refactor and improve `MatProcessor`, where it support PTDF, LODF,
@@ -28,6 +28,9 @@ Outage Distribution Factors".
 - Refactor `MatProcessor` to separate matrix building
 - Add Var `plf` in `DCPF`, `PFlow`, and `ACOPF` to store the line flow
 - Add `build_ptdf`, `build_lodf`, and `build_otdf`
+- Fix ``Routine.get()`` to support pd.Series type idx input
+- Reserve `exec_time` after ``dc2ac()``
+- Adjust kloss to fix ex2
 
 v0.9.5 (2024-03-25)
 -------------------
