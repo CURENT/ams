@@ -107,7 +107,7 @@ class RoutineBase:
         if isinstance(idx, (str, int)):
             idx_u = [idx]
             is_format = True
-        elif isinstance(idx, np.ndarray):
+        elif isinstance(idx, (np.ndarray, pd.Series)):
             idx_u = idx.tolist()
         elif isinstance(idx, list):
             idx_u = idx.copy()
@@ -267,13 +267,13 @@ class RoutineBase:
 
         # --- force initialization ---
         if force:
-            self.system.mats.make()
+            self.system.mats.build()
             for constr in self.constrs.values():
                 constr.is_disabled = False
 
         # --- matrix build ---
         if not self.system.mats.initialized:
-            self.system.mats.make()
+            self.system.mats.build()
 
         # --- constraint check ---
         _ = self._get_off_constrs()
@@ -492,24 +492,24 @@ class RoutineBase:
         elif isinstance(value, RBaseService):
             self.services[key] = value
 
-    def update(self, params=None, mat_make=True,):
+    def update(self, params=None, build_mats=True,):
         """
         Update the values of Parameters in the optimization model.
 
         This method is particularly important when some `RParams` are
         linked with system matrices.
-        In such cases, setting `mat_make=True` is necessary to rebuild
+        In such cases, setting `build_mats=True` is necessary to rebuild
         these matrices for the changes to take effect.
         This is common in scenarios involving topology changes, connection statuses,
         or load value modifications.
-        If unsure, it is advisable to use `mat_make=True` as a precautionary measure.
+        If unsure, it is advisable to use `build_mats=True` as a precautionary measure.
 
         Parameters
         ----------
         params: Parameter, str, or list
             Parameter, Parameter name, or a list of parameter names to be updated.
             If None, all parameters will be updated.
-        mat_make: bool
+        build_mats: bool
             True to rebuild the system matrices. Set to False to speed up the process
             if no system matrices are changed.
         """
@@ -519,7 +519,7 @@ class RoutineBase:
         sparams = []
         if params is None:
             sparams = [val for val in self.params.values()]
-            mat_make = True
+            build_mats = True
         elif isinstance(params, Param):
             sparams = [params]
         elif isinstance(params, str):
@@ -532,8 +532,8 @@ class RoutineBase:
             if param.optz is None:  # means no_parse=True
                 re_init = True
                 break
-        if mat_make:
-            self.system.mats.make()
+        if build_mats:
+            self.system.mats.build()
         if re_init:
             logger.warning(f"<{self.class_name}> reinit OModel due to non-parametric change.")
             self.om.parsed = False

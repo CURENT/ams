@@ -158,6 +158,7 @@ class TestRTED(unittest.TestCase):
         """
         self.ss.RTED.dc2ac()
         self.assertTrue(self.ss.RTED.converted, "AC conversion failed!")
+        self.assertTrue(self.ss.RTED.exec_time > 0, "Execution time is not greater than 0.")
 
         stg_idx = self.ss.StaticGen.get_idx()
         pg_rted = self.ss.RTED.get(src='pg', attr='v', idx=stg_idx)

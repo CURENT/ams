@@ -342,7 +342,7 @@ def dcpf(B, Pbus, Va0, ref, pv, pq):
 
     Ray Zimmerman (PSERC Cornell)
     """
-    pvpq = np.matrix(np.r_[pv, pq])
+    pvpq = np.r_[pv, pq][np.newaxis, :]
 
     # initialize result vector
     Va = np.copy(Va0)

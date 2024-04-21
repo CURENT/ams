@@ -315,6 +315,7 @@ class DCOPF(RoutineBase):
         kloss : float, optional
             The loss factor for the conversion. Defaults to 1.2.
         """
+        exec_time = self.exec_time
         if self.exec_time == 0 or self.exit_code != 0:
             logger.warning(f'{self.class_name} is not executed successfully, quit conversion.')
             return False
@@ -330,6 +331,7 @@ class DCOPF(RoutineBase):
         ACOPF = self.system.ACOPF
         # run ACOPF
         ACOPF.run()
+        # self.exec_time += ACOPF.exec_time
         # scale load back
         self.system.StaticLoad.set(src='p0', attr='v', idx=pq_idx, value=pd0)
         self.system.StaticLoad.set(src='q0', attr='v', idx=pq_idx, value=qd0)
@@ -349,6 +351,7 @@ class DCOPF(RoutineBase):
         self.vBus.parse()
         self.vBus.optz.value = ACOPF.vBus.v
         self.aBus.optz.value = ACOPF.aBus.v
+        self.exec_time = exec_time
 
         # --- set status ---
         self.system.recent = self

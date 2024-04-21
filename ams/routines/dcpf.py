@@ -64,6 +64,12 @@ class DCPF(RoutineBase):
                         name='aBus', tex_name=r'a_{Bus}',
                         model='Bus', src='a',)
 
+        # --- line flow ---
+        self.plf = Var(info='Line flow',
+                       unit='p.u.',
+                       name='plf', tex_name=r'p_{lf}',
+                       model='Line',)
+
     def unpack(self, res):
         """
         Unpack results from PYPOWER.
@@ -83,6 +89,9 @@ class DCPF(RoutineBase):
         # --- Slack ---
         system.Slack.p.v = res['gen'][:system.Slack.n, 1] / mva     # active power
         system.Slack.q.v = res['gen'][:system.Slack.n, 2] / mva     # reactive power
+
+        # --- Line ---
+        self.plf.optz.value = res['branch'][:, 13] / mva  # line flow
 
         # --- copy results from system algeb into routine algeb ---
         for vname, var in self.vars.items():

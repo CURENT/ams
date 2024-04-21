@@ -769,7 +769,7 @@ class Dynamic:
         if no_update and (len(pname_to_update) > 0):
             logger.info(f'Please update <{rtn.class_name}> parameters: {pname_to_update}')
         elif len(pname_to_update) > 0:
-            rtn.update(params=pname_to_update, mat_make=False)
+            rtn.update(params=pname_to_update, build_mats=False)
         return True
 
 
