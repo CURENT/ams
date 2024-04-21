@@ -40,37 +40,29 @@ class TestMatProcessor(unittest.TestCase):
         # check if `v` is 1D-array
         self.assertEqual(one_vec.v.shape, (self.ss.Bus.n,))
 
-    def test_cg(self):
+    def test_c(self):
         """
-        Test `Cg`.
+        Test connectivity matrices.
         """
+        # Test `Cg`
         self.assertIsInstance(self.mats.Cg._v, (c_sparse, l_sparse))
         self.assertIsInstance(self.mats.Cg.v, np.ndarray)
         self.assertEqual(self.mats.Cg._v.max(), 1)
         np.testing.assert_equal(self.mats.Cg._v.sum(axis=0), np.ones((1, self.ng)))
 
-    def test_cl(self):
-        """
-        Test `Cl`.
-        """
+        # Test `Cl`
         self.assertIsInstance(self.mats.Cl._v, (c_sparse, l_sparse))
         self.assertIsInstance(self.mats.Cl.v, np.ndarray)
         self.assertEqual(self.mats.Cl._v.max(), 1)
         np.testing.assert_equal(self.mats.Cl._v.sum(axis=0), np.ones((1, self.nD)))
 
-    def test_csh(self):
-        """
-        Test `Csh`.
-        """
+        # Test `Csh`
         self.assertIsInstance(self.mats.Csh._v, (c_sparse, l_sparse))
         self.assertIsInstance(self.mats.Csh.v, np.ndarray)
         self.assertEqual(self.mats.Csh._v.max(), 1)
         np.testing.assert_equal(self.mats.Csh._v.sum(axis=0), np.ones((1, self.nsh)))
 
-    def test_cft(self):
-        """
-        Test `Cft`.
-        """
+        # Test `Cft`
         self.assertIsInstance(self.mats.Cft._v, (c_sparse, l_sparse))
         self.assertIsInstance(self.mats.Cft.v, np.ndarray)
         self.assertEqual(self.mats.Cft._v.max(), 1)
