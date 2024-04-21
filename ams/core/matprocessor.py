@@ -390,6 +390,9 @@ class MatProcessor:
         """
         Build the DC PTDF matrix and store it in the MParam `PTDF`.
 
+        Note that there is discrepency between the PTDF-based line flow and
+        DCOPF calcualted line flow. The gap is ignorable for small cases.
+
         Returns
         -------
         PTDF : np.ndarray
