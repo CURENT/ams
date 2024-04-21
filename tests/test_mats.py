@@ -107,3 +107,22 @@ class TestMatProcessor(unittest.TestCase):
         """
         self.assertIsInstance(self.mats.Pbusinj._v, np.ndarray)
         np.testing.assert_equal(self.mats.Pbusinj._v.shape, (self.nb,))
+
+    def test_ptdf(self):
+        """
+        Test `PTDF`.
+        """
+        cases = ['matpower/case14.m',
+                 'matpower/case39.m',
+                 'matpower/case118.m']
+
+        for case in cases:
+            ss = ams.load(ams.get_case(case),
+                          setup=True, default_config=True, no_output=True)
+            ss.DCOPF.run(solver='ECOS')
+
+            ptdf = ss.mats.build_ptdf()
+
+            plf = ss.DCOPF.plf.v
+            plfc = ptdf@(ss.mats.Cg._v@ss.DCOPF.pg.v - ss.mats.Cl._v@ss.DCOPF.pd.v)
+            np.testing.assert_allclose(plf, plfc, atol=1e-3)
