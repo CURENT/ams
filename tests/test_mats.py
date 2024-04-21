@@ -145,7 +145,7 @@ class TestMatProcessor(unittest.TestCase):
             oline = ss.Line.idx2uid(oline_idx)
 
             # pre-outage
-            ss.DCPF.run(solver='PIQP')
+            ss.DCPF.run()
             plf0 = ss.DCPF.plf.v.copy()
 
             # post-outage
