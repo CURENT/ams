@@ -12,6 +12,7 @@ from scipy.sparse import csc_matrix as csc_sparse
 from scipy.sparse import lil_matrix as l_sparse
 
 from andes.utils.misc import elapsed
+from andes.thirdparty.npfunc import safe_div
 
 from ams.opt.omodel import Param
 
@@ -460,7 +461,7 @@ class MatProcessor:
 
         H = self.PTDF._v * self.Cft._v
         h = np.diag(H, 0)
-        LODF = H / (np.ones((nl, nl)) - np.ones((nl, 1)) * h.T)
+        LODF = safe_div(H, np.ones((nl, nl)) - np.ones((nl, 1)) * h.T)
         LODF = LODF - np.diag(np.diag(LODF)) - np.eye(nl, nl)
 
         self.LODF._v = LODF
