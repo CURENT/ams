@@ -9,6 +9,26 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.9.6 (2024-xx-xx)
+-------------------
+
+This patch release refactor and improve `MatProcessor`, where it support PTDF, LODF,
+and OTDF for static analysis.
+
+The reference can be found online "PowerWorld > Web Help > Sensitivities > Line
+Outage Distribution Factors".
+
+- Refactor DCPF, PFlow, and ACOPF
+- Add a loss factor in ``RTED.dc2ac()``
+- Add ``DCOPF.dc2ac()``
+- Fix OModel parse status to ensure no_parsed params can be updated
+- Fix and rerun ex2
+- Format ``Routine.get()`` return type to be consistent with input idx type
+- Remove unused ``Routine.prepare()``
+- Refactor `MatProcessor` to separate matrix building
+- Add Var `plf` in `DCPF`, `PFlow`, and `ACOPF` to store the line flow
+- Add `build_ptdf`, `build_lodf`, and `build_otdf`
+
 v0.9.5 (2024-03-25)
 -------------------
 

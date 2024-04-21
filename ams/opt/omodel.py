@@ -6,7 +6,6 @@ import logging
 from typing import Any, Optional, Union
 from collections import OrderedDict
 import re
-import ast
 
 import numpy as np
 import scipy.sparse as spr
@@ -573,8 +572,7 @@ class Constraint(OptzBase):
 
         try:
             logger.debug(f"Value code: {code}")
-            out = ast.literal_eval(code)
-            return out
+            return eval(code)
         except Exception as e:
             logger.error(f"Error in calculating constr <{self.name}>.")
             logger.error(f"Original error: {e}")
@@ -661,8 +659,7 @@ class Objective(OptzBase):
 
         try:
             logger.debug(f"Value code: {code}")
-            out = ast.literal_eval(code)
-            return out
+            return eval(code)
         except Exception as e:
             logger.error(f"Error in calculating obj <{self.name}>.")
             logger.error(f"Original error: {e}")
@@ -746,9 +743,9 @@ class OModel:
         self.constrs = OrderedDict()
         self.obj = None
         self.initialized = False
-        self._parsed = False
+        self.parsed = False
 
-    def _parse(self, no_code=True):
+    def parse(self, no_code=True):
         """
         Parse the optimization model from the symbolic description.
 
@@ -815,8 +812,8 @@ class OModel:
             else:
                 logger.warning(f"{rtn.class_name} has no objective function!")
                 _, s = elapsed(t0)
-                self._parsed = False
-                return self._parsed
+                self.parsed = False
+                return self.parsed
         _, s = elapsed(t0)
         logger.debug(f"Parse Objective in {s}")
 
@@ -827,8 +824,8 @@ class OModel:
         _, s = elapsed(t0)
         logger.debug(f"Parse Expressions in {s}")
 
-        self._parsed = True
-        return self._parsed
+        self.parsed = True
+        return self.parsed
 
     def init(self, no_code=True):
         """
@@ -850,8 +847,8 @@ class OModel:
         """
         t_setup, _ = elapsed()
 
-        if not self._parsed:
-            self._parse(no_code=no_code)
+        if not self.parsed:
+            self.parse(no_code=no_code)
 
         if self.rtn.type == 'PF':
             _, s_setup = elapsed(t_setup)

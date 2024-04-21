@@ -17,11 +17,15 @@ from ams.core.param import RParam
 logger = logging.getLogger(__name__)
 
 
-class DCPFlowBase(RoutineBase):
+class DCPF(RoutineBase):
     """
-    Base class for power flow.
+    DC power flow, overload the ``solve``, ``unpack``, and ``run`` methods.
 
-    Overload the ``solve``, ``unpack``, and ``run`` methods.
+    Notes
+    -----
+    1. DCPF is solved with PYPOWER ``runpf`` function.
+    2. DCPF formulation is not complete yet, but this does not affect the
+       results because the data are passed to PYPOWER for solving.
     """
 
     def __init__(self, system, config):
@@ -48,6 +52,23 @@ class DCPFlowBase(RoutineBase):
                          name='pd', tex_name=r'p_{d}',
                          unit='p.u.',
                          model='StaticLoad', src='p0')
+        # --- gen ---
+        self.pg = Var(info='Gen active power',
+                      unit='p.u.',
+                      name='pg', tex_name=r'p_{g}',
+                      model='StaticGen', src='p',)
+
+        # --- bus ---
+        self.aBus = Var(info='bus voltage angle',
+                        unit='rad',
+                        name='aBus', tex_name=r'a_{Bus}',
+                        model='Bus', src='a',)
+
+        # --- line flow ---
+        self.plf = Var(info='Line flow',
+                       unit='p.u.',
+                       name='plf', tex_name=r'p_{lf}',
+                       model='Line',)
 
     def unpack(self, res):
         """
@@ -56,7 +77,7 @@ class DCPFlowBase(RoutineBase):
         system = self.system
         mva = res['baseMVA']
 
-        # --- copy results from routine algeb into system algeb ---
+        # --- copy results from ppc into system algeb ---
         # --- Bus ---
         system.Bus.v.v = res['bus'][:, 7]               # voltage magnitude
         system.Bus.a.v = res['bus'][:, 8] * deg2rad     # voltage angle
@@ -68,6 +89,9 @@ class DCPFlowBase(RoutineBase):
         # --- Slack ---
         system.Slack.p.v = res['gen'][:system.Slack.n, 1] / mva     # active power
         system.Slack.q.v = res['gen'][:system.Slack.n, 2] / mva     # reactive power
+
+        # --- Line ---
+        self.plf.optz.value = res['branch'][:, 13] / mva  # line flow
 
         # --- copy results from system algeb into routine algeb ---
         for vname, var in self.vars.items():
@@ -86,7 +110,7 @@ class DCPFlowBase(RoutineBase):
                 continue
             try:
                 logger.debug(f"Unpacking {vname} into {owner.class_name}.{var.src}.")
-                var.v = owner.get(src=var.src, attr='v', idx=idx)
+                var.optz.value = owner.get(src=var.src, attr='v', idx=idx)
             except AttributeError:
                 logger.debug(f"Failed to unpack {vname} into {owner.class_name}.{var.src}.")
                 continue
@@ -161,30 +185,3 @@ class DCPFlowBase(RoutineBase):
 
     def disable(self, name):
         raise NotImplementedError
-
-
-class DCPF(DCPFlowBase):
-    """
-    DC power flow.
-
-    Notes
-    -----
-    1. DCPF is solved with PYPOWER ``runpf`` function.
-    2. DCPF formulation is not complete yet, but this does not affect the
-       results because the data are passed to PYPOWER for solving.
-    """
-
-    def __init__(self, system, config):
-        DCPFlowBase.__init__(self, system, config)
-        self.info = 'DC Power Flow'
-
-        # --- bus ---
-        self.aBus = Var(info='bus voltage angle',
-                        unit='rad',
-                        name='aBus', tex_name=r'a_{Bus}',
-                        model='Bus', src='a',)
-        # --- gen ---
-        self.pg = Var(info='actual active power generation',
-                      unit='p.u.',
-                      name='pg', tex_name=r'p_{g}',
-                      model='StaticGen', src='p',)

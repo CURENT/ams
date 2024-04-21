@@ -26,6 +26,19 @@ class DCOPF(RoutineBase):
         RoutineBase.__init__(self, system, config)
         self.info = 'DC Optimal Power Flow'
         self.type = 'DCED'
+
+        # --- Mapping Section ---
+        # --- from map ---
+        self.map1.update({
+            'ug': ('StaticGen', 'u'),
+        })
+        # --- to map ---
+        self.map2.update({
+            'vBus': ('Bus', 'v0'),
+            'ug': ('StaticGen', 'u'),
+            'pg': ('StaticGen', 'p0'),
+        })
+
         # --- Data Section ---
         # --- generator cost ---
         self.c2 = RParam(info='Gen cost coefficient 2',
@@ -291,4 +304,57 @@ class DCOPF(RoutineBase):
 
         # label the most recent solved routine
         self.system.recent = self.system.routines[self.class_name]
+        return True
+
+    def dc2ac(self, kloss=1.0, **kwargs):
+        """
+        Convert the DCOPF results with ACOPF.
+
+        Parameters
+        ----------
+        kloss : float, optional
+            The loss factor for the conversion. Defaults to 1.2.
+        """
+        exec_time = self.exec_time
+        if self.exec_time == 0 or self.exit_code != 0:
+            logger.warning(f'{self.class_name} is not executed successfully, quit conversion.')
+            return False
+
+        # --- ACOPF ---
+        # scale up load
+        pq_idx = self.system.StaticLoad.get_idx()
+        pd0 = self.system.StaticLoad.get(src='p0', attr='v', idx=pq_idx).copy()
+        qd0 = self.system.StaticLoad.get(src='q0', attr='v', idx=pq_idx).copy()
+        self.system.StaticLoad.set(src='p0', attr='v', idx=pq_idx, value=pd0 * kloss)
+        self.system.StaticLoad.set(src='q0', attr='v', idx=pq_idx, value=qd0 * kloss)
+
+        ACOPF = self.system.ACOPF
+        # run ACOPF
+        ACOPF.run()
+        # self.exec_time += ACOPF.exec_time
+        # scale load back
+        self.system.StaticLoad.set(src='p0', attr='v', idx=pq_idx, value=pd0)
+        self.system.StaticLoad.set(src='q0', attr='v', idx=pq_idx, value=qd0)
+        if not ACOPF.exit_code == 0:
+            logger.warning('<ACOPF> did not converge, conversion failed.')
+            # NOTE: mock results to fit interface with ANDES
+            self.vBus = ACOPF.vBus
+            self.vBus.optz.value = np.ones(self.system.Bus.n)
+            self.aBus.optz.value = np.zeros(self.system.Bus.n)
+            return False
+        self.pg.optz.value = ACOPF.pg.v
+
+        # NOTE: mock results to fit interface with ANDES
+        self.addVars(name='vBus',
+                     info='Bus voltage', unit='p.u.',
+                     model='Bus', src='v',)
+        self.vBus.parse()
+        self.vBus.optz.value = ACOPF.vBus.v
+        self.aBus.optz.value = ACOPF.aBus.v
+        self.exec_time = exec_time
+
+        # --- set status ---
+        self.system.recent = self
+        self.converted = True
+        logger.warning(f'<{self.class_name}> converted to AC.')
         return True

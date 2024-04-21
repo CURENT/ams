@@ -149,17 +149,11 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.type = 'DCED'
 
         # --- Mapping Section ---
-        # --- from map ---
+        # Add p -> pg0 in from map
         self.map1.update({
-            'ug': ('StaticGen', 'u'),
             'pg0': ('StaticGen', 'p'),
         })
-        # --- to map ---
-        self.map2.update({
-            'vBus': ('Bus', 'v0'),
-            'ug': ('StaticGen', 'u'),
-            'pg': ('StaticGen', 'p0'),
-        })
+        # nothing to do with to map
 
         # --- Model Section ---
         # --- SFR ---
@@ -181,14 +175,18 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         cost += f'+ t dot sum({_to_sum})'
         self.obj.e_str = cost
 
-    def dc2ac(self, **kwargs):
+    def dc2ac(self, kloss=1.0, **kwargs):
         """
         Convert the RTED results with ACOPF.
 
-        Overload ``dc2ac`` method.
+        Parameters
+        ----------
+        kloss : float, optional
+            The loss factor for the conversion. Defaults to 1.2.
         """
+        exec_time = self.exec_time
         if self.exec_time == 0 or self.exit_code != 0:
-            logger.warning('RTED is not executed successfully, quit conversion.')
+            logger.warning(f'{self.class_name} is not executed successfully, quit conversion.')
             return False
         # set pru and prd into pmin and pmax
         pr_idx = self.pru.get_idx()
@@ -196,14 +194,25 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         pmax0 = self.system.StaticGen.get(src='pmax', attr='v', idx=pr_idx)
         p00 = self.system.StaticGen.get(src='p0', attr='v', idx=pr_idx)
 
-        # solve ACOPF
+        # --- ACOPF ---
+        # scale up load
+        pq_idx = self.system.StaticLoad.get_idx()
+        pd0 = self.system.StaticLoad.get(src='p0', attr='v', idx=pq_idx).copy()
+        qd0 = self.system.StaticLoad.get(src='q0', attr='v', idx=pq_idx).copy()
+        self.system.StaticLoad.set(src='p0', attr='v', idx=pq_idx, value=pd0 * kloss)
+        self.system.StaticLoad.set(src='q0', attr='v', idx=pq_idx, value=qd0 * kloss)
+        # preserve generator reserve
         ACOPF = self.system.ACOPF
         pmin = pmin0 + self.prd.v
         pmax = pmax0 - self.pru.v
         self.system.StaticGen.set(src='pmin', attr='v', idx=pr_idx, value=pmin)
         self.system.StaticGen.set(src='pmax', attr='v', idx=pr_idx, value=pmax)
         self.system.StaticGen.set(src='p0', attr='v', idx=pr_idx, value=self.pg.v)
+        # run ACOPF
         ACOPF.run()
+        # scale load back
+        self.system.StaticLoad.set(src='p0', attr='v', idx=pq_idx, value=pd0)
+        self.system.StaticLoad.set(src='q0', attr='v', idx=pq_idx, value=qd0)
         if not ACOPF.exit_code == 0:
             logger.warning('<ACOPF> did not converge, conversion failed.')
             # NOTE: mock results to fit interface with ANDES
@@ -220,14 +229,16 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.vBus.parse()
         self.vBus.optz.value = ACOPF.vBus.v
         self.aBus.optz.value = ACOPF.aBus.v
+        self.exec_time = exec_time
 
         # reset pmin, pmax, p0
         self.system.StaticGen.set(src='pmin', attr='v', idx=pr_idx, value=pmin0)
         self.system.StaticGen.set(src='pmax', attr='v', idx=pr_idx, value=pmax0)
         self.system.StaticGen.set(src='p0', attr='v', idx=pr_idx, value=p00)
-        self.system.recent = self
 
-        self.is_ac = True
+        # --- set status ---
+        self.system.recent = self
+        self.converted = True
         logger.warning(f'<{self.class_name}> converted to AC.')
         return True
 
@@ -274,9 +285,9 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         -----
         1. remove ``vBus`` if has been converted with ``dc2ac``
         """
-        if self.is_ac:
+        if self.converted:
             delattr(self, 'vBus')
-            self.is_ac = False
+            self.converted = False
         return super().run(**kwargs)
 
 

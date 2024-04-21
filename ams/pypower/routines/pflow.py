@@ -182,7 +182,6 @@ def runpf(casedata, ppopt):
             bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, Ybus, Yf, Yt, V, ref, pv, pq)
 
             enforce_q_lims = ppopt["ENFORCE_Q_LIMS"]
-            logger.debug(f'ENFORCE_Q_LIMS={enforce_q_lims}')
             if ppopt["ENFORCE_Q_LIMS"]:  # enforce generator Q limits
                 # find gens with violated Q constraints
                 gen_status = gen[:, IDX.gen.GEN_STATUS] > 0
@@ -343,7 +342,7 @@ def dcpf(B, Pbus, Va0, ref, pv, pq):
 
     Ray Zimmerman (PSERC Cornell)
     """
-    pvpq = np.matrix(np.r_[pv, pq])
+    pvpq = np.r_[pv, pq][np.newaxis, :]
 
     # initialize result vector
     Va = np.copy(Va0)

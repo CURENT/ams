@@ -68,7 +68,7 @@ class RoutineBase:
         self.exec_time = 0.0        # running time
         self.exit_code = 0          # exit code
         self.converged = False      # convergence flag
-        self.is_ac = False          # AC conversion flag
+        self.converted = False          # AC conversion flag
 
     @property
     def class_name(self):
@@ -102,15 +102,19 @@ class RoutineBase:
         if idx_all is None:
             raise ValueError(f"<{self.class_name}> item <{src}> has no idx.")
 
+        is_format = False  # whether the idx is formatted as a list
+        idx_u = None
         if isinstance(idx, (str, int)):
-            idx = [idx]
+            idx_u = [idx]
+            is_format = True
+        elif isinstance(idx, (np.ndarray, pd.Series)):
+            idx_u = idx.tolist()
+        elif isinstance(idx, list):
+            idx_u = idx.copy()
 
-        if isinstance(idx, np.ndarray):
-            idx = idx.tolist()
-
-        loc = [idx_all.index(idxe) if idxe in idx_all else None for idxe in idx]
+        loc = [idx_all.index(idxe) if idxe in idx_all else None for idxe in idx_u]
         if None in loc:
-            idx_none = [idxe for idxe in idx if idxe not in idx_all]
+            idx_none = [idxe for idxe in idx_u if idxe not in idx_all]
             msg = f"Var <{self.class_name}.{src}> does not contain value with idx={idx_none}"
             raise ValueError(msg)
         out = getattr(item, attr)[loc]
@@ -132,27 +136,49 @@ class RoutineBase:
             out = out[:, loc_h]
             if out.shape[1] == 1:
                 out = out[:, 0]
-        return out
+
+        return out[0] if is_format else out
 
     def set(self, src: str, idx, attr: str = "v", value=0.0):
         """
         Set the value of an attribute of a routine parameter.
+
+        Performs ``self.<src>.<attr>[idx] = value``. This method will not modify
+        the input values from the case file that have not been converted to the
+        system base. As a result, changes applied by this method will not affect
+        the dumped case file.
+
+        To alter parameters and reflect it in the case file, use :meth:`alter`
+        instead.
+
+        Parameters
+        ----------
+        src : str
+            Name of the model property
+        idx : str, int, float, array-like
+            Indices of the devices
+        attr : str, optional, default='v'
+            The internal attribute of the property to get.
+            ``v`` for values, ``a`` for address, and ``e`` for equation value.
+        value : array-like
+            New values to be set
+
+        Returns
+        -------
+        bool
+            True when successful.
         """
         if self.__dict__[src].owner is not None:
             # TODO: fit to `_v` type param in the future
             owner = self.__dict__[src].owner
             src0 = self.__dict__[src].src
-            src_owner = src0 if src0 is not None else src
             try:
-                res = owner.set(src=src_owner, idx=idx, attr=attr, value=value)
+                res = owner.set(src=src0, idx=idx, attr=attr, value=value)
                 return res
             except KeyError as e:
                 msg = f"Failed to set <{src0}> in <{owner.class_name}>. "
                 msg += f"Original error: {e}"
                 raise KeyError(msg)
-            else:
-                logger.info(f"Failed to set <{src0}> in <{owner.class_name}>.")
-                return None
         else:
             # FIXME: add idx for non-grouped variables
             raise TypeError(f"Variable {self.name} has no owner.")
@@ -241,13 +267,13 @@ class RoutineBase:
 
         # --- force initialization ---
         if force:
-            self.system.mats.make()
+            self.system.mats.build()
             for constr in self.constrs.values():
                 constr.is_disabled = False
 
         # --- matrix build ---
         if not self.system.mats.initialized:
-            self.system.mats.make()
+            self.system.mats.build()
 
         # --- constraint check ---
         _ = self._get_off_constrs()
@@ -264,13 +290,6 @@ class RoutineBase:
             self.initialized = False
         logger.info(msg)
         return self.initialized
-
-    def prepare(self):
-        """
-        Prepare the routine.
-        """
-        logger.debug("Generating code for %s", self.class_name)
-        self.syms.generate_symbols()
 
     def solve(self, **kwargs):
         """
@@ -473,34 +492,34 @@ class RoutineBase:
         elif isinstance(value, RBaseService):
             self.services[key] = value
 
-    def update(self, params=None, mat_make=True,):
+    def update(self, params=None, build_mats=True,):
         """
         Update the values of Parameters in the optimization model.
 
         This method is particularly important when some `RParams` are
         linked with system matrices.
-        In such cases, setting `mat_make=True` is necessary to rebuild
+        In such cases, setting `build_mats=True` is necessary to rebuild
         these matrices for the changes to take effect.
         This is common in scenarios involving topology changes, connection statuses,
         or load value modifications.
-        If unsure, it is advisable to use `mat_make=True` as a precautionary measure.
+        If unsure, it is advisable to use `build_mats=True` as a precautionary measure.
 
         Parameters
         ----------
         params: Parameter, str, or list
             Parameter, Parameter name, or a list of parameter names to be updated.
             If None, all parameters will be updated.
-        mat_make: bool
+        build_mats: bool
             True to rebuild the system matrices. Set to False to speed up the process
             if no system matrices are changed.
         """
         t0, _ = elapsed()
-        re_setup = False
+        re_init = False
         # sanitize input
         sparams = []
         if params is None:
             sparams = [val for val in self.params.values()]
-            mat_make = True
+            build_mats = True
         elif isinstance(params, Param):
             sparams = [params]
         elif isinstance(params, str):
@@ -511,12 +530,13 @@ class RoutineBase:
                 param.update()
         for param in sparams:
             if param.optz is None:  # means no_parse=True
-                re_setup = True
+                re_init = True
                 break
-        if mat_make:
-            self.system.mats.make()
-        if re_setup:
+        if build_mats:
+            self.system.mats.build()
+        if re_init:
             logger.warning(f"<{self.class_name}> reinit OModel due to non-parametric change.")
+            self.om.parsed = False
             _ = self.om.init(no_code=True)
         results = self.om.update(params=sparams)
         t0, s0 = elapsed(t0)
@@ -642,7 +662,7 @@ class RoutineBase:
         # --- reset optimization model status ---
         self.om.initialized = False
         # --- reset OModel parser status ---
-        self.om._parsed = False
+        self.om.parsed = False
 
     def addRParam(self,
                   name: str,
