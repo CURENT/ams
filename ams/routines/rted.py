@@ -184,6 +184,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         kloss : float, optional
             The loss factor for the conversion. Defaults to 1.2.
         """
+        exec_time = self.exec_time
         if self.exec_time == 0 or self.exit_code != 0:
             logger.warning(f'{self.class_name} is not executed successfully, quit conversion.')
             return False
@@ -228,6 +229,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.vBus.parse()
         self.vBus.optz.value = ACOPF.vBus.v
         self.aBus.optz.value = ACOPF.aBus.v
+        self.exec_time = exec_time
 
         # reset pmin, pmax, p0
         self.system.StaticGen.set(src='pmin', attr='v', idx=pr_idx, value=pmin0)
