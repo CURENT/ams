@@ -395,6 +395,9 @@ class MatProcessor:
         """
         Build the DC PTDF matrix and store it in the MParam `PTDF`.
 
+        `PTDF[m, n]` means the increased line flow on line `m` when there is
+        1 p.u. power injection at bus `n`.
+
         Note that there is discrepency between the PTDF-based line flow and
         DCOPF calcualted line flow. The gap is ignorable for small cases.
 
