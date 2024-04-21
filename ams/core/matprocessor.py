@@ -399,6 +399,8 @@ class MatProcessor:
         `PTDF[m, n]` means the increased line flow on line `m` when there is
         1 p.u. power injection at bus `n`.
 
+        It requires DC Bbus and Bf.
+
         Note that there is discrepency between the PTDF-based line flow and
         DCOPF calcualted line flow. The gap is ignorable for small cases.
 
@@ -444,6 +446,8 @@ class MatProcessor:
 
         `LODF[m, n]` means the increased line flow on line `m` when there is
         1 p.u. line flow decrease on line `n` due to line `n` outage.
+
+        It requires DC PTDF and Cft.
 
         Returns
         -------
