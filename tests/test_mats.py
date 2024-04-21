@@ -17,9 +17,9 @@ class TestMatProcessor(unittest.TestCase):
         self.ss = ams.load(ams.get_case("matpower/case300.m"),
                            default_config=True, no_output=True)
         self.nR = self.ss.Region.n
-        self.nB = self.ss.Bus.n
+        self.nb = self.ss.Bus.n
         self.nl = self.ss.Line.n
-        self.nG = self.ss.StaticGen.n
+        self.ng = self.ss.StaticGen.n
         self.nsh = self.ss.Shunt.n
         self.nD = self.ss.StaticLoad.n
 
@@ -43,8 +43,7 @@ class TestMatProcessor(unittest.TestCase):
         self.assertIsInstance(self.mats.Cg._v, (c_sparse, l_sparse))
         self.assertIsInstance(self.mats.Cg.v, np.ndarray)
         self.assertEqual(self.mats.Cg._v.max(), 1)
-        np.testing.assert_equal(self.mats.Cg._v.sum(axis=0),
-                                np.ones((1, self.nG)))
+        np.testing.assert_equal(self.mats.Cg._v.sum(axis=0), np.ones((1, self.ng)))
 
     def test_cl(self):
         """
@@ -53,8 +52,7 @@ class TestMatProcessor(unittest.TestCase):
         self.assertIsInstance(self.mats.Cl._v, (c_sparse, l_sparse))
         self.assertIsInstance(self.mats.Cl.v, np.ndarray)
         self.assertEqual(self.mats.Cl._v.max(), 1)
-        np.testing.assert_equal(self.mats.Cl._v.sum(axis=0),
-                                np.ones((1, self.nD)))
+        np.testing.assert_equal(self.mats.Cl._v.sum(axis=0), np.ones((1, self.nD)))
 
     def test_csh(self):
         """
@@ -63,8 +61,7 @@ class TestMatProcessor(unittest.TestCase):
         self.assertIsInstance(self.mats.Csh._v, (c_sparse, l_sparse))
         self.assertIsInstance(self.mats.Csh.v, np.ndarray)
         self.assertEqual(self.mats.Csh._v.max(), 1)
-        np.testing.assert_equal(self.mats.Csh._v.sum(axis=0),
-                                np.ones((1, self.nsh)))
+        np.testing.assert_equal(self.mats.Csh._v.sum(axis=0), np.ones((1, self.nsh)))
 
     def test_cft(self):
         """
@@ -73,5 +70,40 @@ class TestMatProcessor(unittest.TestCase):
         self.assertIsInstance(self.mats.Cft._v, (c_sparse, l_sparse))
         self.assertIsInstance(self.mats.Cft.v, np.ndarray)
         self.assertEqual(self.mats.Cft._v.max(), 1)
-        np.testing.assert_equal(self.mats.Cft._v.sum(axis=0),
-                                np.zeros((1, self.nl)))
+        np.testing.assert_equal(self.mats.Cft._v.sum(axis=0), np.zeros((1, self.nl)))
+
+    def test_b_calc(self):
+        """
+        Test `b_calc`.
+        """
+        b = self.mats._calc_b()
+        self.assertIsInstance(b, np.ndarray)
+        self.assertEqual(b.shape, (self.nl,))
+
+    def test_bf(self):
+        """
+        Test `Bf`.
+        """
+        self.assertIsInstance(self.mats.Bf._v, (c_sparse, l_sparse))
+        np.testing.assert_equal(self.mats.Bf._v.shape, (self.nl, self.nb))
+
+    def test_bbus(self):
+        """
+        Test `Bbus`.
+        """
+        self.assertIsInstance(self.mats.Bbus._v, (c_sparse, l_sparse))
+        np.testing.assert_equal(self.mats.Bbus._v.shape, (self.nb, self.nb))
+
+    def test_pfinj(self):
+        """
+        Test `Pfinj`.
+        """
+        self.assertIsInstance(self.mats.Pfinj._v, np.ndarray)
+        np.testing.assert_equal(self.mats.Pfinj._v.shape, (self.nl,))
+
+    def test_pbusinj(self):
+        """
+        Test `Pbusinj`.
+        """
+        self.assertIsInstance(self.mats.Pbusinj._v, np.ndarray)
+        np.testing.assert_equal(self.mats.Pbusinj._v.shape, (self.nb,))

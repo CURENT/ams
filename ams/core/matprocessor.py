@@ -139,21 +139,32 @@ class MatProcessor:
     def build(self):
         """
         Build the system matrices.
-        It includes connectivity matrices: Cg, Cl, Csh, Cft, and CftT,
-        and bus matrices: Bbus, Bf, Pbusinj, and Pfinj.
+        It build connectivity matrices first: Cg, Cl, Csh, Cft, and CftT.
+        Then build bus matrices: Bf, Bbus, Pfinj, and Pbusinj.
+
+        Returns
+        -------
+        initialized : bool
+            True if the matrices are built successfully.
         """
         t_mat, _ = elapsed()
+
         # --- connectivity matrices ---
         _ = self.build_cg()
         _ = self.build_cl()
         _ = self.build_csh()
         _ = self.build_cft()
+
         # --- bus matrices ---
-        self._makeBdc()
+        _ = self.build_bf()
+        _ = self.build_bbus()
+        _ = self.build_pfinj()
+        _ = self.build_pbusinj()
         _, s_mat = elapsed(t_mat)
+
         logger.debug(f"Built system matrices in {s_mat}.")
         self.initialized = True
-        return True
+        return self.initialized
 
     @property
     def class_name(self):
@@ -169,58 +180,13 @@ class MatProcessor:
         """
         return 2
 
-    def _makeBdc(self):
-        """
-        Make Bdc matrix.
-
-        Call _makeC() before this method to ensure Cft is available.
-        """
-        system = self.system
-
-        # common variables
-        nb = system.Bus.n
-        nl = system.Line.n
-
-        # line parameters
-        idx_line = system.Line.idx.v
-        x = system.Line.get(src='x', attr='v', idx=idx_line)
-        u_line = system.Line.get(src='u', attr='v', idx=idx_line)
-        b = u_line / x  # series susceptance
-
-        # in DC, tap is assumed to be 1
-        tap0 = system.Line.get(src='tap', attr='v', idx=idx_line)
-        tap = np.ones(nl)
-        i = np.flatnonzero(tap0)
-        tap[i] = tap0[i]  # assign non-zero tap ratios
-        b = b / tap  # adjusted series susceptance
-
-        # build Bf such that Bf * Va is the vector of real branch powers injected
-        # at each branch's "from" bus
-        f = system.Bus.idx2uid(system.Line.get(src='bus1', attr='v', idx=idx_line))
-        t = system.Bus.idx2uid(system.Line.get(src='bus2', attr='v', idx=idx_line))
-        ir = np.r_[range(nl), range(nl)]  # double set of row indices
-        Bf = c_sparse((np.r_[b, -b], (ir, np.r_[f, t])), (nl, nb))
-
-        # build Cft, note that this Cft is different from the one in _makeC()
-        Cft = c_sparse((np.r_[np.ones(nl), -np.ones(nl)], (ir, np.r_[f, t])), (nl, nb))
-
-        # build Bbus
-        Bbus = Cft.T * Bf
-
-        phi = system.Line.get(src='phi', attr='v', idx=idx_line)
-        Pfinj = b * (-phi)
-        Pbusinj = Cft.T * Pfinj
-
-        self.Bbus._v, self.Bf._v, self.Pbusinj._v, self.Pfinj._v = Bbus, Bf, Pbusinj, Pfinj
-        return True
-
     def build_cg(self):
         """
         Build generator connectivity matrix Cg, and store it in the MParam `Cg`.
 
         Returns
         -------
-        Cg : spmatrix
+        Cg : scipy.sparse.csr_matrix
             Generator connectivity matrix.
         """
         system = self.system
@@ -247,7 +213,7 @@ class MatProcessor:
 
         Returns
         -------
-        Cl : spmatrix
+        Cl : scipy.sparse.csr_matrix
             Load connectivity matrix.
         """
         system = self.system
@@ -302,7 +268,7 @@ class MatProcessor:
 
         Returns
         -------
-        Cft : spmatrix
+        Cft : scipy.sparse.csr_matrix
             Line connectivity matrix.
         """
         system = self.system
@@ -326,3 +292,96 @@ class MatProcessor:
         self.Cft._v = c_sparse((data_line, (row_line, col_line)), (nb, nl))
         self.CftT._v = self.Cft._v.T
         return self.Cft._v
+
+    def build_bf(self):
+        """
+        Build DC Bf matrix and store it in the MParam `Bf`.
+
+        Returns
+        -------
+        Bf : scipy.sparse.csr_matrix
+            Bf matrix.
+        """
+        system = self.system
+
+        # common variables
+        nb = system.Bus.n
+        nl = system.Line.n
+
+        # line parameters
+        idx_line = system.Line.idx.v
+        b = self._calc_b()
+
+        # build Bf such that Bf * Va is the vector of real branch powers injected
+        # at each branch's "from" bus
+        f = system.Bus.idx2uid(system.Line.get(src='bus1', attr='v', idx=idx_line))
+        t = system.Bus.idx2uid(system.Line.get(src='bus2', attr='v', idx=idx_line))
+        ir = np.r_[range(nl), range(nl)]  # double set of row indices
+        self.Bf._v = c_sparse((np.r_[b, -b], (ir, np.r_[f, t])), (nl, nb))
+        return self.Bf._v
+
+    def build_bbus(self):
+        """
+        Build Bdc matrix and store it in the MParam `Bbus`.
+
+        Returns
+        -------
+        Bdc : scipy.sparse.csr_matrix
+            DC bus admittance matrix.
+        """
+        self.Bbus._v = self.Cft._v * self.Bf._v
+        return self.Bbus._v
+
+    def build_pfinj(self):
+        """
+        Build DC Pfinj vector and store it in the MParam `Pfinj`.
+
+        Returns
+        -------
+        Pfinj : np.ndarray
+            Line power injection vector.
+        """
+        idx_line = self.system.Line.idx.v
+        b = self._calc_b()
+        phi = self.system.Line.get(src='phi', attr='v', idx=idx_line)
+        self.Pfinj._v = b * (-phi)
+        return self.Pfinj._v
+
+    def build_pbusinj(self):
+        """
+        Build DC Pbusinj vector and store it in the MParam `Pbusinj`.
+
+        Returns
+        -------
+        Pbusinj : np.ndarray
+            Bus power injection vector.
+        """
+        self.Pbusinj._v = self.Cft._v * self.Pfinj._v
+        return self.Pbusinj._v
+
+    def _calc_b(self):
+        """
+        Calculate DC series susceptance for each line.
+
+        Returns
+        -------
+        b : np.ndarray
+            Series susceptance for each line.
+        """
+        system = self.system
+        nl = system.Line.n
+
+        # line parameters
+        idx_line = system.Line.idx.v
+        x = system.Line.get(src='x', attr='v', idx=idx_line)
+        u_line = system.Line.get(src='u', attr='v', idx=idx_line)
+        b = u_line / x  # series susceptance
+
+        # in DC, tap is assumed to be 1
+        tap0 = system.Line.get(src='tap', attr='v', idx=idx_line)
+        tap = np.ones(nl)
+        i = np.flatnonzero(tap0)
+        tap[i] = tap0[i]  # assign non-zero tap ratios
+        b = b / tap  # adjusted series susceptance
+
+        return b
