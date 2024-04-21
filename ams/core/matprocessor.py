@@ -104,21 +104,6 @@ class MatProcessor:
     def __init__(self, system):
         self.system = system
         self.initialized = False
-        self.Bbus = MParam(name='Bbus', tex_name=r'B_{bus}',
-                           info='Bus admittance matrix',
-                           v=None, sparse=True)
-        self.Bf = MParam(name='Bf', tex_name=r'B_{f}',
-                         info='Bf matrix',
-                         v=None, sparse=True)
-        self.Pbusinj = MParam(name='Pbusinj', tex_name=r'P_{bus}^{inj}',
-                              info='Bus power injection vector',
-                              v=None,)
-        self.Pfinj = MParam(name='Pfinj', tex_name=r'P_{f}^{inj}',
-                            info='Line power injection vector',
-                            v=None,)
-        self.PTDF = MParam(name='PTDF', tex_name=r'P_{TDF}',
-                           info='Power transfer distribution factor',
-                           v=None)
 
         self.Cft = MParam(name='Cft', tex_name=r'C_{ft}',
                           info='Line connectivity matrix',
@@ -135,6 +120,26 @@ class MatProcessor:
         self.Csh = MParam(name='Csh', tex_name=r'C_{sh}',
                           info='Shunt connectivity matrix',
                           v=None, sparse=True)
+
+        self.Bbus = MParam(name='Bbus', tex_name=r'B_{bus}',
+                           info='Bus admittance matrix',
+                           v=None, sparse=True)
+        self.Bf = MParam(name='Bf', tex_name=r'B_{f}',
+                         info='Bf matrix',
+                         v=None, sparse=True)
+        self.Pbusinj = MParam(name='Pbusinj', tex_name=r'P_{bus}^{inj}',
+                              info='Bus power injection vector',
+                              v=None,)
+        self.Pfinj = MParam(name='Pfinj', tex_name=r'P_{f}^{inj}',
+                            info='Line power injection vector',
+                            v=None,)
+
+        self.PTDF = MParam(name='PTDF', tex_name=r'P_{TDF}',
+                           info='Power transfer distribution factor',
+                           v=None)
+        self.LODF = MParam(name='LODF', tex_name=r'O_{TDF}',
+                           info='Line outage distribution factor',
+                           v=None)
 
     def build(self):
         """
@@ -428,3 +433,32 @@ class MatProcessor:
         self.PTDF._v = H
 
         return self.PTDF._v
+
+    def build_lodf(self):
+        """
+        Build the DC LODF matrix and store it in the MParam `LODF`.
+
+        `LODF[m, n]` means the increased line flow on line `m` when there is
+        1 p.u. line flow decrease on line `n` due to line `n` outage.
+
+        Returns
+        -------
+        LODF : np.ndarray
+            Line outage distribution factor.
+        """
+        system = self.system
+
+        # common variables
+        nl = system.Line.n
+
+        # build PTDF if not built
+        if self.PTDF._v is None:
+            self.build_ptdf()
+
+        H = self.PTDF._v * self.Cft._v
+        h = np.diag(H, 0)
+        LODF = H / (np.ones((nl, nl)) - np.ones((nl, 1)) * h.T)
+        LODF = LODF - np.diag(np.diag(LODF)) - np.eye(nl, nl)
+
+        self.LODF._v = LODF
+        return self.LODF._v
