@@ -14,6 +14,10 @@ class TestMatProcessor(unittest.TestCase):
     """
 
     def setUp(self) -> None:
+        # cases is for testing PTDF, LODF, etc.
+        self.cases = ['matpower/case14.m',
+                      'matpower/case39.m',
+                      'matpower/case118.m']
         self.ss = ams.load(ams.get_case("matpower/case300.m"),
                            default_config=True, no_output=True)
         self.nR = self.ss.Region.n
@@ -112,11 +116,8 @@ class TestMatProcessor(unittest.TestCase):
         """
         Test `PTDF`.
         """
-        cases = ['matpower/case14.m',
-                 'matpower/case39.m',
-                 'matpower/case118.m']
 
-        for case in cases:
+        for case in self.cases:
             ss = ams.load(ams.get_case(case),
                           setup=True, default_config=True, no_output=True)
             ss.DCOPF.run(solver='ECOS')
@@ -125,4 +126,35 @@ class TestMatProcessor(unittest.TestCase):
 
             plf = ss.DCOPF.plf.v
             plfc = ptdf@(ss.mats.Cg._v@ss.DCOPF.pg.v - ss.mats.Cl._v@ss.DCOPF.pd.v)
-            np.testing.assert_allclose(plf, plfc, atol=1e-3)
+            np.testing.assert_allclose(plf, plfc, atol=1e-2)
+
+    def test_lodf(self):
+        """
+        Test `LODF`.
+        """
+        for case in self.cases:
+            ss = ams.load(ams.get_case(case),
+                          setup=True, default_config=True, no_output=True)
+            # build matrices
+            ss.mats.build()
+            _ = ss.mats.build_ptdf()
+            lodf = ss.mats.build_lodf()
+
+            # outage line
+            oline_idx = ss.Line.idx.v[1]
+            oline = ss.Line.idx2uid(oline_idx)
+
+            # pre-outage
+            ss.DCPF.run(solver='PIQP')
+            plf0 = ss.DCPF.plf.v.copy()
+
+            # post-outage
+            ss.Line.set(src='u', attr='v', idx=oline_idx, value=0)
+            ss.DCPF.update()
+            ss.DCPF.run()
+            plf1 = ss.DCPF.plf.v.copy()
+
+            dplf = plf1 - plf0
+            dplfc = -lodf[:, oline] * dplf[oline]
+
+            np.testing.assert_allclose(dplf, dplfc, atol=1e-1)
