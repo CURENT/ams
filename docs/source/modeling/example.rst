@@ -1,7 +1,7 @@
 Examples
 ========
 
-One example is provided to demonstrate descriptive dispatch modeling.
+One example is provided to demonstrate descriptive scheduling modeling.
 
 DCOPF
 ----------

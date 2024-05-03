@@ -44,7 +44,7 @@ class SRBase:
                              name='dsr', tex_name=r'd_{s,r,z}',
                              info='zonal spinning reserve requirement',)
 
-        # NOTE: define e_str in dispatch model
+        # NOTE: define e_str in the scheduling model
         self.prsb = Constraint(info='spinning reserve balance',
                                name='prsb', is_eq=True,)
         self.rsr = Constraint(info='spinning reserve requirement',
@@ -53,7 +53,7 @@ class SRBase:
 
 class MPBase:
     """
-    Base class for multi-period dispatch.
+    Base class for multi-period scheduling.
     """
 
     def __init__(self) -> None:
@@ -220,13 +220,13 @@ class ED(RTED, MPBase, SRBase):
     def dc2ac(self, **kwargs):
         """
         AC conversion ``dc2ac`` is not implemented yet for
-        multi-period dispatch.
+        multi-period scheduling.
         """
         return NotImplementedError
 
     def unpack(self, **kwargs):
         """
-        Multi-period dispatch will not unpack results from
+        Multi-period scheduling will not unpack results from
         solver into devices.
 
         # TODO: unpack first period results, and allow input
@@ -247,7 +247,7 @@ class EDDG(ED, DGBase):
         ED.__init__(self, system, config)
         DGBase.__init__(self)
 
-        self.config.t = 1  # dispatch interval in hour
+        self.config.t = 1  # scheduling interval in hour
 
         self.info = 'Economic dispatch with distributed generation'
         self.type = 'DCED'
@@ -258,7 +258,7 @@ class EDDG(ED, DGBase):
 
 class ESD1MPBase(ESD1Base):
     """
-    Extended base class for energy storage in multi-period dispatch.
+    Extended base class for energy storage in multi-period scheduling.
     """
 
     def __init__(self):
@@ -301,7 +301,7 @@ class EDES(ED, ESD1MPBase):
         ED.__init__(self, system, config)
         ESD1MPBase.__init__(self)
 
-        self.config.t = 1  # dispatch interval in hour
+        self.config.t = 1  # scheduling interval in hour
 
         self.info = 'Economic dispatch with energy storage'
         self.type = 'DCED'

@@ -22,5 +22,4 @@ class EV(Model):
     def __init__(self, system, config):
         Model.__init__(self, system, config)
         self.group = 'DG'
-
-        self.N = NumParam(default=1, info='Number of EVs')
+        

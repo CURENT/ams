@@ -92,7 +92,7 @@ class SFRBase:
         self.prd = Var(info='RegDn reserve',
                        unit='p.u.', name='prd', tex_name=r'p_{r,d}',
                        model='StaticGen', nonneg=True,)
-        # NOTE: define e_str in dispatch routine
+        # NOTE: define e_str in scheduling routine
         self.rbu = Constraint(name='rbu', is_eq=True,
                               info='RegUp reserve balance',)
         self.rbd = Constraint(name='rbd', is_eq=True,

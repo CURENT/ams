@@ -1,5 +1,5 @@
 """
-Dispatch routines.
+Scheduling routines.
 """
 
 from collections import OrderedDict

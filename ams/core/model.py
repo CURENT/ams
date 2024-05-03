@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class Model:
     """
-    Base class for power system dispatch models.
+    Base class for power system scheduling models.
 
     This class is revised from ``andes.core.model.Model``.
     """

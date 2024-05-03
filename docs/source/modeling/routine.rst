@@ -1,7 +1,7 @@
 Routine
 ===========
 
-Routine refers to dispatch-level model, and it includes two sectinos, namely,
+Routine refers to scheduling-level model, and it includes two sectinos, namely,
 Data Section and Model Section.
 
 Data Section
@@ -50,7 +50,7 @@ Model Section
 
 Descriptive Formulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Dispatch routine is the descriptive model of the optimization problem.
+Scheduling routine is the descriptive model of the optimization problem.
 
 Further, to facilitate the routine definition, AMS developed a class
 :py:mod:`ams.core.param.RParam` to pass the model data to multiple routine modeling.
@@ -93,7 +93,7 @@ In AMS, the built-in interface with ANDES is implemented in :py:mod:`ams.interop
 File Format Converter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Power flow data is the bridge between dispatch study and dynamic study,
+Power flow data is the bridge between scheduling study and dynamics study,
 where it defines grid topology and power flow.
 An AMS case can be converted to an ANDES case, with the option to supply additional dynamic
 data.
@@ -105,8 +105,8 @@ data.
 Data Exchange in Simulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To achieve dispatch-dynamic cosimulation, it requires bi-directional data exchange between
-dispatch and dynamic study.
+To achieve scheduling-dynamics cosimulation, it requires bi-directional data exchange between
+scheduling and dynamics study.
 From the perspective of AMS, two functions, ``send`` and ``receive``, are developed.
 The maping relationship for a specific routine is defined in the routine class as ``map1`` and
 ``map2``.

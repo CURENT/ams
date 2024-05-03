@@ -1,5 +1,5 @@
 """
-The package for models used in dispatch modeling.
+The package for models used in scheduling modeling.
 
 The file_classes includes the list of file classes and their corresponding classes.
 """

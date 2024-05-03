@@ -516,7 +516,7 @@ class Dynamic:
 
     def send(self, adsys=None, routine=None):
         """
-        Send results of the recent sovled AMS dispatch (``sp.recent``) to the
+        Send results of the recent sovled AMS routine (``sp.recent``) to the
         target ANDES system.
 
         Note that converged AC conversion DOES NOT guarantee successful dynamic

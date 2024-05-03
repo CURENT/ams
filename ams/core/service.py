@@ -497,7 +497,7 @@ class MinDur(NumOpDual):
         n_gen = self.u.n
         n_ts = self.u.horizon.n
         tout = np.zeros((n_gen, n_ts))
-        t = self.rtn.config.t  # dispatch interval
+        t = self.rtn.config.t  # scheduling interval
 
         # minimum online/offline duration
         td = np.ceil(self.u2.v/t).astype(int)
