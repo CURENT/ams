@@ -104,7 +104,7 @@ class REGCV1(REGCData, Model):
 
 class REGCV2(REGCV1):
     """
-    Voltage-controlled VSC, identical to REGCV1.
+    Voltage-controlled VSC, identical to :ref:`REGCV1`.
 
     Reference:
 
