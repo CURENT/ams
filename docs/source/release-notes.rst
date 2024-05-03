@@ -227,3 +227,42 @@ v0.4 (2023-01)
 -------------------
 
 This release outlines the package.
+
+Roadmap
+=======
+
+This section lists out some potential features that may be added in the future.
+Note that the proposed features are not guaranteed to be implemented and subject to change.
+
+Electric Vehicle for Grid Service
+------------------------------------------
+
+A charging-time-constrained EV aggregation based on the state-space model
+
+References:
+
+[1] J. Wang et al., "Electric Vehicles Charging Time Constrained Deliverable Provision of Secondary
+Frequency Regulation," in IEEE Transactions on Smart Grid, doi: 10.1109/TSG.2024.3356948.
+
+[2] M. Wang et al., "State Space Model of Aggregated Electric Vehicles for Frequency Regulation," in
+IEEE Transactions on Smart Grid, vol. 11, no. 2, pp. 981-994, March 2020, doi: 10.1109/TSG.2019.2929052.
+
+Distribution OPF
+--------------------------
+
+- Distribution networks OPF and its LMP
+- DG siting and sizing considering energy equity
+
+References:
+
+[1] H. Yuan, F. Li, Y. Wei and J. Zhu, "Novel Linearized Power Flow and Linearized OPF Models for
+Active Distribution Networks With Application in Distribution LMP," in IEEE Transactions on Smart Grid,
+vol. 9, no. 1, pp. 438-448, Jan. 2018, doi: 10.1109/TSG.2016.2594814.
+
+[2] C. Li, F. Li, S. Jiang, X. Wang and J. Wang, "Siting and Sizing of DG Units Considering Energy
+Equity: Model, Solution, and Guidelines," in IEEE Transactions on Smart Grid, doi: 10.1109/TSG.2024.3350914.
+
+Planning
+--------------------------
+
+- Transmission expansion planning
