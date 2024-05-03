@@ -3,13 +3,14 @@ EV model.
 """
 
 from andes.core.param import NumParam, IdxParam
+from andes.core.model import ModelData
 
 from ams.core.model import Model
 
 
-class EV1(Model):
+class EV1(ModelData, Model):
     """
-    EV aggregation model at transmission level.
+    EV aggregation model for scheduling at transmission level.
 
     For co-simulation with ADNES, it is expected to be used in
     conjunction with the dynamic models `EV1` or `EV2`.
@@ -21,6 +22,7 @@ class EV1(Model):
     """
 
     def __init__(self, system, config):
+        ModelData.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'DG'
 
