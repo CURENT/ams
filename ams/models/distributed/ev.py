@@ -10,7 +10,7 @@ from ams.core.model import Model
 
 class EV1(ModelData, Model):
     """
-    EV aggregation model for scheduling at transmission level.
+    Aggregated EV model for scheduling at transmission level.
 
     For co-simulation with ADNES, it is expected to be used in
     conjunction with the dynamic models `EV1` or `EV2`.
@@ -45,6 +45,10 @@ class EV1(ModelData, Model):
                                info="Q ratio of linked static gen",
                                tex_name=r'\gamma_Q'
                                )
+        self.N = NumParam(default=10000,
+                          info="number of related EVs",
+                          tex_name='N'
+                          )
 
 
 class EV2(EV1):
