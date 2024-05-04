@@ -2,6 +2,7 @@
 EV Aggregator.
 """
 
+import logging
 from collections import OrderedDict
 
 import scipy.stats as stats
@@ -9,9 +10,12 @@ import scipy.stats as stats
 from andes.core import Config
 from andes.core.param import NumParam
 from andes.core.model import ModelData
-from andes.shared import pd
+from andes.shared import np, pd
+from andes.utils.misc import elapsed
 
 from ams.core.model import Model
+
+logger = logging.getLogger(__name__)
 
 
 class EVA(ModelData, Model):
@@ -30,7 +34,7 @@ class EVA(ModelData, Model):
     """
 
     def __init__(self, N=10000, Ns=20, Tagc=4, SOCf=0.2, r=0.5,
-                 seed=None,):
+                 t=18, seed=None,):
         """
         Initialize the EV aggregation model.
 
@@ -46,69 +50,88 @@ class EVA(ModelData, Model):
             Force charge SOC level between 0 and 1, default is 0.2.
         r : float, optional
             Ratio of time range 1 to time range 2 between 0 and 1, default is 0.5.
+        seed : int or None, optional
+            Seed for random number generator, default is None.
+        t : int, optional
+            Current time in 24 hours, default is 18.
         """
         # inherit attributes and methods from ANDES `ModelData` and AMS `Model`
         ModelData.__init__(self)
         Model.__init__(self, system=None, config=None)
 
+        # internal flags
+        self.is_setup = False        # if EVA has been setup
+
+        self.t = np.array(t, dtype=float)  # time in 24 hours
+
         # manually set config as EVA is not processed by the system
         self.config = Config(self.__class__.__name__)
-        self.config.add(OrderedDict((('ns', Ns),
+        self.config.add(OrderedDict((('n', int(N)),
+                                     ('ns', Ns),
                                      ('tagc', Tagc),
                                      ('socf', SOCf),
                                      ('r', r),
                                      ('socl', 0),
                                      ('socu', 1),
+                                     ('tf', self.t),
+                                     ('prumax', 0),
+                                     ('prdmax', 0),
                                      ('seed', seed),
                                      )))
         self.config.add_extra("_help",
+                              n="Number of related EVs",
                               ns="SOC intervals",
                               tagc="AGC time intervals in seconds",
                               socf="Force charge SOC level",
                               r="ratio of time range 1 to time range 2",
                               socl="lowest SOC limit",
                               socu="highest SOC limit",
+                              tf="EVA running end time in 24 hours",
+                              prumax="maximum power of regulation up, in MW",
+                              prdmax="maximum power of regulation down, in MW",
                               seed='seed (or None) for random number generator',
                               )
         self.config.add_extra("_tex",
+                              n='N_{ev}',
                               ns='N_s',
                               tagc='T_{agc}',
                               socf='SOC_f',
                               r='r',
                               socl='SOC_{l}',
                               socu='SOC_{u}',
+                              tf='T_f',
+                              prumax='P_{ru,max}',
+                              prdmax='P_{rd,max}',
                               seed='seed',
                               )
         self.config.add_extra("_alt",
+                              n='int',
                               ns="int",
                               tagc="float",
                               socf="float",
                               r="float",
                               socl="float",
                               socu="float",
+                              tf="float",
+                              prumax="float",
+                              prdmax="float",
                               seed='int or None',
                               )
 
-        # manually set attributes as EVA is not processed by the system
-        self.n = int(N)
-        self.idx.v = ['SEV_' + str(i+1) for i in range(self.n)]
-        self.uid = {self.idx.v[i]: i for i in range(self.n)}
+        # NOTE: the parameters and variables are declared here and populated in `setup()`
+        # param `idx`, `name`, and `u` are already included in `ModelData`
+        # variables here are actually declared as parameters for memory saving
+        # because ams.core.var.Var has more overhead
 
-    def setup(self):
-        """
-        Setup the EV aggregation model.
-
-        Populate itself with generated EV devices based on the given parameters.
-        """
         # --- parameters ---
         self.namax = NumParam(default=0,
                               info='maximum number of action')
-        self.ts = NumParam(default=0,
+        self.ts = NumParam(default=0, vrange=(0, 24),
                            info='arrive time, in 24 hours')
-        self.tf = NumParam(default=0,
+        self.tf = NumParam(default=0, vrange=(0, 24),
                            info='departure time, in 24 hours')
         self.tt = NumParam(default=0,
-                           info='Tolerance of increased charging time')
+                           info='Tolerance of increased charging time, in hours')
         self.soci = NumParam(default=0,
                              info='initial SOC')
         self.socd = NumParam(default=0,
@@ -118,14 +141,46 @@ class EVA(ModelData, Model):
         self.Pd = NumParam(default=0,
                            info='rated discharging power, in kW')
         self.nc = NumParam(default=0,
-                           info='charging efficiency')
+                           info='charging efficiency',
+                           vrange=(0, 1))
         self.nd = NumParam(default=0,
-                           info='discharging efficiency')
+                           info='discharging efficiency',
+                           vrange=(0, 1))
         self.Q = NumParam(default=0,
-                          info='rated capacity')
+                          info='rated capacity, in kWh')
 
-        # --- initialization ---
-        # NOTE: following definition comes from ref[2]
+        # --- variables ---
+        self.soc0 = NumParam(default=0,
+                             info='previous SOC')
+        self.u0 = NumParam(default=0,
+                           info='previous online status')
+        self.na0 = NumParam(default=0,
+                            info='previous action number')
+        self.soc = NumParam(default=0,
+                            info='SOC')
+        self.na = NumParam(default=0,
+                           info='action number')
+
+    def setup(self):
+        """
+        Setup the EV aggregation model.
+
+        Populate itself with generated EV devices based on the given parameters.
+        """
+        if self.is_setup:
+            logger.warning('EVA has been setup, setup twice is not allowed.')
+            return False
+
+        t0, _ = elapsed()
+
+        # manually set attributes as EVA is not processed by the system
+        self.idx.v = ['SEV_' + str(i+1) for i in range(self.config.n)]
+        self.u.v = np.array(self.u.v, dtype=int)
+        self.uid = {self.idx.v[i]: i for i in range(self.config.n)}
+
+        # --- populate parameters' value ---
+        # NOTE: following definition comes from ref[2], except `tt`
+        # tt is assumend by experience in ref[1]
         # normal distribution parameters
         ndist = {'soci': {'mu': 0.3, 'var': 0.05, 'lb': 0.2, 'ub': 0.4},
                  'socd': {'mu': 0.8, 'var': 0.03, 'lb': 0.7, 'ub': 0.9},
@@ -144,22 +199,25 @@ class EVA(ModelData, Model):
         # --- set soci, socd ---
         self.soci.v = build_truncnorm(ndist['soci']['mu'], ndist['soci']['var'],
                                       ndist['soci']['lb'], ndist['soci']['ub'],
-                                      self.n, self.config.seed)
+                                      self.config.n, self.config.seed)
         self.socd.v = build_truncnorm(ndist['socd']['mu'], ndist['socd']['var'],
                                       ndist['socd']['lb'], ndist['socd']['ub'],
-                                      self.n, self.config.seed)
-
+                                      self.config.n, self.config.seed)
+        # --- set tt ---
+        self.tt.v = build_truncnorm(ndist['tt']['mu'], ndist['tt']['var'],
+                                    ndist['tt']['lb'], ndist['tt']['ub'],
+                                    self.config.n, self.config.seed)
         # --- set ts, tf ---
         tdf = pd.DataFrame({
             col: build_truncnorm(ndist[col]['mu'], ndist[col]['var'],
                                  ndist[col]['lb'], ndist[col]['ub'],
-                                 self.n, self.config.seed)
+                                 self.config.n, self.config.seed)
             for col in ['ts1', 'ts2', 'tf1', 'tf2']
         })
 
-        nev_t1 = int(self.n * self.config.r)  # number of EVs in time range 1
+        nev_t1 = int(self.config.n * self.config.r)  # number of EVs in time range 1
         tp1 = tdf[['ts1', 'tf1']].sample(n=nev_t1, random_state=self.config.seed)
-        tp2 = tdf[['ts2', 'tf2']].sample(n=self.n-nev_t1, random_state=self.config.seed)
+        tp2 = tdf[['ts2', 'tf2']].sample(n=self.config.n-nev_t1, random_state=self.config.seed)
         tp = pd.concat([tp1, tp2], axis=0).reset_index(drop=True).fillna(0)
         tp['ts'] = tp['ts1'] + tp['ts2']
         tp['tf'] = tp['tf1'] + tp['tf2']
@@ -170,13 +228,24 @@ class EVA(ModelData, Model):
         self.ts.v = tp['ts'].values
         self.tf.v = tp['tf'].values
 
-        # --- variables ---
-        # self.soc0 = Algeb(info='previous SOC')
-        # self.u0 = Algeb(info='previous online status')
-        # self.na0 = Algeb(info='previous action number')
-        # self.soc = Algeb(info='SOC')
-        # self.u = Algeb(info='online status')
-        # self.na = Algeb(info='action number')
+        # --- set Pc, Pd, nc, nd, Q ---
+        # NOTE: here it assumes (1) Pc == Pd, (2) nc == nd given by ref[2]
+        if self.config.seed is not None:
+            np.random.seed(self.config.seed)
+        self.Pc.v = np.random.uniform(udist['Pc']['lb'], udist['Pc']['ub'], self.config.n)
+        self.Pd.v = self.Pc.v
+        self.nc.v = np.random.uniform(udist['nc']['lb'], udist['nc']['ub'], self.config.n)
+        self.nd.v = self.nc.v
+        self.Q.v = np.random.uniform(udist['Q']['lb'], udist['Q']['ub'], self.config.n)
+
+        self.is_setup = True
+
+        _, s = elapsed(t0)
+        msg = f'EVA setup in {s}. It is {self.t} H now, '
+        msg += f'with {self.config.n} EVs in total and {self.u.v.sum()} EVs online.'
+        logger.info(msg)
+
+        return self.is_setup
 
 
 def build_truncnorm(mu, var, lb, ub, n, seed):
@@ -198,6 +267,11 @@ def build_truncnorm(mu, var, lb, ub, n, seed):
         Number of samples to generate.
     seed : int
         Random seed to use.
+
+    Returns
+    -------
+    samples : ndarray
+        Generated samples.
     """
     a = (lb - mu) / var
     b = (ub - mu) / var
