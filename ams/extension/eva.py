@@ -3,6 +3,7 @@ EV Aggregator.
 """
 
 import logging
+import itertools
 from collections import OrderedDict
 
 import scipy.stats as stats
@@ -118,6 +119,17 @@ class EVA(ModelData, Model):
                               seed='int or None',
                               )
 
+        unit = self.config.socu / self.config.ns
+        self.soc_intv = OrderedDict({
+            i: (np.around(i * unit, 2), np.around((i + 1) * unit, 2))
+            for i in range(self.config.ns)
+        })
+
+        # states of EV, intersection of charging status and SOC intervals
+        # C: charging, I: idle, D: discharging
+        states = list(itertools.product(['C', 'I', 'D'], self.soc_intv.keys()))
+        self.state = OrderedDict(((''.join(str(i) for i in s), 0.0) for s in states))
+
         # NOTE: the parameters and variables are declared here and populated in `setup()`
         # param `idx`, `name`, and `u` are already included in `ModelData`
         # variables here are actually declared as parameters for memory saving
@@ -196,18 +208,17 @@ class EVA(ModelData, Model):
                  'nd': {'lb': 0.88, 'ub': 0.95},
                  'Q': {'lb': 20.0, 'ub': 30.0}}
 
-        # --- set soci, socd ---
+        # set `soci`, `socd`, `tt`
         self.soci.v = build_truncnorm(ndist['soci']['mu'], ndist['soci']['var'],
                                       ndist['soci']['lb'], ndist['soci']['ub'],
                                       self.config.n, self.config.seed)
         self.socd.v = build_truncnorm(ndist['socd']['mu'], ndist['socd']['var'],
                                       ndist['socd']['lb'], ndist['socd']['ub'],
                                       self.config.n, self.config.seed)
-        # --- set tt ---
         self.tt.v = build_truncnorm(ndist['tt']['mu'], ndist['tt']['var'],
                                     ndist['tt']['lb'], ndist['tt']['ub'],
                                     self.config.n, self.config.seed)
-        # --- set ts, tf ---
+        # set `ts`, `tf`
         tdf = pd.DataFrame({
             col: build_truncnorm(ndist[col]['mu'], ndist[col]['var'],
                                  ndist[col]['lb'], ndist[col]['ub'],
@@ -228,7 +239,7 @@ class EVA(ModelData, Model):
         self.ts.v = tp['ts'].values
         self.tf.v = tp['tf'].values
 
-        # --- set Pc, Pd, nc, nd, Q ---
+        # set `Pc`, `Pd`, `nc`, `nd`, `Q`
         # NOTE: here it assumes (1) Pc == Pd, (2) nc == nd given by ref[2]
         if self.config.seed is not None:
             np.random.seed(self.config.seed)
@@ -238,6 +249,9 @@ class EVA(ModelData, Model):
         self.nd.v = self.nc.v
         self.Q.v = np.random.uniform(udist['Q']['lb'], udist['Q']['ub'], self.config.n)
 
+        # --- adjust variables given current time ---
+        self.g_u()  # update online status
+
         self.is_setup = True
 
         _, s = elapsed(t0)
@@ -246,6 +260,14 @@ class EVA(ModelData, Model):
         logger.info(msg)
 
         return self.is_setup
+
+    def g_u(self):
+        """
+        Update online status of EVs based on current time.
+        """
+        self.u.v = ((self.ts.v <= self.t) & (self.t <= self.tf.v)).astype(int)
+
+        return True
 
 
 def build_truncnorm(mu, var, lb, ub, n, seed):
