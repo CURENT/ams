@@ -178,6 +178,7 @@ class EVA(ModelData, Model):
         # self.u = Algeb(info='online status')
         # self.na = Algeb(info='action number')
 
+
 def build_truncnorm(mu, var, lb, ub, n, seed):
     """
     Helper function to generate truncated normal distribution
