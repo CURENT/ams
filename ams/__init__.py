@@ -9,6 +9,7 @@ from ams import routines  # NOQA
 from ams import opt       # NOQA
 from ams import pypower  # NOQA
 from ams import report  # NOQA
+from ams import extension  # NOQA
 
 from ams.main import config_logger, load, run  # NOQA
 from ams.utils.paths import get_case  # NOQA
@@ -16,4 +17,4 @@ from ams.shared import ppc2df  # NOQA
 
 __author__ = 'Jining Wang'
 
-__all__ = ['io', 'utils', 'models', 'system']
+__all__ = ['io', 'utils', 'models', 'system', 'extension']
