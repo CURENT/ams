@@ -15,6 +15,7 @@ from andes.shared import np, pd
 from andes.utils.misc import elapsed
 
 from ams.core.model import Model
+from ams.utils.paths import ams_root
 
 logger = logging.getLogger(__name__)
 
@@ -35,13 +36,13 @@ class EVA(ModelData, Model):
     """
 
     def __init__(self, N=10000, Ns=20, Tagc=4, SOCf=0.2, r=0.5,
-                 t=18, seed=None,):
+                 t=18, seed=None, A_csv=None, name='EVA'):
         """
         Initialize the EV aggregation model.
 
         Parameters
         ----------
-        N: int, optional
+        N : int, optional
             Number of related EVs, default is 10000.
         Ns : int, optional
             Number of SOC intervals, default is 20.
@@ -55,10 +56,17 @@ class EVA(ModelData, Model):
             Seed for random number generator, default is None.
         t : int, optional
             Current time in 24 hours, default is 18.
+        A_csv : str, optional
+            Path to the CSV file containing the state space matrix A, default is None.
+        name : str, optional
+            Name of the EVA, default is 'EVA'.
         """
         # inherit attributes and methods from ANDES `ModelData` and AMS `Model`
         ModelData.__init__(self)
         Model.__init__(self, system=None, config=None)
+
+        # NOTE: Overwrite DataParam `name` to be a string attribute
+        self.name = name
 
         # internal flags
         self.is_setup = False        # if EVA has been setup
@@ -130,6 +138,43 @@ class EVA(ModelData, Model):
         states = list(itertools.product(['C', 'I', 'D'], self.soc_intv.keys()))
         self.state = OrderedDict(((''.join(str(i) for i in s), 0.0) for s in states))
 
+        # --- state space modeling (SSM) variables ---
+        self.Pave = 0  # average charging power, in MW
+
+        # NOTE: 3*ns comes from the intersection of charging status and SOC intervals
+        ns = self.config.ns
+        # NOTE: x, A will be updated in `setup()`
+        self.x = np.zeros(3*ns)
+
+        # A matrix
+        default_A_csv = ams_root() + '/extension/Aest.csv'
+        if A_csv:
+            try:
+                self.A = pd.read_csv(A_csv).values
+                logger.debug(f'Loaded A matrix from {A_csv}.')
+            except FileNotFoundError:
+                self.A = pd.read_csv(default_A_csv).values
+                logger.debug(f'File {A_csv} not found, using default A matrix.')
+        else:
+            self.A = pd.read_csv(default_A_csv).values
+            logger.debug('No A matrix provided, using default A matrix.')
+
+        mate = np.eye(ns)
+        mat0 = np.zeros((ns, ns))
+        self.B = np.vstack((-mate, mate, mat0))
+        self.C = np.vstack((mat0, -mate, mate))
+
+        # NOTE: D, Da, Db, Dc, Dd will be scaled by Pave later in `setup()`
+        vec1 = np.ones((1, ns))
+        vec0 = np.zeros((1, ns))
+        self.D = np.hstack((-vec1, vec0, vec0))
+        self.Da = np.hstack((vec0, vec0, vec1))
+        self.Db = np.hstack((vec1, vec1, vec1))
+        self.Db[0, ns] = 0  # low charged EVs don't DC
+        self.Dc = np.hstack((-vec1, vec0, vec0))
+        self.Dd = np.hstack((-vec1, -vec1, -vec1))
+        self.Dd[0, 2*ns-1] = 0  # over chargeds EV don't C
+
         # NOTE: the parameters and variables are declared here and populated in `setup()`
         # param `idx`, `name`, and `u` are already included in `ModelData`
         # variables here are actually declared as parameters for memory saving
@@ -180,7 +225,7 @@ class EVA(ModelData, Model):
         Populate itself with generated EV devices based on the given parameters.
         """
         if self.is_setup:
-            logger.warning('EVA has been setup, setup twice is not allowed.')
+            logger.warning(f'{self.name} aggregator has been setup, setup twice is not allowed.')
             return False
 
         t0, _ = elapsed()
@@ -269,11 +314,23 @@ class EVA(ModelData, Model):
         # clip soc to min/max
         self.soc.v = np.clip(self.soc.v, self.config.socl, self.config.socu)
 
+        # SSM variables
+        kde = stats.gaussian_kde(self.Pc.v)
+        step = 0.01
+        Pl_values = np.arange(self.Pc.v.min(), self.Pc.v.max(), step)
+        self.Pave = 1e-3 * np.sum([Pl * kde.integrate_box(Pl, Pl + step) for Pl in Pl_values])  # kw to MW
+
+        self.D *= self.Pave
+        self.Da *= self.Pave
+        self.Db *= self.Pave
+        self.Dc *= self.Pave
+        self.Dd *= self.Pave
+
         self.is_setup = True
 
         _, s = elapsed(t0)
-        msg = f'EVA setup in {s}. It is {self.t} H now, '
-        msg += f'with {self.config.n} EVs in total and {self.u.v.sum()} EVs online.'
+        msg = f'{self.name} aggregator setup in {s}, and the current time is {self.t} H.\n'
+        msg += f'It has {self.config.n} EVs in total and {self.u.v.sum()} EVs online.'
         logger.info(msg)
 
         return self.is_setup
