@@ -251,6 +251,23 @@ class EVA(ModelData, Model):
 
         # --- adjust variables given current time ---
         self.g_u()  # update online status
+        # adjust SOC considering random behavior
+        # NOTE: here we ignore the AGC participation before the current time `self.t`
+
+        # stayed time for the EVs arrived before t, reset negative time to 0
+        tc = np.maximum(self.t - self.ts.v, 0)
+        self.soc.v = self.soci.v + tc * self.Pc.v * self.nc.v / self.Q.v  # charge them
+
+        tr = (self.socd.v - self.soci.v) * self.Q.v / self.Pc.v / self.nc.v  # time needed to charge to socd
+
+        # ratio of stay/required time, stay less than required time reset to 1
+        kt = np.maximum(tc / tr, 1)
+        socp = self.socd.v + np.log(kt) * (1 - self.socd.v)  # log scale higher than socd
+        mask = kt > 1
+        self.soc.v[mask] = socp[mask]  # Update soc
+
+        # clip soc to min/max
+        self.soc.v = np.clip(self.soc.v, self.config.socl, self.config.socu)
 
         self.is_setup = True
 
