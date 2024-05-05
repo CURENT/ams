@@ -20,6 +20,23 @@ from ams.utils.paths import ams_root
 logger = logging.getLogger(__name__)
 
 
+# NOTE: following definition comes from ref[2], except `tt` that is assumed by ref[1]
+# normal distribution parameters
+ndist = {'soci': {'mu': 0.3, 'var': 0.05, 'lb': 0.2, 'ub': 0.4},
+         'socd': {'mu': 0.8, 'var': 0.03, 'lb': 0.7, 'ub': 0.9},
+         'ts1': {'mu': -6.5, 'var': 3.4, 'lb': 0.0, 'ub': 5.5},
+         'ts2': {'mu': 17.5, 'var': 3.4, 'lb': 5.5, 'ub': 24.0},
+         'tf1': {'mu': 8.9, 'var': 3.4, 'lb': 0.0, 'ub': 20.9},
+         'tf2': {'mu': 32.9, 'var': 3.4, 'lb': 20.9, 'ub': 24.0},
+         'tt': {'mu': 0.5, 'var': 0.02, 'lb': 0, 'ub': 1}}
+# uniform distribution parameters
+udist = {'Pc': {'lb': 5.0, 'ub': 7.0},
+         'Pd': {'lb': 5.0, 'ub': 7.0},
+         'nc': {'lb': 0.88, 'ub': 0.95},
+         'nd': {'lb': 0.88, 'ub': 0.95},
+         'Q': {'lb': 20.0, 'ub': 30.0}}
+
+
 class EVA(ModelData, Model):
     """
     State space modeling based EV aggregation model.
@@ -218,11 +235,21 @@ class EVA(ModelData, Model):
         self.na = NumParam(default=0,
                            info='action number')
 
-    def setup(self):
+    def setup(self, ndist=ndist, udist=udist):
         """
         Setup the EV aggregation model.
 
-        Populate itself with generated EV devices based on the given parameters.
+        Parameters
+        ----------
+        ndist : dict, optional
+            Normal distribution parameters, default by built-in `ndist`.
+        udist : dict, optional
+            Uniform distribution parameters, default by built-in `udist`.
+
+        Returns
+        -------
+        is_setup : bool
+            If the setup is successful.
         """
         if self.is_setup:
             logger.warning(f'{self.name} aggregator has been setup, setup twice is not allowed.')
@@ -236,23 +263,6 @@ class EVA(ModelData, Model):
         self.uid = {self.idx.v[i]: i for i in range(self.config.n)}
 
         # --- populate parameters' value ---
-        # NOTE: following definition comes from ref[2], except `tt`
-        # tt is assumend by experience in ref[1]
-        # normal distribution parameters
-        ndist = {'soci': {'mu': 0.3, 'var': 0.05, 'lb': 0.2, 'ub': 0.4},
-                 'socd': {'mu': 0.8, 'var': 0.03, 'lb': 0.7, 'ub': 0.9},
-                 'ts1': {'mu': -6.5, 'var': 3.4, 'lb': 0.0, 'ub': 5.5},
-                 'ts2': {'mu': 17.5, 'var': 3.4, 'lb': 5.5, 'ub': 24.0},
-                 'tf1': {'mu': 8.9, 'var': 3.4, 'lb': 0.0, 'ub': 20.9},
-                 'tf2': {'mu': 32.9, 'var': 3.4, 'lb': 20.9, 'ub': 24.0},
-                 'tt': {'mu': 0.5, 'var': 0.02, 'lb': 0, 'ub': 1}}
-        # uniform distribution parameters
-        udist = {'Pc': {'lb': 5.0, 'ub': 7.0},
-                 'Pd': {'lb': 5.0, 'ub': 7.0},
-                 'nc': {'lb': 0.88, 'ub': 0.95},
-                 'nd': {'lb': 0.88, 'ub': 0.95},
-                 'Q': {'lb': 20.0, 'ub': 30.0}}
-
         # set `soci`, `socd`, `tt`
         self.soci.v = build_truncnorm(ndist['soci']['mu'], ndist['soci']['var'],
                                       ndist['soci']['lb'], ndist['soci']['ub'],
