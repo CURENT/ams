@@ -1,5 +1,14 @@
 """
-EV Aggregator.
+EV Aggregator module.
+
+EVD is the generated datasets, and EVA is the aggregator model.
+
+Reference:
+[1] J. Wang et al., "Electric Vehicles Charging Time Constrained Deliverable Provision of Secondary
+Frequency Regulation," in IEEE Transactions on Smart Grid, doi: 10.1109/TSG.2024.3356948.
+[2] M. Wang, Y. Mu, Q. Shi, H. Jia and F. Li, "Electric Vehicle Aggregator Modeling and Control for
+Frequency Regulation Considering Progressive State Recovery," in IEEE Transactions on Smart Grid,
+vol. 11, no. 5, pp. 4176-4189, Sept. 2020, doi: 10.1109/TSG.2020.2981843.
 """
 
 import logging
@@ -37,23 +46,14 @@ udist = {'Pc': {'lb': 5.0, 'ub': 7.0},
          'Q': {'lb': 20.0, 'ub': 30.0}}
 
 
-class EVA(ModelData, Model):
+class EVD(ModelData, Model):
     """
-    State space modeling based EV aggregation model.
-
-    In the EVA, each single EV is recorded as a device with its own parameters.
+    In the EVD, each single EV is recorded as a device with its own parameters.
     The parameters are generated from given statistical distributions.
-
-    Reference:
-    [1] J. Wang et al., "Electric Vehicles Charging Time Constrained Deliverable Provision of Secondary
-    Frequency Regulation," in IEEE Transactions on Smart Grid, doi: 10.1109/TSG.2024.3356948.
-    [2] M. Wang, Y. Mu, Q. Shi, H. Jia and F. Li, "Electric Vehicle Aggregator Modeling and Control for
-    Frequency Regulation Considering Progressive State Recovery," in IEEE Transactions on Smart Grid,
-    vol. 11, no. 5, pp. 4176-4189, Sept. 2020, doi: 10.1109/TSG.2020.2981843.
     """
 
     def __init__(self, N=10000, Ns=20, Tagc=4, SOCf=0.2, r=0.5,
-                 t=18, seed=None, A_csv=None, name='EVA'):
+                 t=18, seed=None, name='EVA', A_csv=None):
         """
         Initialize the EV aggregation model.
 
@@ -73,22 +73,23 @@ class EVA(ModelData, Model):
             Seed for random number generator, default is None.
         t : int, optional
             Current time in 24 hours, default is 18.
-        A_csv : str, optional
-            Path to the CSV file containing the state space matrix A, default is None.
         name : str, optional
             Name of the EVA, default is 'EVA'.
+        A_csv : str, optional
+            Path to the CSV file containing the state space matrix A, default is None.
         """
         # inherit attributes and methods from ANDES `ModelData` and AMS `Model`
         ModelData.__init__(self)
         Model.__init__(self, system=None, config=None)
 
-        # NOTE: Overwrite DataParam `name` to be a string attribute
-        self.name = name
+        self.evdname = name
 
         # internal flags
         self.is_setup = False        # if EVA has been setup
 
         self.t = np.array(t, dtype=float)  # time in 24 hours
+        self.eva = None  # EV Aggregator
+        self.A_csv = A_csv  # path to the A matrix
 
         # manually set config as EVA is not processed by the system
         self.config = Config(self.__class__.__name__)
@@ -150,48 +151,6 @@ class EVA(ModelData, Model):
             for i in range(self.config.ns)
         })
 
-        # states of EV, intersection of charging status and SOC intervals
-        # C: charging, I: idle, D: discharging
-        states = list(itertools.product(['C', 'I', 'D'], self.soc_intv.keys()))
-        self.state = OrderedDict(((''.join(str(i) for i in s), 0.0) for s in states))
-
-        # --- state space modeling (SSM) variables ---
-        self.Pave = 0  # average charging power, in MW
-
-        # NOTE: 3*ns comes from the intersection of charging status and SOC intervals
-        ns = self.config.ns
-        # NOTE: x, A will be updated in `setup()`
-        self.x = np.zeros(3*ns)
-
-        # A matrix
-        default_A_csv = ams_root() + '/extension/Aest.csv'
-        if A_csv:
-            try:
-                self.A = pd.read_csv(A_csv).values
-                logger.debug(f'Loaded A matrix from {A_csv}.')
-            except FileNotFoundError:
-                self.A = pd.read_csv(default_A_csv).values
-                logger.debug(f'File {A_csv} not found, using default A matrix.')
-        else:
-            self.A = pd.read_csv(default_A_csv).values
-            logger.debug('No A matrix provided, using default A matrix.')
-
-        mate = np.eye(ns)
-        mat0 = np.zeros((ns, ns))
-        self.B = np.vstack((-mate, mate, mat0))
-        self.C = np.vstack((mat0, -mate, mate))
-
-        # NOTE: D, Da, Db, Dc, Dd will be scaled by Pave later in `setup()`
-        vec1 = np.ones((1, ns))
-        vec0 = np.zeros((1, ns))
-        self.D = np.hstack((-vec1, vec0, vec0))
-        self.Da = np.hstack((vec0, vec0, vec1))
-        self.Db = np.hstack((vec1, vec1, vec1))
-        self.Db[0, ns] = 0  # low charged EVs don't DC
-        self.Dc = np.hstack((-vec1, vec0, vec0))
-        self.Dd = np.hstack((-vec1, -vec1, -vec1))
-        self.Dd[0, 2*ns-1] = 0  # over chargeds EV don't C
-
         # NOTE: the parameters and variables are declared here and populated in `setup()`
         # param `idx`, `name`, and `u` are already included in `ModelData`
         # variables here are actually declared as parameters for memory saving
@@ -252,12 +211,13 @@ class EVA(ModelData, Model):
             If the setup is successful.
         """
         if self.is_setup:
-            logger.warning(f'{self.name} aggregator has been setup, setup twice is not allowed.')
+            logger.warning(f'{self.evdname} aggregator has been setup, setup twice is not allowed.')
             return False
 
         t0, _ = elapsed()
 
         # manually set attributes as EVA is not processed by the system
+        self.n = self.config.n
         self.idx.v = ['SEV_' + str(i+1) for i in range(self.config.n)]
         self.u.v = np.array(self.u.v, dtype=int)
         self.uid = {self.idx.v[i]: i for i in range(self.config.n)}
@@ -324,22 +284,12 @@ class EVA(ModelData, Model):
         # clip soc to min/max
         self.soc.v = np.clip(self.soc.v, self.config.socl, self.config.socu)
 
-        # SSM variables
-        kde = stats.gaussian_kde(self.Pc.v)
-        step = 0.01
-        Pl_values = np.arange(self.Pc.v.min(), self.Pc.v.max(), step)
-        self.Pave = 1e-3 * np.sum([Pl * kde.integrate_box(Pl, Pl + step) for Pl in Pl_values])  # kw to MW
-
-        self.D *= self.Pave
-        self.Da *= self.Pave
-        self.Db *= self.Pave
-        self.Dc *= self.Pave
-        self.Dd *= self.Pave
+        self.evd = EVA(evd=self, A_csv=self.A_csv)
 
         self.is_setup = True
 
         _, s = elapsed(t0)
-        msg = f'{self.name} aggregator setup in {s}, and the current time is {self.t} H.\n'
+        msg = f'{self.evdname} aggregator setup in {s}, and the current time is {self.t} H.\n'
         msg += f'It has {self.config.n} EVs in total and {self.u.v.sum()} EVs online.'
         logger.info(msg)
 
@@ -352,6 +302,66 @@ class EVA(ModelData, Model):
         self.u.v = ((self.ts.v <= self.t) & (self.t <= self.tf.v)).astype(int)
 
         return True
+
+
+class EVA:
+    """
+    State space modeling based EV aggregation model.
+    """
+
+    def __init__(self, evd, A_csv=None):
+        """
+        Parameters
+        ----------
+        EVD : ams.extension.eva.EVD
+            EV Aggregator model.
+        """
+        self.parent = evd
+
+        # states of EV, intersection of charging status and SOC intervals
+        # C: charging, I: idle, D: discharging
+        states = list(itertools.product(['C', 'I', 'D'], self.parent.soc_intv.keys()))
+        self.state = OrderedDict(((''.join(str(i) for i in s), 0.0) for s in states))
+
+        # NOTE: 3*ns comes from the intersection of charging status and SOC intervals
+        ns = self.parent.config.ns
+        # NOTE: x, A will be updated in `setup()`
+        self.x = np.zeros(3*ns)
+
+        # A matrix
+        default_A_csv = ams_root() + '/extension/Aest.csv'
+        if A_csv:
+            try:
+                self.A = pd.read_csv(A_csv).values
+                logger.debug(f'Loaded A matrix from {A_csv}.')
+            except FileNotFoundError:
+                self.A = pd.read_csv(default_A_csv).values
+                logger.debug(f'File {A_csv} not found, using default A matrix.')
+        else:
+            self.A = pd.read_csv(default_A_csv).values
+            logger.debug('No A matrix provided, using default A matrix.')
+
+        mate = np.eye(ns)
+        mat0 = np.zeros((ns, ns))
+        self.B = np.vstack((-mate, mate, mat0))
+        self.C = np.vstack((mat0, -mate, mate))
+
+        # SSM variables
+        kde = stats.gaussian_kde(self.parent.Pc.v)
+        step = 0.01
+        Pl_values = np.arange(self.parent.Pc.v.min(), self.parent.Pc.v.max(), step)
+        self.Pave = 1e-3 * np.sum([Pl * kde.integrate_box(Pl, Pl + step) for Pl in Pl_values])  # kw to MW
+
+        # NOTE: D, Da, Db, Dc, Dd will be scaled by Pave later in `setup()`
+        vec1 = np.ones((1, ns))
+        vec0 = np.zeros((1, ns))
+        self.D = self.Pave * np.hstack((-vec1, vec0, vec0))
+        self.Da = self.Pave * np.hstack((vec0, vec0, vec1))
+        self.Db = self.Pave * np.hstack((vec1, vec1, vec1))
+        self.Db[0, ns] = 0  # low charged EVs don't DC
+        self.Dc = self.Pave * np.hstack((-vec1, vec0, vec0))
+        self.Dd = self.Pave * np.hstack((-vec1, -vec1, -vec1))
+        self.Dd[0, 2*ns-1] = 0  # overcharged EVs don't C
 
 
 def build_truncnorm(mu, var, lb, ub, n, seed):
