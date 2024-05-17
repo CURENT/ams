@@ -202,7 +202,12 @@ def mpc2system(mpc: dict, system) -> bool:
 
     gcost_idx = 0
     gen_idx = np.arange(mpc['gen'].shape[0]) + 1
-    for data, gen in zip(mpc['gencost'], gen_idx):
+    mpc_cost = np.zeros((mpc['gen'].shape[0], 7))
+    if mpc['gencost'].shape[1] < 7:
+        mpc_cost[:, :mpc['gencost'].shape[1]] = mpc['gencost']
+    else:
+        mpc_cost = mpc['gencost']
+    for data, gen in zip(mpc_cost, gen_idx):
         # NOTE: only type 2 costs are supported for now
         # type  startup shutdown	n	c2  c1  c0
         # 0     1       2           3   4   5   6
