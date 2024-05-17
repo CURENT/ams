@@ -219,6 +219,7 @@ class EVD(ModelData, Model):
         # manually set attributes as EVA is not processed by the system
         self.n = self.config.n
         self.idx.v = ['SEV_' + str(i+1) for i in range(self.config.n)]
+        self.name.v = ['SEV ' + str(i+1) for i in range(self.config.n)]
         self.u.v = np.array(self.u.v, dtype=int)
         self.uid = {self.idx.v[i]: i for i in range(self.config.n)}
 
@@ -284,6 +285,9 @@ class EVD(ModelData, Model):
         # clip soc to min/max
         self.soc.v = np.clip(self.soc.v, self.config.socl, self.config.socu)
 
+        self.soc0.v = self.soc.v.copy()
+        self.u0.v = self.u.v.copy()
+
         self.evd = EVA(evd=self, A_csv=self.A_csv)
 
         self.is_setup = True
@@ -315,6 +319,8 @@ class EVA:
         ----------
         EVD : ams.extension.eva.EVD
             EV Aggregator model.
+        A_csv : str, optional
+            Path to the CSV file containing the state space matrix A, default is None.
         """
         self.parent = evd
 
