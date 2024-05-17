@@ -76,7 +76,8 @@ class PFlow(DCPF):
         ppopt = ppoption(PF_ALG=alg, ENFORCE_Q_LIMS=self.config.qlim)
 
         res, success, sstats = runpf(casedata=ppc, ppopt=ppopt)
-        return res, success, sstats
+        self.converged = bool(success)
+        return res, self.converged, sstats
 
     def run(self, force_init=False, no_code=True, method="newton", **kwargs):
         """
