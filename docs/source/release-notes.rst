@@ -9,6 +9,17 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.9.7 (2024-xx-xx)
+-------------------
+
+This patch release add the Roadmap section in the release notes, to list out some potential features.
+It also drafts the EV Aggregation model based on the state space modelg, but the finish date remains unknown.
+
+References:
+
+[1] J. Wang et al., "Electric Vehicles Charging Time Constrained Deliverable Provision of Secondary
+Frequency Regulation," in IEEE Transactions on Smart Grid, doi: 10.1109/TSG.2024.3356948.
+
 v0.9.6 (2024-04-21)
 -------------------
 
