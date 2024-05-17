@@ -124,9 +124,8 @@ class DCPF(RoutineBase):
         ppc = system2ppc(self.system)
         ppopt = ppoption(PF_DC=True)
 
-        res, success, sstats = runpf(casedata=ppc, ppopt=ppopt)
-        self.converged = bool(success)
-        return res, self.converged, sstats
+        res, sstats = runpf(casedata=ppc, ppopt=ppopt)
+        return res, sstats
 
     def run(self, force_init=False, no_code=True,
             method=None, **kwargs):
@@ -155,8 +154,9 @@ class DCPF(RoutineBase):
         if not self.initialized:
             self.init(force=force_init, no_code=no_code)
         t0, _ = elapsed()
-        res, success, sstats = self.solve(method=method)
-        self.exit_code = 0 if success else 1
+        res, sstats = self.solve(method=method)
+        self.converged = res['success']
+        self.exit_code = 0 if res['success'] else 1
         _, s = elapsed(t0)
         self.exec_time = float(s.split(' ')[0])
         n_iter = int(sstats['num_iters'])
