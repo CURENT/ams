@@ -165,7 +165,11 @@ class DCPF(RoutineBase):
             msg = f"<{self.class_name}> solved in {s}, converged in "
             msg += n_iter_str + f"with {sstats['solver_name']}."
             logger.info(msg)
-            self.unpack(res)
+            try:
+                self.unpack(res)
+            except Exception:
+                logger.warning(f"Failed to unpack results from {self.class_name}.")
+                return False
             return True
         else:
             msg = f"{self.class_name} failed in "
