@@ -471,13 +471,11 @@ class MatProcessor:
         self.LODF._v = LODF
         return self.LODF._v
 
-    def build_otdf(self, line=None):
+    def build_otdf(self):
         """
-        Build the DC OTDF matrix.
+        Build the DC OTDF matrix: :math:`OTDF = PTDF + LODF * PTDF`.
 
-        `OTDF_k[m, n]` means the PTDF[m, n] with line `k` outage.
-
-        It requires ... ...
+        Note that the OTDF is not stored in the MatProcessor.
 
         Parameters
         ----------
@@ -490,29 +488,10 @@ class MatProcessor:
         OTDF : np.ndarray
             Line outage distribution factor.
         """
-        system = self.system
-
-        if line is None:
-            line = system.Line.idx.v[0]
-        elif isinstance(line, list):
-            logger.warning("Multiple line is given, only the first one is used.")
-            line = line[0]
-        line_uid = system.Line.idx2uid(line)
-
         # build LODF if not built
         if self.LODF._v is None:
             self.build_lodf()
 
-        # common variables
-        nb = system.Bus.n
-        nl = system.Line.n
-
-        # initialize OTDF matrix
-        OTDF = np.zeros((nl, nb))
-
-        line_lodf = self.LODF._v[:, line_uid]  # LODF for the outage line
-        line_ptdf = self.PTDF._v[line_uid, :]  # PTDF for the outage line
-        OTDF += self.PTDF._v  # Add PTDF to OTDF
-        OTDF += line_lodf[:, np.newaxis] * line_ptdf  # Add LODF * PTDF for the outage line
+        OTDF = self.PTDF._v + self.LODF._v @ self.PTDF._v
 
         return OTDF
