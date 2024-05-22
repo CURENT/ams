@@ -20,6 +20,9 @@ References:
 [1] J. Wang et al., "Electric Vehicles Charging Time Constrained Deliverable Provision of Secondary
 Frequency Regulation," in IEEE Transactions on Smart Grid, doi: 10.1109/TSG.2024.3356948.
 
+- Fix OTDF calculation
+- Add parameter `dtype='float64'` in `MatProcessor` PTDF, LODF, and OTDF calculation, to save memory
+
 v0.9.6 (2024-04-21)
 -------------------
 
