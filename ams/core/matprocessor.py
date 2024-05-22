@@ -433,11 +433,11 @@ class MatProcessor:
             self.build()
 
         # use dense representation
-        Bbus, Bf = self.Bbus.v.astype(dtype), self.Bf.v.astype(dtype)
+        Bbus = self.Bbus._v.todense().astype(dtype)
+        Bf = self.Bf._v.todense().astype(dtype)
 
         # initialize PTDF matrix
         H = np.zeros((system.Line.n, system.Bus.n), dtype=dtype)
-
         # calculate PTDF
         H[:, noslack] = np.linalg.solve(Bbus[np.ix_(noslack, noref)].T, Bf[:, noref].T).T
 
