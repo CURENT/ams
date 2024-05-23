@@ -80,7 +80,8 @@ def mpc2system(mpc: dict, system) -> bool:
         vmax = data[11]
         vmin = data[12]
 
-        system.add('Bus', idx=idx, name='Bus ' + str(idx), Vn=baseKV,
+        system.add('Bus', idx=idx, name='Bus ' + str(idx),
+                   type=ty, Vn=baseKV,
                    v0=vmag, a0=vang,
                    vmax=vmax, vmin=vmin,
                    area=area, zone=zone)

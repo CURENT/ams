@@ -434,6 +434,13 @@ class System(andes_System):
         self.Line.a1a = self.Bus.get(src='a', attr='a', idx=self.Line.bus1.v)
         self.Line.a2a = self.Bus.get(src='a', attr='a', idx=self.Line.bus2.v)
 
+        # assign bus type as placeholder; 1=PQ, 2=PV, 3=ref, 4=isolated
+        if self.Bus.type.v.sum() == self.Bus.n:  # if all type are PQ
+            self.Bus.set(src='type', attr='v', idx=self.PV.bus.v,
+                         value=np.ones(self.PV.n))
+            self.Bus.set(src='type', attr='v', idx=self.Slack.bus.v,
+                         value=np.ones(self.Slack.n))
+
         _, s = elapsed(t0)
         logger.info('System set up in %s.', s)
 
