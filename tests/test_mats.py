@@ -166,3 +166,18 @@ class TestMatProcessor(unittest.TestCase):
             otdf32 = ss.mats.build_otdf(dtype='float32')
 
             np.testing.assert_allclose(otdf64, otdf32, atol=1e-3)
+
+    def test_tdf_float32(self):
+        """
+        Test TDFs with float32 is runnable.
+        """
+
+        for case in self.cases:
+            ss = ams.load(ams.get_case(case),
+                          setup=True, default_config=True, no_output=True)
+            # build matrices
+            ss.mats.build()
+
+            ss.mats.build_ptdf(dtype='float32')
+            ss.mats.build_lodf(dtype='float32')
+            ss.mats.build_otdf(dtype='float32')
