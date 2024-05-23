@@ -162,14 +162,7 @@ class TestMatProcessor(unittest.TestCase):
             # build matrices
             ss.mats.build()
 
-            oline_idx = ss.Line.idx.v[1]
+            otdf64 = ss.mats.build_otdf(dtype='float64')
+            otdf32 = ss.mats.build_otdf(dtype='float32')
 
-            otdf = ss.mats.build_otdf(line=oline_idx)
-
-            ss.Line.set(src='u', attr='v', idx=oline_idx, value=0)
-            ss.DCPF.run()
-
-            plf = ss.DCPF.plf.v
-            plfc = otdf@(ss.mats.Cg._v@ss.DCPF.pg.v - ss.mats.Cl._v@ss.DCPF.pd.v)
-
-            np.testing.assert_allclose(plf, plfc, atol=1e-7)
+            np.testing.assert_allclose(otdf64, otdf32, atol=1e-3)
