@@ -8,16 +8,12 @@ import ams
 from ams.core.matprocessor import MatProcessor, MParam
 
 
-class TestMatProcessor(unittest.TestCase):
+class TestMatProcessorBasic(unittest.TestCase):
     """
-    Test functionality of MatProcessor.
+    Test basic functionality of MatProcessor.
     """
 
     def setUp(self) -> None:
-        # cases is for testing PTDF, LODF, etc.
-        self.cases = ['matpower/case14.m',
-                      'matpower/case39.m',
-                      'matpower/case118.m']
         self.ss = ams.load(ams.get_case("matpower/case300.m"),
                            default_config=True, no_output=True)
         self.nR = self.ss.Region.n
@@ -104,6 +100,17 @@ class TestMatProcessor(unittest.TestCase):
         self.assertIsInstance(self.mats.Pbusinj._v, np.ndarray)
         np.testing.assert_equal(self.mats.Pbusinj._v.shape, (self.nb,))
 
+
+class TestMatProcessorTDFs(unittest.TestCase):
+    """
+    Test PTDF, LODF, OTDF.
+    """
+
+    def setUp(self) -> None:
+        self.cases = ['matpower/case14.m',
+                      'matpower/case39.m',
+                      'matpower/case118.m']
+
     def test_ptdf_before_mat_init(self):
         """
         Test `PTDF` before MatProcessor initialization.
@@ -113,13 +120,15 @@ class TestMatProcessor(unittest.TestCase):
             ss = ams.load(ams.get_case(case),
                           setup=True, default_config=True, no_output=True)
 
-            _ = ss.mats.build_ptdf()
+            _ = ss.mats.build_ptdf(no_store=True)
+            self.assertIsNone(ss.mats.PTDF._v)
 
+            _ = ss.mats.build_ptdf(dtype='float64', no_store=False)
+            self.assertEqual(ss.mats.PTDF._v.shape, (ss.Line.n, ss.Bus.n))
             self.assertEqual(ss.mats.PTDF._v.dtype, np.float64)
 
-            _ = ss.mats.build_ptdf(dtype='float32')
-
-            self.assertEqual(ss.mats.PTDF._v.dtype, np.float32)
+            ptdf = ss.mats.build_ptdf(dtype='float32', no_store=True)
+            self.assertEqual(ptdf.dtype, np.float32)
 
     def test_lodf_before_ptdf(self):
         """
@@ -130,13 +139,14 @@ class TestMatProcessor(unittest.TestCase):
             ss = ams.load(ams.get_case(case),
                           setup=True, default_config=True, no_output=True)
 
-            _ = ss.mats.build_lodf(dtype='float64')
+            _ = ss.mats.build_lodf(no_store=True)
+            self.assertIsNone(ss.mats.LODF._v)
 
+            _ = ss.mats.build_lodf(dtype='float64', no_store=False)
             self.assertEqual(ss.mats.LODF._v.dtype, np.float64)
 
-            _ = ss.mats.build_lodf(dtype='float32')
-
-            self.assertEqual(ss.mats.LODF._v.dtype, np.float32)
+            lodf = ss.mats.build_lodf(dtype='float32', no_store=True)
+            self.assertEqual(lodf.dtype, np.float32)
 
     def test_otdf_before_lodf(self):
         """
@@ -150,12 +160,21 @@ class TestMatProcessor(unittest.TestCase):
             ss.mats.build()
 
             otdf64 = ss.mats.build_otdf(dtype='float64')
+            self.assertEqual(otdf64.dtype, np.float64)
+
             otdf32 = ss.mats.build_otdf(dtype='float32')
+            self.assertEqual(otdf32.dtype, np.float32)
 
             np.testing.assert_allclose(otdf64, otdf32, atol=1e-3)
 
+            # input str
             otdf_l2 = ss.mats.build_otdf(line=ss.Line.idx.v[2])
             self.assertEqual(otdf_l2.shape, (ss.Line.n, ss.Bus.n))
 
-            otdf_l23 = ss.mats.build_otdf(line=ss.Line.idx.v[2:4])
+            # input list with single element
+            otdf_l2 = ss.mats.build_otdf(line=ss.Line.idx.v[2:3])
+            self.assertEqual(otdf_l2.shape, (ss.Line.n, ss.Bus.n))
+
+            # input list with multiple elements
+            otdf_l23 = ss.mats.build_otdf(line=ss.Line.idx.v[2:5])
             self.assertEqual(otdf_l23.shape, (ss.Line.n, ss.Bus.n))
