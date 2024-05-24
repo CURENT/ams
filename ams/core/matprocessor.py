@@ -471,19 +471,25 @@ class MatProcessor:
 
         # build PTDF if not built
         if self.PTDF._v is None:
-            self.build_ptdf(dtype=dtype)
+            ptdf = self.build_ptdf(dtype=dtype)
+        if self.PTDF._v.dtype != dtype:
+            ptdf = self.PTDF._v.astype(dtype)
+        else:
+            ptdf = self.PTDF._v
 
-        H = self.PTDF._v * self.Cft._v
+        H = ptdf * self.Cft._v
         h = np.diag(H, 0)
         LODF = safe_div(H, np.ones((nl, nl)) - np.ones((nl, 1)) * h.T)
         LODF = LODF - np.diag(np.diag(LODF)) - np.eye(nl, nl)
 
-        self.LODF._v = LODF
+        self.LODF._v = LODF.astype(dtype)
         return self.LODF._v
 
-    def build_otdf(self, dtype='float64'):
+    def build_otdf(self, line=None, dtype='float64'):
         """
-        Build the DC OTDF matrix: :math:`OTDF = PTDF + LODF * PTDF`.
+        Build the DC OTDF matrix for line outage:
+        :math:`OTDF_k = PTDF + LODF[:, k] @ PTDF[k, ]`,
+        where k is the outage line locations.
 
         Note that the OTDF is not stored in the MatProcessor.
 
@@ -491,6 +497,10 @@ class MatProcessor:
 
         Parameters
         ----------
+        line : int, str, list, optional
+            Lines index for which the OTDF is calculated. It takes both single
+            or multiple line indices.
+            If not given, the first line is used by default.
         dtype : str, optional
             Data type of the OTDF matrix. Default is 'float64'.
 
@@ -499,8 +509,28 @@ class MatProcessor:
         OTDF : np.ndarray
             Line outage distribution factor.
         """
-        # build LODF if not built
-        if self.LODF._v is None:
-            self.build_lodf(dtype=dtype)
+        if self.PTDF._v is None:
+            ptdf = self.build_ptdf(dtype=dtype)
+        if self.PTDF._v.dtype != dtype:
+            ptdf = self.PTDF._v.astype(dtype)
+        else:
+            ptdf = self.PTDF._v
 
-        return self.PTDF._v + self.LODF._v @ self.PTDF._v
+        if self.LODF._v is None:
+            lodf = self.build_lodf(dtype=dtype)
+        if self.LODF._v.dtype != dtype:
+            lodf = self.LODF._v.astype(dtype)
+        else:
+            lodf = self.LODF._v
+
+        if line is None:
+            luid = [0]
+        elif isinstance(line, (int, str)):
+            try:
+                luid = [self.system.Line.idx2uid(line)]
+            except ValueError:
+                raise ValueError(f"Line {line} not found.")
+        elif isinstance(line, list):
+            luid = self.system.Line.idx2uid(line)
+
+        return ptdf + lodf[:, luid] @ ptdf[luid, :]
