@@ -9,7 +9,7 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v0.9.7 (2024-xx-xx)
+v0.9.7 (2024-05-24)
 -------------------
 
 This patch release add the Roadmap section in the release notes, to list out some potential features.
@@ -21,7 +21,7 @@ References:
 Frequency Regulation," in IEEE Transactions on Smart Grid, doi: 10.1109/TSG.2024.3356948.
 
 - Fix OTDF calculation
-- Add parameter `dtype='float64'` in `MatProcessor` PTDF, LODF, and OTDF calculation, to save memory
+- Add parameter `dtype='float64'` and `no_store=False` in `MatProcessor` PTDF, LODF, and OTDF calculation, to save memory
 - Add placeholder parameter `Bus.type`
 
 v0.9.6 (2024-04-21)
