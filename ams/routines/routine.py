@@ -356,7 +356,7 @@ class RoutineBase:
 
     def export_csv(self, path=None):
         """
-        Export dispatch results to a csv file.
+        Export scheduling results to a csv file.
         For multi-period routines, the column "Time" is the time index of
         ``timeslot.v``, which usually comes from ``EDTSlot`` or ``UCTSlot``.
         The rest columns are the variables registered in ``vars``.

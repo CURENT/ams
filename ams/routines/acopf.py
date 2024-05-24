@@ -91,8 +91,7 @@ class ACOPF(DCPF):
         ppc = system2ppc(self.system)
         ppopt = ppoption()
         res, sstats = runopf(casedata=ppc, ppopt=ppopt, **kwargs)
-        self.converged = res['success']
-        return res, self.converged, sstats
+        return res, sstats
 
     def run(self, force_init=False, no_code=True,
             method=None, **kwargs):

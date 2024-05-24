@@ -2,6 +2,7 @@ import logging
 
 import numpy as np
 
+from andes.core.param import NumParam
 from andes.models.bus import BusData
 
 from ams.core.var import Algeb
@@ -24,6 +25,12 @@ class Bus(BusData, Model):
         # in AMS, model "Zone" is developed,
         # so we need to change the model name of IdxParam self.zone
         self.zone.model = 'Region'
+
+        self.type = NumParam(name='type',
+                             info='bus type, 1=PQ, 2=PV, 3=ref, 4=isolated (place holder)',
+                             default=1,
+                             vtype=int,
+                             )
 
         self.a = Algeb(name='a',
                        tex_name=r'\theta',

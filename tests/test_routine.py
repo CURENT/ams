@@ -1,6 +1,8 @@
 import unittest
 import numpy as np
 
+from andes.shared import pd
+
 import ams
 
 
@@ -51,6 +53,9 @@ class TestRoutineMethods(unittest.TestCase):
         self.assertEqual(self.ss.DCOPF.exit_code, 0, "Exit code is not 0.")
         np.testing.assert_equal(self.ss.DCOPF.get('pg', 'PV_30', 'v'),
                                 self.ss.StaticGen.get('p', 'PV_30', 'v'))
+
+        # test input type
+        self.assertIsInstance(self.ss.DCOPF.get('pg', pd.Series(['PV_30']), 'v'), np.ndarray)
 
         # test return type
         self.assertIsInstance(self.ss.DCOPF.get('pg', 'PV_30', 'v'), float)

@@ -80,7 +80,8 @@ def mpc2system(mpc: dict, system) -> bool:
         vmax = data[11]
         vmin = data[12]
 
-        system.add('Bus', idx=idx, name='Bus ' + str(idx), Vn=baseKV,
+        system.add('Bus', idx=idx, name='Bus ' + str(idx),
+                   type=ty, Vn=baseKV,
                    v0=vmag, a0=vang,
                    vmax=vmax, vmin=vmin,
                    area=area, zone=zone)
@@ -200,28 +201,35 @@ def mpc2system(mpc: dict, system) -> bool:
     if ('bus_name' in mpc) and (len(mpc['bus_name']) == len(system.Bus.name.v)):
         system.Bus.name.v[:] = mpc['bus_name']
 
-    gcost_idx = 0
-    gen_idx = np.arange(mpc['gen'].shape[0]) + 1
-    for data, gen in zip(mpc['gencost'], gen_idx):
-        # NOTE: only type 2 costs are supported for now
-        # type  startup shutdown	n	c2  c1  c0
-        # 0     1       2           3   4   5   6
-        if data[0] != 2:
-            raise ValueError('Only MODEL 2 costs are supported')
-        gcost_idx += 1
-        gctype = int(data[0])
-        startup = data[1]
-        shutdown = data[2]
-        c2 = data[4] * base_mva ** 2
-        c1 = data[5] * base_mva
-        c0 = data[6]
-        system.add('GCost', gen=int(gen),
-                   u=1, type=gctype,
-                   idx=gcost_idx,
-                   name=f'GCost {gcost_idx}',
-                   csu=startup, csd=shutdown,
-                   c2=c2, c1=c1, c0=c0
-                   )
+    # --- gencost ---
+    if 'gencost' in mpc:
+        gcost_idx = 0
+        gen_idx = np.arange(mpc['gen'].shape[0]) + 1
+        mpc_cost = np.zeros((mpc['gen'].shape[0], 7))
+        if mpc['gencost'].shape[1] < 7:
+            mpc_cost[:, :mpc['gencost'].shape[1]] = mpc['gencost']
+        else:
+            mpc_cost = mpc['gencost']
+        for data, gen in zip(mpc_cost, gen_idx):
+            # NOTE: only type 2 costs are supported for now
+            # type  startup shutdown	n	c2  c1  c0
+            # 0     1       2           3   4   5   6
+            if data[0] != 2:
+                raise ValueError('Only MODEL 2 costs are supported')
+            gcost_idx += 1
+            gctype = int(data[0])
+            startup = data[1]
+            shutdown = data[2]
+            c2 = data[4] * base_mva ** 2
+            c1 = data[5] * base_mva
+            c0 = data[6]
+            system.add('GCost', gen=int(gen),
+                       u=1, type=gctype,
+                       idx=gcost_idx,
+                       name=f'GCost {gcost_idx}',
+                       csu=startup, csd=shutdown,
+                       c2=c2, c1=c1, c0=c0
+                       )
 
     # --- region ---
     zone_id = np.unique(system.Bus.zone.v).astype(int)

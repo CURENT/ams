@@ -1,5 +1,5 @@
 """
-Model for rolling horizon used in dispatch.
+Model for rolling horizon used in scheduling.
 """
 
 from andes.core import ModelData, NumParam

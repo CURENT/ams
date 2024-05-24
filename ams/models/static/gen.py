@@ -118,7 +118,7 @@ class PVModel(Model):
                              info='Retrieved zone idx', vtype=str, default=None,
                              )
 
-        self.ud = Algeb(info='connection status decision',
+        self.ud = Algeb(info='commitment decision',
                         unit='bool',
                         tex_name=r'u_d',
                         name='ud',

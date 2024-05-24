@@ -48,7 +48,7 @@ class ESD1Data(PVD1Data):
 class ESD1(ESD1Data, Model):
     """
     Distributed energy storage model, revised from ANDES ``ESD1`` model for
-    dispatch.
+    scheduling.
 
     Following parameters are omitted from the original dynamic model:
     ``fn``, ``busf``, ``xc``, ``pqflag``, ``igreg``, ``v0``, ``v1``,

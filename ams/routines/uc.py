@@ -315,13 +315,13 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
     def dc2ac(self, **kwargs):
         """
         AC conversion ``dc2ac`` is not implemented yet for
-        multi-period dispatch.
+        multi-period scheduling.
         """
         return NotImplementedError
 
     def unpack(self, **kwargs):
         """
-        Multi-period dispatch will not unpack results from
+        Multi-period scheduling will not unpack results from
         solver into devices.
 
         # TODO: unpack first period results, and allow input

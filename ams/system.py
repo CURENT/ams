@@ -45,7 +45,7 @@ def disable_methods(methods):
 class System(andes_System):
     """
     A subclass of ``andes.system.System``, this class encapsulates data, models,
-    and routines for dispatch modeling and analysis in power systems.
+    and routines for scheduling modeling and analysis in power systems.
     Some methods  inherited from the parent class are intentionally disabled.
 
     Parameters
@@ -433,6 +433,13 @@ class System(andes_System):
         # consider refator this part if any other similar cases occur in the future
         self.Line.a1a = self.Bus.get(src='a', attr='a', idx=self.Line.bus1.v)
         self.Line.a2a = self.Bus.get(src='a', attr='a', idx=self.Line.bus2.v)
+
+        # assign bus type as placeholder; 1=PQ, 2=PV, 3=ref, 4=isolated
+        if self.Bus.type.v.sum() == self.Bus.n:  # if all type are PQ
+            self.Bus.set(src='type', attr='v', idx=self.PV.bus.v,
+                         value=np.ones(self.PV.n))
+            self.Bus.set(src='type', attr='v', idx=self.Slack.bus.v,
+                         value=np.ones(self.Slack.n))
 
         _, s = elapsed(t0)
         logger.info('System set up in %s.', s)

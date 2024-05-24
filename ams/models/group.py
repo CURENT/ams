@@ -126,7 +126,7 @@ class VSG(GroupBase):
     """
     Renewable generator with virtual synchronous generator (VSG) control group.
 
-    Note that this is a group separate from ``RenGen`` for VSG dispatch study.
+    Note that this is a group separate from ``RenGen`` for VSG scheduling study.
     """
 
     def __init__(self):

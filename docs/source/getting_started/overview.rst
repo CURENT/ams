@@ -4,7 +4,7 @@
 Package Overview
 ================
 
-AMS is an open-source packages for flexible dispatch modeling and co-simulation with
+AMS is an open-source packages for flexible scheduling modeling and co-simulation with
 the in-house dynanic simulation engine `ANDES <https://github.com/curent/andes>`_.
 
 AMS is currently under active development. To get involved,
