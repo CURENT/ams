@@ -476,8 +476,6 @@ class MatProcessor:
         # build PTDF if not built
         if self.PTDF._v is None:
             ptdf = self.build_ptdf(dtype=dtype, no_store=True)
-        if self.PTDF._v.dtype != dtype:
-            ptdf = self.PTDF._v.astype(dtype)
         else:
             ptdf = self.PTDF._v
 
@@ -488,13 +486,16 @@ class MatProcessor:
 
         if not no_store:
             self.LODF._v = LODF.astype(dtype)
-        return LODF
+        return LODF.astype(dtype)
 
     def build_otdf(self, line=None, dtype='float64'):
         """
         Build the DC OTDF matrix for line outage:
         :math:`OTDF_k = PTDF + LODF[:, k] @ PTDF[k, ]`,
         where k is the outage line locations.
+
+        OTDF_k[m, n] means the increased line flow on line `m` when there is
+        1 p.u. line flow decrease on line `k` due to line `k` outage.
 
         Note that the OTDF is not stored in the MatProcessor.
 
@@ -516,15 +517,11 @@ class MatProcessor:
         """
         if self.PTDF._v is None:
             ptdf = self.build_ptdf(dtype=dtype, no_store=True)
-        if self.PTDF._v.dtype != dtype:
-            ptdf = self.PTDF._v.astype(dtype)
         else:
             ptdf = self.PTDF._v
 
         if self.LODF._v is None:
             lodf = self.build_lodf(dtype=dtype, no_store=True)
-        if self.LODF._v.dtype != dtype:
-            lodf = self.LODF._v.astype(dtype)
         else:
             lodf = self.LODF._v
 
@@ -538,4 +535,5 @@ class MatProcessor:
         elif isinstance(line, list):
             luid = self.system.Line.idx2uid(line)
 
-        return ptdf + lodf[:, luid] @ ptdf[luid, :]
+        otdf = ptdf + lodf[:, luid] @ ptdf[luid, :]
+        return otdf.astype(dtype)
