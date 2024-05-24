@@ -392,7 +392,7 @@ class MatProcessor:
 
         return b
 
-    def build_ptdf(self, dtype='float64'):
+    def build_ptdf(self, dtype='float64', no_store=False):
         """
         Build the DC PTDF matrix and store it in the MParam `PTDF`.
 
@@ -410,6 +410,8 @@ class MatProcessor:
         ----------
         dtype : str, optional
             Data type of the PTDF matrix. Default is 'float64'.
+        no_store : bool, optional
+            If True, the PTDF will not be stored into `MatProcessor.PTDF._v`.
 
         Returns
         -------
@@ -441,12 +443,12 @@ class MatProcessor:
         # calculate PTDF
         H[:, noslack] = np.linalg.solve(Bbus[np.ix_(noslack, noref)].T, Bf[:, noref].T).T
 
-        # store PTDF
-        self.PTDF._v = H
+        if not no_store:
+            self.PTDF._v = H
 
-        return self.PTDF._v
+        return H
 
-    def build_lodf(self, dtype='float64'):
+    def build_lodf(self, dtype='float64', no_store=False):
         """
         Build the DC LODF matrix and store it in the MParam `LODF`.
 
@@ -461,6 +463,8 @@ class MatProcessor:
         ----------
         dtype : str, optional
             Data type of the LODF matrix. Default is 'float64'.
+        no_store : bool, optional
+            If True, the LODF will not be stored into `MatProcessor.LODF._v`.
 
         Returns
         -------
@@ -471,7 +475,7 @@ class MatProcessor:
 
         # build PTDF if not built
         if self.PTDF._v is None:
-            ptdf = self.build_ptdf(dtype=dtype)
+            ptdf = self.build_ptdf(dtype=dtype, no_store=True)
         if self.PTDF._v.dtype != dtype:
             ptdf = self.PTDF._v.astype(dtype)
         else:
@@ -482,8 +486,9 @@ class MatProcessor:
         LODF = safe_div(H, np.ones((nl, nl)) - np.ones((nl, 1)) * h.T)
         LODF = LODF - np.diag(np.diag(LODF)) - np.eye(nl, nl)
 
-        self.LODF._v = LODF.astype(dtype)
-        return self.LODF._v
+        if not no_store:
+            self.LODF._v = LODF.astype(dtype)
+        return LODF
 
     def build_otdf(self, line=None, dtype='float64'):
         """
@@ -510,14 +515,14 @@ class MatProcessor:
             Line outage distribution factor.
         """
         if self.PTDF._v is None:
-            ptdf = self.build_ptdf(dtype=dtype)
+            ptdf = self.build_ptdf(dtype=dtype, no_store=True)
         if self.PTDF._v.dtype != dtype:
             ptdf = self.PTDF._v.astype(dtype)
         else:
             ptdf = self.PTDF._v
 
         if self.LODF._v is None:
-            lodf = self.build_lodf(dtype=dtype)
+            lodf = self.build_lodf(dtype=dtype, no_store=True)
         if self.LODF._v.dtype != dtype:
             lodf = self.LODF._v.astype(dtype)
         else:
