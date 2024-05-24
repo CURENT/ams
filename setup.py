@@ -75,7 +75,7 @@ setup(
     name='ltbams',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    description="Python software for dispatch modeling and co-simulation with dynanic.",
+    description="Python software for scheduling modeling and co-simulation with dynanics.",
     long_description=readme,
     long_description_content_type='text/markdown',
     author="Jinning Wang",

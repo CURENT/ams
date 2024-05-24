@@ -44,7 +44,7 @@ class PVD1Data(ModelData):
 class PVD1(PVD1Data, Model):
     """
     Distributed PV model, revised from ANDES ``PVD1`` model for
-    dispatch.
+    scheduling.
 
     Following parameters are omitted from the original dynamic model:
     ``fn``, ``busf``, ``xc``, ``pqflag``, ``igreg``, ``v0``, ``v1``,

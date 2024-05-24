@@ -1,5 +1,5 @@
 """
-The package for models used in dispatch modeling.
+The package for models used in scheduling modeling.
 
 The file_classes includes the list of file classes and their corresponding classes.
 """
@@ -11,7 +11,7 @@ ams_file_classes = list([
     ('static', ['PQ', 'Slack', 'PV']),
     ('shunt', ['Shunt']),
     ('line', ['Line']),
-    ('distributed', ['PVD1', 'ESD1']),
+    ('distributed', ['PVD1', 'ESD1', 'EV1', 'EV2']),
     ('renewable', ['REGCA1', 'REGCV1', 'REGCV2']),
     ('area', ['Area']),
     ('region', ['Region']),

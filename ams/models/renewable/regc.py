@@ -1,5 +1,5 @@
 """
-RenGen dispatch model.
+RenGen scheduling model.
 """
 
 from andes.core.param import NumParam, IdxParam, ExtParam
@@ -9,7 +9,7 @@ from ams.core.model import Model
 
 class REGCData(ModelData):
     """
-    Data container for RenGen dispatch model.
+    Data container for RenGen scheduling model.
     """
 
     def __init__(self):
@@ -37,7 +37,7 @@ class REGCData(ModelData):
 
 class REGCA1(REGCData, Model):
     """
-    Renewable generator dispatch model.
+    Renewable generator scheduling model.
 
     Reference:
 
@@ -104,7 +104,7 @@ class REGCV1(REGCData, Model):
 
 class REGCV2(REGCV1):
     """
-    Voltage-controlled VSC.
+    Voltage-controlled VSC, identical to :ref:`REGCV1`.
 
     Reference:
 

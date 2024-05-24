@@ -52,10 +52,8 @@ def runpf(casedata, ppopt):
     -------
     results : dict or None
         Solved power flow results. None if the power flow did not converge.
-    success : bool
-        True if the algorithm successfully found a solution, False otherwise.
-    et : float
-        Elapsed time in seconds for running the power flow.
+    sstats : dict
+        Solver statistics.
 
     Notes
     -----
@@ -303,7 +301,7 @@ def runpf(casedata, ppopt):
                  IDX.branch.PT,
                  IDX.branch.QT])] = 0
 
-    return results, success, sstats
+    return results, sstats
 
 
 def dcpf(B, Pbus, Va0, ref, pv, pq):

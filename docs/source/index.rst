@@ -15,10 +15,10 @@ AMS documentation
 .. _`ANDES Repository`: https://github.com/CURENT/andes
 .. _`LTB Repository`: https://github.com/CURENT/
 
-LTB AMS is an open-source packages for dispatch modeling, serving as the market
+LTB AMS is an open-source packages for scheduling modeling, serving as the market
 simulator for the CURENT Large scale Testbed (LTB).
 
-AMS enables **flexible** dispatch modeling and **interoprability** with the in-house
+AMS enables **flexible** scheduling modeling and **interoprability** with the in-house
 dynamic simulator ANDES.
 
 .. panels::
@@ -44,7 +44,7 @@ dynamic simulator ANDES.
     Examples
     ^^^^^^^^
 
-    The examples of using AMS for power system dispatch study.
+    The examples of using AMS for power system scheduling study.
 
     +++
 
@@ -58,7 +58,7 @@ dynamic simulator ANDES.
     Model development guide
     ^^^^^^^^^^^^^^^^^^^^^^^
 
-    New dispatch modeling in AMS.
+    New scheduling modeling in AMS.
 
     +++
 

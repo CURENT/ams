@@ -8,16 +8,12 @@ import ams
 from ams.core.matprocessor import MatProcessor, MParam
 
 
-class TestMatProcessor(unittest.TestCase):
+class TestMatProcessorBasic(unittest.TestCase):
     """
-    Test functionality of MatProcessor.
+    Test basic functionality of MatProcessor.
     """
 
     def setUp(self) -> None:
-        # cases is for testing PTDF, LODF, etc.
-        self.cases = ['matpower/case14.m',
-                      'matpower/case39.m',
-                      'matpower/case118.m']
         self.ss = ams.load(ams.get_case("matpower/case300.m"),
                            default_config=True, no_output=True)
         self.nR = self.ss.Region.n
@@ -104,54 +100,55 @@ class TestMatProcessor(unittest.TestCase):
         self.assertIsInstance(self.mats.Pbusinj._v, np.ndarray)
         np.testing.assert_equal(self.mats.Pbusinj._v.shape, (self.nb,))
 
-    def test_ptdf(self):
+
+class TestMatProcessorTDFs(unittest.TestCase):
+    """
+    Test PTDF, LODF, OTDF.
+    """
+
+    def setUp(self) -> None:
+        self.cases = ['matpower/case14.m',
+                      'matpower/case39.m',
+                      'matpower/case118.m']
+
+    def test_ptdf_before_mat_init(self):
         """
-        Test `PTDF`.
+        Test `PTDF` before MatProcessor initialization.
         """
 
         for case in self.cases:
             ss = ams.load(ams.get_case(case),
                           setup=True, default_config=True, no_output=True)
-            ss.DCOPF.run(solver='ECOS')
 
-            ptdf = ss.mats.build_ptdf()
+            _ = ss.mats.build_ptdf(no_store=True)
+            self.assertIsNone(ss.mats.PTDF._v)
 
-            plf = ss.DCOPF.plf.v
-            plfc = ptdf@(ss.mats.Cg._v@ss.DCOPF.pg.v - ss.mats.Cl._v@ss.DCOPF.pd.v)
-            np.testing.assert_allclose(plf, plfc, atol=1e-2)
+            _ = ss.mats.build_ptdf(dtype='float64', no_store=False)
+            self.assertEqual(ss.mats.PTDF._v.shape, (ss.Line.n, ss.Bus.n))
+            self.assertEqual(ss.mats.PTDF._v.dtype, np.float64)
 
-    def test_lodf(self):
+            ptdf = ss.mats.build_ptdf(dtype='float32', no_store=True)
+            self.assertEqual(ptdf.dtype, np.float32)
+
+    def test_lodf_before_ptdf(self):
         """
-        Test `LODF`.
+        Test `LODF` before `PTDF`.
         """
+
         for case in self.cases:
             ss = ams.load(ams.get_case(case),
                           setup=True, default_config=True, no_output=True)
-            # build matrices
-            ss.mats.build()
-            _ = ss.mats.build_ptdf()
-            lodf = ss.mats.build_lodf()
 
-            # outage line
-            oline_idx = ss.Line.idx.v[1]
-            oline = ss.Line.idx2uid(oline_idx)
+            _ = ss.mats.build_lodf(no_store=True)
+            self.assertIsNone(ss.mats.LODF._v)
 
-            # pre-outage
-            ss.DCPF.run()
-            plf0 = ss.DCPF.plf.v.copy()
+            _ = ss.mats.build_lodf(dtype='float64', no_store=False)
+            self.assertEqual(ss.mats.LODF._v.dtype, np.float64)
 
-            # post-outage
-            ss.Line.set(src='u', attr='v', idx=oline_idx, value=0)
-            ss.DCPF.update()
-            ss.DCPF.run()
-            plf1 = ss.DCPF.plf.v.copy()
+            lodf = ss.mats.build_lodf(dtype='float32', no_store=True)
+            self.assertEqual(lodf.dtype, np.float32)
 
-            dplf = plf1 - plf0
-            dplfc = -lodf[:, oline] * dplf[oline]
-
-            np.testing.assert_allclose(dplf, dplfc, atol=1e-7)
-
-    def test_otdf(self):
+    def test_otdf_before_lodf(self):
         """
         Test `OTDF`.
         """
@@ -162,14 +159,22 @@ class TestMatProcessor(unittest.TestCase):
             # build matrices
             ss.mats.build()
 
-            oline_idx = ss.Line.idx.v[1]
+            otdf64 = ss.mats.build_otdf(dtype='float64')
+            self.assertEqual(otdf64.dtype, np.float64)
 
-            otdf = ss.mats.build_otdf(line=oline_idx)
+            otdf32 = ss.mats.build_otdf(dtype='float32')
+            self.assertEqual(otdf32.dtype, np.float32)
 
-            ss.Line.set(src='u', attr='v', idx=oline_idx, value=0)
-            ss.DCPF.run()
+            np.testing.assert_allclose(otdf64, otdf32, atol=1e-3)
 
-            plf = ss.DCPF.plf.v
-            plfc = otdf@(ss.mats.Cg._v@ss.DCPF.pg.v - ss.mats.Cl._v@ss.DCPF.pd.v)
+            # input str
+            otdf_l2 = ss.mats.build_otdf(line=ss.Line.idx.v[2])
+            self.assertEqual(otdf_l2.shape, (ss.Line.n, ss.Bus.n))
 
-            np.testing.assert_allclose(plf, plfc, atol=1e-7)
+            # input list with single element
+            otdf_l2 = ss.mats.build_otdf(line=ss.Line.idx.v[2:3])
+            self.assertEqual(otdf_l2.shape, (ss.Line.n, ss.Bus.n))
+
+            # input list with multiple elements
+            otdf_l23 = ss.mats.build_otdf(line=ss.Line.idx.v[2:5])
+            self.assertEqual(otdf_l23.shape, (ss.Line.n, ss.Bus.n))

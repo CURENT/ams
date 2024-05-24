@@ -1,6 +1,6 @@
 # LTB AMS
 
-Python Software for Power System Dispatch Modeling and Co-Simulation with Dynanic, serving as the market simulator for the [CURENT Largescale Testbed][LTB Repository].
+Python Software for Power System Scheduling Modeling and Co-Simulation with Dynanic, serving as the market simulator for the [CURENT Largescale Testbed][LTB Repository].
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](https://github.com/CURENT/ams/blob/master/LICENSE)
 ![platforms](https://anaconda.org/conda-forge/ltbams/badges/platforms.svg)
@@ -31,7 +31,7 @@ Python Software for Power System Dispatch Modeling and Co-Simulation with Dynani
 
 With the built-in interface with dynamic simulation engine, ANDES, AMS enables Dynamics Interfaced Stability Constrained Production Cost and Market Operation Modeling.
 
-AMS produces credible dispatch results and competitive performance.
+AMS produces credible scheduling results and competitive performance.
 The following results show the comparison of DCOPF between AMS and other tools.
 
 | Cost [\$]       |      AMS       |  MATPOWER   | pandapower |
@@ -79,7 +79,7 @@ pip install git+https://github.com/CURENT/ams.git
 ```
 
 # Sponsors and Contributors
-AMS is the dispatch simulation engine for the CURENT Largescale Testbed (LTB).
+AMS is the scheduling simulation engine for the CURENT Largescale Testbed (LTB).
 More information about CURENT LTB can be found at the [LTB Repository][LTB Repository].
 
 This work was supported in part by the Engineering Research Center Program of the National Science Foundation and the Department of Energy

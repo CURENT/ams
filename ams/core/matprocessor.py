@@ -392,7 +392,7 @@ class MatProcessor:
 
         return b
 
-    def build_ptdf(self):
+    def build_ptdf(self, dtype='float64', no_store=False):
         """
         Build the DC PTDF matrix and store it in the MParam `PTDF`.
 
@@ -404,16 +404,21 @@ class MatProcessor:
         Note that there is discrepency between the PTDF-based line flow and
         DCOPF calcualted line flow. The gap is ignorable for small cases.
 
+        Try to use 'float32' for dtype if memory is a concern.
+
+        Parameters
+        ----------
+        dtype : str, optional
+            Data type of the PTDF matrix. Default is 'float64'.
+        no_store : bool, optional
+            If True, the PTDF will not be stored into `MatProcessor.PTDF._v`.
+
         Returns
         -------
         PTDF : np.ndarray
             Power transfer distribution factor.
         """
         system = self.system
-
-        # common variables
-        nb = system.Bus.n
-        nl = system.Line.n
 
         # use first slack bus as reference slack bus
         slack = system.Slack.bus.v[0]
@@ -428,19 +433,22 @@ class MatProcessor:
         if not self.initialized:
             logger.debug("System matrices are not built. Building now.")
             self.build()
+
         # use dense representation
-        Bbus, Bf = self.Bbus.v, self.Bf.v
+        Bbus = self.Bbus._v.todense().astype(dtype)
+        Bf = self.Bf._v.todense().astype(dtype)
 
         # initialize PTDF matrix
-        H = np.zeros((nl, nb))
+        H = np.zeros((system.Line.n, system.Bus.n), dtype=dtype)
         # calculate PTDF
         H[:, noslack] = np.linalg.solve(Bbus[np.ix_(noslack, noref)].T, Bf[:, noref].T).T
-        # store PTDF
-        self.PTDF._v = H
 
-        return self.PTDF._v
+        if not no_store:
+            self.PTDF._v = H
 
-    def build_lodf(self):
+        return H
+
+    def build_lodf(self, dtype='float64', no_store=False):
         """
         Build the DC LODF matrix and store it in the MParam `LODF`.
 
@@ -449,70 +457,83 @@ class MatProcessor:
 
         It requires DC PTDF and Cft.
 
+        Try to use 'float32' for dtype if memory is a concern.
+
+        Parameters
+        ----------
+        dtype : str, optional
+            Data type of the LODF matrix. Default is 'float64'.
+        no_store : bool, optional
+            If True, the LODF will not be stored into `MatProcessor.LODF._v`.
+
         Returns
         -------
         LODF : np.ndarray
             Line outage distribution factor.
         """
-        system = self.system
-
-        # common variables
-        nl = system.Line.n
+        nl = self.system.Line.n
 
         # build PTDF if not built
         if self.PTDF._v is None:
-            self.build_ptdf()
+            ptdf = self.build_ptdf(dtype=dtype, no_store=True)
+        else:
+            ptdf = self.PTDF._v
 
-        H = self.PTDF._v * self.Cft._v
+        H = ptdf * self.Cft._v
         h = np.diag(H, 0)
         LODF = safe_div(H, np.ones((nl, nl)) - np.ones((nl, 1)) * h.T)
         LODF = LODF - np.diag(np.diag(LODF)) - np.eye(nl, nl)
 
-        self.LODF._v = LODF
-        return self.LODF._v
+        if not no_store:
+            self.LODF._v = LODF.astype(dtype)
+        return LODF.astype(dtype)
 
-    def build_otdf(self, line=None):
+    def build_otdf(self, line=None, dtype='float64'):
         """
-        Build the DC OTDF matrix.
+        Build the DC OTDF matrix for line outage:
+        :math:`OTDF_k = PTDF + LODF[:, k] @ PTDF[k, ]`,
+        where k is the outage line locations.
 
-        `OTDF_k[m, n]` means the PTDF[m, n] with line `k` outage.
+        OTDF_k[m, n] means the increased line flow on line `m` when there is
+        1 p.u. line flow decrease on line `k` due to line `k` outage.
 
-        It requires ... ...
+        Note that the OTDF is not stored in the MatProcessor.
+
+        Try to use 'float32' for dtype if memory is a concern.
 
         Parameters
         ----------
-        line : int, str, optional
-            Outage line idx to build the OTDF. If not provided, use the
-            first line `System.Line.idx.v[0]`.
+        line : int, str, list, optional
+            Lines index for which the OTDF is calculated. It takes both single
+            or multiple line indices.
+            If not given, the first line is used by default.
+        dtype : str, optional
+            Data type of the OTDF matrix. Default is 'float64'.
 
         Returns
         -------
         OTDF : np.ndarray
             Line outage distribution factor.
         """
-        system = self.system
+        if self.PTDF._v is None:
+            ptdf = self.build_ptdf(dtype=dtype, no_store=True)
+        else:
+            ptdf = self.PTDF._v
+
+        if self.LODF._v is None:
+            lodf = self.build_lodf(dtype=dtype, no_store=True)
+        else:
+            lodf = self.LODF._v
 
         if line is None:
-            line = system.Line.idx.v[0]
+            luid = [0]
+        elif isinstance(line, (int, str)):
+            try:
+                luid = [self.system.Line.idx2uid(line)]
+            except ValueError:
+                raise ValueError(f"Line {line} not found.")
         elif isinstance(line, list):
-            logger.warning("Multiple line is given, only the first one is used.")
-            line = line[0]
-        line_uid = system.Line.idx2uid(line)
+            luid = self.system.Line.idx2uid(line)
 
-        # build LODF if not built
-        if self.LODF._v is None:
-            self.build_lodf()
-
-        # common variables
-        nb = system.Bus.n
-        nl = system.Line.n
-
-        # initialize OTDF matrix
-        OTDF = np.zeros((nl, nb))
-
-        line_lodf = self.LODF._v[:, line_uid]  # LODF for the outage line
-        line_ptdf = self.PTDF._v[line_uid, :]  # PTDF for the outage line
-        OTDF += self.PTDF._v  # Add PTDF to OTDF
-        OTDF += line_lodf[:, np.newaxis] * line_ptdf  # Add LODF * PTDF for the outage line
-
-        return OTDF
+        otdf = ptdf + lodf[:, luid] @ ptdf[luid, :]
+        return otdf.astype(dtype)
