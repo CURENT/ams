@@ -394,10 +394,12 @@ class MatProcessor:
 
     def build_ptdf(self, dtype='float64', no_store=False):
         """
-        Build the DC PTDF matrix and store it in the MParam `PTDF`.
+        Build the Power Transfer Distribution Factor (PTDF) matrix and store
+        it in the MParam `PTDF`.
 
         `PTDF[m, n]` means the increased line flow on line `m` when there is
-        1 p.u. power injection at bus `n`.
+        1 p.u. power injection at bus `n`. It is very similar to Generation
+        Shift Factor (GSF).
 
         It requires DC Bbus and Bf.
 
@@ -417,6 +419,14 @@ class MatProcessor:
         -------
         PTDF : np.ndarray
             Power transfer distribution factor.
+
+        References
+        ----------
+        [1] PowerWorld Documentation, Power Transfer Distribution Factors, [Online]
+
+        Available:
+
+        https://www.powerworld.com/WebHelp/Content/MainDocumentation_HTML/Power_Transfer_Distribution_Factors.htm
         """
         system = self.system
 
@@ -450,10 +460,12 @@ class MatProcessor:
 
     def build_lodf(self, dtype='float64', no_store=False):
         """
-        Build the DC LODF matrix and store it in the MParam `LODF`.
+        Build the Line Outage Distribution Factor matrix and store it in the
+        MParam `LODF`.
 
         `LODF[m, n]` means the increased line flow on line `m` when there is
         1 p.u. line flow decrease on line `n` due to line `n` outage.
+        It is also referred to as Branch Outage Distribution Factor (BODF).
 
         It requires DC PTDF and Cft.
 
@@ -470,6 +482,14 @@ class MatProcessor:
         -------
         LODF : np.ndarray
             Line outage distribution factor.
+
+        References
+        ----------
+        [1] PowerWorld Documentation, Line Outage Distribution Factors, [Online]
+
+        Available:
+
+        https://www.powerworld.com/WebHelp/Content/MainDocumentation_HTML/Line_Outage_Distribution_Factors_LODFs.htm
         """
         nl = self.system.Line.n
 
@@ -490,12 +510,11 @@ class MatProcessor:
 
     def build_otdf(self, line=None, dtype='float64'):
         """
-        Build the DC OTDF matrix for line outage:
-        :math:`OTDF_k = PTDF + LODF[:, k] @ PTDF[k, ]`,
-        where k is the outage line locations.
+        Build the Outrage Transfer Distribution Factor (OTDF) matrix for line
+        k outage: :math:`OTDF_k = PTDF + LODF[:, k] @ PTDF[k, ]`.
 
         OTDF_k[m, n] means the increased line flow on line `m` when there is
-        1 p.u. line flow decrease on line `k` due to line `k` outage.
+        1 p.u. power injection at bus `n` when line `k` is outage.
 
         Note that the OTDF is not stored in the MatProcessor.
 
@@ -514,6 +533,14 @@ class MatProcessor:
         -------
         OTDF : np.ndarray
             Line outage distribution factor.
+
+        References
+        ----------
+        [1] PowerWorld Documentation, Line Outage Distribution Factors, [Online]
+
+        Available:
+
+        https://www.powerworld.com/WebHelp/Content/MainDocumentation_HTML/Line_Outage_Distribution_Factors_LODFs.htm
         """
         if self.PTDF._v is None:
             ptdf = self.build_ptdf(dtype=dtype, no_store=True)
