@@ -3,6 +3,7 @@ Module for system matrix make.
 """
 
 import logging
+import os
 from typing import Optional
 
 import numpy as np
@@ -13,6 +14,7 @@ from scipy.sparse import lil_matrix as l_sparse
 
 from andes.utils.misc import elapsed
 from andes.thirdparty.npfunc import safe_div
+from andes.shared import pd
 
 from ams.opt.omodel import Param
 
@@ -42,6 +44,12 @@ class MParam(Param):
         Matrix value of the parameter.
     owner : object, optional
         Owner of the MParam, usually the MatProcessor instance.
+    sparse : bool, optional
+        If True, the matrix is stored in sparse format.
+    col_names : list, optional
+        Column names of the matrix.
+    row_names : list, optional
+        Row names of the matrix.
     """
 
     def __init__(self,
@@ -50,7 +58,10 @@ class MParam(Param):
                  info: Optional[str] = None,
                  unit: Optional[str] = None,
                  v: Optional[np.ndarray] = None,
+                 owner: Optional[object] = None,
                  sparse: Optional[bool] = False,
+                 col_names: Optional[list] = None,
+                 row_names: Optional[list] = None,
                  ):
         self.name = name
         self.tex_name = tex_name if (tex_name is not None) else name
@@ -58,7 +69,37 @@ class MParam(Param):
         self.unit = unit
         self._v = v
         self.sparse = sparse
-        self.owner = None
+        self.owner = owner
+        self.col_names = col_names
+        self.row_names = row_names
+
+    def export_csv(self, path=None):
+        """
+        Export the matrix to a CSV file.
+
+        Parameters
+        ----------
+        path : str, optional
+            Path to the output CSV file.
+
+        Returns
+        -------
+        str
+            The path of the exported csv file
+        """
+
+        if not path:
+            if self.owner.system.files.fullname is None:
+                logger.info("Input file name not detacted. Using `Untitled`.")
+                file_name = f'Untitled_{self.name}'
+            else:
+                file_name = os.path.splitext(self.owner.system.files.fullname)[0]
+                file_name += f'_{self.name}'
+            path = os.path.join(os.getcwd(), file_name + '.csv')
+
+        pd.DataFrame(data=self.v, columns=self.col_names, index=self.row_names).to_csv(path)
+
+        return file_name + '.csv'
 
     @property
     def v(self):
@@ -108,39 +149,39 @@ class MatProcessor:
 
         self.Cft = MParam(name='Cft', tex_name=r'C_{ft}',
                           info='Line connectivity matrix',
-                          v=None, sparse=True)
+                          v=None, sparse=True, owner=self)
         self.CftT = MParam(name='CftT', tex_name=r'C_{ft}^{T}',
                            info='Line connectivity matrix transpose',
-                           v=None, sparse=True)
+                           v=None, sparse=True, owner=self)
         self.Cg = MParam(name='Cg', tex_name=r'C_g',
                          info='Generator connectivity matrix',
-                         v=None, sparse=True)
+                         v=None, sparse=True, owner=self)
         self.Cl = MParam(name='Cl', tex_name=r'Cl',
                          info='Load connectivity matrix',
-                         v=None, sparse=True)
+                         v=None, sparse=True, owner=self)
         self.Csh = MParam(name='Csh', tex_name=r'C_{sh}',
                           info='Shunt connectivity matrix',
-                          v=None, sparse=True)
+                          v=None, sparse=True, owner=self)
 
         self.Bbus = MParam(name='Bbus', tex_name=r'B_{bus}',
                            info='Bus admittance matrix',
-                           v=None, sparse=True)
+                           v=None, sparse=True, owner=self)
         self.Bf = MParam(name='Bf', tex_name=r'B_{f}',
                          info='Bf matrix',
-                         v=None, sparse=True)
+                         v=None, sparse=True, owner=self)
         self.Pbusinj = MParam(name='Pbusinj', tex_name=r'P_{bus}^{inj}',
                               info='Bus power injection vector',
-                              v=None,)
+                              v=None, sparse=False, owner=self)
         self.Pfinj = MParam(name='Pfinj', tex_name=r'P_{f}^{inj}',
                             info='Line power injection vector',
-                            v=None,)
+                            v=None, sparse=False, owner=self)
 
         self.PTDF = MParam(name='PTDF', tex_name=r'P_{TDF}',
                            info='Power transfer distribution factor',
-                           v=None)
+                           v=None, sparse=False, owner=self)
         self.LODF = MParam(name='LODF', tex_name=r'O_{TDF}',
                            info='Line outage distribution factor',
-                           v=None)
+                           v=None, sparse=False, owner=self)
 
     def build(self):
         """

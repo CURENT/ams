@@ -9,6 +9,11 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.9.8 (2024-xx-xx)
+-------------------
+
+- Assign `MParam.owner` when declaring, which is originally assigned in `System._collect_group_data()`
+
 v0.9.7 (2024-05-24)
 -------------------
 
