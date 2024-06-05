@@ -21,7 +21,7 @@ from ams.opt.omodel import Param
 logger = logging.getLogger(__name__)
 
 
-class MParam(Param):
+class MParam(Param): 
     """
     Class for matrix parameters built from the system.
 

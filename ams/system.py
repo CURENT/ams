@@ -238,6 +238,8 @@ class System(andes_System):
                 item.owner = self.groups[item.model]
             elif item.model in self.models.keys():
                 item.owner = self.models[item.model]
+            elif item.model == 'mats':
+                pass
             else:
                 logger.debug(f'item_name: {item_name}')
                 msg = f'Model indicator \'{item.model}\' of <{item.rtn.class_name}.{item_name}>'
