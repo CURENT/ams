@@ -1,11 +1,9 @@
 import unittest
 import numpy as np
 
-from scipy.sparse import csr_matrix as c_sparse
-from scipy.sparse import lil_matrix as l_sparse
-
 import ams
 from ams.core.matprocessor import MatProcessor, MParam
+from ams.shared import sps
 
 
 class TestMatProcessorBasic(unittest.TestCase):
@@ -30,9 +28,9 @@ class TestMatProcessorBasic(unittest.TestCase):
         """
         Test `MParam`.
         """
-        one_vec = MParam(v=c_sparse(np.ones(self.ss.Bus.n)))
-        # check if `_v` is `c_sparse` instance
-        self.assertIsInstance(one_vec._v, c_sparse)
+        one_vec = MParam(v=sps.csr_matrix(np.ones(self.ss.Bus.n)))
+        # check if `_v` is `sps.csr_matrix` instance
+        self.assertIsInstance(one_vec._v, sps.csr_matrix)
         # check if `v` is 1D-array
         self.assertEqual(one_vec.v.shape, (self.ss.Bus.n,))
 
@@ -41,25 +39,25 @@ class TestMatProcessorBasic(unittest.TestCase):
         Test connectivity matrices.
         """
         # Test `Cg`
-        self.assertIsInstance(self.mats.Cg._v, (c_sparse, l_sparse))
+        self.assertIsInstance(self.mats.Cg._v, (sps.csr_matrix, sps.lil_matrix))
         self.assertIsInstance(self.mats.Cg.v, np.ndarray)
         self.assertEqual(self.mats.Cg._v.max(), 1)
         np.testing.assert_equal(self.mats.Cg._v.sum(axis=0), np.ones((1, self.ng)))
 
         # Test `Cl`
-        self.assertIsInstance(self.mats.Cl._v, (c_sparse, l_sparse))
+        self.assertIsInstance(self.mats.Cl._v, (sps.csr_matrix, sps.lil_matrix))
         self.assertIsInstance(self.mats.Cl.v, np.ndarray)
         self.assertEqual(self.mats.Cl._v.max(), 1)
         np.testing.assert_equal(self.mats.Cl._v.sum(axis=0), np.ones((1, self.nD)))
 
         # Test `Csh`
-        self.assertIsInstance(self.mats.Csh._v, (c_sparse, l_sparse))
+        self.assertIsInstance(self.mats.Csh._v, (sps.csr_matrix, sps.lil_matrix))
         self.assertIsInstance(self.mats.Csh.v, np.ndarray)
         self.assertEqual(self.mats.Csh._v.max(), 1)
         np.testing.assert_equal(self.mats.Csh._v.sum(axis=0), np.ones((1, self.nsh)))
 
         # Test `Cft`
-        self.assertIsInstance(self.mats.Cft._v, (c_sparse, l_sparse))
+        self.assertIsInstance(self.mats.Cft._v, (sps.csr_matrix, sps.lil_matrix))
         self.assertIsInstance(self.mats.Cft.v, np.ndarray)
         self.assertEqual(self.mats.Cft._v.max(), 1)
         np.testing.assert_equal(self.mats.Cft._v.sum(axis=0), np.zeros((1, self.nl)))
@@ -76,14 +74,14 @@ class TestMatProcessorBasic(unittest.TestCase):
         """
         Test `Bf`.
         """
-        self.assertIsInstance(self.mats.Bf._v, (c_sparse, l_sparse))
+        self.assertIsInstance(self.mats.Bf._v, (sps.csr_matrix, sps.lil_matrix))
         np.testing.assert_equal(self.mats.Bf._v.shape, (self.nl, self.nb))
 
     def test_bbus(self):
         """
         Test `Bbus`.
         """
-        self.assertIsInstance(self.mats.Bbus._v, (c_sparse, l_sparse))
+        self.assertIsInstance(self.mats.Bbus._v, (sps.csr_matrix, sps.lil_matrix))
         np.testing.assert_equal(self.mats.Bbus._v.shape, (self.nb, self.nb))
 
     def test_pfinj(self):
