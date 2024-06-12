@@ -433,7 +433,8 @@ class MatProcessor:
         return b
 
     def build_ptdf(self, line=None, dtype='float64', no_store=False,
-                   incremental=False, chunk_size=1000, no_tqdm=False):
+                   incremental=False, chunk_size=1000, no_tqdm=False,
+                   decimals=4):
         """
         Build the Power Transfer Distribution Factor (PTDF) matrix and store
         it in the MParam `PTDF` by default.
@@ -466,6 +467,9 @@ class MatProcessor:
             Chunk size for incremental calculation.
         no_tqdm : bool, optional
             If True, the progress bar will be disabled.
+        decimals : int, optional
+            Number of decimal places to round in the incremental
+            calculation.
 
         Returns
         -------
@@ -527,8 +531,10 @@ class MatProcessor:
 
             for start in range(0, nline, chunk_size):
                 end = min(start + chunk_size, nline)
-                H[start:end, noslack] = sps.linalg.spsolve(Bbus[np.ix_(noslack, noref)].T,
-                                                           Bf[np.ix_(luid[start:end], noref)].T).T
+                sol = sps.linalg.spsolve(Bbus[np.ix_(noslack, noref)].T,
+                                         Bf[np.ix_(luid[start:end], noref)].T).T
+                sol.data = np.round(sol.data, decimals)
+                H[start:end, noslack] = sol
 
                 # show progress in percentage
                 perc = np.round(min((end / nline) * 100, 100), 2)
