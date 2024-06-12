@@ -4,13 +4,14 @@ Module for system matrix make.
 
 import logging
 import os
+import sys
 from typing import Optional
 
 import numpy as np
 
-from andes.utils.misc import elapsed
 from andes.thirdparty.npfunc import safe_div
-from andes.shared import pd
+from andes.shared import pd, tqdm, tqdm_nb
+from andes.utils.misc import elapsed, is_notebook
 
 from ams.opt.omodel import Param
 from ams.shared import sps
@@ -143,6 +144,7 @@ class MatProcessor:
     def __init__(self, system):
         self.system = system
         self.initialized = False
+        self.pbar = None
 
         self.Cft = MParam(name='Cft', tex_name=r'C_{ft}',
                           info='Line connectivity matrix',
@@ -431,7 +433,7 @@ class MatProcessor:
         return b
 
     def build_ptdf(self, line=None, dtype='float64', no_store=False,
-                   incremental=False, chunk_size=1000):
+                   incremental=False, chunk_size=1000, no_tqdm=False):
         """
         Build the Power Transfer Distribution Factor (PTDF) matrix and store
         it in the MParam `PTDF` by default.
@@ -457,11 +459,13 @@ class MatProcessor:
         dtype : str, optional
             Data type of the PTDF matrix. Default is 'float64'.
         no_store : bool, optional
-            If True, the PTDF will not be stored into `MatProcessor.PTDF._v`.
+            If False, the PTDF will be stored into `MatProcessor.PTDF._v`.
         incremental : bool, optional
             If True, the sparse PTDF will be calculated in chunks to save memory.
         chunk_size : int, optional
             Chunk size for incremental calculation.
+        no_tqdm : bool, optional
+            If True, the progress bar will be disabled.
 
         Returns
         -------
@@ -508,12 +512,37 @@ class MatProcessor:
         Bf = self.Bf._v
 
         if incremental:
+            # initialize progress bar
+            if is_notebook():
+                self.pbar = tqdm_nb(total=100, unit='%', file=sys.stdout,
+                                    disable=no_tqdm)
+            else:
+                self.pbar = tqdm(total=100, unit='%', ncols=80, ascii=True,
+                                 file=sys.stdout, disable=no_tqdm)
+
+            self.pbar.update(0)
+            last_pc = 0
+
             H = sps.lil_matrix((len(luid), system.Bus.n), dtype=dtype)
 
             for start in range(0, nline, chunk_size):
                 end = min(start + chunk_size, nline)
                 H[start:end, noslack] = sps.linalg.spsolve(Bbus[np.ix_(noslack, noref)].T,
                                                            Bf[np.ix_(luid[start:end], noref)].T).T
+
+                # show progress in percentage
+                perc = np.round(min((end / nline) * 100, 100), 2)
+
+                perc_diff = perc - last_pc
+                if perc_diff >= 1:
+                    self.pbar.update(perc_diff)
+                    last_pc = perc
+
+            # finish progress bar
+            self.pbar.update(100 - last_pc)
+            # removed `pbar` so that System object can be serialized
+            self.pbar.close()
+            self.pbar = None
         else:
             H = np.zeros((nline, nbus), dtype=dtype)
             H[:, noslack] = np.linalg.solve(Bbus.todense()[np.ix_(noslack, noref)].T,
@@ -524,7 +553,8 @@ class MatProcessor:
 
         return H
 
-    def build_lodf(self, dtype='float64', no_store=False):
+    def build_lodf(self, dtype='float64', no_store=False,
+                   incremental=False, chunk_size=1000, no_tqdm=False):
         """
         Build the Line Outage Distribution Factor matrix and store it in the
         MParam `LODF`.
@@ -535,18 +565,25 @@ class MatProcessor:
 
         It requires DC PTDF and Cft.
 
-        Try to use 'float32' for dtype if memory is a concern.
+        For large cases where memory is a concern, use `incremental=True` to
+        calculate the sparse LODF in chunks in the format of scipy.sparse.lil_matrix.
 
         Parameters
         ----------
         dtype : str, optional
             Data type of the LODF matrix. Default is 'float64'.
         no_store : bool, optional
-            If True, the LODF will not be stored into `MatProcessor.LODF._v`.
+            If False, the LODF will be stored into `MatProcessor.LODF._v`.
+        incremental : bool, optional
+            If True, the sparse LODF will be calculated in chunks to save memory.
+        chunk_size : int, optional
+            Chunk size for incremental calculation.
+        no_tqdm : bool, optional
+            If True, the progress bar will be disabled.
 
         Returns
         -------
-        LODF : np.ndarray
+        LODF : np.ndarray, scipy.sparse.lil_matrix
             Line outage distribution factor.
 
         References
@@ -561,18 +598,65 @@ class MatProcessor:
 
         # build PTDF if not built
         if self.PTDF._v is None:
-            ptdf = self.build_ptdf(dtype=dtype, no_store=True)
+            ptdf = self.build_ptdf(dtype=dtype, no_store=True,
+                                   incremental=incremental, chunk_size=chunk_size)
+        elif isinstance(self.PTDF._v, np.ndarray) and incremental:
+            ptdf = sps.lil_matrix(self.PTDF._v)
         else:
             ptdf = self.PTDF._v
 
-        H = ptdf * self.Cft._v
-        h = np.diag(H, 0)
-        LODF = safe_div(H, np.ones((nl, nl)) - np.ones((nl, 1)) * h.T)
-        LODF = LODF - np.diag(np.diag(LODF)) - np.eye(nl, nl)
+        if incremental:
+            # initialize progress bar
+            if is_notebook():
+                self.pbar = tqdm_nb(total=100, unit='%', file=sys.stdout,
+                                    disable=no_tqdm)
+            else:
+                self.pbar = tqdm(total=100, unit='%', ncols=80, ascii=True,
+                                 file=sys.stdout, disable=no_tqdm)
+
+            self.pbar.update(0)
+            last_pc = 0
+
+            H = ptdf @ self.Cft._v
+            h = H.diagonal(0).reshape(1, -1)
+            rden = sps.csr_matrix(np.ones((nl, nl)) - np.ones((nl, 1)) @ h)
+            rden.data = safe_div(np.ones(rden.data.shape), rden.data)
+            LODF = H.multiply(rden)
+            LODF -= sps.diags(LODF.diagonal(), 0)
+            LODF -= sps.eye(nl, nl)
+
+            # for start in range(0, nl, chunk_size):
+            #     end = min(start + chunk_size, nl)
+            #     H_chunk = ptdf[start:end, :] * self.Cft._v
+            #     h_chunk = H_chunk.diagonal(0)
+            #     dmr = sps.csc_matrix(np.ones((end - start, nl)) - np.ones((end - start, 1)) * h_chunk.T)
+            #     dmr.data = safe_div(np.ones_like(dmr.data), dmr.data)
+            #     LODF[start:end, :] = H_chunk.multiply(dmr)
+            #     LODF[start:end, :] -= sps.diags(LODF[start:end, :].diagonal(), 0)
+            #     LODF[start:end, :] -= sps.eye(end - start, nl)
+
+            #     # show progress in percentage
+            #     perc = np.round(min((end / nl) * 100, 100), 2)
+
+            #     perc_diff = perc - last_pc
+            #     if perc_diff >= 1:
+            #         self.pbar.update(perc_diff)
+            #         last_pc = perc
+
+            # finish progress bar
+            self.pbar.update(100 - last_pc)
+            # removed `pbar` so that System object can be serialized
+            self.pbar.close()
+            self.pbar = None
+        else:
+            H = ptdf * self.Cft._v
+            h = np.diag(H, 0).reshape(1, -1)
+            LODF = safe_div(H, np.ones((nl, nl)) - np.ones((nl, 1)) @ h)
+            LODF = LODF - np.diag(np.diag(LODF)) - np.eye(nl, nl)
 
         if not no_store:
             self.LODF._v = LODF.astype(dtype)
-        return LODF.astype(dtype)
+        return self.LODF._v
 
     def build_otdf(self, line=None, dtype='float64'):
         """
