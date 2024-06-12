@@ -8,6 +8,7 @@ from typing import Optional
 
 import numpy as np
 
+import scipy.sparse as sps
 from scipy.sparse import csr_matrix as c_sparse
 from scipy.sparse import csc_matrix as csc_sparse
 from scipy.sparse import lil_matrix as l_sparse
@@ -21,7 +22,7 @@ from ams.opt.omodel import Param
 logger = logging.getLogger(__name__)
 
 
-class MParam(Param): 
+class MParam(Param):
     """
     Class for matrix parameters built from the system.
 
@@ -433,7 +434,7 @@ class MatProcessor:
 
         return b
 
-    def build_ptdf(self, dtype='float64', no_store=False):
+    def build_ptdf(self, line=None, dtype='float64', no_dense=False, no_store=False):
         """
         Build the Power Transfer Distribution Factor (PTDF) matrix and store
         it in the MParam `PTDF`.
@@ -451,10 +452,16 @@ class MatProcessor:
 
         Parameters
         ----------
+        line: int, str, list, optional
+            Lines index for which the PTDF is calculated. It takes both single
+            or multiple line indices. Note that if line is given, the PTDF will
+            not be stored in the MParam.
         dtype : str, optional
             Data type of the PTDF matrix. Default is 'float64'.
         no_store : bool, optional
             If True, the PTDF will not be stored into `MatProcessor.PTDF._v`.
+        no_dense : bool, optional
+            If True, the PTDF will be calculated and stored in dense format.
 
         Returns
         -------
@@ -473,28 +480,40 @@ class MatProcessor:
 
         # use first slack bus as reference slack bus
         slack = system.Slack.bus.v[0]
+        noslack = [system.Bus.idx2uid(bus) for bus in system.Bus.idx.v if bus != slack]
 
         # use first bus for voltage angle reference
         noref_idx = system.Bus.idx.v[1:]
         noref = system.Bus.idx2uid(noref_idx)
 
-        noslack = [system.Bus.idx2uid(bus) for bus in system.Bus.idx.v if bus != slack]
+        if line is None:
+            luid = system.Line.idx2uid(system.Line.idx.v)
+        elif isinstance(line, (int, str)):
+            try:
+                luid = [system.Line.idx2uid(line)]
+            except ValueError:
+                raise ValueError(f"Line {line} not found.")
+        elif isinstance(line, list):
+            luid = system.Line.idx2uid(line)
 
         # build other matrices if not built
         if not self.initialized:
             logger.debug("System matrices are not built. Building now.")
             self.build()
 
-        # use dense representation
-        Bbus = self.Bbus._v.todense().astype(dtype)
-        Bf = self.Bf._v.todense().astype(dtype)
+        H = np.zeros((len(luid), system.Bus.n), dtype=dtype)
+        if no_dense:
+            Bbus = self.Bbus._v
+            Bf = self.Bf._v
+            H = sps.lil_matrix((len(luid), system.Bus.n), dtype=dtype)
+            H[:, noslack] = sps.linalg.spsolve(Bbus[np.ix_(noslack, noref)].T, Bf[np.ix_(luid, noref)].T).T
+        else:
+            Bbus = self.Bbus._v.todense().astype(dtype)
+            Bf = self.Bf._v.todense().astype(dtype)
+            H = np.zeros((len(luid), system.Bus.n), dtype=dtype)
+            H[:, noslack] = np.linalg.solve(Bbus[np.ix_(noslack, noref)].T, Bf[np.ix_(luid, noref)].T).T
 
-        # initialize PTDF matrix
-        H = np.zeros((system.Line.n, system.Bus.n), dtype=dtype)
-        # calculate PTDF
-        H[:, noslack] = np.linalg.solve(Bbus[np.ix_(noslack, noref)].T, Bf[:, noref].T).T
-
-        if not no_store:
+        if -no_store or line is None:
             self.PTDF._v = H
 
         return H
