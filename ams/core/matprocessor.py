@@ -430,21 +430,29 @@ class MatProcessor:
 
         return b
 
-    def build_ptdf(self, line=None, dtype='float64', no_dense=False, no_store=False):
+    def build_ptdf(self, line=None, dtype='float64',
+                   no_dense=False, no_store=False,
+                   incremental=False, chunk_size=1000):
         """
         Build the Power Transfer Distribution Factor (PTDF) matrix and store
-        it in the MParam `PTDF`.
+        it in the MParam `PTDF` by default.
 
         `PTDF[m, n]` means the increased line flow on line `m` when there is
         1 p.u. power injection at bus `n`. It is very similar to Generation
         Shift Factor (GSF).
 
-        It requires DC Bbus and Bf.
-
         Note that there is discrepency between the PTDF-based line flow and
         DCOPF calcualted line flow. The gap is ignorable for small cases.
 
-        Try to use 'float32' for dtype if memory is a concern.
+        It requires DC Bbus and Bf.
+
+        For large cases where memory is a concern, use `no_dense=True` to
+        calculate the PTDF in sparse format.
+        Further, use `incremental=True` to calculate the sparse PTDF in chunks,
+        where no_dense will be ignored.
+
+        The returned PTDF is in scipy.sparse.lil_matrix format if `no_dense=True`
+        or `incremental=True`.
 
         Parameters
         ----------
@@ -458,10 +466,14 @@ class MatProcessor:
             If True, the PTDF will not be stored into `MatProcessor.PTDF._v`.
         no_dense : bool, optional
             If True, the PTDF will be calculated and stored in dense format.
+        incremental : bool, optional
+            If True, the sparse PTDF will be calculated in chunks to save memory.
+        chunk_size : int, optional
+            Chunk size for incremental calculation.
 
         Returns
         -------
-        PTDF : np.ndarray
+        PTDF : np.ndarray, scipy.sparse.lil_matrix
             Power transfer distribution factor.
 
         References
@@ -497,17 +509,28 @@ class MatProcessor:
             logger.debug("System matrices are not built. Building now.")
             self.build()
 
-        H = np.zeros((len(luid), system.Bus.n), dtype=dtype)
-        if no_dense:
-            Bbus = self.Bbus._v
-            Bf = self.Bf._v
+        nbus = system.Bus.n
+        nline = len(luid)
+
+        Bbus = self.Bbus._v
+        Bf = self.Bf._v
+
+        if incremental:
             H = sps.lil_matrix((len(luid), system.Bus.n), dtype=dtype)
-            H[:, noslack] = sps.linalg.spsolve(Bbus[np.ix_(noslack, noref)].T, Bf[np.ix_(luid, noref)].T).T
+
+            for start in range(0, nline, chunk_size):
+                end = min(start + chunk_size, nline)
+                H[start:end, noslack] = sps.linalg.spsolve(Bbus[np.ix_(noslack, noref)].T,
+                                                           Bf[np.ix_(luid[start:end], noref)].T).T
+
+        if no_dense:
+            H = sps.lil_matrix((nline, nbus), dtype=dtype)
+            H[:, noslack] = sps.linalg.spsolve(Bbus[np.ix_(noslack, noref)].T,
+                                               Bf[np.ix_(luid, noref)].T).T
         else:
-            Bbus = self.Bbus._v.todense().astype(dtype)
-            Bf = self.Bf._v.todense().astype(dtype)
-            H = np.zeros((len(luid), system.Bus.n), dtype=dtype)
-            H[:, noslack] = np.linalg.solve(Bbus[np.ix_(noslack, noref)].T, Bf[np.ix_(luid, noref)].T).T
+            H = np.zeros((nline, nbus), dtype=dtype)
+            H[:, noslack] = np.linalg.solve(Bbus.todense()[np.ix_(noslack, noref)].T,
+                                            Bf.todense()[np.ix_(luid, noref)].T).T
 
         if -no_store or line is None:
             self.PTDF._v = H
