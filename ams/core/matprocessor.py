@@ -8,10 +8,6 @@ from typing import Optional
 
 import numpy as np
 
-from scipy.sparse import csr_matrix as c_sparse
-from scipy.sparse import csc_matrix as csc_sparse
-from scipy.sparse import lil_matrix as l_sparse
-
 from andes.utils.misc import elapsed
 from andes.thirdparty.npfunc import safe_div
 from andes.shared import pd
@@ -109,7 +105,7 @@ class MParam(Param):
         """
         # NOTE: scipy.sparse matrix will return 2D array
         # so we squeeze it here if only one row
-        if isinstance(self._v, (c_sparse, l_sparse, csc_sparse)):
+        if isinstance(self._v, (sps.csr_matrix, sps.l_sparse, sps.csc_sparse)):
             out = self._v.toarray()
             if out.shape[0] == 1:
                 return np.squeeze(out)
@@ -252,7 +248,7 @@ class MatProcessor:
 
         row = np.array([system.Bus.idx2uid(x) for x in on_gen_bus])
         col = np.array([idx_gen.index(x) for x in on_gen_idx])
-        self.Cg._v = c_sparse((np.ones(len(on_gen_idx)), (row, col)), (nb, ng))
+        self.Cg._v = sps.csr_matrix((np.ones(len(on_gen_idx)), (row, col)), (nb, ng))
         return self.Cg._v
 
     def build_cl(self):
@@ -279,7 +275,7 @@ class MatProcessor:
 
         row = np.array([system.Bus.idx2uid(x) for x in on_load_bus])
         col = np.array([system.PQ.idx2uid(x) for x in on_load_idx])
-        self.Cl._v = c_sparse((np.ones(len(on_load_idx)), (row, col)), (nb, npq))
+        self.Cl._v = sps.csr_matrix((np.ones(len(on_load_idx)), (row, col)), (nb, npq))
         return self.Cl._v
 
     def build_csh(self):
@@ -306,7 +302,7 @@ class MatProcessor:
 
         row = np.array([system.Bus.idx2uid(x) for x in on_shunt_bus])
         col = np.array([system.Shunt.idx2uid(x) for x in on_shunt_idx])
-        self.Csh._v = c_sparse((np.ones(len(on_shunt_idx)), (row, col)), (nb, nsh))
+        self.Csh._v = sps.csr_matrix((np.ones(len(on_shunt_idx)), (row, col)), (nb, nsh))
         return self.Csh._v
 
     def build_cft(self):
@@ -337,7 +333,7 @@ class MatProcessor:
         data_line[len(on_line_idx):] = -1
         row_line = np.array([system.Bus.idx2uid(x) for x in on_line_bus1 + on_line_bus2])
         col_line = np.array([system.Line.idx2uid(x) for x in on_line_idx + on_line_idx])
-        self.Cft._v = c_sparse((data_line, (row_line, col_line)), (nb, nl))
+        self.Cft._v = sps.csr_matrix((data_line, (row_line, col_line)), (nb, nl))
         self.CftT._v = self.Cft._v.T
         return self.Cft._v
 
@@ -365,7 +361,7 @@ class MatProcessor:
         f = system.Bus.idx2uid(system.Line.get(src='bus1', attr='v', idx=idx_line))
         t = system.Bus.idx2uid(system.Line.get(src='bus2', attr='v', idx=idx_line))
         ir = np.r_[range(nl), range(nl)]  # double set of row indices
-        self.Bf._v = c_sparse((np.r_[b, -b], (ir, np.r_[f, t])), (nl, nb))
+        self.Bf._v = sps.csr_matrix((np.r_[b, -b], (ir, np.r_[f, t])), (nl, nb))
         return self.Bf._v
 
     def build_bbus(self):
