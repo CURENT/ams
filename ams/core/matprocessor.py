@@ -8,7 +8,6 @@ from typing import Optional
 
 import numpy as np
 
-import scipy.sparse as sps
 from scipy.sparse import csr_matrix as c_sparse
 from scipy.sparse import csc_matrix as csc_sparse
 from scipy.sparse import lil_matrix as l_sparse
@@ -18,6 +17,7 @@ from andes.thirdparty.npfunc import safe_div
 from andes.shared import pd
 
 from ams.opt.omodel import Param
+from ams.shared import sps
 
 logger = logging.getLogger(__name__)
 
