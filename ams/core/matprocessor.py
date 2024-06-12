@@ -430,8 +430,7 @@ class MatProcessor:
 
         return b
 
-    def build_ptdf(self, line=None, dtype='float64',
-                   no_dense=False, no_store=False,
+    def build_ptdf(self, line=None, dtype='float64', no_store=False,
                    incremental=False, chunk_size=1000):
         """
         Build the Power Transfer Distribution Factor (PTDF) matrix and store
@@ -446,13 +445,8 @@ class MatProcessor:
 
         It requires DC Bbus and Bf.
 
-        For large cases where memory is a concern, use `no_dense=True` to
-        calculate the PTDF in sparse format.
-        Further, use `incremental=True` to calculate the sparse PTDF in chunks,
-        where no_dense will be ignored.
-
-        The returned PTDF is in scipy.sparse.lil_matrix format if `no_dense=True`
-        or `incremental=True`.
+        For large cases where memory is a concern, use `incremental=True` to
+        calculate the sparse PTDF in chunks in the format of scipy.sparse.lil_matrix.
 
         Parameters
         ----------
@@ -464,8 +458,6 @@ class MatProcessor:
             Data type of the PTDF matrix. Default is 'float64'.
         no_store : bool, optional
             If True, the PTDF will not be stored into `MatProcessor.PTDF._v`.
-        no_dense : bool, optional
-            If True, the PTDF will be calculated and stored in dense format.
         incremental : bool, optional
             If True, the sparse PTDF will be calculated in chunks to save memory.
         chunk_size : int, optional
@@ -522,11 +514,6 @@ class MatProcessor:
                 end = min(start + chunk_size, nline)
                 H[start:end, noslack] = sps.linalg.spsolve(Bbus[np.ix_(noslack, noref)].T,
                                                            Bf[np.ix_(luid[start:end], noref)].T).T
-
-        if no_dense:
-            H = sps.lil_matrix((nline, nbus), dtype=dtype)
-            H[:, noslack] = sps.linalg.spsolve(Bbus[np.ix_(noslack, noref)].T,
-                                               Bf[np.ix_(luid, noref)].T).T
         else:
             H = np.zeros((nline, nbus), dtype=dtype)
             H[:, noslack] = np.linalg.solve(Bbus.todense()[np.ix_(noslack, noref)].T,
