@@ -106,7 +106,7 @@ class MParam(Param):
         """
         # NOTE: scipy.sparse matrix will return 2D array
         # so we squeeze it here if only one row
-        if isinstance(self._v, (sps.csr_matrix, sps.l_sparse, sps.csc_sparse)):
+        if isinstance(self._v, (sps.csr_matrix, sps.lil_matrix, sps.csc_matrix)):
             out = self._v.toarray()
             if out.shape[0] == 1:
                 return np.squeeze(out)
@@ -455,7 +455,7 @@ class MatProcessor:
         ----------
         line: int, str, list, optional
             Lines index for which the PTDF is calculated. It takes both single
-            or multiple line indices. Note that if line is given, the PTDF will
+            or multiple line indices. Note that if `line` is given, the PTDF will
             not be stored in the MParam.
         dtype : str, optional
             Data type of the PTDF matrix. Default is 'float64'.
@@ -554,7 +554,7 @@ class MatProcessor:
             H[:, noslack] = np.linalg.solve(Bbus.todense()[np.ix_(noslack, noref)].T,
                                             Bf.todense()[np.ix_(luid, noref)].T).T
 
-        if -no_store or line is None:
+        if (not no_store) & (line is None):
             self.PTDF._v = H
 
         return H
