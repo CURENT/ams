@@ -432,7 +432,7 @@ class MatProcessor:
 
         return b
 
-    def build_ptdf(self, line=None, dtype='float64', no_store=False,
+    def build_ptdf(self, line=None, no_store=False,
                    incremental=False, chunk_size=1000, no_tqdm=False,
                    decimals=4):
         """
@@ -457,8 +457,6 @@ class MatProcessor:
             Lines index for which the PTDF is calculated. It takes both single
             or multiple line indices. Note that if `line` is given, the PTDF will
             not be stored in the MParam.
-        dtype : str, optional
-            Data type of the PTDF matrix. Default is 'float64'.
         no_store : bool, optional
             If False, the PTDF will be stored into `MatProcessor.PTDF._v`.
         incremental : bool, optional
@@ -473,7 +471,7 @@ class MatProcessor:
 
         Returns
         -------
-        PTDF : np.ndarray, scipy.sparse.lil_matrix
+        PTDF : np.ndarray or scipy.sparse.lil_matrix
             Power transfer distribution factor.
 
         References
@@ -527,13 +525,13 @@ class MatProcessor:
             self.pbar.update(0)
             last_pc = 0
 
-            H = sps.lil_matrix((len(luid), system.Bus.n), dtype=dtype)
+            H = sps.lil_matrix((len(luid), system.Bus.n))
 
             for start in range(0, nline, chunk_size):
                 end = min(start + chunk_size, nline)
                 sol = sps.linalg.spsolve(Bbus[np.ix_(noslack, noref)].T,
                                          Bf[np.ix_(luid[start:end], noref)].T).T
-                sol.data = np.round(sol.data, decimals)
+                sol = np.round(sol, decimals)
                 H[start:end, noslack] = sol
 
                 # show progress in percentage
@@ -550,17 +548,20 @@ class MatProcessor:
             self.pbar.close()
             self.pbar = None
         else:
-            H = np.zeros((nline, nbus), dtype=dtype)
+            H = np.zeros((nline, nbus))
             H[:, noslack] = np.linalg.solve(Bbus.todense()[np.ix_(noslack, noref)].T,
                                             Bf.todense()[np.ix_(luid, noref)].T).T
+
+        # reshape results into 1D array if only one line
+        if isinstance(line, (int, str)):
+            H = H[0, :]
 
         if (not no_store) & (line is None):
             self.PTDF._v = H
 
         return H
 
-    def build_lodf(self, dtype='float64', no_store=False,
-                   incremental=False, chunk_size=1000, no_tqdm=False):
+    def build_lodf(self, no_store=False, incremental=False, chunk_size=1000, no_tqdm=False):
         """
         Build the Line Outage Distribution Factor matrix and store it in the
         MParam `LODF`.
@@ -576,8 +577,6 @@ class MatProcessor:
 
         Parameters
         ----------
-        dtype : str, optional
-            Data type of the LODF matrix. Default is 'float64'.
         no_store : bool, optional
             If False, the LODF will be stored into `MatProcessor.LODF._v`.
         incremental : bool, optional
@@ -604,12 +603,9 @@ class MatProcessor:
 
         # build PTDF if not built
         if self.PTDF._v is None:
-            ptdf = self.build_ptdf(dtype=dtype, no_store=True,
-                                   incremental=incremental, chunk_size=chunk_size)
-        elif isinstance(self.PTDF._v, np.ndarray) and incremental:
+            ptdf = self.build_ptdf(no_store=True, incremental=incremental, chunk_size=chunk_size)
+        if incremental and isinstance(self.PTDF._v, np.ndarray):
             ptdf = sps.lil_matrix(self.PTDF._v)
-        else:
-            ptdf = self.PTDF._v
 
         if incremental:
             # initialize progress bar
@@ -661,10 +657,10 @@ class MatProcessor:
             LODF = LODF - np.diag(np.diag(LODF)) - np.eye(nl, nl)
 
         if not no_store:
-            self.LODF._v = LODF.astype(dtype)
+            self.LODF._v = LODF
         return self.LODF._v
 
-    def build_otdf(self, line=None, dtype='float64'):
+    def build_otdf(self, line=None):
         """
         Build the Outrage Transfer Distribution Factor (OTDF) matrix for line
         k outage: :math:`OTDF_k = PTDF + LODF[:, k] @ PTDF[k, ]`.
@@ -674,16 +670,12 @@ class MatProcessor:
 
         Note that the OTDF is not stored in the MatProcessor.
 
-        Try to use 'float32' for dtype if memory is a concern.
-
         Parameters
         ----------
         line : int, str, list, optional
             Lines index for which the OTDF is calculated. It takes both single
             or multiple line indices.
             If not given, the first line is used by default.
-        dtype : str, optional
-            Data type of the OTDF matrix. Default is 'float64'.
 
         Returns
         -------
@@ -699,12 +691,12 @@ class MatProcessor:
         https://www.powerworld.com/WebHelp/Content/MainDocumentation_HTML/Line_Outage_Distribution_Factors_LODFs.htm
         """
         if self.PTDF._v is None:
-            ptdf = self.build_ptdf(dtype=dtype, no_store=True)
+            ptdf = self.build_ptdf(no_store=True)
         else:
             ptdf = self.PTDF._v
 
         if self.LODF._v is None:
-            lodf = self.build_lodf(dtype=dtype, no_store=True)
+            lodf = self.build_lodf(no_store=True)
         else:
             lodf = self.LODF._v
 
@@ -719,4 +711,4 @@ class MatProcessor:
             luid = self.system.Line.idx2uid(line)
 
         otdf = ptdf + lodf[:, luid] @ ptdf[luid, :]
-        return otdf.astype(dtype)
+        return otdf
