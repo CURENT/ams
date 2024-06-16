@@ -466,8 +466,7 @@ class MatProcessor:
         no_tqdm : bool, optional
             If True, the progress bar will be disabled.
         decimals : int, optional
-            Number of decimal places to round in the incremental
-            calculation.
+            Number of decimal places to round in the incremental calculation.
 
         Returns
         -------
