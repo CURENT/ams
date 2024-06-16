@@ -201,7 +201,8 @@ class TestBuildPTDF(unittest.TestCase):
         Test PTDF before MatProcessor initialization `mats.init()`.
         """
         self.assertIsNone(self.ss.mats.PTDF._v)
-        self.assertEqual(self.ptdf_full.shape, (self.nl, self.nb))
+        _ = self.ss.mats.build_ptdf(no_store=False)
+        self.assertEqual(self.ss.mats.PTDF._v.shape, (self.nl, self.nb))
 
     def test_ptdf_lines(self):
         """
@@ -291,3 +292,31 @@ class TestBuildPTDF(unittest.TestCase):
         np.testing.assert_array_almost_equal(ptdf_c5.todense(),
                                              self.ptdf_full[2:4, :],
                                              decimal=self.dec)
+
+
+class TestBuildLODF(unittest.TestCase):
+    """
+    Test build LODF.
+    """
+
+    def setUp(self) -> None:
+        self.ss = ams.load(ams.get_case('matpower/case14.m'),
+                           setup=True, default_config=True, no_output=True)
+        self.nl = self.ss.Line.n
+        self.nb = self.ss.Bus.n
+        self.dec = 4
+
+        self.assertFalse(self.ss.mats.initialized)
+        self.lodf_full = self.ss.mats.build_lodf(no_store=True)
+        self.assertTrue(self.ss.mats.initialized)
+
+    def test_lodf_before_ptdf(self):
+        """
+        Test LODF before PTDF.
+        """
+        self.assertIsNone(self.ss.mats.PTDF._v)
+        self.assertIsNone(self.ss.mats.LODF._v)
+        _ = self.ss.mats.build_lodf(no_store=False)
+        self.assertEqual(self.ss.mats.LODF._v.shape, (self.nl, self.nl))
+        # PTDF should not be stored for requested building
+        self.assertIsNone(self.ss.mats.PTDF._v)
