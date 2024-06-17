@@ -171,7 +171,7 @@ class TestBuildPTDF(unittest.TestCase):
 
     def test_ptdf_incrementa_step(self):
         """
-        Test PTDF incremental build with chunk size.
+        Test PTDF incremental build with step.
         """
         # step < line length
         ptdf_c1 = self.ss.mats.build_ptdf(line=self.ss.Line.idx.v[2:4], incremental=True,
@@ -262,6 +262,34 @@ class TestBuildLODF(unittest.TestCase):
         # input list with multiple elements
         lodf_l23 = self.ss.mats.build_lodf(line=self.ss.Line.idx.v[2:4], incremental=True, no_store=False)
         np.testing.assert_array_almost_equal(lodf_l23.todense(),
+                                             self.lodf_full[:, 2:4],
+                                             decimal=self.dec)
+
+    def test_lodf_incrementa_step(self):
+        """
+        Test LODF incremental build with step.
+        """
+        # step < line length
+        lodf_c1 = self.ss.mats.build_lodf(line=self.ss.Line.idx.v[2:4], incremental=True,
+                                          no_store=False, step=1)
+        self.assertTrue(sps.isspmatrix_lil(lodf_c1))
+        np.testing.assert_array_almost_equal(lodf_c1.todense(),
+                                             self.lodf_full[:, 2:4],
+                                             decimal=self.dec)
+
+        # step = line length
+        lodf_c2 = self.ss.mats.build_lodf(line=self.ss.Line.idx.v[2:4], incremental=True,
+                                          no_store=False, step=2)
+        self.assertTrue(sps.isspmatrix_lil(lodf_c2))
+        np.testing.assert_array_almost_equal(lodf_c2.todense(),
+                                             self.lodf_full[:, 2:4],
+                                             decimal=self.dec)
+
+        # step > line length
+        lodf_c5 = self.ss.mats.build_lodf(line=self.ss.Line.idx.v[2:4], incremental=True,
+                                          no_store=False, step=5)
+        self.assertTrue(sps.isspmatrix_lil(lodf_c5))
+        np.testing.assert_array_almost_equal(lodf_c5.todense(),
                                              self.lodf_full[:, 2:4],
                                              decimal=self.dec)
 
