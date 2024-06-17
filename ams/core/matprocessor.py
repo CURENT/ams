@@ -433,7 +433,7 @@ class MatProcessor:
         return b
 
     def build_ptdf(self, line=None, no_store=False,
-                   incremental=False, chunk_size=1000, no_tqdm=False):
+                   incremental=False, step=1000, no_tqdm=False):
         """
         Build the Power Transfer Distribution Factor (PTDF) matrix and store
         it in the MParam `PTDF` by default.
@@ -460,8 +460,8 @@ class MatProcessor:
             If False, the PTDF will be stored into `MatProcessor.PTDF._v`.
         incremental : bool, optional
             If True, the sparse PTDF will be calculated in chunks to save memory.
-        chunk_size : int, optional
-            Chunk size for incremental calculation.
+        step : int, optional
+            Step for incremental calculation.
         no_tqdm : bool, optional
             If True, the progress bar will be disabled.
 
@@ -524,8 +524,8 @@ class MatProcessor:
             H = sps.lil_matrix((nline, system.Bus.n))
 
             # NOTE: for PTDF, we are building rows by rows
-            for start in range(0, nline, chunk_size):
-                end = min(start + chunk_size, nline)
+            for start in range(0, nline, step):
+                end = min(start + step, nline)
                 sol = sps.linalg.spsolve(Bbus[np.ix_(noslack, noref)].T,
                                          Bf[np.ix_(luid[start:end], noref)].T).T
                 H[start:end, noslack] = sol
@@ -558,7 +558,7 @@ class MatProcessor:
         return H
 
     def build_lodf(self, line=None, no_store=False,
-                   incremental=False, chunk_size=1000, no_tqdm=False):
+                   incremental=False, step=1000, no_tqdm=False):
         """
         Build the Line Outage Distribution Factor matrix and store it in the
         MParam `LODF`.
@@ -582,8 +582,8 @@ class MatProcessor:
             If False, the LODF will be stored into `MatProcessor.LODF._v`.
         incremental : bool, optional
             If True, the sparse LODF will be calculated in chunks to save memory.
-        chunk_size : int, optional
-            Chunk size for incremental calculation.
+        step : int, optional
+            Step for incremental calculation.
         no_tqdm : bool, optional
             If True, the progress bar will be disabled.
 
@@ -619,7 +619,7 @@ class MatProcessor:
         ptdf = self.PTDF._v
         # build PTDF if not built
         if self.PTDF._v is None:
-            ptdf = self.build_ptdf(no_store=True, incremental=incremental, chunk_size=chunk_size)
+            ptdf = self.build_ptdf(no_store=True, incremental=incremental, step=step)
         if incremental and isinstance(self.PTDF._v, np.ndarray):
             ptdf = sps.lil_matrix(self.PTDF._v)
 
@@ -638,8 +638,8 @@ class MatProcessor:
             LODF = sps.lil_matrix((nbranch, nline))
 
             # NOTE: for LODF, we are doing it columns by columns
-            # reshape luid to list of list by chunk_size
-            luidp = [luid[i:i + chunk_size] for i in range(0, len(luid), chunk_size)]
+            # reshape luid to list of list by step
+            luidp = [luid[i:i + step] for i in range(0, len(luid), step)]
             for luidi in luidp:
                 H_chunk = ptdf @ self.Cft._v[:, luidi]
                 h_chunk = H_chunk.diagonal(-luidi[0])

@@ -169,29 +169,29 @@ class TestBuildPTDF(unittest.TestCase):
         np.testing.assert_array_almost_equal(ptdf_l23.todense(),
                                              self.ptdf_full[2:4, :])
 
-    def test_ptdf_incrementa_chunk_size(self):
+    def test_ptdf_incrementa_step(self):
         """
         Test PTDF incremental build with chunk size.
         """
-        # chunk_size < line length
+        # step < line length
         ptdf_c1 = self.ss.mats.build_ptdf(line=self.ss.Line.idx.v[2:4], incremental=True,
-                                          no_store=False, chunk_size=1)
+                                          no_store=False, step=1)
         self.assertTrue(sps.isspmatrix_lil(ptdf_c1))
         self.assertIsNone(self.ss.mats.PTDF._v)
         np.testing.assert_array_almost_equal(ptdf_c1.todense(),
                                              self.ptdf_full[2:4, :],)
 
-        # chunk_size = line length
+        # step = line length
         ptdf_c2 = self.ss.mats.build_ptdf(line=self.ss.Line.idx.v[2:4], incremental=True,
-                                          no_store=False, chunk_size=2)
+                                          no_store=False, step=2)
         self.assertTrue(sps.isspmatrix_lil(ptdf_c2))
         self.assertIsNone(self.ss.mats.PTDF._v)
         np.testing.assert_array_almost_equal(ptdf_c2.todense(),
                                              self.ptdf_full[2:4, :],)
 
-        # chunk_size > line length
+        # step > line length
         ptdf_c5 = self.ss.mats.build_ptdf(line=self.ss.Line.idx.v[2:4], incremental=True,
-                                          no_store=False, chunk_size=5)
+                                          no_store=False, step=5)
         self.assertTrue(sps.isspmatrix_lil(ptdf_c5))
         self.assertIsNone(self.ss.mats.PTDF._v)
         np.testing.assert_array_almost_equal(ptdf_c5.todense(),
