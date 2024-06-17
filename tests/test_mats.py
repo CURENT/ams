@@ -189,7 +189,6 @@ class TestBuildPTDF(unittest.TestCase):
                            setup=True, default_config=True, no_output=True)
         self.nl = self.ss.Line.n
         self.nb = self.ss.Bus.n
-        self.dec = 4
 
         self.assertFalse(self.ss.mats.initialized)
         # NOTE: here we test `no_store=True` option
@@ -213,17 +212,17 @@ class TestBuildPTDF(unittest.TestCase):
         # input str
         ptdf_l2 = self.ss.mats.build_ptdf(line=self.ss.Line.idx.v[2], no_store=False)
         self.assertIsNone(self.ss.mats.PTDF._v)
-        np.testing.assert_array_almost_equal(ptdf_l2, self.ptdf_full[2, :], decimal=self.dec)
+        np.testing.assert_array_almost_equal(ptdf_l2, self.ptdf_full[2, :])
 
         # input list with single element
         ptdf_l2p = self.ss.mats.build_ptdf(line=[self.ss.Line.idx.v[2]], no_store=False)
         self.assertIsNone(self.ss.mats.PTDF._v)
-        np.testing.assert_array_almost_equal(ptdf_l2p, self.ptdf_full[[2], :], decimal=self.dec)
+        np.testing.assert_array_almost_equal(ptdf_l2p, self.ptdf_full[[2], :])
 
         # input list with multiple elements
         ptdf_l23 = self.ss.mats.build_ptdf(line=self.ss.Line.idx.v[2:4], no_store=False)
         self.assertIsNone(self.ss.mats.PTDF._v)
-        np.testing.assert_array_almost_equal(ptdf_l23, self.ptdf_full[2:4, :], decimal=self.dec)
+        np.testing.assert_array_almost_equal(ptdf_l23, self.ptdf_full[2:4, :])
 
     def test_ptdf_incremental_lines(self):
         """
@@ -233,8 +232,7 @@ class TestBuildPTDF(unittest.TestCase):
         ptdf_l2 = self.ss.mats.build_ptdf(line=self.ss.Line.idx.v[2], incremental=True, no_store=False,
                                           no_tqdm=True)
         np.testing.assert_array_almost_equal(ptdf_l2.todense(),
-                                             self.ptdf_full[[2], :],
-                                             decimal=self.dec)
+                                             self.ptdf_full[[2], :])
         self.assertTrue(sps.isspmatrix_lil(ptdf_l2))
         self.assertIsNone(self.ss.mats.PTDF._v)
 
@@ -242,25 +240,14 @@ class TestBuildPTDF(unittest.TestCase):
         ptdf_l2p = self.ss.mats.build_ptdf(line=[self.ss.Line.idx.v[2]], incremental=True, no_store=False,
                                            no_tqdm=False)
         np.testing.assert_array_almost_equal(ptdf_l2p.todense(),
-                                             self.ptdf_full[[2], :],
-                                             decimal=self.dec)
+                                             self.ptdf_full[[2], :])
         self.assertTrue(sps.isspmatrix_lil(ptdf_l2p))
         self.assertIsNone(self.ss.mats.PTDF._v)
 
         # input list with multiple elements
         ptdf_l23 = self.ss.mats.build_ptdf(line=self.ss.Line.idx.v[2:4], incremental=True, no_store=False)
         np.testing.assert_array_almost_equal(ptdf_l23.todense(),
-                                             self.ptdf_full[2:4, :],
-                                             decimal=self.dec)
-
-        # test decimals
-        ptdf_l23_dec2 = self.ss.mats.build_ptdf(line=self.ss.Line.idx.v[2:4], incremental=True,
-                                                no_store=False, decimals=2)
-        self.assertTrue(sps.isspmatrix_lil(ptdf_l23_dec2))
-        self.assertIsNone(self.ss.mats.PTDF._v)
-        np.testing.assert_array_almost_equal(ptdf_l23_dec2.todense(),
-                                             self.ptdf_full[2:4, :],
-                                             decimal=2)
+                                             self.ptdf_full[2:4, :])
 
     def test_ptdf_incrementa_chunk_size(self):
         """
@@ -272,8 +259,7 @@ class TestBuildPTDF(unittest.TestCase):
         self.assertTrue(sps.isspmatrix_lil(ptdf_c1))
         self.assertIsNone(self.ss.mats.PTDF._v)
         np.testing.assert_array_almost_equal(ptdf_c1.todense(),
-                                             self.ptdf_full[2:4, :],
-                                             decimal=self.dec)
+                                             self.ptdf_full[2:4, :],)
 
         # chunk_size = line length
         ptdf_c2 = self.ss.mats.build_ptdf(line=self.ss.Line.idx.v[2:4], incremental=True,
@@ -281,8 +267,7 @@ class TestBuildPTDF(unittest.TestCase):
         self.assertTrue(sps.isspmatrix_lil(ptdf_c2))
         self.assertIsNone(self.ss.mats.PTDF._v)
         np.testing.assert_array_almost_equal(ptdf_c2.todense(),
-                                             self.ptdf_full[2:4, :],
-                                             decimal=self.dec)
+                                             self.ptdf_full[2:4, :],)
 
         # chunk_size > line length
         ptdf_c5 = self.ss.mats.build_ptdf(line=self.ss.Line.idx.v[2:4], incremental=True,
@@ -290,8 +275,7 @@ class TestBuildPTDF(unittest.TestCase):
         self.assertTrue(sps.isspmatrix_lil(ptdf_c5))
         self.assertIsNone(self.ss.mats.PTDF._v)
         np.testing.assert_array_almost_equal(ptdf_c5.todense(),
-                                             self.ptdf_full[2:4, :],
-                                             decimal=self.dec)
+                                             self.ptdf_full[2:4, :],)
 
 
 class TestBuildLODF(unittest.TestCase):
@@ -320,3 +304,43 @@ class TestBuildLODF(unittest.TestCase):
         self.assertEqual(self.ss.mats.LODF._v.shape, (self.nl, self.nl))
         # PTDF should not be stored for requested building
         self.assertIsNone(self.ss.mats.PTDF._v)
+
+    def test_lodf_lines(self):
+        """
+        Test LODF with `line` inputs.
+        """
+        # input str
+        lodf_l2 = self.ss.mats.build_lodf(line=self.ss.Line.idx.v[2], no_store=False)
+        np.testing.assert_array_almost_equal(lodf_l2, self.lodf_full[:, 2], decimal=self.dec)
+
+        # input list with single element
+        lodf_l2p = self.ss.mats.build_lodf(line=[self.ss.Line.idx.v[2]], no_store=False)
+        np.testing.assert_array_almost_equal(lodf_l2p, self.lodf_full[:, [2]], decimal=self.dec)
+
+        # input list with multiple elements
+        lodf_l23 = self.ss.mats.build_lodf(line=self.ss.Line.idx.v[2:4], no_store=False)
+        np.testing.assert_array_almost_equal(lodf_l23, self.lodf_full[:, 2:4], decimal=self.dec)
+
+    def test_lodf_incremental_lines(self):
+        """
+        Test LODF incremental build with `line` inputs.
+        """
+        # input str
+        lodf_l2 = self.ss.mats.build_lodf(line=self.ss.Line.idx.v[2], incremental=True, no_store=False)
+        np.testing.assert_array_almost_equal(lodf_l2.todense(),
+                                             self.lodf_full[:, [2]],
+                                             decimal=self.dec)
+        self.assertTrue(sps.isspmatrix_lil(lodf_l2))
+
+        # input list with single element
+        lodf_l2p = self.ss.mats.build_lodf(line=[self.ss.Line.idx.v[2]], incremental=True, no_store=False)
+        np.testing.assert_array_almost_equal(lodf_l2p.todense(),
+                                             self.lodf_full[:, [2]],
+                                             decimal=self.dec)
+        self.assertTrue(sps.isspmatrix_lil(lodf_l2p))
+
+        # input list with multiple elements
+        lodf_l23 = self.ss.mats.build_lodf(line=self.ss.Line.idx.v[2:4], incremental=True, no_store=False)
+        np.testing.assert_array_almost_equal(lodf_l23.todense(),
+                                             self.lodf_full[:, 2:4],
+                                             decimal=self.dec)
