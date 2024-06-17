@@ -710,7 +710,7 @@ class MatProcessor:
 
         Returns
         -------
-        OTDF : np.ndarray
+        OTDF : np.ndarray, scipy.sparse.csr_matrix
             Line outage distribution factor.
 
         References
