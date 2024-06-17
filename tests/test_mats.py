@@ -169,7 +169,7 @@ class TestBuildPTDF(unittest.TestCase):
         np.testing.assert_array_almost_equal(ptdf_l23.todense(),
                                              self.ptdf_full[2:4, :])
 
-    def test_ptdf_incrementa_step(self):
+    def test_ptdf_incremental_step(self):
         """
         Test PTDF incremental build with step.
         """
@@ -265,7 +265,7 @@ class TestBuildLODF(unittest.TestCase):
                                              self.lodf_full[:, 2:4],
                                              decimal=self.dec)
 
-    def test_lodf_incrementa_step(self):
+    def test_lodf_incremental_step(self):
         """
         Test LODF incremental build with step.
         """
