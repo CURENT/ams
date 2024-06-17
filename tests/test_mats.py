@@ -99,86 +99,6 @@ class TestMatProcessorBasic(unittest.TestCase):
         np.testing.assert_equal(self.mats.Pbusinj._v.shape, (self.nb,))
 
 
-# class TestMatProcessorTDFs(unittest.TestCase):
-#     """
-#     Test PTDF, LODF, OTDF.
-#     """
-
-#     def setUp(self) -> None:
-#         self.cases = ['matpower/case14.m',
-#                       'matpower/case39.m',
-#                       'matpower/case118.m']
-
-#     def test_ptdf_before_mat_init(self):
-#         """
-#         Test `build_PTDF()` before MatProcessor initialization `build()`.
-#         """
-
-#         for case in self.cases:
-#             ss = ams.load(ams.get_case(case),
-#                           setup=True, default_config=True, no_output=True)
-
-#             # --- test no_store ---
-#             ptdf = ss.mats.build_ptdf(no_store=True)
-#             self.assertIsNone(ss.mats.PTDF._v)
-#             self.assertEqual(ss.mats.PTDF._v.shape, (ss.Line.n, ss.Bus.n))
-
-#     def test_ptdf_line(self):
-#         """
-#         Test `build_PTDF()` with line.
-#         """
-
-#         for case in self.cases:
-#             ss = ams.load(ams.get_case(case),
-#                           setup=True, default_config=True, no_output=True)
-
-#             flag_build = ss.mats.build()
-#             self.assertTrue(flag_build)
-
-#             # TODO: test different line inputs
-
-#     def test_lodf_before_ptdf(self):
-#         """
-#         Test `LODF` before `PTDF`.
-#         """
-
-#         for case in self.cases:
-#             ss = ams.load(ams.get_case(case),
-#                           setup=True, default_config=True, no_output=True)
-
-#             _ = ss.mats.build_lodf(no_store=True)
-#             self.assertIsNone(ss.mats.LODF._v)
-
-#             _ = ss.mats.build_lodf(no_store=False)
-#             self.assertEqual(ss.mats.LODF._v.shape, (ss.Line.n, ss.Line.n))
-
-#     def test_otdf_before_lodf(self):
-#         """
-#         Test `OTDF`.
-#         """
-
-#         for case in self.cases:
-#             ss = ams.load(ams.get_case(case),
-#                           setup=True, default_config=True, no_output=True)
-#             # build matrices
-#             ss.mats.build()
-
-#             otdf64 = ss.mats.build_otdf()
-#             self.assertEqual(otdf64.shape, (ss.Line.n, ss.Bus.n))
-
-#             # input str
-#             otdf_l2 = ss.mats.build_otdf(line=ss.Line.idx.v[2])
-#             self.assertEqual(otdf_l2.shape, (ss.Line.n, ss.Bus.n))
-
-#             # input list with single element
-#             otdf_l2 = ss.mats.build_otdf(line=ss.Line.idx.v[2:3])
-#             self.assertEqual(otdf_l2.shape, (ss.Line.n, ss.Bus.n))
-
-#             # input list with multiple elements
-#             otdf_l23 = ss.mats.build_otdf(line=ss.Line.idx.v[2:5])
-#             self.assertEqual(otdf_l23.shape, (ss.Line.n, ss.Bus.n))
-
-
 class TestBuildPTDF(unittest.TestCase):
     """
     Test build PTDF.
@@ -344,3 +264,69 @@ class TestBuildLODF(unittest.TestCase):
         np.testing.assert_array_almost_equal(lodf_l23.todense(),
                                              self.lodf_full[:, 2:4],
                                              decimal=self.dec)
+
+
+class TestBuildOTDF(unittest.TestCase):
+    """
+    Test build OTDF.
+    """
+
+    def setUp(self) -> None:
+        self.ss = ams.load(ams.get_case('matpower/case14.m'),
+                           setup=True, default_config=True, no_output=True)
+        self.nl = self.ss.Line.n
+        self.nb = self.ss.Bus.n
+        self.dec = 4
+        _ = self.ss.mats.build()
+
+    def test_otdf_dense_build(self):
+        _ = self.ss.mats.build_ptdf(no_store=False, incremental=False)
+        _ = self.ss.mats.build_lodf(no_store=False, incremental=False)
+        self.otdf_full = self.ss.mats.build_otdf()
+        self.assertEqual(self.otdf_full.shape, (self.nl, self.nb))
+
+    def test_otdf_sparse_build(self):
+        # --- both PTDF and LODF are dense ---
+        _ = self.ss.mats.build_ptdf(no_store=False, incremental=False)
+        _ = self.ss.mats.build_lodf(no_store=False, incremental=False)
+        otdf_dense = self.ss.mats.build_otdf()
+
+        _ = self.ss.mats.build_ptdf(no_store=False, incremental=True)
+        _ = self.ss.mats.build_lodf(no_store=False, incremental=True)
+        otdf_sparse = self.ss.mats.build_otdf()
+        np.testing.assert_array_almost_equal(otdf_sparse.todense(), otdf_dense,
+                                             decimal=self.dec)
+
+        # --- PTDF is dense and LODF is sparse ---
+        _ = self.ss.mats.build_ptdf(no_store=False, incremental=False)
+        _ = self.ss.mats.build_lodf(no_store=False, incremental=True)
+        otdf_sps1 = self.ss.mats.build_otdf()
+        np.testing.assert_array_almost_equal(otdf_sps1, otdf_dense,
+                                             decimal=self.dec)
+
+        # --- PTDF is sparse and LODF is dense ---
+        _ = self.ss.mats.build_ptdf(no_store=False, incremental=True)
+        _ = self.ss.mats.build_lodf(no_store=False, incremental=False)
+        otdf_sps2 = self.ss.mats.build_otdf()
+        np.testing.assert_array_almost_equal(otdf_sps2.todense(), otdf_dense,
+                                             decimal=self.dec)
+
+    def test_otdf_lines(self):
+        """
+        Test OTDF with `line` inputs.
+        """
+        # --- both PTDF and LODF are dense ---
+        _ = self.ss.mats.build_ptdf(no_store=False, incremental=False)
+        _ = self.ss.mats.build_lodf(no_store=False, incremental=False)
+
+        # input str
+        otdf_l2 = self.ss.mats.build_otdf(line=self.ss.Line.idx.v[2])
+        self.assertEqual(otdf_l2.shape, (self.nl, self.nb))
+
+        # input list with single element
+        otdf_l2p = self.ss.mats.build_otdf(line=[self.ss.Line.idx.v[2]])
+        self.assertEqual(otdf_l2p.shape, (self.nl, self.nb))
+
+        # input list with multiple elements
+        otdf_l23 = self.ss.mats.build_otdf(line=self.ss.Line.idx.v[2:4])
+        self.assertEqual(otdf_l23.shape, (self.nl, self.nb))
