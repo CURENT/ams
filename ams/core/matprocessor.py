@@ -433,8 +433,7 @@ class MatProcessor:
         return b
 
     def build_ptdf(self, line=None, no_store=False,
-                   incremental=False, chunk_size=1000, no_tqdm=False,
-                   decimals=4):
+                   incremental=False, chunk_size=1000, no_tqdm=False):
         """
         Build the Power Transfer Distribution Factor (PTDF) matrix and store
         it in the MParam `PTDF` by default.
@@ -465,9 +464,6 @@ class MatProcessor:
             Chunk size for incremental calculation.
         no_tqdm : bool, optional
             If True, the progress bar will be disabled.
-        decimals : int, optional
-            Number of decimal places to round in the incremental calculation,
-            default is 4.
 
         Returns
         -------
@@ -525,13 +521,13 @@ class MatProcessor:
             self.pbar.update(0)
             last_pc = 0
 
-            H = sps.lil_matrix((len(luid), system.Bus.n))
+            H = sps.lil_matrix((nline, system.Bus.n))
 
+            # NOTE: for PTDF, we are building rows by rows
             for start in range(0, nline, chunk_size):
                 end = min(start + chunk_size, nline)
                 sol = sps.linalg.spsolve(Bbus[np.ix_(noslack, noref)].T,
                                          Bf[np.ix_(luid[start:end], noref)].T).T
-                sol = np.round(sol, decimals)
                 H[start:end, noslack] = sol
 
                 # show progress in percentage
@@ -561,7 +557,8 @@ class MatProcessor:
 
         return H
 
-    def build_lodf(self, no_store=False, incremental=False, chunk_size=1000, no_tqdm=False):
+    def build_lodf(self, line=None, no_store=False,
+                   incremental=False, chunk_size=1000, no_tqdm=False):
         """
         Build the Line Outage Distribution Factor matrix and store it in the
         MParam `LODF`.
@@ -577,6 +574,10 @@ class MatProcessor:
 
         Parameters
         ----------
+        line: int, str, list, optional
+            Lines index for which the LODF is calculated. It takes both single
+            or multiple line indices. Note that if `line` is given, the LODF will
+            not be stored in the MParam.
         no_store : bool, optional
             If False, the LODF will be stored into `MatProcessor.LODF._v`.
         incremental : bool, optional
@@ -599,8 +600,23 @@ class MatProcessor:
 
         https://www.powerworld.com/WebHelp/Content/MainDocumentation_HTML/Line_Outage_Distribution_Factors_LODFs.htm
         """
-        nl = self.system.Line.n
+        system = self.system
 
+        if line is None:
+            luid = system.Line.idx2uid(system.Line.idx.v)
+        elif isinstance(line, (int, str)):
+            try:
+                luid = [system.Line.idx2uid(line)]
+            except ValueError:
+                raise ValueError(f"Line {line} not found.")
+        elif isinstance(line, list):
+            luid = system.Line.idx2uid(line)
+
+        # NOTE: here we use nbranch to differentiate it with nline
+        nbranch = system.Line.n
+        nline = len(luid)
+
+        ptdf = self.PTDF._v
         # build PTDF if not built
         if self.PTDF._v is None:
             ptdf = self.build_ptdf(no_store=True, incremental=incremental, chunk_size=chunk_size)
@@ -619,31 +635,34 @@ class MatProcessor:
             self.pbar.update(0)
             last_pc = 0
 
-            H = ptdf @ self.Cft._v
-            h = H.diagonal(0).reshape(1, -1)
-            rden = sps.csr_matrix(np.ones((nl, nl)) - np.ones((nl, 1)) @ h)
-            rden.data = safe_div(np.ones(rden.data.shape), rden.data)
-            LODF = H.multiply(rden)
-            LODF -= sps.diags(LODF.diagonal(), 0)
-            LODF -= sps.eye(nl, nl)
+            LODF = sps.lil_matrix((nbranch, nline))
 
-            # for start in range(0, nl, chunk_size):
-            #     end = min(start + chunk_size, nl)
-            #     H_chunk = ptdf[start:end, :] * self.Cft._v
-            #     h_chunk = H_chunk.diagonal(0)
-            #     dmr = sps.csc_matrix(np.ones((end - start, nl)) - np.ones((end - start, 1)) * h_chunk.T)
-            #     dmr.data = safe_div(np.ones_like(dmr.data), dmr.data)
-            #     LODF[start:end, :] = H_chunk.multiply(dmr)
-            #     LODF[start:end, :] -= sps.diags(LODF[start:end, :].diagonal(), 0)
-            #     LODF[start:end, :] -= sps.eye(end - start, nl)
+            # NOTE: for LODF, we are doing it columns by columns
+            # reshape luid to list of list by chunk_size
+            luidp = [luid[i:i + chunk_size] for i in range(0, len(luid), chunk_size)]
+            for luidi in luidp:
+                H_chunk = ptdf @ self.Cft._v[:, luidi]
+                h_chunk = H_chunk.diagonal(-luidi[0])
+                rden = safe_div(np.ones(H_chunk.shape),
+                                np.tile(np.ones_like(h_chunk) - h_chunk, (nbranch, 1)))
+                H_chunk = H_chunk.multiply(rden).tolil()
+                # NOTE: use lil_matrix to set diagonal values as -1
+                rsid = sps.diags(H_chunk.diagonal(-luidi[0])) + sps.eye(H_chunk.shape[1])
+                if H_chunk.shape[0] > rsid.shape[0]:
+                    Rsid = sps.lil_matrix(H_chunk.shape)
+                    Rsid[luidi, :] = rsid
+                else:
+                    Rsid = rsid
+                H_chunk = H_chunk - Rsid
+                LODF[:, [luid.index(i) for i in luidi]] = H_chunk
 
-            #     # show progress in percentage
-            #     perc = np.round(min((end / nl) * 100, 100), 2)
+                # show progress in percentage
+                perc = np.round(min((luid.index(luidi[-1]) / nline) * 100, 100), 2)
 
-            #     perc_diff = perc - last_pc
-            #     if perc_diff >= 1:
-            #         self.pbar.update(perc_diff)
-            #         last_pc = perc
+                perc_diff = perc - last_pc
+                if perc_diff >= 1:
+                    self.pbar.update(perc_diff)
+                    last_pc = perc
 
             # finish progress bar
             self.pbar.update(100 - last_pc)
@@ -651,14 +670,26 @@ class MatProcessor:
             self.pbar.close()
             self.pbar = None
         else:
-            H = ptdf * self.Cft._v
-            h = np.diag(H, 0).reshape(1, -1)
-            LODF = safe_div(H, np.ones((nl, nl)) - np.ones((nl, 1)) @ h)
-            LODF = LODF - np.diag(np.diag(LODF)) - np.eye(nl, nl)
+            H = ptdf @ self.Cft._v[:, luid]
+            h = np.diag(H, -luid[0])
+            LODF = safe_div(H,
+                            np.tile(np.ones_like(h) - h, (nbranch, 1)))
+            # # NOTE: reset the diagonal elements to -1
+            rsid = np.diag(np.diag(LODF, -luid[0])) + np.eye(nline, nline)
+            if LODF.shape[0] > rsid.shape[0]:
+                Rsid = np.zeros_like(LODF)
+                Rsid[luid, :] = rsid
+            else:
+                Rsid = rsid
+            LODF = LODF - Rsid
 
-        if not no_store:
+        # reshape results into 1D array if only one line
+        if isinstance(line, (int, str)):
+            LODF = LODF[:, 0]
+
+        if (not no_store) & (line is None):
             self.LODF._v = LODF
-        return self.LODF._v
+        return LODF
 
     def build_otdf(self, line=None):
         """
