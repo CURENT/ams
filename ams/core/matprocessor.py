@@ -623,7 +623,7 @@ class MatProcessor:
         if incremental and isinstance(self.PTDF._v, np.ndarray):
             ptdf = sps.lil_matrix(self.PTDF._v)
 
-        if incremental:
+        if incremental | (isinstance(ptdf, sps.spmatrix)):
             # initialize progress bar
             if is_notebook():
                 self.pbar = tqdm_nb(total=100, unit='%', file=sys.stdout,
@@ -721,15 +721,11 @@ class MatProcessor:
 
         https://www.powerworld.com/WebHelp/Content/MainDocumentation_HTML/Line_Outage_Distribution_Factors_LODFs.htm
         """
-        if self.PTDF._v is None:
-            ptdf = self.build_ptdf(no_store=True)
-        else:
-            ptdf = self.PTDF._v
+        if (self.PTDF._v is None) or (self.LODF._v is None):
+            raise ValueError("Internal PTDF and LODF are not available. Please build them first.")
 
-        if self.LODF._v is None:
-            lodf = self.build_lodf(no_store=True)
-        else:
-            lodf = self.LODF._v
+        ptdf = self.PTDF._v
+        lodf = self.LODF._v
 
         if line is None:
             luid = [0]
