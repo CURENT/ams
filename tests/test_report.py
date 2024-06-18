@@ -46,7 +46,7 @@ class TestReport(unittest.TestCase):
         Test report with DCOPF solved.
         """
         self.ss.files.no_output = False
-        self.ss.DCOPF.run(solver='ECOS')
+        self.ss.DCOPF.run(solver='CLARABEL')
         self.assertTrue(self.ss.report())
         self.assertTrue(os.path.exists(self.expected_report))
 
@@ -61,9 +61,9 @@ class TestReport(unittest.TestCase):
         Test report with multiple solved routines.
         """
         self.ss.files.no_output = False
-        self.ss.DCOPF.run(solver='ECOS')
-        self.ss.RTED.run(solver='ECOS')
-        self.ss.ED.run(solver='ECOS')
+        self.ss.DCOPF.run(solver='CLARABEL')
+        self.ss.RTED.run(solver='CLARABEL')
+        self.ss.ED.run(solver='CLARABEL')
         self.assertTrue(self.ss.report())
         self.assertTrue(os.path.exists(self.expected_report))
 

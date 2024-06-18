@@ -52,7 +52,7 @@ class TestKnownResults(unittest.TestCase):
         """
         Test DCOPF for case14.
         """
-        self.sp.DCOPF.run(solver='ECOS')
+        self.sp.DCOPF.run(solver='CLARABEL')
         self.assertAlmostEqual(self.sp.DCOPF.obj.v,
                                self.mpres['case14']['DCOPF']['obj'],
                                places=4)
@@ -121,7 +121,7 @@ class TestKnownResultsIEEE39(unittest.TestCase):
         """
         Test DCOPF for case39.
         """
-        self.sp.DCOPF.run(solver='ECOS')
+        self.sp.DCOPF.run(solver='CLARABEL')
         self.assertAlmostEqual(self.sp.DCOPF.obj.v,
                                self.mpres['case39']['DCOPF']['obj'],
                                places=2)
@@ -190,7 +190,7 @@ class TestKnownResultsIEEE118(unittest.TestCase):
         """
         Test DCOPF for case118.
         """
-        self.sp.DCOPF.run(solver='ECOS')
+        self.sp.DCOPF.run(solver='CLARABEL')
         self.assertAlmostEqual(self.sp.DCOPF.obj.v,
                                self.mpres['case118']['DCOPF']['obj'],
                                places=2)
