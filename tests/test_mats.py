@@ -24,6 +24,22 @@ class TestMatProcessorBasic(unittest.TestCase):
         self.mats = MatProcessor(self.ss)
         self.mats.build()
 
+    def test_MParams_owner(self):
+        """
+        Tesst MParams owner before system initialization.
+        """
+        self.assertIs(self.mats.Cft.owner, self.mats)
+        self.assertIs(self.mats.CftT.owner, self.mats)
+        self.assertIs(self.mats.Cg.owner, self.mats)
+        self.assertIs(self.mats.Cl.owner, self.mats)
+        self.assertIs(self.mats.Csh.owner, self.mats)
+        self.assertIs(self.mats.Bbus.owner, self.mats)
+        self.assertIs(self.mats.Bf.owner, self.mats)
+        self.assertIs(self.mats.Pbusinj.owner, self.mats)
+        self.assertIs(self.mats.Pfinj.owner, self.mats)
+        self.assertIs(self.mats.PTDF.owner, self.mats)
+        self.assertIs(self.mats.LODF.owner, self.mats)
+
     def test_MParam(self):
         """
         Test `MParam`.
