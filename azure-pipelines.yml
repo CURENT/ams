@@ -41,8 +41,8 @@ jobs:
   timeoutInMinutes: 360
   strategy:
     matrix:
-      macos_python311:
-        python.version: '3.11'
+      macos_python3.10:
+        python.version: '3.10'
 
   steps:
   - task: UsePythonVersion@0
@@ -67,8 +67,8 @@ jobs:
   timeoutInMinutes: 360
   strategy:
     matrix:
-      win_python311:
-        python.version: '311'
+      win_python3.9:
+        python.version: '3.9'
 
   steps:
   - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
