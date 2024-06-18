@@ -228,7 +228,7 @@ def load_ptdf(mpres, case):
         The result dictionary.
     case : str
         The case name.
-    
+
     Returns
     -------
     ptdf : np.ndarray
@@ -250,7 +250,7 @@ def load_lodf(mpres, case):
         The result dictionary.
     case : str
         The case name.
-    
+
     Returns
     -------
     lodf : np.ndarray
