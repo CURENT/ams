@@ -40,9 +40,9 @@ class TestMatProcessorBasic(unittest.TestCase):
         self.assertIs(self.mats.PTDF.owner, self.mats)
         self.assertIs(self.mats.LODF.owner, self.mats)
 
-    def test_MParam(self):
+    def test_MParam_instance(self):
         """
-        Test `MParam`.
+        Test `MParam` instantiate.
         """
         one_vec = MParam(v=sps.csr_matrix(np.ones(self.ss.Bus.n)))
         # check if `_v` is `sps.csr_matrix` instance
