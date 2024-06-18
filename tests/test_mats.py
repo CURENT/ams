@@ -57,6 +57,46 @@ class TestMatProcessorBasic(unittest.TestCase):
         self.assertTrue(os.path.exists(path))
         os.remove(path)
 
+    def test_MParams_export(self) -> None:
+        """
+        Test MParams export.
+        """
+        cft = self.mats.Cft.export_csv()
+        self.assertTrue(os.path.exists(cft))
+        os.remove(cft)
+
+        cftt = self.mats.CftT.export_csv()
+        self.assertTrue(os.path.exists(cftt))
+        os.remove(cftt)
+
+        cg = self.mats.Cg.export_csv()
+        self.assertTrue(os.path.exists(cg))
+        os.remove(cg)
+
+        cl = self.mats.Cl.export_csv()
+        self.assertTrue(os.path.exists(cl))
+        os.remove(cl)
+
+        csh = self.mats.Csh.export_csv()
+        self.assertTrue(os.path.exists(csh))
+        os.remove(csh)
+
+        bbus = self.mats.Bbus.export_csv()
+        self.assertTrue(os.path.exists(bbus))
+        os.remove(bbus)
+
+        bf = self.mats.Bf.export_csv()
+        self.assertTrue(os.path.exists(bf))
+        os.remove(bf)
+
+        ptdf = self.mats.PTDF.export_csv()
+        self.assertTrue(os.path.exists(ptdf))
+        os.remove(ptdf)
+
+        lodf = self.mats.LODF.export_csv()
+        self.assertTrue(os.path.exists(lodf))
+        os.remove(lodf)
+
     def test_MParam_instance(self):
         """
         Test `MParam` instantiate.
