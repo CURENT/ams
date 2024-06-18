@@ -51,6 +51,7 @@ jobs:
     displayName: 'Use Python $(python.version)'
 
   - script: |
+      conda install -c conda-forge kvxopt
       python -m pip install --upgrade pip
       pip install .[all]
     displayName: 'Install dependencies'
@@ -83,6 +84,7 @@ jobs:
 
   - script: |
       call activate amsEnv
+      conda install -c conda-forge kvxopt
       python -m pip install --upgrade pip
       pip install pytest pytest-azurepipelines
       pip install .[dev,interop]

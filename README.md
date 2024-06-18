@@ -59,6 +59,8 @@ Use the following resources to get involved.
 
 # Installation
 
+***NOTE:*** ``kvxopt`` is recommended to install via ``conda`` as sometimes ``pip`` struggles to set the correct path for compiled libraries.
+
 AMS is released as ``ltbams`` on PyPI and conda-forge.
 Install from PyPI using pip:
 
