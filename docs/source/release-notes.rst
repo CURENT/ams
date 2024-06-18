@@ -16,6 +16,7 @@ v0.9.8 (2024-06-18)
 - In `MatProcessor`, improve `build_ptdf` and `build_lodf` to allow partial building and incremental building
 - Add in 'cases/matpower/Benchmark.json' for benchmark with MATPOWER
 - Improve known good results test
+- Minor fix in `main.py` selftest part
 
 v0.9.7 (2024-05-24)
 -------------------
