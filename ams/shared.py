@@ -11,9 +11,11 @@ from collections import OrderedDict
 import cvxpy as cp
 
 from andes.shared import pd
+from andes.utils.lazyimport import LazyImport
 
 logger = logging.getLogger(__name__)
 
+sps = LazyImport('import scipy.sparse as sps')
 
 # NOTE: copied from CVXPY documentation
 MIP_SOLVERS = ['CBC', 'COPT', 'GLPK_MI', 'CPLEX', 'GUROBI',

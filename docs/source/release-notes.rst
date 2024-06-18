@@ -9,6 +9,16 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.9.8 (2024-06-18)
+-------------------
+
+- Assign `MParam.owner` when declaring
+- In `MatProcessor`, improve `build_ptdf` and `build_lodf` to allow partial building and incremental building
+- Add in 'cases/matpower/Benchmark.json' for benchmark with MATPOWER
+- Improve known good results test
+- Minor fix in `main.py` selftest part
+- Set dependency NumPy version to be <2.0.0 to avoid CVXPY compatibility issues
+
 v0.9.7 (2024-05-24)
 -------------------
 

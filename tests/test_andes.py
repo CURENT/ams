@@ -198,7 +198,7 @@ class TestDataExchange(unittest.TestCase):
                            setup=True,
                            no_output=True,
                            default_config=True,)
-        self.sp.RTED.run(solver='ECOS')
+        self.sp.RTED.run(solver='CLARABEL')
         self.sp.RTED.dc2ac()
         self.stg_idx = self.sp.RTED.pg.get_idx()
 

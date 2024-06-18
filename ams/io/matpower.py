@@ -80,15 +80,15 @@ def mpc2system(mpc: dict, system) -> bool:
         vmax = data[11]
         vmin = data[12]
 
-        system.add('Bus', idx=idx, name='Bus ' + str(idx),
+        system.add('Bus', idx=idx, name=None,
                    type=ty, Vn=baseKV,
                    v0=vmag, a0=vang,
                    vmax=vmax, vmin=vmin,
                    area=area, zone=zone)
         if pd != 0 or qd != 0:
-            system.add('PQ', bus=idx, name='PQ ' + str(idx), Vn=baseKV, p0=pd, q0=qd)
+            system.add('PQ', bus=idx, name=None, Vn=baseKV, p0=pd, q0=qd)
         if gs or bs:
-            system.add('Shunt', bus=idx, name='Shunt ' + str(idx), Vn=baseKV, g=gs, b=bs)
+            system.add('Shunt', bus=idx, name=None, Vn=baseKV, g=gs, b=bs)
 
     gen_idx = 0
     if mpc['gen'].shape[1] <= 10:  # missing data
@@ -135,7 +135,7 @@ def mpc2system(mpc: dict, system) -> bool:
 
         if bus_idx in sw:
             system.add('Slack', idx=gen_idx, bus=bus_idx, busr=bus_idx,
-                       name='Slack ' + str(bus_idx),
+                       name=None,
                        u=status, Sn=data[6],
                        Vn=vn, v0=vg, p0=pg, q0=qg, a0=a0,
                        pmax=pmax, pmin=pmin,
@@ -148,7 +148,7 @@ def mpc2system(mpc: dict, system) -> bool:
                        apf=apf)
         else:
             system.add('PV', idx=gen_idx, bus=bus_idx, busr=bus_idx,
-                       name='PV ' + str(bus_idx),
+                       name=None,
                        u=status, Sn=data[6],
                        Vn=vn, v0=vg, p0=pg, q0=qg,
                        pmax=pmax, pmin=pmin,

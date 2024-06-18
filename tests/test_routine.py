@@ -49,7 +49,7 @@ class TestRoutineMethods(unittest.TestCase):
         np.testing.assert_equal(self.ss.DCOPF.get('ug', 'PV_30'), 1)
 
         # get an unpacked var value
-        self.ss.DCOPF.run(solver='ECOS')
+        self.ss.DCOPF.run(solver='CLARABEL')
         self.assertEqual(self.ss.DCOPF.exit_code, 0, "Exit code is not 0.")
         np.testing.assert_equal(self.ss.DCOPF.get('pg', 'PV_30', 'v'),
                                 self.ss.StaticGen.get('p', 'PV_30', 'v'))
@@ -62,7 +62,7 @@ class TestRoutineMethods(unittest.TestCase):
         self.assertIsInstance(self.ss.DCOPF.get('pg', ['PV_30'], 'v'), np.ndarray)
 
         # --- multi period routine ---
-        self.ss.ED.run(solver='ECOS')
+        self.ss.ED.run(solver='CLARABEL')
         self.assertEqual(self.ss.ED.exit_code, 0, "Exit code is not 0.")
         np.testing.assert_equal(self.ss.ED.get('pg', 'PV_30', 'v').ndim, 1)
         np.testing.assert_equal(self.ss.ED.get('pg', ['PV_30'], 'v').ndim, 2)
@@ -87,7 +87,7 @@ class TestRoutineMethods(unittest.TestCase):
         Test Contraint and Objective values.
         """
 
-        self.ss.DCOPF.run(solver='ECOS')
+        self.ss.DCOPF.run(solver='CLARABEL')
         self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge!")
 
         # --- constraint values ---
@@ -114,7 +114,7 @@ class TestOModel(unittest.TestCase):
         Test generator trip.
         """
         # --- run DCOPF ---
-        self.ss.DCOPF.run(solver='ECOS')
+        self.ss.DCOPF.run(solver='CLARABEL')
         obj = self.ss.DCOPF.obj.v
 
         # --- generator trip ---
@@ -122,7 +122,7 @@ class TestOModel(unittest.TestCase):
 
         self.ss.DCOPF.update()
 
-        self.ss.DCOPF.run(solver='ECOS')
+        self.ss.DCOPF.run(solver='CLARABEL')
         self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge under generator trip!")
         obj_gt = self.ss.DCOPF.obj.v
         self.assertGreater(obj_gt, obj)
@@ -135,7 +135,7 @@ class TestOModel(unittest.TestCase):
 
         self.ss.DCOPF.update()
 
-        self.ss.DCOPF.run(solver='ECOS')
+        self.ss.DCOPF.run(solver='CLARABEL')
         self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge under line trip!")
         obj_lt = self.ss.DCOPF.obj.v
         self.assertGreater(obj_lt, obj_gt)
@@ -155,7 +155,7 @@ class TestRTED(unittest.TestCase):
                            default_config=True,
                            no_output=True,
                            )
-        self.ss.RTED.run(solver='ECOS')
+        self.ss.RTED.run(solver='CLARABEL')
 
     def test_dc2ac(self):
         """
