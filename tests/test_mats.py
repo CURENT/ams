@@ -1,4 +1,6 @@
 import unittest
+import os
+
 import numpy as np
 
 import ams
@@ -39,6 +41,21 @@ class TestMatProcessorBasic(unittest.TestCase):
         self.assertIs(self.mats.Pfinj.owner, self.mats)
         self.assertIs(self.mats.PTDF.owner, self.mats)
         self.assertIs(self.mats.LODF.owner, self.mats)
+
+    def test_MParam_export_csv(self):
+        """
+        Test MParams export.
+        """
+        # --- path is not given ---
+        exported_csv = self.mats.Cft.export_csv()
+        self.assertTrue(os.path.exists(exported_csv))
+        os.remove(exported_csv)
+
+        # --- path is given ---
+        path = 'CASE300_Cft.csv'
+        exported_csv = self.mats.Cft.export_csv(path)
+        self.assertTrue(os.path.exists(path))
+        os.remove(path)
 
     def test_MParam_instance(self):
         """
