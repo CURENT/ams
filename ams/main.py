@@ -717,6 +717,8 @@ def selftest(quick=False, extra=False, **kwargs):
         for test_class in test_group._tests:
             tests_keep = list()
 
+            if not hasattr(test_class, '_tests'):
+                continue
             for t in test_class._tests:
                 # skip the extra tests if `extra` is not True
                 if (extra is not True) and (extra_test in t._testMethodName):

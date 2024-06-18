@@ -37,7 +37,7 @@ class TestDCED(unittest.TestCase):
         """
         init = self.ss.DCOPF.init()
         self.assertTrue(init, "DCOPF initialization failed!")
-        self.ss.DCOPF.run(solver='ECOS')
+        self.ss.DCOPF.run(solver='CLARABEL')
         np.testing.assert_equal(self.ss.DCOPF.exit_code, 0)
 
     def test_rted(self) -> None:
@@ -46,7 +46,7 @@ class TestDCED(unittest.TestCase):
         """
         init = self.ss.RTED.init()
         self.assertTrue(init, "RTED initialization failed!")
-        self.ss.RTED.run(solver='ECOS')
+        self.ss.RTED.run(solver='CLARABEL')
         np.testing.assert_equal(self.ss.RTED.exit_code, 0)
 
     def test_ed(self) -> None:
@@ -55,7 +55,7 @@ class TestDCED(unittest.TestCase):
         """
         init = self.ss.ED.init()
         self.assertTrue(init, "ED initialization failed!")
-        self.ss.ED.run(solver='ECOS')
+        self.ss.ED.run(solver='CLARABEL')
         np.testing.assert_equal(self.ss.ED.exit_code, 0)
 
     @require_MIP_solver

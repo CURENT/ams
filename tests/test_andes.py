@@ -4,6 +4,8 @@ Test ANDES interface.
 
 import unittest
 import numpy as np
+import pkg_resources
+from pkg_resources import parse_version
 
 import andes
 import ams
@@ -16,6 +18,10 @@ class TestMatrices(unittest.TestCase):
     """
     Tests for system matrices consistency.
     """
+
+    andes_version = pkg_resources.get_distribution("andes").version
+    if parse_version(andes_version) < parse_version('1.9.2'):
+        raise unittest.SkipTest("Requires ANDES version >= 1.9.2")
 
     sp = ams.load(ams.get_case('5bus/pjm5bus_demo.xlsx'),
                   setup=True, no_output=True, default_config=True,)
@@ -192,7 +198,7 @@ class TestDataExchange(unittest.TestCase):
                            setup=True,
                            no_output=True,
                            default_config=True,)
-        self.sp.RTED.run(solver='ECOS')
+        self.sp.RTED.run(solver='CLARABEL')
         self.sp.RTED.dc2ac()
         self.stg_idx = self.sp.RTED.pg.get_idx()
 

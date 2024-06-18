@@ -3,18 +3,18 @@ Module for system matrix make.
 """
 
 import logging
+import os
+import sys
 from typing import Optional
 
 import numpy as np
 
-from scipy.sparse import csr_matrix as c_sparse
-from scipy.sparse import csc_matrix as csc_sparse
-from scipy.sparse import lil_matrix as l_sparse
-
-from andes.utils.misc import elapsed
 from andes.thirdparty.npfunc import safe_div
+from andes.shared import pd, tqdm, tqdm_nb
+from andes.utils.misc import elapsed, is_notebook
 
 from ams.opt.omodel import Param
+from ams.shared import sps
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +42,12 @@ class MParam(Param):
         Matrix value of the parameter.
     owner : object, optional
         Owner of the MParam, usually the MatProcessor instance.
+    sparse : bool, optional
+        If True, the matrix is stored in sparse format.
+    col_names : list, optional
+        Column names of the matrix.
+    row_names : list, optional
+        Row names of the matrix.
     """
 
     def __init__(self,
@@ -50,7 +56,10 @@ class MParam(Param):
                  info: Optional[str] = None,
                  unit: Optional[str] = None,
                  v: Optional[np.ndarray] = None,
+                 owner: Optional[object] = None,
                  sparse: Optional[bool] = False,
+                 col_names: Optional[list] = None,
+                 row_names: Optional[list] = None,
                  ):
         self.name = name
         self.tex_name = tex_name if (tex_name is not None) else name
@@ -58,7 +67,39 @@ class MParam(Param):
         self.unit = unit
         self._v = v
         self.sparse = sparse
-        self.owner = None
+        self.owner = owner
+        self.col_names = col_names
+        self.row_names = row_names
+
+    def export_csv(self, path=None):
+        """
+        Export the matrix to a CSV file.
+
+        Parameters
+        ----------
+        path : str, optional
+            Path to the output CSV file.
+
+        Returns
+        -------
+        str
+            The path of the exported csv file
+        """
+
+        if path is None:
+            if self.owner.system.files.fullname is None:
+                logger.info("Input file name not detacted. Using `Untitled`.")
+                file_name = f'Untitled_{self.name}'
+            else:
+                file_name = os.path.splitext(self.owner.system.files.fullname)[0]
+                file_name += f'_{self.name}'
+            path = os.path.join(os.getcwd(), file_name + '.csv')
+        else:
+            file_name = os.path.splitext(os.path.basename(path))[0]
+
+        pd.DataFrame(data=self.v, columns=self.col_names, index=self.row_names).to_csv(path)
+
+        return file_name + '.csv'
 
     @property
     def v(self):
@@ -67,7 +108,7 @@ class MParam(Param):
         """
         # NOTE: scipy.sparse matrix will return 2D array
         # so we squeeze it here if only one row
-        if isinstance(self._v, (c_sparse, l_sparse, csc_sparse)):
+        if isinstance(self._v, (sps.csr_matrix, sps.lil_matrix, sps.csc_matrix)):
             out = self._v.toarray()
             if out.shape[0] == 1:
                 return np.squeeze(out)
@@ -100,47 +141,50 @@ class MParam(Param):
 class MatProcessor:
     """
     Class for matrix processing in AMS system.
+
+    The MParams' row names and col names are assigned in `System.setup()`.
     """
 
     def __init__(self, system):
         self.system = system
         self.initialized = False
+        self.pbar = None
 
         self.Cft = MParam(name='Cft', tex_name=r'C_{ft}',
                           info='Line connectivity matrix',
-                          v=None, sparse=True)
+                          v=None, sparse=True, owner=self)
         self.CftT = MParam(name='CftT', tex_name=r'C_{ft}^{T}',
                            info='Line connectivity matrix transpose',
-                           v=None, sparse=True)
+                           v=None, sparse=True, owner=self)
         self.Cg = MParam(name='Cg', tex_name=r'C_g',
                          info='Generator connectivity matrix',
-                         v=None, sparse=True)
+                         v=None, sparse=True, owner=self)
         self.Cl = MParam(name='Cl', tex_name=r'Cl',
                          info='Load connectivity matrix',
-                         v=None, sparse=True)
+                         v=None, sparse=True, owner=self)
         self.Csh = MParam(name='Csh', tex_name=r'C_{sh}',
                           info='Shunt connectivity matrix',
-                          v=None, sparse=True)
+                          v=None, sparse=True, owner=self)
 
         self.Bbus = MParam(name='Bbus', tex_name=r'B_{bus}',
                            info='Bus admittance matrix',
-                           v=None, sparse=True)
+                           v=None, sparse=True, owner=self)
         self.Bf = MParam(name='Bf', tex_name=r'B_{f}',
                          info='Bf matrix',
-                         v=None, sparse=True)
+                         v=None, sparse=True, owner=self)
         self.Pbusinj = MParam(name='Pbusinj', tex_name=r'P_{bus}^{inj}',
                               info='Bus power injection vector',
-                              v=None,)
+                              v=None, sparse=False, owner=self)
         self.Pfinj = MParam(name='Pfinj', tex_name=r'P_{f}^{inj}',
                             info='Line power injection vector',
-                            v=None,)
+                            v=None, sparse=False, owner=self)
 
         self.PTDF = MParam(name='PTDF', tex_name=r'P_{TDF}',
                            info='Power transfer distribution factor',
-                           v=None)
+                           v=None, sparse=False, owner=self)
         self.LODF = MParam(name='LODF', tex_name=r'O_{TDF}',
                            info='Line outage distribution factor',
-                           v=None)
+                           v=None, sparse=False, owner=self)
 
     def build(self):
         """
@@ -210,7 +254,7 @@ class MatProcessor:
 
         row = np.array([system.Bus.idx2uid(x) for x in on_gen_bus])
         col = np.array([idx_gen.index(x) for x in on_gen_idx])
-        self.Cg._v = c_sparse((np.ones(len(on_gen_idx)), (row, col)), (nb, ng))
+        self.Cg._v = sps.csr_matrix((np.ones(len(on_gen_idx)), (row, col)), (nb, ng))
         return self.Cg._v
 
     def build_cl(self):
@@ -237,7 +281,7 @@ class MatProcessor:
 
         row = np.array([system.Bus.idx2uid(x) for x in on_load_bus])
         col = np.array([system.PQ.idx2uid(x) for x in on_load_idx])
-        self.Cl._v = c_sparse((np.ones(len(on_load_idx)), (row, col)), (nb, npq))
+        self.Cl._v = sps.csr_matrix((np.ones(len(on_load_idx)), (row, col)), (nb, npq))
         return self.Cl._v
 
     def build_csh(self):
@@ -264,7 +308,7 @@ class MatProcessor:
 
         row = np.array([system.Bus.idx2uid(x) for x in on_shunt_bus])
         col = np.array([system.Shunt.idx2uid(x) for x in on_shunt_idx])
-        self.Csh._v = c_sparse((np.ones(len(on_shunt_idx)), (row, col)), (nb, nsh))
+        self.Csh._v = sps.csr_matrix((np.ones(len(on_shunt_idx)), (row, col)), (nb, nsh))
         return self.Csh._v
 
     def build_cft(self):
@@ -295,7 +339,7 @@ class MatProcessor:
         data_line[len(on_line_idx):] = -1
         row_line = np.array([system.Bus.idx2uid(x) for x in on_line_bus1 + on_line_bus2])
         col_line = np.array([system.Line.idx2uid(x) for x in on_line_idx + on_line_idx])
-        self.Cft._v = c_sparse((data_line, (row_line, col_line)), (nb, nl))
+        self.Cft._v = sps.csr_matrix((data_line, (row_line, col_line)), (nb, nl))
         self.CftT._v = self.Cft._v.T
         return self.Cft._v
 
@@ -323,7 +367,7 @@ class MatProcessor:
         f = system.Bus.idx2uid(system.Line.get(src='bus1', attr='v', idx=idx_line))
         t = system.Bus.idx2uid(system.Line.get(src='bus2', attr='v', idx=idx_line))
         ir = np.r_[range(nl), range(nl)]  # double set of row indices
-        self.Bf._v = c_sparse((np.r_[b, -b], (ir, np.r_[f, t])), (nl, nb))
+        self.Bf._v = sps.csr_matrix((np.r_[b, -b], (ir, np.r_[f, t])), (nl, nb))
         return self.Bf._v
 
     def build_bbus(self):
@@ -392,114 +436,274 @@ class MatProcessor:
 
         return b
 
-    def build_ptdf(self, dtype='float64', no_store=False):
+    def build_ptdf(self, line=None, no_store=False,
+                   incremental=False, step=1000, no_tqdm=False):
         """
-        Build the DC PTDF matrix and store it in the MParam `PTDF`.
+        Build the Power Transfer Distribution Factor (PTDF) matrix and store
+        it in the MParam `PTDF` by default.
 
         `PTDF[m, n]` means the increased line flow on line `m` when there is
-        1 p.u. power injection at bus `n`.
-
-        It requires DC Bbus and Bf.
+        1 p.u. power injection at bus `n`. It is very similar to Generation
+        Shift Factor (GSF).
 
         Note that there is discrepency between the PTDF-based line flow and
         DCOPF calcualted line flow. The gap is ignorable for small cases.
 
-        Try to use 'float32' for dtype if memory is a concern.
+        It requires DC Bbus and Bf.
+
+        For large cases where memory is a concern, use `incremental=True` to
+        calculate the sparse PTDF in chunks in the format of scipy.sparse.lil_matrix.
 
         Parameters
         ----------
-        dtype : str, optional
-            Data type of the PTDF matrix. Default is 'float64'.
+        line: int, str, list, optional
+            Lines index for which the PTDF is calculated. It takes both single
+            or multiple line indices. Note that if `line` is given, the PTDF will
+            not be stored in the MParam.
         no_store : bool, optional
-            If True, the PTDF will not be stored into `MatProcessor.PTDF._v`.
+            If False, the PTDF will be stored into `MatProcessor.PTDF._v`.
+        incremental : bool, optional
+            If True, the sparse PTDF will be calculated in chunks to save memory.
+        step : int, optional
+            Step for incremental calculation.
+        no_tqdm : bool, optional
+            If True, the progress bar will be disabled.
 
         Returns
         -------
-        PTDF : np.ndarray
+        PTDF : np.ndarray or scipy.sparse.lil_matrix
             Power transfer distribution factor.
+
+        References
+        ----------
+        [1] PowerWorld Documentation, Power Transfer Distribution Factors, [Online]
+
+        Available:
+
+        https://www.powerworld.com/WebHelp/Content/MainDocumentation_HTML/Power_Transfer_Distribution_Factors.htm
         """
         system = self.system
 
         # use first slack bus as reference slack bus
         slack = system.Slack.bus.v[0]
+        noslack = [system.Bus.idx2uid(bus) for bus in system.Bus.idx.v if bus != slack]
 
         # use first bus for voltage angle reference
         noref_idx = system.Bus.idx.v[1:]
         noref = system.Bus.idx2uid(noref_idx)
 
-        noslack = [system.Bus.idx2uid(bus) for bus in system.Bus.idx.v if bus != slack]
+        if line is None:
+            luid = system.Line.idx2uid(system.Line.idx.v)
+        elif isinstance(line, (int, str)):
+            try:
+                luid = [system.Line.idx2uid(line)]
+            except ValueError:
+                raise ValueError(f"Line {line} not found.")
+        elif isinstance(line, list):
+            luid = system.Line.idx2uid(line)
 
         # build other matrices if not built
         if not self.initialized:
             logger.debug("System matrices are not built. Building now.")
             self.build()
 
-        # use dense representation
-        Bbus = self.Bbus._v.todense().astype(dtype)
-        Bf = self.Bf._v.todense().astype(dtype)
+        nbus = system.Bus.n
+        nline = len(luid)
 
-        # initialize PTDF matrix
-        H = np.zeros((system.Line.n, system.Bus.n), dtype=dtype)
-        # calculate PTDF
-        H[:, noslack] = np.linalg.solve(Bbus[np.ix_(noslack, noref)].T, Bf[:, noref].T).T
+        Bbus = self.Bbus._v
+        Bf = self.Bf._v
 
-        if not no_store:
+        if incremental:
+            # initialize progress bar
+            if is_notebook():
+                self.pbar = tqdm_nb(total=100, unit='%', file=sys.stdout,
+                                    disable=no_tqdm)
+            else:
+                self.pbar = tqdm(total=100, unit='%', ncols=80, ascii=True,
+                                 file=sys.stdout, disable=no_tqdm)
+
+            self.pbar.update(0)
+            last_pc = 0
+
+            H = sps.lil_matrix((nline, system.Bus.n))
+
+            # NOTE: for PTDF, we are building rows by rows
+            for start in range(0, nline, step):
+                end = min(start + step, nline)
+                sol = sps.linalg.spsolve(Bbus[np.ix_(noslack, noref)].T,
+                                         Bf[np.ix_(luid[start:end], noref)].T).T
+                H[start:end, noslack] = sol
+
+                # show progress in percentage
+                perc = np.round(min((end / nline) * 100, 100), 2)
+
+                perc_diff = perc - last_pc
+                if perc_diff >= 1:
+                    self.pbar.update(perc_diff)
+                    last_pc = perc
+
+            # finish progress bar
+            self.pbar.update(100 - last_pc)
+            # removed `pbar` so that System object can be serialized
+            self.pbar.close()
+            self.pbar = None
+        else:
+            H = np.zeros((nline, nbus))
+            H[:, noslack] = np.linalg.solve(Bbus.todense()[np.ix_(noslack, noref)].T,
+                                            Bf.todense()[np.ix_(luid, noref)].T).T
+
+        # reshape results into 1D array if only one line
+        if isinstance(line, (int, str)):
+            H = H[0, :]
+
+        if (not no_store) & (line is None):
             self.PTDF._v = H
 
         return H
 
-    def build_lodf(self, dtype='float64', no_store=False):
+    def build_lodf(self, line=None, no_store=False,
+                   incremental=False, step=1000, no_tqdm=False):
         """
-        Build the DC LODF matrix and store it in the MParam `LODF`.
+        Build the Line Outage Distribution Factor matrix and store it in the
+        MParam `LODF`.
 
         `LODF[m, n]` means the increased line flow on line `m` when there is
         1 p.u. line flow decrease on line `n` due to line `n` outage.
+        It is also referred to as Branch Outage Distribution Factor (BODF).
 
         It requires DC PTDF and Cft.
 
-        Try to use 'float32' for dtype if memory is a concern.
+        For large cases where memory is a concern, use `incremental=True` to
+        calculate the sparse LODF in chunks in the format of scipy.sparse.lil_matrix.
 
         Parameters
         ----------
-        dtype : str, optional
-            Data type of the LODF matrix. Default is 'float64'.
+        line: int, str, list, optional
+            Lines index for which the LODF is calculated. It takes both single
+            or multiple line indices. Note that if `line` is given, the LODF will
+            not be stored in the MParam.
         no_store : bool, optional
-            If True, the LODF will not be stored into `MatProcessor.LODF._v`.
+            If False, the LODF will be stored into `MatProcessor.LODF._v`.
+        incremental : bool, optional
+            If True, the sparse LODF will be calculated in chunks to save memory.
+        step : int, optional
+            Step for incremental calculation.
+        no_tqdm : bool, optional
+            If True, the progress bar will be disabled.
 
         Returns
         -------
-        LODF : np.ndarray
+        LODF : np.ndarray, scipy.sparse.lil_matrix
             Line outage distribution factor.
-        """
-        nl = self.system.Line.n
 
+        References
+        ----------
+        [1] PowerWorld Documentation, Line Outage Distribution Factors, [Online]
+
+        Available:
+
+        https://www.powerworld.com/WebHelp/Content/MainDocumentation_HTML/Line_Outage_Distribution_Factors_LODFs.htm
+        """
+        system = self.system
+
+        if line is None:
+            luid = system.Line.idx2uid(system.Line.idx.v)
+        elif isinstance(line, (int, str)):
+            try:
+                luid = [system.Line.idx2uid(line)]
+            except ValueError:
+                raise ValueError(f"Line {line} not found.")
+        elif isinstance(line, list):
+            luid = system.Line.idx2uid(line)
+
+        # NOTE: here we use nbranch to differentiate it with nline
+        nbranch = system.Line.n
+        nline = len(luid)
+
+        ptdf = self.PTDF._v
         # build PTDF if not built
         if self.PTDF._v is None:
-            ptdf = self.build_ptdf(dtype=dtype, no_store=True)
+            ptdf = self.build_ptdf(no_store=True, incremental=incremental, step=step)
+        if incremental and isinstance(self.PTDF._v, np.ndarray):
+            ptdf = sps.lil_matrix(self.PTDF._v)
+
+        if incremental | (isinstance(ptdf, sps.spmatrix)):
+            # initialize progress bar
+            if is_notebook():
+                self.pbar = tqdm_nb(total=100, unit='%', file=sys.stdout,
+                                    disable=no_tqdm)
+            else:
+                self.pbar = tqdm(total=100, unit='%', ncols=80, ascii=True,
+                                 file=sys.stdout, disable=no_tqdm)
+
+            self.pbar.update(0)
+            last_pc = 0
+
+            LODF = sps.lil_matrix((nbranch, nline))
+
+            # NOTE: for LODF, we are doing it columns by columns
+            # reshape luid to list of list by step
+            luidp = [luid[i:i + step] for i in range(0, len(luid), step)]
+            for luidi in luidp:
+                H_chunk = ptdf @ self.Cft._v[:, luidi]
+                h_chunk = H_chunk.diagonal(-luidi[0])
+                rden = safe_div(np.ones(H_chunk.shape),
+                                np.tile(np.ones_like(h_chunk) - h_chunk, (nbranch, 1)))
+                H_chunk = H_chunk.multiply(rden).tolil()
+                # NOTE: use lil_matrix to set diagonal values as -1
+                rsid = sps.diags(H_chunk.diagonal(-luidi[0])) + sps.eye(H_chunk.shape[1])
+                if H_chunk.shape[0] > rsid.shape[0]:
+                    Rsid = sps.lil_matrix(H_chunk.shape)
+                    Rsid[luidi, :] = rsid
+                else:
+                    Rsid = rsid
+                H_chunk = H_chunk - Rsid
+                LODF[:, [luid.index(i) for i in luidi]] = H_chunk
+
+                # show progress in percentage
+                perc = np.round(min((luid.index(luidi[-1]) / nline) * 100, 100), 2)
+
+                perc_diff = perc - last_pc
+                if perc_diff >= 1:
+                    self.pbar.update(perc_diff)
+                    last_pc = perc
+
+            # finish progress bar
+            self.pbar.update(100 - last_pc)
+            # removed `pbar` so that System object can be serialized
+            self.pbar.close()
+            self.pbar = None
         else:
-            ptdf = self.PTDF._v
+            H = ptdf @ self.Cft._v[:, luid]
+            h = np.diag(H, -luid[0])
+            LODF = safe_div(H,
+                            np.tile(np.ones_like(h) - h, (nbranch, 1)))
+            # # NOTE: reset the diagonal elements to -1
+            rsid = np.diag(np.diag(LODF, -luid[0])) + np.eye(nline, nline)
+            if LODF.shape[0] > rsid.shape[0]:
+                Rsid = np.zeros_like(LODF)
+                Rsid[luid, :] = rsid
+            else:
+                Rsid = rsid
+            LODF = LODF - Rsid
 
-        H = ptdf * self.Cft._v
-        h = np.diag(H, 0)
-        LODF = safe_div(H, np.ones((nl, nl)) - np.ones((nl, 1)) * h.T)
-        LODF = LODF - np.diag(np.diag(LODF)) - np.eye(nl, nl)
+        # reshape results into 1D array if only one line
+        if isinstance(line, (int, str)):
+            LODF = LODF[:, 0]
 
-        if not no_store:
-            self.LODF._v = LODF.astype(dtype)
-        return LODF.astype(dtype)
+        if (not no_store) & (line is None):
+            self.LODF._v = LODF
+        return LODF
 
-    def build_otdf(self, line=None, dtype='float64'):
+    def build_otdf(self, line=None):
         """
-        Build the DC OTDF matrix for line outage:
-        :math:`OTDF_k = PTDF + LODF[:, k] @ PTDF[k, ]`,
-        where k is the outage line locations.
+        Build the Outrage Transfer Distribution Factor (OTDF) matrix for line
+        k outage: :math:`OTDF_k = PTDF + LODF[:, k] @ PTDF[k, ]`.
 
         OTDF_k[m, n] means the increased line flow on line `m` when there is
-        1 p.u. line flow decrease on line `k` due to line `k` outage.
+        1 p.u. power injection at bus `n` when line `k` is outage.
 
         Note that the OTDF is not stored in the MatProcessor.
-
-        Try to use 'float32' for dtype if memory is a concern.
 
         Parameters
         ----------
@@ -507,23 +711,25 @@ class MatProcessor:
             Lines index for which the OTDF is calculated. It takes both single
             or multiple line indices.
             If not given, the first line is used by default.
-        dtype : str, optional
-            Data type of the OTDF matrix. Default is 'float64'.
 
         Returns
         -------
-        OTDF : np.ndarray
+        OTDF : np.ndarray, scipy.sparse.csr_matrix
             Line outage distribution factor.
-        """
-        if self.PTDF._v is None:
-            ptdf = self.build_ptdf(dtype=dtype, no_store=True)
-        else:
-            ptdf = self.PTDF._v
 
-        if self.LODF._v is None:
-            lodf = self.build_lodf(dtype=dtype, no_store=True)
-        else:
-            lodf = self.LODF._v
+        References
+        ----------
+        [1] PowerWorld Documentation, Line Outage Distribution Factors, [Online]
+
+        Available:
+
+        https://www.powerworld.com/WebHelp/Content/MainDocumentation_HTML/Line_Outage_Distribution_Factors_LODFs.htm
+        """
+        if (self.PTDF._v is None) or (self.LODF._v is None):
+            raise ValueError("Internal PTDF and LODF are not available. Please build them first.")
+
+        ptdf = self.PTDF._v
+        lodf = self.LODF._v
 
         if line is None:
             luid = [0]
@@ -536,4 +742,4 @@ class MatProcessor:
             luid = self.system.Line.idx2uid(line)
 
         otdf = ptdf + lodf[:, luid] @ ptdf[luid, :]
-        return otdf.astype(dtype)
+        return otdf

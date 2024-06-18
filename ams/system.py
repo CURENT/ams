@@ -441,6 +441,34 @@ class System(andes_System):
             self.Bus.set(src='type', attr='v', idx=self.Slack.bus.v,
                          value=np.ones(self.Slack.n))
 
+        # --- assign column and row names ---
+        self.mats.Cft.col_names = self.Line.idx.v
+        self.mats.Cft.row_names = self.Bus.idx.v
+
+        self.mats.CftT.col_names = self.Bus.idx.v
+        self.mats.CftT.row_names = self.Line.idx.v
+
+        self.mats.Cg.col_names = self.StaticGen.get_idx()
+        self.mats.Cg.row_names = self.Bus.idx.v
+
+        self.mats.Cl.col_names = self.PQ.idx.v
+        self.mats.Cl.row_names = self.Bus.idx.v
+
+        self.mats.Csh.col_names = self.Shunt.idx.v
+        self.mats.Csh.row_names = self.Bus.idx.v
+
+        self.mats.Bbus.col_names = self.Bus.idx.v
+        self.mats.Bbus.row_names = self.Bus.idx.v
+
+        self.mats.Bf.col_names = self.Bus.idx.v
+        self.mats.Bf.row_names = self.Line.idx.v
+
+        self.mats.PTDF.col_names = self.Bus.idx.v
+        self.mats.PTDF.row_names = self.Line.idx.v
+
+        self.mats.LODF.col_names = self.Line.idx.v
+        self.mats.LODF.row_names = self.Line.idx.v
+
         _, s = elapsed(t0)
         logger.info('System set up in %s.', s)
 

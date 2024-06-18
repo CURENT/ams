@@ -9,12 +9,13 @@ import re
 
 import numpy as np
 import scipy.sparse as spr
-from scipy.sparse import csr_matrix as c_sparse  # NOQA
 
 from andes.core.common import Config
 from andes.utils.misc import elapsed
 
 import cvxpy as cp
+
+from ams.shared import sps      # NOQA
 
 logger = logging.getLogger(__name__)
 
@@ -245,7 +246,7 @@ class Param(OptzBase):
             val = "self.v"
             if self.sparse:
                 if not spr.issparse(self.v):
-                    val = "c_sparse(self.v)"
+                    val = "sps.csr_matrix(self.v)"
             exec(f"self.optz.value = {val}", globals(), locals())
         except ValueError:
             msg = f"Parameter <{self.name}> has non-numeric value, "
