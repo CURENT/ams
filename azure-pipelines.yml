@@ -41,8 +41,8 @@ jobs:
   timeoutInMinutes: 360
   strategy:
     matrix:
-      macos_python3.10:
-        python.version: '3.10'
+      macos_python311:
+        python.version: '3.11'
 
   steps:
   - task: UsePythonVersion@0
@@ -66,23 +66,23 @@ jobs:
   timeoutInMinutes: 360
   strategy:
     matrix:
-      win_python3.9:
-        python.version: '3.9'
+      win_python311:
+        python.version: '311'
 
   steps:
   - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
     displayName: Add conda to PATH
 
-  - script: conda create --yes --quiet --name andesEnv
+  - script: conda create --yes --quiet --name amsEnv
     displayName: Create Anaconda environment
 
   - script: |
-      call activate andesEnv
-      conda install --yes --quiet --name andesEnv python=%PYTHON_VERSION%
+      call activate amsEnv
+      conda install --yes --quiet --name amsEnv python=%PYTHON_VERSION%
     displayName: Install Anaconda packages
 
   - script: |
-      call activate andesEnv
+      call activate amsEnv
       python -m pip install --upgrade pip
       pip install pytest pytest-azurepipelines
       pip install .[dev,interop]
