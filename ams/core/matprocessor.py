@@ -86,7 +86,7 @@ class MParam(Param):
             The path of the exported csv file
         """
 
-        if not path:
+        if path is None:
             if self.owner.system.files.fullname is None:
                 logger.info("Input file name not detacted. Using `Untitled`.")
                 file_name = f'Untitled_{self.name}'
@@ -94,6 +94,8 @@ class MParam(Param):
                 file_name = os.path.splitext(self.owner.system.files.fullname)[0]
                 file_name += f'_{self.name}'
             path = os.path.join(os.getcwd(), file_name + '.csv')
+        else:
+            file_name = os.path.splitext(os.path.basename(path))[0]
 
         pd.DataFrame(data=self.v, columns=self.col_names, index=self.row_names).to_csv(path)
 
