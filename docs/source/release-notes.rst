@@ -17,6 +17,7 @@ v0.9.8 (2024-06-18)
 - Add in 'cases/matpower/Benchmark.json' for benchmark with MATPOWER
 - Improve known good results test
 - Minor fix in `main.py` selftest part
+- Set dependency NumPy version to be <2.0.0 to avoid CVXPY compatibility issues
 
 v0.9.7 (2024-05-24)
 -------------------
