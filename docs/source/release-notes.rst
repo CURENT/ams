@@ -9,10 +9,13 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v0.9.8 (2024-xx-xx)
+v0.9.8 (2024-06-18)
 -------------------
 
-- Assign `MParam.owner` when declaring, which is originally assigned in `System._collect_group_data()`
+- Assign `MParam.owner` when declaring
+- In `MatProcessor`, improve `build_ptdf` and `build_lodf` to allow partial building and incremental building
+- Add in 'cases/matpower/Benchmark.json' for benchmark with MATPOWER
+- Improve known good results test
 
 v0.9.7 (2024-05-24)
 -------------------
