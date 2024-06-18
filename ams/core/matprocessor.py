@@ -141,6 +141,8 @@ class MParam(Param):
 class MatProcessor:
     """
     Class for matrix processing in AMS system.
+
+    The MParams' row names and col names are assigned in `System.setup()`.
     """
 
     def __init__(self, system):
