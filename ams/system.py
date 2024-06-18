@@ -231,7 +231,6 @@ class System(andes_System):
         """
         Set the owner for routine attributes: ``RParam``, ``Var``, and ``RBaseService``.
         """
-        # NOTE: here we skip assigning `MParam` owner as it is assined in `MatProcessor`
         for item_name, item in items.items():
             if item.model in self.groups.keys():
                 item.is_group = True
@@ -239,7 +238,7 @@ class System(andes_System):
             elif item.model in self.models.keys():
                 item.owner = self.models[item.model]
             elif item.model == 'mats':
-                pass
+                item.owner = self.mats
             else:
                 logger.debug(f'item_name: {item_name}')
                 msg = f'Model indicator \'{item.model}\' of <{item.rtn.class_name}.{item_name}>'
