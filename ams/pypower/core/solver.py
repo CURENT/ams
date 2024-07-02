@@ -13,7 +13,7 @@ from scipy.sparse import csr_matrix as c_sparse
 
 from andes.shared import rad2deg, deg2rad
 
-from ams.shared import inf
+from ams.shared import inf, nan
 
 from ams.pypower.core.pips import pips
 from ams.pypower.make import makeYbus
@@ -726,18 +726,18 @@ def qps_cplex(H, c, A, l, u, xmin, xmax, x0, opt):
 
     # check for empty results (in case optimization failed)
     if len(x) == 0:
-        x = np.NaN * np.zeros(nx)
+        x = nan * np.zeros(nx)
 
     if len(f) == 0:
-        f = np.NaN
+        f = nan
 
     if len(lam) == 0:
-        lam['ineqlin'] = np.NaN * np.zeros(len(bi))
-        lam['eqlin'] = np.NaN * np.zeros(len(be))
-        lam['lower'] = np.NaN * np.zeros(nx)
-        lam['upper'] = np.NaN * np.zeros(nx)
-        mu_l = np.NaN * np.zeros(nA)
-        mu_u = np.NaN * np.zeros(nA)
+        lam['ineqlin'] = nan * np.zeros(len(bi))
+        lam['eqlin'] = nan * np.zeros(len(be))
+        lam['lower'] = nan * np.zeros(nx)
+        lam['upper'] = nan * np.zeros(nx)
+        mu_l = nan * np.zeros(nA)
+        mu_u = nan * np.zeros(nA)
     else:
         mu_l = np.zeros(nA)
         mu_u = np.zeros(nA)
@@ -1003,18 +1003,18 @@ def qps_gurobi(H, c, A, l, u, xmin, xmax, x0, opt):
     # check for empty results (in case optimization failed)
     lam = {}
     if len(x) == 0:
-        x = np.NaN(nx, 1)
-        lam['lower'] = np.NaN(nx)
-        lam['upper'] = np.NaN(nx)
+        x = nan(nx, 1)
+        lam['lower'] = nan(nx)
+        lam['upper'] = nan(nx)
     else:
         lam['lower'] = np.zeros(nx)
         lam['upper'] = np.zeros(nx)
 
     if len(f) == 0:
-        f = np.NaN
+        f = nan
 
     if len(pi) == 0:
-        pi = np.NaN(len(bb))
+        pi = nan(len(bb))
 
     kl = find(rc > 0)  # lower bound binding
     ku = find(rc < 0)  # upper bound binding

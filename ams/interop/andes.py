@@ -11,6 +11,7 @@ from andes.utils.misc import elapsed
 from andes.system import System as andes_System
 
 from ams.io import input_formats
+from ams.shared import nan
 
 logger = logging.getLogger(__name__)
 
@@ -260,7 +261,7 @@ def parse_addfile(adsys, amsys, addfile):
                     except KeyError:  # set the most frequent string as the model name
                         split_list = []
                         for item in df[idxn].values:
-                            if item is None or np.nan:
+                            if item is None or nan:
                                 continue
                             try:
                                 split_list.append(item.split('_'))
@@ -295,7 +296,7 @@ def parse_addfile(adsys, amsys, addfile):
     # add dynamic models
     for name, df in df_models.items():
         # drop rows that all nan
-        df.replace(['', ' '], np.NaN, inplace=True)  # replace empty string with nan
+        df.replace(['', ' '], nan, inplace=True)  # replace empty string with nan
         df.dropna(axis=0, how='all', inplace=True)
         # if the dynamic model also exists in AMS, use AMS parameters for overlap
         if (name in amsys.models.keys()) and amsys.models[name].n > 0:
@@ -684,15 +685,15 @@ class Dynamic:
             cond_ads_stg_u = (mname_ads in ['StaticGen', 'PV', 'Sclak']) and (pname_ads == 'u')
             if cond_ads_stg_u and (self.is_tds):
                 # --- SynGen ---
-                u_sg = sa.SynGen.get(idx=link['syg_idx'].replace(np.NaN, None).to_list(),
+                u_sg = sa.SynGen.get(idx=link['syg_idx'].replace(nan, None).to_list(),
                                      src='u', attr='v',
                                      allow_none=True, default=0,)
                 # --- DG ---
-                u_dg = sa.DG.get(idx=link['dg_idx'].replace(np.NaN, None).to_list(),
+                u_dg = sa.DG.get(idx=link['dg_idx'].replace(nan, None).to_list(),
                                  src='u', attr='v',
                                  allow_none=True, default=0,)
                 # --- RenGen ---
-                u_rg = sa.RenGen.get(idx=link['rg_idx'].replace(np.NaN, None).to_list(),
+                u_rg = sa.RenGen.get(idx=link['rg_idx'].replace(nan, None).to_list(),
                                      src='u', attr='v',
                                      allow_none=True, default=0,)
                 # --- output ---
@@ -722,19 +723,19 @@ class Dynamic:
             cond_ads_stg_p = (mname_ads in ['StaticGen', 'PV', 'Sclak']) and (pname_ads == 'p')
             if cond_ads_stg_p and (self.is_tds):
                 # --- SynGen ---
-                p_sg = sa.SynGen.get(idx=link['syg_idx'].replace(np.NaN, None).to_list(),
+                p_sg = sa.SynGen.get(idx=link['syg_idx'].replace(nan, None).to_list(),
                                      src='Pe', attr='v',
                                      allow_none=True, default=0,)
                 # --- DG ---
-                Ie_dg = sa.DG.get(idx=link['dg_idx'].replace(np.NaN, None).to_list(),
+                Ie_dg = sa.DG.get(idx=link['dg_idx'].replace(nan, None).to_list(),
                                   src='Ipout_y', attr='v',
                                   allow_none=True, default=0,)
-                v_dg = sa.DG.get(idx=link['dg_idx'].replace(np.NaN, None).to_list(),
+                v_dg = sa.DG.get(idx=link['dg_idx'].replace(nan, None).to_list(),
                                  src='v', attr='v',
                                  allow_none=True, default=0,)
                 p_dg = Ie_dg * v_dg
                 # --- RenGen ---
-                p_rg = sa.RenGen.get(idx=link['rg_idx'].replace(np.NaN, None).to_list(),
+                p_rg = sa.RenGen.get(idx=link['rg_idx'].replace(nan, None).to_list(),
                                      src='Pe', attr='v',
                                      allow_none=True, default=0,)
                 # --- output ---

@@ -21,7 +21,7 @@ from ams.pypower.routines.pflow import newtonpf, pfsoln
 from ams.pypower.core import ppoption
 import ams.pypower.routines.cpf_callbacks as cpf_callbacks
 
-from ams.shared import inf
+from ams.shared import inf, nan
 
 logger = logging.getLogger(__name__)
 
@@ -256,9 +256,9 @@ def runcpf(casedata, ppopt=None, scale=1.2):
     if success:
         n = cpf_results["iterations"] + 1
         cpf_results["V_p"] = opfcn.i2e_data(
-            ppctarget, cpf_results["V_p"], np.full((nb, n), np.NaN), "bus", 0)
+            ppctarget, cpf_results["V_p"], np.full((nb, n), nan), "bus", 0)
         cpf_results["V_c"] = opfcn.i2e_data(
-            ppctarget, cpf_results["V_c"], np.full((nb, n), np.NaN), "bus", 0)
+            ppctarget, cpf_results["V_c"], np.full((nb, n), nan), "bus", 0)
     results = opfcn.int2ext(ppctarget)
     results["cpf"] = cpf_results
 

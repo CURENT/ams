@@ -18,14 +18,10 @@ logger = logging.getLogger(__name__)
 sps = LazyImport('import scipy.sparse as sps')
 np = LazyImport('import numpy as np')
 
-# Determine the correct infinity value once and use it throughout
-try:
-    # Try using the newer version attribute first
-    inf = np.inf
-except AttributeError:
-    # Fallback to the older version attribute if the newer one is not available
-    inf = np.Inf
-
+# --- NumPy constants ---
+# NOTE: In NumPy 2.0, np.Inf and np.NaN are deprecated.
+inf = np.inf
+nan = np.nan
 
 # NOTE: copied from CVXPY documentation
 MIP_SOLVERS = ['CBC', 'COPT', 'GLPK_MI', 'CPLEX', 'GUROBI',
