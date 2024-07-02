@@ -7,19 +7,21 @@ import logging
 import numpy as np
 from numpy import flatnonzero as find
 
-import scipy.sparse as sp  # NOQA
+import scipy.sparse as sp
 
-from andes.shared import deg2rad  # NOQA
-from andes.utils.misc import elapsed  # NOQA
+from andes.shared import deg2rad
+from andes.utils.misc import elapsed
 
-import ams.pypower.utils as putil  # NOQA
-import ams.pypower.io as pio  # NOQA
-import ams.pypower.routines.opffcns as opfcn  # NOQA
-from ams.pypower.idx import IDX  # NOQA
-from ams.pypower.make import (makeSbus, makeYbus, dSbus_dV)  # NOQA
-from ams.pypower.routines.pflow import newtonpf, pfsoln  # NOQA
-from ams.pypower.core import ppoption  # NOQA
-import ams.pypower.routines.cpf_callbacks as cpf_callbacks  # NOQA
+import ams.pypower.utils as putil
+import ams.pypower.io as pio
+import ams.pypower.routines.opffcns as opfcn
+from ams.pypower.idx import IDX
+from ams.pypower.make import (makeSbus, makeYbus, dSbus_dV)
+from ams.pypower.routines.pflow import newtonpf, pfsoln
+from ams.pypower.core import ppoption
+import ams.pypower.routines.cpf_callbacks as cpf_callbacks
+
+from ams.shared import inf
 
 logger = logging.getLogger(__name__)
 
@@ -213,7 +215,7 @@ def runcpf(casedata, ppopt=None, scale=1.2):
             pvpq = np.r_[pv, pq]
             # Adapt stepsize
             cpf_error = np.linalg.norm(np.r_[np.angle(V[pq]), abs(
-                V[pvpq]), lam] - np.r_[np.angle(V0[pq]), abs(V0[pvpq]), lam0], np.Inf)
+                V[pvpq]), lam] - np.r_[np.angle(V0[pq]), abs(V0[pvpq]), lam0], inf)
             if cpf_error < ppopt["CPF_ERROR_TOL"]:
                 # Increase stepsize
                 step = step * ppopt["CPF_ERROR_TOL"] / cpf_error
@@ -375,7 +377,7 @@ def cpf_corrector(Ybus, Sbus, V0, ref, pv, pq,
     F = np.r_[F, P]
 
     # check tolerance
-    normF = np.linalg.norm(F, np.Inf)
+    normF = np.linalg.norm(F, inf)
     logger.debug('CPF correction')
     logger.debug('%2d: |F(x)| = %.10g', i, normF)
     if normF < tol:
@@ -435,7 +437,7 @@ def cpf_corrector(Ybus, Sbus, V0, ref, pv, pq,
         F = np.r_[F, P]
 
         # check for convergence
-        normF = np.linalg.norm(F, np.Inf)
+        normF = np.linalg.norm(F, inf)
         logger.debug('%2d: |F(x)| = %.10g', i, normF)
 
         if normF < tol:

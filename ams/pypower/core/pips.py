@@ -1,22 +1,24 @@
 """
 Python Interior Point Solver (PIPS).
 """
-import logging  # NOQA
+import logging
 
-import numpy as np  # NOQA
-from numpy import flatnonzero as find  # NOQA
+import numpy as np
+from numpy import flatnonzero as find
 
-import scipy.sparse as sp  # NOQA
-from scipy.sparse import csr_matrix as c_sparse  # NOQA
+import scipy.sparse as sp
+from scipy.sparse import csr_matrix as c_sparse
 
-from andes.shared import deg2rad, rad2deg  # NOQA
+from andes.shared import deg2rad, rad2deg
 
-from ams.pypower.eps import EPS  # NOQA
-from ams.pypower.idx import IDX  # NOQA
-from ams.pypower.utils import sub2ind  # NOQA
-from ams.pypower.make import makeYbus  # NOQA
+from ams.shared import inf
+
+from ams.pypower.eps import EPS
+from ams.pypower.idx import IDX
+from ams.pypower.utils import sub2ind
+from ams.pypower.make import makeYbus
 from ams.pypower.routines.opffcns import (opf_costfcn, opf_consfcn,
-                                          opf_hessfcn,)  # NOQA
+                                          opf_hessfcn,)
 
 
 logger = logging.getLogger(__name__)
@@ -205,13 +207,13 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
 
     # default argument values
     if l is None or len(l) == 0:
-        l = -np.Inf * np.ones(nA)
+        l = -inf * np.ones(nA)
     if u is None or len(u) == 0:
-        u = np.Inf * np.ones(nA)
+        u = inf * np.ones(nA)
     if xmin is None or len(xmin) == 0:
-        xmin = -np.Inf * np.ones(x0.shape[0])
+        xmin = -inf * np.ones(x0.shape[0])
     if xmax is None or len(xmax) == 0:
-        xmax = np.Inf * np.ones(x0.shape[0])
+        xmax = inf * np.ones(x0.shape[0])
     if gh_fcn is None:
         nonlinear = False
         gn = np.array([])
@@ -343,15 +345,15 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
 
     maxh = np.zeros(1) if len(h) == 0 else max(h)
 
-    gnorm = np.linalg.norm(g, np.Inf) if len(g) else 0.0
-    lam_norm = np.linalg.norm(lam, np.Inf) if len(lam) else 0.0
-    mu_norm = np.linalg.norm(mu, np.Inf) if len(mu) else 0.0
-    znorm = np.linalg.norm(z, np.Inf) if len(z) else 0.0
+    gnorm = np.linalg.norm(g, inf) if len(g) else 0.0
+    lam_norm = np.linalg.norm(lam, inf) if len(lam) else 0.0
+    mu_norm = np.linalg.norm(mu, inf) if len(mu) else 0.0
+    znorm = np.linalg.norm(z, inf) if len(z) else 0.0
     feascond = \
-        max([gnorm, maxh]) / (1 + max([np.linalg.norm(x, np.Inf), znorm]))
+        max([gnorm, maxh]) / (1 + max([np.linalg.norm(x, inf), znorm]))
     gradcond = \
-        np.linalg.norm(Lx, np.Inf) / (1 + max([lam_norm, mu_norm]))
-    compcond = np.dot(z, mu) / (1 + np.linalg.norm(x, np.Inf))
+        np.linalg.norm(Lx, inf) / (1 + max([lam_norm, mu_norm]))
+    compcond = np.dot(z, mu) / (1 + np.linalg.norm(x, inf))
     costcond = np.abs(f - f0) / (1 + np.abs(f0))
 
     # save history
@@ -467,14 +469,14 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
 
             maxh1 = np.zeros(1) if len(h1) == 0 else max(h1)
 
-            g1norm = np.linalg.norm(g1, np.Inf) if len(g1) else 0.0
-            lam1_norm = np.linalg.norm(lam, np.Inf) if len(lam) else 0.0
-            mu1_norm = np.linalg.norm(mu, np.Inf) if len(mu) else 0.0
-            z1norm = np.linalg.norm(z, np.Inf) if len(z) else 0.0
+            g1norm = np.linalg.norm(g1, inf) if len(g1) else 0.0
+            lam1_norm = np.linalg.norm(lam, inf) if len(lam) else 0.0
+            mu1_norm = np.linalg.norm(mu, inf) if len(mu) else 0.0
+            z1norm = np.linalg.norm(z, inf) if len(z) else 0.0
 
             feascond1 = max([g1norm, maxh1]) / \
-                (1 + max([np.linalg.norm(x1, np.Inf), z1norm]))
-            gradcond1 = np.linalg.norm(Lx1, np.Inf) / (1 + max([lam1_norm, mu1_norm]))
+                (1 + max([np.linalg.norm(x1, inf), z1norm]))
+            gradcond1 = np.linalg.norm(Lx1, inf) / (1 + max([lam1_norm, mu1_norm]))
 
             if (feascond1 > feascond) and (gradcond1 > gradcond):
                 sc = True
@@ -560,15 +562,15 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
         else:
             maxh = max(h)
 
-        gnorm = np.linalg.norm(g, np.Inf) if len(g) else 0.0
-        lam_norm = np.linalg.norm(lam, np.Inf) if len(lam) else 0.0
-        mu_norm = np.linalg.norm(mu, np.Inf) if len(mu) else 0.0
-        znorm = np.linalg.norm(z, np.Inf) if len(z) else 0.0
+        gnorm = np.linalg.norm(g, inf) if len(g) else 0.0
+        lam_norm = np.linalg.norm(lam, inf) if len(lam) else 0.0
+        mu_norm = np.linalg.norm(mu, inf) if len(mu) else 0.0
+        znorm = np.linalg.norm(z, inf) if len(z) else 0.0
         feascond = \
-            max([gnorm, maxh]) / (1 + max([np.linalg.norm(x, np.Inf), znorm]))
+            max([gnorm, maxh]) / (1 + max([np.linalg.norm(x, inf), znorm]))
         gradcond = \
-            np.linalg.norm(Lx, np.Inf) / (1 + max([lam_norm, mu_norm]))
-        compcond = np.dot(z, mu) / (1 + np.linalg.norm(x, np.Inf))
+            np.linalg.norm(Lx, inf) / (1 + max([lam_norm, mu_norm]))
+        compcond = np.dot(z, mu) / (1 + np.linalg.norm(x, inf))
         costcond = float(np.abs(f - f0) / (1 + np.abs(f0)))
 
         hist.append({'feascond': feascond, 'gradcond': gradcond,
@@ -775,8 +777,8 @@ def pipsopf_solver(om, ppopt, out_opt=None):
 
     # try to select an interior initial point
     ll, uu = xmin.copy(), xmax.copy()
-    ll[xmin == -np.Inf] = -1e10  # replace Inf with numerical proxies
-    uu[xmax == np.Inf] = 1e10
+    ll[xmin == -inf] = -1e10  # replace Inf with numerical proxies
+    uu[xmax == inf] = 1e10
     x0 = (ll + uu) / 2
     Varefs = bus[bus[:, IDX.bus.BUS_TYPE] == IDX.bus.REF, IDX.bus.VA] * deg2rad
     # angles set to first reference angle

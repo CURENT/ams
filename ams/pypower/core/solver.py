@@ -1,23 +1,25 @@
 """
 PYPOWER solver interface.
 """
-import logging  # NOQA
-from functools import wraps  # NOQA
-import re  # NOQA
+import logging
+from functools import wraps
+import re
 
-import numpy as np  # NOQA
-from numpy import flatnonzero as find  # NOQA
+import numpy as np
+from numpy import flatnonzero as find
 
-import scipy.sparse as sp  # NOQA
+import scipy.sparse as sp
 from scipy.sparse import csr_matrix as c_sparse
 
-from andes.shared import rad2deg, deg2rad  # NOQA
+from andes.shared import rad2deg, deg2rad
 
-from ams.pypower.core.pips import pips  # NOQA
-from ams.pypower.make import makeYbus  # NOQA
-import ams.pypower.utils as putils  # NOQA
-from ams.pypower.utils import IDX  # NOQA
-from ams.pypower.routines.opffcns import opf_costfcn, opf_consfcn, opf_hessfcn  # NOQA
+from ams.shared import inf
+
+from ams.pypower.core.pips import pips
+from ams.pypower.make import makeYbus
+import ams.pypower.utils as putils
+from ams.pypower.utils import IDX
+from ams.pypower.routines.opffcns import opf_costfcn, opf_consfcn, opf_hessfcn
 
 
 logger = logging.getLogger(__name__)
@@ -155,8 +157,8 @@ def ipoptopf_solver(om, ppopt):
     # try to select an interior initial point
     ll = xmin.copy()
     uu = xmax.copy()
-    ll[xmin == -np.Inf] = -2e19  # replace Inf with numerical proxies
-    uu[xmax == np.Inf] = 2e19
+    ll[xmin == -inf] = -2e19  # replace Inf with numerical proxies
+    uu[xmax == inf] = 2e19
     x0 = (ll + uu) / 2
     Varefs = bus[bus[:, IDX.bus.BUS_TYPE] == IDX.bus.REF, IDX.bus.VA] * deg2rad
     x0[vv['i1']['Va']:vv['iN']['Va']] = Varefs[0]  # angles set to first reference angle
@@ -254,7 +256,7 @@ def ipoptopf_solver(om, ppopt):
     # number of constraints
     m = neqnln + niqnln + nA
     # lower bound of constraint
-    gl = np.r_[np.zeros(neqnln), -np.Inf * np.ones(niqnln), l]
+    gl = np.r_[np.zeros(neqnln), -inf * np.ones(niqnln), l]
     # upper bound of constraints
     gu = np.r_[np.zeros(neqnln), np.zeros(niqnln),          u]
 
@@ -619,22 +621,22 @@ def qps_cplex(H, c, A, l, u, xmin, xmax, x0, opt):
     if len(c) == 0:
         c = np.zeros(nx)
 
-    if len(A) > 0 and (len(l) == 0 or all(l == -np.Inf)) and \
-            (len(u) == 0 or all(u == np.Inf)):
+    if len(A) > 0 and (len(l) == 0 or all(l == -inf)) and \
+            (len(u) == 0 or all(u == inf)):
         A = None  # no limits => no linear constraints
 
     nA = np.shape(A)[0]  # number of original linear constraints
     if len(u) == 0:  # By default, linear inequalities are ...
-        u = np.Inf * np.ones(nA)  # ... unbounded above and ...
+        u = inf * np.ones(nA)  # ... unbounded above and ...
 
     if len(l) == 0:
-        l = -np.Inf * np.ones(nA)  # ... unbounded below.
+        l = -inf * np.ones(nA)  # ... unbounded below.
 
     if len(xmin) == 0:  # By default, optimization variables are ...
-        xmin = -np.Inf * np.ones(nx)  # ... unbounded below and ...
+        xmin = -inf * np.ones(nx)  # ... unbounded below and ...
 
     if len(xmax) == 0:
-        xmax = np.Inf * np.ones(nx)  # ... unbounded above.
+        xmax = inf * np.ones(nx)  # ... unbounded above.
 
     if len(x0) == 0:
         x0 = np.zeros(nx)
@@ -909,17 +911,17 @@ def qps_gurobi(H, c, A, l, u, xmin, xmax, x0, opt):
     if len(c) == 0:
         c = np.zeros(nx)
 
-    if len(A) > 0 and (len(l) == 0 or all(l == -np.Inf)) and \
-            (len(u) == 0 or all(u == np.Inf)):
+    if len(A) > 0 and (len(l) == 0 or all(l == -inf)) and \
+            (len(u) == 0 or all(u == inf)):
         A = None  # no limits => no linear constraints
 
     nA = np.shape(A)[0]  # number of original linear constraints
     if nA:
         if len(u) == 0:  # By default, linear inequalities are ...
-            u = np.Inf * np.ones(nA)  # ... unbounded above and ...
+            u = inf * np.ones(nA)  # ... unbounded above and ...
 
         if len(l) == 0:
-            l = -np.Inf * np.ones(nA)  # ... unbounded below.
+            l = -inf * np.ones(nA)  # ... unbounded below.
 
     if len(x0) == 0:
         x0 = np.zeros(nx)
@@ -945,7 +947,7 @@ def qps_gurobi(H, c, A, l, u, xmin, xmax, x0, opt):
     if verbose:
         g_opt['DisplayInterval'] = 1
     else:
-        g_opt['DisplayInterval'] = np.Inf
+        g_opt['DisplayInterval'] = inf
 
     if not sp.issparse(A):
         A = c_sparse(A)
@@ -1190,17 +1192,17 @@ def qps_ipopt(H, c, A, l, u, xmin, xmax, x0, opt):
     if len(c) == 0:
         c = np.zeros(nx)
 
-    if len(A) > 0 and (len(l) == 0 or all(l == -np.Inf)) and \
-            (len(u) == 0 or all(u == np.Inf)):
+    if len(A) > 0 and (len(l) == 0 or all(l == -inf)) and \
+            (len(u) == 0 or all(u == inf)):
         A = None  # no limits => no linear constraints
 
     nA = np.shape(A)[0]  # number of original linear constraints
     if nA:
         if len(u) == 0:  # By default, linear inequalities are ...
-            u = np.Inf * np.ones(nA)  # ... unbounded above and ...
+            u = inf * np.ones(nA)  # ... unbounded above and ...
 
         if len(l) == 0:
-            l = -np.Inf * np.ones(nA)  # ... unbounded below.
+            l = -inf * np.ones(nA)  # ... unbounded below.
 
     if len(x0) == 0:
         x0 = np.zeros(nx)
@@ -1444,8 +1446,8 @@ def qps_mosek(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None,
     if 'a' not in prob | len(prob['a']) == 0:
         unconstrained = True
         prob['a'] = c_sparse((1, (1, 1)), (1, nx))
-        prob.blc = -np.Inf
-        prob.buc = np.Inf
+        prob.blc = -inf
+        prob.buc = inf
     else:
         unconstrained = False
 
@@ -1707,8 +1709,8 @@ def qps_pips(H, c, A, l, u, xmin=None, xmax=None, x0=None, opt=None):
     else:
         nx = p['H'].shape[0]
 
-    p['xmin'] = -np.Inf * np.ones(nx) if 'xmin' not in p else p['xmin']
-    p['xmax'] = np.Inf * np.ones(nx) if 'xmax' not in p else p['xmax']
+    p['xmin'] = -inf * np.ones(nx) if 'xmin' not in p else p['xmin']
+    p['xmax'] = inf * np.ones(nx) if 'xmax' not in p else p['xmax']
 
     p['c'] = np.zeros(nx) if p['c'] is None else p['c']
 
@@ -2147,7 +2149,7 @@ def gurobi_options(overrides=None, ppopt=None):
     if verbose:
         opt['DisplayInterval'] = 1
     else:
-        opt['DisplayInterval'] = np.Inf
+        opt['DisplayInterval'] = inf
 
     # -----  call user function to modify defaults  -----
     if len(fname) > 0:

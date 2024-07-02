@@ -25,6 +25,8 @@ import ams.pypower.routines.opffcns as opfcn
 
 from ams.pypower.toggle import toggle_reserves
 
+from ams.shared import inf
+
 logger = logging.getLogger(__name__)
 
 
@@ -406,7 +408,7 @@ def opf_setup(ppc, ppopt):
     ycon_vars = ['Pg', 'Qg', 'y']
 
     # voltage angle reference constraints
-    Vau = np.Inf * np.ones(nb)
+    Vau = inf * np.ones(nb)
     Val = -Vau
     Vau[refs] = Va[refs]
     Val[refs] = Va[refs]
@@ -696,10 +698,10 @@ class opf_model(object):
 
             N, M = AorN.shape
             if len(l) == 0:  # default l is -Inf
-                l = -np.Inf * np.ones(N)
+                l = -inf * np.ones(N)
 
             if len(u) == 0:  # default u is Inf
-                u = np.Inf * np.ones(N)
+                u = inf * np.ones(N)
 
             if len(varsets) == 0:
                 varsets = self.var["order"]
@@ -883,10 +885,10 @@ class opf_model(object):
             v0 = np.zeros(N)  # init to zero by default
 
         if vl is None or len(vl) == 0:
-            vl = -np.Inf * np.ones(N)  # unbounded below by default
+            vl = -inf * np.ones(N)  # unbounded below by default
 
         if vu is None or len(vu) == 0:
-            vu = np.Inf * np.ones(N)  # unbounded above by default
+            vu = inf * np.ones(N)  # unbounded above by default
 
         # add info about this var set
         self.var["idx"]["i1"][name] = self.var["N"]  # + 1   ## starting index
@@ -1202,7 +1204,7 @@ class opf_model(object):
 
         if self.lin["N"]:
             A = sp.sparse.lil_matrix((self.lin["N"], self.var["N"]))
-            u = np.Inf * np.ones(self.lin["N"])
+            u = inf * np.ones(self.lin["N"])
             l = -u
         else:
             A = None

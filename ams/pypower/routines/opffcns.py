@@ -4,18 +4,20 @@ Module for OPF functions.
 import logging
 from copy import deepcopy
 
-import numpy as np  # NOQA
-from numpy import flatnonzero as find  # NOQA
+import numpy as np
+from numpy import flatnonzero as find
 
-import scipy.sparse as sp  # NOQA
-from scipy.sparse import csr_matrix as c_sparse  # NOQA
-from scipy.sparse import lil_matrix as l_sparse  # NOQA
+import scipy.sparse as sp
+from scipy.sparse import csr_matrix as c_sparse
+from scipy.sparse import lil_matrix as l_sparse
 
-from ams.pypower.utils import isload, get_reorder, set_reorder  # NOQA
-from ams.pypower.idx import IDX  # NOQA
+from ams.pypower.utils import isload, get_reorder, set_reorder
+from ams.pypower.idx import IDX
 from ams.pypower.make import (d2Sbus_dV2, dSbus_dV, dIbr_dV,
                               d2AIbr_dV2, d2ASbr_dV2, dSbr_dV,
-                              makeSbus, dAbr_dV)  # NOQA
+                              makeSbus, dAbr_dV)
+
+from ams.shared import inf
 
 logger = logging.getLogger(__name__)
 
@@ -313,7 +315,7 @@ def opf_consfcn(x, om, Ybus, Yf, Yt, ppopt, il=None, *args):
     # then, the inequality constraints (branch flow limits)
     if nl2 > 0:
         flow_max = (branch[il, IDX.branch.RATE_A] / baseMVA)**2
-        flow_max[flow_max == 0] = np.Inf
+        flow_max[flow_max == 0] = inf
         if ppopt['OPF_FLOW_LIM'] == 2:  # current magnitude limit, |I|
             If = Yf * V
             It = Yt * V

@@ -1,20 +1,21 @@
 """
 PYPOWER module for toggling OPF elements.
 """
-import logging  # NOQA
+import logging
 
-import numpy as np  # NOQA
-from numpy import flatnonzero as find  # NOQA
+import numpy as np
+from numpy import flatnonzero as find
 
-import scipy.sparse as sp  # NOQA
-from scipy.sparse import csr_matrix as c_sparse  # NOQA
-from scipy.sparse import lil_matrix as l_sparse  # NOQA
+import scipy.sparse as sp
+from scipy.sparse import csr_matrix as c_sparse
+from scipy.sparse import lil_matrix as l_sparse
 
-from ams.pypower.make import makeBdc  # NOQA
-from ams.pypower.idx import IDX  # NOQA
+from ams.shared import inf
+from ams.pypower.make import makeBdc
+from ams.pypower.idx import IDX
 from ams.pypower.routines.opffcns import (add_userfcn, remove_userfcn,
                                           e2i_field, i2e_field, i2e_data,
-                                          isload)  # NOQA
+                                          isload)
 
 from pprint import pprint
 
@@ -383,8 +384,8 @@ def userfcn_dcline_ext2int(ppc, args):
     fg = np.zeros((ndc, ppc['gen'].shape[1]))
     fg[:, IDX.gen.MBSAE] = 100
     fg[:, IDX.gen.GEN_STATUS] = dc[:, IDX.dcline.BR_STATUS]  # status (should be all 1's)
-    fg[:, IDX.gen.PMIN] = -np.Inf
-    fg[:, IDX.gen.PMAX] = np.Inf
+    fg[:, IDX.gen.PMIN] = -inf
+    fg[:, IDX.gen.PMAX] = inf
     tg = fg.copy()
     fg[:, IDX.gen.GEN_BUS] = dc[:, IDX.dcline.F_BUS]  # from bus
     tg[:, IDX.gen.GEN_BUS] = dc[:, IDX.dcline.T_BUS]  # to bus
@@ -853,7 +854,7 @@ def userfcn_reserves_formulation(om, *args):
 
     # variable bounds
     Rmin = np.zeros(ngr)  # bound below by 0
-    Rmax = np.Inf * np.ones(ngr)  # bound above by ...
+    Rmax = inf * np.ones(ngr)  # bound above by ...
     k = find(ppc['gen'][igr, IDX.gen.RAMP_10])
     Rmax[k] = ppc['gen'][igr[k], IDX.gen.RAMP_10]  # ... ramp rate and ...
     if 'qty' in r:
