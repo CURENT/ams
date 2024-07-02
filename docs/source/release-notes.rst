@@ -9,10 +9,10 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v0.9.9 (2024-07-01)
+v0.9.9 (2024-xx-xx)
 -------------------
 
-- Update dependency requirements to support NumPy v2.0.0
+- Prepare to support NumPy v2.0.0, but solver has unexpected behavior
 - Improve the logic of setting `Optz` value
 
 v0.9.8 (2024-06-18)
