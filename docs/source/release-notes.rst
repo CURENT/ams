@@ -12,7 +12,8 @@ Pre-v1.0.0
 v0.9.9 (2024-xx-xx)
 -------------------
 
-- Prepare to support NumPy v2.0.0, but solver has unexpected behavior
+- Skip macOS tests in azure-pipelines due to failure in fixing its configuration
+- Prepare to support NumPy v2.0.0, but solvers have unexpected behavior
 - Improve the logic of setting `Optz` value
 
 v0.9.8 (2024-06-18)
