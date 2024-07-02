@@ -1,18 +1,19 @@
 """
 Make matrices.
 """
-import logging  # NOQA
+import logging
 
-import numpy as np  # NOQA
+import numpy as np
 
-from numpy import flatnonzero as find  # NOQA
-from scipy.sparse import csr_matrix as c_sparse  # NOQA
-from scipy.sparse import lil_matrix as l_sparse  # NOQA
+from numpy import flatnonzero as find
+from scipy.sparse import csr_matrix as c_sparse
+from scipy.sparse import lil_matrix as l_sparse
 
-from andes.shared import deg2rad  # NOQA
-from ams.pypower.idx import IDX  # NOQA
+from andes.shared import deg2rad
+from ams.shared import inf
+from ams.pypower.idx import IDX
 
-import ams.pypower.utils as putil  # NOQA
+import ams.pypower.utils as putil
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,7 @@ def makeAang(baseMVA, branch, nb, ppopt):
             jj = np.r_[branch[iang, IDX.branch.F_BUS], branch[iang, IDX.branch.T_BUS]]
             Aang = c_sparse((np.r_[np.ones(nang), -np.ones(nang)],
                              (ii, jj)), (nang, nb))
-            uang = np.Inf * np.ones(nang)
+            uang = inf * np.ones(nang)
             lang = -uang
             lang[iangl] = branch[iang[iangl], IDX.branch.ANGMIN] * deg2rad
             uang[iangh] = branch[iang[iangh], IDX.branch.ANGMAX] * deg2rad

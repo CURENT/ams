@@ -35,31 +35,32 @@ jobs:
       coverage report -m  # Generate test coverage report.
     displayName: 'pytest and coverage'
 
-- job: MacOSTests
-  pool:
-    vmImage: macOS-latest
-  timeoutInMinutes: 360
-  strategy:
-    matrix:
-      macos_python3.10:
-        python.version: '3.10'
+# skip MacOS for now
+# - job: MacOSTests
+#   pool:
+#     vmImage: macOS-latest
+#   timeoutInMinutes: 360
+#   strategy:
+#       matrix:
+#         Python310:
+#           python.version: '3.10'
 
-  steps:
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '$(python.version)'
-    displayName: 'Use Python $(python.version)'
+#   steps:
+#   - task: UsePythonVersion@0
+#     inputs:
+#       versionSpec: '$(python.version)'
+#     displayName: 'Use Python $(python.version)'
 
-  - script: |
-      conda install -c conda-forge kvxopt
-      python -m pip install --upgrade pip
-      pip install .[all]
-    displayName: 'Install dependencies'
+#   - script: |
+#       conda install -c conda-forge kvxopt
+#       python -m pip install --upgrade pip
+#       pip install .[all]
+#     displayName: 'Install dependencies'
 
-  - script: |
-      pip install pytest pytest-azurepipelines
-      pytest
-    displayName: 'pytest'
+#   - script: |
+#       pip install pytest pytest-azurepipelines
+#       pytest
+#     displayName: 'pytest'
 
 - job: WindowsTests
   pool:

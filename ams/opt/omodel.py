@@ -412,8 +412,10 @@ class Var(OptzBase):
 
     @v.setter
     def v(self, value):
-        # FIXME: is this safe?
-        self._v = value
+        if self.optz is None:
+            logger.info(f"Variable <{self.name}> is not initialized yet.")
+        else:
+            self.optz.value = value
 
     def get_idx(self):
         if self.is_group:
@@ -595,6 +597,10 @@ class Constraint(OptzBase):
         else:
             return self.optz._expr.value
 
+    @v.setter
+    def v(self, value):
+        raise AttributeError("Cannot set the value of the constraint.")
+
 
 class Objective(OptzBase):
     """
@@ -634,7 +640,6 @@ class Objective(OptzBase):
         OptzBase.__init__(self, name=name, info=info, unit=unit)
         self.e_str = e_str
         self.sense = sense
-        self._v = 0
         self.code = None
 
     @property
@@ -673,13 +678,12 @@ class Objective(OptzBase):
         """
         if self.optz is None:
             return None
-        out = self.om.obj.value
-        out = self._v if out is None else out
-        return out
+        else:
+            return self.optz.value
 
     @v.setter
     def v(self, value):
-        self._v = value
+        raise AttributeError("Cannot set the value of the objective function.")
 
     def parse(self, no_code=True):
         """

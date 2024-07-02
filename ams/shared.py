@@ -16,6 +16,12 @@ from andes.utils.lazyimport import LazyImport
 logger = logging.getLogger(__name__)
 
 sps = LazyImport('import scipy.sparse as sps')
+np = LazyImport('import numpy as np')
+
+# --- NumPy constants ---
+# NOTE: In NumPy 2.0, np.Inf and np.NaN are deprecated.
+inf = np.inf
+nan = np.nan
 
 # NOTE: copied from CVXPY documentation
 MIP_SOLVERS = ['CBC', 'COPT', 'GLPK_MI', 'CPLEX', 'GUROBI',

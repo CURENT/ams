@@ -9,6 +9,13 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.9.9 (2024-xx-xx)
+-------------------
+
+- Skip macOS tests in azure-pipelines due to failure in fixing its configuration
+- Prepare to support NumPy v2.0.0, but solvers have unexpected behavior
+- Improve the logic of setting `Optz` value
+
 v0.9.8 (2024-06-18)
 -------------------
 
