@@ -41,7 +41,7 @@ jobs:
   timeoutInMinutes: 360
   strategy:
     matrix:
-      macos_python3.10:
+      macos_python310:
         python.version: '3.10'
 
   steps:
