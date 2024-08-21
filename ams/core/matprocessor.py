@@ -466,8 +466,8 @@ class MatProcessor:
         permc_spec : str, optional
             Column permutation strategy for sparsity preservation. Default is 'COLAMD'.
         use_umfpack : bool, optional
-            If True, use UMFPACK as the solver. Effective only when `incremental=True`
-            and (`line` contains a single line or `step` is 1). Default is True.
+            If True, use UMFPACK as the solver. Effective only when (`incremental=True`)
+            & (`line` contains a single line or `step` is 1). Default is True.
 
         Parameters
         ----------
