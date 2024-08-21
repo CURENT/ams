@@ -12,6 +12,7 @@ Pre-v1.0.0
 v0.9.9 (2024-xx-xx)
 -------------------
 
+- In module `MatProcessor`, add two parameters `permc_spec` and `use_umfpack` in function `build_ptdf`
 - Follow RTD's deprecation of Sphinx context injection at build time
 - In MATPOWER conversion, set devices name as None
 - Skip macOS tests in azure-pipelines due to failure in fixing its configuration
