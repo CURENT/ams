@@ -15,6 +15,7 @@ cli:
 codecov: 
   token: 5fc2d41f-bcba-455d-a843-f85beb76d28f
 ignore:
+  - "pyproject.toml"
   - "setup.py"
   - "versioneer.py"
   - "ams/pypower/**"
