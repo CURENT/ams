@@ -74,7 +74,7 @@ include-package-data = true  # Ensure package data is included
 [tool.setuptools.package-data]
 "*" = ["CONTRIBUTING.rst", "LICENSE", "README.md", "versioneer.py", "ams/_version.py"]
 "cases" = ["*.xlsx", "*.m", "*.raw", "*.dyr", "*.py", "*.json"]
-"docs" = ["*.rst", "*.png", "conf.py", "Makefile", "make.bat"]
+"docs" = ["*.rst", "*.png", "conf.py", "Makefile", "make.bat", "source/images/*"]
 
 [tool.setuptools.exclude-package-data]
 "py" = ["*.pyc", "*.pyo"]
