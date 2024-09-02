@@ -19,6 +19,7 @@ v0.9.9 (2024-09-02)
 - Prepare to support NumPy v2.0.0, but solvers have unexpected behavior
 - Improve the logic of setting `Optz` value
 - Support NumPy v2.0.0
+- Transition to pyproject.toml for build configuration
 
 v0.9.8 (2024-06-18)
 -------------------
