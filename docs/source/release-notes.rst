@@ -9,6 +9,18 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.9.9 (2024-09-02)
+-------------------
+
+- In module `MatProcessor`, add two parameters `permc_spec` and `use_umfpack` in function `build_ptdf`
+- Follow RTD's deprecation of Sphinx context injection at build time
+- In MATPOWER conversion, set devices name as None
+- Skip macOS tests in azure-pipelines due to failure in fixing its configuration
+- Prepare to support NumPy v2.0.0, but solvers have unexpected behavior
+- Improve the logic of setting `Optz` value
+- Support NumPy v2.0.0
+- Transition to pyproject.toml for build configuration
+
 v0.9.8 (2024-06-18)
 -------------------
 

@@ -111,7 +111,7 @@ def preamble():
 
 def main():
     """
-    Entry point of the ANDES command-line interface.
+    Entry point of the AMS command-line interface.
     """
 
     parser = create_parser()

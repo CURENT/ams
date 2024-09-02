@@ -437,22 +437,37 @@ class MatProcessor:
         return b
 
     def build_ptdf(self, line=None, no_store=False,
-                   incremental=False, step=1000, no_tqdm=False):
+                   incremental=False, step=1000, no_tqdm=False,
+                   permc_spec=None, use_umfpack=True):
         """
-        Build the Power Transfer Distribution Factor (PTDF) matrix and store
-        it in the MParam `PTDF` by default.
+        Build the Power Transfer Distribution Factor (PTDF) matrix and optionally store it in `MParam.PTDF`.
 
-        `PTDF[m, n]` means the increased line flow on line `m` when there is
-        1 p.u. power injection at bus `n`. It is very similar to Generation
-        Shift Factor (GSF).
+        PTDF[m, n] represents the increased line flow on line `m` for a 1 p.u. power injection at bus `n`.
+        It is similar to the Generation Shift Factor (GSF).
 
-        Note that there is discrepency between the PTDF-based line flow and
-        DCOPF calcualted line flow. The gap is ignorable for small cases.
+        Note: There may be minor discrepancies between PTDF-based line flow and DCOPF-calculated line flow.
 
-        It requires DC Bbus and Bf.
+        For large cases, use `incremental=True` to calculate the sparse PTDF in chunks, which will be stored
+        as a `scipy.sparse.lil_matrix`. In this mode, the PTDF is calculated in chunks, and a progress bar
+        will be shown unless `no_tqdm=True`.
 
-        For large cases where memory is a concern, use `incremental=True` to
-        calculate the sparse PTDF in chunks in the format of scipy.sparse.lil_matrix.
+        Parameters
+        ----------
+        line : int, str, list, optional
+            Line indices for which the PTDF is calculated. If specified, the PTDF will not be stored in `MParam`.
+        no_store : bool, optional
+            If False, store the PTDF in `MatProcessor.PTDF._v`. Default is False.
+        incremental : bool, optional
+            If True, calculate the sparse PTDF in chunks to save memory. Default is False.
+        step : int, optional
+            Step size for incremental calculation. Default is 1000.
+        no_tqdm : bool, optional
+            If True, disable the progress bar. Default is False.
+        permc_spec : str, optional
+            Column permutation strategy for sparsity preservation. Default is 'COLAMD'.
+        use_umfpack : bool, optional
+            If True, use UMFPACK as the solver. Effective only when (`incremental=True`)
+            & (`line` contains a single line or `step` is 1). Default is True.
 
         Parameters
         ----------
@@ -468,6 +483,10 @@ class MatProcessor:
             Step for incremental calculation.
         no_tqdm : bool, optional
             If True, the progress bar will be disabled.
+        permc_spec : str, optional
+            How to permute the columns of the matrix for sparsity preservation. (default: 'COLAMD')
+        use_umfpack : bool, optional
+            If True, use UMFPACK as the solver. (default: True)
 
         Returns
         -------
@@ -530,8 +549,10 @@ class MatProcessor:
             # NOTE: for PTDF, we are building rows by rows
             for start in range(0, nline, step):
                 end = min(start + step, nline)
-                sol = sps.linalg.spsolve(Bbus[np.ix_(noslack, noref)].T,
-                                         Bf[np.ix_(luid[start:end], noref)].T).T
+                sol = sps.linalg.spsolve(A=Bbus[np.ix_(noslack, noref)].T,
+                                         b=Bf[np.ix_(luid[start:end], noref)].T,
+                                         permc_spec=permc_spec,
+                                         use_umfpack=use_umfpack).T
                 H[start:end, noslack] = sol
 
                 # show progress in percentage

@@ -278,7 +278,7 @@ def d2Sbus_dV2(Ybus, V, lam):
     A = c_sparse((lam * V, (ib, ib)))
     B = Ybus * diagV
     C = A * np.conj(B)
-    D = Ybus.H * diagV
+    D = Ybus.getH() * diagV
     E = diagV.conj() * (D * diaglam - c_sparse((D * lam, (ib, ib))))
     F = C - A * c_sparse((np.conj(Ibus), (ib, ib)))
     G = c_sparse((np.ones(nb) / abs(V), (ib, ib)))
@@ -425,7 +425,7 @@ def d2Sbr_dV2(Cbr, Ybr, V, lam):
     diaglam = c_sparse((lam, (il, il)))
     diagV = c_sparse((V, (ib, ib)))
 
-    A = Ybr.H * diaglam * Cbr
+    A = Ybr.getH() * diaglam * Cbr
     B = np.conj(diagV) * A * diagV
     D = c_sparse(((A * V) * np.conj(V), (ib, ib)))
     E = c_sparse(((A.T * np.conj(V) * V), (ib, ib)))

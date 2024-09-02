@@ -3,8 +3,10 @@ engines:
   flake8:
     enabled: true
 exclude_paths:
+  - "pyproject.toml"
   - "setup.py"
   - "versioneer.py"
+  - "genconf.py"
   - "ams/pypower/**"
   - "ams/_version.py"
   - ".github/**"

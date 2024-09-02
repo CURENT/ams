@@ -7,6 +7,7 @@ import numpy as np
 
 from andes.shared import rad2deg
 import ams
+from ams.shared import nan
 
 logger = logging.getLogger(__name__)
 
@@ -70,8 +71,8 @@ class TestKnownResults(unittest.TestCase):
         ptdf_mp = load_ptdf(self.mpres, 'case14')
         lodf_mp = load_lodf(self.mpres, 'case14')
 
-        ptdf[np.isnan(ptdf_mp)] = np.nan
-        lodf[np.isnan(lodf_mp)] = np.nan
+        ptdf[np.isnan(ptdf_mp)] = nan
+        lodf[np.isnan(lodf_mp)] = nan
 
         np.testing.assert_allclose(ptdf, ptdf_mp,
                                    equal_nan=True, rtol=1e-2, atol=1e-2)
@@ -139,8 +140,8 @@ class TestKnownResultsIEEE39(unittest.TestCase):
         ptdf_mp = load_ptdf(self.mpres, 'case39')
         lodf_mp = load_lodf(self.mpres, 'case39')
 
-        ptdf[np.isnan(ptdf_mp)] = np.nan
-        lodf[np.isnan(lodf_mp)] = np.nan
+        ptdf[np.isnan(ptdf_mp)] = nan
+        lodf[np.isnan(lodf_mp)] = nan
 
         np.testing.assert_allclose(ptdf, ptdf_mp,
                                    equal_nan=True, rtol=1e-2, atol=1e-2)
@@ -208,8 +209,8 @@ class TestKnownResultsIEEE118(unittest.TestCase):
         ptdf_mp = load_ptdf(self.mpres, 'case118')
         lodf_mp = load_lodf(self.mpres, 'case118')
 
-        ptdf[np.isnan(ptdf_mp)] = np.nan
-        lodf[np.isnan(lodf_mp)] = np.nan
+        ptdf[np.isnan(ptdf_mp)] = nan
+        lodf[np.isnan(lodf_mp)] = nan
 
         np.testing.assert_allclose(ptdf, ptdf_mp,
                                    equal_nan=True, rtol=1e-2, atol=1e-2)
@@ -257,7 +258,7 @@ def load_lodf(mpres, case):
         The LODF matrix.
     """
     lodf_data = np.array(mpres[case]['LODF'])
-    lodf = np.array([[np.nan if val in ["_NaN_", "-_Inf_", "_Inf_"] else val for val in row] for row in lodf_data],
+    lodf = np.array([[nan if val in ["_NaN_", "-_Inf_", "_Inf_"] else val for val in row] for row in lodf_data],
                     dtype=float)
     # NOTE: force the diagonal to be -1
     np.fill_diagonal(lodf, -1)

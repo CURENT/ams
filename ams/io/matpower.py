@@ -226,7 +226,7 @@ def mpc2system(mpc: dict, system) -> bool:
             system.add('GCost', gen=int(gen),
                        u=1, type=gctype,
                        idx=gcost_idx,
-                       name=f'GCost {gcost_idx}',
+                       name=None,
                        csu=startup, csd=shutdown,
                        c2=c2, c1=c1, c0=c0
                        )
@@ -235,7 +235,7 @@ def mpc2system(mpc: dict, system) -> bool:
     zone_id = np.unique(system.Bus.zone.v).astype(int)
     for zone in zone_id:
         zone_idx = f'ZONE_{zone}'
-        system.add('Region', idx=zone_idx, name=zone_idx)
+        system.add('Region', idx=zone_idx, name=None)
     bus_zone = system.Bus.zone.v
     bus_zone = [f'ZONE_{int(zone)}' for zone in bus_zone]
     system.Bus.zone.v = bus_zone
@@ -291,8 +291,10 @@ def system2mpc(system) -> dict:
                gen=np.zeros((system.PV.n + system.Slack.n, 21), dtype=np.float64),
                branch=np.zeros((system.Line.n, 17), dtype=np.float64),
                gencost=np.zeros((system.GCost.n, 7), dtype=np.float64),
-               bus_name=np.zeros((system.Bus.n, ), dtype=object),
                )
+
+    if system.Bus.name.v is not None:
+        mpc['bus_name'] = system.Bus.name.v
 
     base_mva = system.config.mva
 
@@ -400,7 +402,5 @@ def system2mpc(system) -> dict:
         gencost[:, 6] = system.GCost.c0.v[gcost_uid]
     else:
         mpc.pop('gencost')
-
-    mpc['bus_name'] = np.array(system.Bus.name.v)
 
     return mpc

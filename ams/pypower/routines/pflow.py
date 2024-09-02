@@ -2,27 +2,29 @@
 PYPOWER module to solve power flow.
 """
 
-import logging  # NOQA
+import logging
 
-from time import time  # NOQA
+from time import time
 
-import numpy as np  # NOQA
+import numpy as np
 
-from numpy import flatnonzero as find  # NOQA
-from scipy.sparse.linalg import spsolve, splu  # NOQA
-from scipy.sparse import hstack, vstack  # NOQA
-from scipy.sparse import csr_matrix as c_sparse  # NOQA
+from numpy import flatnonzero as find
+from scipy.sparse.linalg import spsolve, splu
+from scipy.sparse import hstack, vstack
+from scipy.sparse import csr_matrix as c_sparse
 
-from andes.shared import deg2rad, rad2deg  # NOQA
+from andes.shared import deg2rad, rad2deg
 
-from ams.pypower.core import ppoption  # NOQA
-import ams.pypower.utils as putils  # NOQA
-from ams.pypower.idx import IDX  # NOQA
-from ams.pypower.io import loadcase  # NOQA
-from ams.pypower.eps import EPS  # NOQA
-import ams.pypower.routines.opffcns as opfcn  # NOQA
+from ams.pypower.core import ppoption
+import ams.pypower.utils as putils
+from ams.pypower.idx import IDX 
+from ams.pypower.io import loadcase
+from ams.pypower.eps import EPS
+import ams.pypower.routines.opffcns as opfcn
 
-from ams.pypower.make import (makeB, makeBdc, makeSbus, makeYbus, dSbus_dV)  # NOQA
+from ams.pypower.make import (makeB, makeBdc, makeSbus, makeYbus, dSbus_dV)
+
+from ams.shared import inf
 
 
 logger = logging.getLogger(__name__)
@@ -429,7 +431,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt):
               mis[pq].imag]
 
     # check tolerance
-    normF = np.linalg.norm(F, np.Inf)
+    normF = np.linalg.norm(F, inf)
     logger.info('%2d: |F(x)| = %.10g', i, normF)
     converged = normF < tol
 
@@ -471,7 +473,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppopt):
                   mis[pq].imag]
 
         # check for convergence
-        normF = np.linalg.norm(F, np.Inf)
+        normF = np.linalg.norm(F, inf)
         logger.info('%2d: |F(x)| = %.10g', i, normF)
         converged = normF < tol
 
@@ -674,7 +676,7 @@ def gausspf(Ybus, Sbus, V0, ref, pv, pq, ppopt):
               mis[pq].imag]
 
     # check tolerance
-    normF = np.linalg.norm(F, np.Inf)
+    normF = np.linalg.norm(F, inf)
     logger.info('%d: |F(x)| = %.10g', i, normF)
     converged = normF < tol
 
@@ -706,7 +708,7 @@ def gausspf(Ybus, Sbus, V0, ref, pv, pq, ppopt):
                   mis[pq].imag]
 
         # check for convergence
-        normF = np.linalg.norm(F, np.Inf)
+        normF = np.linalg.norm(F, inf)
         logger.info('%d: |F(x)| = %.10g', i, normF)
         converged = normF < tol
 
@@ -789,8 +791,8 @@ def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt):
     Q = mis[pq].imag
 
     # check tolerance
-    normP = np.linalg.norm(P, np.Inf)
-    normQ = np.linalg.norm(Q, np.Inf)
+    normP = np.linalg.norm(P, inf)
+    normQ = np.linalg.norm(Q, inf)
     logger.info(f'{i} --: |P| = {normP:.10g}, |Q| = {normQ:.10g}')
     converged = normP < tol and normQ < tol
 
@@ -820,8 +822,8 @@ def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt):
         Q = mis[pq].imag
 
         # check tolerance
-        normP = np.linalg.norm(P, np.Inf)
-        normQ = np.linalg.norm(Q, np.Inf)
+        normP = np.linalg.norm(P, inf)
+        normQ = np.linalg.norm(Q, inf)
         logger.info(f'{i} P: |P| = {normP:.10g}, |Q| = {normQ:.10g}')
         if normP < tol and normQ < tol:
             converged = 1
@@ -840,8 +842,8 @@ def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt):
         Q = mis[pq].imag
 
         # check tolerance
-        normP = np.linalg.norm(P, np.Inf)
-        normQ = np.linalg.norm(Q, np.Inf)
+        normP = np.linalg.norm(P, inf)
+        normQ = np.linalg.norm(Q, inf)
         logger.info(f'{i} Q: |P| = {normP:.10g}, |Q| = {normQ:.10g}')
         converged = normP < tol and normQ < tol
         if converged:

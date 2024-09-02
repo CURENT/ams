@@ -144,6 +144,86 @@ class TestOModel(unittest.TestCase):
         np.testing.assert_almost_equal(plf_trip, 0, decimal=6)
 
 
+class TestSetOptzValueACOPF(unittest.TestCase):
+    """
+    Test value settings of `OptzBase` series in `ACOPF`.
+    """
+
+    def setUp(self) -> None:
+        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.xlsx"),
+                           setup=True,
+                           default_config=True,
+                           no_output=True,
+                           )
+
+    def test_vset_before_init(self):
+        """
+        Test value setting before routine initialization.
+        """
+        # set values to `Var` before initialization is not doable
+        v_ext = np.ones(self.ss.ACOPF.pg.n)
+        self.ss.ACOPF.pg.v = v_ext
+        self.assertIsNone(self.ss.ACOPF.pg.v)
+        # set values to `Constraint` is not allowed
+        self.assertRaises(AttributeError, lambda: setattr(self.ss.ACOPF.plfub, 'v', 1))
+        # set values to `Objective` is not allowed
+        self.assertRaises(AttributeError, lambda: setattr(self.ss.ACOPF.obj, 'v', 1))
+
+    def test_vset_after_init(self):
+        """
+        Test value setting after routine initialization.
+        """
+        self.ss.ACOPF.init()
+        # set values to `Var` after initialization is allowed
+        v_ext = np.ones(self.ss.ACOPF.pg.n)
+        self.ss.ACOPF.pg.v = v_ext
+        np.testing.assert_equal(self.ss.ACOPF.pg.v, v_ext)
+        # set values to `Constraint` is not allowed
+        self.assertRaises(AttributeError, lambda: setattr(self.ss.ACOPF.plfub, 'v', 1))
+        # set values to `Objective` is not allowed
+        self.assertRaises(AttributeError, lambda: setattr(self.ss.ACOPF.obj, 'v', 1))
+
+
+class TestSetOptzValueDCOPF(unittest.TestCase):
+    """
+    Test value settings of `OptzBase` series in `DCOPF`.
+    """
+
+    def setUp(self) -> None:
+        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.xlsx"),
+                           setup=True,
+                           default_config=True,
+                           no_output=True,
+                           )
+
+    def test_vset_before_init(self):
+        """
+        Test value setting before routine initialization.
+        """
+        # set values to `Var` before initialization is not doable
+        v_ext = np.ones(self.ss.DCOPF.pg.n)
+        self.ss.DCOPF.pg.v = v_ext
+        self.assertIsNone(self.ss.DCOPF.pg.v)
+        # set values to `Constraint` is not allowed
+        self.assertRaises(AttributeError, lambda: setattr(self.ss.DCOPF.plfub, 'v', 1))
+        # set values to `Objective` is not allowed
+        self.assertRaises(AttributeError, lambda: setattr(self.ss.DCOPF.obj, 'v', 1))
+
+    def test_vset_after_init(self):
+        """
+        Test value setting after routine initialization.
+        """
+        self.ss.DCOPF.init()
+        # set values to `Var` after initialization is allowed
+        v_ext = np.ones(self.ss.DCOPF.pg.n)
+        self.ss.DCOPF.pg.v = v_ext
+        np.testing.assert_equal(self.ss.DCOPF.pg.v, v_ext)
+        # set values to `Constraint` is not allowed
+        self.assertRaises(AttributeError, lambda: setattr(self.ss.DCOPF.plfub, 'v', 1))
+        # set values to `Objective` is not allowed
+        self.assertRaises(AttributeError, lambda: setattr(self.ss.DCOPF.obj, 'v', 1))
+
+
 class TestRTED(unittest.TestCase):
     """
     Test methods of `RTED`.
