@@ -40,24 +40,5 @@ def write_req():
     print("Requirements files generated successfully.")
 
 
-def write_cfg():
-    """
-    Write versioneer configuration from pyproject.toml to setup.cfg.
-    """
-    with open('pyproject.toml', 'r') as f:
-        pyproject = toml.load(f)
-
-    versioneer = pyproject['tool']['versioneer']
-
-    with open('setup.cfg', 'w') as f:
-        f.write(comment)
-        f.write("[versioneer]\n")
-        for key, value in versioneer.items():
-            f.write(f"{key} = {value}\n")
-
-    print("Versioneer configuration generated successfully.")
-
-
 if __name__ == "__main__":
     write_req()
-    write_cfg()
