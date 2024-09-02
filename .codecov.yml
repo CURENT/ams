@@ -17,8 +17,8 @@ codecov:
 ignore:
   - "pyproject.toml"
   - "setup.py"
+  - "genconf.py"
   - "versioneer.py"
-  - "genreq.py"
   - "ams/pypower/**"
   - "ams/_version.py"
   - ".github/**"

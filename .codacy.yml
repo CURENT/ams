@@ -6,7 +6,7 @@ exclude_paths:
   - "pyproject.toml"
   - "setup.py"
   - "versioneer.py"
-  - "genreq.py"
+  - "genconf.py"
   - "ams/pypower/**"
   - "ams/_version.py"
   - ".github/**"
