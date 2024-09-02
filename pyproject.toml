@@ -41,18 +41,19 @@ dev = [
     "pytest-cov",
     "coverage",
     "flake8",
-    "ipython",
     "numpydoc",
     "toml"
 ]
 doc = [
+    "ipython",
     "sphinx",
     "pydata-sphinx-theme",
     "numpydoc",
     "sphinx-copybutton",
     "sphinx-panels",
     "myst-parser",
-    "nbsphinx"
+    "nbsphinx",
+    "pyscipopt "
 ]
 
 [project.scripts]

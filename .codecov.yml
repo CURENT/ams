@@ -18,6 +18,7 @@ ignore:
   - "pyproject.toml"
   - "setup.py"
   - "versioneer.py"
+  - "genreq.py"
   - "ams/pypower/**"
   - "ams/_version.py"
   - ".github/**"
