@@ -3,9 +3,10 @@ pytest               # dev
 pytest-cov           # dev
 coverage             # dev
 flake8               # dev
-ipython              # dev
 numpydoc             # dev
 toml                 # dev
+pyscipopt            # dev
+ipython              # doc
 sphinx               # doc
 pydata-sphinx-theme  # doc
 numpydoc             # doc
@@ -13,3 +14,4 @@ sphinx-copybutton    # doc
 sphinx-panels        # doc
 myst-parser          # doc
 nbsphinx             # doc
+pyscipopt            # doc

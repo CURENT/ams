@@ -42,7 +42,8 @@ dev = [
     "coverage",
     "flake8",
     "numpydoc",
-    "toml"
+    "toml",
+    "pyscipopt"
 ]
 doc = [
     "ipython",
@@ -53,7 +54,7 @@ doc = [
     "sphinx-panels",
     "myst-parser",
     "nbsphinx",
-    "pyscipopt "
+    "pyscipopt"
 ]
 
 [project.scripts]
