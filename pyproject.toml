@@ -68,10 +68,8 @@ Issues = "https://github.com/CURENT/ams/issues"
 Changelog = "https://ltb.readthedocs.io/projects/ams/en/latest/release-notes.html"
 
 [tool.setuptools]
+packages = ["ams"]
 include-package-data = true  # Ensure package data is included
-
-[tool.setuptools.packages.find]
-where = ["ams"]
 
 [tool.setuptools.package-data]
 "*" = ["CONTRIBUTING.rst", "LICENSE", "README.md", "versioneer.py", "ams/_version.py"]
