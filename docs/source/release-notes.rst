@@ -9,6 +9,11 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.9.11 (2024-xx-xx)
+--------------------
+
+- [WIP] Fix circular import issue in `ams.io`
+
 v0.9.10 (2024-09-03)
 --------------------
 
