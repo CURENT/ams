@@ -9,12 +9,16 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.9.11 (2024-xx-xx)
+--------------------
+
+- Add pyproject.toml for PEP 517 and PEP 518 compliance
+
 v0.9.10 (2024-09-03)
 --------------------
 
 Hotfix of import issue in ``v0.9.9``.
 
-Features developed in ``v0.9.9``:
 - In module `MatProcessor`, add two parameters `permc_spec` and `use_umfpack` in function `build_ptdf`
 - Follow RTD's deprecation of Sphinx context injection at build time
 - In MATPOWER conversion, set devices name as None
