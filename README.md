@@ -8,7 +8,6 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 ![Repo Size](https://img.shields.io/github/repo-size/CURENT/ams)
 [![GitHub last commit (master)](https://img.shields.io/github/last-commit/CURENT/ams/master?label=last%20commit%20to%20master)](https://github.com/CURENT/ams/commits/master/)
 [![GitHub last commit (develop)](https://img.shields.io/github/last-commit/CURENT/ams/develop?label=last%20commit%20to%20develop)](https://github.com/CURENT/ams/commits/develop/)
-[![HitCount](https://hits.dwyl.com/CURENT/ams.svg)](https://hits.dwyl.com/CURENT/ams)
 [![libraries](https://img.shields.io/librariesio/release/pypi/ltbams)](https://libraries.io/pypi/ltbams)
 [![Structure](https://img.shields.io/badge/code_base-visualize-blue)](https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=CURENT%2Fams)
 
@@ -60,8 +59,9 @@ Use the following resources to get involved.
 # Installation
 
 ***NOTE:***
-- ``kvxopt`` is recommended to install via ``conda`` as sometimes ``pip`` struggles to set the correct path for compiled libraries
-- `cvxpy` versions **below 1.5** are incompatible with `numpy` versions **2.0 and above**.
+- Version **0.9.9** has known issues. Please avoid using this version
+- `kvxopt` is recommended to install via `conda` as sometimes ``pip`` struggles to set the correct path for compiled libraries
+- `cvxpy` versions **below 1.5** are incompatible with `numpy` versions **2.0 and above**
 
 AMS is released as ``ltbams`` on PyPI and conda-forge.
 Install from PyPI using pip:
