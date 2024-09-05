@@ -24,7 +24,7 @@ A simplified code snippet for RTED is shown below as an example.
                                info='Sum Gen vars vector in shape of zone',
                                no_parse=True, sparse=True)
             ... ...
-            self.rbu = Constraint(name='rbu', type='eq',
+            self.rbu = Constraint(name='rbu', is_eq=True,
                                   info='RegUp reserve balance',
                                   e_str = 'gs @ mul(ug, pru) - dud')
             ... ...
