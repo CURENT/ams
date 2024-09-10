@@ -4,8 +4,6 @@ Test interface.
 
 import unittest
 import numpy as np
-import pkg_resources
-from pkg_resources import parse_version
 
 import andes
 import ams
