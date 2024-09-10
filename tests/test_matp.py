@@ -1,3 +1,7 @@
+"""
+Test module MatProcessor.
+"""
+
 import unittest
 import os
 
