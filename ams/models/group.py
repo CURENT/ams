@@ -210,6 +210,12 @@ class ACLine(GroupBase):
         self.common_params.extend(('bus1', 'bus2', 'r', 'x'))
 
 
+class ACShort(GroupBase):
+    def __init__(self):
+        super(ACShort, self).__init__()
+        self.common_params.extend(('bus1', 'bus2'))
+
+
 class StaticLoad(GroupBase):
     """
     Static load group.
