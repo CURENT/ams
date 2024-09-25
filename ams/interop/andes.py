@@ -17,33 +17,31 @@ logger = logging.getLogger(__name__)
 
 
 # Models used in ANDES PFlow
+def create_entry(*fields):
+    """
+    Helper function to create a list of fields for a model entry.
+    """
+    return list(('idx', 'u', 'name')) + list(fields)
+
+
 pflow_dict = OrderedDict([
-    ('Bus', ['idx', 'u', 'name',
-             'Vn', 'vmax', 'vmin',
-             'v0', 'a0', 'xcoord', 'ycoord',
-             'area', 'zone', 'owner']),
-    ('PQ', ['idx', 'u', 'name',
-            'bus', 'Vn', 'p0', 'q0',
-            'vmax', 'vmin', 'owner']),
-    ('PV', ['idx', 'u', 'name', 'Sn',
-            'Vn', 'bus', 'busr', 'p0', 'q0',
-            'pmax', 'pmin', 'qmax', 'qmin',
-            'v0', 'vmax', 'vmin', 'ra', 'xs']),
-    ('Slack', ['idx', 'u', 'name', 'Sn',
-               'Vn', 'bus', 'busr', 'p0', 'q0',
-               'pmax', 'pmin', 'qmax', 'qmin',
-               'v0', 'vmax', 'vmin', 'ra', 'xs',
-               'a0']),
-    ('Shunt', ['idx', 'u', 'name', 'Sn',
-               'Vn', 'bus', 'g', 'b', 'fn']),
-    ('Line', ['idx', 'u', 'name',
-              'bus1', 'bus2', 'Sn',
-              'fn', 'Vn1', 'Vn2',
-              'r', 'x', 'b', 'g', 'b1', 'g1', 'b2', 'g2',
-              'trans', 'tap', 'phi',
-              'rate_a', 'rate_b', 'rate_c',
-              'owner', 'xcoord', 'ycoord']),
-    ('Area', ['idx', 'u', 'name']),
+    ('Bus', create_entry('Vn', 'vmax', 'vmin', 'v0', 'a0',
+                         'xcoord', 'ycoord', 'area', 'zone',
+                         'owner')),
+    ('PQ', create_entry('bus', 'Vn', 'p0', 'q0', 'vmax',
+                        'vmin', 'owner')),
+    ('PV', create_entry('Sn', 'Vn', 'bus', 'busr', 'p0', 'q0',
+                        'pmax', 'pmin', 'qmax', 'qmin',
+                        'v0', 'vmax', 'vmin', 'ra', 'xs')),
+    ('Slack', create_entry('Sn', 'Vn', 'bus', 'busr', 'p0', 'q0',
+                           'pmax', 'pmin', 'qmax', 'qmin',
+                           'v0', 'vmax', 'vmin', 'ra', 'xs', 'a0')),
+    ('Shunt', create_entry('Sn', 'Vn', 'bus', 'g', 'b', 'fn')),
+    ('Line', create_entry('bus1', 'bus2', 'Sn', 'fn', 'Vn1', 'Vn2',
+                          'r', 'x', 'b', 'g', 'b1', 'g1', 'b2', 'g2',
+                          'trans', 'tap', 'phi', 'rate_a', 'rate_b',
+                          'rate_c', 'owner', 'xcoord', 'ycoord')),
+    ('Area', create_entry()),
 ])
 
 # dict for guessing dynamic models given its idx
