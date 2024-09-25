@@ -924,8 +924,11 @@ def make_link_table(adsys):
     ssa_key0 = pd.merge(left=ssa_key0, how='left', on='stg_idx',
                         right=ssa_rg[['stg_idx', 'rg_idx']])
 
-    ssa_key0 = ssa_key0.fillna(value=False).infer_objects(copy=False)
-    dyr = ssa_key0['syg_idx'].astype(bool) + ssa_key0['dg_idx'].astype(bool) + ssa_key0['rg_idx'].astype(bool)
+    # NOTE: use this instead of fillna to avoid type conversion
+    idxc = ['stg_idx', 'syg_idx', 'dg_idx', 'rg_idx']
+    ssa_key0[idxc] = ssa_key0[idxc].astype('str').replace({'nan': ''}).astype('bool')
+
+    dyr = ssa_key0['syg_idx'] + ssa_key0['dg_idx'] + ssa_key0['rg_idx']
     non_dyr = np.logical_not(dyr)
     ssa_dyr0 = ssa_key0[non_dyr]
     ssa_dyr0['gammap'] = 1
