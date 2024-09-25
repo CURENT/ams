@@ -10,6 +10,7 @@ from andes.shared import pd, np
 from andes.utils.misc import elapsed
 from andes.system import System as andes_System
 
+from ams.utils import create_entry
 from ams.io import input_formats
 from ams.shared import nan
 
@@ -17,13 +18,6 @@ logger = logging.getLogger(__name__)
 
 
 # Models used in ANDES PFlow
-def create_entry(*fields):
-    """
-    Helper function to create a list of fields for a model entry.
-    """
-    return list(('idx', 'u', 'name')) + list(fields)
-
-
 pflow_dict = OrderedDict([
     ('Bus', create_entry('Vn', 'vmax', 'vmin', 'v0', 'a0',
                          'xcoord', 'ycoord', 'area', 'zone',
@@ -930,7 +924,7 @@ def make_link_table(adsys):
     ssa_key0 = pd.merge(left=ssa_key0, how='left', on='stg_idx',
                         right=ssa_rg[['stg_idx', 'rg_idx']])
 
-    ssa_key0 = ssa_key0.fillna(value=False)
+    ssa_key0 = ssa_key0.fillna(value=False).infer_objects(copy=False)
     dyr = ssa_key0['syg_idx'].astype(bool) + ssa_key0['dg_idx'].astype(bool) + ssa_key0['rg_idx'].astype(bool)
     non_dyr = np.logical_not(dyr)
     ssa_dyr0 = ssa_key0[non_dyr]
