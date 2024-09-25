@@ -42,6 +42,7 @@ pflow_dict = OrderedDict([
                           'trans', 'tap', 'phi', 'rate_a', 'rate_b',
                           'rate_c', 'owner', 'xcoord', 'ycoord')),
     ('Area', create_entry()),
+    ('Jumper', create_entry('bus1', 'bus2')),
 ])
 
 # dict for guessing dynamic models given its idx
