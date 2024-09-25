@@ -11,7 +11,7 @@ def require_MIP_solver(f):
     """
     def wrapper(*args, **kwargs):
         all_solvers = cp.installed_solvers()
-        mip_solvers = ['CPLEX', 'GUROBI', 'MOSEK']
+        mip_solvers = ['SCIP', 'CPLEX', 'GUROBI', 'MOSEK']
         if any(s in mip_solvers for s in all_solvers):
             pass
         else:
@@ -65,7 +65,7 @@ class TestDCED(unittest.TestCase):
         """
         init = self.ss.RTEDES.init()
         self.assertTrue(init, "RTEDES initialization failed!")
-        self.ss.RTEDES.run()
+        self.ss.RTEDES.run(solver='SCIP')
         np.testing.assert_equal(self.ss.RTEDES.exit_code, 0)
 
     @require_MIP_solver
@@ -75,7 +75,7 @@ class TestDCED(unittest.TestCase):
         """
         init = self.ss.EDES.init()
         self.assertTrue(init, "EDES initialization failed!")
-        self.ss.EDES.run()
+        self.ss.EDES.run(solver='SCIP')
         np.testing.assert_equal(self.ss.EDES.exit_code, 0)
 
 
