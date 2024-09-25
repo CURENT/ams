@@ -4,8 +4,8 @@ Test ANDES matrices.
 
 import unittest
 import numpy as np
-import pkg_resources
-from pkg_resources import parse_version
+import importlib.metadata
+from packaging.version import parse as parse_version
 
 import ams
 
@@ -15,7 +15,7 @@ class TestMatrices(unittest.TestCase):
     Tests for system matrices consistency.
     """
 
-    andes_version = pkg_resources.get_distribution("andes").version
+    andes_version = importlib.metadata.version("andes")
     if parse_version(andes_version) < parse_version('1.9.2'):
         raise unittest.SkipTest("Requires ANDES version >= 1.9.2")
 
