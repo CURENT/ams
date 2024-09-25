@@ -13,6 +13,8 @@ v0.9.11 (2024-xx-xx)
 --------------------
 
 - Add pyproject.toml for PEP 517 and PEP 518 compliance
+- Add model `Jumper`
+- Fix deprecation warning related to `pandas.fillna` and `newshape` in NumPy
 
 v0.9.10 (2024-09-03)
 --------------------
