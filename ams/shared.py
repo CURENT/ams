@@ -23,15 +23,17 @@ np = LazyImport('import numpy as np')
 inf = np.inf
 nan = np.nan
 
-# NOTE: copied from CVXPY documentation
-MIP_SOLVERS = ['CBC', 'COPT', 'GLPK_MI', 'CPLEX', 'GUROBI',
-               'MOSEK', 'SCIP', 'XPRESS', 'SCIPY']
-
-INSTALLED_SOLVERS = cp.installed_solvers()
-
 # NOTE: copyright
 year_end = datetime.now().year
 copyright_msg = f'Copyright (C) 2023-{year_end} Jinning Wang'
+
+# NOTE: copied from CVXPY documentation, last checked on 2024/10/30, v1.5
+mip_solvers = ['CBC', 'COPT', 'GLPK_MI', 'CPLEX', 'GUROBI',
+               'MOSEK', 'SCIP', 'XPRESS', 'SCIPY']
+
+installed_solvers = cp.installed_solvers()
+
+installed_mip_solvers = [s for s in installed_solvers if s in mip_solvers]
 
 
 def require_MIP_solver(f):
@@ -41,7 +43,7 @@ def require_MIP_solver(f):
 
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if not any(s in MIP_SOLVERS for s in INSTALLED_SOLVERS):
+        if not any(s in mip_solvers for s in installed_solvers):
             raise ModuleNotFoundError("No MIP solver is available.")
         return f(*args, **kwargs)
 
