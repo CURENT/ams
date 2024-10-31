@@ -65,12 +65,12 @@ class GenParam:
                             tex_name=r'p_{g0}',
                             unit='p.u.',
                             )
-        self.td1 = NumParam(default=0,
+        self.td1 = NumParam(default=1,
                             info='minimum ON duration',
                             tex_name=r't_{d1}',
                             unit='h',
                             )
-        self.td2 = NumParam(default=0,
+        self.td2 = NumParam(default=0.5,
                             info='minimum OFF duration',
                             tex_name=r't_{d2}',
                             unit='h',
