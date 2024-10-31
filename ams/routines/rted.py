@@ -78,11 +78,11 @@ class SFRBase:
                          model='SFR', src='dd',
                          unit='%', no_parse=True,)
         self.dud = NumOpDual(u=self.pdz, u2=self.du, fun=np.multiply,
-                             rfun=np.reshape, rargs=dict(shape=(-1,)),
+                             rfun=np.reshape, rargs=dict(newshape=(-1,)),
                              name='dud', tex_name=r'd_{u, d}',
                              info='zonal RegUp reserve requirement',)
         self.ddd = NumOpDual(u=self.pdz, u2=self.dd, fun=np.multiply,
-                             rfun=np.reshape, rargs=dict(shape=(-1,)),
+                             rfun=np.reshape, rargs=dict(newshape=(-1,)),
                              name='ddd', tex_name=r'd_{d, d}',
                              info='zonal RegDn reserve requirement',)
         # --- SFR ---
