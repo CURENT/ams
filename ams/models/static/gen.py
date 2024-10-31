@@ -18,7 +18,7 @@ class GenParam:
                              info="generator controllability",
                              tex_name=r'c_{trl}',
                              unit='bool',)
-        self.udf = NumParam(default=1,
+        self.udf = NumParam(default=0,
                             info="enforced on/off status; 0 unenforced, 1 enforced on, -1 enforced off",
                             tex_name=r'u_{d,f}',
                             unit='int',
