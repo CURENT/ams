@@ -132,11 +132,11 @@ class TestDCOPF(unittest.TestCase):
         self.ss.DCOPF.run(solver='CLARABEL')
         self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge under generator trip!")
         self.assertAlmostEqual(self.ss.DCOPF.get(src='pg', attr='v', idx='PV_1'),
-                               0, decimal=6,
+                               0, places=6,
                                msg="Generator trip does not take effect in DCOPF!")
-
-        pg_trip = self.ss.DCOPF.get(src='pg', attr='v', idx='PV_1')
-        np.testing.assert_almost_equal(pg_trip, 0, decimal=6)
+        self.assertAlmostEqual(self.ss.DCOPF.get(src='pg', attr='v', idx='PV_1'),
+                               0, places=6,
+                               msg="Generator trip does not take effect in DCOPF!")
 
         # --- trip line ---
         self.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
@@ -145,9 +145,9 @@ class TestDCOPF(unittest.TestCase):
         self.ss.DCOPF.run(solver='CLARABEL')
         self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge under line trip!")
 
-        np.testing.assert_almost_equal(self.ss.DCOPF.get(src='plf', attr='v', idx='Line_3'),
-                                       0, decimal=6,
-                                       msg="Line trip does not take effect in DCOPF!")
+        self.assertAlmostEqual(self.ss.DCOPF.get(src='plf', attr='v', idx='Line_3'),
+                               0, places=6,
+                               msg="Line trip does not take effect in DCOPF!")
 
 
 class TestRTED(unittest.TestCase):
@@ -208,7 +208,7 @@ class TestRTED(unittest.TestCase):
         self.ss.RTED.run(solver='CLARABEL')
         self.assertTrue(self.ss.RTED.converged, "RTED did not converge under generator trip!")
         self.assertAlmostEqual(self.ss.RTED.get(src='pg', attr='v', idx='PV_1'),
-                               0, decimal=6,
+                               0, places=6,
                                msg="Generator trip does not take effect in RTED!")
 
         pg_trip = self.ss.RTED.get(src='pg', attr='v', idx='PV_1')
@@ -221,7 +221,7 @@ class TestRTED(unittest.TestCase):
         self.ss.RTED.run(solver='CLARABEL')
         self.assertTrue(self.ss.RTED.converged, "RTED did not converge under line trip!")
         self.assertAlmostEqual(self.ss.RTED.get(src='plf', attr='v', idx='Line_3'),
-                               0, decimal=6,
+                               0, places=6,
                                msg="Line trip does not take effect in RTED!")
 
 
