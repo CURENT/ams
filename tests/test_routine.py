@@ -131,8 +131,7 @@ class TestOModel(unittest.TestCase):
         np.testing.assert_almost_equal(pg_trip, 0, decimal=6)
 
         # --- trip line ---
-        self.ss.Line.set(src='u', attr='v', idx='Line_4', value=0)
-
+        self.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
         self.ss.DCOPF.update()
 
         self.ss.DCOPF.run(solver='CLARABEL')
@@ -140,7 +139,7 @@ class TestOModel(unittest.TestCase):
         obj_lt = self.ss.DCOPF.obj.v
         self.assertGreater(obj_lt, obj_gt)
 
-        plf_trip = self.ss.DCOPF.get(src='plf', attr='v', idx='Line_4')
+        plf_trip = self.ss.DCOPF.get(src='plf', attr='v', idx='Line_3')
         np.testing.assert_almost_equal(plf_trip, 0, decimal=6)
 
 
