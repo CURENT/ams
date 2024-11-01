@@ -54,15 +54,15 @@ class TestRTED(unittest.TestCase):
 
         self.ss.RTED.run(solver='CLARABEL')
         obj_pqt = self.ss.RTED.obj.v
-        self.assertLess(obj_pqt, obj, "Load set does not take effect in RTED!")
+        self.assertLess(obj_pqt, obj, "Load set does not take effect!")
 
         # --- trip load ---
-        self.ss.PQ.set(src='u', attr='v', idx='PQ_1', value=0)
+        self.ss.PQ.set(src='u', attr='v', idx='PQ_2', value=0)
         self.ss.RTED.update()
 
         self.ss.RTED.run(solver='CLARABEL')
         obj_pqt2 = self.ss.RTED.obj.v
-        self.assertLess(obj_pqt2, obj_pqt, "Load trip does not take effect in RTED!")
+        self.assertLess(obj_pqt2, obj_pqt, "Load trip does not take effect!")
 
         # --- trip generator ---
         self.ss.StaticGen.set(src='u', attr='v', idx='PV_1', value=0)
@@ -72,7 +72,7 @@ class TestRTED(unittest.TestCase):
         self.assertTrue(self.ss.RTED.converged, "RTED did not converge under generator trip!")
         self.assertAlmostEqual(self.ss.RTED.get(src='pg', attr='v', idx='PV_1'),
                                0, places=6,
-                               msg="Generator trip does not take effect in RTED!")
+                               msg="Generator trip does not take effect!")
 
         pg_trip = self.ss.RTED.get(src='pg', attr='v', idx='PV_1')
         np.testing.assert_almost_equal(pg_trip, 0, decimal=6)
@@ -85,4 +85,4 @@ class TestRTED(unittest.TestCase):
         self.assertTrue(self.ss.RTED.converged, "RTED did not converge under line trip!")
         self.assertAlmostEqual(self.ss.RTED.get(src='plf', attr='v', idx='Line_3'),
                                0, places=6,
-                               msg="Line trip does not take effect in RTED!")
+                               msg="Line trip does not take effect!")
