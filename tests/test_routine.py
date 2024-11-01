@@ -92,10 +92,10 @@ class TestRoutineMethods(unittest.TestCase):
 
         # --- constraint values ---
         for constr in self.ss.DCOPF.constrs.values():
-            np.testing.assert_almost_equal(constr.v, constr.v2, decimal=6)
+            np.testing.assert_almost_equal(constr.v, constr.e, decimal=6)
 
         # --- objective value ---
-        self.assertAlmostEqual(self.ss.DCOPF.obj.v, self.ss.DCOPF.obj.v2, places=6)
+        self.assertAlmostEqual(self.ss.DCOPF.obj.v, self.ss.DCOPF.obj.e, places=6)
 
 
 class TestSetOptzValueACOPF(unittest.TestCase):

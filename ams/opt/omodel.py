@@ -548,12 +548,15 @@ class Constraint(OptzBase):
         return out
 
     @property
-    def v2(self):
+    def e(self):
         """
         Return the calculated constraint LHS value.
-        Note that ``v`` should be used primarily as it is obtained
+        Note that `v` should be used primarily as it is obtained
         from the solver directly.
-        ``v2`` is for debugging purpose, and should be consistent with ``v``.
+
+        `e` is for debugging purpose. For a successfully solved problem,
+        `e` should equal to `v`. However, when a problem is infeasible
+        or unbounded, `e` can be used to check the constraint LHS value.
         """
         if self.code is None:
             logger.info(f"Constraint <{self.name}> is not parsed yet.")
@@ -638,12 +641,16 @@ class Objective(OptzBase):
         self.code = None
 
     @property
-    def v2(self):
+    def e(self):
         """
         Return the calculated objective value.
-        Note that ``v`` should be used primarily as it is obtained
+
+        Note that `v` should be used primarily as it is obtained
         from the solver directly.
-        ``v2`` is for debugging purpose, and should be consistent with ``v``.
+
+        `e` is for debugging purpose. For a successfully solved problem,
+        `e` should equal to `v`. However, when a problem is infeasible
+        or unbounded, `e` can be used to check the objective value.
         """
         if self.code is None:
             logger.info(f"Objective <{self.name}> is not parsed yet.")
