@@ -304,7 +304,7 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         if len(g_idx) == 0:
             g_idx = priority[0]
             ug0 = 0
-        self.system.StaticGen.set(src='u', attr='v', idx=g_idx, value=ug0)
+        self.system.StaticGen.alter(src='u', idx=g_idx, value=ug0)
         logger.warning(f'Turn off StaticGen {g_idx} as initial commitment guess.')
         return True
 
