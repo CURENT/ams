@@ -15,6 +15,13 @@ class TestED(unittest.TestCase):
         # decrease load first
         self.ss.PQ.set(src='p0', attr='v', idx=['PQ_1', 'PQ_2'], value=[0.3, 0.3])
 
+    def test_init(self):
+        """
+        Test initialization.
+        """
+        self.ss.ED.init()
+        self.assertTrue(self.ss.ED.initialized, "ED initialization failed!")
+
     def test_trip(self):
         """
         Test generator trip.
@@ -22,14 +29,21 @@ class TestED(unittest.TestCase):
         self.ss.ED.run(solver='CLARABEL')
         obj = self.ss.ED.obj.v
 
-        # --- trip load ---
-        self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0)
+        # --- set load ---
+        self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.ED.update()
 
         self.ss.ED.run(solver='CLARABEL')
         obj_pqt = self.ss.ED.obj.v
+        self.assertLess(obj_pqt, obj, "Load set does not take effect!")
 
-        self.assertLess(obj_pqt, obj, "Load trip does not take effect!")
+        # --- trip load ---
+        self.ss.PQ.set(src='u', attr='v', idx='PQ_2', value=0)
+        self.ss.ED.update()
+
+        self.ss.ED.run(solver='CLARABEL')
+        obj_pqt2 = self.ss.ED.obj.v
+        self.assertLess(obj_pqt2, obj_pqt, "Load trip does not take effect!")
 
         # --- trip generator ---
         self.ss.StaticGen.set(src='u', attr='v', idx='PV_1', value=0)
