@@ -213,6 +213,7 @@ class RoutineBase:
         info: bool
             Whether to print warning messages.
         """
+        logger.debug(f"Entering data check for <{self.class_name}>.")
         no_input = []
         owner_list = []
         for rname, rparam in self.rparams.items():
@@ -230,9 +231,10 @@ class RoutineBase:
         if len(no_input) > 0:
             if info:
                 msg = f"Following models are missing in input: {set(owner_list)}"
-                logger.warning(msg)
+                logger.error(msg)
             return False
         # TODO: add data validation for RParam, typical range, etc.
+        logger.debug(" - Data check passed")
         return True
 
     def init(self, no_code=True,
@@ -263,11 +265,7 @@ class RoutineBase:
 
         t0, _ = elapsed()
         # --- data check ---
-        if self._data_check():
-            logger.debug(f"{self.class_name} data check passed.")
-        else:
-            msg = f"{self.class_name} data check failed, setup may run into error!"
-            logger.warning(msg)
+        self._data_check()
 
         # --- turn on all constrs ---
         if force_constr:
