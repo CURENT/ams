@@ -117,13 +117,21 @@ class TestDCOPF(unittest.TestCase):
         self.ss.DCOPF.run(solver='CLARABEL')
         obj = self.ss.DCOPF.obj.v
 
-        # --- trip load ---
+        # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0)
         self.ss.DCOPF.update()
 
         self.ss.DCOPF.run(solver='CLARABEL')
         obj_pqt = self.ss.DCOPF.obj.v
-        self.assertLess(obj_pqt, obj, "Load trip does not take effect in DCOPF!")
+        self.assertLess(obj_pqt, obj, "Load set does not take effect in DCOPF!")
+
+        # --- trip load ---
+        self.ss.PQ.set(src='u', attr='v', idx='PQ_1', value=0)
+        self.ss.DCOPF.update()
+
+        self.ss.DCOPF.run(solver='CLARABEL')
+        obj_pqt2 = self.ss.DCOPF.obj.v
+        self.assertLess(obj_pqt2, obj_pqt, "Load trip does not take effect in DCOPF!")
 
         # --- trip generator ---
         self.ss.StaticGen.set(src='u', attr='v', idx='PV_1', value=0)
@@ -192,14 +200,21 @@ class TestRTED(unittest.TestCase):
         self.ss.RTED.run(solver='CLARABEL')
         obj = self.ss.RTED.obj.v
 
-        # --- trip load ---
+        # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0)
-        self.ss.RTED.update()
+        self.ss.DCOPF.update()
 
         self.ss.RTED.run(solver='CLARABEL')
         obj_pqt = self.ss.RTED.obj.v
+        self.assertLess(obj_pqt, obj, "Load set does not take effect in RTED!")
 
-        self.assertLess(obj_pqt, obj, "Load trip does not take effect in RTED!")
+        # --- trip load ---
+        self.ss.PQ.set(src='u', attr='v', idx='PQ_1', value=0)
+        self.ss.RTED.update()
+
+        self.ss.RTED.run(solver='CLARABEL')
+        obj_pqt2 = self.ss.RTED.obj.v
+        self.assertLess(obj_pqt2, obj_pqt, "Load trip does not take effect in RTED!")
 
         # --- trip generator ---
         self.ss.StaticGen.set(src='u', attr='v', idx='PV_1', value=0)
