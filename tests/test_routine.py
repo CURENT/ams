@@ -98,9 +98,9 @@ class TestRoutineMethods(unittest.TestCase):
         self.assertAlmostEqual(self.ss.DCOPF.obj.v, self.ss.DCOPF.obj.v2, places=6)
 
 
-class TestOModel(unittest.TestCase):
+class TestDCOPF(unittest.TestCase):
     """
-    Test methods of `RTED`.
+    Test routine `DCOPF`.
     """
 
     def setUp(self) -> None:
@@ -117,14 +117,24 @@ class TestOModel(unittest.TestCase):
         self.ss.DCOPF.run(solver='CLARABEL')
         obj = self.ss.DCOPF.obj.v
 
-        # --- generator trip ---
-        self.ss.StaticGen.set(src='u', attr='v', idx='PV_1', value=0)
+        # --- trip load ---
+        self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0)
+        self.ss.DCOPF.update()
 
+        self.ss.DCOPF.run(solver='CLARABEL')
+        obj_pqt = self.ss.DCOPF.obj.v
+
+        # NOTE: ensure load is successfully tripped
+        self.assertLess(obj_pqt, obj)
+
+        # --- trip generator ---
+        self.ss.StaticGen.set(src='u', attr='v', idx='PV_1', value=0)
         self.ss.DCOPF.update()
 
         self.ss.DCOPF.run(solver='CLARABEL')
         self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge under generator trip!")
         obj_gt = self.ss.DCOPF.obj.v
+        # NOTE: ensure generator is successfully tripped
         self.assertGreater(obj_gt, obj)
 
         pg_trip = self.ss.DCOPF.get(src='pg', attr='v', idx='PV_1')
@@ -137,6 +147,7 @@ class TestOModel(unittest.TestCase):
         self.ss.DCOPF.run(solver='CLARABEL')
         self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge under line trip!")
         obj_lt = self.ss.DCOPF.obj.v
+        # NOTE: ensure line is successfully tripped
         self.assertGreater(obj_lt, obj_gt)
 
         plf_trip = self.ss.DCOPF.get(src='plf', attr='v', idx='Line_3')
