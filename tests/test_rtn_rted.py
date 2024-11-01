@@ -1,8 +1,6 @@
 import unittest
 import numpy as np
 
-from andes.shared import pd
-
 import ams
 
 
