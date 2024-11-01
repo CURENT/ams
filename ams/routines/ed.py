@@ -2,7 +2,6 @@
 Economic dispatch routines.
 """
 import logging
-from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
@@ -131,8 +130,7 @@ class ED(RTED, MPBase, SRBase):
         MPBase.__init__(self)
         SRBase.__init__(self)
 
-        self.config.add(OrderedDict((('t', 1),
-                                     )))
+        self.config.t = 1  # scheduling interval in hour
         self.config.add_extra("_help",
                               t="time interval in hours",
                               )
@@ -244,8 +242,6 @@ class EDDG(ED, DGBase):
         ED.__init__(self, system, config)
         DGBase.__init__(self)
 
-        self.config.t = 1  # scheduling interval in hour
-
         self.info = 'Economic dispatch with distributed generation'
         self.type = 'DCED'
 
@@ -297,8 +293,6 @@ class EDES(ED, ESD1MPBase):
     def __init__(self, system, config):
         ED.__init__(self, system, config)
         ESD1MPBase.__init__(self)
-
-        self.config.t = 1  # scheduling interval in hour
 
         self.info = 'Economic dispatch with energy storage'
         self.type = 'DCED'
