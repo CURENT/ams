@@ -148,7 +148,7 @@ class TestIEEE14RAW(unittest.TestCase):
             no_output=True,
             default_config=True,
         )
-        ams.io.xlsx.write(ss, "ieee14.xlsx")
+        ams.io.xlsx.write(ss, "ieee14.xlsx", overwrite=True)
         self.assertTrue(os.path.exists("ieee14.xlsx"))
         os.remove("ieee14.xlsx")
 
@@ -159,7 +159,7 @@ class TestIEEE14RAW(unittest.TestCase):
             no_output=True,
             default_config=True,
         )
-        ams.io.json.write(ss, "ieee14.json")
+        ams.io.json.write(ss, "ieee14.json", overwrite=True)
         self.assertTrue(os.path.exists("ieee14.json"))
         os.remove("ieee14.json")
 
