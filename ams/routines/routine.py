@@ -235,23 +235,27 @@ class RoutineBase:
         # TODO: add data validation for RParam, typical range, etc.
         return True
 
-    def init(self, force=False, no_code=True, **kwargs):
+    def init(self, no_code=True,
+             force_mats=False, force_constr=False,
+             force_parse=False, force_generate=False,
+             **kwargs):
         """
         Initialize the routine.
 
-        Force initialization (`force=True`) will do the following:
-        - Rebuild the system matrices
-        - Enable all constraints
-        - Reinitialize the optimization model
-
         Parameters
         ----------
-        force: bool
-            Whether to force initialization.
         no_code: bool
             Whether to show generated code.
+        force_mats: bool
+            Whether to force build the system matrices, goes to `self.system.mats.build()`.
+        force_constr: bool
+            Whether to turn on all constraints.
+        force_parse: bool
+            Whether to force parse the optimization model, goes to `self.om.init()`.
+        force_generate: bool
+            Whether to force generate symbols, goes to `self.om.init()`.
         """
-        skip_all = (not force) and self.initialized and self.om.initialized
+        skip_all = not (force_mats and force_parse and force_generate) and self.initialized
 
         if skip_all:
             logger.debug(f"{self.class_name} has already been initialized.")
@@ -265,20 +269,19 @@ class RoutineBase:
             msg = f"{self.class_name} data check failed, setup may run into error!"
             logger.warning(msg)
 
-        # --- force initialization ---
-        if force:
-            self.system.mats.build()
+        # --- turn on all constrs ---
+        if force_constr:
             for constr in self.constrs.values():
                 constr.is_disabled = False
 
         # --- matrix build ---
-        if not self.system.mats.initialized:
-            self.system.mats.build()
+        self.system.mats.build(force_mats=force_mats)
 
         # --- constraint check ---
         _ = self._get_off_constrs()
 
-        om_init = self.om.init(no_code=no_code)
+        if not self.om.initialized:
+            om_init = self.om.init(no_code=no_code, force_parse=force_parse, force_generate=force_generate)
         _, s_init = elapsed(t0)
 
         msg = f"<{self.class_name}> "
