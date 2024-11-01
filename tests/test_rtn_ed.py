@@ -29,7 +29,7 @@ class TestED(unittest.TestCase):
         self.ss.ED.run(solver='CLARABEL')
         obj_pqt = self.ss.ED.obj.v
 
-        self.assertLess(obj_pqt, obj, "Load trip does not take effect in ED!")
+        self.assertLess(obj_pqt, obj, "Load trip does not take effect!")
 
         # --- trip generator ---
         self.ss.StaticGen.set(src='u', attr='v', idx='PV_1', value=0)
@@ -38,7 +38,7 @@ class TestED(unittest.TestCase):
         self.ss.ED.run(solver='CLARABEL')
         self.assertTrue(self.ss.ED.converged, "ED did not converge under generator trip!")
         obj_gt = self.ss.ED.obj.v
-        self.assertGreater(obj_gt, obj, "Generator trip does not take effect in ED!")
+        self.assertGreater(obj_gt, obj, "Generator trip does not take effect!")
 
         pg_trip = self.ss.ED.get(src='pg', attr='v', idx='PV_1')
         np.testing.assert_almost_equal(pg_trip, 0, decimal=6)
@@ -50,7 +50,7 @@ class TestED(unittest.TestCase):
         self.ss.ED.run(solver='CLARABEL')
         self.assertTrue(self.ss.Ed.converged, "ED did not converge under line trip!")
         obj_lt = self.ss.ED.obj.v
-        self.assertGreater(obj_lt, obj_gt, "Line trip does not take effect in ED!")
+        self.assertGreater(obj_lt, obj_gt, "Line trip does not take effect!")
 
         plf_trip = self.ss.ED.get(src='plf', attr='v', idx='Line_3')
         np.testing.assert_almost_equal(plf_trip, 0, decimal=6)

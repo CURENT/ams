@@ -28,15 +28,15 @@ class TestDCOPF(unittest.TestCase):
 
         self.ss.DCOPF.run(solver='CLARABEL')
         obj_pqt = self.ss.DCOPF.obj.v
-        self.assertLess(obj_pqt, obj, "Load set does not take effect in DCOPF!")
+        self.assertLess(obj_pqt, obj, "Load set does not take effect!")
 
         # --- trip load ---
-        self.ss.PQ.set(src='u', attr='v', idx='PQ_1', value=0)
+        self.ss.PQ.set(src='u', attr='v', idx='PQ_2', value=0)
         self.ss.DCOPF.update()
 
         self.ss.DCOPF.run(solver='CLARABEL')
         obj_pqt2 = self.ss.DCOPF.obj.v
-        self.assertLess(obj_pqt2, obj_pqt, "Load trip does not take effect in DCOPF!")
+        self.assertLess(obj_pqt2, obj_pqt, "Load trip does not take effect!")
 
         # --- trip generator ---
         self.ss.StaticGen.set(src='u', attr='v', idx='PV_1', value=0)
@@ -46,10 +46,10 @@ class TestDCOPF(unittest.TestCase):
         self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge under generator trip!")
         self.assertAlmostEqual(self.ss.DCOPF.get(src='pg', attr='v', idx='PV_1'),
                                0, places=6,
-                               msg="Generator trip does not take effect in DCOPF!")
+                               msg="Generator trip does not take effect!")
         self.assertAlmostEqual(self.ss.DCOPF.get(src='pg', attr='v', idx='PV_1'),
                                0, places=6,
-                               msg="Generator trip does not take effect in DCOPF!")
+                               msg="Generator trip does not take effect!")
 
         # --- trip line ---
         self.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
@@ -60,4 +60,4 @@ class TestDCOPF(unittest.TestCase):
 
         self.assertAlmostEqual(self.ss.DCOPF.get(src='plf', attr='v', idx='Line_3'),
                                0, places=6,
-                               msg="Line trip does not take effect in DCOPF!")
+                               msg="Line trip does not take effect!")
