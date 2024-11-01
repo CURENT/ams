@@ -56,15 +56,32 @@ class TestED(unittest.TestCase):
                                        plf_l3, decimal=6)
 
         # --- trip generator ---
-        # a) check StaticGen.u does not take effect
+        stg = 'PV_1'
+        stg_uid = self.ss.ED.pg.get_idx().index(stg)
+        # a) ensure StaticGen.u does not take effect
         # NOTE: in ED, `EDTSlot.ug` is used instead of `StaticGen.u`
-        self.ss.StaticGen.set(src='u', attr='v', idx='PV_1', value=0)
+        self.ss.StaticGen.set(src='u', attr='v', idx=stg, value=0)
         self.ss.ED.update()
 
         self.ss.ED.run(solver='CLARABEL')
         self.assertTrue(self.ss.ED.converged, "ED did not converge under generator trip!")
-        pg_pv1 = self.ss.ED.get(src='pg', attr='v', idx='PV_1')
+        pg_pv1 = self.ss.ED.get(src='pg', attr='v', idx=stg)
         np.testing.assert_array_less(np.zeros_like(pg_pv1), pg_pv1,
                                      err_msg="Generator trip take effect, which is unexpected!")
 
-        # b) check EDTSlot.ug takes effect
+        # TODO: DEBUG: NOT SURE THIS TEST FAILED
+        # b) ensure EDTSlot.ug takes effect
+        # NOTE: manually chang ug.v for testing purpose
+        loc_offtime = np.array([0, 2, 4])
+        self.ss.EDTSlot.ug.v[loc_offtime, stg_uid] = 0
+
+        self.ss.ED.run(solver='CLARABEL')
+        self.assertTrue(self.ss.ED.converged, "ED did not converge under generator trip!")
+        pg_pv1 = self.ss.ED.get(src='pg', attr='v', idx=stg)
+        print('stg_uid', stg_uid)
+        print(self.ss.EDTSlot.ug.v)
+        print(pg_pv1)
+        np.testing.assert_almost_equal(np.zeros_like(loc_offtime),
+                                       pg_pv1[loc_offtime],
+                                       decimal=6,
+                                       err_msg="Generator trip does not take effect!")
