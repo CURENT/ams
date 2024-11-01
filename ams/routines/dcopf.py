@@ -94,11 +94,19 @@ class DCOPF(RoutineBase):
                            model='Slack', src='bus',
                            no_parse=True,)
         # --- load ---
+        self.upq = RParam(info='Load connection status',
+                          name='upq', tex_name=r'u_{PQ}',
+                          model='StaticLoad', src='u',
+                          no_parse=True,)
         self.pd = RParam(info='active demand',
                          name='pd', tex_name=r'p_{d}',
                          model='StaticLoad', src='p0',
                          unit='p.u.',)
         # --- line ---
+        self.ul = RParam(info='Line connection status',
+                         name='ul', tex_name=r'u_{l}',
+                         model='Line', src='u',
+                         no_parse=True,)
         self.rate_a = RParam(info='long-term flow limit',
                              name='rate_a', tex_name=r'R_{ATEA}',
                              unit='p.u.', model='Line',)
@@ -181,7 +189,7 @@ class DCOPF(RoutineBase):
                       unit='$/p.u.',
                       model='Bus',)
         # --- power balance ---
-        pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
+        pb = 'Bbus@aBus + Pbusinj + Cl@(mul(upq, pd)) + Csh@gsh - Cg@pg'
         self.pb = Constraint(name='pb', info='power balance',
                              e_str=pb, is_eq=True,)
         # --- line flow ---
@@ -191,10 +199,10 @@ class DCOPF(RoutineBase):
                        model='Line',)
         self.plflb = Constraint(info='line flow lower bound',
                                 name='plflb', is_eq=False,
-                                e_str='-Bf@aBus - Pfinj - rate_a',)
+                                e_str='-Bf@aBus - Pfinj - mul(ul, rate_a)',)
         self.plfub = Constraint(info='line flow upper bound',
                                 name='plfub', is_eq=False,
-                                e_str='Bf@aBus + Pfinj - rate_a',)
+                                e_str='Bf@aBus + Pfinj - mul(ul, rate_a)',)
         self.alflb = Constraint(info='line angle difference lower bound',
                                 name='alflb', is_eq=False,
                                 e_str='-CftT@aBus + amin',)
