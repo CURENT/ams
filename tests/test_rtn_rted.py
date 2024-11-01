@@ -50,7 +50,7 @@ class TestRTED(unittest.TestCase):
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0)
-        self.ss.DCOPF.update()
+        self.ss.RTED.update()
 
         self.ss.RTED.run(solver='CLARABEL')
         obj_pqt = self.ss.RTED.obj.v
