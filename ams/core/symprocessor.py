@@ -9,6 +9,7 @@ from collections import OrderedDict
 
 import sympy as sp
 
+from andes.utils.misc import elapsed
 from ams.core.matprocessor import MatProcessor
 
 logger = logging.getLogger(__name__)
@@ -107,9 +108,12 @@ class SymProcessor:
         """
         Generate symbols for all variables.
         """
-        if not force_generate and self.parent._syms:
+        logger.debug(f'Entering symbol generation for {self.parent.class_name}')
+
+        if (not force_generate) and self.parent._syms:
+            logger.debug(f' - Symbols already generated for {self.parent.class_name}')
             return True
-        logger.debug(f'- Generating symbols for {self.parent.class_name}')
+        t, _ = elapsed()
 
         # process tex_names defined in routines
         # -----------------------------------------------------------
@@ -186,8 +190,10 @@ class SymProcessor:
         self.inputs_dict['sys_mva'] = sp.symbols('sys_mva')
 
         self.parent._syms = True
+        _, s = elapsed(t)
 
-        return True
+        logger.debug(f' - Generated in {s}')
+        return self.parent._syms
 
     def _check_expr_symbols(self, expr):
         """
