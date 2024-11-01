@@ -191,19 +191,19 @@ class ED(RTED, MPBase, SRBase):
         self.rbu.e_str = 'gs@mul(ugt, pru) - mul(dud, tlv)'
         self.rbd.e_str = 'gs@mul(ugt, prd) - mul(ddd, tlv)'
 
-        self.rru.e_str = 'mul(ugt, pg + pru) - mul(pmax, tlv)'
-        self.rrd.e_str = 'mul(ugt, -pg + prd) + mul(pmin, tlv)'
+        self.rru.e_str = 'pg + pru - mul(mul(ugt, pmax), tlv)'
+        self.rrd.e_str = '-pg + prd + mul(mul(ugt, pmin), tlv)'
 
         self.rgu.e_str = 'pg @ Mr - t dot RR30'
         self.rgd.e_str = '-pg @ Mr - t dot RR30'
 
         self.rgu0 = Constraint(name='rgu0',
                                info='Initial gen ramping up',
-                               e_str='pg[:, 0] - pg0[:, 0] - R30',
+                               e_str='mul(ugt[:, 0], pg[:, 0] - pg0[:, 0] - R30)',
                                is_eq=False,)
         self.rgd0 = Constraint(name='rgd0',
                                info='Initial gen ramping down',
-                               e_str='- pg[:, 0] + pg0[:, 0] - R30',
+                               e_str='mul(ugt[:, 0], -pg[:, 0] + pg0[:, 0] - R30)',
                                is_eq=False,)
 
         # --- objective ---
