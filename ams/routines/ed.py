@@ -92,15 +92,10 @@ class MPBase:
                               name='RR30', tex_name=r'R_{30,R}',
                               info='Repeated ramp rate', no_parse=True,)
 
-        self.ctrl.expand_dims = 1
-        self.c0.expand_dims = 1
-        self.pmax.expand_dims = 1
-        self.pmin.expand_dims = 1
-        self.pg0.expand_dims = 1
-        self.rate_a.expand_dims = 1
-        self.Pfinj.expand_dims = 1
-        self.Pbusinj.expand_dims = 1
-        self.gsh.expand_dims = 1
+        items_to_expand = ['ctrl', 'c0', 'pmax', 'pmin', 'pg0', 'rate_a',
+                           'Pfinj', 'Pbusinj', 'gsh']
+        for item in items_to_expand:
+            self.__dict__[item].expand_dims = 1
 
         # NOTE: extend pg to 2D matrix: row for gen and col for timeslot
         self.pg.horizon = self.timeslot
