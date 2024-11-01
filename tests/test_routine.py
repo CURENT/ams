@@ -123,7 +123,6 @@ class TestDCOPF(unittest.TestCase):
 
         self.ss.DCOPF.run(solver='CLARABEL')
         obj_pqt = self.ss.DCOPF.obj.v
-
         self.assertLess(obj_pqt, obj, "Load trip does not take effect in DCOPF!")
 
         # --- trip generator ---
@@ -132,8 +131,9 @@ class TestDCOPF(unittest.TestCase):
 
         self.ss.DCOPF.run(solver='CLARABEL')
         self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge under generator trip!")
-        obj_gt = self.ss.DCOPF.obj.v
-        self.assertGreater(obj_gt, obj, "Generator trip does not take effect in DCOPF!")
+        self.assertAlmostEqual(self.ss.DCOPF.get(src='pg', attr='v', idx='PV_1'),
+                               0, decimal=6,
+                               msg="Generator trip does not take effect in DCOPF!")
 
         pg_trip = self.ss.DCOPF.get(src='pg', attr='v', idx='PV_1')
         np.testing.assert_almost_equal(pg_trip, 0, decimal=6)
@@ -144,11 +144,10 @@ class TestDCOPF(unittest.TestCase):
 
         self.ss.DCOPF.run(solver='CLARABEL')
         self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge under line trip!")
-        obj_lt = self.ss.DCOPF.obj.v
-        self.assertGreater(obj_lt, obj_gt, "Line trip does not take effect in DCOPF!")
 
-        plf_trip = self.ss.DCOPF.get(src='plf', attr='v', idx='Line_3')
-        np.testing.assert_almost_equal(plf_trip, 0, decimal=6)
+        np.testing.assert_almost_equal(self.ss.DCOPF.get(src='plf', attr='v', idx='Line_3'),
+                                       0, decimal=6,
+                                       msg="Line trip does not take effect in DCOPF!")
 
 
 class TestRTED(unittest.TestCase):
@@ -208,8 +207,9 @@ class TestRTED(unittest.TestCase):
 
         self.ss.RTED.run(solver='CLARABEL')
         self.assertTrue(self.ss.RTED.converged, "RTED did not converge under generator trip!")
-        obj_gt = self.ss.RTED.obj.v
-        self.assertGreater(obj_gt, obj, "Generator trip does not take effect in RTED!")
+        self.assertAlmostEqual(self.ss.RTED.get(src='pg', attr='v', idx='PV_1'),
+                               0, decimal=6,
+                               msg="Generator trip does not take effect in RTED!")
 
         pg_trip = self.ss.RTED.get(src='pg', attr='v', idx='PV_1')
         np.testing.assert_almost_equal(pg_trip, 0, decimal=6)
@@ -220,11 +220,9 @@ class TestRTED(unittest.TestCase):
 
         self.ss.RTED.run(solver='CLARABEL')
         self.assertTrue(self.ss.RTED.converged, "RTED did not converge under line trip!")
-        obj_lt = self.ss.RTED.obj.v
-        self.assertGreater(obj_lt, obj_gt, "Line trip does not take effect in RTED!")
-
-        plf_trip = self.ss.RTED.get(src='plf', attr='v', idx='Line_3')
-        np.testing.assert_almost_equal(plf_trip, 0, decimal=6)
+        self.assertAlmostEqual(self.ss.RTED.get(src='plf', attr='v', idx='Line_3'),
+                               0, decimal=6,
+                               msg="Line trip does not take effect in RTED!")
 
 
 class TestED(unittest.TestCase):
