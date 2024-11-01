@@ -14,6 +14,13 @@ class TestDCOPF(unittest.TestCase):
         # decrease load first
         self.ss.PQ.set(src='p0', attr='v', idx=['PQ_1', 'PQ_2'], value=[0.3, 0.3])
 
+    def test_init(self):
+        """
+        Test initialization.
+        """
+        self.ss.DCOPF.init()
+        self.assertTrue(self.ss.DCOPF.initialized, "DCOPF initialization failed!")
+
     def test_trip(self):
         """
         Test generator trip.

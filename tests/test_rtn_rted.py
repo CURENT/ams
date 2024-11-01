@@ -17,27 +17,12 @@ class TestRTED(unittest.TestCase):
                            )
         self.ss.RTED.run(solver='CLARABEL')
 
-    def test_dc2ac(self):
+    def test_init(self):
         """
         Test `RTED.init()` method.
         """
-        self.ss.RTED.dc2ac()
-        self.assertTrue(self.ss.RTED.converted, "AC conversion failed!")
-        self.assertTrue(self.ss.RTED.exec_time > 0, "Execution time is not greater than 0.")
-
-        stg_idx = self.ss.StaticGen.get_idx()
-        pg_rted = self.ss.RTED.get(src='pg', attr='v', idx=stg_idx)
-        pg_acopf = self.ss.ACOPF.get(src='pg', attr='v', idx=stg_idx)
-        np.testing.assert_almost_equal(pg_rted, pg_acopf, decimal=3)
-
-        bus_idx = self.ss.Bus.get_idx()
-        v_rted = self.ss.RTED.get(src='vBus', attr='v', idx=bus_idx)
-        v_acopf = self.ss.ACOPF.get(src='vBus', attr='v', idx=bus_idx)
-        np.testing.assert_almost_equal(v_rted, v_acopf, decimal=3)
-
-        a_rted = self.ss.RTED.get(src='aBus', attr='v', idx=bus_idx)
-        a_acopf = self.ss.ACOPF.get(src='aBus', attr='v', idx=bus_idx)
-        np.testing.assert_almost_equal(a_rted, a_acopf, decimal=3)
+        self.ss.RTED.init()
+        self.assertTrue(self.ss.RTED.initialized, "RTED initialization failed!")
 
     def test_trip(self):
         """
@@ -84,3 +69,25 @@ class TestRTED(unittest.TestCase):
         self.assertAlmostEqual(self.ss.RTED.get(src='plf', attr='v', idx='Line_3'),
                                0, places=6,
                                msg="Line trip does not take effect!")
+
+    def test_dc2ac(self):
+        """
+        Test `RTED.init()` method.
+        """
+        self.ss.RTED.dc2ac()
+        self.assertTrue(self.ss.RTED.converted, "AC conversion failed!")
+        self.assertTrue(self.ss.RTED.exec_time > 0, "Execution time is not greater than 0.")
+
+        stg_idx = self.ss.StaticGen.get_idx()
+        pg_rted = self.ss.RTED.get(src='pg', attr='v', idx=stg_idx)
+        pg_acopf = self.ss.ACOPF.get(src='pg', attr='v', idx=stg_idx)
+        np.testing.assert_almost_equal(pg_rted, pg_acopf, decimal=3)
+
+        bus_idx = self.ss.Bus.get_idx()
+        v_rted = self.ss.RTED.get(src='vBus', attr='v', idx=bus_idx)
+        v_acopf = self.ss.ACOPF.get(src='vBus', attr='v', idx=bus_idx)
+        np.testing.assert_almost_equal(v_rted, v_acopf, decimal=3)
+
+        a_rted = self.ss.RTED.get(src='aBus', attr='v', idx=bus_idx)
+        a_acopf = self.ss.ACOPF.get(src='aBus', attr='v', idx=bus_idx)
+        np.testing.assert_almost_equal(a_rted, a_acopf, decimal=3)
