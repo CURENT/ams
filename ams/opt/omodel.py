@@ -135,8 +135,6 @@ class ExpressionCalc(OptzBase):
         # store the parsed expression str code
         self.code = code_expr
         code_expr = "self.optz = " + code_expr
-        msg = f"- Parse ExpressionCalc <{self.name}>: {self.e_str} "
-        logger.debug(msg)
         if not no_code:
             logger.info(f"<{self.name}> code: {code_expr}")
         # execute the expression
@@ -538,9 +536,6 @@ class Constraint(OptzBase):
         # parse the constraint type
         code_constr = "self.optz=" + code_constr
         code_constr += " == 0" if self.is_eq else " <= 0"
-        msg = f"- Parse Constr <{self.name}>: {self.e_str} "
-        msg += "== 0" if self.is_eq else "<= 0"
-        logger.debug(msg)
         if not no_code:
             logger.info(f"<{self.name}> code: {code_constr}")
         # set the parsed constraint
@@ -705,7 +700,6 @@ class Objective(OptzBase):
             raise ValueError(f'Objective sense {self.sense} is not supported.')
         sense = 'cp.Minimize' if self.sense == 'min' else 'cp.Maximize'
         code_obj = f"self.optz={sense}({code_obj})"
-        logger.debug(f"Parse Objective <{self.name}>: {self.sense.upper()}. {self.e_str}")
         if not no_code:
             logger.info(f"Code: {code_obj}")
         # set the parsed objective function
@@ -750,7 +744,7 @@ class OModel:
         self.initialized = False
         self.parsed = False
 
-    def parse(self, no_code=True):
+    def parse(self, no_code=True, force_generate=False):
         """
         Parse the optimization model from the symbolic description.
 
@@ -759,15 +753,18 @@ class OModel:
         no_code : bool, optional
             Flag indicating if the parsing code should be displayed,
             True by default.
+        force_generate : bool, optional
+            Flag indicating if the symbols should be generated, goes to `self.rtn.syms.generate_symbols()`.
         """
         rtn = self.rtn
-        rtn.syms.generate_symbols(force_generate=False)
+        rtn.syms.generate_symbols(force_generate=force_generate)
 
         # --- add RParams and Services as parameters ---
         t0, _ = elapsed()
         logger.debug(f'Parsing OModel for {rtn.class_name}')
         for key, val in rtn.params.items():
             if not val.no_parse:
+                logger.debug(f"    - Parsing Param <{key}>")
                 try:
                     val.parse()
                 except Exception as e:
@@ -776,12 +773,13 @@ class OModel:
                     raise Exception(msg)
                 setattr(self, key, val.optz)
         _, s = elapsed(t0)
-        logger.debug(f"Parse Params in {s}")
+        logger.debug(f"  -> Parse Params in {s}")
 
         # --- add decision variables ---
         t0, _ = elapsed()
         for key, val in rtn.vars.items():
             try:
+                logger.debug(f"    - Parsing Var <{key}>")
                 val.parse()
             except Exception as e:
                 msg = f"Failed to parse Var <{key}>. "
@@ -789,11 +787,12 @@ class OModel:
                 raise Exception(msg)
             setattr(self, key, val.optz)
         _, s = elapsed(t0)
-        logger.debug(f"Parse Vars in {s}")
+        logger.debug(f"  -> Parse Vars in {s}")
 
         # --- add constraints ---
         t0, _ = elapsed()
         for key, val in rtn.constrs.items():
+            logger.debug(f"    - Parsing Constr <{key}>: {val.e_str}")
             try:
                 val.parse(no_code=no_code)
             except Exception as e:
@@ -802,11 +801,12 @@ class OModel:
                 raise Exception(msg)
             setattr(self, key, val.optz)
         _, s = elapsed(t0)
-        logger.debug(f"Parse Constrs in {s}")
+        logger.debug(f"  -> Parse Constrs in {s}")
 
         # --- parse objective functions ---
         t0, _ = elapsed()
         if rtn.type != 'PF':
+            logger.debug(f"    - Parsing Objective <{rtn.obj.name}>")
             if rtn.obj is not None:
                 try:
                     rtn.obj.parse(no_code=no_code)
@@ -820,19 +820,26 @@ class OModel:
                 self.parsed = False
                 return self.parsed
         _, s = elapsed(t0)
-        logger.debug(f"Parse Objective in {s}")
+        logger.debug(f"  -> Parse Objective in {s}")
 
         # --- parse expressions ---
         t0, _ = elapsed()
         for key, val in self.rtn.exprs.items():
-            val.parse(no_code=no_code)
+            msg = f"    - Parsing ExpressionCalc <{key}>: {val.e_str} "
+            logger.debug(msg)
+            try:
+                val.parse(no_code=no_code)
+            except Exception as e:
+                msg = f"Failed to parse ExpressionCalc <{key}>. "
+                msg += f"Original error: {e}"
+                raise Exception(msg)
         _, s = elapsed(t0)
-        logger.debug(f"Parse Expressions in {s}")
+        logger.debug(f"  -> Parse Expressions in {s}")
 
         self.parsed = True
         return self.parsed
 
-    def init(self, no_code=True):
+    def init(self, no_code=True, force_parse=False, force_generate=False):
         """
         Set up the optimization model from the symbolic description.
 
@@ -844,24 +851,29 @@ class OModel:
         no_code : bool, optional
             Flag indicating if the parsing code should be displayed,
             True by default.
+        force_parse : bool, optional
+            Flag indicating if the parsing should be forced, goes to `self.parse()`.
+        force_generate : bool, optional
+            Flag indicating if the symbols should be generated, goes to `self.parse()`.
 
         Returns
         -------
         bool
             Returns True if the setup is successful, False otherwise.
         """
-        t_setup, _ = elapsed()
+        t_init, _ = elapsed()
 
-        if not self.parsed:
-            self.parse(no_code=no_code)
+        if force_parse or not self.parsed:
+            self.parse(no_code=no_code, force_generate=force_generate)
 
         if self.rtn.type == 'PF':
-            _, s_setup = elapsed(t_setup)
+            _, s_init = elapsed(t_init)
             self.initialized = True
-            logger.debug(f"OModel for <{self.rtn.class_name}> initialized in {s_setup}.")
+            logger.debug(f"OModel for <{self.rtn.class_name}> initialized in {s_init}.")
             return self.initialized
 
-        # --- finalize the optimziation formulation ---
+        # --- evaluate the optimziation ---
+        t_eva, _ = elapsed()
         code_prob = "self.prob = problem(self.obj, "
         constrs_skip = []
         constrs_add = []
@@ -874,14 +886,13 @@ class OModel:
         for pattern, replacement in self.rtn.syms.sub_map.items():
             code_prob = re.sub(pattern, replacement, code_prob)
 
-        t_final, _ = elapsed()
         exec(code_prob, globals(), locals())
-        _, s_final = elapsed(t_final)
-        logger.debug(f"Finalize in {s_final}")
+        _, s_eva = elapsed(t_eva)
+        logger.debug(f"OModel for <{self.rtn.class_name}> evaluated in {s_eva}")
 
-        _, s_setup = elapsed(t_setup)
+        _, s_init = elapsed(t_init)
         self.initialized = True
-        logger.debug(f"OModel for <{self.rtn.class_name}> initialized in {s_setup}.")
+        logger.debug(f"OModel for <{self.rtn.class_name}> initialized in {s_init}.")
 
         return self.initialized
 
