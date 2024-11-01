@@ -69,6 +69,8 @@ class TestED(unittest.TestCase):
         np.testing.assert_almost_equal(np.zeros_like(plf_l3),
                                        plf_l3, decimal=6)
 
+        self.ss.Line.alter(src='u', idx='Line_3', value=1)  # reset
+
     def test_set_load(self):
         """
         Test setting load.
@@ -85,7 +87,7 @@ class TestED(unittest.TestCase):
         self.assertLess(obj_pqt, obj, "Load set does not take effect!")
 
         # --- trip load ---
-        self.ss.PQ.set(src='u', attr='v', idx='PQ_2', value=0)
+        self.ss.PQ.alter(src='u', idx='PQ_2', value=0)
         self.ss.ED.update()
 
         self.ss.ED.run(solver='CLARABEL')
