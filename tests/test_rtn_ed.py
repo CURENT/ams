@@ -54,6 +54,8 @@ class TestED(unittest.TestCase):
         np.testing.assert_array_less(np.zeros_like(pg_pv1), pg_pv1,
                                      err_msg="Generator trip take effect, which is unexpected!")
 
+        self.ss.StaticGen.alter(src='u', idx=stg, value=1)  # reset
+
     def test_trip_line(self):
         """
         Test line tripping.
