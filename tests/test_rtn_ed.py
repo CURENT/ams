@@ -73,7 +73,7 @@ class TestED(unittest.TestCase):
 
     def test_set_load(self):
         """
-        Test setting load.
+        Test setting and tripping load.
         """
         self.ss.ED.run(solver='CLARABEL')
         obj = self.ss.ED.obj.v
