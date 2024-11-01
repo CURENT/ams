@@ -23,7 +23,7 @@ class TestDCOPF(unittest.TestCase):
         obj = self.ss.DCOPF.obj.v
 
         # --- set load ---
-        self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0)
+        self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.DCOPF.update()
 
         self.ss.DCOPF.run(solver='CLARABEL')

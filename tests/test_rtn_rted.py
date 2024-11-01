@@ -47,7 +47,7 @@ class TestRTED(unittest.TestCase):
         obj = self.ss.RTED.obj.v
 
         # --- set load ---
-        self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0)
+        self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.RTED.update()
 
         self.ss.RTED.run(solver='CLARABEL')
