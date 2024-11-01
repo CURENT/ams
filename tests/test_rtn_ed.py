@@ -45,26 +45,26 @@ class TestED(unittest.TestCase):
         obj_pqt2 = self.ss.ED.obj.v
         self.assertLess(obj_pqt2, obj_pqt, "Load trip does not take effect!")
 
-        # --- trip generator ---
-        self.ss.StaticGen.set(src='u', attr='v', idx='PV_1', value=0)
-        self.ss.ED.update()
-
-        self.ss.ED.run(solver='CLARABEL')
-        self.assertTrue(self.ss.ED.converged, "ED did not converge under generator trip!")
-        obj_gt = self.ss.ED.obj.v
-        self.assertGreater(obj_gt, obj, "Generator trip does not take effect!")
-
-        pg_trip = self.ss.ED.get(src='pg', attr='v', idx='PV_1')
-        np.testing.assert_almost_equal(pg_trip, 0, decimal=6)
-
         # --- trip line ---
         self.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
         self.ss.ED.update()
 
         self.ss.ED.run(solver='CLARABEL')
-        self.assertTrue(self.ss.Ed.converged, "ED did not converge under line trip!")
-        obj_lt = self.ss.ED.obj.v
-        self.assertGreater(obj_lt, obj_gt, "Line trip does not take effect!")
+        self.assertTrue(self.ss.ED.converged, "ED did not converge under line trip!")
+        plf_l3 = self.ss.ED.get(src='plf', attr='v', idx='Line_3')
+        np.testing.assert_almost_equal(np.zeros_like(plf_l3),
+                                       plf_l3, decimal=6)
 
-        plf_trip = self.ss.ED.get(src='plf', attr='v', idx='Line_3')
-        np.testing.assert_almost_equal(plf_trip, 0, decimal=6)
+        # --- trip generator ---
+        # a) check StaticGen.u does not take effect
+        # NOTE: in ED, `EDTSlot.ug` is used instead of `StaticGen.u`
+        self.ss.StaticGen.set(src='u', attr='v', idx='PV_1', value=0)
+        self.ss.ED.update()
+
+        self.ss.ED.run(solver='CLARABEL')
+        self.assertTrue(self.ss.ED.converged, "ED did not converge under generator trip!")
+        pg_pv1 = self.ss.ED.get(src='pg', attr='v', idx='PV_1')
+        np.testing.assert_array_less(np.zeros_like(pg_pv1), pg_pv1,
+                                     err_msg="Generator trip take effect, which is unexpected!")
+
+        # b) check EDTSlot.ug takes effect
