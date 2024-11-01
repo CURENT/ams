@@ -192,6 +192,11 @@ class MatProcessor:
         It build connectivity matrices first: Cg, Cl, Csh, Cft, and CftT.
         Then build bus matrices: Bf, Bbus, Pfinj, and Pbusinj.
 
+        Notes
+        -----
+        Generator online status is NOT considered in its connectivity matrix.
+        The same applies for load, line, and shunt.
+
         Returns
         -------
         initialized : bool
