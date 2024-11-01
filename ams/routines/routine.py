@@ -239,8 +239,7 @@ class RoutineBase:
 
     def init(self, no_code=True,
              force_mats=False, force_constr=False,
-             force_parse=False, force_generate=False,
-             **kwargs):
+             force_parse=False, force_generate=False):
         """
         Initialize the routine.
 
@@ -279,11 +278,11 @@ class RoutineBase:
         _ = self._get_off_constrs()
 
         if not self.om.initialized:
-            om_init = self.om.init(no_code=no_code, force_parse=force_parse, force_generate=force_generate)
+            self.om.init(no_code=no_code, force_parse=force_parse, force_generate=force_generate)
         _, s_init = elapsed(t0)
 
         msg = f"<{self.class_name}> "
-        if om_init:
+        if self.om.initialized:
             msg += f"initialized in {s_init}."
             self.initialized = True
         else:
@@ -310,9 +309,14 @@ class RoutineBase:
         """
         return None
 
-    def run(self, force_init=False, no_code=True, **kwargs):
+    def run(self,
+            force_mats=False, force_constr=False,
+            force_parse=False, force_generate=False,
+            no_code=True,
+            *args, **kwargs):
         """
         Run the routine.
+        *args and **kwargs go to `self.solve()`.
 
         Force initialization (`force_init=True`) will do the following:
         - Rebuild the system matrices
@@ -321,16 +325,24 @@ class RoutineBase:
 
         Parameters
         ----------
-        force_init: bool
-            Whether to force initialization.
+        force_mats: bool
+            Whether to force build the system matrices, goes to `self.init()`.
+        force_constr: bool
+            Whether to turn on all constraints, goes to `self.init()`.
+        force_parse: bool
+            Whether to force parse the optimization model, goes to `self.init()`.
+        force_generate: bool
+            Whether to force generate symbols, goes to `self.init()`
         no_code: bool
             Whether to show generated code.
         """
         # --- setup check ---
-        self.init(force=force_init, no_code=no_code)
+        self.init(force_mats=force_mats, force_constr=force_constr,
+                  force_parse=force_parse, force_generate=force_generate,
+                  no_code=no_code)
         # --- solve optimization ---
         t0, _ = elapsed()
-        _ = self.solve(**kwargs)
+        _ = self.solve(*args, **kwargs)
         status = self.om.prob.status
         self.exit_code = self.syms.status[status]
         self.converged = self.exit_code == 0

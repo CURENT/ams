@@ -225,15 +225,17 @@ class DCOPF(RoutineBase):
                              info='total cost', unit='$',
                              sense='min', e_str=obj,)
 
-    def solve(self, **kwargs):
+    def solve(self, *args, **kwargs):
         """
         Solve the routine optimization model.
+        *args and **kwargs go to `self.om.prob.solve()` (`cvxpy.Problem.solve()`).
         """
-        return self.om.prob.solve(**kwargs)
+        return self.om.prob.solve(*args, **kwargs)
 
-    def run(self, no_code=True, **kwargs):
+    def run(self, no_code=True, *args, **kwargs):
         """
         Run the routine.
+        *args and **kwargs go to `self.solve()`.
 
         Parameters
         ----------
@@ -270,7 +272,7 @@ class DCOPF(RoutineBase):
         kwargs : keywords, optional
             Additional solver specific arguments. See CVXPY documentation for details.
         """
-        return RoutineBase.run(self, no_code=no_code, **kwargs)
+        return RoutineBase.run(self, no_code=no_code, *args, **kwargs)
 
     def _post_solve(self):
         """

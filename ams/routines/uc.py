@@ -308,9 +308,13 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         logger.warning(f'Turn off StaticGen {g_idx} as initial commitment guess.')
         return True
 
-    def init(self, force=False, no_code=True, **kwargs):
+    def init(self, no_code=True,
+             force_mats=False, force_constr=False,
+             force_parse=False, force_generate=False):
         self._initial_guess()
-        return super().init(force=force, no_code=no_code, **kwargs)
+        return super().init(no_code=no_code,
+                            force_mats=force_mats, force_constr=force_constr,
+                            force_parse=force_parse, force_generate=force_generate)
 
     def dc2ac(self, **kwargs):
         """

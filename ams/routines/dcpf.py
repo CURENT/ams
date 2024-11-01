@@ -127,10 +127,11 @@ class DCPF(RoutineBase):
         res, sstats = runpf(casedata=ppc, ppopt=ppopt)
         return res, sstats
 
-    def run(self, force_init=False, no_code=True,
-            method=None, **kwargs):
+    def run(self, no_code=True, method=None,
+            *args, **kwargs):
         """
         Run DC pwoer flow.
+        *args and **kwargs go to `self.solve()`, which are not used yet.
 
         Examples
         --------
@@ -139,8 +140,6 @@ class DCPF(RoutineBase):
 
         Parameters
         ----------
-        force_init : bool
-            Force initialization.
         no_code : bool
             Disable showing code.
         method : str
@@ -152,9 +151,9 @@ class DCPF(RoutineBase):
             Exit code of the routine.
         """
         if not self.initialized:
-            self.init(force=force_init, no_code=no_code)
+            self.init(no_code=no_code)
         t0, _ = elapsed()
-        res, sstats = self.solve(method=method)
+        res, sstats = self.solve(method=method, *args, **kwargs)
         self.converged = res['success']
         self.exit_code = 0 if res['success'] else 1
         _, s = elapsed(t0)
