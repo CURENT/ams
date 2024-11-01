@@ -115,13 +115,15 @@ class ED(RTED, MPBase, SRBase):
 
     - Vars ``pg``, ``pru``, ``prd`` are extended to 2D
     - 2D Vars ``rgu`` and ``rgd`` are introduced
-    - Param ``ug`` is sourced from ``EDTSlot.ug`` as commitment decisions
+    - Param ``ug`` is sourced from ``EDTSlot.ug`` as generator commitment
 
     Notes
     -----
     1. Formulations has been adjusted with interval ``config.t``
 
     2. The tie-line flow is not implemented in this model.
+
+    3. `EDTSlot.ug` is used instead of `StaticGen.u` for generator commitment.
     """
 
     def __init__(self, system, config):
