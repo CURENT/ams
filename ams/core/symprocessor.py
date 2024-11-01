@@ -108,10 +108,10 @@ class SymProcessor:
         """
         Generate symbols for all variables.
         """
-        logger.debug(f'Entering symbol generation for {self.parent.class_name}')
+        logger.debug(f'Entering symbol generation for <{self.parent.class_name}>')
 
         if (not force_generate) and self.parent._syms:
-            logger.debug(f' - Symbols already generated for {self.parent.class_name}')
+            logger.debug(' - Symbols already generated')
             return True
         t, _ = elapsed()
 
@@ -192,7 +192,7 @@ class SymProcessor:
         self.parent._syms = True
         _, s = elapsed(t)
 
-        logger.debug(f' - Generated in {s}')
+        logger.debug(f' - Symbols generated in {s}')
         return self.parent._syms
 
     def _check_expr_symbols(self, expr):
