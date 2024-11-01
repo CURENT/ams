@@ -186,7 +186,7 @@ class MatProcessor:
                            info='Line outage distribution factor',
                            v=None, sparse=False, owner=self)
 
-    def build(self):
+    def build(self, force_mats=False):
         """
         Build the system matrices.
         It build connectivity matrices first: Cg, Cl, Csh, Cft, and CftT.
@@ -197,8 +197,11 @@ class MatProcessor:
         initialized : bool
             True if the matrices are built successfully.
         """
-        t_mat, _ = elapsed()
+        if not force_mats and self.initialized:
+            logger.debug("System matrices are already built.")
+            return self.initialized
 
+        t_mat, _ = elapsed()
         # --- connectivity matrices ---
         _ = self.build_cg()
         _ = self.build_cl()
