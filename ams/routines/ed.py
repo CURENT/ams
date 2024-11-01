@@ -93,7 +93,7 @@ class MPBase:
                               info='Repeated ramp rate', no_parse=True,)
 
         items_to_expand = ['ctrl', 'c0', 'pmax', 'pmin', 'pg0', 'rate_a',
-                           'Pfinj', 'Pbusinj', 'gsh']
+                           'Pfinj', 'Pbusinj', 'gsh', 'ul']
         for item in items_to_expand:
             self.__dict__[item].expand_dims = 1
 
@@ -179,8 +179,8 @@ class ED(RTED, MPBase, SRBase):
         # --- line ---
         self.plf.horizon = self.timeslot
         self.plf.info = '2D Line flow'
-        self.plflb.e_str = '-Bf@aBus - Pfinj@tlv - rate_a@tlv'
-        self.plfub.e_str = 'Bf@aBus + Pfinj@tlv - rate_a@tlv'
+        self.plflb.e_str = '-Bf@aBus - Pfinj@tlv - mul(ul, rate_a)@tlv'
+        self.plfub.e_str = 'Bf@aBus + Pfinj@tlv - mul(ul, rate_a)@tlv'
         self.alflb.e_str = '-CftT@aBus + amin@tlv'
         self.alfub.e_str = 'CftT@aBus - amax@tlv'
 
