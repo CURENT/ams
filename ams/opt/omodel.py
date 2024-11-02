@@ -144,7 +144,7 @@ class ExpressionCalc(OptzBase):
         """
         logger.debug(f"    - Expression <{self.name}>: {self.code}")
         local_vars = {'self': self}
-        self.optz = eval(self.code, globals(), local_vars)
+        self.optz = eval(self.code, {}, local_vars)
         return True
 
     @property
@@ -262,8 +262,8 @@ class Param(OptzBase):
             if self.sparse:
                 if not spr.issparse(self.v):
                     val = "sps.csr_matrix(self.v)"
-            local_vars = {'self': self, 'config': config, 'sps': sps}
-            self.optz = eval(val, globals(), local_vars)
+            local_vars = {'self': self, 'config': config, 'sps': sps, 'cp': cp}
+            self.optz = eval(val, {}, local_vars)
         except ValueError:
             msg = f"Parameter <{self.name}> has non-numeric value, "
             msg += "set `no_parse=True`."
@@ -499,8 +499,8 @@ class Var(OptzBase):
                 config[k] = v
         logger.debug(f"    - Var <{self.name}>: {self.code}")
         try:
-            local_vars = {'self': self, 'config': config}
-            self.optz = eval(self.code, globals(), local_vars)
+            local_vars = {'self': self, 'config': config, 'cp': cp}
+            self.optz = eval(self.code, {}, local_vars)
         except Exception as e:
             logger.error(f"Error in evaluating var <{self.name}>.")
             logger.error(f"Original error: {e}")
@@ -582,8 +582,8 @@ class Constraint(OptzBase):
         """
         logger.debug(f"    - Constr <{self.name}>: {self.code}")
         try:
-            local_vars = {'self': self}
-            self.optz = eval(self.code, globals(), local_vars)
+            local_vars = {'self': self, 'cp': cp}
+            self.optz = eval(self.code, {}, local_vars)
         except Exception as e:
             logger.error(f"Error in evaluating constr <{self.name}>.")
             logger.error(f"Original error: {e}")
@@ -768,7 +768,8 @@ class Objective(OptzBase):
             Returns True if the evaluation is successful, False otherwise.
         """
         logger.debug(f"    - Objective <{self.name}>: {self.e_str}")
-        self.optz = eval(self.code, globals(), locals())
+        local_vars = {'self': self, 'cp': cp}
+        self.optz = eval(self.code, {}, local_vars)
         return True
 
     def __repr__(self):
@@ -981,7 +982,7 @@ class OModel:
         """
         logger.debug(f"Finalizing OModel for <{self.rtn.class_name}>")
         t, _ = elapsed()
-        code_prob = "self.prob = problem(self.obj, "
+        code_prob = "problem(self.obj, "
         constrs_skip = []
         constrs_add = []
         for key, val in self.rtn.constrs.items():
@@ -993,8 +994,8 @@ class OModel:
         for pattern, replacement in self.rtn.syms.sub_map.items():
             code_prob = re.sub(pattern, replacement, code_prob)
 
-        local_vars = {}
-        self.prob = eval(code_prob, globals(), local_vars)
+        local_vars = {'self': self, 'constrs_add': constrs_add, 'cp': cp}
+        self.prob = eval(code_prob, {}, local_vars)
         _, s = elapsed(t)
         logger.debug(f" -> Finalized in {s}")
         self.evaluated = True
