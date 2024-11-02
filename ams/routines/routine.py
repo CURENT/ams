@@ -280,7 +280,7 @@ class RoutineBase:
         _ = self._get_off_constrs()
 
         if not self.om.initialized:
-            self.om.init(no_code=no_code, force_parse=force_parse, force_generate=force_generate)
+            self.om.init()
         _, s_init = elapsed(t0)
 
         msg = f"<{self.class_name}> "

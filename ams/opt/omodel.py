@@ -121,14 +121,9 @@ class ExpressionCalc(OptzBase):
         self.e_str = e_str
         self.code = None
 
-    def parse(self, no_code=True):
+    def parse(self):
         """
         Parse the Expression.
-
-        Parameters
-        ----------
-        no_code : bool, optional
-            Flag indicating if the code should be shown, True by default.
         """
         # parse the expression str
         sub_map = self.om.rtn.syms.sub_map
@@ -142,8 +137,6 @@ class ExpressionCalc(OptzBase):
         # store the parsed expression str code
         self.code = code_expr
         code_expr = "self.optz = " + code_expr
-        if not no_code:
-            logger.info(f"<{self.name}> code: {code_expr}")
         return True
 
     def evaluate(self):
@@ -563,14 +556,9 @@ class Constraint(OptzBase):
         self.dual = None
         self.code = None
 
-    def parse(self, no_code=True):
+    def parse(self):
         """
         Parse the constraint.
-
-        Parameters
-        ----------
-        no_code : bool, optional
-            Flag indicating if the code should be shown, True by default.
         """
         # parse the expression str
         sub_map = self.om.rtn.syms.sub_map
@@ -748,14 +736,9 @@ class Objective(OptzBase):
     def v(self, value):
         raise AttributeError("Cannot set the value of the objective function.")
 
-    def parse(self, no_code=True):
+    def parse(self):
         """
         Parse the objective function.
-
-        Parameters
-        ----------
-        no_code : bool, optional
-            Flag indicating if the code should be shown, True by default.
 
         Returns
         -------
@@ -773,8 +756,6 @@ class Objective(OptzBase):
             raise ValueError(f'Objective sense {self.sense} is not supported.')
         sense = 'cp.Minimize' if self.sense == 'min' else 'cp.Maximize'
         code_obj = f"self.optz={sense}({code_obj})"
-        if not no_code:
-            logger.info(f"Code: {code_obj}")
         self.code = code_obj
         return True
 
@@ -833,19 +814,16 @@ class OModel:
         self.initialized = False
         self.parsed = False
         self.evaluated = False
+        self.finalized = False
 
-    def parse(self, no_code=True, force_generate=False):
+    def parse(self):
         """
         Parse the optimization model from the symbolic description.
-        Must be called after generating the symbols `self.rtn.syms.generate_symbols()`.
 
-        Parameters
-        ----------
-        no_code : bool, optional
-            Flag indicating if the parsing code should be displayed,
-            True by default.
-        force_generate : bool, optional
-            Flag indicating if the symbols should be generated, goes to `self.rtn.syms.generate_symbols()`.
+        This method should be called after the routine symbols are generated
+        `self.rtn.syms.generate_symbols()`. It parses the following components
+        of the optimization model: parameters, decision variables, constraints,
+        objective function, and expressions.
 
         Returns
         -------
@@ -867,8 +845,8 @@ class OModel:
 
         # --- add decision variables ---
         for key, val in self.rtn.vars.items():
+            logger.debug(f"    - Var <{key}>")
             try:
-                logger.debug(f"    - Var <{key}>")
                 val.parse()
             except Exception as e:
                 msg = f"Failed to parse Var <{key}>. "
@@ -879,7 +857,7 @@ class OModel:
         for key, val in self.rtn.constrs.items():
             logger.debug(f"    - Constr <{key}>: {val.e_str}")
             try:
-                val.parse(no_code=no_code)
+                val.parse()
             except Exception as e:
                 msg = f"Failed to parse Constr <{key}>. "
                 msg += f"Original error: {e}"
@@ -890,7 +868,7 @@ class OModel:
             logger.debug(f"    - Objective <{self.rtn.obj.name}>: {self.rtn.obj.e_str}")
             if self.rtn.obj is not None:
                 try:
-                    self.rtn.obj.parse(no_code=no_code)
+                    self.rtn.obj.parse()
                 except Exception as e:
                     msg = f"Failed to parse Objective <{self.rtn.obj.name}>. "
                     msg += f"Original error: {e}"
@@ -902,12 +880,11 @@ class OModel:
 
         # --- parse expressions ---
         for key, val in self.rtn.exprs.items():
-            msg = f"    - ExpressionCalc <{key}>: {val.e_str} "
-            logger.debug(msg)
+            logger.debug(f"    - ExpressionCalc <{key}>: {val.e_str}")
             try:
-                val.parse(no_code=no_code)
+                val.parse()
             except Exception as e:
-                msg = f"Failed to parse ExpressionCalc <{key}>. "
+                msg = f"Failed to parse ExpressionCalc <{key}>."
                 msg += f"Original error: {e}"
                 raise Exception(msg)
         _, s = elapsed(t)
@@ -919,6 +896,10 @@ class OModel:
     def evaluate(self):
         """
         Evaluate the optimization model.
+
+        This method should be called after `self.parse()`. It evaluates the following
+        components of the optimization model: parameters, decision variables, constraints,
+        objective function, and expressions.
 
         Returns
         -------
@@ -955,8 +936,13 @@ class OModel:
         """
         Finalize the optimization model.
 
+        This method should be called after `self.evaluate()`. It assemble the optimization
+        problem from the evaluated components.
+
         Returns
         -------
+        bool
+            Returns True if the finalization is successful, False otherwise.
         """
         logger.debug(f"Finalizing OModel for <{self.rtn.class_name}>")
         t, _ = elapsed()
@@ -975,8 +961,10 @@ class OModel:
         exec(code_prob, globals(), locals())
         _, s = elapsed(t)
         logger.debug(f" -> Finalized in {s}")
+        self.evaluated = True
+        return self.evaluated
 
-    def init(self, no_code=True, force_parse=False, force_generate=False):
+    def init(self, force_parse=False, force_generate=False):
         """
         Set up the optimization model from the symbolic description.
 
@@ -985,9 +973,6 @@ class OModel:
 
         Parameters
         ----------
-        no_code : bool, optional
-            Flag indicating if the parsing code should be displayed,
-            True by default.
         force_parse : bool, optional
             Flag indicating if the parsing should be forced, goes to `self.parse()`.
         force_generate : bool, optional
@@ -1001,7 +986,7 @@ class OModel:
         t_init, _ = elapsed()
 
         if force_parse or not self.parsed:
-            self.parse(no_code=no_code, force_generate=force_generate)
+            self.parse(force_generate=force_generate)
 
         if self.rtn.type == 'PF':
             _, s_init = elapsed(t_init)
