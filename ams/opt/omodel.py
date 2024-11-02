@@ -943,7 +943,7 @@ class OModel:
 
         self.evaluated = True
         _, s = elapsed(t)
-        logger.debug(f"OModel for <{self.rtn.class_name}> evaluated in {s}")
+        logger.debug(f" -> Evaluated in {s}")
         return self.evaluated
 
     def init(self, no_code=True, force_parse=False, force_generate=False):
