@@ -207,6 +207,7 @@ class MatProcessor:
             return self.initialized
 
         t_mat, _ = elapsed()
+        logger.debug("Entering system matrix building")
         # --- connectivity matrices ---
         _ = self.build_cg()
         _ = self.build_cl()
@@ -220,7 +221,7 @@ class MatProcessor:
         _ = self.build_pbusinj()
         _, s_mat = elapsed(t_mat)
 
-        logger.debug(f"Built system matrices in {s_mat}.")
+        logger.debug(f" -> System matrices built in {s_mat}")
         self.initialized = True
         return self.initialized
 

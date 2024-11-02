@@ -213,7 +213,7 @@ class RoutineBase:
         info: bool
             Whether to print warning messages.
         """
-        logger.debug(f"Entering data check for <{self.class_name}>.")
+        logger.debug(f"Entering data check for <{self.class_name}>")
         no_input = []
         owner_list = []
         for rname, rparam in self.rparams.items():
@@ -234,7 +234,7 @@ class RoutineBase:
                 logger.error(msg)
             return False
         # TODO: add data validation for RParam, typical range, etc.
-        logger.debug(" - Data check passed")
+        logger.debug(" -> Data check passed")
         return True
 
     def init(self, no_code=True, force_init=False,
