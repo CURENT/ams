@@ -4,6 +4,7 @@ Shared constants and delayed imports.
 This module is supplementary to the ``andes.shared`` module.
 """
 import logging
+import unittest
 from functools import wraps
 from datetime import datetime
 from collections import OrderedDict
@@ -47,6 +48,19 @@ def require_MIP_solver(f):
             raise ModuleNotFoundError("No MIP solver is available.")
         return f(*args, **kwargs)
 
+    return wrapper
+
+
+def skip_unittest_without_MIP(f):
+    """
+    Decorator for skipping tests that require MIP solver.
+    """
+    def wrapper(*args, **kwargs):
+        if any(s in mip_solvers for s in installed_solvers):
+            pass
+        else:
+            raise unittest.SkipTest("No MIP solver is available.")
+        return f(*args, **kwargs)
     return wrapper
 
 

@@ -2,22 +2,6 @@ import unittest
 import numpy as np
 
 import ams
-import cvxpy as cp
-
-
-def require_MIP_solver(f):
-    """
-    Decorator for skipping tests that require MIP solver.
-    """
-    def wrapper(*args, **kwargs):
-        all_solvers = cp.installed_solvers()
-        mip_solvers = ['SCIP', 'CPLEX', 'GUROBI', 'MOSEK']
-        if any(s in mip_solvers for s in all_solvers):
-            pass
-        else:
-            raise unittest.SkipTest("MIP solver is not available.")
-        return f(*args, **kwargs)
-    return wrapper
 
 
 class TestDCED(unittest.TestCase):
