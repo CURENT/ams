@@ -135,9 +135,8 @@ class ExpressionCalc(OptzBase):
         for pattern, replacement in sub_map.items():
             try:
                 code_expr = re.sub(pattern, replacement, code_expr)
-            except TypeError as e:
-                logger.error(f"Error in parsing expr <{self.name}>.")
-                raise e
+            except Exception as e:
+                raise Exception(f"Error in parsing expr <{self.name}>.\n{e}")
         # store the parsed expression str code
         self.code = code_expr
         msg = f" - ExpressionCalc <{self.name}>: {self.e_str}"
@@ -150,8 +149,11 @@ class ExpressionCalc(OptzBase):
         """
         msg = f" - Expression <{self.name}>: {self.code}"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
-        local_vars = {'self': self}
-        self.optz = eval(self.code, {}, local_vars)
+        try:
+            local_vars = {'self': self}
+            self.optz = eval(self.code, {}, local_vars)
+        except Exception as e:
+            raise Exception(f"Error in evaluating expr <{self.name}>.\n{e}")
         return True
 
     @property
@@ -253,11 +255,17 @@ class Param(OptzBase):
         # NOTE: it seems that there is no need to use re.sub here
         code_param = f"param(shape={shape}, **config)"
         for pattern, replacement, in sub_map.items():
-            code_param = re.sub(pattern, replacement, code_param)
+            try:
+                code_param = re.sub(pattern, replacement, code_param)
+            except Exception as e:
+                raise Exception(f"Error in parsing param <{self.name}>.\n{e}")
         self.code = code_param
         return True
 
     def evaluate(self):
+        """
+        Evaluate the parameter.
+        """
         if self.no_parse:
             return True
 
@@ -276,11 +284,9 @@ class Param(OptzBase):
             msg += "set `no_parse=True`."
             logger.warning(msg)
             self.no_parse = True
-            return False
+            return True
         except Exception as e:
-            logger.error(f"Error in evaluating param <{self.name}>.")
-            logger.error(f"Original error: {e}")
-            return False
+            raise Exception(f"Error in evaluating param <{self.name}>.\n{e}")
         return True
 
     def update(self):
@@ -479,8 +485,12 @@ class Var(OptzBase):
         else:
             raise ValueError(f"Invalid shape {self._shape}.")
         code_var = f"var({shape}, **config)"
+        logger.debug(f" - Var <{self.name}>: {self.code}")
         for pattern, replacement, in sub_map.items():
-            code_var = re.sub(pattern, replacement, code_var)
+            try:
+                code_var = re.sub(pattern, replacement, code_var)
+            except Exception as e:
+                raise Exception(f"Error in parsing var <{self.name}>.\n{e}")
         self.code = code_var
         return True
 
@@ -510,9 +520,7 @@ class Var(OptzBase):
             local_vars = {'self': self, 'config': config, 'cp': cp}
             self.optz = eval(self.code, {}, local_vars)
         except Exception as e:
-            logger.error(f"Error in evaluating var <{self.name}>.")
-            logger.error(f"Original error: {e}")
-            return False
+            raise Exception(f"Error in evaluating var <{self.name}>.\n{e}")
         return True
 
     def __repr__(self):
@@ -576,8 +584,7 @@ class Constraint(OptzBase):
             try:
                 code_constr = re.sub(pattern, replacement, code_constr)
             except TypeError as e:
-                logger.error(f"Error in parsing constr <{self.name}>.")
-                raise e
+                raise TypeError(f"Error in parsing constr <{self.name}>.\n{e}")
         # parse the constraint type
         code_constr += " == 0" if self.is_eq else " <= 0"
         # store the parsed expression str code
@@ -593,12 +600,10 @@ class Constraint(OptzBase):
         msg = f" - Constr <{self.name}>: {self.code}"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         try:
-            local_vars = {'self': self, 'cp': cp}
+            local_vars = {'self': self, 'cp': cp, 'sub_map': self.om.rtn.syms.val_map}
             self.optz = eval(self.code, {}, local_vars)
         except Exception as e:
-            logger.error(f"Error in evaluating constr <{self.name}>.")
-            logger.error(f"Original error: {e}")
-            return False
+            raise Exception(f"Error in evaluating constr <{self.name}>.\n{e}")
 
     def __repr__(self):
         enabled = 'OFF' if self.is_disabled else 'ON'
@@ -626,16 +631,14 @@ class Constraint(OptzBase):
             try:
                 code = re.sub(pattern, replacement, code)
             except TypeError as e:
-                logger.error(f"Error in parsing value for constr <{self.name}>.")
-                raise e
+                raise TypeError(e)
 
         try:
             logger.debug(f"Value code: {code}")
-            return eval(code)
+            local_vars = {'self': self, 'cp': cp, 'val_map': val_map}
+            return eval(code, {}, local_vars)
         except Exception as e:
-            logger.error(f"Error in calculating constr <{self.name}>.")
-            logger.error(f"Original error: {e}")
-            return None
+            return Exception(f"Error in calculating constr <{self.name}>.\n{e}")
 
     @property
     def v(self):
@@ -760,7 +763,10 @@ class Objective(OptzBase):
         sub_map = self.om.rtn.syms.sub_map
         code_obj = self.e_str
         for pattern, replacement, in sub_map.items():
-            code_obj = re.sub(pattern, replacement, code_obj)
+            try:
+                code_obj = re.sub(pattern, replacement, code_obj)
+            except Exception as e:
+                raise Exception(f"Error in parsing obj <{self.name}>.\n{e}")
         # store the parsed expression str code
         self.code = code_obj
         if self.sense not in ['min', 'max']:
@@ -781,8 +787,11 @@ class Objective(OptzBase):
             Returns True if the evaluation is successful, False otherwise.
         """
         logger.debug(f" - Objective <{self.name}>: {self.e_str}")
-        local_vars = {'self': self, 'cp': cp}
-        self.optz = eval(self.code, {}, local_vars)
+        try:
+            local_vars = {'self': self, 'cp': cp}
+            self.optz = eval(self.code, {}, local_vars)
+        except Exception as e:
+            raise Exception(f"Error in evaluating obj <{self.name}>.\n{e}")
         return True
 
     def __repr__(self):
@@ -830,7 +839,7 @@ class OModel:
         self.evaluated = False
         self.finalized = False
 
-    def parse(self):
+    def parse(self, force=False):
         """
         Parse the optimization model from the symbolic description.
 
@@ -839,42 +848,33 @@ class OModel:
         of the optimization model: parameters, decision variables, constraints,
         objective function, and expressions.
 
+        Parameters
+        ----------
+        force : bool, optional
+            Flag indicating if to force the parsing.
+
         Returns
         -------
         bool
             Returns True if the parsing is successful, False otherwise.
         """
+        if self.parsed and not force:
+            logger.warning("Model is already parsed.")
+            return self.parsed
         t, _ = elapsed()
         # --- add RParams and Services as parameters ---
         logger.warning(f'Parsing OModel for <{self.rtn.class_name}>')
         for key, val in self.rtn.params.items():
             if not val.no_parse:
-                logger.debug(f" - Param <{key}>")
-                try:
-                    val.parse()
-                except Exception as e:
-                    msg = f"Failed to parse Param <{key}>. "
-                    msg += f"Original error: {e}"
-                    raise Exception(msg)
+                val.parse()
 
         # --- add decision variables ---
         for key, val in self.rtn.vars.items():
-            logger.debug(f" - Var <{key}>")
-            try:
-                val.parse()
-            except Exception as e:
-                msg = f"Failed to parse Var <{key}>. "
-                msg += f"Original error: {e}"
-                raise Exception(msg)
+            val.parse()
 
         # --- add constraints ---
         for key, val in self.rtn.constrs.items():
-            try:
-                val.parse()
-            except Exception as e:
-                msg = f"Failed to parse Constr <{key}>. "
-                msg += f"Original error: {e}"
-                raise Exception(msg)
+            val.parse()
 
         # --- parse objective functions ---
         if self.rtn.type != 'PF':
@@ -882,9 +882,7 @@ class OModel:
                 try:
                     self.rtn.obj.parse()
                 except Exception as e:
-                    msg = f"Failed to parse Objective <{self.rtn.obj.name}>. "
-                    msg += f"Original error: {e}"
-                    raise Exception(msg)
+                    raise Exception(f"Failed to parse Objective <{self.rtn.obj.name}>.\n{e}")
             else:
                 logger.warning(f"{self.rtn.class_name} has no objective function!")
                 self.parsed = False
@@ -895,9 +893,7 @@ class OModel:
             try:
                 val.parse()
             except Exception as e:
-                msg = f"Failed to parse ExpressionCalc <{key}>."
-                msg += f"Original error: {e}"
-                raise Exception(msg)
+                raise Exception(f"Failed to parse ExpressionCalc <{key}>.\n{e}")
         _, s = elapsed(t)
         logger.debug(f"  -> Parsed in {s}")
 
@@ -909,27 +905,33 @@ class OModel:
         Evaluate the parameters.
         """
         for key, val in self.rtn.params.items():
-            val.evaluate()
-            setattr(self, key, val.optz)
-        return True
+            try:
+                val.evaluate()
+                setattr(self, key, val.optz)
+            except Exception as e:
+                raise Exception(f"Failed to evaluate Param <{key}>.\n{e}")
 
     def _evaluate_vars(self):
         """
         Evaluate the decision variables.
         """
         for key, val in self.rtn.vars.items():
-            val.evaluate()
-            setattr(self, key, val.optz)
-        return True
+            try:
+                val.evaluate()
+                setattr(self, key, val.optz)
+            except Exception as e:
+                raise Exception(f"Failed to evaluate Var <{key}>.\n{e}")
 
     def _evaluate_constrs(self):
         """
         Evaluate the constraints.
         """
         for key, val in self.rtn.constrs.items():
-            val.evaluate()
-            setattr(self, key, val.optz)
-        return True
+            try:
+                val.evaluate()
+                setattr(self, key, val.optz)
+            except Exception as e:
+                raise Exception(f"Failed to evaluate Constr <{key}>.\n{e}")
 
     def _evaluate_obj(self):
         """
@@ -940,17 +942,18 @@ class OModel:
         if self.rtn.type != 'PF':
             self.rtn.obj.evaluate()
             self.obj = self.rtn.obj.optz
-        return True
 
     def _evaluate_exprs(self):
         """
         Evaluate the expressions.
         """
         for key, val in self.rtn.exprs.items():
-            val.evaluate()
-        return True
+            try:
+                val.evaluate()
+            except Exception as e:
+                raise Exception(f"Failed to evaluate ExpressionCalc <{key}>.\n{e}")
 
-    def evaluate(self):
+    def evaluate(self, force=False):
         """
         Evaluate the optimization model.
 
@@ -958,15 +961,22 @@ class OModel:
         components of the optimization model: parameters, decision variables, constraints,
         objective function, and expressions.
 
+        Parameters
+        ----------
+        force : bool, optional
+            Flag indicating if to force the evaluation
+
         Returns
         -------
         bool
             Returns True if the evaluation is successful, False otherwise.
         """
+        if self.evaluated and not force:
+            logger.warning("Model is already evaluated.")
+            return self.evaluated
         logger.warning(f"Evaluating OModel for <{self.rtn.class_name}>")
         t, _ = elapsed()
-        if not self.parsed:
-            raise ValueError("Model is not parsed yet.")
+
         self._evaluate_params()
         self._evaluate_vars()
         self._evaluate_constrs()
@@ -978,7 +988,7 @@ class OModel:
         logger.debug(f" -> Evaluated in {s}")
         return self.evaluated
 
-    def finalize(self):
+    def finalize(self, force=False):
         """
         Finalize the optimization model.
 
@@ -990,6 +1000,9 @@ class OModel:
         bool
             Returns True if the finalization is successful, False otherwise.
         """
+        if self.finalized and not force:
+            logger.warning("Model is already finalized.")
+            return self.finalized
         logger.warning(f"Finalizing OModel for <{self.rtn.class_name}>")
         t, _ = elapsed()
         code_prob = "problem(self.obj, "
@@ -1008,10 +1021,10 @@ class OModel:
         self.prob = eval(code_prob, {}, local_vars)
         _, s = elapsed(t)
         logger.debug(f" -> Finalized in {s}")
-        self.evaluated = True
-        return self.evaluated
+        self.finalized = True
+        return self.finalized
 
-    def init(self, force_parse=False, force_generate=False):
+    def init(self, force=False):
         """
         Set up the optimization model from the symbolic description.
 
@@ -1020,35 +1033,38 @@ class OModel:
 
         Parameters
         ----------
-        force_parse : bool, optional
-            Flag indicating if the parsing should be forced, goes to `self.parse()`.
-        force_generate : bool, optional
-            Flag indicating if the symbols should be generated, goes to `self.parse()`.
+        force : bool, optional
+            Flag indicating if to force the OModel initialization.
+            If True, following methods will be called by force: `self.parse()`,
+            `self.evaluate()`, `self.finalize()`
 
         Returns
         -------
         bool
             Returns True if the setup is successful, False otherwise.
         """
-        t_init, _ = elapsed()
-
-        if force_parse or not self.parsed:
-            self.parse(force_generate=force_generate)
-
-        if self.rtn.type == 'PF':
-            _, s_init = elapsed(t_init)
-            self.initialized = True
-            logger.debug(f"OModel for <{self.rtn.class_name}> initialized in {s_init}.")
+        if self.initialized and not force:
+            logger.warning("OModel is already initialized.")
             return self.initialized
 
-        self.evaluate()
+        t, _ = elapsed()
 
-        # --- finalize the optimziation ---
-        self.finalize()
+        self.parse(force=force)
 
-        _, s_init = elapsed(t_init)
+        # NOTE: Hardcoded for using PYPOWER as the PF type routines
+        if self.rtn.type == 'PF':
+            _, s = elapsed(t)
+            self.initialized = True
+            logger.debug(f"OModel for <{self.rtn.class_name}> initialized in {s}")
+            return self.initialized
+
+        self.evaluate(force=force)
+
+        self.finalize(force=force)
+
+        _, s = elapsed(t)
         self.initialized = True
-        logger.debug(f"OModel for <{self.rtn.class_name}> initialized in {s_init}.")
+        logger.debug(f"OModel for <{self.rtn.class_name}> initialized in {s}")
 
         return self.initialized
 
