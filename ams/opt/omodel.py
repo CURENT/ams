@@ -919,6 +919,11 @@ class OModel:
     def evaluate(self):
         """
         Evaluate the optimization model.
+
+        Returns
+        -------
+        bool
+            Returns True if the evaluation is successful, False otherwise.
         """
         logger.debug(f"Evaluating OModel for <{self.rtn.class_name}>")
         t, _ = elapsed()
@@ -945,6 +950,31 @@ class OModel:
         _, s = elapsed(t)
         logger.debug(f" -> Evaluated in {s}")
         return self.evaluated
+
+    def finalize(self):
+        """
+        Finalize the optimization model.
+
+        Returns
+        -------
+        """
+        logger.debug(f"Finalizing OModel for <{self.rtn.class_name}>")
+        t, _ = elapsed()
+        code_prob = "self.prob = problem(self.obj, "
+        constrs_skip = []
+        constrs_add = []
+        for key, val in self.rtn.constrs.items():
+            if (val.is_disabled) or (val is None):
+                constrs_skip.append(f'<{key}>')
+            else:
+                constrs_add.append(val.optz)
+        code_prob += "[constr for constr in constrs_add])"
+        for pattern, replacement in self.rtn.syms.sub_map.items():
+            code_prob = re.sub(pattern, replacement, code_prob)
+
+        exec(code_prob, globals(), locals())
+        _, s = elapsed(t)
+        logger.debug(f" -> Finalized in {s}")
 
     def init(self, no_code=True, force_parse=False, force_generate=False):
         """
@@ -981,23 +1011,8 @@ class OModel:
 
         self.evaluate()
 
-        # --- evaluate the optimziation ---
-        t_eva, _ = elapsed()
-        code_prob = "self.prob = problem(self.obj, "
-        constrs_skip = []
-        constrs_add = []
-        for key, val in self.rtn.constrs.items():
-            if (val.is_disabled) or (val is None):
-                constrs_skip.append(f'<{key}>')
-            else:
-                constrs_add.append(val.optz)
-        code_prob += "[constr for constr in constrs_add])"
-        for pattern, replacement in self.rtn.syms.sub_map.items():
-            code_prob = re.sub(pattern, replacement, code_prob)
-
-        exec(code_prob, globals(), locals())
-        _, s_eva = elapsed(t_eva)
-        logger.debug(f"OModel for <{self.rtn.class_name}> evaluated in {s_eva}")
+        # --- finalize the optimziation ---
+        self.finalize()
 
         _, s_init = elapsed(t_init)
         self.initialized = True
