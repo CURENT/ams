@@ -938,9 +938,9 @@ class OModel:
             setattr(self, key, val.optz)
         if self.rtn.type != 'PF':
             self.rtn.obj.evaluate()
+            # NOTE: since we already have the attribute `obj`,
+            # we can update it rather than setting it
             self.obj = self.rtn.obj.optz
-            # similar to `setattr`
-            exec("self.obj = self.rtn.obj.optz", globals(), locals())
         for key, val in self.rtn.exprs.items():
             val.evaluate()
 
