@@ -304,9 +304,12 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         if len(g_idx) == 0:
             g_idx = priority[0]
             ug0 = 0
+            off_gen = f'{g_idx}'
+        else:
+            off_gen = ', '.join(g_idx)
         self.system.StaticGen.alter(src='u', idx=g_idx, value=ug0)
-        logger.warning(f'Turn off StaticGen {g_idx} as initial commitment guess.')
-        return True
+        logger.warning(f"As initial commitment guess, turn off StaticGen: {off_gen}")
+        return g_idx
 
     def init(self, no_code=True,
              force_mats=False, force_constr=False,
