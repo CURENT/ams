@@ -864,7 +864,6 @@ class OModel:
                     msg = f"Failed to parse Param <{key}>. "
                     msg += f"Original error: {e}"
                     raise Exception(msg)
-                setattr(self, key, val.optz)
 
         # --- add decision variables ---
         for key, val in self.rtn.vars.items():
@@ -875,7 +874,6 @@ class OModel:
                 msg = f"Failed to parse Var <{key}>. "
                 msg += f"Original error: {e}"
                 raise Exception(msg)
-            setattr(self, key, val.optz)
 
         # --- add constraints ---
         for key, val in self.rtn.constrs.items():
@@ -886,7 +884,6 @@ class OModel:
                 msg = f"Failed to parse Constr <{key}>. "
                 msg += f"Original error: {e}"
                 raise Exception(msg)
-            setattr(self, key, val.optz)
 
         # --- parse objective functions ---
         if self.rtn.type != 'PF':
