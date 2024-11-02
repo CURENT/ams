@@ -173,7 +173,7 @@ class RoutineBase:
             owner = self.__dict__[src].owner
             src0 = self.__dict__[src].src
             try:
-                res = owner.set(src=src0, idx=idx, attr=attr, value=value)
+                res = owner.alter(src=src0, idx=idx, value=value)
                 return res
             except KeyError as e:
                 msg = f"Failed to set <{src0}> in <{owner.class_name}>. "
