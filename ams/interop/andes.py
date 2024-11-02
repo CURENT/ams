@@ -695,8 +695,8 @@ class Dynamic:
                                          idx=link['stg_idx'].values)
                 # NOTE: only update u if changed actually
                 u0_rtn = rtn.get(src=vname_ams, attr='v', idx=link['stg_idx'].values).copy()
-                rtn.alter(src=vname_ams, idx=link['stg_idx'].values, value=u_stg)
-                rtn.alter(src=vname_ams, idx=link['stg_idx'].values, value=u_dyg)
+                rtn.set(src=vname_ams, attr='v', idx=link['stg_idx'].values, value=u_stg)
+                rtn.set(src=vname_ams, attr='v', idx=link['stg_idx'].values, value=u_dyg)
                 u_rtn = rtn.get(src=vname_ams, attr='v', idx=link['stg_idx'].values).copy()
                 if not np.array_equal(u0_rtn, u_rtn):
                     pname_to_update.append(vname_ams)
@@ -733,8 +733,8 @@ class Dynamic:
                 # Sync StaticGen.p first, then overwrite the ones with dynamic generator
                 p_stg = sa.StaticGen.get(src='p', attr='v',
                                          idx=link['stg_idx'].values)
-                rtn.alter(src=vname_ams, idx=link['stg_idx'].values, value=p_stg)
-                rtn.alter(src=vname_ams, idx=link['stg_idx'].values, value=p_dyg)
+                rtn.set(src=vname_ams, attr='v', idx=link['stg_idx'].values, value=p_stg)
+                rtn.set(src=vname_ams, attr='v', idx=link['stg_idx'].values, value=p_dyg)
 
                 pname_to_update.append(vname_ams)
 
@@ -749,7 +749,7 @@ class Dynamic:
             # --- other scenarios ---
             if _dest_check(mname=mname_ads, pname=pname_ads, idx=idx_ads, adsys=sa):
                 v_ads = mdl_ads.get(src=pname_ads, attr='v', idx=idx_ads)
-                rtn.alter(src=vname_ams, idx=idx_ads, value=v_ads)
+                rtn.set(src=vname_ams, attr='v', idx=idx_ads, value=v_ads)
                 pname_to_update.append(vname_ams)
                 logger.warning(f'Receive <{vname_ams}> from {mname_ads}.{pname_ads}')
 
