@@ -287,9 +287,9 @@ class DCOPF(RoutineBase):
             Additional solver specific arguments. See CVXPY documentation for details.
         """
         return super().run(no_code=no_code, force_init=force_init,
-                            force_mats=force_mats, force_constr=force_constr,
-                            force_parse=force_parse, force_generate=force_generate,
-                            *args, **kwargs)
+                           force_mats=force_mats, force_constr=force_constr,
+                           force_parse=force_parse, force_generate=force_generate,
+                           *args, **kwargs)
 
     def _post_solve(self):
         """
