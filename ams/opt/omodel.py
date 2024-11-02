@@ -241,6 +241,11 @@ class Param(OptzBase):
     def parse(self):
         """
         Parse the parameter.
+
+        Returns
+        -------
+        bool
+            Returns True if the parsing is successful, False otherwise.
         """
         sub_map = self.om.rtn.syms.sub_map
         shape = np.shape(self.v)
@@ -249,9 +254,10 @@ class Param(OptzBase):
         for pattern, replacement, in sub_map.items():
             code_param = re.sub(pattern, replacement, code_param)
         self.code = code_param
+        return True
 
     def evaluate(self):
-        config = self.config.as_dict()  # NOQA
+        config = self.config.as_dict()  # NOQA, used in `self.code`
         exec(self.code, globals(), locals())
         try:
             msg = f"Parameter <{self.name}> is set as sparse, "
@@ -485,6 +491,11 @@ class Var(OptzBase):
     def evaluate(self):
         """
         Evaluate the variable.
+
+        Returns
+        -------
+        bool
+            Returns True if the evaluation is successful, False otherwise.
         """
         exec(self.code, globals(), locals())
         return True
@@ -518,6 +529,12 @@ class Constraint(OptzBase):
         Flag indicating if the constraint is disabled, False by default.
     rtn : ams.routines.Routine
         The owner routine instance.
+    is_disabled : bool, optional
+        Flag indicating if the constraint is disabled, False by default.
+    dual : float, optional
+        The dual value of the constraint.
+    code : str, optional
+        The code string for the constraint
     """
 
     def __init__(self,
@@ -532,7 +549,6 @@ class Constraint(OptzBase):
         self.is_disabled = False
         self.dual = None
         self.code = None
-        # TODO: add constraint info from solver, maybe dual?
 
     def parse(self, no_code=True):
         """
@@ -653,6 +669,8 @@ class Objective(OptzBase):
         computation.
     rtn : ams.routines.Routine
         The owner routine instance.
+    code : str
+        The code string for the objective function.
     """
 
     def __init__(self,
@@ -721,6 +739,11 @@ class Objective(OptzBase):
         ----------
         no_code : bool, optional
             Flag indicating if the code should be shown, True by default.
+
+        Returns
+        -------
+        bool
+            Returns True if the parsing is successful, False otherwise.
         """
         # parse the expression str
         sub_map = self.om.rtn.syms.sub_map
@@ -741,6 +764,11 @@ class Objective(OptzBase):
     def evaluate(self):
         """
         Evaluate the objective function.
+
+        Returns
+        -------
+        bool
+            Returns True if the evaluation is successful, False otherwise.
         """
         exec(self.code, globals(), locals())
         exec("self.om.obj = self.optz", globals(), locals())
@@ -771,6 +799,12 @@ class OModel:
         Constraints.
     obj: Objective
         Objective function.
+    initialized: bool
+        Flag indicating if the model is initialized.
+    parsed: bool
+        Flag indicating if the model is parsed.
+    evaluated: bool
+        Flag indicating if the model is evaluated.
     """
 
     def __init__(self, routine):
@@ -782,6 +816,7 @@ class OModel:
         self.obj = None
         self.initialized = False
         self.parsed = False
+        self.evaluated = False
 
     def parse(self, no_code=True, force_generate=False):
         """
@@ -794,6 +829,11 @@ class OModel:
             True by default.
         force_generate : bool, optional
             Flag indicating if the symbols should be generated, goes to `self.rtn.syms.generate_symbols()`.
+
+        Returns
+        -------
+        bool
+            Returns True if the parsing is successful, False otherwise.
         """
         rtn = self.rtn
         rtn.syms.generate_symbols(force_generate=force_generate)
@@ -894,7 +934,9 @@ class OModel:
             self.rtn.obj.evaluate()
         for key, val in self.rtn.exprs.items():
             val.evaluate()
-        return True
+
+        self.evaluated = True
+        return self.evaluated
 
     def init(self, no_code=True, force_parse=False, force_generate=False):
         """
