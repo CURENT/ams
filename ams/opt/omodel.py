@@ -88,7 +88,7 @@ class OptzBase:
         try:
             return self.om.__dict__[self.name].shape
         except KeyError:
-            logger.warning('Shape info is not ready before initialziation.')
+            logger.warning('Shape info is not ready before initialization.')
             return None
 
     @property
@@ -99,7 +99,7 @@ class OptzBase:
         if self.rtn.initialized:
             return self.om.__dict__[self.name].size
         else:
-            logger.warning(f'<{self.rtn.class_name}> is not initialized yet.')
+            logger.warning(f'Routine <{self.rtn.class_name}> is not initialized yet.')
             return None
 
 
@@ -136,7 +136,6 @@ class ExpressionCalc(OptzBase):
                 raise e
         # store the parsed expression str code
         self.code = code_expr
-        code_expr = "self.optz = " + code_expr
         return True
 
     def evaluate(self):
@@ -144,7 +143,8 @@ class ExpressionCalc(OptzBase):
         Evaluate the expression.
         """
         logger.debug(f"    - Expression <{self.name}>: {self.code}")
-        exec(self.code, globals(), locals())
+        local_vars = {'self': self}
+        self.optz = eval(self.code, globals(), local_vars)
         return True
 
     @property
@@ -211,7 +211,7 @@ class Param(OptzBase):
                  integer: Optional[bool] = False,
                  pos: Optional[bool] = False,
                  neg: Optional[bool] = False,
-                 sparse: Optional[list] = False,
+                 sparse: Optional[bool] = False,
                  ):
         OptzBase.__init__(self, name=name, info=info, unit=unit)
         self.no_parse = no_parse  # True to skip parsing the parameter
@@ -244,7 +244,7 @@ class Param(OptzBase):
         sub_map = self.om.rtn.syms.sub_map
         shape = np.shape(self.v)
         # NOTE: it seems that there is no need to use re.sub here
-        code_param = f"self.optz=param(shape={shape}, **config)"
+        code_param = f"param(shape={shape}, **config)"
         for pattern, replacement, in sub_map.items():
             code_param = re.sub(pattern, replacement, code_param)
         self.code = code_param
@@ -255,7 +255,6 @@ class Param(OptzBase):
             return True
 
         config = self.config.as_dict()  # NOQA, used in `self.code`
-        exec(self.code, globals(), locals())
         try:
             msg = f"Parameter <{self.name}> is set as sparse, "
             msg += "but the value is not sparse."
@@ -263,7 +262,8 @@ class Param(OptzBase):
             if self.sparse:
                 if not spr.issparse(self.v):
                     val = "sps.csr_matrix(self.v)"
-            exec(f"self.optz.value = {val}", globals(), locals())
+            local_vars = {'self': self, 'config': config, 'sps': sps}
+            self.optz = eval(val, globals(), local_vars)
         except ValueError:
             msg = f"Parameter <{self.name}> has non-numeric value, "
             msg += "set `no_parse=True`."
@@ -471,7 +471,7 @@ class Var(OptzBase):
             nc = shape[1] if len(shape) > 1 else 0
         else:
             raise ValueError(f"Invalid shape {self._shape}.")
-        code_var = f"self.optz=var({shape}, **config)"
+        code_var = f"var({shape}, **config)"
         for pattern, replacement, in sub_map.items():
             code_var = re.sub(pattern, replacement, code_var)
         self.code = code_var
@@ -499,7 +499,8 @@ class Var(OptzBase):
                 config[k] = v
         logger.debug(f"    - Var <{self.name}>: {self.code}")
         try:
-            exec(self.code, globals(), locals())
+            local_vars = {'self': self, 'config': config}
+            self.optz = eval(self.code, globals(), local_vars)
         except Exception as e:
             logger.error(f"Error in evaluating var <{self.name}>.")
             logger.error(f"Original error: {e}")
@@ -547,7 +548,7 @@ class Constraint(OptzBase):
                  name: Optional[str] = None,
                  e_str: Optional[str] = None,
                  info: Optional[str] = None,
-                 is_eq: Optional[str] = False,
+                 is_eq: Optional[bool] = False,
                  ):
         OptzBase.__init__(self, name=name, info=info)
         self.e_str = e_str
@@ -570,7 +571,6 @@ class Constraint(OptzBase):
                 logger.error(f"Error in parsing constr <{self.name}>.")
                 raise e
         # parse the constraint type
-        code_constr = "self.optz=" + code_constr
         code_constr += " == 0" if self.is_eq else " <= 0"
         # store the parsed expression str code
         self.code = code_constr
@@ -580,14 +580,14 @@ class Constraint(OptzBase):
         """
         Evaluate the constraint.
         """
-        logger.debug(f"    - Constraint <{self.name}>: {self.code}")
+        logger.debug(f"    - Constr <{self.name}>: {self.code}")
         try:
-            exec(self.code, globals(), locals())
+            local_vars = {'self': self}
+            self.optz = eval(self.code, globals(), local_vars)
         except Exception as e:
             logger.error(f"Error in evaluating constr <{self.name}>.")
             logger.error(f"Original error: {e}")
             return False
-        return True
 
     def __repr__(self):
         enabled = 'OFF' if self.is_disabled else 'ON'
@@ -755,8 +755,7 @@ class Objective(OptzBase):
         if self.sense not in ['min', 'max']:
             raise ValueError(f'Objective sense {self.sense} is not supported.')
         sense = 'cp.Minimize' if self.sense == 'min' else 'cp.Maximize'
-        code_obj = f"self.optz={sense}({code_obj})"
-        self.code = code_obj
+        self.code = f"{sense}({code_obj})"
         return True
 
     def evaluate(self):
@@ -768,7 +767,8 @@ class Objective(OptzBase):
         bool
             Returns True if the evaluation is successful, False otherwise.
         """
-        exec(self.code, globals(), locals())
+        logger.debug(f"    - Objective <{self.name}>: {self.e_str}")
+        self.optz = eval(self.code, globals(), locals())
         return True
 
     def __repr__(self):
@@ -893,6 +893,52 @@ class OModel:
         self.parsed = True
         return self.parsed
 
+    def _evaluate_params(self):
+        """
+        Evaluate the parameters.
+        """
+        for key, val in self.rtn.params.items():
+            val.evaluate()
+            setattr(self, key, val.optz)
+        return True
+
+    def _evaluate_vars(self):
+        """
+        Evaluate the decision variables.
+        """
+        for key, val in self.rtn.vars.items():
+            val.evaluate()
+            setattr(self, key, val.optz)
+        return True
+
+    def _evaluate_constrs(self):
+        """
+        Evaluate the constraints.
+        """
+        for key, val in self.rtn.constrs.items():
+            val.evaluate()
+            setattr(self, key, val.optz)
+        return True
+
+    def _evaluate_obj(self):
+        """
+        Evaluate the objective function.
+        """
+        # NOTE: since we already have the attribute `obj`,
+        # we can update it rather than setting it
+        if self.rtn.type != 'PF':
+            self.rtn.obj.evaluate()
+            self.obj = self.rtn.obj.optz
+        return True
+
+    def _evaluate_exprs(self):
+        """
+        Evaluate the expressions.
+        """
+        for key, val in self.rtn.exprs.items():
+            val.evaluate()
+        return True
+
     def evaluate(self):
         """
         Evaluate the optimization model.
@@ -910,22 +956,11 @@ class OModel:
         t, _ = elapsed()
         if not self.parsed:
             raise ValueError("Model is not parsed yet.")
-        for key, val in self.rtn.params.items():
-            val.evaluate()
-            setattr(self, key, val.optz)
-        for key, val in self.rtn.vars.items():
-            val.evaluate()
-            setattr(self, key, val.optz)
-        for key, val in self.rtn.constrs.items():
-            val.evaluate()
-            setattr(self, key, val.optz)
-        if self.rtn.type != 'PF':
-            self.rtn.obj.evaluate()
-            # NOTE: since we already have the attribute `obj`,
-            # we can update it rather than setting it
-            self.obj = self.rtn.obj.optz
-        for key, val in self.rtn.exprs.items():
-            val.evaluate()
+        self._evaluate_params()
+        self._evaluate_vars()
+        self._evaluate_constrs()
+        self._evaluate_obj()
+        self._evaluate_exprs()
 
         self.evaluated = True
         _, s = elapsed(t)
@@ -958,7 +993,8 @@ class OModel:
         for pattern, replacement in self.rtn.syms.sub_map.items():
             code_prob = re.sub(pattern, replacement, code_prob)
 
-        exec(code_prob, globals(), locals())
+        local_vars = {}
+        self.prob = eval(code_prob, globals(), local_vars)
         _, s = elapsed(t)
         logger.debug(f" -> Finalized in {s}")
         self.evaluated = True
@@ -1026,9 +1062,9 @@ class OModel:
         elif isinstance(value, cp.Parameter):
             self.params[key] = value
 
-    def __setattr__(self, __name: str, __value: Any):
-        self._register_attribute(__name, __value)
-        super().__setattr__(__name, __value)
+    def __setattr__(self, name: str, value: Any):
+        super().__setattr__(name, value)
+        self._register_attribute(name, value)
 
     def update(self, params):
         """
