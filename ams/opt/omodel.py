@@ -49,10 +49,17 @@ class OptzBase:
         self.is_disabled = False
         self.rtn = None
         self.optz = None  # corresponding optimization element
+        self.code = None
 
     def parse(self):
         """
         Parse the object.
+        """
+        raise NotImplementedError
+
+    def evaluate(self):
+        """
+        Evaluate the object.
         """
         raise NotImplementedError
 
@@ -137,8 +144,13 @@ class ExpressionCalc(OptzBase):
         code_expr = "self.optz = " + code_expr
         if not no_code:
             logger.info(f"<{self.name}> code: {code_expr}")
-        # execute the expression
-        exec(code_expr, globals(), locals())
+        return True
+
+    def evaluate(self):
+        """
+        Evaluate the expression.
+        """
+        exec(self.code, globals(), locals())
         return True
 
     @property
@@ -230,14 +242,17 @@ class Param(OptzBase):
         """
         Parse the parameter.
         """
-        config = self.config.as_dict()  # NOQA
         sub_map = self.om.rtn.syms.sub_map
         shape = np.shape(self.v)
         # NOTE: it seems that there is no need to use re.sub here
         code_param = f"self.optz=param(shape={shape}, **config)"
         for pattern, replacement, in sub_map.items():
             code_param = re.sub(pattern, replacement, code_param)
-        exec(code_param, globals(), locals())
+        self.code = code_param
+
+    def evaluate(self):
+        config = self.config.as_dict()  # NOQA
+        exec(self.code, globals(), locals())
         try:
             msg = f"Parameter <{self.name}> is set as sparse, "
             msg += "but the value is not sparse."
@@ -464,8 +479,14 @@ class Var(OptzBase):
         code_var = f"self.optz=var({shape}, **config)"
         for pattern, replacement, in sub_map.items():
             code_var = re.sub(pattern, replacement, code_var)
-        # build the Var object
-        exec(code_var, globals(), locals())
+        self.code = code_var
+        return True
+
+    def evaluate(self):
+        """
+        Evaluate the variable.
+        """
+        exec(self.code, globals(), locals())
         return True
 
     def __repr__(self):
@@ -531,15 +552,20 @@ class Constraint(OptzBase):
             except TypeError as e:
                 logger.error(f"Error in parsing constr <{self.name}>.")
                 raise e
-        # store the parsed expression str code
-        self.code = code_constr
         # parse the constraint type
         code_constr = "self.optz=" + code_constr
         code_constr += " == 0" if self.is_eq else " <= 0"
+        # store the parsed expression str code
+        self.code = code_constr
         if not no_code:
             logger.info(f"<{self.name}> code: {code_constr}")
-        # set the parsed constraint
-        exec(code_constr, globals(), locals())
+        return True
+
+    def evaluate(self):
+        """
+        Evaluate the constraint.
+        """
+        exec(self.code, globals(), locals())
         return True
 
     def __repr__(self):
@@ -709,8 +735,14 @@ class Objective(OptzBase):
         code_obj = f"self.optz={sense}({code_obj})"
         if not no_code:
             logger.info(f"Code: {code_obj}")
-        # set the parsed objective function
-        exec(code_obj, globals(), locals())
+        self.code = code_obj
+        return True
+
+    def evaluate(self):
+        """
+        Evaluate the objective function.
+        """
+        exec(self.code, globals(), locals())
         exec("self.om.obj = self.optz", globals(), locals())
         return True
 
@@ -846,6 +878,24 @@ class OModel:
         self.parsed = True
         return self.parsed
 
+    def evaluate(self):
+        """
+        Evaluate the optimization model.
+        """
+        if not self.parsed:
+            raise ValueError("Model is not parsed yet.")
+        for key, val in self.rtn.params.items():
+            val.evaluate()
+        for key, val in self.rtn.vars.items():
+            val.evaluate()
+        for key, val in self.rtn.constrs.items():
+            val.evaluate()
+        if self.rtn.type != 'PF':
+            self.rtn.obj.evaluate()
+        for key, val in self.rtn.exprs.items():
+            val.evaluate()
+        return True
+
     def init(self, no_code=True, force_parse=False, force_generate=False):
         """
         Set up the optimization model from the symbolic description.
@@ -878,6 +928,8 @@ class OModel:
             self.initialized = True
             logger.debug(f"OModel for <{self.rtn.class_name}> initialized in {s_init}.")
             return self.initialized
+
+        self.evaluate()
 
         # --- evaluate the optimziation ---
         t_eva, _ = elapsed()
