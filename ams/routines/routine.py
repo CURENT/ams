@@ -237,7 +237,7 @@ class RoutineBase:
         logger.debug(" - Data check passed")
         return True
 
-    def init(self, no_code=True,
+    def init(self, no_code=True, force_init=False,
              force_mats=False, force_constr=False,
              force_parse=False, force_generate=False):
         """
@@ -247,6 +247,8 @@ class RoutineBase:
         ----------
         no_code: bool
             Whether to show generated code.
+        force_init: bool
+            Whether to force re-initialization, will ignore `self.initialized`.
         force_mats: bool
             Whether to force build the system matrices, goes to `self.system.mats.build()`.
         force_constr: bool
@@ -256,7 +258,7 @@ class RoutineBase:
         force_generate: bool
             Whether to force generate symbols, goes to `self.om.init()`.
         """
-        skip_all = not (force_mats and force_parse and force_generate) and self.initialized
+        skip_all = not (force_init and force_mats and force_parse and force_generate) and self.initialized
 
         if skip_all:
             logger.debug(f"{self.class_name} has already been initialized.")
@@ -310,9 +312,9 @@ class RoutineBase:
         return None
 
     def run(self,
+            no_code=True, force_init=False,
             force_mats=False, force_constr=False,
             force_parse=False, force_generate=False,
-            no_code=True,
             *args, **kwargs):
         """
         Run the routine.
@@ -325,6 +327,10 @@ class RoutineBase:
 
         Parameters
         ----------
+        no_code: bool
+            Whether to show generated code.
+        force_init: bool
+            Whether to force re-initialization, will ignore `self.initialized`.
         force_mats: bool
             Whether to force build the system matrices, goes to `self.init()`.
         force_constr: bool
@@ -337,9 +343,9 @@ class RoutineBase:
             Whether to show generated code.
         """
         # --- setup check ---
-        self.init(force_mats=force_mats, force_constr=force_constr,
-                  force_parse=force_parse, force_generate=force_generate,
-                  no_code=no_code)
+        self.init(no_code=no_code, force_init=force_init,
+                  force_mats=force_mats, force_constr=force_constr,
+                  force_parse=force_parse, force_generate=force_generate)
         # --- solve optimization ---
         t0, _ = elapsed()
         _ = self.solve(*args, **kwargs)

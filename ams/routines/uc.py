@@ -311,11 +311,11 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         logger.warning(f"As initial commitment guess, turn off StaticGen: {off_gen}")
         return g_idx
 
-    def init(self, no_code=True,
+    def init(self, no_code=True, force_init=False,
              force_mats=False, force_constr=False,
              force_parse=False, force_generate=False):
         self._initial_guess()
-        return super().init(no_code=no_code,
+        return super().init(no_code=no_code, force_init=force_init,
                             force_mats=force_mats, force_constr=force_constr,
                             force_parse=force_parse, force_generate=force_generate)
 

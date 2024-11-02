@@ -232,7 +232,11 @@ class DCOPF(RoutineBase):
         """
         return self.om.prob.solve(*args, **kwargs)
 
-    def run(self, no_code=True, *args, **kwargs):
+    def run(self,
+            no_code=True, force_init=False,
+            force_mats=False, force_constr=False,
+            force_parse=False, force_generate=False,
+            *args, **kwargs):
         """
         Run the routine.
         *args and **kwargs go to `self.solve()`.
@@ -241,6 +245,16 @@ class DCOPF(RoutineBase):
         ----------
         no_code : bool, optional
             If True, print the generated CVXPY code. Defaults to False.
+        force_init : bool, optional
+            If True, force re-initialization. Defaults to False.
+        force_mats : bool, optional
+            If True, force re-generating matrices. Defaults to False.
+        force_constr : bool, optional
+            If True, force re-generating constraints. Defaults to False.
+        force_parse : bool, optional
+            If True, force re-parsing the model. Defaults to False.
+        force_generate : bool, optional
+            If True, force re-generating the model. Defaults to False.
 
         Other Parameters
         ----------------
@@ -272,7 +286,10 @@ class DCOPF(RoutineBase):
         kwargs : keywords, optional
             Additional solver specific arguments. See CVXPY documentation for details.
         """
-        return RoutineBase.run(self, no_code=no_code, *args, **kwargs)
+        return super().run(no_code=no_code, force_init=force_init,
+                            force_mats=force_mats, force_constr=force_constr,
+                            force_parse=force_parse, force_generate=force_generate,
+                            *args, **kwargs)
 
     def _post_solve(self):
         """
