@@ -51,23 +51,23 @@ class TestUC(unittest.TestCase):
         Test setting and tripping load.
         """
         self.ss.UC.run(solver='SCIP')
-        obj = self.ss.UC.obj.v
+        pgs = self.ss.UC.obj.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.UC.update()
 
         self.ss.UC.run(solver='SCIP')
-        obj_pqt = self.ss.UC.obj.v
-        self.assertLess(obj_pqt, obj, "Load set does not take effect!")
+        pgs_pqt = self.ss.UC.obj.v.sum()
+        self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
         # --- trip load ---
         self.ss.PQ.alter(src='u', idx='PQ_2', value=0)
         self.ss.UC.update()
 
         self.ss.UC.run(solver='SCIP')
-        obj_pqt2 = self.ss.UC.obj.v
-        self.assertLess(obj_pqt2, obj_pqt, "Load trip does not take effect!")
+        pgs_pqt2 = self.ss.UC.obj.v.sum()
+        self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
     @skip_unittest_without_MIP
     def test_trip_line(self):
@@ -130,23 +130,23 @@ class TestUCES(unittest.TestCase):
         Test setting and tripping load.
         """
         self.ss.UCES.run(solver='SCIP')
-        obj = self.ss.UCES.obj.v
+        pgs = self.ss.UCES.pg.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.UCES.update()
 
         self.ss.UCES.run(solver='SCIP')
-        obj_pqt = self.ss.UCES.obj.v
-        self.assertLess(obj_pqt, obj, "Load set does not take effect!")
+        pgs_pqt = self.ss.UCES.pg.v.sum()
+        self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
         # --- trip load ---
         self.ss.PQ.alter(src='u', idx='PQ_2', value=0)
         self.ss.UCES.update()
 
         self.ss.UCES.run(solver='SCIP')
-        obj_pqt2 = self.ss.UCES.obj.v
-        self.assertLess(obj_pqt2, obj_pqt, "Load trip does not take effect!")
+        pgs_pqt2 = self.ss.UCES.pg.v.sum()
+        self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
     @skip_unittest_without_MIP
     def test_trip_line(self):

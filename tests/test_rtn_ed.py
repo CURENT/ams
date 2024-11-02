@@ -76,20 +76,20 @@ class TestED(unittest.TestCase):
         Test setting and tripping load.
         """
         self.ss.ED.run(solver='CLARABEL')
-        obj = self.ss.ED.obj.v
+        pgs = self.ss.ED.pg.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.ED.update()
 
         self.ss.ED.run(solver='CLARABEL')
-        obj_pqt = self.ss.ED.obj.v
-        self.assertLess(obj_pqt, obj, "Load set does not take effect!")
+        pgs_pqt = self.ss.ED.pg.v.sum()
+        self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
         # --- trip load ---
         self.ss.PQ.alter(src='u', idx='PQ_2', value=0)
         self.ss.ED.update()
 
         self.ss.ED.run(solver='CLARABEL')
-        obj_pqt2 = self.ss.ED.obj.v
-        self.assertLess(obj_pqt2, obj_pqt, "Load trip does not take effect!")
+        pgs_pqt2 = self.ss.ED.pg.v.sum()
+        self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
