@@ -58,20 +58,20 @@ class TestDCOPF(unittest.TestCase):
         """
         # --- run DCOPF ---
         self.ss.DCOPF.run(solver='CLARABEL')
-        obj = self.ss.DCOPF.obj.v
+        pgs = self.ss.DCOPF.pg.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.DCOPF.update()
 
         self.ss.DCOPF.run(solver='CLARABEL')
-        obj_pqt = self.ss.DCOPF.obj.v
-        self.assertLess(obj_pqt, obj, "Load set does not take effect!")
+        pgs_pqt = self.ss.DCOPF.pg.v.sum()
+        self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
         # --- trip load ---
         self.ss.PQ.set(src='u', attr='v', idx='PQ_2', value=0)
         self.ss.DCOPF.update()
 
         self.ss.DCOPF.run(solver='CLARABEL')
-        obj_pqt2 = self.ss.DCOPF.obj.v
-        self.assertLess(obj_pqt2, obj_pqt, "Load trip does not take effect!")
+        pgs_pqt2 = self.ss.DCOPF.pg.v.sum()
+        self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
