@@ -15,9 +15,13 @@ from andes.utils.misc import elapsed
 
 import cvxpy as cp
 
+from ams.utils import pretty_long_message
 from ams.shared import sps      # NOQA
 
 logger = logging.getLogger(__name__)
+
+_prefix = r" - --------------> | "
+_max_length = 80
 
 
 class OptzBase:
@@ -136,13 +140,16 @@ class ExpressionCalc(OptzBase):
                 raise e
         # store the parsed expression str code
         self.code = code_expr
+        msg = f" - ExpressionCalc <{self.name}>: {self.e_str}"
+        logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         return True
 
     def evaluate(self):
         """
         Evaluate the expression.
         """
-        logger.debug(f"    - Expression <{self.name}>: {self.code}")
+        msg = f" - Expression <{self.name}>: {self.code}"
+        logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         local_vars = {'self': self}
         self.optz = eval(self.code, {}, local_vars)
         return True
@@ -497,7 +504,8 @@ class Var(OptzBase):
                 config['boolean'] = v
             else:
                 config[k] = v
-        logger.debug(f"    - Var <{self.name}>: {self.code}")
+        msg = f" - Var <{self.name}>: {self.code}"
+        logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         try:
             local_vars = {'self': self, 'config': config, 'cp': cp}
             self.optz = eval(self.code, {}, local_vars)
@@ -574,13 +582,16 @@ class Constraint(OptzBase):
         code_constr += " == 0" if self.is_eq else " <= 0"
         # store the parsed expression str code
         self.code = code_constr
+        msg = f" - Constr <{self.name}>: {self.e_str}"
+        logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         return True
 
     def evaluate(self):
         """
         Evaluate the constraint.
         """
-        logger.debug(f"    - Constr <{self.name}>: {self.code}")
+        msg = f" - Constr <{self.name}>: {self.code}"
+        logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         try:
             local_vars = {'self': self, 'cp': cp}
             self.optz = eval(self.code, {}, local_vars)
@@ -756,6 +767,8 @@ class Objective(OptzBase):
             raise ValueError(f'Objective sense {self.sense} is not supported.')
         sense = 'cp.Minimize' if self.sense == 'min' else 'cp.Maximize'
         self.code = f"{sense}({code_obj})"
+        msg = f" - Objective <{self.name}>: {self.code}"
+        logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         return True
 
     def evaluate(self):
@@ -767,7 +780,7 @@ class Objective(OptzBase):
         bool
             Returns True if the evaluation is successful, False otherwise.
         """
-        logger.debug(f"    - Objective <{self.name}>: {self.e_str}")
+        logger.debug(f" - Objective <{self.name}>: {self.e_str}")
         local_vars = {'self': self, 'cp': cp}
         self.optz = eval(self.code, {}, local_vars)
         return True
@@ -833,10 +846,10 @@ class OModel:
         """
         t, _ = elapsed()
         # --- add RParams and Services as parameters ---
-        logger.debug(f'Parsing OModel for <{self.rtn.class_name}>')
+        logger.warning(f'Parsing OModel for <{self.rtn.class_name}>')
         for key, val in self.rtn.params.items():
             if not val.no_parse:
-                logger.debug(f"    - Param <{key}>")
+                logger.debug(f" - Param <{key}>")
                 try:
                     val.parse()
                 except Exception as e:
@@ -846,7 +859,7 @@ class OModel:
 
         # --- add decision variables ---
         for key, val in self.rtn.vars.items():
-            logger.debug(f"    - Var <{key}>")
+            logger.debug(f" - Var <{key}>")
             try:
                 val.parse()
             except Exception as e:
@@ -856,7 +869,6 @@ class OModel:
 
         # --- add constraints ---
         for key, val in self.rtn.constrs.items():
-            logger.debug(f"    - Constr <{key}>: {val.e_str}")
             try:
                 val.parse()
             except Exception as e:
@@ -866,7 +878,6 @@ class OModel:
 
         # --- parse objective functions ---
         if self.rtn.type != 'PF':
-            logger.debug(f"    - Objective <{self.rtn.obj.name}>: {self.rtn.obj.e_str}")
             if self.rtn.obj is not None:
                 try:
                     self.rtn.obj.parse()
@@ -881,7 +892,6 @@ class OModel:
 
         # --- parse expressions ---
         for key, val in self.rtn.exprs.items():
-            logger.debug(f"    - ExpressionCalc <{key}>: {val.e_str}")
             try:
                 val.parse()
             except Exception as e:
@@ -953,7 +963,7 @@ class OModel:
         bool
             Returns True if the evaluation is successful, False otherwise.
         """
-        logger.debug(f"Evaluating OModel for <{self.rtn.class_name}>")
+        logger.warning(f"Evaluating OModel for <{self.rtn.class_name}>")
         t, _ = elapsed()
         if not self.parsed:
             raise ValueError("Model is not parsed yet.")
@@ -980,7 +990,7 @@ class OModel:
         bool
             Returns True if the finalization is successful, False otherwise.
         """
-        logger.debug(f"Finalizing OModel for <{self.rtn.class_name}>")
+        logger.warning(f"Finalizing OModel for <{self.rtn.class_name}>")
         t, _ = elapsed()
         code_prob = "problem(self.obj, "
         constrs_skip = []

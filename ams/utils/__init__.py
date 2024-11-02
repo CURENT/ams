@@ -31,3 +31,29 @@ def create_entry(*fields, three_params=True):
     """
     base_fields = ['idx', 'u', 'name'] if three_params else []
     return base_fields + list(fields)
+
+
+def pretty_long_message(message, prefix="", max_length=80):
+    """
+    Pretty print a long message.
+
+    Parameters
+    ----------
+    message : str
+        The message to format.
+    prefix : str, optional
+        A prefix to add to each line of the message.
+    max_length : int, optional
+        The maximum length of each line.
+
+    Returns
+    -------
+    str
+        The formatted message.
+    """
+    if len(message) <= max_length:
+        return message
+    else:
+        lines = [message[i:i+max_length] for i in range(0, len(message), max_length)]
+        formatted_message = lines[0] + "\n" + "\n".join([prefix + line for line in lines[1:]])
+        return formatted_message
