@@ -41,8 +41,42 @@ def ensure_symbols(func):
 
     def wrapper(self, *args, **kwargs):
         if not self.rtn._syms:
-            logger.debug(f"<{self.rtn.class_name}> symbols are not generated yet.")
+            logger.debug(f"<{self.rtn.class_name}> symbols are not generated yet. Generating now...")
             self.rtn.syms.generate_symbols()
+        return func(self, *args, **kwargs)
+    return wrapper
+
+
+def ensure_mats_and_parsed(func):
+    """
+    Decorator to ensure that system matrices are built and OModel is parsed
+    before evaluation. If not, it runs the necessary methods to initialize them.
+
+    Designed to be used on the `evaluate` method of the optimization elements (`OptzBase`)
+    and optimization model (`OModel`), i.e., `Var`, `Param`, `Constraint`, `Objective`,
+    and `ExpressionCalc`.
+
+    Note:
+    -----
+    Evaluation before matrices building and parsing can run into errors. Ensure that
+    system matrices are built and OModel is parsed before calling the `evaluate` method.
+    """
+    def wrapper(self, *args, **kwargs):
+        try:
+            if not self.rtn.system.mats.initialized:
+                logger.debug("System matrices are not built yet. Building now...")
+                self.rtn.system.mats.build()
+            if isinstance(self, (OptzBase, Var, Param, Constraint, Objective)):
+                if not self.om.parsed:
+                    logger.debug("OModel is not parsed yet. Parsing now...")
+                    self.om.parse()
+            elif isinstance(self, OModel):
+                if not self.parsed:
+                    logger.debug("OModel is not parsed yet. Parsing now...")
+                    self.parse()
+        except Exception as e:
+            logger.error(f"Error during initialization or parsing: {e}")
+            raise
         return func(self, *args, **kwargs)
     return wrapper
 
@@ -90,6 +124,7 @@ class OptzBase:
         """
         raise NotImplementedError
 
+    @ensure_mats_and_parsed
     def evaluate(self):
         """
         Evaluate the object.
@@ -173,6 +208,7 @@ class ExpressionCalc(OptzBase):
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         return True
 
+    @ensure_mats_and_parsed
     def evaluate(self):
         """
         Evaluate the expression.
@@ -293,6 +329,7 @@ class Param(OptzBase):
         self.code = code_param
         return True
 
+    @ensure_mats_and_parsed
     def evaluate(self):
         """
         Evaluate the parameter.
@@ -526,6 +563,7 @@ class Var(OptzBase):
         self.code = code_var
         return True
 
+    @ensure_mats_and_parsed
     def evaluate(self):
         """
         Evaluate the variable.
@@ -626,6 +664,7 @@ class Constraint(OptzBase):
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         return True
 
+    @ensure_mats_and_parsed
     def evaluate(self):
         """
         Evaluate the constraint.
@@ -811,6 +850,7 @@ class Objective(OptzBase):
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         return True
 
+    @ensure_mats_and_parsed
     def evaluate(self):
         """
         Evaluate the objective function.
@@ -988,6 +1028,7 @@ class OModel:
             except Exception as e:
                 raise Exception(f"Failed to evaluate ExpressionCalc <{key}>.\n{e}")
 
+    @ensure_mats_and_parsed
     def evaluate(self, force=False):
         """
         Evaluate the optimization model.
