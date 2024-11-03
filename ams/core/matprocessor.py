@@ -186,11 +186,16 @@ class MatProcessor:
                            info='Line outage distribution factor',
                            v=None, sparse=False, owner=self)
 
-    def build(self, force_mats=False):
+    def build(self, force=False):
         """
         Build the system matrices.
         It build connectivity matrices first: Cg, Cl, Csh, Cft, and CftT.
         Then build bus matrices: Bf, Bbus, Pfinj, and Pbusinj.
+
+        Parameters
+        ----------
+        force : bool, optional
+            If True, force to rebuild the matrices. Default is False.
 
         Notes
         -----
@@ -202,7 +207,7 @@ class MatProcessor:
         initialized : bool
             True if the matrices are built successfully.
         """
-        if not force_mats and self.initialized:
+        if not force and self.initialized:
             logger.debug("System matrices are already built.")
             return self.initialized
 

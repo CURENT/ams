@@ -237,28 +237,23 @@ class RoutineBase:
         logger.debug(" -> Data check passed")
         return True
 
-    def init(self, no_code=True, force_init=False,
-             force_mats=False, force_constr=False,
-             force_parse=False, force_generate=False):
+    def init(self, force_init=False, force_mats=False,
+             force_constr=False, force_om=False):
         """
         Initialize the routine.
 
-        Parameters
+        Other parameters
         ----------
-        no_code: bool
-            Whether to show generated code.
         force_init: bool
             Whether to force re-initialization, will ignore `self.initialized`.
         force_mats: bool
             Whether to force build the system matrices, goes to `self.system.mats.build()`.
         force_constr: bool
             Whether to turn on all constraints.
-        force_parse: bool
-            Whether to force parse the optimization model, goes to `self.om.init()`.
-        force_generate: bool
-            Whether to force generate symbols, goes to `self.om.init()`.
+        force_om: bool
+            Whether to force initialize the optimization model.
         """
-        skip_all = not (force_init and force_mats and force_parse and force_generate) and self.initialized
+        skip_all = not (force_init and force_mats) and self.initialized
 
         if skip_all:
             logger.debug(f"{self.class_name} has already been initialized.")
@@ -274,13 +269,13 @@ class RoutineBase:
                 constr.is_disabled = False
 
         # --- matrix build ---
-        self.system.mats.build(force_mats=force_mats)
+        self.system.mats.build(force=force_mats)
 
         # --- constraint check ---
         _ = self._get_off_constrs()
 
         if not self.om.initialized:
-            self.om.init()
+            self.om.init(force=force_om)
         _, s_init = elapsed(t0)
 
         msg = f"<{self.class_name}> "
