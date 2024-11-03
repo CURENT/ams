@@ -24,6 +24,29 @@ _prefix = r" - --------------> | "
 _max_length = 80
 
 
+def ensure_symbols(func):
+    """
+    Decorator to ensure that symbols are generated before parsing.
+    If not, it runs self.rtn.syms.generate_symbols().
+
+    Designed to be used on the `parse` method of the optimization elements (`OptzBase`)
+    and optimization model (`OModel`), i.e., `Var`, `Param`, `Constraint`, `Objective`,
+    and `ExpressionCalc`.
+
+    Note:
+    -----
+    Parsing before symbol generation can give wrong results. Ensure that symbols
+    are generated before calling the `parse` method.
+    """
+
+    def wrapper(self, *args, **kwargs):
+        if not self.rtn._syms:
+            logger.debug(f"<{self.rtn.class_name}> symbols are not generated yet.")
+            self.rtn.syms.generate_symbols()
+        return func(self, *args, **kwargs)
+    return wrapper
+
+
 class OptzBase:
     """
     Base class for optimization elements, e.g., Var and Constraint.
@@ -39,6 +62,11 @@ class OptzBase:
     ----------
     rtn : ams.routines.Routine
         The owner routine instance.
+
+    Note:
+    -----
+    Ensure that symbols are generated before calling the `parse` method. Parsing
+    before symbol generation can give wrong results.
     """
 
     def __init__(self,
@@ -55,6 +83,7 @@ class OptzBase:
         self.optz = None  # corresponding optimization element
         self.code = None
 
+    @ensure_symbols
     def parse(self):
         """
         Parse the object.
@@ -125,6 +154,7 @@ class ExpressionCalc(OptzBase):
         self.e_str = e_str
         self.code = None
 
+    @ensure_symbols
     def parse(self):
         """
         Parse the Expression.
@@ -241,6 +271,7 @@ class Param(OptzBase):
                                      ('neg', neg),
                                      )))
 
+    @ensure_symbols
     def parse(self):
         """
         Parse the parameter.
@@ -459,6 +490,7 @@ class Var(OptzBase):
         else:
             return self.owner.idx.v
 
+    @ensure_symbols
     def parse(self):
         """
         Parse the variable.
@@ -573,6 +605,7 @@ class Constraint(OptzBase):
         self.dual = None
         self.code = None
 
+    @ensure_symbols
     def parse(self):
         """
         Parse the constraint.
@@ -750,6 +783,7 @@ class Objective(OptzBase):
     def v(self, value):
         raise AttributeError("Cannot set the value of the objective function.")
 
+    @ensure_symbols
     def parse(self):
         """
         Parse the objective function.
@@ -839,6 +873,7 @@ class OModel:
         self.evaluated = False
         self.finalized = False
 
+    @ensure_symbols
     def parse(self, force=False):
         """
         Parse the optimization model from the symbolic description.
