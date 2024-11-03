@@ -706,11 +706,13 @@ class Constraint(OptzBase):
                 raise TypeError(e)
 
         try:
-            logger.debug(f"Value code: {code}")
-            local_vars = {'self': self, 'cp': cp, 'val_map': val_map}
+            logger.debug(pretty_long_message(f"Value code: {code}",
+                                             _prefix, max_length=_max_length))
+            local_vars = {'self': self, 'np': np, 'cp': cp, 'val_map': val_map}
             return eval(code, {}, local_vars)
         except Exception as e:
-            return Exception(f"Error in calculating constr <{self.name}>.\n{e}")
+            logger.error(f"Error in calculating constr <{self.name}>.\n{e}")
+            return None
 
     @property
     def v(self):
@@ -801,11 +803,12 @@ class Objective(OptzBase):
                 raise e
 
         try:
-            logger.debug(f"Value code: {code}")
-            return eval(code)
+            logger.debug(pretty_long_message(f"Value code: {code}",
+                                             _prefix, max_length=_max_length))
+            local_vars = {'self': self, 'np': np, 'cp': cp, 'val_map': val_map}
+            return eval(code, {}, local_vars)
         except Exception as e:
-            logger.error(f"Error in calculating obj <{self.name}>.")
-            logger.error(f"Original error: {e}")
+            logger.error(f"Error in calculating obj <{self.name}>.\n{e}")
             return None
 
     @property

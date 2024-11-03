@@ -86,6 +86,8 @@ class SymProcessor:
 
         # mapping dict for evaluating expressions
         self.val_map = OrderedDict([
+            (r'(== 0|<= 0)$', ''),  # remove the comparison operator
+            (r'cp\.(Minimize|Maximize)', r'float'),  # remove cp.Minimize/Maximize
             (r'\bcp.\b', 'np.'),
         ])
 
