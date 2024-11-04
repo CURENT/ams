@@ -225,39 +225,32 @@ class DCOPF(RoutineBase):
                              info='total cost', unit='$',
                              sense='min', e_str=obj,)
 
-    def solve(self, *args, **kwargs):
+    def solve(self, **kwargs):
         """
         Solve the routine optimization model.
         *args and **kwargs go to `self.om.prob.solve()` (`cvxpy.Problem.solve()`).
         """
-        return self.om.prob.solve(*args, **kwargs)
+        return self.om.prob.solve(**kwargs)
 
-    def run(self,
-            no_code=True, force_init=False,
-            force_mats=False, force_constr=False,
-            force_parse=False, force_generate=False,
-            *args, **kwargs):
+    def run(self, **kwargs):
         """
         Run the routine.
-        *args and **kwargs go to `self.solve()`.
+
+        Following kwargs go to `self.init()`: `force`, `force_mats`, `force_constr`, `force_om`.
+
+        Following kwargs go to `self.solve()`: `solver`, `verbose`, `gp`, `qcp`, `requires_grad`,
+        `enforce_dpp`, `ignore_dpp`, `method`, and all rest.
 
         Parameters
         ----------
-        no_code : bool, optional
-            If True, print the generated CVXPY code. Defaults to False.
-        force_init : bool, optional
+        force : bool, optional
             If True, force re-initialization. Defaults to False.
         force_mats : bool, optional
             If True, force re-generating matrices. Defaults to False.
         force_constr : bool, optional
-            If True, force re-generating constraints. Defaults to False.
-        force_parse : bool, optional
-            If True, force re-parsing the model. Defaults to False.
-        force_generate : bool, optional
-            If True, force re-generating the model. Defaults to False.
-
-        Other Parameters
-        ----------------
+            Whether to turn on all constraints.
+        force_om : bool, optional
+            If True, force re-generating optimization model. Defaults to False.
         solver: str, optional
             The solver to use. For example, 'GUROBI', 'ECOS', 'SCS', or 'OSQP'.
         verbose : bool, optional
@@ -283,13 +276,8 @@ class DCOPF(RoutineBase):
             When True, DPP problems will be treated as non-DPP, which may speed up compilation. Defaults to False.
         method : function, optional
             A custom solve method to use.
-        kwargs : keywords, optional
-            Additional solver specific arguments. See CVXPY documentation for details.
         """
-        return super().run(no_code=no_code, force_init=force_init,
-                           force_mats=force_mats, force_constr=force_constr,
-                           force_parse=force_parse, force_generate=force_generate,
-                           *args, **kwargs)
+        return super().run(**kwargs)
 
     def _post_solve(self):
         """

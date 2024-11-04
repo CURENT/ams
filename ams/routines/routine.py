@@ -237,15 +237,14 @@ class RoutineBase:
         logger.debug(" -> Data check passed")
         return True
 
-    def init(self, force_init=False, force_mats=False,
-             force_constr=False, force_om=False):
+    def init(self, **kwargs):
         """
         Initialize the routine.
 
         Other parameters
         ----------
-        force_init: bool
-            Whether to force re-initialization, will ignore `self.initialized`.
+        force: bool
+            Whether to force initialization regardless of the current initialization status.
         force_mats: bool
             Whether to force build the system matrices, goes to `self.system.mats.build()`.
         force_constr: bool
@@ -253,7 +252,12 @@ class RoutineBase:
         force_om: bool
             Whether to force initialize the optimization model.
         """
-        skip_all = not (force_init and force_mats) and self.initialized
+        force = kwargs.pop('force', False)
+        force_mats = kwargs.pop('force_mats', False)
+        force_constr = kwargs.pop('force_constr', False)
+        force_om = kwargs.pop('force_om', False)
+
+        skip_all = not (force and force_mats) and self.initialized
 
         if skip_all:
             logger.debug(f"{self.class_name} has already been initialized.")
@@ -292,25 +296,21 @@ class RoutineBase:
         """
         Solve the routine optimization model.
         """
-        return True
+        raise NotImplementedError
 
     def unpack(self, **kwargs):
         """
         Unpack the results.
         """
-        return None
+        raise NotImplementedError
 
     def _post_solve(self):
         """
         Post-solve calculation.
         """
-        return None
+        raise NotImplementedError
 
-    def run(self,
-            no_code=True, force_init=False,
-            force_mats=False, force_constr=False,
-            force_parse=False, force_generate=False,
-            *args, **kwargs):
+    def run(self, **kwargs):
         """
         Run the routine.
         *args and **kwargs go to `self.solve()`.
@@ -322,28 +322,26 @@ class RoutineBase:
 
         Parameters
         ----------
-        no_code: bool
-            Whether to show generated code.
         force_init: bool
-            Whether to force re-initialization, will ignore `self.initialized`.
+            Whether to force re-initialize the routine.
         force_mats: bool
-            Whether to force build the system matrices, goes to `self.init()`.
+            Whether to force build the system matrices.
         force_constr: bool
-            Whether to turn on all constraints, goes to `self.init()`.
-        force_parse: bool
-            Whether to force parse the optimization model, goes to `self.init()`.
-        force_generate: bool
-            Whether to force generate symbols, goes to `self.init()`
-        no_code: bool
-            Whether to show generated code.
+            Whether to turn on all constraints.
+        force_om: bool
+            Whether to force initialize the OModel.
         """
         # --- setup check ---
-        self.init(no_code=no_code, force_init=force_init,
-                  force_mats=force_mats, force_constr=force_constr,
-                  force_parse=force_parse, force_generate=force_generate)
+        force_init = kwargs.pop('force_init', False)
+        force_mats = kwargs.pop('force_mats', False)
+        force_constr = kwargs.pop('force_constr', False)
+        force_om = kwargs.pop('force_om', False)
+        self.init(force=force_init, force_mats=force_mats,
+                  force_constr=force_constr, force_om=force_om)
+
         # --- solve optimization ---
         t0, _ = elapsed()
-        _ = self.solve(*args, **kwargs)
+        _ = self.solve(**kwargs)
         status = self.om.prob.status
         self.exit_code = self.syms.status[status]
         self.converged = self.exit_code == 0
@@ -528,7 +526,7 @@ class RoutineBase:
             if no system matrices are changed.
         """
         t0, _ = elapsed()
-        re_init = False
+        re_finalize = False
         # sanitize input
         sparams = []
         if params is None:
@@ -542,16 +540,19 @@ class RoutineBase:
             sparams = [self.params[param] for param in params if isinstance(param, str)]
             for param in sparams:
                 param.update()
+
         for param in sparams:
             if param.optz is None:  # means no_parse=True
-                re_init = True
+                re_finalize = True
                 break
-        if build_mats:
-            self.system.mats.build()
-        if re_init:
+
+        self.system.mats.build(force=build_mats)
+
+        if re_finalize:
             logger.warning(f"<{self.class_name}> reinit OModel due to non-parametric change.")
-            self.om.parsed = False
-            _ = self.om.init(no_code=True)
+            self.om.evaluate(force=True)
+            self.om.finalize(force=True)
+
         results = self.om.update(params=sparams)
         t0, s0 = elapsed(t0)
         logger.debug(f"Update params in {s0}.")
