@@ -337,7 +337,7 @@ class Param(OptzBase):
         if self.no_parse:
             return True
 
-        config = self.config.as_dict()  # NOQA, used in `self.code`
+        config = self.config.as_dict()
         try:
             msg = f"Parameter <{self.name}> is set as sparse, "
             msg += "but the value is not sparse."
@@ -346,7 +346,8 @@ class Param(OptzBase):
                 if not spr.issparse(self.v):
                     val = "sps.csr_matrix(self.v)"
             local_vars = {'self': self, 'config': config, 'sps': sps, 'cp': cp}
-            self.optz = eval(val, {}, local_vars)
+            self.optz = eval(self.code, {}, local_vars)  # create the cp.Parameter as self.optz
+            self.optz.value = eval(val, {}, local_vars)  # assign value to self.optz
         except ValueError:
             msg = f"Parameter <{self.name}> has non-numeric value, "
             msg += "set `no_parse=True`."
