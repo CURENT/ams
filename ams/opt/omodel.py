@@ -1080,6 +1080,10 @@ class OModel:
         bool
             Returns True if the finalization is successful, False otherwise.
         """
+        # NOTE: for power flow type, we skip the finalization
+        if self.rtn.type == 'PF':
+            self.finalized = True
+            return self.finalized
         if self.finalized and not force:
             logger.warning("Model is already finalized.")
             return self.finalized
@@ -1130,16 +1134,7 @@ class OModel:
         t, _ = elapsed()
 
         self.parse(force=force)
-
-        # NOTE: Hardcoded for using PYPOWER as the PF type routines
-        if self.rtn.type == 'PF':
-            _, s = elapsed(t)
-            self.initialized = True
-            logger.debug(f"OModel for <{self.rtn.class_name}> initialized in {s}")
-            return self.initialized
-
         self.evaluate(force=force)
-
         self.finalize(force=force)
 
         _, s = elapsed(t)
