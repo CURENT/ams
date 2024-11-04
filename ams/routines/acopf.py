@@ -93,8 +93,7 @@ class ACOPF(DCPF):
         res, sstats = runopf(casedata=ppc, ppopt=ppopt, **kwargs)
         return res, sstats
 
-    def run(self, no_code=True, method=None,
-            *args, **kwargs):
+    def run(self, **kwargs):
         """
         Run ACOPF using PYPOWER with PIPS.
         *args and **kwargs go to `self.solve()`, which are not used yet.
@@ -118,5 +117,4 @@ class ACOPF(DCPF):
         exit_code : int
             Exit code of the routine.
         """
-        super().run(no_code=no_code, method=method,
-                    *args, **kwargs, )
+        super().run(**kwargs)
