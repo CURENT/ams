@@ -16,7 +16,7 @@ from andes.utils.misc import elapsed
 import cvxpy as cp
 
 from ams.utils import pretty_long_message
-from ams.shared import sps      # NOQA
+from ams.shared import sps
 
 logger = logging.getLogger(__name__)
 
