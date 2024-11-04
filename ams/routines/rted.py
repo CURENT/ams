@@ -227,6 +227,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
                      info='Bus voltage', unit='p.u.',
                      model='Bus', src='v',)
         self.vBus.parse()
+        self.vBus.evaluate()
         self.vBus.optz.value = ACOPF.vBus.v
         self.aBus.optz.value = ACOPF.aBus.v
         self.exec_time = exec_time
