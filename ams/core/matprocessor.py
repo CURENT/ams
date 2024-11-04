@@ -212,7 +212,7 @@ class MatProcessor:
             return self.initialized
 
         t_mat, _ = elapsed()
-        logger.debug("Entering system matrix building")
+        logger.warning("Building system matrices")
         # --- connectivity matrices ---
         _ = self.build_cg()
         _ = self.build_cl()

@@ -938,7 +938,7 @@ class OModel:
             Returns True if the parsing is successful, False otherwise.
         """
         if self.parsed and not force:
-            logger.warning("Model is already parsed.")
+            logger.debug("Model is already parsed.")
             return self.parsed
         t, _ = elapsed()
         # --- add RParams and Services as parameters ---
@@ -1052,7 +1052,7 @@ class OModel:
             Returns True if the evaluation is successful, False otherwise.
         """
         if self.evaluated and not force:
-            logger.warning("Model is already evaluated.")
+            logger.debug("Model is already evaluated.")
             return self.evaluated
         logger.warning(f"Evaluating OModel for <{self.rtn.class_name}>")
         t, _ = elapsed()
@@ -1085,7 +1085,7 @@ class OModel:
             self.finalized = True
             return self.finalized
         if self.finalized and not force:
-            logger.warning("Model is already finalized.")
+            logger.debug("Model is already finalized.")
             return self.finalized
         logger.warning(f"Finalizing OModel for <{self.rtn.class_name}>")
         t, _ = elapsed()
@@ -1128,7 +1128,7 @@ class OModel:
             Returns True if the setup is successful, False otherwise.
         """
         if self.initialized and not force:
-            logger.warning("OModel is already initialized.")
+            logger.debug("OModel is already initialized.")
             return self.initialized
 
         t, _ = elapsed()
