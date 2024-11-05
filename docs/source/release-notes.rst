@@ -26,6 +26,7 @@ v0.9.11 (2024-xx-xx)
 - Add more routine tests for generator trip, line trip, and load trip
 - Add a README to overview built-in cases
 - Rename methods `v2` as `e` for classes `Constraint` and `Objective`
+- Add benchmark functions
 
 v0.9.10 (2024-09-03)
 --------------------
