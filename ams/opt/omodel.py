@@ -8,7 +8,6 @@ from collections import OrderedDict
 import re
 
 import numpy as np
-import scipy.sparse as spr
 
 from andes.core.common import Config
 from andes.utils.misc import elapsed
@@ -217,11 +216,27 @@ class ExpressionCalc(OptzBase):
         msg = f" - Expression <{self.name}>: {self.code}"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         try:
-            local_vars = {'self': self}
-            self.optz = eval(self.code, {}, local_vars)
+            local_vars = {'self': self, 'np': np, 'cp': cp}
+            self.optz = self._evaluate_expression(self.code, local_vars=local_vars)
         except Exception as e:
             raise Exception(f"Error in evaluating expr <{self.name}>.\n{e}")
         return True
+
+    def _evaluate_expression(self, code, local_vars=None):
+        """
+        Helper method to evaluate the expression code.
+
+        Parameters
+        ----------
+        code : str
+            The code string representing the expression.
+
+        Returns
+        -------
+        cp.Expression
+            The evaluated cvxpy expression.
+        """
+        return eval(code, {}, local_vars)
 
     @property
     def v(self):
@@ -342,7 +357,6 @@ class Param(OptzBase):
         try:
             msg = f"Parameter <{self.name}> is set as sparse, "
             msg += "but the value is not sparse."
-            val = "self.v"
             if self.sparse:
                 self.v = sps.csr_matrix(self.v)
 
@@ -666,6 +680,22 @@ class Constraint(OptzBase):
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         return True
 
+    def _evaluate_expression(self, code, local_vars=None):
+        """
+        Helper method to evaluate the expression code.
+
+        Parameters
+        ----------
+        code : str
+            The code string representing the expression.
+
+        Returns
+        -------
+        cp.Expression
+            The evaluated cvxpy expression.
+        """
+        return eval(code, {}, local_vars)
+
     @ensure_mats_and_parsed
     def evaluate(self):
         """
@@ -675,7 +705,7 @@ class Constraint(OptzBase):
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         try:
             local_vars = {'self': self, 'cp': cp, 'sub_map': self.om.rtn.syms.val_map}
-            self.optz = eval(self.code, {}, local_vars)
+            self.optz = self._evaluate_expression(self.code, local_vars=local_vars)
         except Exception as e:
             raise Exception(f"Error in evaluating constr <{self.name}>.\n{e}")
 
@@ -711,7 +741,7 @@ class Constraint(OptzBase):
             logger.debug(pretty_long_message(f"Value code: {code}",
                                              _prefix, max_length=_max_length))
             local_vars = {'self': self, 'np': np, 'cp': cp, 'val_map': val_map}
-            return eval(code, {}, local_vars)
+            return self._evaluate_expression(code, local_vars)
         except Exception as e:
             logger.error(f"Error in calculating constr <{self.name}>.\n{e}")
             return None
@@ -808,7 +838,7 @@ class Objective(OptzBase):
             logger.debug(pretty_long_message(f"Value code: {code}",
                                              _prefix, max_length=_max_length))
             local_vars = {'self': self, 'np': np, 'cp': cp, 'val_map': val_map}
-            return eval(code, {}, local_vars)
+            return self._evaluate_expression(code, local_vars)
         except Exception as e:
             logger.error(f"Error in calculating obj <{self.name}>.\n{e}")
             return None
@@ -868,10 +898,26 @@ class Objective(OptzBase):
         logger.debug(f" - Objective <{self.name}>: {self.e_str}")
         try:
             local_vars = {'self': self, 'cp': cp}
-            self.optz = eval(self.code, {}, local_vars)
+            self.optz = self._evaluate_expression(self.code, local_vars=local_vars)
         except Exception as e:
             raise Exception(f"Error in evaluating obj <{self.name}>.\n{e}")
         return True
+
+    def _evaluate_expression(self, code, local_vars=None):
+        """
+        Helper method to evaluate the expression code.
+
+        Parameters
+        ----------
+        code : str
+            The code string representing the expression.
+
+        Returns
+        -------
+        cp.Expression
+            The evaluated cvxpy expression.
+        """
+        return eval(code, {}, local_vars)
 
     def __repr__(self):
         return f"{self.class_name}: {self.name} [{self.sense.upper()}]"
