@@ -1089,20 +1089,13 @@ class OModel:
             return self.finalized
         logger.warning(f"Finalizing OModel for <{self.rtn.class_name}>")
         t, _ = elapsed()
-        code_prob = "problem(self.obj, "
-        constrs_skip = []
-        constrs_add = []
-        for key, val in self.rtn.constrs.items():
-            if (val.is_disabled) or (val is None):
-                constrs_skip.append(f'<{key}>')
-            else:
-                constrs_add.append(val.optz)
-        code_prob += "[constr for constr in constrs_add])"
-        for pattern, replacement in self.rtn.syms.sub_map.items():
-            code_prob = re.sub(pattern, replacement, code_prob)
 
-        local_vars = {'self': self, 'constrs_add': constrs_add, 'cp': cp}
-        self.prob = eval(code_prob, {}, local_vars)
+        # Collect constraints that are not disabled
+        constrs_add = [val.optz for key, val in self.rtn.constrs.items(
+        ) if not val.is_disabled and val is not None]
+        # Construct the problem using cvxpy.Problem
+        self.prob = cp.Problem(self.obj, constrs_add)
+
         _, s = elapsed(t)
         logger.debug(f" -> Finalized in {s}")
         self.finalized = True
