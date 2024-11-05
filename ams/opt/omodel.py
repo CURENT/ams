@@ -61,6 +61,7 @@ def ensure_mats_and_parsed(func):
     Evaluation before matrices building and parsing can run into errors. Ensure that
     system matrices are built and OModel is parsed before calling the `evaluate` method.
     """
+
     def wrapper(self, *args, **kwargs):
         try:
             if not self.rtn.system.mats.initialized:
@@ -343,11 +344,11 @@ class Param(OptzBase):
             msg += "but the value is not sparse."
             val = "self.v"
             if self.sparse:
-                if not spr.issparse(self.v):
-                    val = "sps.csr_matrix(self.v)"
-            local_vars = {'self': self, 'config': config, 'sps': sps, 'cp': cp}
-            self.optz = eval(self.code, {}, local_vars)  # create the cp.Parameter as self.optz
-            self.optz.value = eval(val, {}, local_vars)  # assign value to self.optz
+                self.v = sps.csr_matrix(self.v)
+
+            # Create the cvxpy.Parameter object
+            self.optz = cp.Parameter(shape=self.v.shape, **config)
+            self.optz.value = self.v
         except ValueError:
             msg = f"Parameter <{self.name}> has non-numeric value, "
             msg += "set `no_parse=True`."
