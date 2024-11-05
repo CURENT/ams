@@ -312,7 +312,7 @@ class DCOPF(RoutineBase):
                     pass
                 # NOTE: only unpack the variables that are in the model or group
                 try:
-                    var.owner.alter(src=var.src, idx=idx, value=var.v)
+                    var.owner.set(src=var.src, idx=idx, value=var.v)
                 # failed to find source var in the owner (model or group)
                 except (KeyError, TypeError):
                     pass

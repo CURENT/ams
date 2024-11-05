@@ -317,7 +317,7 @@ def parse_addfile(adsys, amsys, addfile):
             syg_idx += syg.idx.v
     syg_bus_idx = adsys.SynGen.get(src='bus', attr='v', idx=syg_idx)
     syg_bus_vn = adsys.Bus.get(src='Vn', idx=syg_bus_idx)
-    adsys.SynGen.alter(src='Vn', idx=syg_idx, value=syg_bus_vn)
+    adsys.SynGen.set(src='Vn', attr='v', idx=syg_idx, value=syg_bus_vn)
 
     # --- for debugging ---
     adsys.df_in = df_models
@@ -417,7 +417,7 @@ class Dynamic:
         if syg_mask.any():
             logger.debug('Governor is not complete for SynGen.')
         # --- pref ---
-        sa.TurbineGov.alter(value=syg_ams, idx=gov_idx, src='pref0')
+        sa.TurbineGov.set(value=syg_ams, idx=gov_idx, src='pref0')
 
         # --- paux ---
         # TODO: sync paux, using paux0
@@ -432,7 +432,7 @@ class Dynamic:
         dg_ams = sp.recent.get(src='pg', attr='v', idx=stg_dg_idx,
                                allow_none=True, default=0)
         # --- pref ---
-        sa.DG.alter(src='pref0', idx=dg_idx, value=dg_ams)
+        sa.DG.set(src='pref0', idx=dg_idx, value=dg_ams)
         # TODO: paux, using Pext0, this one should be do in other place rather than here
 
         # 3) RenGen
@@ -486,9 +486,9 @@ class Dynamic:
             msg += ' Otherwise, unexpected results might occur.'
             raise ValueError(msg)
         # FIXME: below code seems to be unnecessary
-        sa.SynGen.alter(src='u', idx=syg_idx, value=stg_u_ams)
-        sa.DG.alter(src='u', idx=dg_idx, value=dg_u_ams)
-        sa.RenGen.alter(src='u', idx=rg_idx, value=rg_u_ams)
+        sa.SynGen.set(src='u', idx=syg_idx, value=stg_u_ams)
+        sa.DG.set(src='u', idx=dg_idx, value=dg_u_ams)
+        sa.RenGen.set(src='u', idx=rg_idx, value=rg_u_ams)
         return True
 
     def _sync_check(self, amsys, adsys):
@@ -568,7 +568,7 @@ class Dynamic:
                 stg_idx = sp.StaticGen.get_idx()
                 bus_stg = sp.StaticGen.get(src='bus', attr='v', idx=stg_idx)
                 vBus = rtn.get(src='vBus', attr='v', idx=bus_stg)
-                sa.StaticGen.alter(src='v0', idx=stg_idx, value=vBus)
+                sa.StaticGen.set(src='v0', attr='v', idx=stg_idx, value=vBus)
                 logger.info(f'*Send <{vname_ams}> to StaticGen.v0')
 
             # 1. gen online status; in TDS running, setting u is invalid
@@ -600,7 +600,7 @@ class Dynamic:
                 if syg_mask.any():
                     logger.debug('Governor is not complete for SynGen.')
                 # --- pref ---
-                sa.TurbineGov.alter(src='pref0', idx=gov_idx, value=syg_ams)
+                sa.TurbineGov.set(src='pref0', idx=gov_idx, value=syg_ams)
 
                 # --- DG: DG.pref0 ---
                 dg_idx = sp.dyn.link['dg_idx'].dropna().tolist()  # DG idx
@@ -610,7 +610,7 @@ class Dynamic:
                 # corresponding StaticGen pg in AMS
                 dg_ams = rtn.get(src='pg', attr='v', idx=stg_dg_idx)
                 # --- pref ---
-                sa.DG.alter(src='pref0', idx=dg_idx, value=dg_ams)
+                sa.DG.set(src='pref0', idx=dg_idx, value=dg_ams)
 
                 # --- RenGen: seems unnecessary ---
                 # TODO: which models/params are used to control output and auxillary power?
@@ -625,7 +625,7 @@ class Dynamic:
 
             # --- other scenarios ---
             if _dest_check(mname=mname_ads, pname=pname_ads, idx=idx_ads, adsys=sa):
-                mdl_ads.alter(src=pname_ads, idx=idx_ads, value=var_ams.v)
+                mdl_ads.set(src=pname_ads, attr='v', idx=idx_ads, value=var_ams.v)
                 logger.warning(f'Send <{vname_ams}> to {mname_ads}.{pname_ads}')
         return True
 
