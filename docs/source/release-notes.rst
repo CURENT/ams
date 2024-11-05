@@ -27,6 +27,7 @@ v0.9.11 (2024-xx-xx)
 - Add a README to overview built-in cases
 - Rename methods `v2` as `e` for classes `Constraint` and `Objective`
 - Add benchmark functions
+- Improve using of `eval()` in module `omodel`
 
 v0.9.10 (2024-09-03)
 --------------------
