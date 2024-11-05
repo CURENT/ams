@@ -78,7 +78,7 @@ class PFlow(DCPF):
         res, sstats = runpf(casedata=ppc, ppopt=ppopt)
         return res, sstats
 
-    def run(self, force_init=False, no_code=True, method="newton", **kwargs):
+    def run(self, **kwargs):
         """
         Run AC power flow using PYPOWER.
 
@@ -108,6 +108,4 @@ class PFlow(DCPF):
         exit_code : int
             Exit code of the routine.
         """
-        return super().run(force_init=force_init,
-                           no_code=no_code, method=method,
-                           **kwargs,)
+        return super().run(**kwargs,)
