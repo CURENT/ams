@@ -312,9 +312,9 @@ class DCOPF(RoutineBase):
                     pass
                 # NOTE: only unpack the variables that are in the model or group
                 try:
-                    var.owner.set(src=var.src, idx=idx, value=var.v)
-                # failed to find source var in the owner (model or group)
+                    var.owner.set(src=var.src, attr='v', idx=idx, value=var.v)
                 except (KeyError, TypeError):
+                    logger.error(f'Failed to unpack {var.name} to {var.owner.name}')
                     pass
 
         # label the most recent solved routine
