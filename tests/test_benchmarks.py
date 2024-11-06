@@ -57,12 +57,14 @@ class TestBenchmarks(unittest.TestCase):
     def test_get_tool_versions(self):
         self.assertIsInstance(bp.get_tool_versions(), dict)
 
+    @require_packages('mosek', 'gurobipy', 'pandapower')
     def test_run_routine(self):
         ss = ams.load(self.case, setup=True, default_config=True, no_output=True)
         _, _obj = bp.run_routine(ss, routine='DCOPF', solver='CLARABEL', ignore_dpp=False)
 
         np.testing.assert_array_less(np.zeros_like(_obj), _obj)
 
+    @require_packages('mosek', 'gurobipy', 'pandapower')
     def test_run_dcopf_with_load_factors(self):
         ss = ams.load(self.case, setup=True, default_config=True, no_output=True)
         _, _obj = bp.run_dcopf_with_load_factors(ss, solver='CLARABEL',
