@@ -29,13 +29,22 @@ jobs:
       run: |
         mamba install -y nbmake pytest-xdist line_profiler  # add'l packages for notebook tests.
         mamba install --file requirements.txt --file requirements-extra.txt
+        python -m pip install pyscipopt
         python -m pip install -e .
+    - shell: bash -el {0}
+      name: Run pip check
+      run: |
+        pip check || true  # Allow pip check to fail without failing the job
     - name: Lint with flake8 for pull requests
       if: github.event_name == 'pull_request'
       run: |
         pip install flake8  # specify flake8 to avoid unknown error
         # stop the build if there are Python syntax errors or undefined names
         flake8 .
+    - shell: bash -el {0}
+      name: Test with pytest
+      run: |
+        pytest
     - shell: bash -el {0}
       name: Test notebooks.
       run: |
