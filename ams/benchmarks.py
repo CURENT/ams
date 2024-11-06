@@ -9,12 +9,16 @@ import logging
 
 import numpy as np
 
-import pandapower as pdp
+try:
+    import pandapower as pdp
+    PANDAPOWER_AVAILABLE = True
+except ImportError:
+    PANDAPOWER_AVAILABLE = False
+    logging.warning("pandapower is not available. Some functionalities will be disabled.")
 
 from andes.utils.misc import elapsed
 
 import ams
-
 
 logger = logging.getLogger(__name__)
 
@@ -174,20 +178,24 @@ def test_time(case, routine='DCOPF', ignore_dpp=True):
     s_ams_mosek, obj_mosek = run_routine(sp, routine, ignore_dpp, 'MOSEK')
     s_ams_piqp, obj_piqp = run_routine(sp, routine, ignore_dpp, 'PIQP')
 
-    # Convert to PYPOWER format
-    ppc = ams.io.pypower.system2ppc(sp)
-    freq = sp.config.freq
-    ppn = pdp.converter.from_ppc(ppc, f_hz=freq)
+    if PANDAPOWER_AVAILABLE:
+        # Convert to PYPOWER format
+        ppc = ams.io.pypower.system2ppc(sp)
+        freq = sp.config.freq
+        ppn = pdp.converter.from_ppc(ppc, f_hz=freq)
 
-    del sp
+        del sp
 
-    try:
-        t_pdp, _ = elapsed()
-        pdp.rundcopp(ppn)
-        _, s_pdp = elapsed(t_pdp)
-        obj_pdp = ppn.res_cost
-    except Exception as e:
-        logger.error(f"Error running pandapower: {e}")
+        try:
+            t_pdp, _ = elapsed()
+            pdp.rundcopp(ppn)
+            _, s_pdp = elapsed(t_pdp)
+            obj_pdp = ppn.res_cost
+        except Exception as e:
+            logger.error(f"Error running pandapower: {e}")
+            s_pdp = _failed_time
+            obj_pdp = _failed_obj
+    else:
         s_pdp = _failed_time
         obj_pdp = _failed_obj
 
@@ -304,28 +312,32 @@ def test_mtime(case, load_factors, ignore_dpp=True):
         sp, 'PIQP', load_factors=load_factors, ignore_dpp=ignore_dpp)
     sp.PQ.alter(src='p0', idx=pq_idx, value=pd0)
 
-    # --- PANDAPOWER ---
-    ppc = ams.io.pypower.system2ppc(sp)
-    freq = sp.config.freq
+    if PANDAPOWER_AVAILABLE:
+        # --- PANDAPOWER ---
+        ppc = ams.io.pypower.system2ppc(sp)
+        freq = sp.config.freq
 
-    del sp
+        del sp
 
-    ppc_pd0 = ppc['bus'][:, 2].copy()
+        ppc_pd0 = ppc['bus'][:, 2].copy()
 
-    ppn = pdp.converter.from_ppc(ppc, f_hz=freq)
-    obj_pdp = 0
-    t_pdp_series = ['0 seconds'] * len(load_factors)
-    try:
-        for i, lf_k in enumerate(load_factors):
-            ppc['bus'][:, 2] = lf_k * ppc_pd0
-            ppn = pdp.converter.from_ppc(ppc, f_hz=freq)
-            t0_pdp, _ = elapsed()
-            pdp.rundcopp(ppn)
-            obj_pdp += ppn.res_cost
-            _, t_pdp_series[i] = elapsed(t0_pdp)
-        t_pdp_series = [float(t.split(' ')[0]) for t in t_pdp_series]
-        s_pdp = f'{np.sum(t_pdp_series):.4f} seconds'
-    except Exception:
+        ppn = pdp.converter.from_ppc(ppc, f_hz=freq)
+        obj_pdp = 0
+        t_pdp_series = ['0 seconds'] * len(load_factors)
+        try:
+            for i, lf_k in enumerate(load_factors):
+                ppc['bus'][:, 2] = lf_k * ppc_pd0
+                ppn = pdp.converter.from_ppc(ppc, f_hz=freq)
+                t0_pdp, _ = elapsed()
+                pdp.rundcopp(ppn)
+                obj_pdp += ppn.res_cost
+                _, t_pdp_series[i] = elapsed(t0_pdp)
+            t_pdp_series = [float(t.split(' ')[0]) for t in t_pdp_series]
+            s_pdp = f'{np.sum(t_pdp_series):.4f} seconds'
+        except Exception:
+            s_pdp = _failed_time
+            obj_pdp = _failed_obj
+    else:
         s_pdp = _failed_time
         obj_pdp = _failed_obj
 
