@@ -307,7 +307,7 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
             off_gen = f'{g_idx}'
         else:
             off_gen = ', '.join(g_idx)
-        self.system.StaticGen.alter(src='u', idx=g_idx, value=ug0)
+        self.system.StaticGen.set(src='u', attr='v', idx=g_idx, value=ug0)
         logger.warning(f"As initial commitment guess, turn off StaticGen: {off_gen}")
         return g_idx
 
