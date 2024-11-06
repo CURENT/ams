@@ -158,8 +158,8 @@ class TestDataExchange(unittest.TestCase):
                       no_output=True,
                       default_config=True,)
         # alleviate limiter
-        sa.TGOV1.set(src='VMAX', attr='v', idx=sa.TGOV1.idx.v, value=100*np.ones(sa.TGOV1.n))
-        sa.TGOV1.set(src='VMIN', attr='v', idx=sa.TGOV1.idx.v, value=np.zeros(sa.TGOV1.n))
+        sa.TGOV1.set(src='VMAX', idx=sa.TGOV1.idx.v, attr='v', value=100*np.ones(sa.TGOV1.n))
+        sa.TGOV1.set(src='VMIN', idx=sa.TGOV1.idx.v, attr='v', value=np.zeros(sa.TGOV1.n))
 
         # --- test before PFlow ---
         self.sp.dyn.send(adsys=sa, routine='RTED')

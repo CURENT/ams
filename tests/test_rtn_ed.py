@@ -45,7 +45,7 @@ class TestED(unittest.TestCase):
 
         # b) ensure StaticGen.u does not take effect
         # NOTE: in ED, `EDTSlot.ug` is used instead of `StaticGen.u`
-        self.ss.StaticGen.set(src='u', attr='v', idx=stg, value=0)
+        self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
         self.ss.ED.update()
 
         self.ss.ED.run(solver='CLARABEL')
@@ -54,7 +54,7 @@ class TestED(unittest.TestCase):
         np.testing.assert_array_less(np.zeros_like(pg_pv1), pg_pv1,
                                      err_msg="Generator trip take effect, which is unexpected!")
 
-        self.ss.StaticGen.alter(src='u', idx=stg, value=1)  # reset
+        self.ss.StaticGen.set(src='u', idx=stg,  attr='v', value=1)  # reset
 
     def test_trip_line(self):
         """
@@ -136,7 +136,7 @@ class TestEDES(unittest.TestCase):
 
         # b) ensure StaticGen.u does not take effect
         # NOTE: in ED, `EDTSlot.ug` is used instead of `StaticGen.u`
-        self.ss.StaticGen.set(src='u', attr='v', idx=stg, value=0)
+        self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
         self.ss.ED.update()
 
         self.ss.ED.run(solver='CLARABEL')
@@ -145,7 +145,7 @@ class TestEDES(unittest.TestCase):
         np.testing.assert_array_less(np.zeros_like(pg_pv1), pg_pv1,
                                      err_msg="Generator trip take effect, which is unexpected!")
 
-        self.ss.StaticGen.alter(src='u', idx=stg, value=1)  # reset
+        self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=1)  # reset
 
     def test_line_trip(self):
         """

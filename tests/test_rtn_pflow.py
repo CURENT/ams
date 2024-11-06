@@ -24,7 +24,7 @@ class TestDCPF(unittest.TestCase):
         Test generator tripping.
         """
         stg = 2
-        self.ss.StaticGen.set(src='u', attr='v', idx=stg, value=0)
+        self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
 
         self.ss.DCPF.update()
         self.ss.DCPF.run()
@@ -33,7 +33,7 @@ class TestDCPF(unittest.TestCase):
                                0, places=6,
                                msg="Generator trip does not take effect!")
 
-        self.ss.StaticGen.alter(src='u', idx=stg, value=1)  # reset
+        self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=1)  # reset
 
     def test_trip_line(self):
         """
@@ -96,7 +96,7 @@ class TestPFlow(unittest.TestCase):
         Test generator tripping.
         """
         stg = 2
-        self.ss.StaticGen.set(src='u', attr='v', idx=stg, value=0)
+        self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
 
         self.ss.PFlow.update()
         self.ss.PFlow.run()
@@ -105,7 +105,7 @@ class TestPFlow(unittest.TestCase):
                                0, places=6,
                                msg="Generator trip does not take effect!")
 
-        self.ss.StaticGen.alter(src='u', idx=stg, value=1)
+        self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=1)
 
     def test_trip_line(self):
         """
@@ -168,7 +168,7 @@ class TestACOPF(unittest.TestCase):
         Test generator tripping.
         """
         stg = 2
-        self.ss.StaticGen.set(src='u', attr='v', idx=stg, value=0)
+        self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
 
         self.ss.ACOPF.update()
         self.ss.ACOPF.run()
@@ -177,7 +177,7 @@ class TestACOPF(unittest.TestCase):
                                0, places=6,
                                msg="Generator trip does not take effect!")
 
-        self.ss.StaticGen.alter(src='u', idx=stg, value=1)
+        self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=1)
 
     def test_trip_line(self):
         """

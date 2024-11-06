@@ -312,9 +312,9 @@ class DCOPF(RoutineBase):
                     pass
                 # NOTE: only unpack the variables that are in the model or group
                 try:
-                    var.owner.set(src=var.src, attr='v', idx=idx, value=var.v)
+                    var.owner.set(src=var.src, idx=idx, attr='v', value=var.v)
                 except (KeyError, TypeError):
-                    logger.error(f'Failed to unpack {var.name} to {var.owner.name}')
+                    logger.error(f'Failed to unpack <{var}> to <{var.owner.class_name}>.')
                     pass
 
         # label the most recent solved routine
@@ -340,16 +340,16 @@ class DCOPF(RoutineBase):
         pq_idx = self.system.StaticLoad.get_idx()
         pd0 = self.system.StaticLoad.get(src='p0', attr='v', idx=pq_idx).copy()
         qd0 = self.system.StaticLoad.get(src='q0', attr='v', idx=pq_idx).copy()
-        self.system.StaticLoad.alter(src='p0', idx=pq_idx, value=pd0 * kloss)
-        self.system.StaticLoad.alter(src='q0', idx=pq_idx, value=qd0 * kloss)
+        self.system.StaticLoad.set(src='p0', idx=pq_idx, attr='v', value=pd0 * kloss)
+        self.system.StaticLoad.set(src='q0', idx=pq_idx, attr='v', value=qd0 * kloss)
 
         ACOPF = self.system.ACOPF
         # run ACOPF
         ACOPF.run()
         # self.exec_time += ACOPF.exec_time
         # scale load back
-        self.system.StaticLoad.alter(src='p0', idx=pq_idx, value=pd0)
-        self.system.StaticLoad.alter(src='q0', idx=pq_idx, value=qd0)
+        self.system.StaticLoad.set(src='p0', idx=pq_idx, value=pd0)
+        self.system.StaticLoad.set(src='q0', idx=pq_idx, value=qd0)
         if not ACOPF.exit_code == 0:
             logger.warning('<ACOPF> did not converge, conversion failed.')
             # NOTE: mock results to fit interface with ANDES

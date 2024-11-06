@@ -30,7 +30,7 @@ class TestRTED(unittest.TestCase):
         Test generator tripping.
         """
         stg = 'PV_1'
-        self.ss.StaticGen.set(src='u', attr='v', idx=stg, value=0)
+        self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
 
         self.ss.RTED.update()
         self.ss.RTED.run(solver='CLARABEL')
@@ -39,7 +39,7 @@ class TestRTED(unittest.TestCase):
                                0, places=6,
                                msg="Generator trip does not take effect!")
 
-        self.ss.StaticGen.alter(src='u', idx=stg, value=1)  # reset
+        self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=1)  # reset
 
     def test_trip_line(self):
         """
@@ -124,7 +124,7 @@ class TestRTEDES(unittest.TestCase):
         Test generator tripping.
         """
         stg = 'PV_1'
-        self.ss.StaticGen.set(src='u', attr='v', idx=stg, value=0)
+        self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
 
         self.ss.RTEDES.update()
         self.ss.RTEDES.run(solver='SCIP')
@@ -133,7 +133,7 @@ class TestRTEDES(unittest.TestCase):
                                0, places=6,
                                msg="Generator trip does not take effect!")
 
-        self.ss.StaticGen.alter(src='u', idx=stg, value=1)
+        self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=1)
 
     @skip_unittest_without_MIP
     def test_trip_line(self):

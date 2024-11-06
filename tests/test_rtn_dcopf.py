@@ -26,7 +26,7 @@ class TestDCOPF(unittest.TestCase):
         Test generator tripping.
         """
         stg = 'PV_1'
-        self.ss.StaticGen.set(src='u', attr='v', idx=stg, value=0)
+        self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
 
         self.ss.DCOPF.update()
         self.ss.DCOPF.run(solver='CLARABEL')
@@ -35,7 +35,7 @@ class TestDCOPF(unittest.TestCase):
                                0, places=6,
                                msg="Generator trip does not take effect!")
 
-        self.ss.StaticGen.alter(src='u', idx=stg, value=1)  # reset
+        self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=1)  # reset
 
     def test_trip_line(self):
         """
