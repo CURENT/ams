@@ -6,7 +6,6 @@ flake8               # dev
 numpydoc             # dev
 toml                 # dev
 pyscipopt            # dev
-pandapower           # dev
 toml                 # dev
 ipython              # doc
 sphinx               # doc
