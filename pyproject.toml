@@ -67,3 +67,6 @@ style = "pep440-post"
 versionfile_source = "ams/_version.py"
 versionfile_build = "ams/_version.py"
 tag_prefix = "v"
+
+[tool.setuptools]
+packages = ["ams"]
