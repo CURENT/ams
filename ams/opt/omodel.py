@@ -334,9 +334,7 @@ class Param(OptzBase):
             Returns True if the parsing is successful, False otherwise.
         """
         sub_map = self.om.rtn.syms.sub_map
-        shape = np.shape(self.v)
-        # NOTE: it seems that there is no need to use re.sub here
-        code_param = f"param(shape={shape}, **config)"
+        code_param = "param(**config)"
         for pattern, replacement, in sub_map.items():
             try:
                 code_param = re.sub(pattern, replacement, code_param)

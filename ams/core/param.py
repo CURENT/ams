@@ -196,7 +196,12 @@ class RParam(Param):
         """
         Return the shape of the parameter.
         """
-        return np.shape(self.v)
+        if self.is_ext:
+            return np.shape(self._v)
+        elif self.no_parse:
+            return None
+        else:
+            return np.shape(self.v)
 
     @property
     def dtype(self):
