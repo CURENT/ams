@@ -1,4 +1,4 @@
-# Generated on 2024-09-02.
+# Generated on 2024-11-06.
 kvxopt>=1.3.2.1
 numpy
 scipy

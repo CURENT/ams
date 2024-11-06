@@ -43,7 +43,9 @@ dev = [
     "flake8",
     "numpydoc",
     "toml",
-    "pyscipopt"
+    "pyscipopt",
+    "pandapower",
+    "toml"
 ]
 doc = [
     "ipython",
