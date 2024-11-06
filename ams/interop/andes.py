@@ -600,7 +600,7 @@ class Dynamic:
                 if syg_mask.any():
                     logger.debug('Governor is not complete for SynGen.')
                 # --- pref ---
-                sa.TurbineGov.set(src='pref0', idx=gov_idx, value=syg_ams)
+                sa.TurbineGov.set(src='pref0', attr='v', idx=gov_idx, value=syg_ams)
 
                 # --- DG: DG.pref0 ---
                 dg_idx = sp.dyn.link['dg_idx'].dropna().tolist()  # DG idx
@@ -610,7 +610,7 @@ class Dynamic:
                 # corresponding StaticGen pg in AMS
                 dg_ams = rtn.get(src='pg', attr='v', idx=stg_dg_idx)
                 # --- pref ---
-                sa.DG.set(src='pref0', idx=dg_idx, value=dg_ams)
+                sa.DG.set(src='pref0', attr='v', idx=dg_idx, value=dg_ams)
 
                 # --- RenGen: seems unnecessary ---
                 # TODO: which models/params are used to control output and auxillary power?
