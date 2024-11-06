@@ -26,9 +26,68 @@ logger = logging.getLogger(__name__)
 class RoutineBase:
     """
     Class to hold descriptive routine models and data mapping.
+
+    Attributes
+    ----------
+    system : Optional[Type]
+        The system object associated with the routine.
+    config : Config
+        Configuration object for the routine.
+    info : Optional[str]
+        Information about the routine.
+    tex_names : OrderedDict
+        LaTeX names for the routine parameters.
+    syms : SymProcessor
+        Symbolic processor for the routine.
+    _syms : bool
+        Flag indicating whether symbols have been generated.
+    rparams : OrderedDict
+        Registry for RParam objects.
+    services : OrderedDict
+        Registry for service objects.
+    params : OrderedDict
+        Registry for Param objects.
+    vars : OrderedDict
+        Registry for Var objects.
+    constrs : OrderedDict
+        Registry for Constraint objects.
+    exprs : OrderedDict
+        Registry for Expression objects.
+    obj : Optional[Objective]
+        Objective of the routine.
+    initialized : bool
+        Flag indicating whether the routine has been initialized.
+    type : str
+        Type of the routine.
+    docum : RDocumenter
+        Documentation generator for the routine.
+    map1 : OrderedDict
+        Mapping from ANDES.
+    map2 : OrderedDict
+        Mapping to ANDES.
+    om : OModel
+        Optimization model for the routine.
+    exec_time : float
+        Execution time of the routine.
+    exit_code : int
+        Exit code of the routine.
+    converged : bool
+        Flag indicating whether the routine has converged.
+    converted : bool
+        Flag indicating whether AC conversion has been performed.
     """
 
     def __init__(self, system=None, config=None):
+        """
+        Initialize the routine.
+
+        Parameters
+        ----------
+        system : Optional[Type]
+            The system object associated with the routine.
+        config : Optional[dict]
+            Configuration dictionary for the routine.
+        """
         self.system = system
         self.config = Config(self.class_name)
         self.info = None
@@ -242,7 +301,7 @@ class RoutineBase:
         Initialize the routine.
 
         Other parameters
-        ----------
+        ----------------
         force: bool
             Whether to force initialization regardless of the current initialization status.
         force_mats: bool
@@ -313,7 +372,7 @@ class RoutineBase:
     def run(self, **kwargs):
         """
         Run the routine.
-        *args and **kwargs go to `self.solve()`.
+        args and kwargs go to `self.solve()`.
 
         Force initialization (`force_init=True`) will do the following:
         - Rebuild the system matrices
