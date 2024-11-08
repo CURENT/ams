@@ -48,7 +48,7 @@ def get_tool_versions(tools=None):
         tools = ['ltbams', 'andes',
                  'cvxpy', 'pandapower',
                  'PYPOWER', 'gurobipy', 'mosek',
-                 'ecos', 'scs', 'piqp', 'numba']
+                 'piqp', 'numba']
 
     # Get current time and Python version
     last_run_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
