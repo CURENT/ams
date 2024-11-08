@@ -1,6 +1,5 @@
 """
 MATPOWER parser.
-This module is revised from the existing module ``andes.io.matpower``.
 """
 import logging
 import numpy as np
@@ -23,7 +22,7 @@ def testlines(infile):
 
 def read(system, file):
     """
-    Read a MATPOWER data file into mpc, and build andes device elements.
+    Read a MATPOWER data file into mpc, and build AMS device elements.
     """
 
     mpc = m2mpc(file)
@@ -34,16 +33,14 @@ def mpc2system(mpc: dict, system) -> bool:
     """
     Load an mpc dict into an empty AMS system.
 
-    This function is revised from ``andes.io.matpower.mpc2system``.
-
-    Compared to the original one, this function includes the generator cost data.
+    Revised from ``andes.io.matpower.mpc2system``.
 
     Note that `mbase` in mpc is converted to `Sn`, but it is not actually used in
     MATPOWER nor AMS.
 
     Parameters
     ----------
-    system : andes.system.System
+    system : ams.system.System
         Empty system to load the data into.
     mpc : dict
         mpc struct names : numpy arrays
