@@ -236,7 +236,7 @@ def run_dcopf_with_load_factors(sp, solver, method=None, load_factors=None, igno
         pq_idx = sp.PQ.idx.v
         pd0 = sp.PQ.get(src='p0', attr='v', idx=pq_idx).copy()
         for lf_k in load_factors:
-            sp.PQ.alter(src='p0', idx=pq_idx, value=lf_k * pd0)
+            sp.PQ.set(src='p0', attr='v', idx=pq_idx, value=lf_k * pd0)
             sp.DCOPF.update(params=['pd'])
             if method:
                 sp.DCOPF.run(solver=solver, reoptimize=True, Method=method, ignore_dpp=ignore_dpp)
@@ -302,15 +302,15 @@ def test_mtime(case, load_factors, ignore_dpp=True):
     # Run solvers with load factors
     s_ams_grb, obj_grb = run_dcopf_with_load_factors(
         sp, 'GUROBI', method=3, load_factors=load_factors, ignore_dpp=ignore_dpp)
-    sp.PQ.alter(src='p0', idx=pq_idx, value=pd0)  # Reset the load in AMS
+    sp.PQ.set(src='p0', attr='v', idx=pq_idx, value=pd0)  # Reset the load in AMS
 
     s_ams_mosek, obj_mosek = run_dcopf_with_load_factors(
         sp, 'MOSEK', load_factors=load_factors, ignore_dpp=ignore_dpp)
-    sp.PQ.alter(src='p0', idx=pq_idx, value=pd0)
+    sp.PQ.set(src='p0', attr='v', idx=pq_idx, value=pd0)
 
     s_ams_piqp, obj_piqp = run_dcopf_with_load_factors(
         sp, 'PIQP', load_factors=load_factors, ignore_dpp=ignore_dpp)
-    sp.PQ.alter(src='p0', idx=pq_idx, value=pd0)
+    sp.PQ.set(src='p0', attr='v', idx=pq_idx, value=pd0)
 
     if PANDAPOWER_AVAILABLE:
         # --- PANDAPOWER ---
