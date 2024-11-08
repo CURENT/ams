@@ -143,7 +143,7 @@ def test_time(case, routine='DCOPF', ignore_dpp=True):
     # NOTE: the line flow limits are relaxed for the large cases
     # otherwise the DCOPF will fail in pandapower and MATPOWER
     if sp.Bus.n > 4000:
-        sp.Line.alter(src='rate_a', idx=sp.Line.idx.v, value=999)
+        sp.Line.alter(src='rate_a', idx=sp.Line.idx.v, value=99999)
 
     rtn = sp.routines[routine]
 
