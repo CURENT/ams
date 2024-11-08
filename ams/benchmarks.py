@@ -45,7 +45,8 @@ def get_tool_versions(tools=None):
         A dictionary containing the tool names and their versions.
     """
     if tools is None:
-        tools = ['ltbams', 'cvxpy', 'pandapower',
+        tools = ['ltbams', 'andes',
+                 'cvxpy', 'pandapower',
                  'PYPOWER', 'gurobipy', 'mosek',
                  'ecos', 'scs', 'piqp', 'numba']
 
