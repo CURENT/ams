@@ -22,7 +22,7 @@ import ams
 
 logger = logging.getLogger(__name__)
 
-_failed_time = '-1 seconds'
+_failed_time = -1
 _failed_obj = -1
 
 cols_time = ['ams_mats', 'ams_parse', 'ams_eval', 'ams_final',
@@ -45,10 +45,9 @@ def get_tool_versions(tools=None):
         A dictionary containing the tool names and their versions.
     """
     if tools is None:
-        tools = ['ltbams', 'andes',
-                 'cvxpy', 'pandapower',
-                 'PYPOWER', 'gurobipy', 'mosek',
-                 'piqp', 'numba']
+        tools = ['ltbams', 'andes', 'cvxpy',
+                 'gurobipy', 'mosek', 'piqp',
+                 'pandapower', 'numba']
 
     # Get current time and Python version
     last_run_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -83,7 +82,7 @@ def get_tool_versions(tools=None):
     return tool_versions
 
 
-def run_routine(system, routine='DCOPF', ignore_dpp=True, solver='GUROBI', method=None):
+def time_routine_solve(system, routine='DCOPF', **kwargs):
     """
     Run the specified routine with the given solver and method.
 
@@ -93,26 +92,28 @@ def run_routine(system, routine='DCOPF', ignore_dpp=True, solver='GUROBI', metho
         The system object containing the routine.
     routine : str, optional
         The name of the routine to run. Defaults to 'DCOPF'.
+
+    Other Parameters
+    ----------------
+    solver : str, optional
+        The solver to use.
     ignore_dpp : bool, optional
         Whether to ignore DPP. Defaults to True.
-    solver : str, optional
-        The solver to use. Defaults to 'GUROBI'.
     method : function, optional
         A custom solve method to use. Defaults to None.
 
     Returns
     -------
     tuple
-        A tuple containing the elapsed time and the objective value.
+        A tuple containing the elapsed time (s) and the objective value ($).
     """
     rtn = system.routines[routine]
+    solver = kwargs.get('solver', None)
     try:
-        t_start, _ = elapsed()
-        if method:
-            rtn.run(solver=solver, reoptimize=True, Method=method, ignore_dpp=ignore_dpp)
-        else:
-            rtn.run(solver=solver, ignore_dpp=ignore_dpp)
-        _, elapsed_time = elapsed(t_start)
+        t, _ = elapsed()
+        rtn.run(**kwargs)
+        _, s0 = elapsed(t)
+        elapsed_time = float(s0.split(' ')[0])
         obj_value = rtn.obj.v
     except Exception as e:
         logger.error(f"Error running routine {routine} with solver {solver}: {e}")
@@ -121,52 +122,44 @@ def run_routine(system, routine='DCOPF', ignore_dpp=True, solver='GUROBI', metho
     return elapsed_time, obj_value
 
 
-def test_time(case, routine='DCOPF', ignore_dpp=True):
+def pre_solve(system, routine):
     """
-    Test the execution time of the specified routine on the given case.
+    Time the routine preparation process.
 
     Parameters
     ----------
-    case : str
-        The path to the case file.
-    routine : str, optional
-        The name of the routine to test. Defaults to 'DCOPF'.
-    ignore_dpp : bool, optional
-        Whether to ignore DPP. Defaults to True.
+    system : ams.System
+        The system object containing the routine.
+    routine : str
+        The name of the routine to prepare
 
     Returns
     -------
-    tuple
-        A tuple containing the list of times and the list of objective values.
+    dict
+        A dictionary containing the preparation times in seconds for each step:
+        'mats', 'parse', 'evaluate', 'finalize', 'postinit'.
     """
-    sp = ams.load(case, setup=True, default_config=True, no_output=True)
-
-    # NOTE: the line flow limits are relaxed for the large cases
-    # otherwise the DCOPF will fail in pandapower and MATPOWER
-    if sp.Bus.n > 4000:
-        sp.Line.alter(src='rate_a', idx=sp.Line.idx.v, value=99999)
-
-    rtn = sp.routines[routine]
+    rtn = system.routines[routine]
 
     # Initialize AMS
     # --- matrices build ---
     t_mats, _ = elapsed()
-    sp.mats.build()
+    system.mats.build(force=True)
     _, s_mats = elapsed(t_mats)
 
     # --- code generation ---
     t_parse, _ = elapsed()
-    rtn.om.parse()
+    rtn.om.parse(force=True)
     _, s_parse = elapsed(t_parse)
 
     # --- code evaluation ---
     t_evaluate, _ = elapsed()
-    rtn.om.evaluate()
+    rtn.om.evaluate(force=True)
     _, s_evaluate = elapsed(t_evaluate)
 
     # --- problem finalization ---
     t_finalize, _ = elapsed()
-    rtn.om.finalize()
+    rtn.om.finalize(force=True)
     _, s_finalize = elapsed(t_finalize)
 
     # --- rest init process ---
@@ -174,38 +167,74 @@ def test_time(case, routine='DCOPF', ignore_dpp=True):
     rtn.init()
     _, s_postinit = elapsed(t_postinit)
 
-    # --- run solvers ---
-    s_ams_grb, obj_grb = run_routine(sp, routine, ignore_dpp, 'GUROBI')
-    s_ams_mosek, obj_mosek = run_routine(sp, routine, ignore_dpp, 'MOSEK')
-    s_ams_piqp, obj_piqp = run_routine(sp, routine, ignore_dpp, 'PIQP')
+    pre_time = dict(mats=float(s_mats.split(' ')[0]),
+                    parse=float(s_parse.split(' ')[0]),
+                    evaluate=float(s_evaluate.split(' ')[0]),
+                    finalize=float(s_finalize.split(' ')[0]),
+                    postinit=float(s_postinit.split(' ')[0]))
+    return pre_time
 
-    if PANDAPOWER_AVAILABLE:
-        # Convert to PYPOWER format
-        ppc = ams.io.pypower.system2ppc(sp)
-        freq = sp.config.freq
-        ppn = pdp.converter.from_ppc(ppc, f_hz=freq)
 
-        del sp
+def time_pdp_dcopf(system):
+    """
+    Test the execution time of DCOPF using pandapower.
 
-        try:
-            t_pdp, _ = elapsed()
-            pdp.rundcopp(ppn)
-            _, s_pdp = elapsed(t_pdp)
-            obj_pdp = ppn.res_cost
-        except Exception as e:
-            logger.error(f"Error running pandapower: {e}")
-            s_pdp = _failed_time
-            obj_pdp = _failed_obj
-    else:
-        s_pdp = _failed_time
-        obj_pdp = _failed_obj
+    Parameters
+    ----------
+    system : ams.System
+        The system object containing the routine.
 
-    time = [s_mats, s_parse, s_evaluate, s_finalize, s_postinit,
-            s_ams_grb, s_ams_mosek, s_ams_piqp, s_pdp]
-    time = [float(t.split(' ')[0]) for t in time]
-    obj = [obj_grb, obj_mosek, obj_piqp, obj_pdp]
+    Returns
+    -------
+    tuple
+        A tuple containing the elapsed time (s) and the objective value ($).
+    """
+    ppc = ams.io.pypower.system2ppc(system)
+    ppn = pdp.converter.from_ppc(ppc, f_hz=system.config.freq)
+    try:
+        t_pdp, _ = elapsed()
+        pdp.rundcopp(ppn)
+        _, s_pdp = elapsed(t_pdp)
+        elapsed_time = float(s_pdp.split(' ')[0])
+        obj_value = ppn.res_cost
+    except Exception as e:
+        logger.error(f"Error running pandapower: {e}")
+        elapsed_time = _failed_time
+        obj_value = _failed_obj
+    return elapsed_time, obj_value
 
-    return time, obj
+
+def time_routine(system, routine='DCOPF', solvers=['CLARABEL']):
+    """
+    Time the specified routine with the given solvers.
+
+    Parameters
+    ----------
+    system : ams.System
+        The system object containing the routine.
+    routine : str, optional
+        The name of the routine to run. Defaults to 'DCOPF'.
+    solvers : list of str, optional
+        List of solvers to use. Defaults to ['CLARABEL'].
+    """
+    pre_time = pre_solve(system, routine)
+    sol_time = {f'{solver}': {'time': 0, 'obj': 0} for solver in solvers}
+
+    for solver in solvers:
+        if solver != 'pandapower':
+            kwargs = {'solver': solver}
+            s, obj = time_routine_solve(system, routine, **kwargs)
+            sol_time[solver]['time'] = s
+            sol_time[solver]['obj'] = obj
+        elif solver == 'pandapower' and PANDAPOWER_AVAILABLE and routine == 'DCOPF':
+            s, obj = time_pdp_dcopf(system)
+            sol_time[solver]['time'] = s
+            sol_time[solver]['obj'] = obj
+        else:
+            sol_time[solver]['time'] = _failed_time
+            sol_time[solver]['obj'] = _failed_obj
+
+    return pre_time, sol_time
 
 
 def run_dcopf_with_load_factors(sp, solver, method=None, load_factors=None, ignore_dpp=False):
