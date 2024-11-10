@@ -7,8 +7,6 @@ import sys
 import importlib_metadata
 import logging
 
-import numpy as np
-
 try:
     import pandapower as pdp
     PANDAPOWER_AVAILABLE = True
@@ -169,22 +167,20 @@ def pre_solve(system, routine):
     return pre_time
 
 
-def time_pdp_dcopf(system):
+def time_pdp_dcopf(ppn):
     """
     Test the execution time of DCOPF using pandapower.
 
     Parameters
     ----------
-    system : ams.System
-        The system object containing the routine.
+    ppn : pandapowerNet
+        The pandapower network object.
 
     Returns
     -------
     tuple
         A tuple containing the elapsed time (s) and the objective value ($).
     """
-    ppc = ams.io.pypower.system2ppc(system)
-    ppn = pdp.converter.from_ppc(ppc, f_hz=system.config.freq)
     try:
         t_pdp, _ = elapsed()
         pdp.rundcopp(ppn)
@@ -232,7 +228,9 @@ def time_routine(system, routine='DCOPF', solvers=['CLARABEL'],
             sol[solver]['time'] = s
             sol[solver]['obj'] = obj
         elif solver == 'pandapower' and PANDAPOWER_AVAILABLE and routine == 'DCOPF':
-            s, obj = time_pdp_dcopf(system)
+            ppc = ams.io.pypower.system2ppc(system)
+            ppn = pdp.converter.from_ppc(ppc, f_hz=system.config.freq)
+            s, obj = time_pdp_dcopf(ppn)
             sol[solver]['time'] = s
             sol[solver]['obj'] = obj
         else:
@@ -242,143 +240,63 @@ def time_routine(system, routine='DCOPF', solvers=['CLARABEL'],
     return pre_time, sol
 
 
-def run_dcopf_with_load_factors(sp, solver, method=None, load_factors=None, ignore_dpp=False):
+def time_dcopf_with_lf(system, solvers=['CLARABEL'], load_factors=[1], ignore_dpp=False):
     """
-    Run the specified solver with varying load factors.
+    Time the execution of DCOPF with varying load factors.
 
     Parameters
     ----------
-    sp : ams.System
+    system : ams.System
         The system object containing the routine.
-    solver : str
-        The name of the solver to use.
-    method : function, optional
-        A custom solve method to use. Defaults to None.
+    solvers : list of str, optional
+        List of solvers to use. Defaults to ['CLARABEL'].
     load_factors : list of float, optional
         List of load factors to apply. Defaults to None.
-
-    Returns
-    -------
-    tuple
-        A tuple containing the elapsed time and the cumulative objective value.
-    """
-    if load_factors is None:
-        load_factors = []
-
-    obj_value = 0
-    try:
-        t_start, _ = elapsed()
-        pq_idx = sp.PQ.idx.v
-        pd0 = sp.PQ.get(src='p0', attr='v', idx=pq_idx).copy()
-        for lf_k in load_factors:
-            sp.PQ.set(src='p0', attr='v', idx=pq_idx, value=lf_k * pd0)
-            sp.DCOPF.update(params=['pd'])
-            if method:
-                sp.DCOPF.run(solver=solver, reoptimize=True, Method=method, ignore_dpp=ignore_dpp)
-            else:
-                sp.DCOPF.run(solver=solver, ignore_dpp=ignore_dpp)
-            obj_value += sp.DCOPF.obj.v
-        _, elapsed_time = elapsed(t_start)
-    except Exception as e:
-        logger.error(f"Error running solver {solver} with load factors: {e}")
-        elapsed_time = _failed_time
-        obj_value = _failed_obj
-    return elapsed_time, obj_value
-
-
-def test_mtime(case, load_factors, ignore_dpp=True):
-    """
-    Test the execution time of the specified routine on the given case with varying load factors.
-
-    Parameters
-    ----------
-    case : str
-        The path to the case file.
-    load_factors : list of float
-        List of load factors to apply.
+    ignore_dpp : bool, optional
+        Whether to ignore DPP.
 
     Returns
     -------
     tuple
         A tuple containing the list of times and the list of objective values.
     """
-    sp = ams.load(case, setup=True, default_config=True, no_output=True)
+    pre_time = pre_solve(system, 'DCOPF')
+    sol = {f'{solver}': {'time': 0, 'obj': 0} for solver in solvers}
 
-    # Record original load
-    pq_idx = sp.PQ.idx.v
-    pd0 = sp.PQ.get(src='p0', attr='v', idx=pq_idx).copy()
+    pd0 = system.PQ.p0.v.copy()
+    pq_idx = system.PQ.idx.v
 
-    # Initialize AMS
-    # --- matrices build ---
-    t_mats, _ = elapsed()
-    sp.mats.build()
-    _, s_mats = elapsed(t_mats)
+    for solver in solvers:
+        if solver != 'pandapower':
+            obj_all = 0
+            t_all, _ = elapsed()
+            for lf_k in load_factors:
+                system.PQ.set(src='p0', attr='v', idx=pq_idx, value=lf_k * pd0)
+                system.DCOPF.update(params=['pd'])
+                _, obj = time_routine_solve(system, 'DCOPF',
+                                            solver=solver, ignore_dpp=ignore_dpp)
+                obj_all += obj
+            _, s_all = elapsed(t_all)
+            system.PQ.set(src='p0', attr='v', idx=pq_idx, value=pd0)
+            s = float(s_all.split(' ')[0])
+            sol[solver]['time'] = s
+            sol[solver]['obj'] = obj_all
+        elif solver == 'pandapower' and PANDAPOWER_AVAILABLE:
+            ppc = ams.io.pypower.system2ppc(system)
+            ppn = pdp.converter.from_ppc(ppc, f_hz=system.config.freq)
+            p_mw0 = ppn.load['p_mw'].copy()
+            t_all, _ = elapsed()
+            obj_all = 0
+            for lf_k in load_factors:
+                ppn.load['p_mw'] = lf_k * p_mw0
+                _, obj = time_pdp_dcopf(ppn)
+                obj_all += obj
+            _, s_all = elapsed(t_all)
+            s = float(s_all.split(' ')[0])
+            sol[solver]['time'] = s
+            sol[solver]['obj'] = obj_all
+        else:
+            sol[solver]['time'] = _failed_time
+            sol[solver]['obj'] = _failed_obj
 
-    # --- code generation ---
-    t_parse, _ = elapsed()
-    sp.DCOPF.om.parse()
-    _, s_parse = elapsed(t_parse)
-
-    # --- code evaluation ---
-    t_evaluate, _ = elapsed()
-    sp.DCOPF.om.evaluate()
-    _, s_evaluate = elapsed(t_evaluate)
-
-    # --- problem finalization ---
-    t_finalize, _ = elapsed()
-    sp.DCOPF.om.finalize()
-    _, s_finalize = elapsed(t_finalize)
-
-    # --- rest init process ---
-    t_postinit, _ = elapsed()
-    sp.DCOPF.init()
-    _, s_postinit = elapsed(t_postinit)
-
-    # Run solvers with load factors
-    s_ams_grb, obj_grb = run_dcopf_with_load_factors(
-        sp, 'GUROBI', method=3, load_factors=load_factors, ignore_dpp=ignore_dpp)
-    sp.PQ.set(src='p0', attr='v', idx=pq_idx, value=pd0)  # Reset the load in AMS
-
-    s_ams_mosek, obj_mosek = run_dcopf_with_load_factors(
-        sp, 'MOSEK', load_factors=load_factors, ignore_dpp=ignore_dpp)
-    sp.PQ.set(src='p0', attr='v', idx=pq_idx, value=pd0)
-
-    s_ams_piqp, obj_piqp = run_dcopf_with_load_factors(
-        sp, 'PIQP', load_factors=load_factors, ignore_dpp=ignore_dpp)
-    sp.PQ.set(src='p0', attr='v', idx=pq_idx, value=pd0)
-
-    if PANDAPOWER_AVAILABLE:
-        # --- PANDAPOWER ---
-        ppc = ams.io.pypower.system2ppc(sp)
-        freq = sp.config.freq
-
-        del sp
-
-        ppc_pd0 = ppc['bus'][:, 2].copy()
-
-        ppn = pdp.converter.from_ppc(ppc, f_hz=freq)
-        obj_pdp = 0
-        t_pdp_series = ['0 seconds'] * len(load_factors)
-        try:
-            for i, lf_k in enumerate(load_factors):
-                ppc['bus'][:, 2] = lf_k * ppc_pd0
-                ppn = pdp.converter.from_ppc(ppc, f_hz=freq)
-                t0_pdp, _ = elapsed()
-                pdp.rundcopp(ppn)
-                obj_pdp += ppn.res_cost
-                _, t_pdp_series[i] = elapsed(t0_pdp)
-            t_pdp_series = [float(t.split(' ')[0]) for t in t_pdp_series]
-            s_pdp = f'{np.sum(t_pdp_series):.4f} seconds'
-        except Exception:
-            s_pdp = _failed_time
-            obj_pdp = _failed_obj
-    else:
-        s_pdp = _failed_time
-        obj_pdp = _failed_obj
-
-    time = [s_mats, s_parse, s_evaluate, s_finalize, s_postinit,
-            s_ams_grb, s_ams_mosek, s_ams_piqp, s_pdp]
-    time = [float(t.split(' ')[0]) for t in time]
-    obj = [obj_grb, obj_mosek, obj_piqp, obj_pdp]
-
-    return time, obj
+    return pre_time, sol
