@@ -99,8 +99,6 @@ def time_routine_solve(system, routine='DCOPF', **kwargs):
         The solver to use.
     ignore_dpp : bool, optional
         Whether to ignore DPP. Defaults to True.
-    method : function, optional
-        A custom solve method to use. Defaults to None.
 
     Returns
     -------
@@ -204,7 +202,8 @@ def time_pdp_dcopf(system):
     return elapsed_time, obj_value
 
 
-def time_routine(system, routine='DCOPF', solvers=['CLARABEL']):
+def time_routine(system, routine='DCOPF', solvers=['CLARABEL'],
+                 **kwargs):
     """
     Time the specified routine with the given solvers.
 
@@ -216,14 +215,24 @@ def time_routine(system, routine='DCOPF', solvers=['CLARABEL']):
         The name of the routine to run. Defaults to 'DCOPF'.
     solvers : list of str, optional
         List of solvers to use. Defaults to ['CLARABEL'].
+
+    Other Parameters
+    ----------------
+    ignore_dpp : bool, optional
+        Whether to ignore DPP. Defaults to True.
+
+    Returns
+    -------
+    tuple
+        A tuple containing the preparation times and the solution times in
+        seconds for each solver.
     """
     pre_time = pre_solve(system, routine)
     sol_time = {f'{solver}': {'time': 0, 'obj': 0} for solver in solvers}
 
     for solver in solvers:
         if solver != 'pandapower':
-            kwargs = {'solver': solver}
-            s, obj = time_routine_solve(system, routine, **kwargs)
+            s, obj = time_routine_solve(system, routine, solver=solver, **kwargs)
             sol_time[solver]['time'] = s
             sol_time[solver]['obj'] = obj
         elif solver == 'pandapower' and PANDAPOWER_AVAILABLE and routine == 'DCOPF':
