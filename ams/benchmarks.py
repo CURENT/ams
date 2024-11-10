@@ -25,9 +25,7 @@ logger = logging.getLogger(__name__)
 _failed_time = -1
 _failed_obj = -1
 
-cols_time = ['ams_mats', 'ams_parse', 'ams_eval', 'ams_final',
-             'ams_postinit', 'ams_grb', 'ams_mosek', 'ams_piqp', 'pdp']
-cols_obj = ['grb', 'mosek', 'piqp', 'pdp']
+cols_pre = ['ams_mats', 'ams_parse', 'ams_eval', 'ams_final', 'ams_postinit']
 
 
 def get_tool_versions(tools=None):
@@ -165,11 +163,9 @@ def pre_solve(system, routine):
     rtn.init()
     _, s_postinit = elapsed(t_postinit)
 
-    pre_time = dict(mats=float(s_mats.split(' ')[0]),
-                    parse=float(s_parse.split(' ')[0]),
-                    evaluate=float(s_evaluate.split(' ')[0]),
-                    finalize=float(s_finalize.split(' ')[0]),
-                    postinit=float(s_postinit.split(' ')[0]))
+    s_float = [float(s.split(' ')[0]) for s in [s_mats, s_parse, s_evaluate, s_finalize, s_postinit]]
+
+    pre_time = dict(zip(cols_pre, s_float))
     return pre_time
 
 
@@ -228,22 +224,22 @@ def time_routine(system, routine='DCOPF', solvers=['CLARABEL'],
         seconds for each solver.
     """
     pre_time = pre_solve(system, routine)
-    sol_time = {f'{solver}': {'time': 0, 'obj': 0} for solver in solvers}
+    sol = {f'{solver}': {'time': 0, 'obj': 0} for solver in solvers}
 
     for solver in solvers:
         if solver != 'pandapower':
             s, obj = time_routine_solve(system, routine, solver=solver, **kwargs)
-            sol_time[solver]['time'] = s
-            sol_time[solver]['obj'] = obj
+            sol[solver]['time'] = s
+            sol[solver]['obj'] = obj
         elif solver == 'pandapower' and PANDAPOWER_AVAILABLE and routine == 'DCOPF':
             s, obj = time_pdp_dcopf(system)
-            sol_time[solver]['time'] = s
-            sol_time[solver]['obj'] = obj
+            sol[solver]['time'] = s
+            sol[solver]['obj'] = obj
         else:
-            sol_time[solver]['time'] = _failed_time
-            sol_time[solver]['obj'] = _failed_obj
+            sol[solver]['time'] = _failed_time
+            sol[solver]['obj'] = _failed_obj
 
-    return pre_time, sol_time
+    return pre_time, sol
 
 
 def run_dcopf_with_load_factors(sp, solver, method=None, load_factors=None, ignore_dpp=False):
