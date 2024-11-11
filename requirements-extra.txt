@@ -1,4 +1,4 @@
-# Generated on 2024-11-06.
+# Generated on 2024-11-11.
 pytest               # dev
 pytest-cov           # dev
 coverage             # dev
@@ -7,6 +7,7 @@ numpydoc             # dev
 toml                 # dev
 pyscipopt            # dev
 toml                 # dev
+pandoc               # doc
 ipython              # doc
 sphinx               # doc
 pydata-sphinx-theme  # doc

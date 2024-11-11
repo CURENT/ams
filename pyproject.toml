@@ -47,6 +47,7 @@ dev = [
     "toml"
 ]
 doc = [
+    "pandoc",
     "ipython",
     "sphinx",
     "pydata-sphinx-theme",
