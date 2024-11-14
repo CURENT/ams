@@ -8,8 +8,8 @@ import numpy as np
 import andes
 import ams
 
-from ams.interop.andes import (build_group_table, make_link_table, to_andes,
-                               parse_addfile, verify_pf)
+from ams.interface import (build_group_table, make_link_table, to_andes,
+                           parse_addfile, verify_pf)
 
 
 class TestAndesConversion(unittest.TestCase):

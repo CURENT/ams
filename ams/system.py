@@ -24,7 +24,7 @@ from ams.models import file_classes
 from ams.routines import all_routines
 from ams.utils.paths import get_config_path
 from ams.core.matprocessor import MatProcessor
-from ams.interop.andes import to_andes
+from ams.interface import to_andes
 from ams.report import Report
 
 logger = logging.getLogger(__name__)

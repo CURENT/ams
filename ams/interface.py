@@ -1,5 +1,5 @@
 """
-Interface with ANDES
+Module for interfacing ANDES
 """
 
 import os
