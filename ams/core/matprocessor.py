@@ -10,11 +10,11 @@ from typing import Optional
 import numpy as np
 
 from andes.thirdparty.npfunc import safe_div
-from andes.shared import pd, tqdm, tqdm_nb
+from andes.shared import tqdm, tqdm_nb
 from andes.utils.misc import elapsed, is_notebook
 
 from ams.opt.omodel import Param
-from ams.shared import sps
+from ams.shared import pd, sps
 
 logger = logging.getLogger(__name__)
 

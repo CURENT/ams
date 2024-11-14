@@ -10,7 +10,6 @@ from collections import OrderedDict
 import numpy as np
 
 from andes.core import Config
-from andes.shared import pd
 from andes.utils.misc import elapsed
 
 from ams.core.param import RParam
@@ -19,6 +18,7 @@ from ams.core.documenter import RDocumenter
 from ams.core.service import RBaseService, ValueService
 from ams.opt.omodel import OModel, Param, Var, Constraint, Objective, ExpressionCalc
 
+from ams.shared import pd
 
 logger = logging.getLogger(__name__)
 

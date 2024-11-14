@@ -1,9 +1,9 @@
 import unittest
 import numpy as np
 
-from andes.shared import pd
 
 import ams
+from ams.shared import pd
 
 
 class TestRoutineMethods(unittest.TestCase):

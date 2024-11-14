@@ -6,13 +6,12 @@ import os
 import logging
 from collections import OrderedDict, Counter
 
-from andes.shared import pd, np
 from andes.utils.misc import elapsed
 from andes.system import System as andes_System
 
 from ams.utils import create_entry
 from ams.io import input_formats
-from ams.shared import nan
+from ams.shared import nan, pd, np
 
 logger = logging.getLogger(__name__)
 
