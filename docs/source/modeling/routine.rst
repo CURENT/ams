@@ -58,13 +58,6 @@ Further, to facilitate the routine definition, AMS developed a class
 .. autoclass:: ams.core.param.RParam
     :noindex:
 
-.. currentmodule:: ams.routines
-.. autosummary::
-      :recursive:
-      :toctree: _generated
-
-      RoutineBase
-
 Numerical Optimization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -87,7 +80,7 @@ Interoperation with ANDES
 -----------------------------------
 
 The interoperation with dynamic simulator invovles both file conversion and data exchange.
-In AMS, the built-in interface with ANDES is implemented in :py:mod:`ams.interop.andes`.
+In AMS, the built-in interface with ANDES is implemented in :py:mod:`ams.interface`.
 
 
 File Format Converter
@@ -98,7 +91,7 @@ where it defines grid topology and power flow.
 An AMS case can be converted to an ANDES case, with the option to supply additional dynamic
 data.
 
-.. autofunction:: ams.interop.andes.to_andes
+.. autofunction:: ams.interface.to_andes
     :noindex:
 
 
@@ -112,10 +105,10 @@ The maping relationship for a specific routine is defined in the routine class a
 ``map2``.
 Additionally, a link table for the ANDES case is used for the controller connections.
 
-Module :py:mod:`ams.interop.andes.Dynamic`, contains the necessary functions and classes for
+Module :py:mod:`ams.interface.Dynamic`, contains the necessary functions and classes for
 file conversion and data exchange.
 
-.. autoclass:: ams.interop.andes.Dynamic
+.. autoclass:: ams.interface.Dynamic
     :noindex:
     :members: send, receive
 

@@ -234,7 +234,7 @@ class DCOPF(RoutineBase):
     def solve(self, **kwargs):
         """
         Solve the routine optimization model.
-        *args and **kwargs go to `self.om.prob.solve()` (`cvxpy.Problem.solve()`).
+        args and kwargs go to `self.om.prob.solve()` (`cvxpy.Problem.solve()`).
         """
         return self.om.prob.solve(**kwargs)
 

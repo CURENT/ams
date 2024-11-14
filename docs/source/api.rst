@@ -44,6 +44,8 @@ Routines
    :template: autosummary/module_toctree.rst
 
    ams.routines.routine
+   ams.routines.dcopf
+   ams.routines.pflow
 
 
 Optimization
@@ -56,7 +58,7 @@ Optimization
    :caption: Optimization
    :template: autosummary/module_toctree.rst
 
-   ams.opt.omodel
+   ams.opt
 
 
 I/O
@@ -82,7 +84,7 @@ Interoperability
    :caption: Interoperability
    :template: autosummary/module_toctree.rst
 
-   ams.interop
+   ams.interface
 
 
 Others
