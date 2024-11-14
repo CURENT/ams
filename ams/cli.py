@@ -29,6 +29,12 @@ def create_parser():
     -------
     argparse.ArgumentParser
         Parser with all AMS options
+
+    Notes
+    -----
+    Revised from the ANDES project (https://github.com/CURENT/andes).
+    Original author: Hantao Cui
+    License: GPL3
     """
 
     parser = argparse.ArgumentParser()

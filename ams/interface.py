@@ -1,49 +1,41 @@
 """
-Interface with ANDES
+Module for interfacing ANDES
 """
 
 import os
 import logging
 from collections import OrderedDict, Counter
 
-from andes.shared import pd, np
 from andes.utils.misc import elapsed
 from andes.system import System as andes_System
 
+from ams.utils import create_entry
 from ams.io import input_formats
-from ams.shared import nan
+from ams.shared import nan, pd, np
 
 logger = logging.getLogger(__name__)
 
 
 # Models used in ANDES PFlow
 pflow_dict = OrderedDict([
-    ('Bus', ['idx', 'u', 'name',
-             'Vn', 'vmax', 'vmin',
-             'v0', 'a0', 'xcoord', 'ycoord',
-             'area', 'zone', 'owner']),
-    ('PQ', ['idx', 'u', 'name',
-            'bus', 'Vn', 'p0', 'q0',
-            'vmax', 'vmin', 'owner']),
-    ('PV', ['idx', 'u', 'name', 'Sn',
-            'Vn', 'bus', 'busr', 'p0', 'q0',
-            'pmax', 'pmin', 'qmax', 'qmin',
-            'v0', 'vmax', 'vmin', 'ra', 'xs']),
-    ('Slack', ['idx', 'u', 'name', 'Sn',
-               'Vn', 'bus', 'busr', 'p0', 'q0',
-               'pmax', 'pmin', 'qmax', 'qmin',
-               'v0', 'vmax', 'vmin', 'ra', 'xs',
-               'a0']),
-    ('Shunt', ['idx', 'u', 'name', 'Sn',
-               'Vn', 'bus', 'g', 'b', 'fn']),
-    ('Line', ['idx', 'u', 'name',
-              'bus1', 'bus2', 'Sn',
-              'fn', 'Vn1', 'Vn2',
-              'r', 'x', 'b', 'g', 'b1', 'g1', 'b2', 'g2',
-              'trans', 'tap', 'phi',
-              'rate_a', 'rate_b', 'rate_c',
-              'owner', 'xcoord', 'ycoord']),
-    ('Area', ['idx', 'u', 'name']),
+    ('Bus', create_entry('Vn', 'vmax', 'vmin', 'v0', 'a0',
+                         'xcoord', 'ycoord', 'area', 'zone',
+                         'owner')),
+    ('PQ', create_entry('bus', 'Vn', 'p0', 'q0', 'vmax',
+                        'vmin', 'owner')),
+    ('PV', create_entry('Sn', 'Vn', 'bus', 'busr', 'p0', 'q0',
+                        'pmax', 'pmin', 'qmax', 'qmin',
+                        'v0', 'vmax', 'vmin', 'ra', 'xs')),
+    ('Slack', create_entry('Sn', 'Vn', 'bus', 'busr', 'p0', 'q0',
+                           'pmax', 'pmin', 'qmax', 'qmin',
+                           'v0', 'vmax', 'vmin', 'ra', 'xs', 'a0')),
+    ('Shunt', create_entry('Sn', 'Vn', 'bus', 'g', 'b', 'fn')),
+    ('Line', create_entry('bus1', 'bus2', 'Sn', 'fn', 'Vn1', 'Vn2',
+                          'r', 'x', 'b', 'g', 'b1', 'g1', 'b2', 'g2',
+                          'trans', 'tap', 'phi', 'rate_a', 'rate_b',
+                          'rate_c', 'owner', 'xcoord', 'ycoord')),
+    ('Area', create_entry()),
+    ('Jumper', create_entry('bus1', 'bus2')),
 ])
 
 # dict for guessing dynamic models given its idx
@@ -324,7 +316,7 @@ def parse_addfile(adsys, amsys, addfile):
             syg_idx += syg.idx.v
     syg_bus_idx = adsys.SynGen.get(src='bus', attr='v', idx=syg_idx)
     syg_bus_vn = adsys.Bus.get(src='Vn', idx=syg_bus_idx)
-    adsys.SynGen.set(src='Vn', attr='v', idx=syg_idx, value=syg_bus_vn)
+    adsys.SynGen.set(src='Vn', idx=syg_idx, attr='v', value=syg_bus_vn)
 
     # --- for debugging ---
     adsys.df_in = df_models
@@ -424,8 +416,7 @@ class Dynamic:
         if syg_mask.any():
             logger.debug('Governor is not complete for SynGen.')
         # --- pref ---
-        sa.TurbineGov.set(value=syg_ams, idx=gov_idx,
-                          src='pref0', attr='v')
+        sa.TurbineGov.set(value=syg_ams, idx=gov_idx, attr='v', src='pref0')
 
         # --- paux ---
         # TODO: sync paux, using paux0
@@ -440,8 +431,7 @@ class Dynamic:
         dg_ams = sp.recent.get(src='pg', attr='v', idx=stg_dg_idx,
                                allow_none=True, default=0)
         # --- pref ---
-        sa.DG.set(value=dg_ams, idx=dg_idx,
-                  src='pref0', attr='v')
+        sa.DG.set(src='pref0', idx=dg_idx, attr='v', value=dg_ams)
         # TODO: paux, using Pext0, this one should be do in other place rather than here
 
         # 3) RenGen
@@ -495,9 +485,9 @@ class Dynamic:
             msg += ' Otherwise, unexpected results might occur.'
             raise ValueError(msg)
         # FIXME: below code seems to be unnecessary
-        sa.SynGen.set(src='u', attr='v', idx=syg_idx, value=stg_u_ams)
-        sa.DG.set(src='u', attr='v', idx=dg_idx, value=dg_u_ams)
-        sa.RenGen.set(src='u', attr='v', idx=rg_idx, value=rg_u_ams)
+        sa.SynGen.set(src='u', idx=syg_idx, attr='v', value=stg_u_ams)
+        sa.DG.set(src='u', idx=dg_idx, attr='v', value=dg_u_ams)
+        sa.RenGen.set(src='u', idx=rg_idx, attr='v', value=rg_u_ams)
         return True
 
     def _sync_check(self, amsys, adsys):
@@ -577,7 +567,7 @@ class Dynamic:
                 stg_idx = sp.StaticGen.get_idx()
                 bus_stg = sp.StaticGen.get(src='bus', attr='v', idx=stg_idx)
                 vBus = rtn.get(src='vBus', attr='v', idx=bus_stg)
-                sa.StaticGen.set(value=vBus, idx=stg_idx, src='v0', attr='v')
+                sa.StaticGen.set(src='v0', idx=stg_idx, attr='v', value=vBus)
                 logger.info(f'*Send <{vname_ams}> to StaticGen.v0')
 
             # 1. gen online status; in TDS running, setting u is invalid
@@ -609,7 +599,7 @@ class Dynamic:
                 if syg_mask.any():
                     logger.debug('Governor is not complete for SynGen.')
                 # --- pref ---
-                sa.TurbineGov.set(value=syg_ams, idx=gov_idx, src='pref0', attr='v')
+                sa.TurbineGov.set(src='pref0', idx=gov_idx, attr='v', value=syg_ams)
 
                 # --- DG: DG.pref0 ---
                 dg_idx = sp.dyn.link['dg_idx'].dropna().tolist()  # DG idx
@@ -619,7 +609,7 @@ class Dynamic:
                 # corresponding StaticGen pg in AMS
                 dg_ams = rtn.get(src='pg', attr='v', idx=stg_dg_idx)
                 # --- pref ---
-                sa.DG.set(value=dg_ams, idx=dg_idx, src='pref0', attr='v')
+                sa.DG.set(src='pref0', idx=dg_idx, attr='v', value=dg_ams)
 
                 # --- RenGen: seems unnecessary ---
                 # TODO: which models/params are used to control output and auxillary power?
@@ -634,7 +624,7 @@ class Dynamic:
 
             # --- other scenarios ---
             if _dest_check(mname=mname_ads, pname=pname_ads, idx=idx_ads, adsys=sa):
-                mdl_ads.set(src=pname_ads, attr='v', idx=idx_ads, value=var_ams.v)
+                mdl_ads.set(src=pname_ads, idx=idx_ads, attr='v', value=var_ams.v)
                 logger.warning(f'Send <{vname_ams}> to {mname_ads}.{pname_ads}')
         return True
 
@@ -704,10 +694,8 @@ class Dynamic:
                                          idx=link['stg_idx'].values)
                 # NOTE: only update u if changed actually
                 u0_rtn = rtn.get(src=vname_ams, attr='v', idx=link['stg_idx'].values).copy()
-                rtn.set(src=vname_ams, attr='v', value=u_stg,
-                        idx=link['stg_idx'].values)
-                rtn.set(src=vname_ams, attr='v', value=u_dyg,
-                        idx=link['stg_idx'].values)
+                rtn.set(src=vname_ams, idx=link['stg_idx'].values, attr='v', value=u_stg)
+                rtn.set(src=vname_ams, idx=link['stg_idx'].values, attr='v', value=u_dyg)
                 u_rtn = rtn.get(src=vname_ams, attr='v', idx=link['stg_idx'].values).copy()
                 if not np.array_equal(u0_rtn, u_rtn):
                     pname_to_update.append(vname_ams)
@@ -744,10 +732,8 @@ class Dynamic:
                 # Sync StaticGen.p first, then overwrite the ones with dynamic generator
                 p_stg = sa.StaticGen.get(src='p', attr='v',
                                          idx=link['stg_idx'].values)
-                rtn.set(src=vname_ams, attr='v', value=p_stg,
-                        idx=link['stg_idx'].values)
-                rtn.set(src=vname_ams, attr='v', value=p_dyg,
-                        idx=link['stg_idx'].values)
+                rtn.set(src=vname_ams, idx=link['stg_idx'].values, attr='v', value=p_stg)
+                rtn.set(src=vname_ams, idx=link['stg_idx'].values, attr='v', value=p_dyg)
 
                 pname_to_update.append(vname_ams)
 
@@ -762,7 +748,7 @@ class Dynamic:
             # --- other scenarios ---
             if _dest_check(mname=mname_ads, pname=pname_ads, idx=idx_ads, adsys=sa):
                 v_ads = mdl_ads.get(src=pname_ads, attr='v', idx=idx_ads)
-                rtn.set(src=vname_ams, attr='v', idx=idx_ads, value=v_ads)
+                rtn.set(src=vname_ams, idx=idx_ads, attr='v', value=v_ads)
                 pname_to_update.append(vname_ams)
                 logger.warning(f'Receive <{vname_ams}> from {mname_ads}.{pname_ads}')
 
@@ -931,8 +917,11 @@ def make_link_table(adsys):
     ssa_key0 = pd.merge(left=ssa_key0, how='left', on='stg_idx',
                         right=ssa_rg[['stg_idx', 'rg_idx']])
 
-    ssa_key0 = ssa_key0.fillna(value=False)
-    dyr = ssa_key0['syg_idx'].astype(bool) + ssa_key0['dg_idx'].astype(bool) + ssa_key0['rg_idx'].astype(bool)
+    # NOTE: use this instead of fillna to avoid type conversion
+    idxc = ['stg_idx', 'syg_idx', 'dg_idx', 'rg_idx']
+    ssa_key0[idxc] = ssa_key0[idxc].astype('str').replace({'nan': ''}).astype('bool')
+
+    dyr = ssa_key0['syg_idx'] + ssa_key0['dg_idx'] + ssa_key0['rg_idx']
     non_dyr = np.logical_not(dyr)
     ssa_dyr0 = ssa_key0[non_dyr]
     ssa_dyr0['gammap'] = 1

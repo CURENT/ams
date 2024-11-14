@@ -43,9 +43,11 @@ dev = [
     "flake8",
     "numpydoc",
     "toml",
-    "pyscipopt"
+    "pyscipopt",
+    "toml"
 ]
 doc = [
+    "pandoc",
     "ipython",
     "sphinx",
     "pydata-sphinx-theme",
@@ -66,3 +68,6 @@ style = "pep440-post"
 versionfile_source = "ams/_version.py"
 versionfile_build = "ams/_version.py"
 tag_prefix = "v"
+
+[tool.setuptools.packages.find]
+where = ["."]

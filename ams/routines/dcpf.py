@@ -127,10 +127,10 @@ class DCPF(RoutineBase):
         res, sstats = runpf(casedata=ppc, ppopt=ppopt)
         return res, sstats
 
-    def run(self, force_init=False, no_code=True,
-            method=None, **kwargs):
+    def run(self, **kwargs):
         """
         Run DC pwoer flow.
+        *args and **kwargs go to `self.solve()`, which are not used yet.
 
         Examples
         --------
@@ -139,10 +139,6 @@ class DCPF(RoutineBase):
 
         Parameters
         ----------
-        force_init : bool
-            Force initialization.
-        no_code : bool
-            Disable showing code.
         method : str
             Placeholder for future use.
 
@@ -152,9 +148,10 @@ class DCPF(RoutineBase):
             Exit code of the routine.
         """
         if not self.initialized:
-            self.init(force=force_init, no_code=no_code)
+            self.init()
         t0, _ = elapsed()
-        res, sstats = self.solve(method=method)
+
+        res, sstats = self.solve(**kwargs)
         self.converged = res['success']
         self.exit_code = 0 if res['success'] else 1
         _, s = elapsed(t0)
@@ -167,8 +164,8 @@ class DCPF(RoutineBase):
             logger.info(msg)
             try:
                 self.unpack(res)
-            except Exception:
-                logger.warning(f"Failed to unpack results from {self.class_name}.")
+            except Exception as e:
+                logger.error(f"Failed to unpack results from {self.class_name}.\n{e}")
                 return False
             return True
         else:

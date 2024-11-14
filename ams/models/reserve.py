@@ -29,10 +29,10 @@ class SFR(ReserveData, Model):
         self.group = 'Reserve'
         self.du = NumParam(default=0,
                            info='Zonal RegUp reserve demand',
-                           tex_name=r'd_{u}', unit='%',)
+                           tex_name=r'd_{u}',)
         self.dd = NumParam(default=0,
                            info='Zonal RegDown reserve demand',
-                           tex_name=r'd_{d}', unit='%',)
+                           tex_name=r'd_{d}',)
 
 
 class SR(ReserveData, Model):
@@ -49,7 +49,7 @@ class SR(ReserveData, Model):
         ReserveData.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'Reserve'
-        self.demand = NumParam(default=0.1, unit='%',
+        self.demand = NumParam(default=0.1,
                                info='Zonal spinning reserve demand',
                                tex_name=r'd_{SR}')
 
@@ -68,7 +68,7 @@ class NSR(ReserveData, Model):
         ReserveData.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'Reserve'
-        self.demand = NumParam(default=0.1, unit='%',
+        self.demand = NumParam(default=0.1,
                                info='Zonal non-spinning reserve demand',
                                tex_name=r'd_{NSR}')
 

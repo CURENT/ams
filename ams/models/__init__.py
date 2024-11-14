@@ -10,7 +10,7 @@ ams_file_classes = list([
     ('bus', ['Bus']),
     ('static', ['PQ', 'Slack', 'PV']),
     ('shunt', ['Shunt']),
-    ('line', ['Line']),
+    ('line', ['Line', 'Jumper']),
     ('distributed', ['PVD1', 'ESD1', 'EV1', 'EV2']),
     ('renewable', ['REGCA1', 'REGCV1', 'REGCV2']),
     ('area', ['Area']),

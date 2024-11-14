@@ -28,6 +28,12 @@ def report_info(system) -> list:
 class Report:
     """
     Report class to store routine analysis reports.
+
+    Notes
+    -----
+    Revised from the ANDES project (https://github.com/CURENT/andes).
+    Original author: Hantao Cui
+    License: GPL3
     """
 
     def __init__(self, system):

@@ -4,7 +4,6 @@ Scheduling routines.
 
 from collections import OrderedDict
 from andes.utils.func import list_flatten
-from ams.routines.routine import RoutineBase  # NOQA
 
 all_routines = OrderedDict([
     ('dcpf', ['DCPF']),

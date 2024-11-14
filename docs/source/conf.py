@@ -164,7 +164,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'ams', 'AMS Manual',
-     author, 'ams', 'Python Software for Scheduling Modeling and Co-Simulation with Dynanic',
+     author, 'ams', 'Python Software for Scheduling Modeling and Co-Simulation with Dynanics',
      'Miscellaneous'),
 ]
 

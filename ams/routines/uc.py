@@ -304,13 +304,16 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         if len(g_idx) == 0:
             g_idx = priority[0]
             ug0 = 0
-        self.system.StaticGen.set(src='u', attr='v', idx=g_idx, value=ug0)
-        logger.warning(f'Turn off StaticGen {g_idx} as initial commitment guess.')
-        return True
+            off_gen = f'{g_idx}'
+        else:
+            off_gen = ', '.join(g_idx)
+        self.system.StaticGen.set(src='u', idx=g_idx, attr='v', value=ug0)
+        logger.warning(f"As initial commitment guess, turn off StaticGen: {off_gen}")
+        return g_idx
 
-    def init(self, force=False, no_code=True, **kwargs):
+    def init(self, **kwargs):
         self._initial_guess()
-        return super().init(force=force, no_code=no_code, **kwargs)
+        return super().init(**kwargs)
 
     def dc2ac(self, **kwargs):
         """

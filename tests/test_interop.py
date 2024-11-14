@@ -1,73 +1,20 @@
 """
-Test ANDES interface.
+Test interface.
 """
 
 import unittest
 import numpy as np
-import pkg_resources
-from pkg_resources import parse_version
 
 import andes
 import ams
 
-from ams.interop.andes import (build_group_table, make_link_table, to_andes,
-                               parse_addfile, verify_pf)
+from ams.interface import (build_group_table, make_link_table, to_andes,
+                           parse_addfile, verify_pf)
 
 
-class TestMatrices(unittest.TestCase):
+class TestAndesConversion(unittest.TestCase):
     """
-    Tests for system matrices consistency.
-    """
-
-    andes_version = pkg_resources.get_distribution("andes").version
-    if parse_version(andes_version) < parse_version('1.9.2'):
-        raise unittest.SkipTest("Requires ANDES version >= 1.9.2")
-
-    sp = ams.load(ams.get_case('5bus/pjm5bus_demo.xlsx'),
-                  setup=True, no_output=True, default_config=True,)
-    sa = sp.to_andes(setup=True, no_output=True, default_config=True,)
-
-    def setUp(self) -> None:
-        """
-        Test setup.
-        """
-
-    def test_build_y(self):
-        """
-        Test build_y consistency.
-        """
-        ysp = self.sp.Line.build_y()
-        ysa = self.sa.Line.build_y()
-        np.testing.assert_equal(np.array(ysp.V), np.array(ysa.V))
-
-    def test_build_Bp(self):
-        """
-        Test build_Bp consistency.
-        """
-        Bp_sp = self.sp.Line.build_Bp()
-        Bp_sa = self.sa.Line.build_Bp()
-        np.testing.assert_equal(np.array(Bp_sp.V), np.array(Bp_sa.V))
-
-    def test_build_Bpp(self):
-        """
-        Test build_Bpp consistency.
-        """
-        Bpp_sp = self.sp.Line.build_Bpp()
-        Bpp_sa = self.sa.Line.build_Bpp()
-        np.testing.assert_equal(np.array(Bpp_sp.V), np.array(Bpp_sa.V))
-
-    def test_build_Bdc(self):
-        """
-        Test build_Bdc consistency.
-        """
-        Bdc_sp = self.sp.Line.build_Bdc()
-        Bdc_sa = self.sa.Line.build_Bdc()
-        np.testing.assert_equal(np.array(Bdc_sp.V), np.array(Bdc_sa.V))
-
-
-class TestInteropBase(unittest.TestCase):
-    """
-    Tests for basic function of ANDES interface.
+    Tests conversion from AMS to ANDES.
     """
     ad_cases = [
         'ieee14/ieee14_full.xlsx',
@@ -211,8 +158,8 @@ class TestDataExchange(unittest.TestCase):
                       no_output=True,
                       default_config=True,)
         # alleviate limiter
-        sa.TGOV1.set(src='VMAX', attr='v', idx=sa.TGOV1.idx.v, value=100*np.ones(sa.TGOV1.n))
-        sa.TGOV1.set(src='VMIN', attr='v', idx=sa.TGOV1.idx.v, value=np.zeros(sa.TGOV1.n))
+        sa.TGOV1.set(src='VMAX', idx=sa.TGOV1.idx.v, attr='v', value=100*np.ones(sa.TGOV1.n))
+        sa.TGOV1.set(src='VMIN', idx=sa.TGOV1.idx.v, attr='v', value=np.zeros(sa.TGOV1.n))
 
         # --- test before PFlow ---
         self.sp.dyn.send(adsys=sa, routine='RTED')

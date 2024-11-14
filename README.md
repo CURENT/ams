@@ -82,6 +82,19 @@ Install from GitHub source:
 pip install git+https://github.com/CURENT/ams.git
 ```
 
+# Example Usage
+
+Using AMS to run a Real-Time Economic Dispatch (RTED) simulation:
+
+```python
+import ams
+
+ss = ams.load(ams.get_case('ieee14_uced.xlsx'))
+ss.RTED.run()
+
+print(ss.RTED.pg.v)
+```
+
 # Sponsors and Contributors
 AMS is the scheduling simulation engine for the CURENT Largescale Testbed (LTB).
 More information about CURENT LTB can be found at the [LTB Repository][LTB Repository].
