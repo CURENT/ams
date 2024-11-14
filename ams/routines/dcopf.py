@@ -20,6 +20,12 @@ class DCOPF(RoutineBase):
     DC optimal power flow (DCOPF).
 
     The nodal price is calculated as ``pi`` in ``pic``.
+
+    References
+    ----------
+    1. R. D. Zimmerman, C. E. Murillo-Sanchez, and R. J. Thomas, “MATPOWER: Steady-State Operations, Planning, and
+    Analysis Tools for Power Systems Research and Education,” IEEE Trans. Power Syst., vol. 26, no. 1, pp. 12–19,
+    Feb. 2011
     """
 
     def __init__(self, system, config):
@@ -94,11 +100,19 @@ class DCOPF(RoutineBase):
                            model='Slack', src='bus',
                            no_parse=True,)
         # --- load ---
+        self.upq = RParam(info='Load connection status',
+                          name='upq', tex_name=r'u_{PQ}',
+                          model='StaticLoad', src='u',
+                          no_parse=True,)
         self.pd = RParam(info='active demand',
                          name='pd', tex_name=r'p_{d}',
                          model='StaticLoad', src='p0',
                          unit='p.u.',)
         # --- line ---
+        self.ul = RParam(info='Line connection status',
+                         name='ul', tex_name=r'u_{l}',
+                         model='Line', src='u',
+                         no_parse=True,)
         self.rate_a = RParam(info='long-term flow limit',
                              name='rate_a', tex_name=r'R_{ATEA}',
                              unit='p.u.', model='Line',)
@@ -181,7 +195,7 @@ class DCOPF(RoutineBase):
                       unit='$/p.u.',
                       model='Bus',)
         # --- power balance ---
-        pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
+        pb = 'Bbus@aBus + Pbusinj + Cl@(mul(upq, pd)) + Csh@gsh - Cg@pg'
         self.pb = Constraint(name='pb', info='power balance',
                              e_str=pb, is_eq=True,)
         # --- line flow ---
@@ -191,10 +205,10 @@ class DCOPF(RoutineBase):
                        model='Line',)
         self.plflb = Constraint(info='line flow lower bound',
                                 name='plflb', is_eq=False,
-                                e_str='-Bf@aBus - Pfinj - rate_a',)
+                                e_str='-Bf@aBus - Pfinj - mul(ul, rate_a)',)
         self.plfub = Constraint(info='line flow upper bound',
                                 name='plfub', is_eq=False,
-                                e_str='Bf@aBus + Pfinj - rate_a',)
+                                e_str='Bf@aBus + Pfinj - mul(ul, rate_a)',)
         self.alflb = Constraint(info='line angle difference lower bound',
                                 name='alflb', is_eq=False,
                                 e_str='-CftT@aBus + amin',)
@@ -220,20 +234,29 @@ class DCOPF(RoutineBase):
     def solve(self, **kwargs):
         """
         Solve the routine optimization model.
+        args and kwargs go to `self.om.prob.solve()` (`cvxpy.Problem.solve()`).
         """
         return self.om.prob.solve(**kwargs)
 
-    def run(self, no_code=True, **kwargs):
+    def run(self, **kwargs):
         """
         Run the routine.
 
+        Following kwargs go to `self.init()`: `force`, `force_mats`, `force_constr`, `force_om`.
+
+        Following kwargs go to `self.solve()`: `solver`, `verbose`, `gp`, `qcp`, `requires_grad`,
+        `enforce_dpp`, `ignore_dpp`, `method`, and all rest.
+
         Parameters
         ----------
-        no_code : bool, optional
-            If True, print the generated CVXPY code. Defaults to False.
-
-        Other Parameters
-        ----------------
+        force : bool, optional
+            If True, force re-initialization. Defaults to False.
+        force_mats : bool, optional
+            If True, force re-generating matrices. Defaults to False.
+        force_constr : bool, optional
+            Whether to turn on all constraints.
+        force_om : bool, optional
+            If True, force re-generating optimization model. Defaults to False.
         solver: str, optional
             The solver to use. For example, 'GUROBI', 'ECOS', 'SCS', or 'OSQP'.
         verbose : bool, optional
@@ -259,10 +282,8 @@ class DCOPF(RoutineBase):
             When True, DPP problems will be treated as non-DPP, which may speed up compilation. Defaults to False.
         method : function, optional
             A custom solve method to use.
-        kwargs : keywords, optional
-            Additional solver specific arguments. See CVXPY documentation for details.
         """
-        return RoutineBase.run(self, no_code=no_code, **kwargs)
+        return super().run(**kwargs)
 
     def _post_solve(self):
         """
@@ -297,9 +318,9 @@ class DCOPF(RoutineBase):
                     pass
                 # NOTE: only unpack the variables that are in the model or group
                 try:
-                    var.owner.set(src=var.src, attr='v', idx=idx, value=var.v)
-                # failed to find source var in the owner (model or group)
+                    var.owner.set(src=var.src, idx=idx, attr='v', value=var.v)
                 except (KeyError, TypeError):
+                    logger.error(f'Failed to unpack <{var}> to <{var.owner.class_name}>.')
                     pass
 
         # label the most recent solved routine
@@ -325,16 +346,16 @@ class DCOPF(RoutineBase):
         pq_idx = self.system.StaticLoad.get_idx()
         pd0 = self.system.StaticLoad.get(src='p0', attr='v', idx=pq_idx).copy()
         qd0 = self.system.StaticLoad.get(src='q0', attr='v', idx=pq_idx).copy()
-        self.system.StaticLoad.set(src='p0', attr='v', idx=pq_idx, value=pd0 * kloss)
-        self.system.StaticLoad.set(src='q0', attr='v', idx=pq_idx, value=qd0 * kloss)
+        self.system.StaticLoad.set(src='p0', idx=pq_idx, attr='v', value=pd0 * kloss)
+        self.system.StaticLoad.set(src='q0', idx=pq_idx, attr='v', value=qd0 * kloss)
 
         ACOPF = self.system.ACOPF
         # run ACOPF
         ACOPF.run()
         # self.exec_time += ACOPF.exec_time
         # scale load back
-        self.system.StaticLoad.set(src='p0', attr='v', idx=pq_idx, value=pd0)
-        self.system.StaticLoad.set(src='q0', attr='v', idx=pq_idx, value=qd0)
+        self.system.StaticLoad.set(src='p0', idx=pq_idx, value=pd0)
+        self.system.StaticLoad.set(src='q0', idx=pq_idx, value=qd0)
         if not ACOPF.exit_code == 0:
             logger.warning('<ACOPF> did not converge, conversion failed.')
             # NOTE: mock results to fit interface with ANDES

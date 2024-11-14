@@ -1,7 +1,7 @@
 import unittest
+import numpy as np
 
 import ams
-import numpy as np
 
 ams.config_logger(stream_level=40)
 

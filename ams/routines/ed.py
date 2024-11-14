@@ -2,7 +2,6 @@
 Economic dispatch routines.
 """
 import logging
-from collections import OrderedDict
 import numpy as np
 
 from ams.core.param import RParam
@@ -92,15 +91,10 @@ class MPBase:
                               name='RR30', tex_name=r'R_{30,R}',
                               info='Repeated ramp rate', no_parse=True,)
 
-        self.ctrl.expand_dims = 1
-        self.c0.expand_dims = 1
-        self.pmax.expand_dims = 1
-        self.pmin.expand_dims = 1
-        self.pg0.expand_dims = 1
-        self.rate_a.expand_dims = 1
-        self.Pfinj.expand_dims = 1
-        self.Pbusinj.expand_dims = 1
-        self.gsh.expand_dims = 1
+        items_to_expand = ['ctrl', 'c0', 'pmax', 'pmin', 'pg0', 'rate_a',
+                           'Pfinj', 'Pbusinj', 'gsh', 'ul']
+        for item in items_to_expand:
+            self.__dict__[item].expand_dims = 1
 
         # NOTE: extend pg to 2D matrix: row for gen and col for timeslot
         self.pg.horizon = self.timeslot
@@ -120,13 +114,15 @@ class ED(RTED, MPBase, SRBase):
 
     - Vars ``pg``, ``pru``, ``prd`` are extended to 2D
     - 2D Vars ``rgu`` and ``rgd`` are introduced
-    - Param ``ug`` is sourced from ``EDTSlot.ug`` as commitment decisions
+    - Param ``ug`` is sourced from ``EDTSlot.ug`` as generator commitment
 
     Notes
     -----
     1. Formulations has been adjusted with interval ``config.t``
 
     2. The tie-line flow is not implemented in this model.
+
+    3. `EDTSlot.ug` is used instead of `StaticGen.u` for generator commitment.
     """
 
     def __init__(self, system, config):
@@ -134,8 +130,7 @@ class ED(RTED, MPBase, SRBase):
         MPBase.__init__(self)
         SRBase.__init__(self)
 
-        self.config.add(OrderedDict((('t', 1),
-                                     )))
+        self.config.t = 1  # scheduling interval in hour
         self.config.add_extra("_help",
                               t="time interval in hours",
                               )
@@ -182,8 +177,8 @@ class ED(RTED, MPBase, SRBase):
         # --- line ---
         self.plf.horizon = self.timeslot
         self.plf.info = '2D Line flow'
-        self.plflb.e_str = '-Bf@aBus - Pfinj@tlv - rate_a@tlv'
-        self.plfub.e_str = 'Bf@aBus + Pfinj@tlv - rate_a@tlv'
+        self.plflb.e_str = '-Bf@aBus - Pfinj@tlv - mul(ul, rate_a)@tlv'
+        self.plfub.e_str = 'Bf@aBus + Pfinj@tlv - mul(ul, rate_a)@tlv'
         self.alflb.e_str = '-CftT@aBus + amin@tlv'
         self.alfub.e_str = 'CftT@aBus - amax@tlv'
 
@@ -196,19 +191,19 @@ class ED(RTED, MPBase, SRBase):
         self.rbu.e_str = 'gs@mul(ugt, pru) - mul(dud, tlv)'
         self.rbd.e_str = 'gs@mul(ugt, prd) - mul(ddd, tlv)'
 
-        self.rru.e_str = 'mul(ugt, pg + pru) - mul(pmax, tlv)'
-        self.rrd.e_str = 'mul(ugt, -pg + prd) + mul(pmin, tlv)'
+        self.rru.e_str = 'pg + pru - mul(mul(ugt, pmax), tlv)'
+        self.rrd.e_str = '-pg + prd + mul(mul(ugt, pmin), tlv)'
 
         self.rgu.e_str = 'pg @ Mr - t dot RR30'
         self.rgd.e_str = '-pg @ Mr - t dot RR30'
 
         self.rgu0 = Constraint(name='rgu0',
                                info='Initial gen ramping up',
-                               e_str='pg[:, 0] - pg0[:, 0] - R30',
+                               e_str='mul(ugt[:, 0], pg[:, 0] - pg0[:, 0] - R30)',
                                is_eq=False,)
         self.rgd0 = Constraint(name='rgd0',
                                info='Initial gen ramping down',
-                               e_str='- pg[:, 0] + pg0[:, 0] - R30',
+                               e_str='mul(ugt[:, 0], -pg[:, 0] + pg0[:, 0] - R30)',
                                is_eq=False,)
 
         # --- objective ---
@@ -246,8 +241,6 @@ class EDDG(ED, DGBase):
     def __init__(self, system, config):
         ED.__init__(self, system, config)
         DGBase.__init__(self)
-
-        self.config.t = 1  # scheduling interval in hour
 
         self.info = 'Economic dispatch with distributed generation'
         self.type = 'DCED'
@@ -300,8 +293,6 @@ class EDES(ED, ESD1MPBase):
     def __init__(self, system, config):
         ED.__init__(self, system, config)
         ESD1MPBase.__init__(self)
-
-        self.config.t = 1  # scheduling interval in hour
 
         self.info = 'Economic dispatch with energy storage'
         self.type = 'DCED'

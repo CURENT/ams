@@ -16,7 +16,13 @@ class GenParam:
     def __init__(self) -> None:
         self.ctrl = NumParam(default=1,
                              info="generator controllability",
-                             tex_name=r'c_{trl}',)
+                             tex_name=r'c_{trl}',
+                             unit='bool',)
+        self.uf = NumParam(default=0,
+                           info="enforced on/off status; 0 unenforced, 1 enforced on, -1 enforced off",
+                           tex_name=r'u_{f}',
+                           unit='int',
+                           vrange=(-1, 1))
         self.Pc1 = NumParam(default=0.0,
                             info="lower real power output of PQ capability curve",
                             tex_name=r'P_{c1}',
@@ -65,12 +71,12 @@ class GenParam:
                             tex_name=r'p_{g0}',
                             unit='p.u.',
                             )
-        self.td1 = NumParam(default=0,
+        self.td1 = NumParam(default=1,
                             info='minimum ON duration',
                             tex_name=r't_{d1}',
                             unit='h',
                             )
-        self.td2 = NumParam(default=0,
+        self.td2 = NumParam(default=0.5,
                             info='minimum OFF duration',
                             tex_name=r't_{d2}',
                             unit='h',

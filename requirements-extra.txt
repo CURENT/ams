@@ -1,23 +1,19 @@
-# FORMAT
-# Put your extra requirements here in the following format
-#
-# package[version_required] # tag1, tag2, ...
-#
-# Allow at least one space between the package name/version and '#'
-#
-# Only one `#` is allowed per line. Lines starting with `#` are ignored.
-
-pytest==7.4 #                   dev
-pytest-cov #                    dev
-coverage #                      dev
-flake8 #                        dev
-pyscipopt #                     dev
-ipython #                       dev, doc
-sphinx #                        dev, doc
-pydata-sphinx-theme #           dev, doc
-numpydoc #                      dev, doc
-sphinx-copybutton #             dev, doc
-sphinx-panels #                 dev, doc
-pydata-sphinx-theme #           dev, doc
-myst-parser #                   dev, doc
-nbsphinx #                      dev, doc
+# Generated on 2024-11-11.
+pytest               # dev
+pytest-cov           # dev
+coverage             # dev
+flake8               # dev
+numpydoc             # dev
+toml                 # dev
+pyscipopt            # dev
+toml                 # dev
+pandoc               # doc
+ipython              # doc
+sphinx               # doc
+pydata-sphinx-theme  # doc
+numpydoc             # doc
+sphinx-copybutton    # doc
+sphinx-panels        # doc
+myst-parser          # doc
+nbsphinx             # doc
+pyscipopt            # doc

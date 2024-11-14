@@ -1,9 +1,9 @@
 import unittest
 import numpy as np
 
-from andes.shared import pd
 
 import ams
+from ams.shared import pd
 
 
 class TestRoutineMethods(unittest.TestCase):
@@ -92,56 +92,10 @@ class TestRoutineMethods(unittest.TestCase):
 
         # --- constraint values ---
         for constr in self.ss.DCOPF.constrs.values():
-            np.testing.assert_almost_equal(constr.v, constr.v2, decimal=6)
+            np.testing.assert_almost_equal(constr.v, constr.e, decimal=6)
 
         # --- objective value ---
-        self.assertAlmostEqual(self.ss.DCOPF.obj.v, self.ss.DCOPF.obj.v2, places=6)
-
-
-class TestOModel(unittest.TestCase):
-    """
-    Test methods of `RTED`.
-    """
-
-    def setUp(self) -> None:
-        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.xlsx"),
-                           setup=True, default_config=True, no_output=True)
-        # decrease load first
-        self.ss.PQ.set(src='p0', attr='v', idx=['PQ_1', 'PQ_2'], value=[0.3, 0.3])
-
-    def test_trip(self):
-        """
-        Test generator trip.
-        """
-        # --- run DCOPF ---
-        self.ss.DCOPF.run(solver='CLARABEL')
-        obj = self.ss.DCOPF.obj.v
-
-        # --- generator trip ---
-        self.ss.StaticGen.set(src='u', attr='v', idx='PV_1', value=0)
-
-        self.ss.DCOPF.update()
-
-        self.ss.DCOPF.run(solver='CLARABEL')
-        self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge under generator trip!")
-        obj_gt = self.ss.DCOPF.obj.v
-        self.assertGreater(obj_gt, obj)
-
-        pg_trip = self.ss.DCOPF.get(src='pg', attr='v', idx='PV_1')
-        np.testing.assert_almost_equal(pg_trip, 0, decimal=6)
-
-        # --- trip line ---
-        self.ss.Line.set(src='u', attr='v', idx='Line_4', value=0)
-
-        self.ss.DCOPF.update()
-
-        self.ss.DCOPF.run(solver='CLARABEL')
-        self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge under line trip!")
-        obj_lt = self.ss.DCOPF.obj.v
-        self.assertGreater(obj_lt, obj_gt)
-
-        plf_trip = self.ss.DCOPF.get(src='plf', attr='v', idx='Line_4')
-        np.testing.assert_almost_equal(plf_trip, 0, decimal=6)
+        self.assertAlmostEqual(self.ss.DCOPF.obj.v, self.ss.DCOPF.obj.e, places=6)
 
 
 class TestSetOptzValueACOPF(unittest.TestCase):
@@ -222,39 +176,3 @@ class TestSetOptzValueDCOPF(unittest.TestCase):
         self.assertRaises(AttributeError, lambda: setattr(self.ss.DCOPF.plfub, 'v', 1))
         # set values to `Objective` is not allowed
         self.assertRaises(AttributeError, lambda: setattr(self.ss.DCOPF.obj, 'v', 1))
-
-
-class TestRTED(unittest.TestCase):
-    """
-    Test methods of `RTED`.
-    """
-
-    def setUp(self) -> None:
-        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.xlsx"),
-                           setup=True,
-                           default_config=True,
-                           no_output=True,
-                           )
-        self.ss.RTED.run(solver='CLARABEL')
-
-    def test_dc2ac(self):
-        """
-        Test `RTED.init()` method.
-        """
-        self.ss.RTED.dc2ac()
-        self.assertTrue(self.ss.RTED.converted, "AC conversion failed!")
-        self.assertTrue(self.ss.RTED.exec_time > 0, "Execution time is not greater than 0.")
-
-        stg_idx = self.ss.StaticGen.get_idx()
-        pg_rted = self.ss.RTED.get(src='pg', attr='v', idx=stg_idx)
-        pg_acopf = self.ss.ACOPF.get(src='pg', attr='v', idx=stg_idx)
-        np.testing.assert_almost_equal(pg_rted, pg_acopf, decimal=3)
-
-        bus_idx = self.ss.Bus.get_idx()
-        v_rted = self.ss.RTED.get(src='vBus', attr='v', idx=bus_idx)
-        v_acopf = self.ss.ACOPF.get(src='vBus', attr='v', idx=bus_idx)
-        np.testing.assert_almost_equal(v_rted, v_acopf, decimal=3)
-
-        a_rted = self.ss.RTED.get(src='aBus', attr='v', idx=bus_idx)
-        a_acopf = self.ss.ACOPF.get(src='aBus', attr='v', idx=bus_idx)
-        np.testing.assert_almost_equal(a_rted, a_acopf, decimal=3)

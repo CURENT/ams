@@ -9,12 +9,32 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.9.11 (2024-11-14)
+--------------------
+
+- Add pyproject.toml for PEP 517 and PEP 518 compliance
+- Add model `Jumper`
+- Fix deprecation warning related to `pandas.fillna` and `newshape` in NumPy
+- Minor refactor on solvers information in the module `shared`
+- Change default values of minimum ON/OFF duration time of generators to be 1 and 0.5 hours
+- Add parameter `uf` for enforced generator on/off status
+- In servicee `LoadScale`, consider load online status
+- Consider line online status in routine `ED`
+- Add methods `evaluate` and `finalize` in the class `OModel` to handle optimization elements generation and assembling
+- Refactor `OModel.init()` and `Routine.init()`
+- Add ANDES paper as a citation file for now
+- Add more routine tests for generator trip, line trip, and load trip
+- Add a README to overview built-in cases
+- Rename methods `v2` as `e` for classes `Constraint` and `Objective`
+- Add benchmark functions
+- Improve using of `eval()` in module `omodel`
+- Refactor module `interop.andes` as module `interface` for simplicity
+
 v0.9.10 (2024-09-03)
 --------------------
 
 Hotfix of import issue in ``v0.9.9``.
 
-Features developed in ``v0.9.9``:
 - In module `MatProcessor`, add two parameters `permc_spec` and `use_umfpack` in function `build_ptdf`
 - Follow RTD's deprecation of Sphinx context injection at build time
 - In MATPOWER conversion, set devices name as None

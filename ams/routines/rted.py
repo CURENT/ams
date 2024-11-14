@@ -199,20 +199,20 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         pq_idx = self.system.StaticLoad.get_idx()
         pd0 = self.system.StaticLoad.get(src='p0', attr='v', idx=pq_idx).copy()
         qd0 = self.system.StaticLoad.get(src='q0', attr='v', idx=pq_idx).copy()
-        self.system.StaticLoad.set(src='p0', attr='v', idx=pq_idx, value=pd0 * kloss)
-        self.system.StaticLoad.set(src='q0', attr='v', idx=pq_idx, value=qd0 * kloss)
+        self.system.StaticLoad.set(src='p0', idx=pq_idx, attr='v', value=pd0 * kloss)
+        self.system.StaticLoad.set(src='q0', idx=pq_idx, attr='v', value=qd0 * kloss)
         # preserve generator reserve
         ACOPF = self.system.ACOPF
         pmin = pmin0 + self.prd.v
         pmax = pmax0 - self.pru.v
-        self.system.StaticGen.set(src='pmin', attr='v', idx=pr_idx, value=pmin)
-        self.system.StaticGen.set(src='pmax', attr='v', idx=pr_idx, value=pmax)
-        self.system.StaticGen.set(src='p0', attr='v', idx=pr_idx, value=self.pg.v)
+        self.system.StaticGen.set(src='pmin', idx=pr_idx, attr='v', value=pmin)
+        self.system.StaticGen.set(src='pmax', idx=pr_idx, attr='v', value=pmax)
+        self.system.StaticGen.set(src='p0', idx=pr_idx, attr='v', value=self.pg.v)
         # run ACOPF
         ACOPF.run()
         # scale load back
-        self.system.StaticLoad.set(src='p0', attr='v', idx=pq_idx, value=pd0)
-        self.system.StaticLoad.set(src='q0', attr='v', idx=pq_idx, value=qd0)
+        self.system.StaticLoad.set(src='p0', idx=pq_idx, attr='v', value=pd0)
+        self.system.StaticLoad.set(src='q0', idx=pq_idx, attr='v', value=qd0)
         if not ACOPF.exit_code == 0:
             logger.warning('<ACOPF> did not converge, conversion failed.')
             # NOTE: mock results to fit interface with ANDES
@@ -227,14 +227,15 @@ class RTED(DCOPF, RTEDBase, SFRBase):
                      info='Bus voltage', unit='p.u.',
                      model='Bus', src='v',)
         self.vBus.parse()
+        self.vBus.evaluate()
         self.vBus.optz.value = ACOPF.vBus.v
         self.aBus.optz.value = ACOPF.aBus.v
         self.exec_time = exec_time
 
         # reset pmin, pmax, p0
-        self.system.StaticGen.set(src='pmin', attr='v', idx=pr_idx, value=pmin0)
-        self.system.StaticGen.set(src='pmax', attr='v', idx=pr_idx, value=pmax0)
-        self.system.StaticGen.set(src='p0', attr='v', idx=pr_idx, value=p00)
+        self.system.StaticGen.set(src='pmin', idx=pr_idx, attr='v', value=pmin0)
+        self.system.StaticGen.set(src='pmax', idx=pr_idx, attr='v', value=pmax0)
+        self.system.StaticGen.set(src='p0', idx=pr_idx, attr='v', value=p00)
 
         # --- set status ---
         self.system.recent = self

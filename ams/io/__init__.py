@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 # The first file will be parsed by read() function and the addfile will be parsed by read_add()
 # Typically, column based formats, such as IEEE CDF and PSS/E RAW, are faster to parse
 
-# TODO: add support for json I/O
 input_formats = {
     'xlsx': ('xlsx',),
     'json': ('json',),

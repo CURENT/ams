@@ -104,7 +104,7 @@ Model Section
               # --- power balance ---
               pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
               self.pb = Constraint(name='pb', info='power balance',
-                                   e_str=pb, type='eq',)
+                                   e_str=pb, is_eq=True,)
               # --- line flow ---
               self.plf = Var(info='Line flow',
                              unit='p.u.',

@@ -1,6 +1,5 @@
 """
 MATPOWER parser.
-This module is revised from the existing module ``andes.io.matpower``.
 """
 import logging
 import numpy as np
@@ -23,7 +22,7 @@ def testlines(infile):
 
 def read(system, file):
     """
-    Read a MATPOWER data file into mpc, and build andes device elements.
+    Read a MATPOWER data file into mpc, and build AMS device elements.
     """
 
     mpc = m2mpc(file)
@@ -34,16 +33,14 @@ def mpc2system(mpc: dict, system) -> bool:
     """
     Load an mpc dict into an empty AMS system.
 
-    This function is revised from ``andes.io.matpower.mpc2system``.
-
-    Compared to the original one, this function includes the generator cost data.
+    Revised from ``andes.io.matpower.mpc2system``.
 
     Note that `mbase` in mpc is converted to `Sn`, but it is not actually used in
     MATPOWER nor AMS.
 
     Parameters
     ----------
-    system : andes.system.System
+    system : ams.system.System
         Empty system to load the data into.
     mpc : dict
         mpc struct names : numpy arrays
@@ -205,11 +202,7 @@ def mpc2system(mpc: dict, system) -> bool:
     if 'gencost' in mpc:
         gcost_idx = 0
         gen_idx = np.arange(mpc['gen'].shape[0]) + 1
-        mpc_cost = np.zeros((mpc['gen'].shape[0], 7))
-        if mpc['gencost'].shape[1] < 7:
-            mpc_cost[:, :mpc['gencost'].shape[1]] = mpc['gencost']
-        else:
-            mpc_cost = mpc['gencost']
+        mpc_cost = mpc['gencost']
         for data, gen in zip(mpc_cost, gen_idx):
             # NOTE: only type 2 costs are supported for now
             # type  startup shutdown	n	c2  c1  c0
@@ -220,9 +213,16 @@ def mpc2system(mpc: dict, system) -> bool:
             gctype = int(data[0])
             startup = data[1]
             shutdown = data[2]
-            c2 = data[4] * base_mva ** 2
-            c1 = data[5] * base_mva
-            c0 = data[6]
+            if data[3] == 3:
+                c2 = data[4] * base_mva ** 2
+                c1 = data[5] * base_mva
+                c0 = data[6]
+            elif data[3] == 2:
+                c2 = 0
+                c1 = data[4] * base_mva
+                c0 = data[5]
+            else:
+                raise ValueError('Unrecognized gencost model, please use eighter quadratic or linear cost model')
             system.add('GCost', gen=int(gen),
                        u=1, type=gctype,
                        idx=gcost_idx,

@@ -59,7 +59,7 @@ class PFlow(DCPF):
                       model="StaticGen", src="q",)
         # NOTE: omit AC power flow formulation here
 
-    def solve(self, method="newton"):
+    def solve(self, method="newton", **kwargs):
         """
         Solve the AC power flow using PYPOWER.
         """
@@ -73,12 +73,12 @@ class PFlow(DCPF):
         if alg is None:
             msg = f"Invalid method `{method}` for PFlow."
             raise ValueError(msg)
-        ppopt = ppoption(PF_ALG=alg, ENFORCE_Q_LIMS=self.config.qlim)
+        ppopt = ppoption(PF_ALG=alg, ENFORCE_Q_LIMS=self.config.qlim, **kwargs)
 
         res, sstats = runpf(casedata=ppc, ppopt=ppopt)
         return res, sstats
 
-    def run(self, force_init=False, no_code=True, method="newton", **kwargs):
+    def run(self, **kwargs):
         """
         Run AC power flow using PYPOWER.
 
@@ -108,6 +108,4 @@ class PFlow(DCPF):
         exit_code : int
             Exit code of the routine.
         """
-        return super().run(force_init=force_init,
-                           no_code=no_code, method=method,
-                           **kwargs,)
+        return super().run(**kwargs,)

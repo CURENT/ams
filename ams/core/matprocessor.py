@@ -10,11 +10,11 @@ from typing import Optional
 import numpy as np
 
 from andes.thirdparty.npfunc import safe_div
-from andes.shared import pd, tqdm, tqdm_nb
+from andes.shared import tqdm, tqdm_nb
 from andes.utils.misc import elapsed, is_notebook
 
 from ams.opt.omodel import Param
-from ams.shared import sps
+from ams.shared import pd, sps
 
 logger = logging.getLogger(__name__)
 
@@ -186,19 +186,33 @@ class MatProcessor:
                            info='Line outage distribution factor',
                            v=None, sparse=False, owner=self)
 
-    def build(self):
+    def build(self, force=False):
         """
         Build the system matrices.
         It build connectivity matrices first: Cg, Cl, Csh, Cft, and CftT.
         Then build bus matrices: Bf, Bbus, Pfinj, and Pbusinj.
+
+        Parameters
+        ----------
+        force : bool, optional
+            If True, force to rebuild the matrices. Default is False.
+
+        Notes
+        -----
+        Generator online status is NOT considered in its connectivity matrix.
+        The same applies for load, line, and shunt.
 
         Returns
         -------
         initialized : bool
             True if the matrices are built successfully.
         """
-        t_mat, _ = elapsed()
+        if not force and self.initialized:
+            logger.debug("System matrices are already built.")
+            return self.initialized
 
+        t_mat, _ = elapsed()
+        logger.warning("Building system matrices")
         # --- connectivity matrices ---
         _ = self.build_cg()
         _ = self.build_cl()
@@ -212,7 +226,7 @@ class MatProcessor:
         _ = self.build_pbusinj()
         _, s_mat = elapsed(t_mat)
 
-        logger.debug(f"Built system matrices in {s_mat}.")
+        logger.debug(f" -> System matrices built in {s_mat}")
         self.initialized = True
         return self.initialized
 

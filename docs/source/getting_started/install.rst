@@ -172,8 +172,8 @@ Note the dot at the end. Pip will take care of the rest.
 .. note::
 
     To install extra support packages, one can append ``[NAME_OF_EXTRA]`` to
-    ``pip install -e .``. For example, ``pip install -e .[interop]`` will
-    install packages to support interoperability when installing AMS in the
+    ``pip install -e .``. For example, ``pip install -e .[doc]`` will
+    install packages to support documentation when installing AMS in the
     development, editable mode.
 
 Updating AMS
