@@ -17,7 +17,7 @@ from andes.variables import FileMan
 from andes.utils.misc import elapsed
 from andes.utils.tab import Tab
 
-import ams.io
+import ams
 from ams.models.group import GroupBase
 from ams.routines.type import TypeBase
 from ams.models import file_classes
