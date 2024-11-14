@@ -9,7 +9,7 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v0.9.11 (2024-xx-xx)
+v0.9.11 (2024-11-14)
 --------------------
 
 - Add pyproject.toml for PEP 517 and PEP 518 compliance
@@ -28,6 +28,7 @@ v0.9.11 (2024-xx-xx)
 - Rename methods `v2` as `e` for classes `Constraint` and `Objective`
 - Add benchmark functions
 - Improve using of `eval()` in module `omodel`
+- Refactor module `interop.andes` as module `interface` for simplicity
 
 v0.9.10 (2024-09-03)
 --------------------
