@@ -4,7 +4,7 @@ Benchmark functions.
 
 import datetime
 import sys
-import importlib_metadata
+import importlib.metadata as importlib_metadata
 import logging
 
 try:
