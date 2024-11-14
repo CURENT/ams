@@ -9,6 +9,13 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.9.12 (202x-xx-xx)
+--------------------
+
+RC1
+~~~~
+- Reset setup.py to ensure compatibility
+
 v0.9.11 (2024-11-14)
 --------------------
 
