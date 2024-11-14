@@ -6,8 +6,8 @@ This module leverages the existing parser and writer in andes.io.xlsx.
 import logging
 
 from andes.io.xlsx import (read, testlines, confirm_overwrite, _add_book)  # NOQA
-from andes.shared import pd
-from andes.system import System as andes_system
+
+from ams.shared import pd, empty_adsys, ad_models
 
 
 logger = logging.getLogger(__name__)
@@ -61,13 +61,6 @@ def _write_system(system, writer, skip_empty, to_andes=False):
 
     Rewrite function ``andes.io.xlsx._write_system`` to skip non-andes sheets.
     """
-    ad_models = []
-    if to_andes:
-        # Instantiate an ANDES system
-        sa = andes_system(setup=False, default_config=True,
-                          codegen=False, autogen_stale=False,
-                          no_undill=True,)
-        ad_models = list(sa.models.keys())
     for name, instance in system.models.items():
         if skip_empty and instance.n == 0:
             continue
@@ -78,7 +71,7 @@ def _write_system(system, writer, skip_empty, to_andes=False):
             # NOTE: ommit parameters that are not in ANDES
             skip_params = []
             ams_params = list(instance.params.keys())
-            andes_params = list(sa.models[name].params.keys())
+            andes_params = list(empty_adsys.models[name].params.keys())
             skip_params = list(set(ams_params) - set(andes_params))
             df = instance.cache.df_in.drop(skip_params, axis=1, errors='ignore')
         else:

@@ -11,7 +11,7 @@ from collections import OrderedDict
 from andes.io.json import (testlines, read)  # NOQA
 from andes.utils.paths import confirm_overwrite
 
-from andes.system import System as andes_system
+from ams.shared import empty_adsys, ad_models
 
 logger = logging.getLogger(__name__)
 
@@ -62,13 +62,6 @@ def _dump_system(system, skip_empty, orient='records', to_andes=False):
     Dump parameters of each model into a json string and return
     them all in an OrderedDict.
     """
-    ad_models = []
-    if to_andes:
-        # Instantiate an ANDES system
-        sa = andes_system(setup=False, default_config=True,
-                          codegen=False, autogen_stale=False,
-                          no_undill=True,)
-        ad_models = list(sa.models.keys())
     out = OrderedDict()
     for name, instance in system.models.items():
         if skip_empty and instance.n == 0:
@@ -79,7 +72,7 @@ def _dump_system(system, skip_empty, orient='records', to_andes=False):
             # NOTE: ommit parameters that are not in ANDES
             skip_params = []
             ams_params = list(instance.params.keys())
-            andes_params = list(sa.models[name].params.keys())
+            andes_params = list(empty_adsys.models[name].params.keys())
             skip_params = list(set(ams_params) - set(andes_params))
             df = instance.cache.df_in.drop(skip_params, axis=1, errors='ignore')
             out[name] = df.to_dict(orient=orient)

@@ -11,13 +11,20 @@ from collections import OrderedDict
 
 import cvxpy as cp
 
-from andes.shared import pd
 from andes.utils.lazyimport import LazyImport
+
+from andes.system import System as adSystem
+
 
 logger = logging.getLogger(__name__)
 
 sps = LazyImport('import scipy.sparse as sps')
 np = LazyImport('import numpy as np')
+pd = LazyImport('import pandas as pd')
+
+# --- an empty ANDES system ---
+empty_adsys = adSystem()
+ad_models = list(empty_adsys.models.keys())
 
 # --- NumPy constants ---
 # NOTE: In NumPy 2.0, np.Inf and np.NaN are deprecated.
