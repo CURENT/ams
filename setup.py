@@ -1,10 +1,11 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 import versioneer
 
 setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
+    packages=find_packages(where="."),
     package_data={
         'ams': [
             # When adding files here, remember to update MANIFEST.in as well,
