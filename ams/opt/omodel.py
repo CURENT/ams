@@ -32,8 +32,6 @@ def ensure_symbols(func):
     and optimization model (`OModel`), i.e., `Var`, `Param`, `Constraint`, `Objective`,
     and `ExpressionCalc`.
 
-    Note:
-    -----
     Parsing before symbol generation can give wrong results. Ensure that symbols
     are generated before calling the `parse` method.
     """
@@ -48,17 +46,15 @@ def ensure_symbols(func):
 
 def ensure_mats_and_parsed(func):
     """
-    Decorator to ensure that system matrices are built and OModel is parsed
+    Decorator to ensure that system matrices are built and the OModel is parsed
     before evaluation. If not, it runs the necessary methods to initialize them.
 
-    Designed to be used on the `evaluate` method of the optimization elements (`OptzBase`)
-    and optimization model (`OModel`), i.e., `Var`, `Param`, `Constraint`, `Objective`,
+    Designed to be used on the `evaluate` method of optimization elements (`OptzBase`)
+    and the optimization model (`OModel`), i.e., `Var`, `Param`, `Constraint`, `Objective`,
     and `ExpressionCalc`.
 
-    Note:
-    -----
-    Evaluation before matrices building and parsing can run into errors. Ensure that
-    system matrices are built and OModel is parsed before calling the `evaluate` method.
+    Evaluation before building matrices and parsing the OModel can lead to errors. Ensure that
+    system matrices are built and the OModel is parsed before calling the `evaluate` method.
     """
 
     def wrapper(self, *args, **kwargs):
@@ -83,24 +79,23 @@ def ensure_mats_and_parsed(func):
 
 class OptzBase:
     """
-    Base class for optimization elements, e.g., Var and Constraint.
+    Base class for optimization elements.
+    Ensure that symbols are generated before calling the `parse` method. Parsing
+    before symbol generation can lead to incorrect results.
 
     Parameters
     ----------
     name : str, optional
-        Name.
+        Name of the optimization element.
     info : str, optional
-        Descriptive information
+        Descriptive information about the optimization element.
+    unit : str, optional
+        Unit of measurement for the optimization element.
 
     Attributes
     ----------
     rtn : ams.routines.Routine
         The owner routine instance.
-
-    Note:
-    -----
-    Ensure that symbols are generated before calling the `parse` method. Parsing
-    before symbol generation can give wrong results.
     """
 
     def __init__(self,
