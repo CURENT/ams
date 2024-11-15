@@ -203,12 +203,12 @@ class DCOPF(RoutineBase):
         self.alfub = Constraint(info='line angle difference upper bound',
                                 name='alfub', is_eq=False,
                                 e_str='CftT@aBus - amax',)
-        self.plf = ExpressionCalc(info='plf calculation',
+        self.plf = ExpressionCalc(info='Line flow',
                                   name='plf', unit='p.u.',
                                   e_str='Bf@aBus + Pfinj',
                                   model='Line', src=None,)
         # NOTE: in CVXPY, dual_variables returns a list
-        self.pi = ExpressionCalc(info='Locational marginal price (LMP), dual of Constraint pb',
+        self.pi = ExpressionCalc(info='LMP, dual of <pb>',
                                  name='pi', unit='$/p.u.',
                                  model='Bus', src=None,
                                  e_str='pb.dual_variables[0]')
