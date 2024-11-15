@@ -12,6 +12,9 @@ Pre-v1.0.0
 v0.9.12 (202x-xx-xx)
 --------------------
 
+- Refactor OModel.initialized as a property method
+- Add a demo to show using `Constraint.e` for debugging
+
 RC1
 ~~~~
 - Reset setup.py to ensure compatibility
