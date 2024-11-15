@@ -91,9 +91,9 @@ class DCOPF(RoutineBase):
                            unit='p.u.', model='StaticGen',
                            no_parse=False,)
         self.pg0 = RParam(info='Gen initial active power',
-                          name='p0', tex_name=r'p_{g, 0}',
-                          unit='p.u.',
-                          model='StaticGen', src='pg0')
+                          name='pg0', tex_name=r'p_{g, 0}',
+                          unit='p.u.', model='StaticGen',
+                          src='p0', no_parse=False,)
         # --- bus ---
         self.buss = RParam(info='Bus slack',
                            name='buss', tex_name=r'B_{us,s}',
