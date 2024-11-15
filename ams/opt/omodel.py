@@ -642,8 +642,6 @@ class Var(OptzBase):
         self.unit = unit
 
         self.tex_name = tex_name if tex_name else name
-        # instance of the owner Model
-        self.owner = None
         # variable internal index inside a model (assigned in run time)
         self.id = None
         OptzBase.__init__(self, name=name, info=info, unit=unit)
