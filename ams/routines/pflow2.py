@@ -19,6 +19,8 @@ class PFlow2(RoutineBase):
     """
     Power flow routine.
 
+    [In progress]
+
     References
     ----------
     1. R. D. Zimmerman, C. E. Murillo-Sanchez, and R. J. Thomas, “MATPOWER: Steady-State Operations, Planning, and
@@ -206,6 +208,9 @@ class PFlow2(RoutineBase):
                               name='sbus', is_eq=True,
                               e_str='csb@aBus',)
         # --- power balance ---
+        # TODO: pout = VYV
+        # TODO: pin = $injected power$
+        # TODO: pb = pout - pin
         pb = 'Bbus@aBus + Pbusinj + Cl@(mul(upq, pd)) + Csh@gsh - Cg@pg'
         self.pb = Constraint(name='pb', info='power balance',
                              e_str=pb, is_eq=True,)
