@@ -1,5 +1,5 @@
 """
-DCOPF routines.
+Power flow routines independent from PYPOWER.
 """
 import logging
 
@@ -9,17 +9,15 @@ from ams.core.service import NumOp, NumOpDual, VarSelect
 
 from ams.routines.routine import RoutineBase
 
-from ams.opt.omodel import Var, Constraint, Objective, ExpressionCalc
+from ams.opt.omodel import Var, Constraint, Objective
 
 
 logger = logging.getLogger(__name__)
 
 
-class DCOPF(RoutineBase):
+class PFlow2(RoutineBase):
     """
-    DC optimal power flow (DCOPF).
-
-    The nodal price is calculated as ``pi`` in ``pic``.
+    Power flow routine.
 
     References
     ----------
@@ -30,37 +28,23 @@ class DCOPF(RoutineBase):
 
     def __init__(self, system, config):
         RoutineBase.__init__(self, system, config)
-        self.info = 'DC Optimal Power Flow'
-        self.type = 'DCED'
+        self.info = 'AC Power Flow'
+        self.type = 'ACED'
 
         # --- Mapping Section ---
-        # --- from map ---
-        self.map1.update({
-            'ug': ('StaticGen', 'u'),
-        })
-        # --- to map ---
-        self.map2.update({
-            'vBus': ('Bus', 'v0'),
-            'ug': ('StaticGen', 'u'),
-            'pg': ('StaticGen', 'p0'),
-        })
+        # TODO: skip for now
+        # # --- from map ---
+        # self.map1.update({
+        #     'ug': ('StaticGen', 'u'),
+        # })
+        # # --- to map ---
+        # self.map2.update({
+        #     'vBus': ('Bus', 'v0'),
+        #     'ug': ('StaticGen', 'u'),
+        #     'pg': ('StaticGen', 'p0'),
+        # })
 
         # --- Data Section ---
-        # --- generator cost ---
-        self.c2 = RParam(info='Gen cost coefficient 2',
-                         name='c2', tex_name=r'c_{2}',
-                         unit=r'$/(p.u.^2)', model='GCost',
-                         indexer='gen', imodel='StaticGen',
-                         nonneg=True, no_parse=True)
-        self.c1 = RParam(info='Gen cost coefficient 1',
-                         name='c1', tex_name=r'c_{1}',
-                         unit=r'$/(p.u.)', model='GCost',
-                         indexer='gen', imodel='StaticGen',)
-        self.c0 = RParam(info='Gen cost coefficient 0',
-                         name='c0', tex_name=r'c_{0}',
-                         unit=r'$', model='GCost',
-                         indexer='gen', imodel='StaticGen',
-                         no_parse=True)
         # --- generator ---
         self.ug = RParam(info='Gen connection status',
                          name='ug', tex_name=r'u_{g}',
@@ -92,8 +76,20 @@ class DCOPF(RoutineBase):
                            no_parse=False,)
         self.pg0 = RParam(info='Gen initial active power',
                           name='pg0', tex_name=r'p_{g, 0}',
-                          unit='p.u.', model='StaticGen',
-                          src='p0', no_parse=False,)
+                          unit='p.u.',
+                          model='StaticGen', src='p0')
+        self.qmax = RParam(info='Gen maximum reactive power',
+                           name='qmax', tex_name=r'q_{g, max}',
+                           unit='p.u.', model='StaticGen',
+                           no_parse=False,)
+        self.qmin = RParam(info='Gen minimum reactive power',
+                           name='qmin', tex_name=r'q_{g, min}',
+                           unit='p.u.', model='StaticGen',
+                           no_parse=False,)
+        self.qg0 = RParam(info='Gen initial reactive power',
+                          name='qg0', tex_name=r'q_{g, 0}',
+                          unit='p.u.',
+                          model='StaticGen', src='q0')
         # --- bus ---
         self.buss = RParam(info='Bus slack',
                            name='buss', tex_name=r'B_{us,s}',
@@ -107,6 +103,10 @@ class DCOPF(RoutineBase):
         self.pd = RParam(info='active demand',
                          name='pd', tex_name=r'p_{d}',
                          model='StaticLoad', src='p0',
+                         unit='p.u.',)
+        self.qd = RParam(info='reactive demand',
+                         name='qd', tex_name=r'q_{d}',
+                         model='StaticLoad', src='q0',
                          unit='p.u.',)
         # --- line ---
         self.ul = RParam(info='Line connection status',
@@ -178,11 +178,26 @@ class DCOPF(RoutineBase):
         pgub = 'pg - mul(nctrle, pg0) - mul(ctrle, pmax)'
         self.pgub = Constraint(name='pgub', info='pg max',
                                e_str=pgub, is_eq=False,)
+        self.qg = Var(info='Gen reactive power',
+                      unit='p.u.',
+                      name='qg', tex_name=r'q_g',
+                      model='StaticGen', src='q',)
+        qglb = '-qg + mul(nctrle, qg0) + mul(ctrle, qmin)'
+        self.qglb = Constraint(name='qglb', info='qg min',
+                               e_str=qglb, is_eq=False,)
+        qgub = 'qg - mul(nctrle, qg0) - mul(ctrle, qmax)'
+        self.qgub = Constraint(name='qgub', info='qg max',
+                               e_str=qgub, is_eq=False,)
+
         # --- bus ---
         self.aBus = Var(info='Bus voltage angle',
                         unit='rad',
                         name='aBus', tex_name=r'\theta_{bus}',
                         model='Bus', src='a',)
+        self.vBus = Var(info='Bus voltage magnitude',
+                        unit='p.u.',
+                        name='vBus', tex_name=r'v_{bus}',
+                        model='Bus', src='v',)
         self.csb = VarSelect(info='select slack bus',
                              name='csb', tex_name=r'c_{sb}',
                              u=self.aBus, indexer='buss',
@@ -190,10 +205,6 @@ class DCOPF(RoutineBase):
         self.sba = Constraint(info='align slack bus angle',
                               name='sbus', is_eq=True,
                               e_str='csb@aBus',)
-        self.pi = Var(info='nodal price',
-                      name='pi', tex_name=r'\pi',
-                      unit='$/p.u.',
-                      model='Bus',)
         # --- power balance ---
         pb = 'Bbus@aBus + Pbusinj + Cl@(mul(upq, pd)) + Csh@gsh - Cg@pg'
         self.pb = Constraint(name='pb', info='power balance',
@@ -215,21 +226,11 @@ class DCOPF(RoutineBase):
         self.alfub = Constraint(info='line angle difference upper bound',
                                 name='alfub', is_eq=False,
                                 e_str='CftT@aBus - amax',)
-        self.plfc = ExpressionCalc(info='plf calculation',
-                                   name='plfc', var='plf',
-                                   e_str='Bf@aBus + Pfinj')
-        # NOTE: in CVXPY, dual_variables returns a list
-        self.pic = ExpressionCalc(info='dual of Constraint pb',
-                                  name='pic', var='pi',
-                                  e_str='pb.dual_variables[0]')
 
         # --- objective ---
-        obj = 'sum(mul(c2, pg**2))'
-        obj += '+ sum(mul(c1, pg))'
-        obj += '+ sum(mul(ug, c0))'
         self.obj = Objective(name='obj',
-                             info='total cost', unit='$',
-                             sense='min', e_str=obj,)
+                             info='No objective', unit='$',
+                             sense='min', e_str='0',)
 
     def solve(self, **kwargs):
         """

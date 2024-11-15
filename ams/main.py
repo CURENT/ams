@@ -570,14 +570,14 @@ def versioninfo():
     import numpy as np
     import cvxpy
     import andes
-    from ams.shared import INSTALLED_SOLVERS
+    from ams.shared import installed_solvers
 
     versions = {'Python': platform.python_version(),
                 'ams': get_versions()['version'],
                 'andes': andes.__version__,
                 'numpy': np.__version__,
                 'cvxpy': cvxpy.__version__,
-                'solvers': ', '.join(INSTALLED_SOLVERS),
+                'solvers': ', '.join(installed_solvers),
                 }
     maxwidth = max([len(k) for k in versions.keys()])
 

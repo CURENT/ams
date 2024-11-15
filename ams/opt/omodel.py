@@ -359,7 +359,10 @@ class Param(OptzBase):
                 self.v = sps.csr_matrix(self.v)
 
             # Create the cvxpy.Parameter object
-            self.optz = cp.Parameter(shape=self.v.shape, **config)
+            if isinstance(self.v, np.ndarray):
+                self.optz = cp.Parameter(shape=self.v.shape, **config)
+            else:
+                self.optz = cp.Parameter(**config)
             self.optz.value = self.v
         except ValueError:
             msg = f"Parameter <{self.name}> has non-numeric value, "
@@ -957,10 +960,16 @@ class OModel:
         self.vars = OrderedDict()
         self.constrs = OrderedDict()
         self.obj = None
-        self.initialized = False
         self.parsed = False
         self.evaluated = False
         self.finalized = False
+
+    @property
+    def initialized(self):
+        """
+        Return the initialization status.
+        """
+        return self.parsed and self.evaluated and self.finalized
 
     @ensure_symbols
     def parse(self, force=False):
@@ -1176,7 +1185,6 @@ class OModel:
         self.finalize(force=force)
 
         _, s = elapsed(t)
-        self.initialized = True
         logger.debug(f"OModel for <{self.rtn.class_name}> initialized in {s}")
 
         return self.initialized
