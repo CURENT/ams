@@ -338,14 +338,14 @@ class RDocumenter:
         # expressions based on output format
         expressions = []
         if export == 'rest':
-            for p in self.parent.exprs.values():
+            for p in self.parent.exprcs.values():
                 expr = _tex_pre(self, p, self.parent.syms.tex_map)
                 logger.debug(f'{p.name} math: {expr}')
                 expressions.append(expr)
 
-            title = 'Expressions\n----------------------------------'
+            title = 'ExpressionCalcs\n----------------------------------'
         else:
-            title = 'Expressions'
+            title = 'ExpressionCalcs'
         expressions = math_wrap(expressions, export=export)
 
         plain_dict = OrderedDict([('Name', names),
