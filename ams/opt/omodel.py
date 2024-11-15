@@ -15,12 +15,9 @@ from andes.utils.misc import elapsed
 import cvxpy as cp
 
 from ams.utils import pretty_long_message
-from ams.shared import sps
+from ams.shared import sps, _prefix, _max_length
 
 logger = logging.getLogger(__name__)
-
-_prefix = r" - --------------> | "
-_max_length = 80
 
 
 def ensure_symbols(func):

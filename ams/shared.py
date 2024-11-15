@@ -31,6 +31,10 @@ ad_models = list(empty_adsys.models.keys())
 inf = np.inf
 nan = np.nan
 
+# --- misc constants ---
+_prefix = r" - --------------> | "  # NOQA
+_max_length = 80                    # NOQA
+
 # NOTE: copyright
 year_end = datetime.now().year
 copyright_msg = f'Copyright (C) 2023-{year_end} Jinning Wang'
