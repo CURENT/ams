@@ -18,6 +18,7 @@ TODO: class `Expression`: registry in `OModel` and `Routine`, fit symbol process
 - Add a demo to show using `Constraint.e` for debugging
 - Fix `ams.opt.omodel.Param.evaluate()` when its value is a number
 - Improve `ams.opt.omodel.ExpressionCalc()` for efficiency
+- Refactor module `ams.opt`
 
 RC1
 ~~~~
