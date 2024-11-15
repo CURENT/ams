@@ -2,9 +2,17 @@ import unittest
 import os
 
 import ams.main
+import ams.cli
 
 
 class TestCLI(unittest.TestCase):
+
+    def test_cli_parser(self):
+        ams.cli.create_parser()
+
+    def test_cli_preamble(self):
+        ams.cli.preamble()
+
     def test_main_doc(self):
         ams.main.doc('Bus')
         ams.main.doc(list_supported=True)
