@@ -190,6 +190,16 @@ class ExpressionCalc(OptzBase):
         self.model = model
         self.owner = None
         self.src = src
+        self.is_group = False
+
+    def get_idx(self):
+        if self.is_group:
+            return self.owner.get_idx()
+        elif self.owner is None:
+            logger.info(f'ExpressionCalc <{self.name}> has no owner.')
+            return None
+        else:
+            return self.owner.idx.v
 
     @ensure_symbols
     def parse(self):
