@@ -1,4 +1,5 @@
 import unittest
+import os
 
 import ams.main
 
@@ -14,3 +15,12 @@ class TestCLI(unittest.TestCase):
     def test_misc(self):
         ams.main.misc(show_license=True)
         ams.main.misc(save_config=None, overwrite=True)
+
+    def test_profile_run(self):
+        _ = ams.main.run(ams.get_case('matpower/case5.m'),
+                         no_output=False,
+                         profile=True,)
+        self.assertTrue(os.path.exists('case5_prof.prof'))
+        self.assertTrue(os.path.exists('case5_prof.txt'))
+        os.remove('case5_prof.prof')
+        os.remove('case5_prof.txt')
