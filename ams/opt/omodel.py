@@ -359,7 +359,10 @@ class Param(OptzBase):
                 self.v = sps.csr_matrix(self.v)
 
             # Create the cvxpy.Parameter object
-            self.optz = cp.Parameter(shape=self.v.shape, **config)
+            if isinstance(self.v, np.ndarray):
+                self.optz = cp.Parameter(shape=self.v.shape, **config)
+            else:
+                self.optz = cp.Parameter(**config)
             self.optz.value = self.v
         except ValueError:
             msg = f"Parameter <{self.name}> has non-numeric value, "
