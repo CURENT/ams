@@ -163,6 +163,10 @@ class SymProcessor:
             if not service.no_parse:
                 self.val_map[rf"\b{sname}\b"] = f"rtn.{sname}.v"
 
+        # Expressions
+        for ename, expr in self.parent.exprs.items():
+            self.sub_map[rf"\b{ename}\b"] = f"self.rtn.{ename}.optz"
+
         # Constraints
         # NOTE: constraints are included in sub_map for ExpressionCalc
         # thus, they don't have the suffix `.v`

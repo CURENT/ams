@@ -285,13 +285,13 @@ class DCOPF(RoutineBase):
         """
         Post-solve calculations.
         """
-        for expr in self.exprs.values():
+        for exprc in self.exprcs.values():
             try:
-                var = getattr(self, expr.var)
-                var.optz.value = expr.v
-                logger.debug(f'Post solve: {var} = {expr.e_str}')
+                var = getattr(self, exprc.var)
+                var.optz.value = exprc.v
+                logger.debug(f'Post solve: {var} = {exprc.e_str}')
             except AttributeError:
-                raise AttributeError(f'No such variable {expr.var}')
+                raise AttributeError(f'No such variable {exprc.var}')
         return True
 
     def unpack(self, **kwargs):

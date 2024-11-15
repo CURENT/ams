@@ -223,7 +223,7 @@ class ExpressionCalc(OptzBase):
             local_vars = {'self': self, 'np': np, 'cp': cp}
             self.optz = self._evaluate_expression(self.code, local_vars=local_vars)
         except Exception as e:
-            raise Exception(f"Error in evaluating expr <{self.name}>.\n{e}")
+            raise Exception(f"Error in evaluating ExpressionCalc <{self.name}>.\n{e}")
         return True
 
     def _evaluate_expression(self, code, local_vars=None):
@@ -251,6 +251,140 @@ class ExpressionCalc(OptzBase):
             return None
         else:
             return self.optz.value
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}: {self.name}'
+
+
+class Expression(OptzBase):
+    """
+    Base class for expressions used in a routine.
+    """
+
+    def __init__(self,
+                 name: Optional[str] = None,
+                 info: Optional[str] = None,
+                 e_str: Optional[str] = None,
+                 ):
+        OptzBase.__init__(self, name=name, info=info)
+        self.e_str = e_str
+        self.optz = None
+        self.code = None
+
+    @ensure_symbols
+    def parse(self):
+        """
+        Parse the expression.
+
+        Returns
+        -------
+        bool
+            Returns True if the parsing is successful, False otherwise.
+        """
+        sub_map = self.om.rtn.syms.sub_map
+        code_expr = self.e_str
+        for pattern, replacement in sub_map.items():
+            try:
+                code_expr = re.sub(pattern, replacement, code_expr)
+            except Exception as e:
+                raise Exception(f"Error in parsing expr <{self.name}>.\n{e}")
+        self.code = code_expr
+        msg = f" - Expression <{self.name}>: {self.e_str}"
+        logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
+        return True
+
+    @ensure_mats_and_parsed
+    def evaluate(self):
+        """
+        Evaluate the expression.
+
+        Returns
+        -------
+        bool
+            Returns True if the evaluation is successful, False otherwise.
+        """
+        msg = f" - Expression <{self.name}>: {self.code}"
+        logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
+        try:
+            local_vars = {'self': self, 'np': np, 'cp': cp}
+            self.optz = self._evaluate_expression(self.code, local_vars=local_vars)
+        except Exception as e:
+            raise Exception(f"Error in evaluating Expression <{self.name}>.\n{e}")
+        return True
+
+    def _evaluate_expression(self, code, local_vars=None):
+        """
+        Helper method to evaluate the expression code.
+
+        Parameters
+        ----------
+        code : str
+            The code string representing the expression.
+
+        Returns
+        -------
+        cp.Expression
+            The evaluated cvxpy expression.
+        """
+        return eval(code, {}, local_vars)
+
+    @property
+    def v(self):
+        """
+        Return the CVXPY expression value.
+        """
+        if self.optz is None:
+            return None
+        else:
+            return self.optz.value
+
+    @property
+    def shape(self):
+        """
+        Return the shape.
+        """
+        try:
+            return self.om.__dict__[self.name].shape
+        except KeyError:
+            logger.warning('Shape info is not ready before initialization.')
+            return None
+
+    @property
+    def size(self):
+        """
+        Return the size.
+        """
+        if self.rtn.initialized:
+            return self.om.__dict__[self.name].size
+        else:
+            logger.warning(f'Routine <{self.rtn.class_name}> is not initialized yet.')
+            return None
+
+    @property
+    def e(self):
+        """
+        Return the calculated expression value.
+        """
+        if self.code is None:
+            logger.info(f"Expression <{self.name}> is not parsed yet.")
+            return None
+
+        val_map = self.om.rtn.syms.val_map
+        code = self.code
+        for pattern, replacement in val_map.items():
+            try:
+                code = re.sub(pattern, replacement, code)
+            except TypeError as e:
+                raise TypeError(e)
+
+        try:
+            logger.debug(pretty_long_message(f"Value code: {code}",
+                                             _prefix, max_length=_max_length))
+            local_vars = {'self': self, 'np': np, 'cp': cp, 'val_map': val_map}
+            return self._evaluate_expression(code, local_vars)
+        except Exception as e:
+            logger.error(f"Error in calculating expr <{self.name}>.\n{e}")
+            return None
 
     def __repr__(self):
         return f'{self.__class__.__name__}: {self.name}'
@@ -375,7 +509,7 @@ class Param(OptzBase):
             self.no_parse = True
             return True
         except Exception as e:
-            raise Exception(f"Error in evaluating param <{self.name}>.\n{e}")
+            raise Exception(f"Error in evaluating Param <{self.name}>.\n{e}")
         return True
 
     def update(self):
@@ -611,7 +745,7 @@ class Var(OptzBase):
             local_vars = {'self': self, 'config': config, 'cp': cp}
             self.optz = eval(self.code, {}, local_vars)
         except Exception as e:
-            raise Exception(f"Error in evaluating var <{self.name}>.\n{e}")
+            raise Exception(f"Error in evaluating Var <{self.name}>.\n{e}")
         return True
 
     def __repr__(self):
@@ -712,7 +846,7 @@ class Constraint(OptzBase):
             local_vars = {'self': self, 'cp': cp, 'sub_map': self.om.rtn.syms.val_map}
             self.optz = self._evaluate_expression(self.code, local_vars=local_vars)
         except Exception as e:
-            raise Exception(f"Error in evaluating constr <{self.name}>.\n{e}")
+            raise Exception(f"Error in evaluating Constraint <{self.name}>.\n{e}")
 
     def __repr__(self):
         enabled = 'OFF' if self.is_disabled else 'ON'
@@ -905,7 +1039,7 @@ class Objective(OptzBase):
             local_vars = {'self': self, 'cp': cp}
             self.optz = self._evaluate_expression(self.code, local_vars=local_vars)
         except Exception as e:
-            raise Exception(f"Error in evaluating obj <{self.name}>.\n{e}")
+            raise Exception(f"Error in evaluating Objective <{self.name}>.\n{e}")
         return True
 
     def _evaluate_expression(self, code, local_vars=None):
@@ -941,12 +1075,14 @@ class OModel:
     ----------
     prob: cvxpy.Problem
         Optimization model.
+    exprs: OrderedDict
+        Expressions registry.
     params: OrderedDict
-        Parameters.
+        Parameters registry.
     vars: OrderedDict
-        Decision variables.
+        Decision variables registry.
     constrs: OrderedDict
-        Constraints.
+        Constraints registry.
     obj: Objective
         Objective function.
     initialized: bool
@@ -960,6 +1096,7 @@ class OModel:
     def __init__(self, routine):
         self.rtn = routine
         self.prob = None
+        self.exprs = OrderedDict()
         self.params = OrderedDict()
         self.vars = OrderedDict()
         self.constrs = OrderedDict()
@@ -998,9 +1135,14 @@ class OModel:
         if self.parsed and not force:
             logger.debug("Model is already parsed.")
             return self.parsed
+
         t, _ = elapsed()
-        # --- add RParams and Services as parameters ---
         logger.warning(f'Parsing OModel for <{self.rtn.class_name}>')
+        # --- add expressions ---
+        for key, val in self.rtn.exprs.items():
+            val.parse()
+
+        # --- add RParams and Services as parameters ---
         for key, val in self.rtn.params.items():
             if not val.no_parse:
                 val.parse()
@@ -1011,6 +1153,10 @@ class OModel:
 
         # --- add constraints ---
         for key, val in self.rtn.constrs.items():
+            val.parse()
+
+        # --- add ExpressionCalcs ---
+        for key, val in self.rtn.exprcs.items():
             val.parse()
 
         # --- parse objective functions ---
@@ -1088,6 +1234,16 @@ class OModel:
             try:
                 val.evaluate()
             except Exception as e:
+                raise Exception(f"Failed to evaluate Expression <{key}>.\n{e}")
+
+    def _evaluate_exprcs(self):
+        """
+        Evaluate the expressions.
+        """
+        for key, val in self.rtn.exprcs.items():
+            try:
+                val.evaluate()
+            except Exception as e:
                 raise Exception(f"Failed to evaluate ExpressionCalc <{key}>.\n{e}")
 
     @ensure_mats_and_parsed
@@ -1120,6 +1276,7 @@ class OModel:
         self._evaluate_constrs()
         self._evaluate_obj()
         self._evaluate_exprs()
+        self._evaluate_exprcs()
 
         self.evaluated = True
         _, s = elapsed(t)
@@ -1213,6 +1370,8 @@ class OModel:
             self.constrs[key] = value
         elif isinstance(value, cp.Parameter):
             self.params[key] = value
+        elif isinstance(value, cp.Expression):
+            self.exprs[key] = value
 
     def __setattr__(self, name: str, value: Any):
         super().__setattr__(name, value)
