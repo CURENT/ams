@@ -224,7 +224,7 @@ class RDocumenter:
         self.parent.syms.generate_symbols()
         out += self._obj_doc(max_width=max_width, export=export)
         out += self._constr_doc(max_width=max_width, export=export)
-        out += self._expr_doc(max_width=max_width, export=export)
+        out += self._exprc_doc(max_width=max_width, export=export)
         out += self._var_doc(max_width=max_width, export=export)
         out += self._service_doc(max_width=max_width, export=export)
         out += self._param_doc(max_width=max_width, export=export)
@@ -315,18 +315,25 @@ class RDocumenter:
                               plain_dict=plain_dict,
                               rest_dict=rest_dict)
 
-    def _expr_doc(self, max_width=78, export='plain'):
-        # expression documentation
-        if len(self.parent.exprs) == 0:
+    def _exprc_doc(self, max_width=78, export='plain'):
+        # ExpressionCalc documentation
+        if len(self.parent.exprcs) == 0:
             return ''
 
         # prepare temporary lists
-        names, var_names, info = list(), list(), list()
+        names, info = list(), list()
+        units, sources, units_rest = list(), list(), list()
 
-        for p in self.parent.exprs.values():
+        for p in self.parent.exprcs.values():
             names.append(p.name)
-            var_names.append(p.var)
             info.append(p.info if p.info else '')
+            units.append(p.unit if p.unit else '')
+            units_rest.append(f'*{p.unit}*' if p.unit else '')
+
+            slist = []
+            if p.owner is not None and p.src is not None:
+                slist.append(f'{p.owner.class_name}.{p.src}')
+            sources.append(','.join(slist))
 
         # expressions based on output format
         expressions = []
@@ -342,13 +349,14 @@ class RDocumenter:
         expressions = math_wrap(expressions, export=export)
 
         plain_dict = OrderedDict([('Name', names),
-                                  ('Variable', var_names),
                                   ('Description', info),
+                                  ('Unit', units),
                                   ])
         rest_dict = OrderedDict([('Name', names),
-                                 ('Variable', var_names),
                                  ('Description', info),
                                  ('Expression', expressions),
+                                 ('Unit', units_rest),
+                                 ('Source', sources),
                                  ])
 
         # convert to rows and export as table
