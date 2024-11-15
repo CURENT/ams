@@ -957,10 +957,16 @@ class OModel:
         self.vars = OrderedDict()
         self.constrs = OrderedDict()
         self.obj = None
-        self.initialized = False
         self.parsed = False
         self.evaluated = False
         self.finalized = False
+
+    @property
+    def initialized(self):
+        """
+        Return the initialization status.
+        """
+        return self.parsed and self.evaluated and self.finalized
 
     @ensure_symbols
     def parse(self, force=False):
@@ -1176,7 +1182,6 @@ class OModel:
         self.finalize(force=force)
 
         _, s = elapsed(t)
-        self.initialized = True
         logger.debug(f"OModel for <{self.rtn.class_name}> initialized in {s}")
 
         return self.initialized

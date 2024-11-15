@@ -316,7 +316,7 @@ class RoutineBase:
         force_constr = kwargs.pop('force_constr', False)
         force_om = kwargs.pop('force_om', False)
 
-        skip_all = not (force and force_mats) and self.initialized
+        skip_all = not (force and force_mats) and self.initialized and self.om.initialized
 
         if skip_all:
             logger.debug(f"{self.class_name} has already been initialized.")
@@ -563,7 +563,7 @@ class RoutineBase:
         elif isinstance(value, RBaseService):
             self.services[key] = value
 
-    def update(self, params=None, build_mats=True,):
+    def update(self, params=None, build_mats=False):
         """
         Update the values of Parameters in the optimization model.
 
@@ -671,7 +671,7 @@ class RoutineBase:
                     logger.warning(f"Constraint <{n}> has already been enabled.")
                     continue
                 self.constrs[n].is_disabled = False
-                self.om.initialized = False
+                self.om.finalized = False
                 constr_act.append(n)
             if len(constr_act) > 0:
                 msg = ", ".join(constr_act)
@@ -683,7 +683,7 @@ class RoutineBase:
                 logger.warning(f"Constraint <{name}> has already been enabled.")
             else:
                 self.constrs[name].is_disabled = False
-                self.om.initialized = False
+                self.om.finalized = False
                 logger.warning(f"Turn on constraint <{name}>.")
             return True
 
@@ -705,7 +705,7 @@ class RoutineBase:
                     logger.warning(f"Constraint <{n}> has already been disabled.")
                 else:
                     self.constrs[n].is_disabled = True
-                    self.om.initialized = False
+                    self.om.finalized = False
                     constr_act.append(n)
             if len(constr_act) > 0:
                 msg = ", ".join(constr_act)
@@ -717,7 +717,7 @@ class RoutineBase:
                 logger.warning(f"Constraint <{name}> has already been disabled.")
             else:
                 self.constrs[name].is_disabled = True
-                self.om.initialized = False
+                self.om.finalized = False
                 logger.warning(f"Turn off constraint <{name}>.")
             return True
 
@@ -734,7 +734,9 @@ class RoutineBase:
         # --- reset symprocessor status ---
         self._syms = False
         # --- reset optimization model status ---
-        self.om.initialized = False
+        self.om.parsed = False
+        self.om.evaluated = False
+        self.om.finalized = False
         # --- reset OModel parser status ---
         self.om.parsed = False
 
