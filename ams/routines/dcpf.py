@@ -7,7 +7,7 @@ from andes.shared import deg2rad
 from andes.utils.misc import elapsed
 
 from ams.routines.routine import RoutineBase
-from ams.opt.omodel import Var
+from ams.opt import Var
 from ams.pypower import runpf
 from ams.pypower.core import ppoption
 

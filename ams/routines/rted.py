@@ -9,7 +9,7 @@ from ams.core.param import RParam
 from ams.core.service import ZonalSum, VarSelect, NumOp, NumOpDual
 from ams.routines.dcopf import DCOPF
 
-from ams.opt.omodel import Var, Constraint
+from ams.opt import Var, Constraint
 
 logger = logging.getLogger(__name__)
 

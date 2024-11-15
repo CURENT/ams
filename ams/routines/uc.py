@@ -12,7 +12,7 @@ from ams.routines.dcopf import DCOPF
 from ams.routines.rted import RTEDBase
 from ams.routines.ed import SRBase, MPBase, ESD1MPBase, DGBase
 
-from ams.opt.omodel import Var, Constraint
+from ams.opt import Var, Constraint
 
 logger = logging.getLogger(__name__)
 

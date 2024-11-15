@@ -10,7 +10,7 @@ import scipy.sparse as spr
 
 from andes.core.service import BaseService
 
-from ams.opt.omodel import Param
+from ams.opt import Param
 
 
 logger = logging.getLogger(__name__)

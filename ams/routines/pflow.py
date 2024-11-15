@@ -11,7 +11,7 @@ from ams.pypower.core import ppoption
 from ams.core.param import RParam
 
 from ams.routines.dcpf import DCPF
-from ams.opt.omodel import Var
+from ams.opt import Var
 
 logger = logging.getLogger(__name__)
 

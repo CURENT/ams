@@ -9,7 +9,7 @@ from ams.core.service import NumOp, NumOpDual, VarSelect
 
 from ams.routines.routine import RoutineBase
 
-from ams.opt.omodel import Var, Constraint, Objective, ExpressionCalc
+from ams.opt import Var, Constraint, Objective, ExpressionCalc
 
 
 logger = logging.getLogger(__name__)

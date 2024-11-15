@@ -16,7 +16,7 @@ from ams.core.param import RParam
 from ams.core.symprocessor import SymProcessor
 from ams.core.documenter import RDocumenter
 from ams.core.service import RBaseService, ValueService
-from ams.opt.omodel import OModel, Param, Var, Constraint, Objective, ExpressionCalc, Expression
+from ams.opt import OModel, Param, Var, Constraint, Objective, ExpressionCalc, Expression
 
 from ams.shared import pd
 

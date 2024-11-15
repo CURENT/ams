@@ -11,7 +11,7 @@ from ams.io.pypower import system2ppc
 from ams.core.param import RParam
 
 from ams.routines.dcpf import DCPF
-from ams.opt.omodel import Var, Constraint, Objective
+from ams.opt import Var, Constraint, Objective
 
 logger = logging.getLogger(__name__)
 

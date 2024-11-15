@@ -10,7 +10,7 @@ from ams.core.service import (NumOpDual, NumHstack,
 
 from ams.routines.rted import RTED, DGBase, ESD1Base
 
-from ams.opt.omodel import Var, Constraint
+from ams.opt import Var, Constraint
 
 logger = logging.getLogger(__name__)
 

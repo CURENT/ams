@@ -9,7 +9,7 @@ from ams.core.service import NumOp, NumOpDual, VarSelect
 
 from ams.routines.routine import RoutineBase
 
-from ams.opt.omodel import Var, Constraint, Objective
+from ams.opt import Var, Constraint, Objective
 
 
 logger = logging.getLogger(__name__)
@@ -196,11 +196,6 @@ class PFlow2(RoutineBase):
                         unit='p.u.',
                         name='vBus', tex_name=r'v_{bus}',
                         model='Bus', src='v',)
-        self.Vc = Var(info='Bus voltage in complex',
-                      unit='p.u.',
-                      name='V', tex_name=r'V',
-                      model='Bus',
-                      cplx=True,)
         self.csb = VarSelect(info='select slack bus',
                              name='csb', tex_name=r'c_{sb}',
                              u=self.aBus, indexer='buss',
@@ -209,6 +204,9 @@ class PFlow2(RoutineBase):
                               name='sbus', is_eq=True,
                               e_str='csb@aBus',)
         # --- power balance ---
+        # self.Vc = ExpressionCalc(info='Expression of Bus voltage in complex',
+        #                          name='Vc',
+        #                          e_str='vBus dot exp(1j dot aBus)',)
         # Vc = vBus * exp(1j * aBus)
         # TODO: pout = VYV; diag(Vc) @ conj(Y) @ Vc
         # TODO: pin = $injected power$
