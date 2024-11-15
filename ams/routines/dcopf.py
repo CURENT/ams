@@ -186,19 +186,11 @@ class DCOPF(RoutineBase):
         self.sba = Constraint(info='align slack bus angle',
                               name='sbus', is_eq=True,
                               e_str='csb@aBus',)
-        self.pi = Var(info='nodal price',
-                      name='pi', tex_name=r'\pi',
-                      unit='$/p.u.',
-                      model='Bus',)
         # --- power balance ---
         pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
         self.pb = Constraint(name='pb', info='power balance',
                              e_str=pb, is_eq=True,)
         # --- line flow ---
-        self.plf = Var(info='Line flow',
-                       unit='p.u.',
-                       name='plf', tex_name=r'p_{lf}',
-                       model='Line',)
         self.plflb = Constraint(info='line flow lower bound',
                                 name='plflb', is_eq=False,
                                 e_str='-Bf@aBus - Pfinj - mul(ul, rate_a)',)
@@ -211,13 +203,15 @@ class DCOPF(RoutineBase):
         self.alfub = Constraint(info='line angle difference upper bound',
                                 name='alfub', is_eq=False,
                                 e_str='CftT@aBus - amax',)
-        self.plfc = ExpressionCalc(info='plf calculation',
-                                   name='plfc', var='plf',
-                                   e_str='Bf@aBus + Pfinj')
+        self.plf = ExpressionCalc(info='plf calculation',
+                                  name='plf', unit='p.u.',
+                                  e_str='Bf@aBus + Pfinj',
+                                  model='Line', src=None,)
         # NOTE: in CVXPY, dual_variables returns a list
-        self.pic = ExpressionCalc(info='dual of Constraint pb',
-                                  name='pic', var='pi',
-                                  e_str='pb.dual_variables[0]')
+        self.pi = ExpressionCalc(info='Locational marginal price (LMP), dual of Constraint pb',
+                                 name='pi', unit='$/p.u.',
+                                 model='Bus', src=None,
+                                 e_str='pb.dual_variables[0]')
 
         # --- objective ---
         obj = 'sum(mul(c2, pg**2))'
@@ -285,20 +279,13 @@ class DCOPF(RoutineBase):
         """
         Post-solve calculations.
         """
-        for exprc in self.exprcs.values():
-            try:
-                var = getattr(self, exprc.var)
-                var.optz.value = exprc.v
-                logger.debug(f'Post solve: {var} = {exprc.e_str}')
-            except AttributeError:
-                raise AttributeError(f'No such variable {exprc.var}')
         return True
 
     def unpack(self, **kwargs):
         """
         Unpack the results from CVXPY model.
         """
-        # --- solver results to routine algeb ---
+        # --- solver Var results to routine algeb ---
         for _, var in self.vars.items():
             # --- copy results from routine algeb into system algeb ---
             if var.model is None:          # if no owner
@@ -317,6 +304,25 @@ class DCOPF(RoutineBase):
                     var.owner.set(src=var.src, idx=idx, attr='v', value=var.v)
                 except (KeyError, TypeError):
                     logger.error(f'Failed to unpack <{var}> to <{var.owner.class_name}>.')
+                    pass
+
+        # --- solver ExpressionCalc results to routine algeb ---
+        for _, exprc in self.exprcs.items():
+            if exprc.model is None:
+                continue
+            if exprc.src is None:
+                continue
+            else:
+                try:
+                    idx = exprc.owner.get_idx()
+                except AttributeError:
+                    idx = exprc.owner.idx.v
+                else:
+                    pass
+                try:
+                    exprc.owner.set(src=exprc.src, idx=idx, attr='v', value=exprc.v)
+                except (KeyError, TypeError):
+                    logger.error(f'Failed to unpack <{exprc}> to <{exprc.owner.class_name}>.')
                     pass
 
         # label the most recent solved routine

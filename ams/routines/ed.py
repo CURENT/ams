@@ -182,7 +182,7 @@ class ED(RTED, MPBase, SRBase):
         self.alflb.e_str = '-CftT@aBus + amin@tlv'
         self.alfub.e_str = 'CftT@aBus - amax@tlv'
 
-        self.plfc.e_str = 'Bf@aBus + Pfinj@tlv'
+        self.plf.e_str = 'Bf@aBus + Pfinj@tlv'
 
         # --- power balance ---
         self.pb.e_str = 'Bbus@aBus + Pbusinj@tlv + Cl@pds + Csh@gsh@tlv - Cg@pg'

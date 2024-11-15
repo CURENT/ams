@@ -175,23 +175,26 @@ class ExpressionCalc(OptzBase):
     """
     Class for calculating expressions.
 
-    Note that `ExpressionCalc` is not a CVXPY expression. It is used to calculate
-    expression values **after** successful optimization.
-    Therefore, it should not be involved in any optimization modeling.
+    Note that `ExpressionCalc` is not a CVXPY expression, and it should not be used
+    in the optimization model.
+    It is used to calculate expression values **after** successful optimization.
     """
 
     def __init__(self,
                  name: Optional[str] = None,
                  info: Optional[str] = None,
                  unit: Optional[str] = None,
-                 var: Optional[str] = None,
                  e_str: Optional[str] = None,
+                 model: Optional[Any] = None,
+                 src: Optional[str] = None,
                  ):
         OptzBase.__init__(self, name=name, info=info, unit=unit)
         self.optz = None
-        self.var = var
         self.e_str = e_str
         self.code = None
+        self.model = model
+        self.owner = None
+        self.src = src
 
     @ensure_symbols
     def parse(self):
@@ -251,6 +254,32 @@ class ExpressionCalc(OptzBase):
             return None
         else:
             return self.optz.value
+
+    @property
+    def e(self):
+        """
+        Return the calculated expression value.
+        """
+        if self.code is None:
+            logger.info(f"ExpressionCalc <{self.name}> is not parsed yet.")
+            return None
+
+        val_map = self.om.rtn.syms.val_map
+        code = self.code
+        for pattern, replacement in val_map.items():
+            try:
+                code = re.sub(pattern, replacement, code)
+            except TypeError as e:
+                raise TypeError(e)
+
+        try:
+            logger.debug(pretty_long_message(f"Value code: {code}",
+                                             _prefix, max_length=_max_length))
+            local_vars = {'self': self, 'np': np, 'cp': cp, 'val_map': val_map}
+            return self._evaluate_expression(code, local_vars)
+        except Exception as e:
+            logger.error(f"Error in calculating expr <{self.name}>.\n{e}")
+            return None
 
     def __repr__(self):
         return f'{self.__class__.__name__}: {self.name}'

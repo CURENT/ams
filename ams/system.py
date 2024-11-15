@@ -229,7 +229,7 @@ class System(andes_System):
 
     def _collect_group_data(self, items):
         """
-        Set the owner for routine attributes: ``RParam``, ``Var``, and ``RBaseService``.
+        Set the owner for routine attributes: ``RParam``, ``Var``, ``ExpressionCalc``, and ``RBaseService``.
         """
         for item_name, item in items.items():
             if item.model in self.groups.keys():
@@ -271,12 +271,15 @@ class System(andes_System):
                     type_instance = self.types[type_name]
                     type_instance.routines[vname] = rtn
                     # self.types[rtn.type].routines[vname] = rtn
-                    # Collect rparams
+                    # Collect RParams
                     rparams = getattr(rtn, 'rparams')
                     self._collect_group_data(rparams)
-                    # Collect routine vars
+                    # Collect routine Vars
                     r_vars = getattr(rtn, 'vars')
                     self._collect_group_data(r_vars)
+                    # Collect ExpressionCalcs
+                    exprc = getattr(rtn, 'exprcs')
+                    self._collect_group_data(exprc)
 
     def import_groups(self):
         """
