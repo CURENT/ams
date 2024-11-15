@@ -14,6 +14,7 @@ v0.9.12 (202x-xx-xx)
 
 - Refactor OModel.initialized as a property method
 - Add a demo to show using `Constraint.e` for debugging
+- Fix `OModel.Param.evaluate()` when its value is a number
 
 RC1
 ~~~~
