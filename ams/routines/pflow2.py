@@ -31,7 +31,7 @@ class PFlow2(RoutineBase):
     def __init__(self, system, config):
         RoutineBase.__init__(self, system, config)
         self.info = 'AC Power Flow'
-        self.type = 'ACED'
+        self.type = 'PF'
 
         # --- Mapping Section ---
         # TODO: skip for now
