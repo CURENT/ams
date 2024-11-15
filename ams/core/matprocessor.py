@@ -140,7 +140,9 @@ class MParam(Param):
 
 class MatProcessor:
     """
-    Class for matrix processing in AMS system.
+    Class for matrices processing in AMS system.
+    The connectivity matrices `Cft`, `Cg`, `Cl`, and `Csh` ***have taken*** the
+    devices connectivity into account.
 
     The MParams' row names and col names are assigned in `System.setup()`.
     """
