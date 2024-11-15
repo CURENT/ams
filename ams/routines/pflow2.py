@@ -98,10 +98,6 @@ class PFlow2(RoutineBase):
                            model='Slack', src='bus',
                            no_parse=True,)
         # --- load ---
-        self.upq = RParam(info='Load connection status',
-                          name='upq', tex_name=r'u_{PQ}',
-                          model='StaticLoad', src='u',
-                          no_parse=True,)
         self.pd = RParam(info='active demand',
                          name='pd', tex_name=r'p_{d}',
                          model='StaticLoad', src='p0',
@@ -200,6 +196,11 @@ class PFlow2(RoutineBase):
                         unit='p.u.',
                         name='vBus', tex_name=r'v_{bus}',
                         model='Bus', src='v',)
+        self.Vc = Var(info='Bus voltage in complex',
+                      unit='p.u.',
+                      name='V', tex_name=r'V',
+                      model='Bus',
+                      cplx=True,)
         self.csb = VarSelect(info='select slack bus',
                              name='csb', tex_name=r'c_{sb}',
                              u=self.aBus, indexer='buss',
@@ -208,10 +209,11 @@ class PFlow2(RoutineBase):
                               name='sbus', is_eq=True,
                               e_str='csb@aBus',)
         # --- power balance ---
-        # TODO: pout = VYV
+        # Vc = vBus * exp(1j * aBus)
+        # TODO: pout = VYV; diag(Vc) @ conj(Y) @ Vc
         # TODO: pin = $injected power$
         # TODO: pb = pout - pin
-        pb = 'Bbus@aBus + Pbusinj + Cl@(mul(upq, pd)) + Csh@gsh - Cg@pg'
+        pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
         self.pb = Constraint(name='pb', info='power balance',
                              e_str=pb, is_eq=True,)
         # --- line flow ---
