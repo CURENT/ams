@@ -187,6 +187,7 @@ class OModel:
         for key, val in self.rtn.exprs.items():
             try:
                 val.evaluate()
+                setattr(self, key, val.optz)
             except Exception as e:
                 raise Exception(f"Failed to evaluate Expression <{key}>.\n{e}")
 
@@ -225,11 +226,12 @@ class OModel:
         logger.warning(f"Evaluating OModel for <{self.rtn.class_name}>")
         t, _ = elapsed()
 
+        # NOTE: should evaluate in sequence
         self._evaluate_params()
         self._evaluate_vars()
+        self._evaluate_exprs()
         self._evaluate_constrs()
         self._evaluate_obj()
-        self._evaluate_exprs()
         self._evaluate_exprcs()
 
         self.evaluated = True

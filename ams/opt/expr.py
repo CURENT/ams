@@ -32,6 +32,8 @@ class Expression(OptzBase):
         Expression name. One should typically assigning the name directly because
         it will be automatically assigned by the model. The value of ``name``
         will be the symbol name to be used in expressions.
+    tex_name : str, optional
+        LaTeX-formatted variable symbol. Defaults to the value of ``name``.
     info : str, optional
         Descriptive information
     unit : str, optional
@@ -52,6 +54,7 @@ class Expression(OptzBase):
 
     def __init__(self,
                  name: Optional[str] = None,
+                 tex_name: Optional[str] = None,
                  info: Optional[str] = None,
                  unit: Optional[str] = None,
                  e_str: Optional[str] = None,
@@ -62,6 +65,7 @@ class Expression(OptzBase):
                  horizon: Optional[str] = None,
                  ):
         OptzBase.__init__(self, name=name, info=info, unit=unit)
+        self.tex_name = tex_name
         self.e_str = e_str
         self.optz = None
         self.code = None
@@ -127,7 +131,7 @@ class Expression(OptzBase):
         msg = f" - Expression <{self.name}>: {self.code}"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         try:
-            local_vars = {'self': self, 'np': np, 'cp': cp}
+            local_vars = {'self': self, 'np': np, 'cp': cp, 'sub_map': self.om.rtn.syms.val_map}
             self.optz = self._evaluate_expression(self.code, local_vars=local_vars)
         except Exception as e:
             raise Exception(f"Error in evaluating Expression <{self.name}>.\n{e}")
