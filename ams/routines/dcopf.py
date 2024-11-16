@@ -168,12 +168,18 @@ class DCOPF(RoutineBase):
                       name='pg', tex_name=r'p_g',
                       model='StaticGen', src='p',
                       v0=self.pg0)
-        pglb = '-pg + mul(nctrle, pg0) + mul(ctrle, pmin)'
+        self.pmaxe = Expression(info='Effective Gen maximum active power',
+                                name='pmaxe', tex_name=r'p_{g, max, e}',
+                                e_str='mul(nctrle, pg0) + mul(ctrle, pmax)',
+                                model='StaticGen', src=None,)
+        self.pmine = Expression(info='Effective Gen minimum active power',
+                                name='pmine', tex_name=r'p_{g, min, e}',
+                                e_str='mul(nctrle, pg0) + mul(ctrle, pmin)',
+                                model='StaticGen', src=None,)
         self.pglb = Constraint(name='pglb', info='pg min',
-                               e_str=pglb, is_eq=False,)
-        pgub = 'pg - mul(nctrle, pg0) - mul(ctrle, pmax)'
+                               e_str='-pg + pmine', is_eq=False,)
         self.pgub = Constraint(name='pgub', info='pg max',
-                               e_str=pgub, is_eq=False,)
+                               e_str='pg - pmaxe', is_eq=False,)
         # --- bus ---
         self.aBus = Var(info='Bus voltage angle',
                         unit='rad',

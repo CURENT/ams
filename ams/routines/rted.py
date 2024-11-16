@@ -161,8 +161,8 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.rbu.e_str = 'gs @ mul(ug, pru) - dud'
         self.rbd.e_str = 'gs @ mul(ug, prd) - ddd'
         # RegUp/Dn reserve source
-        self.rru.e_str = 'mul(ug, (pg + pru)) - mul(ug, pmax)'
-        self.rrd.e_str = 'mul(ug, (-pg + prd)) + mul(ug, pmin)'
+        self.rru.e_str = 'mul(ug, (pg + pru)) - mul(ug, pmaxe)'
+        self.rrd.e_str = 'mul(ug, (-pg + prd)) + mul(ug, pmine)'
         # Gen ramping up/down
         self.rgu.e_str = 'mul(ug, (pg-pg0-R10))'
         self.rgd.e_str = 'mul(ug, (-pg+pg0-R10))'
