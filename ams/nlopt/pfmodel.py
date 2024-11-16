@@ -3,36 +3,21 @@ Module for non-linear power flow solving.
 """
 import logging
 
-from collections import OrderedDict
+from ams.opt import OModel
 
 
 logger = logging.getLogger(__name__)
 
 
-class PFModel:
+class PFModel(OModel):
     """
     Base class for power flow solver.
     """
 
     def __init__(self, routine):
-        self.rtn = routine
-        self.prob = None
-        self.exprs = OrderedDict()
-        self.params = OrderedDict()
-        self.vars = OrderedDict()
-        self.constrs = OrderedDict()
-        self.obj = None
-        self.parsed = False
-        self.evaluated = False
-        self.finalized = False
+        OModel.__init__(self, routine)
 
-    @property
-    def initialized(self):
-        """
-        Return the initialization status.
-        """
-        return self.parsed and self.evaluated and self.finalized
-
+    # TODO: temporary override for development
     def parse(self, force=False):
         self.parsed = True
         return self.parsed
