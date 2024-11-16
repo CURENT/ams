@@ -158,12 +158,12 @@ class ED(RTED, MPBase, SRBase):
         # --- gen ---
         self.ctrle.u2 = self.ugt
         self.nctrle.u2 = self.ugt
-        pglb = '-pg + mul(mul(nctrle, pg0), tlv) '
-        pglb += '+ mul(mul(ctrle, tlv), pmin)'
-        self.pglb.e_str = pglb
-        pgub = 'pg - mul(mul(nctrle, pg0), tlv) '
-        pgub += '- mul(mul(ctrle, tlv), pmax)'
-        self.pgub.e_str = pgub
+        pmaxe = 'mul(mul(nctrle, pg0), tlv) + mul(mul(ctrle, tlv), pmax)'
+        self.pmaxe.e_str = pmaxe
+        pmine = 'mul(mul(nctrle, pg0), tlv) + mul(mul(ctrle, tlv), pmin)'
+        self.pmine.e_str = pmine
+        self.pglb.e_str = '-pg + pmine'
+        self.pgub.e_str = 'pg - pmaxe'
 
         self.pru.horizon = self.timeslot
         self.pru.info = '2D RegUp power'
