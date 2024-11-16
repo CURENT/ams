@@ -9,7 +9,7 @@ from ams.core.service import NumOp, NumOpDual, VarSelect
 
 from ams.routines.routine import RoutineBase
 
-from ams.opt import Var, Constraint, Objective, ExpressionCalc
+from ams.opt import Var, Constraint, Objective, ExpressionCalc, Expression
 
 
 logger = logging.getLogger(__name__)
@@ -191,22 +191,23 @@ class DCOPF(RoutineBase):
         self.pb = Constraint(name='pb', info='power balance',
                              e_str=pb, is_eq=True,)
         # --- line flow ---
+        self.plf = Expression(info='Line flow',
+                              name='plf', tex_name=r'p_{lf}',
+                              unit='p.u.',
+                              e_str='Bf@aBus + Pfinj',
+                              model='Line', src=None,)
         self.plflb = Constraint(info='line flow lower bound',
                                 name='plflb', is_eq=False,
-                                e_str='-Bf@aBus - Pfinj - mul(ul, rate_a)',)
+                                e_str='-plf - mul(ul, rate_a)',)
         self.plfub = Constraint(info='line flow upper bound',
                                 name='plfub', is_eq=False,
-                                e_str='Bf@aBus + Pfinj - mul(ul, rate_a)',)
+                                e_str='plf - mul(ul, rate_a)',)
         self.alflb = Constraint(info='line angle difference lower bound',
                                 name='alflb', is_eq=False,
                                 e_str='-CftT@aBus + amin',)
         self.alfub = Constraint(info='line angle difference upper bound',
                                 name='alfub', is_eq=False,
                                 e_str='CftT@aBus - amax',)
-        self.plf = ExpressionCalc(info='Line flow',
-                                  name='plf', unit='p.u.',
-                                  e_str='Bf@aBus + Pfinj',
-                                  model='Line', src=None,)
         # NOTE: in CVXPY, dual_variables returns a list
         self.pi = ExpressionCalc(info='LMP, dual of <pb>',
                                  name='pi', unit='$/p.u.',
@@ -279,6 +280,11 @@ class DCOPF(RoutineBase):
         """
         Post-solve calculations.
         """
+        # NOTE: unpack Expressions if owner and arc are available
+        for expr in self.exprs.values():
+            if expr.owner and expr.src:
+                expr.owner.set(src=expr.src, attr='v',
+                               idx=expr.get_idx(), value=expr.v)
         return True
 
     def unpack(self, **kwargs):
