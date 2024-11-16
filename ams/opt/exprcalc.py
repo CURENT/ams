@@ -3,7 +3,7 @@ Module for optimization ExpressionCalc.
 """
 import logging
 
-from typing import Any, Optional
+from typing import Optional
 import re
 
 import numpy as np
@@ -32,7 +32,7 @@ class ExpressionCalc(OptzBase):
                  info: Optional[str] = None,
                  unit: Optional[str] = None,
                  e_str: Optional[str] = None,
-                 model: Optional[Any] = None,
+                 model: Optional[str] = None,
                  src: Optional[str] = None,
                  ):
         OptzBase.__init__(self, name=name, info=info, unit=unit)
