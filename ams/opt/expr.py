@@ -171,7 +171,7 @@ class Expression(OptzBase):
         Set the value.
         """
         if self.no_parse:
-            self._v = value
+            self._v[...] = value
         else:
             logger.warning('Cannot set value to an Expression that is not no_parse.')
 

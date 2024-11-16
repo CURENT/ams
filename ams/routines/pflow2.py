@@ -204,36 +204,43 @@ class PFlow2(RoutineBase):
                               name='sbus', is_eq=True,
                               e_str='csb@aBus',)
         # --- power balance ---
-        self.Vc = Expression(info='Bus voltage in complex',
-                             name='Vc', unit='p.u.',
+        # NOTE: CVXPY does not support exp complex number
+        self.Vc = Expression(info='Complex bus voltage',
+                             name='Vc', tex_name=r'V_{bus}',
+                             unit='p.u.', no_parse=True,
                              e_str='vBus dot exp(1j dot aBus)',
-                             no_parse=True,
                              model='Bus', src=None,
                              vtype=complex,)
-        # Vc = vBus * exp(1j * aBus)
-        # TODO: pout = VYV; diag(Vc) @ conj(Y) @ Vc
-        # TODO: pin = $injected power$
-        # TODO: pb = pout - pin
+        self.pbin = Expression(info='Bus power in',
+                               name='pbin', tex_name=r'p_{bus}^{in}',
+                               unit='p.u.', no_parse=True,
+                               e_str='-Cl@pd - Csh@gsh + Cg@pg',
+                               model='Bus', src=None,)
+        self.pbout = Expression(info='Bus power out',
+                                name='pbout', tex_name=r'p_{bus}^{out}',
+                                unit='p.u.', no_parse=True,
+                                e_str='Vc @ Bbus @ conj(Vc)',
+                                model='Bus', src=None)
         pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
         self.pb = Constraint(name='pb', info='power balance',
-                             e_str=pb, is_eq=True,)
-        # --- line flow ---
-        self.plf = Var(info='Line flow',
-                       unit='p.u.',
-                       name='plf', tex_name=r'p_{lf}',
-                       model='Line',)
-        self.plflb = Constraint(info='line flow lower bound',
-                                name='plflb', is_eq=False,
-                                e_str='-Bf@aBus - Pfinj - mul(ul, rate_a)',)
-        self.plfub = Constraint(info='line flow upper bound',
-                                name='plfub', is_eq=False,
-                                e_str='Bf@aBus + Pfinj - mul(ul, rate_a)',)
-        self.alflb = Constraint(info='line angle difference lower bound',
-                                name='alflb', is_eq=False,
-                                e_str='-CftT@aBus + amin',)
-        self.alfub = Constraint(info='line angle difference upper bound',
-                                name='alfub', is_eq=False,
-                                e_str='CftT@aBus - amax',)
+                             e_str='pbin - pbout', is_eq=True,)
+        # # --- line flow ---
+        # self.plf = Var(info='Line flow',
+        #                unit='p.u.',
+        #                name='plf', tex_name=r'p_{lf}',
+        #                model='Line',)
+        # self.plflb = Constraint(info='line flow lower bound',
+        #                         name='plflb', is_eq=False,
+        #                         e_str='-Bf@aBus - Pfinj - mul(ul, rate_a)',)
+        # self.plfub = Constraint(info='line flow upper bound',
+        #                         name='plfub', is_eq=False,
+        #                         e_str='Bf@aBus + Pfinj - mul(ul, rate_a)',)
+        # self.alflb = Constraint(info='line angle difference lower bound',
+        #                         name='alflb', is_eq=False,
+        #                         e_str='-CftT@aBus + amin',)
+        # self.alfub = Constraint(info='line angle difference upper bound',
+        #                         name='alfub', is_eq=False,
+        #                         e_str='CftT@aBus - amax',)
 
         # --- objective ---
         self.obj = Objective(name='obj',
@@ -245,7 +252,8 @@ class PFlow2(RoutineBase):
         Solve the routine optimization model.
         args and kwargs go to `self.om.prob.solve()` (`cvxpy.Problem.solve()`).
         """
-        return self.om.prob.solve(**kwargs)
+        raise NotImplementedError('Not implemented yet.')
+        
 
     def run(self, **kwargs):
         """
@@ -292,99 +300,16 @@ class PFlow2(RoutineBase):
         method : function, optional
             A custom solve method to use.
         """
-        return super().run(**kwargs)
+        raise NotImplementedError('Not implemented yet.')
 
     def _post_solve(self):
         """
         Post-solve calculations.
         """
-        for expr in self.exprs.values():
-            try:
-                var = getattr(self, expr.var)
-                var.optz.value = expr.v
-                logger.debug(f'Post solve: {var} = {expr.e_str}')
-            except AttributeError:
-                raise AttributeError(f'No such variable {expr.var}')
         return True
 
     def unpack(self, **kwargs):
         """
         Unpack the results from CVXPY model.
         """
-        # --- solver results to routine algeb ---
-        for _, var in self.vars.items():
-            # --- copy results from routine algeb into system algeb ---
-            if var.model is None:          # if no owner
-                continue
-            if var.src is None:            # if no source
-                continue
-            else:
-                try:
-                    idx = var.owner.get_idx()
-                except AttributeError:
-                    idx = var.owner.idx.v
-                else:
-                    pass
-                # NOTE: only unpack the variables that are in the model or group
-                try:
-                    var.owner.set(src=var.src, idx=idx, attr='v', value=var.v)
-                except (KeyError, TypeError):
-                    logger.error(f'Failed to unpack <{var}> to <{var.owner.class_name}>.')
-                    pass
-
-        # label the most recent solved routine
-        self.system.recent = self.system.routines[self.class_name]
-        return True
-
-    def dc2ac(self, kloss=1.0, **kwargs):
-        """
-        Convert the DCOPF results with ACOPF.
-
-        Parameters
-        ----------
-        kloss : float, optional
-            The loss factor for the conversion. Defaults to 1.2.
-        """
-        exec_time = self.exec_time
-        if self.exec_time == 0 or self.exit_code != 0:
-            logger.warning(f'{self.class_name} is not executed successfully, quit conversion.')
-            return False
-
-        # --- ACOPF ---
-        # scale up load
-        pq_idx = self.system.StaticLoad.get_idx()
-        pd0 = self.system.StaticLoad.get(src='p0', attr='v', idx=pq_idx).copy()
-        qd0 = self.system.StaticLoad.get(src='q0', attr='v', idx=pq_idx).copy()
-        self.system.StaticLoad.set(src='p0', idx=pq_idx, attr='v', value=pd0 * kloss)
-        self.system.StaticLoad.set(src='q0', idx=pq_idx, attr='v', value=qd0 * kloss)
-
-        ACOPF = self.system.ACOPF
-        # run ACOPF
-        ACOPF.run()
-        # self.exec_time += ACOPF.exec_time
-        # scale load back
-        self.system.StaticLoad.set(src='p0', idx=pq_idx, value=pd0)
-        self.system.StaticLoad.set(src='q0', idx=pq_idx, value=qd0)
-        if not ACOPF.exit_code == 0:
-            logger.warning('<ACOPF> did not converge, conversion failed.')
-            # NOTE: mock results to fit interface with ANDES
-            self.vBus = ACOPF.vBus
-            self.vBus.optz.value = np.ones(self.system.Bus.n)
-            self.aBus.optz.value = np.zeros(self.system.Bus.n)
-            return False
-        self.pg.optz.value = ACOPF.pg.v
-
-        # NOTE: mock results to fit interface with ANDES
-        self.addVars(name='vBus',
-                     info='Bus voltage', unit='p.u.',
-                     model='Bus', src='v',)
-        self.vBus.parse()
-        self.vBus.optz.value = ACOPF.vBus.v
-        self.aBus.optz.value = ACOPF.aBus.v
-        self.exec_time = exec_time
-
-        # --- set status ---
-        self.system.recent = self
-        self.converted = True
-        logger.warning(f'<{self.class_name}> converted to AC.')
-        return True
+        raise NotImplementedError('Not implemented yet.')
