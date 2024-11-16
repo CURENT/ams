@@ -168,11 +168,11 @@ class DCOPF(RoutineBase):
                       name='pg', tex_name=r'p_g',
                       model='StaticGen', src='p',
                       v0=self.pg0)
-        self.pmaxe = Expression(info='Effective Gen maximum active power',
+        self.pmaxe = Expression(info='Effective pmax',
                                 name='pmaxe', tex_name=r'p_{g, max, e}',
                                 e_str='mul(nctrle, pg0) + mul(ctrle, pmax)',
                                 model='StaticGen', src=None,)
-        self.pmine = Expression(info='Effective Gen minimum active power',
+        self.pmine = Expression(info='Effective pmin',
                                 name='pmine', tex_name=r'p_{g, min, e}',
                                 e_str='mul(nctrle, pg0) + mul(ctrle, pmin)',
                                 model='StaticGen', src=None,)
