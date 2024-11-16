@@ -171,6 +171,7 @@ class SymProcessor:
                 self.sub_map[rf"\b{ename}\b"] = f"self.rtn.{ename}._v"
             else:
                 self.sub_map[rf"\b{ename}\b"] = f"self.om.{ename}"
+            self.val_map[rf"\b{ename}\b"] = f"rtn.{ename}.v"
             self.tex_map[rf"\b{ename}\b"] = f'{expr.tex_name}'
 
         # Constraints
