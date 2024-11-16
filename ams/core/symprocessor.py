@@ -90,6 +90,8 @@ class SymProcessor:
             (r'cp\.(Minimize|Maximize)', r'float'),  # remove cp.Minimize/Maximize
             (r'\bcp.\b', 'np.'),
             (r'\bexp\b', 'np.exp'),
+            (r'\blog\b', 'np.log'),
+            (r'\bconj\b', 'np.conj'),
         ])
 
         self.status = {
@@ -122,16 +124,6 @@ class SymProcessor:
         # -----------------------------------------------------------
         for key in self.parent.tex_names.keys():
             self.tex_names[key] = sp.symbols(self.parent.tex_names[key])
-
-        # Expressions
-        for ename, expr in self.parent.exprs.items():
-            self.inputs_dict[ename] = sp.symbols(f'{ename}')
-            if expr.no_parse:
-                self.sub_map[rf"\b{ename}\b"] = f"self.rtn.{ename}.v"
-            else:
-                self.sub_map[rf"\b{ename}\b"] = f"self.om.{ename}"
-            self.tex_map[rf"\b{ename}\b"] = f'{expr.tex_name}'
-            self.val_map[rf"\b{ename}\b"] = f"rtn.{ename}.v"
 
         # Vars
         for vname, var in self.parent.vars.items():
@@ -171,6 +163,15 @@ class SymProcessor:
             self.tex_map[rf"\b{sname}\b"] = f'{service.tex_name}'
             if not service.no_parse:
                 self.val_map[rf"\b{sname}\b"] = f"rtn.{sname}.v"
+
+        # Expressions
+        for ename, expr in self.parent.exprs.items():
+            self.inputs_dict[ename] = sp.symbols(f'{ename}')
+            if expr.no_parse:
+                self.sub_map[rf"\b{ename}\b"] = f"self.rtn.{ename}._v"
+            else:
+                self.sub_map[rf"\b{ename}\b"] = f"self.om.{ename}"
+            self.tex_map[rf"\b{ename}\b"] = f'{expr.tex_name}'
 
         # Constraints
         # NOTE: constraints are included in sub_map for ExpressionCalc
