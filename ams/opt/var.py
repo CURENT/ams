@@ -93,7 +93,7 @@ class Var(OptzBase):
                  model: Optional[str] = None,
                  shape: Optional[Union[tuple, int]] = None,
                  v0: Optional[str] = None,
-                 horizon=None,
+                 horizon: Optional[str] = None,
                  nonneg: Optional[bool] = False,
                  nonpos: Optional[bool] = False,
                  cplx: Optional[bool] = False,
