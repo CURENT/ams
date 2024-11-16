@@ -26,12 +26,35 @@ class Expression(OptzBase):
     def __init__(self,
                  name: Optional[str] = None,
                  info: Optional[str] = None,
+                 unit: Optional[str] = None,
                  e_str: Optional[str] = None,
+                 no_parse: Optional[bool] = False,
+                 model: Optional[str] = None,
+                 src: Optional[str] = None,
+                 vtype: Optional[str] = float,
+                 horizon: Optional[str] = None,
                  ):
-        OptzBase.__init__(self, name=name, info=info)
+        OptzBase.__init__(self, name=name, info=info, unit=unit)
         self.e_str = e_str
         self.optz = None
         self.code = None
+        self.no_parse = no_parse
+        self.model = model
+        self.owner = None
+        self.src = src
+        self.is_group = False
+        self._v = None  # internal value storage when no_parse is True
+        self.vtype = vtype  # value type, used when no_parse is True
+        self.horizon = horizon
+
+    def get_idx(self):
+        if self.is_group:
+            return self.owner.get_idx()
+        elif self.owner is None:
+            logger.info(f'ExpressionCalc <{self.name}> has no owner.')
+            return None
+        else:
+            return self.owner.idx.v
 
     @ensure_symbols
     def parse(self):
@@ -65,6 +88,15 @@ class Expression(OptzBase):
         bool
             Returns True if the evaluation is successful, False otherwise.
         """
+        # TODO: when no_parse, should initialize _v
+        if self.no_parse:
+            if self.horizon is not None:
+                shape = (self.owner.n, self.horizon.n)
+            else:
+                shape = (self.owner.n,)
+            self._v = np.zeros(shape, dtype=self.vtype)
+            return True
+
         msg = f" - Expression <{self.name}>: {self.code}"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         try:
@@ -95,21 +127,36 @@ class Expression(OptzBase):
         """
         Return the CVXPY expression value.
         """
-        if self.optz is None:
+        if self.no_parse:
+            return self._v
+        elif self.optz is None:
             return None
         else:
             return self.optz.value
+
+    @v.setter
+    def v(self, value):
+        """
+        Set the value.
+        """
+        if self.no_parse:
+            self._v = value
+        else:
+            logger.warning('Cannot set value to an Expression that is not no_parse.')
 
     @property
     def shape(self):
         """
         Return the shape.
         """
-        try:
-            return self.om.__dict__[self.name].shape
-        except KeyError:
-            logger.warning('Shape info is not ready before initialization.')
-            return None
+        if self.no_parse:
+            return self._v.shape
+        else:
+            try:
+                return self.om.__dict__[self.name].shape
+            except KeyError:
+                logger.warning('Shape info is not ready before initialization.')
+                return None
 
     @property
     def size(self):
