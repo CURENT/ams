@@ -89,6 +89,7 @@ class SymProcessor:
             (r'(== 0|<= 0)$', ''),  # remove the comparison operator
             (r'cp\.(Minimize|Maximize)', r'float'),  # remove cp.Minimize/Maximize
             (r'\bcp.\b', 'np.'),
+            (r'\bexp\b', 'np.exp'),
         ])
 
         self.status = {
