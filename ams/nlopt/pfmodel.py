@@ -34,22 +34,28 @@ class PFModel:
         return self.parsed and self.evaluated and self.finalized
 
     def parse(self, force=False):
-        raise NotImplementedError
+        self.parsed = True
+        return self.parsed
 
     def evaluate(self, force=False):
-        raise NotImplementedError
+        self.evaluated = True
+        return self.evaluated
 
     def finalize(self, force=False):
-        raise NotImplementedError
+        self.finalized = True
+        return self.finalized
 
-    def init(self):
+    def init(self, force=False):
         """
         Initialize the power flow solver.
         """
-        raise NotImplementedError
+        self.parse(force)
+        self.evaluate(force)
+        self.finalize(force)
+        return self.initialized
 
     def update(self, params):
-        raise NotImplementedError
+        pass
 
     @property
     def class_name(self):

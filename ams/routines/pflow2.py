@@ -142,12 +142,12 @@ class PFlow2(RoutineBase):
     # TODO: we might also need to override self.om.init()?
 
     # TODO: seems we might need override the following methods
-    def init(self, **kwargs):
-        """
-        Initialize the routine optimization model.
-        args and kwargs go to `self.om.init()` (`cvxpy.Problem.__init__()`).
-        """
-        raise NotImplementedError('Not implemented yet.')
+    # def init(self, **kwargs):
+    #     """
+    #     Initialize the routine optimization model.
+    #     args and kwargs go to `self.om.init()` (`cvxpy.Problem.__init__()`).
+    #     """
+    #     raise NotImplementedError('Not implemented yet.')
 
     def solve(self, **kwargs):
         """
