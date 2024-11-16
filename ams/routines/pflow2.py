@@ -9,7 +9,7 @@ from ams.core.service import NumOp, NumOpDual, VarSelect  # noqa
 
 from ams.routines.routine import RoutineBase
 
-from ams.opt import Var, Constraint, Objective, Expression  # noqa
+from ams.opt import Var, Constraint, Objective, Expression, ExpressionCalc  # noqa
 
 
 logger = logging.getLogger(__name__)
@@ -126,15 +126,20 @@ class PFlow2(RoutineBase):
                         name='vBus', tex_name=r'v_{bus}',
                         model='Bus', src='v',)
         # --- power balance ---
-        # pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
-        # self.pb = Constraint(name='pb', info='power balance',
-        #                      e_str='pbin - pbout', is_eq=True,
-        #                      )
-
+        pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
+        self.pb = Constraint(name='pb', info='power balance',
+                             e_str=pb, is_eq=True,
+                             )
+        self.Vc = ExpressionCalc(name='Vc',
+                                 info='power balance',
+                                 e_str='vBus dot exp(1j * aBus)',
+                                 )
         # --- objective ---
         # self.obj = Objective(name='obj',
         #                      info='No objective', unit='$',
         #                      sense='min', e_str='(0)',)
+
+    # TODO: we might also need to override self.om.init()?
 
     # TODO: seems we might need override the following methods
     def init(self, **kwargs):
