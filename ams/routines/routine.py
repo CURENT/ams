@@ -17,6 +17,7 @@ from ams.core.symprocessor import SymProcessor
 from ams.core.documenter import RDocumenter
 from ams.core.service import RBaseService, ValueService
 from ams.opt import OModel, Param, Var, Constraint, Objective, ExpressionCalc, Expression
+from ams.nlopt import PFModel
 
 from ams.shared import pd
 
@@ -119,7 +120,11 @@ class RoutineBase:
         self.map2 = OrderedDict()  # to ANDES
 
         # --- optimization modeling ---
-        self.om = OModel(routine=self)      # optimization model
+        # NOTE: for specific routins, the om is a dedicated model
+        if self.class_name == 'PFlow2':
+            self.om = PFModel(routine=self)
+        else:
+            self.om = OModel(routine=self)      # optimization model
 
         if config is not None:
             self.config.load(config)

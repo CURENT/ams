@@ -9,7 +9,7 @@ from collections import OrderedDict
 logger = logging.getLogger(__name__)
 
 
-class PFlowSolver:
+class PFModel:
     """
     Base class for power flow solver.
     """
@@ -57,3 +57,6 @@ class PFlowSolver:
         Return the class name
         """
         return self.__class__.__name__
+
+    def __repr__(self) -> str:
+        return f'{self.rtn.class_name}.{self.__class__.__name__} at {hex(id(self))}'
