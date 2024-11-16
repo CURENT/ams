@@ -21,6 +21,33 @@ logger = logging.getLogger(__name__)
 class Expression(OptzBase):
     """
     Base class for expressions used in a routine.
+
+    When `no_parse` is True, the Expression will have its own value storage
+    `_v` and will not be evaluated as a CVXPY expression.
+    In this case, `model` should be provided to indicate the owner model or group.
+
+    Parameters
+    ----------
+    name : str, optional
+        Expression name. One should typically assigning the name directly because
+        it will be automatically assigned by the model. The value of ``name``
+        will be the symbol name to be used in expressions.
+    info : str, optional
+        Descriptive information
+    unit : str, optional
+        Unit
+    e_str : str, optional
+        Expression string
+    no_parse : bool, optional
+        Do not parse the expression
+    model : str, optional
+        Name of the owner model or group.
+    src : str, optional
+        Source expression name
+    vtype : type, optional
+        Value type
+    horizon : ams.routines.RParam, optional
+        Horizon
     """
 
     def __init__(self,
