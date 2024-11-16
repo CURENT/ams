@@ -52,11 +52,6 @@ class PFlow2(RoutineBase):
                          name='ug', tex_name=r'u_{g}',
                          model='StaticGen', src='u',
                          no_parse=True)
-        # --- bus ---
-        self.buss = RParam(info='Bus slack',
-                           name='buss', tex_name=r'B_{us,s}',
-                           model='Slack', src='bus',
-                           no_parse=True,)
         # --- load ---
         self.pd = RParam(info='active demand',
                          name='pd', tex_name=r'p_{d}',
@@ -71,18 +66,6 @@ class PFlow2(RoutineBase):
                          name='ul', tex_name=r'u_{l}',
                          model='Line', src='u',
                          no_parse=True,)
-        self.rate_a = RParam(info='long-term flow limit',
-                             name='rate_a', tex_name=r'R_{ATEA}',
-                             unit='p.u.', model='Line',)
-        # --- line angle difference ---
-        self.amax = RParam(model='Line', src='amax',
-                           name='amax', tex_name=r'\theta_{bus, max}',
-                           info='max line angle difference',
-                           no_parse=True,)
-        self.amin = RParam(model='Line', src='amin',
-                           name='amin', tex_name=r'\theta_{bus, min}',
-                           info='min line angle difference',
-                           no_parse=True,)
         # --- shunt ---
         self.gsh = RParam(info='shunt conductance',
                           name='gsh', tex_name=r'g_{sh}',
@@ -149,9 +132,17 @@ class PFlow2(RoutineBase):
         #                      )
 
         # --- objective ---
-        self.obj = Objective(name='obj',
-                             info='No objective', unit='$',
-                             sense='min', e_str='(0)',)
+        # self.obj = Objective(name='obj',
+        #                      info='No objective', unit='$',
+        #                      sense='min', e_str='(0)',)
+
+    # TODO: seems we might need override the following methods
+    def init(self, **kwargs):
+        """
+        Initialize the routine optimization model.
+        args and kwargs go to `self.om.init()` (`cvxpy.Problem.__init__()`).
+        """
+        raise NotImplementedError('Not implemented yet.')
 
     def solve(self, **kwargs):
         """
