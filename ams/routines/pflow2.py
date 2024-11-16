@@ -3,13 +3,13 @@ Power flow routines independent from PYPOWER.
 """
 import logging
 
-import numpy as np
+import numpy as np  # noqa
 from ams.core.param import RParam
-from ams.core.service import NumOp, NumOpDual, VarSelect
+from ams.core.service import NumOp, NumOpDual, VarSelect  # noqa
 
 from ams.routines.routine import RoutineBase
 
-from ams.opt import Var, Constraint, Objective, Expression
+from ams.opt import Var, Constraint, Objective, Expression  # noqa
 
 
 logger = logging.getLogger(__name__)
@@ -52,46 +52,6 @@ class PFlow2(RoutineBase):
                          name='ug', tex_name=r'u_{g}',
                          model='StaticGen', src='u',
                          no_parse=True)
-        self.ctrl = RParam(info='Gen controllability',
-                           name='ctrl', tex_name=r'c_{trl}',
-                           model='StaticGen', src='ctrl',
-                           no_parse=True)
-        self.ctrle = NumOpDual(info='Effective Gen controllability',
-                               name='ctrle', tex_name=r'c_{trl, e}',
-                               u=self.ctrl, u2=self.ug,
-                               fun=np.multiply, no_parse=True)
-        self.nctrl = NumOp(u=self.ctrl, fun=np.logical_not,
-                           name='nctrl', tex_name=r'c_{trl,n}',
-                           info='Effective Gen uncontrollability',
-                           no_parse=True,)
-        self.nctrle = NumOpDual(info='Effective Gen uncontrollability',
-                                name='nctrle', tex_name=r'c_{trl,n,e}',
-                                u=self.nctrl, u2=self.ug,
-                                fun=np.multiply, no_parse=True)
-        self.pmax = RParam(info='Gen maximum active power',
-                           name='pmax', tex_name=r'p_{g, max}',
-                           unit='p.u.', model='StaticGen',
-                           no_parse=False,)
-        self.pmin = RParam(info='Gen minimum active power',
-                           name='pmin', tex_name=r'p_{g, min}',
-                           unit='p.u.', model='StaticGen',
-                           no_parse=False,)
-        self.pg0 = RParam(info='Gen initial active power',
-                          name='pg0', tex_name=r'p_{g, 0}',
-                          unit='p.u.',
-                          model='StaticGen', src='p0')
-        self.qmax = RParam(info='Gen maximum reactive power',
-                           name='qmax', tex_name=r'q_{g, max}',
-                           unit='p.u.', model='StaticGen',
-                           no_parse=False,)
-        self.qmin = RParam(info='Gen minimum reactive power',
-                           name='qmin', tex_name=r'q_{g, min}',
-                           unit='p.u.', model='StaticGen',
-                           no_parse=False,)
-        self.qg0 = RParam(info='Gen initial reactive power',
-                          name='qg0', tex_name=r'q_{g, 0}',
-                          unit='p.u.',
-                          model='StaticGen', src='q0')
         # --- bus ---
         self.buss = RParam(info='Bus slack',
                            name='buss', tex_name=r'B_{us,s}',
@@ -168,25 +128,11 @@ class PFlow2(RoutineBase):
         self.pg = Var(info='Gen active power',
                       unit='p.u.',
                       name='pg', tex_name=r'p_g',
-                      model='StaticGen', src='p',
-                      v0=self.pg0)
-        pglb = '-pg + mul(nctrle, pg0) + mul(ctrle, pmin)'
-        self.pglb = Constraint(name='pglb', info='pg min',
-                               e_str=pglb, is_eq=False,)
-        pgub = 'pg - mul(nctrle, pg0) - mul(ctrle, pmax)'
-        self.pgub = Constraint(name='pgub', info='pg max',
-                               e_str=pgub, is_eq=False,)
+                      model='StaticGen', src='p',)
         self.qg = Var(info='Gen reactive power',
                       unit='p.u.',
                       name='qg', tex_name=r'q_g',
                       model='StaticGen', src='q',)
-        qglb = '-qg + mul(nctrle, qg0) + mul(ctrle, qmin)'
-        self.qglb = Constraint(name='qglb', info='qg min',
-                               e_str=qglb, is_eq=False,)
-        qgub = 'qg - mul(nctrle, qg0) - mul(ctrle, qmax)'
-        self.qgub = Constraint(name='qgub', info='qg max',
-                               e_str=qgub, is_eq=False,)
-
         # --- bus ---
         self.aBus = Var(info='Bus voltage angle',
                         unit='rad',
@@ -196,56 +142,16 @@ class PFlow2(RoutineBase):
                         unit='p.u.',
                         name='vBus', tex_name=r'v_{bus}',
                         model='Bus', src='v',)
-        self.csb = VarSelect(info='select slack bus',
-                             name='csb', tex_name=r'c_{sb}',
-                             u=self.aBus, indexer='buss',
-                             no_parse=True,)
-        self.sba = Constraint(info='align slack bus angle',
-                              name='sbus', is_eq=True,
-                              e_str='csb@aBus',)
         # --- power balance ---
-        # NOTE: CVXPY does not support exp complex number
-        self.Vc = Expression(info='Complex bus voltage',
-                             name='Vc', tex_name=r'V_{bus}',
-                             unit='p.u.', no_parse=True,
-                             e_str='vBus dot exp(1j dot aBus)',
-                             model='Bus', src=None,
-                             vtype=complex,)
-        self.pbin = Expression(info='Bus power in',
-                               name='pbin', tex_name=r'p_{bus}^{in}',
-                               unit='p.u.', no_parse=True,
-                               e_str='-Cl@pd - Csh@gsh + Cg@pg',
-                               model='Bus', src=None,)
-        self.pbout = Expression(info='Bus power out',
-                                name='pbout', tex_name=r'p_{bus}^{out}',
-                                unit='p.u.', no_parse=True,
-                                e_str='Vc @ Bbus @ conj(Vc)',
-                                model='Bus', src=None)
-        pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
-        self.pb = Constraint(name='pb', info='power balance',
-                             e_str='pbin - pbout', is_eq=True,)
-        # # --- line flow ---
-        # self.plf = Var(info='Line flow',
-        #                unit='p.u.',
-        #                name='plf', tex_name=r'p_{lf}',
-        #                model='Line',)
-        # self.plflb = Constraint(info='line flow lower bound',
-        #                         name='plflb', is_eq=False,
-        #                         e_str='-Bf@aBus - Pfinj - mul(ul, rate_a)',)
-        # self.plfub = Constraint(info='line flow upper bound',
-        #                         name='plfub', is_eq=False,
-        #                         e_str='Bf@aBus + Pfinj - mul(ul, rate_a)',)
-        # self.alflb = Constraint(info='line angle difference lower bound',
-        #                         name='alflb', is_eq=False,
-        #                         e_str='-CftT@aBus + amin',)
-        # self.alfub = Constraint(info='line angle difference upper bound',
-        #                         name='alfub', is_eq=False,
-        #                         e_str='CftT@aBus - amax',)
+        # pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
+        # self.pb = Constraint(name='pb', info='power balance',
+        #                      e_str='pbin - pbout', is_eq=True,
+        #                      )
 
         # --- objective ---
         self.obj = Objective(name='obj',
                              info='No objective', unit='$',
-                             sense='min', e_str='0',)
+                             sense='min', e_str='(0)',)
 
     def solve(self, **kwargs):
         """
@@ -253,7 +159,6 @@ class PFlow2(RoutineBase):
         args and kwargs go to `self.om.prob.solve()` (`cvxpy.Problem.solve()`).
         """
         raise NotImplementedError('Not implemented yet.')
-        
 
     def run(self, **kwargs):
         """
