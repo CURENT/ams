@@ -12,13 +12,12 @@ Pre-v1.0.0
 v0.9.12 (202x-xx-xx)
 --------------------
 
-TODO: class `Expression`: registry in `OModel` and `Routine`, fit symbol processor, fit documenter
-
 - Refactor `OModel.initialized` as a property method
 - Add a demo to show using `Constraint.e` for debugging
 - Fix `ams.opt.omodel.Param.evaluate()` when its value is a number
 - Improve `ams.opt.omodel.ExpressionCalc()` for efficiency
 - Refactor module `ams.opt`
+- Add class `ams.opt.Expression`
 
 RC1
 ~~~~
