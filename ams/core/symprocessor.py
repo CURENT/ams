@@ -167,10 +167,7 @@ class SymProcessor:
         # Expressions
         for ename, expr in self.parent.exprs.items():
             self.inputs_dict[ename] = sp.symbols(f'{ename}')
-            if expr.no_parse:
-                self.sub_map[rf"\b{ename}\b"] = f"self.rtn.{ename}._v"
-            else:
-                self.sub_map[rf"\b{ename}\b"] = f"self.om.{ename}"
+            self.sub_map[rf"\b{ename}\b"] = f"self.om.{ename}"
             self.val_map[rf"\b{ename}\b"] = f"rtn.{ename}.v"
             self.tex_map[rf"\b{ename}\b"] = f'{expr.tex_name}'
 
