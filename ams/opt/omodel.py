@@ -16,9 +16,9 @@ from ams.opt.optbase import ensure_symbols, ensure_mats_and_parsed
 logger = logging.getLogger(__name__)
 
 
-class OModel:
+class OModelBase:
     """
-    Base class for optimization models.
+    Template class for optimization models.
 
     Parameters
     ----------
@@ -58,6 +58,94 @@ class OModel:
         self.parsed = False
         self.evaluated = False
         self.finalized = False
+
+    @property
+    def initialized(self):
+        """
+        Return the initialization status.
+        """
+        return self.parsed and self.evaluated and self.finalized
+
+    def parse(self, force=False):
+        self.parsed = True
+        return self.parsed
+
+    def _evaluate_params(self):
+        return True
+
+    def _evaluate_vars(self):
+        return True
+
+    def _evaluate_constrs(self):
+        return True
+
+    def _evaluate_obj(self):
+        return True
+
+    def _evaluate_exprs(self):
+        return True
+
+    def _evaluate_exprcs(self):
+        return True
+
+    def evaluate(self, force=False):
+        self._evaluate_params()
+        self._evaluate_vars()
+        self._evaluate_exprs()
+        self._evaluate_constrs()
+        self._evaluate_obj()
+        self._evaluate_exprcs()
+        self.evaluated = True
+        return self.evaluated
+
+    def finalize(self, force=False):
+        self.finalized = True
+        return True
+
+    def init(self, force=False):
+        self.parse(force)
+        self.evaluate(force)
+        self.finalize(force)
+        return self.initialized
+
+    @property
+    def class_name(self):
+        return self.__class__.__name__
+
+    def _register_attribute(self, key, value):
+        """
+        Register a pair of attributes to OModel instance.
+
+        Called within ``__setattr__``, this is where the magic happens.
+        Subclass attributes are automatically registered based on the variable type.
+        """
+        if isinstance(value, cp.Variable):
+            self.vars[key] = value
+        elif isinstance(value, cp.Constraint):
+            self.constrs[key] = value
+        elif isinstance(value, cp.Parameter):
+            self.params[key] = value
+        elif isinstance(value, cp.Expression):
+            self.exprs[key] = value
+
+    def __setattr__(self, name: str, value: Any):
+        super().__setattr__(name, value)
+        self._register_attribute(name, value)
+
+    def update(self, params):
+        return True
+
+    def __repr__(self) -> str:
+        return f'{self.rtn.class_name}.{self.__class__.__name__} at {hex(id(self))}'
+
+
+class OModel(OModelBase):
+    """
+    Base class for optimization models.
+    """
+
+    def __init__(self, routine):
+        OModelBase.__init__(self, routine)
 
     @property
     def initialized(self):

@@ -9,4 +9,5 @@ from ams.opt.param import Param  # NOQA
 from ams.opt.constraint import Constraint  # NOQA
 from ams.opt.objective import Objective  # NOQA
 from ams.opt.expression import Expression  # NOQA
-from ams.opt.omodel import OModel  # NOQA
+from ams.opt.omodel import OModelBase, OModel  # NOQA
+from ams.opt.pfmodel import PFModel  # NOQA
