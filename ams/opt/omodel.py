@@ -19,32 +19,6 @@ logger = logging.getLogger(__name__)
 class OModelBase:
     """
     Template class for optimization models.
-
-    Parameters
-    ----------
-    routine: Routine
-        Routine that to be modeled.
-
-    Attributes
-    ----------
-    prob: cvxpy.Problem
-        Optimization model.
-    exprs: OrderedDict
-        Expressions registry.
-    params: OrderedDict
-        Parameters registry.
-    vars: OrderedDict
-        Decision variables registry.
-    constrs: OrderedDict
-        Constraints registry.
-    obj: Objective
-        Objective function.
-    initialized: bool
-        Flag indicating if the model is initialized.
-    parsed: bool
-        Flag indicating if the model is parsed.
-    evaluated: bool
-        Flag indicating if the model is evaluated.
     """
 
     def __init__(self, routine):
@@ -142,6 +116,34 @@ class OModelBase:
 class OModel(OModelBase):
     """
     Base class for optimization models.
+
+    Parameters
+    ----------
+    routine: Routine
+        Routine that to be modeled.
+
+    Attributes
+    ----------
+    prob: cvxpy.Problem
+        Optimization model.
+    exprs: OrderedDict
+        Expressions registry.
+    params: OrderedDict
+        Parameters registry.
+    vars: OrderedDict
+        Decision variables registry.
+    constrs: OrderedDict
+        Constraints registry.
+    obj: Objective
+        Objective function.
+    initialized: bool
+        Flag indicating if the model is initialized.
+    parsed: bool
+        Flag indicating if the model is parsed.
+    evaluated: bool
+        Flag indicating if the model is evaluated.
+    finalized: bool
+        Flag indicating if the model is finalized.
     """
 
     def __init__(self, routine):
