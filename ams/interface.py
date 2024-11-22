@@ -50,9 +50,21 @@ idx_guess = {'rego': 'RenGovernor',
              'pq': 'PQ', }
 
 
-def _sync_adsys(amsys, adsys):
+def sync_adsys(amsys, adsys):
     """
-    Helper function to sync parameters value from AMS to ANDES.
+    Sync parameters value of PFlow models between AMS and ANDES systems.
+
+    Parameters
+    ----------
+    amsys : AMS.system.System
+        The AMS system.
+    adsys : ANDES.system.System
+        The ANDES system.
+
+    Returns
+    -------
+    bool
+        True if successful.
     """
     for mname, params in pflow_dict.items():
         ad_mdl = adsys.__dict__[mname]
@@ -68,7 +80,7 @@ def _sync_adsys(amsys, adsys):
             except Exception:
                 logger.debug(f"Skip updating {mname}.{param}")
                 continue
-    return adsys
+    return True
 
 
 def _to_andes_pflow(system, no_output=False, default_config=True, **kwargs):
@@ -88,7 +100,7 @@ def _to_andes_pflow(system, no_output=False, default_config=True, **kwargs):
         for row in mdl.cache.df_in[mdl_cols].to_dict(orient='records'):
             adsys.add(mdl_name, row)
 
-    adsys = _sync_adsys(amsys=system, adsys=adsys)
+    sync_adsys(amsys=system, adsys=adsys)
 
     return adsys
 

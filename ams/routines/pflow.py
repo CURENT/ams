@@ -9,7 +9,7 @@ from andes.utils.misc import elapsed
 from ams.core.param import RParam
 from ams.routines.routine import RoutineBase
 from ams.opt import Var, Expression
-from ams.interface import _to_andes_pflow, _sync_adsys
+from ams.interface import _to_andes_pflow, sync_adsys
 
 logger = logging.getLogger(__name__)
 
@@ -174,7 +174,7 @@ class PFlow(RoutineBase):
         if not self.initialized:
             self.init()
 
-        _sync_adsys(self.system, self._adsys)
+        sync_adsys(self.system, self._adsys)
 
         return True
 
