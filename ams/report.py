@@ -180,15 +180,26 @@ class Report:
                 text.append([''])
                 row_name.append(
                     ['Generation', 'Load'])
-                if rtn.type == 'ACED':
+
+                if hasattr(rtn, 'pd'):
+                    pd = rtn.pd.v.sum().round(6)
+                else:
+                    pd = rtn.system.PQ.p0.v.sum().round(6)
+                if hasattr(rtn, 'qd'):
+                    qd = rtn.qd.v.sum().round(6)
+                else:
+                    qd = rtn.system.PQ.q0.v.sum().round(6)
+
+                if rtn.type in ['ACED', 'PF']:
                     header.append(['P (p.u.)', 'Q (p.u.)'])
-                    Pcol = [rtn.pg.v.sum().round(6), rtn.pd.v.sum().round(6)]
-                    Qcol = [rtn.qg.v.sum().round(6), rtn.qd.v.sum().round(6)]
+                    Pcol = [rtn.pg.v.sum().round(6), pd]
+                    Qcol = [rtn.qg.v.sum().round(6), qd]
                     data.append([Pcol, Qcol])
                 else:
                     header.append(['P (p.u.)'])
-                    Pcol = [rtn.pg.v.sum().round(6), rtn.pd.v.sum().round(6)]
+                    Pcol = [rtn.pg.v.sum().round(6), pd]
                     data.append([Pcol])
+
                 # --- routine data ---
                 text.extend(text_sum)
                 header.extend(header_sum)
