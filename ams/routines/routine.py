@@ -120,11 +120,7 @@ class RoutineBase:
         self.map2 = OrderedDict()  # to ANDES
 
         # --- optimization modeling ---
-        # NOTE: for specific routins, the om is a dedicated model
-        if self.class_name in ['PFlow2']:
-            self.om = None
-        else:
-            self.om = OModel(routine=self)      # optimization model
+        self.om = OModel(routine=self)      # optimization model
 
         if config is not None:
             self.config.load(config)
