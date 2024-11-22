@@ -50,13 +50,13 @@ idx_guess = {'rego': 'RenGovernor',
              'pq': 'PQ', }
 
 
-def _to_andes_pflow(system, no_output=False, default_config=True):
+def _to_andes_pflow(system, no_output=False, default_config=True, **kwargs):
     """
     Helper function to convert the AMS system to an ANDES system with only
     power flow models.
     """
 
-    adsys = andes_System(no_outpu=no_output, default_config=default_config)
+    adsys = andes_System(no_outpu=no_output, default_config=default_config, **kwargs)
     # FIXME: is there a systematic way to do this? Other config might be needed
     adsys.config.freq = system.config.freq
     adsys.config.mva = system.config.mva
@@ -73,7 +73,8 @@ def _to_andes_pflow(system, no_output=False, default_config=True):
 def to_andes(system, addfile=None,
              setup=False, no_output=False,
              default_config=True,
-             verify=True, tol=1e-3):
+             verify=True, tol=1e-3,
+             **kwargs):
     """
     Convert the AMS system to an ANDES system.
 
@@ -132,7 +133,7 @@ def to_andes(system, addfile=None,
     t0, _ = elapsed()
 
     # --- convert power flow models ---
-    adsys = _to_andes_pflow(system, no_output=no_output, default_config=default_config)
+    adsys = _to_andes_pflow(system, no_output=no_output, default_config=default_config, **kwargs)
 
     _, s = elapsed(t0)
 
