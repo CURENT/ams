@@ -16,7 +16,7 @@ from ams.core.param import RParam
 from ams.core.symprocessor import SymProcessor
 from ams.core.documenter import RDocumenter
 from ams.core.service import RBaseService, ValueService
-from ams.opt import OModel, PFModel
+from ams.opt import OModel
 from ams.opt import Param, Var, Constraint, Objective, ExpressionCalc, Expression
 
 from ams.shared import pd
@@ -121,8 +121,8 @@ class RoutineBase:
 
         # --- optimization modeling ---
         # NOTE: for specific routins, the om is a dedicated model
-        if self.class_name == 'PFlow2':
-            self.om = PFModel(routine=self)
+        if self.class_name in ['PFlow2']:
+            self.om = None
         else:
             self.om = OModel(routine=self)      # optimization model
 
