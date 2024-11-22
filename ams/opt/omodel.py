@@ -204,16 +204,15 @@ class OModel(OModelBase):
             val.parse()
 
         # --- parse objective functions ---
-        if self.rtn.type != 'PF':
-            if self.rtn.obj is not None:
-                try:
-                    self.rtn.obj.parse()
-                except Exception as e:
-                    raise Exception(f"Failed to parse Objective <{self.rtn.obj.name}>.\n{e}")
-            else:
-                logger.warning(f"{self.rtn.class_name} has no objective function!")
-                self.parsed = False
-                return self.parsed
+        if self.rtn.obj is not None:
+            try:
+                self.rtn.obj.parse()
+            except Exception as e:
+                raise Exception(f"Failed to parse Objective <{self.rtn.obj.name}>.\n{e}")
+        elif not self.rtn.class_name in ['PFlow']:
+            logger.warning(f"{self.rtn.class_name} has no objective function!")
+            self.parsed = False
+            return self.parsed
 
         # --- parse expressions ---
         for key, val in self.rtn.exprs.items():
@@ -266,7 +265,7 @@ class OModel(OModelBase):
         """
         # NOTE: since we already have the attribute `obj`,
         # we can update it rather than setting it
-        if self.rtn.type != 'PF':
+        if self.rtn.obj is not None:
             self.rtn.obj.evaluate()
             self.obj = self.rtn.obj.optz
 
@@ -342,7 +341,7 @@ class OModel(OModelBase):
             Returns True if the finalization is successful, False otherwise.
         """
         # NOTE: for power flow type, we skip the finalization
-        if self.rtn.type == 'PF':
+        if self.rtn.class_name in ['PFlow']:
             self.finalized = True
             return self.finalized
         if self.finalized and not force:
