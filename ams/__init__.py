@@ -11,4 +11,4 @@ from ams.shared import ppc2df  # NOQA
 
 __author__ = 'Jining Wang'
 
-__all__ = ['System', 'get_case', 'System']
+__all__ = ['System', 'get_case']
