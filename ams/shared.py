@@ -23,7 +23,7 @@ np = LazyImport('import numpy as np')
 pd = LazyImport('import pandas as pd')
 
 # --- an empty ANDES system ---
-empty_adsys = adSystem()
+empty_adsys = adSystem(autogen_stale=False)
 ad_models = list(empty_adsys.models.keys())
 
 # --- NumPy constants ---
