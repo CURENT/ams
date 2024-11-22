@@ -50,6 +50,27 @@ idx_guess = {'rego': 'RenGovernor',
              'pq': 'PQ', }
 
 
+def _sync_adsys(amsys, adsys):
+    """
+    Helper function to sync parameters value from AMS to ANDES.
+    """
+    for mname, params in pflow_dict.items():
+        ad_mdl = adsys.__dict__[mname]
+        am_mdl = amsys.__dict__[mname]
+        idx = am_mdl.idx.v
+        for param in params:
+            if param in ['idx', 'name']:
+                continue
+            # NOTE: when setting list values to DataParam, sometimes run into error
+            try:
+                ad_mdl.set(src=param, attr='v', idx=idx,
+                           value=am_mdl.get(src=param, attr='v', idx=idx))
+            except Exception:
+                logger.debug(f"Skip updating {mname}.{param}")
+                continue
+    return adsys
+
+
 def _to_andes_pflow(system, no_output=False, default_config=True, **kwargs):
     """
     Helper function to convert the AMS system to an ANDES system with only
@@ -66,6 +87,8 @@ def _to_andes_pflow(system, no_output=False, default_config=True, **kwargs):
         mdl.cache.refresh("df_in")  # refresh cache
         for row in mdl.cache.df_in[mdl_cols].to_dict(orient='records'):
             adsys.add(mdl_name, row)
+
+    adsys = _sync_adsys(amsys=system, adsys=adsys)
 
     return adsys
 
