@@ -12,32 +12,33 @@ from ams.core.service import VarSelect
 logger = logging.getLogger(__name__)
 
 
-class DCPF(RoutineBase):
+class DCPFBase(RoutineBase):
     """
-    DC power flow.
+    Base class for DC power flow.
     """
 
     def __init__(self, system, config):
         RoutineBase.__init__(self, system, config)
-        self.info = 'DC Power Flow'
-        self.type = 'PF'
 
         self.ug = RParam(info='Gen connection status',
                          name='ug', tex_name=r'u_{g}',
                          model='StaticGen', src='u',
                          no_parse=True)
+        self.pg0 = RParam(info='Gen initial active power',
+                          name='pg0', tex_name=r'p_{g, 0}',
+                          unit='p.u.', model='StaticGen',
+                          src='p0', no_parse=False,)
+        # --- shunt ---
         self.gsh = RParam(info='shunt conductance',
                           name='gsh', tex_name=r'g_{sh}',
                           model='Shunt', src='g',
                           no_parse=True,)
+
         self.buss = RParam(info='Bus slack',
                            name='buss', tex_name=r'B_{us,s}',
                            model='Slack', src='bus',
                            no_parse=True,)
-        self.genpv = RParam(info='gen of PV',
-                            name='genpv', tex_name=r'g_{DG}',
-                            model='PV', src='idx',
-                            no_parse=True,)
+        # --- load ---
         self.pd = RParam(info='active demand',
                          name='pd', tex_name=r'p_{d}',
                          model='StaticLoad', src='p0',
@@ -79,32 +80,25 @@ class DCPF(RoutineBase):
                             model='mats', src='Pfinj',
                             no_parse=True,)
 
+        # --- generation ---
         self.pg = Var(info='Gen active power',
                       unit='p.u.',
                       name='pg', tex_name=r'p_g',
-                      model='StaticGen', src='p')
+                      model='StaticGen', src='p',
+                      v0=self.pg0)
+
+        # --- bus ---
         self.aBus = Var(info='Bus voltage angle',
                         unit='rad',
                         name='aBus', tex_name=r'\theta_{bus}',
                         model='Bus', src='a',)
 
-        self.cpv = VarSelect(u=self.pg, indexer='genpv',
-                             name='cpv', tex_name=r'C_{PV}',
-                             info='Select PV from pg',
-                             no_parse=True,)
-        self.pg0 = RParam(info='Gen initial active power',
-                          name='pg0', tex_name=r'p_{g, 0}',
-                          unit='p.u.', model='StaticGen',
-                          src='p0', no_parse=False,)
-
         # --- power balance ---
         pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
         self.pb = Constraint(name='pb', info='power balance',
                              e_str=pb, is_eq=True,)
-        self.pvb = Constraint(name='pvb', info='PV generator',
-                              e_str='cpv @ (pg - mul(ug, pg0))',
-                              is_eq=True,)
 
+        # --- bus ---
         self.csb = VarSelect(info='select slack bus',
                              name='csb', tex_name=r'c_{sb}',
                              u=self.aBus, indexer='buss',
@@ -112,15 +106,13 @@ class DCPF(RoutineBase):
         self.sba = Constraint(info='align slack bus angle',
                               name='sbus', is_eq=True,
                               e_str='csb@aBus',)
+
+        # --- line flow ---
         self.plf = Expression(info='Line flow',
                               name='plf', tex_name=r'p_{lf}',
                               unit='p.u.',
                               e_str='Bf@aBus + Pfinj',
                               model='Line', src=None,)
-
-        self.obj = Objective(name='obj',
-                             info='place holder', unit='$',
-                             sense='min', e_str='0',)
 
     def solve(self, **kwargs):
         """
@@ -188,17 +180,30 @@ class DCPF(RoutineBase):
                                idx=expr.get_idx(), value=expr.v)
         return True
 
-    def summary(self, **kwargs):
-        """
-        # TODO: Print power flow summary.
-        """
-        raise NotImplementedError
 
-    def enable(self, name):
-        raise NotImplementedError
+class DCPF(DCPFBase):
+    """
+    DC power flow.
+    """
 
-    def disable(self, name):
-        raise NotImplementedError
+    def __init__(self, system, config):
+        DCPFBase.__init__(self, system, config)
+        self.info = 'DC Power Flow'
+        self.type = 'PF'
 
-    def dc2ac(self, name):
-        raise NotImplementedError
+        self.genpv = RParam(info='gen of PV',
+                            name='genpv', tex_name=r'g_{DG}',
+                            model='PV', src='idx',
+                            no_parse=True,)
+        self.cpv = VarSelect(u=self.pg, indexer='genpv',
+                             name='cpv', tex_name=r'C_{PV}',
+                             info='Select PV from pg',
+                             no_parse=True,)
+
+        self.pvb = Constraint(name='pvb', info='PV generator',
+                              e_str='cpv @ (pg - mul(ug, pg0))',
+                              is_eq=True,)
+
+        self.obj = Objective(name='obj',
+                             info='place holder', unit='$',
+                             sense='min', e_str='0',)
