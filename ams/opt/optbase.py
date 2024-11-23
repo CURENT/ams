@@ -150,3 +150,6 @@ class OptzBase:
         else:
             logger.warning(f'Routine <{self.rtn.class_name}> is not initialized yet.')
             return None
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}: {self.name}'

@@ -137,6 +137,3 @@ class ExpressionCalc(OptzBase):
         except Exception as e:
             logger.error(f"Error in calculating expr <{self.name}>.\n{e}")
             return None
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}: {self.name}'
