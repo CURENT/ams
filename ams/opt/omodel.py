@@ -149,13 +149,6 @@ class OModel(OModelBase):
     def __init__(self, routine):
         OModelBase.__init__(self, routine)
 
-    @property
-    def initialized(self):
-        """
-        Return the initialization status.
-        """
-        return self.parsed and self.evaluated and self.finalized
-
     @ensure_symbols
     def parse(self, force=False):
         """
