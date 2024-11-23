@@ -13,7 +13,7 @@ from andes.thirdparty.npfunc import safe_div
 from andes.shared import tqdm, tqdm_nb
 from andes.utils.misc import elapsed, is_notebook
 
-from ams.opt.omodel import Param
+from ams.opt import Param
 from ams.shared import pd, sps
 
 logger = logging.getLogger(__name__)
@@ -140,7 +140,9 @@ class MParam(Param):
 
 class MatProcessor:
     """
-    Class for matrix processing in AMS system.
+    Class for matrices processing in AMS system.
+    The connectivity matrices `Cft`, `Cg`, `Cl`, and `Csh` ***have taken*** the
+    devices connectivity into account.
 
     The MParams' row names and col names are assigned in `System.setup()`.
     """

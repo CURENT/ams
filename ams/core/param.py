@@ -10,7 +10,7 @@ from typing import Optional, Iterable
 import numpy as np
 from scipy.sparse import issparse
 
-from ams.opt.omodel import Param
+from ams.opt import Param
 
 logger = logging.getLogger(__name__)
 

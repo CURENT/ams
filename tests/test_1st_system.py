@@ -26,7 +26,7 @@ class TestCodegen(unittest.TestCase):
         for export in ['plain', 'rest']:
             docum._obj_doc(max_width=78, export=export)
             docum._constr_doc(max_width=78, export=export)
-            docum._expr_doc(max_width=78, export=export)
+            docum._exprc_doc(max_width=78, export=export)
             docum._var_doc(max_width=78, export=export)
             docum._service_doc(max_width=78, export=export)
             docum._param_doc(max_width=78, export=export)

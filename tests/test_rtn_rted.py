@@ -81,7 +81,7 @@ class TestRTED(unittest.TestCase):
 
     def test_dc2ac(self):
         """
-        Test `RTED.init()` method.
+        Test `RTED.dc2ac()` method.
         """
         self.ss.RTED.dc2ac()
         self.assertTrue(self.ss.RTED.converted, "AC conversion failed!")

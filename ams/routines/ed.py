@@ -10,7 +10,7 @@ from ams.core.service import (NumOpDual, NumHstack,
 
 from ams.routines.rted import RTED, DGBase, ESD1Base
 
-from ams.opt.omodel import Var, Constraint
+from ams.opt import Var, Constraint
 
 logger = logging.getLogger(__name__)
 
@@ -158,12 +158,12 @@ class ED(RTED, MPBase, SRBase):
         # --- gen ---
         self.ctrle.u2 = self.ugt
         self.nctrle.u2 = self.ugt
-        pglb = '-pg + mul(mul(nctrle, pg0), tlv) '
-        pglb += '+ mul(mul(ctrle, tlv), pmin)'
-        self.pglb.e_str = pglb
-        pgub = 'pg - mul(mul(nctrle, pg0), tlv) '
-        pgub += '- mul(mul(ctrle, tlv), pmax)'
-        self.pgub.e_str = pgub
+        pmaxe = 'mul(mul(nctrle, pg0), tlv) + mul(mul(ctrle, tlv), pmax)'
+        self.pmaxe.e_str = pmaxe
+        pmine = 'mul(mul(nctrle, pg0), tlv) + mul(mul(ctrle, tlv), pmin)'
+        self.pmine.e_str = pmine
+        self.pglb.e_str = '-pg + pmine'
+        self.pgub.e_str = 'pg - pmaxe'
 
         self.pru.horizon = self.timeslot
         self.pru.info = '2D RegUp power'
@@ -182,7 +182,7 @@ class ED(RTED, MPBase, SRBase):
         self.alflb.e_str = '-CftT@aBus + amin@tlv'
         self.alfub.e_str = 'CftT@aBus - amax@tlv'
 
-        self.plfc.e_str = 'Bf@aBus + Pfinj@tlv'
+        self.plf.e_str = 'Bf@aBus + Pfinj@tlv'
 
         # --- power balance ---
         self.pb.e_str = 'Bbus@aBus + Pbusinj@tlv + Cl@pds + Csh@gsh@tlv - Cg@pg'

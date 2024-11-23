@@ -1,111 +1,253 @@
 """
-Power flow routines.
+Power flow routines independent from PYPOWER.
 """
 import logging
+from typing import Optional, Union, Type
 from collections import OrderedDict
 
-from ams.pypower import runpf
+import numpy as np
 
-from ams.io.pypower import system2ppc
-from ams.pypower.core import ppoption
+from andes.utils.misc import elapsed
+
 from ams.core.param import RParam
-
-from ams.routines.dcpf import DCPF
-from ams.opt.omodel import Var
+from ams.routines.routine import RoutineBase
+from ams.opt import Var, Expression, Objective
+from ams.interface import _to_andes_pflow, sync_adsys
 
 logger = logging.getLogger(__name__)
 
 
-class PFlow(DCPF):
+class PFlow(RoutineBase):
     """
-    AC Power Flow routine.
+    Power flow analysis using ANDES PFlow routine.
 
-    Notes
-    -----
-    1. AC pwoer flow is solved with PYPOWER ``runpf`` function.
-    2. AC power flow formulation in AMS style is NOT DONE YET,
-       but this does not affect the results
-       because the data are passed to PYPOWER for solving.
+    More settings can be changed via ``PFlow2._adsys.config`` and ``PFlow2._adsys.PFlow.config``.
+
+    All generator output powers, bus voltages, and angles are included in the variable definitions.
+    However, not all of these are unknowns; the definitions are provided for easy access.
+
+    References
+    ----------
+    [1] M. L. Crow, Computational methods for electric power systems. 2015.
+
+    [2] ANDES Documentation - Simulation and Plot. [Online]. Available:
+    https://docs.andes.app/en/latest/_examples/ex1.html
     """
 
     def __init__(self, system, config):
-        DCPF.__init__(self, system, config)
-        self.info = "AC Power Flow"
-        self.type = "PF"
+        RoutineBase.__init__(self, system, config)
+        self.info = 'AC Power Flow'
+        self.type = 'PF'
+        self._adsys = None
 
-        self.config.add(OrderedDict((('qlim', 0),
+        self.config.add(OrderedDict((('tol', 1e-6),
+                                     ('max_iter', 25),
+                                     ('method', 'NR'),
+                                     ('check_conn', 1),
+                                     ('n_factorize', 4),
                                      )))
         self.config.add_extra("_help",
-                              qlim="Enforce generator q limits",
+                              tol="convergence tolerance",
+                              max_iter="max. number of iterations",
+                              method="calculation method",
+                              check_conn='check connectivity before power flow',
+                              n_factorize="first N iterations to factorize Jacobian in dishonest method",
                               )
         self.config.add_extra("_alt",
-                              qlim=(0, 1, 2),
+                              tol="float",
+                              method=("NR", "dishonest", "NK"),
+                              check_conn=(0, 1),
+                              max_iter=">=10",
+                              n_factorize=">0",
                               )
 
-        self.qd = RParam(info="reactive power load in system base",
-                         name="qd", tex_name=r"q_{d}",
-                         unit="p.u.",
-                         model="StaticLoad", src="q0",)
+        self.Bf = RParam(info='Bf matrix',
+                         name='Bf', tex_name=r'B_{f}',
+                         model='mats', src='Bf',
+                         no_parse=True, sparse=True,)
+        self.Pfinj = RParam(info='Line power injection vector',
+                            name='Pfinj', tex_name=r'P_{f}^{inj}',
+                            model='mats', src='Pfinj',
+                            no_parse=True,)
 
-        # --- bus ---
-        self.vBus = Var(info="bus voltage magnitude",
-                        unit="p.u.",
-                        name="vBus", tex_name=r"v_{Bus}",
-                        model="Bus", src="v",)
-        # --- gen ---
-        self.qg = Var(info="reactive power generation",
-                      unit="p.u.",
-                      name="qg", tex_name=r"q_{g}",
-                      model="StaticGen", src="q",)
-        # NOTE: omit AC power flow formulation here
+        self.pg = Var(info='Gen active power',
+                      unit='p.u.',
+                      name='pg', tex_name=r'p_g',
+                      model='StaticGen', src='p')
+        self.qg = Var(info='Gen reactive power',
+                      unit='p.u.',
+                      name='qg', tex_name=r'q_g',
+                      model='StaticGen', src='q')
+        self.aBus = Var(info='Bus voltage angle',
+                        unit='rad',
+                        name='aBus', tex_name=r'\theta_{bus}',
+                        model='Bus', src='a',)
+        self.vBus = Var(info='Bus voltage magnitude',
+                        unit='p.u.',
+                        name='vBus', tex_name=r'V_{bus}',
+                        model='Bus', src='v',)
+        self.plf = Expression(info='Line flow',
+                              name='plf', tex_name=r'p_{lf}',
+                              unit='p.u.',
+                              e_str='Bf@aBus + Pfinj',
+                              model='Line', src=None,)
 
-    def solve(self, method="newton", **kwargs):
+        self.obj = Objective(name='obj',
+                             info='place holder', unit='$',
+                             sense='min', e_str='0',)
+
+    def init(self, **kwargs):
         """
-        Solve the AC power flow using PYPOWER.
+        Initialize the ANDES PFlow routine.
+
+        kwargs go to andes.system.System().
         """
-        ppc = system2ppc(self.system)
+        self._adsys = _to_andes_pflow(self.system,
+                                      no_output=self.system.files.no_output,
+                                      config=self.config.as_dict(),
+                                      **kwargs)
+        self._adsys.setup()
+        self.om.init()
+        self.initialized = True
+        return self.initialized
 
-        method_map = dict(newton=1, fdxb=2, fdbx=3, gauss=4)
-        alg = method_map.get(method)
-        if alg == 4:
-            msg = "Gauss method is not fully tested yet, not recommended!"
-            logger.warning(msg)
-        if alg is None:
-            msg = f"Invalid method `{method}` for PFlow."
-            raise ValueError(msg)
-        ppopt = ppoption(PF_ALG=alg, ENFORCE_Q_LIMS=self.config.qlim, **kwargs)
-
-        res, sstats = runpf(casedata=ppc, ppopt=ppopt)
-        return res, sstats
+    def solve(self, **kwargs):
+        """
+        Placeholder.
+        """
+        return True
 
     def run(self, **kwargs):
         """
-        Run AC power flow using PYPOWER.
-
-        Currently, four methods are supported: 'newton', 'fdxb', 'fdbx', 'gauss',
-        for Newton's method, fast-decoupled, XB, fast-decoupled, BX, and Gauss-Seidel,
-        respectively.
-
-        Note that gauss method is not recommended because it seems to be much
-        more slower than the other three methods and not fully tested yet.
-
-        Examples
-        --------
-        >>> ss = ams.load(ams.get_case('matpower/case14.m'))
-        >>> ss.PFlow.run()
-
-        Parameters
-        ----------
-        force_init : bool
-            Force initialization.
-        no_code : bool
-            Disable showing code.
-        method : str
-            Method for solving the power flow.
-
-        Returns
-        -------
-        exit_code : int
-            Exit code of the routine.
+        Run the routine.
         """
-        return super().run(**kwargs,)
+        if not self.initialized:
+            self.init()
+
+        t0, _ = elapsed()
+        _ = self._adsys.PFlow.run()
+        self.exit_code = self._adsys.exit_code
+        self.converged = self.exit_code == 0
+        _, s = elapsed(t0)
+        self.exec_time = float(s.split(" ")[0])
+
+        self.unpack()
+        return True
+
+    def _post_solve(self):
+        """
+        Placeholder.
+        """
+        return True
+
+    def unpack(self, **kwargs):
+        """
+        Unpack the results from ANDES PFlow routine.
+        """
+        # TODO: maybe also include the DC devices results
+        sys = self.system
+        # --- device results ---
+        bus_idx = sys.Bus.idx.v
+        sys.Bus.set(src='v', attr='v', idx=bus_idx,
+                    value=self._adsys.Bus.get(src='v', attr='v', idx=bus_idx))
+        sys.Bus.set(src='a', attr='v', idx=bus_idx,
+                    value=self._adsys.Bus.get(src='a', attr='v', idx=bus_idx))
+        pv_idx = sys.PV.idx.v
+        pv_u = sys.PV.get(src='u', attr='v', idx=pv_idx)
+        # NOTE: for p, we should consider the online status as p0 is a param
+        sys.PV.set(src='p', attr='v', idx=pv_idx,
+                   value=pv_u * sys.PV.get(src='p0', attr='v', idx=pv_idx))
+        sys.PV.set(src='q', attr='v', idx=pv_idx,
+                   value=self._adsys.PV.get(src='q', attr='v', idx=pv_idx))
+        slack_idx = sys.Slack.idx.v
+        sys.Slack.set(src='p', attr='v', idx=slack_idx,
+                      value=self._adsys.Slack.get(src='p', attr='v', idx=slack_idx))
+        sys.Slack.set(src='q', attr='v', idx=slack_idx,
+                      value=self._adsys.Slack.get(src='q', attr='v', idx=slack_idx))
+        # --- routine results ---
+        self.pg.optz.value = sys.StaticGen.get(src='p', attr='v', idx=self.pg.get_idx())
+        self.qg.optz.value = sys.StaticGen.get(src='q', attr='v', idx=self.qg.get_idx())
+        self.aBus.optz.value = sys.Bus.get(src='a', attr='v', idx=self.aBus.get_idx())
+        self.vBus.optz.value = sys.Bus.get(src='v', attr='v', idx=self.vBus.get_idx())
+        return True
+
+    def update(self, **kwargs):
+        """
+        Placeholder.
+        """
+        if not self.initialized:
+            self.init()
+
+        sync_adsys(self.system, self._adsys)
+
+        return True
+
+    def enable(self, name):
+        raise NotImplementedError
+
+    def disable(self, name):
+        raise NotImplementedError
+
+    def addRParam(self,
+                  name: str,
+                  tex_name: Optional[str] = None,
+                  info: Optional[str] = None,
+                  src: Optional[str] = None,
+                  unit: Optional[str] = None,
+                  model: Optional[str] = None,
+                  v: Optional[np.ndarray] = None,
+                  indexer: Optional[str] = None,
+                  imodel: Optional[str] = None,):
+        """
+        Not supported!
+        """
+        raise NotImplementedError
+
+    def addService(self,
+                   name: str,
+                   value: np.ndarray,
+                   tex_name: str = None,
+                   unit: str = None,
+                   info: str = None,
+                   vtype: Type = None,):
+        """
+        Not supported!
+        """
+        raise NotImplementedError
+
+    def addConstrs(self,
+                   name: str,
+                   e_str: str,
+                   info: Optional[str] = None,
+                   is_eq: Optional[str] = False,):
+        """
+        Not supported!
+        """
+        raise NotImplementedError
+
+    def addVars(self,
+                name: str,
+                model: Optional[str] = None,
+                shape: Optional[Union[int, tuple]] = None,
+                tex_name: Optional[str] = None,
+                info: Optional[str] = None,
+                src: Optional[str] = None,
+                unit: Optional[str] = None,
+                horizon: Optional[RParam] = None,
+                nonneg: Optional[bool] = False,
+                nonpos: Optional[bool] = False,
+                cplx: Optional[bool] = False,
+                imag: Optional[bool] = False,
+                symmetric: Optional[bool] = False,
+                diag: Optional[bool] = False,
+                psd: Optional[bool] = False,
+                nsd: Optional[bool] = False,
+                hermitian: Optional[bool] = False,
+                boolean: Optional[bool] = False,
+                integer: Optional[bool] = False,
+                pos: Optional[bool] = False,
+                neg: Optional[bool] = False,):
+        """
+        Not supported!
+        """
+        raise NotImplementedError

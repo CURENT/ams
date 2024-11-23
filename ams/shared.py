@@ -23,13 +23,17 @@ np = LazyImport('import numpy as np')
 pd = LazyImport('import pandas as pd')
 
 # --- an empty ANDES system ---
-empty_adsys = adSystem()
+empty_adsys = adSystem(autogen_stale=False)
 ad_models = list(empty_adsys.models.keys())
 
 # --- NumPy constants ---
 # NOTE: In NumPy 2.0, np.Inf and np.NaN are deprecated.
 inf = np.inf
 nan = np.nan
+
+# --- misc constants ---
+_prefix = r" - --------------> | "  # NOQA
+_max_length = 80                    # NOQA
 
 # NOTE: copyright
 year_end = datetime.now().year

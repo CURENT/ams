@@ -10,7 +10,7 @@ import scipy.sparse as spr
 
 from andes.core.service import BaseService
 
-from ams.opt.omodel import Param
+from ams.opt import Param
 
 
 logger = logging.getLogger(__name__)
@@ -33,8 +33,6 @@ class RBaseService(BaseService, Param):
         Description.
     vtype : Type, optional
         Variable type.
-    model : str, optional
-        Model name.
     no_parse: bool, optional
         True to skip parsing the service.
     sparse: bool, optional
@@ -106,8 +104,8 @@ class ValueService(RBaseService):
         Description.
     vtype : Type, optional
         Variable type.
-    model : str, optional
-        Model name.
+    no_parse: bool, optional
+        True to skip parsing the service.
     sparse: bool, optional
         True to return output as scipy csr_matrix.
     """
@@ -155,8 +153,8 @@ class ROperationService(RBaseService):
         Description.
     vtype : Type, optional
         Variable type.
-    model : str, optional
-        Model name.
+    no_parse: bool, optional
+        True to skip parsing the service.
     sparse: bool, optional
         True to return output as scipy csr_matrix.
     """
@@ -194,6 +192,8 @@ class LoadScale(ROperationService):
         Unit.
     info : str, optional
         Description.
+    no_parse: bool, optional
+        True to skip parsing the service.
     sparse: bool, optional
         True to return output as scipy csr_matrix.
     """
@@ -236,7 +236,7 @@ class NumOp(ROperationService):
 
     Note that the scalar output is converted to a 1D array.
 
-    The optional kwargs are passed to the input function.
+    The `rargs` are passed to the input function.
 
     Parameters
     ----------
@@ -397,8 +397,6 @@ class NumOpDual(NumOp):
         Description.
     vtype : Type, optional
         Variable type.
-    model : str, optional
-        Model name.
     rfun : Callable, optional
         Function to apply to the output of ``fun``.
     rargs : dict, optional
@@ -407,6 +405,8 @@ class NumOpDual(NumOp):
         Expand the dimensions of the output array along a specified axis.
     array_out : bool, optional
         Whether to force the output to be an array.
+    no_parse: bool, optional
+        True to skip parsing the service.
     sparse: bool, optional
         True to return output as scipy csr_matrix.
     """
@@ -467,6 +467,10 @@ class MinDur(NumOpDual):
         Unit.
     info : str, optional
         Description.
+    vtype : Type, optional
+        Variable type.
+    no_parse: bool, optional
+        True to skip parsing the service.
     sparse: bool, optional
         True to return output as scipy csr_matrix.
     """
@@ -537,8 +541,12 @@ class NumHstack(NumOp):
         Description.
     vtype : Type, optional
         Variable type.
-    model : str, optional
-        Model name.
+    rfun : Callable, optional
+        Function to apply to the output of ``fun``.
+    rargs : dict, optional
+        Keyword arguments to pass to ``rfun``.
+    no_parse: bool, optional
+        True to skip parsing the service.
     sparse: bool, optional
         True to return output as scipy csr_matrix.
     """
@@ -624,8 +632,12 @@ class ZonalSum(NumOp):
         Description.
     vtype : Type
         Variable type.
-    model : str
-        Model name.
+    rfun : Callable, optional
+        Function to apply to the output of ``fun``.
+    rargs : dict, optional
+        Keyword arguments to pass to ``rfun``.
+    no_parse: bool, optional
+        True to skip parsing the service.
     sparse: bool, optional
         True to return output as scipy csr_matrix.
     """
@@ -676,7 +688,7 @@ class VarSelect(NumOp):
     A numerical matrix to select a subset of a 2D variable,
     ``u.v[:, idx]``.
 
-    For example, if nned to select Energy Storage output
+    For example, if need to select Energy Storage output
     power from StaticGen `pg`, following definition can be used:
     ```python
     class RTED:
@@ -709,6 +721,8 @@ class VarSelect(NumOp):
         Keyword arguments to pass to ``rfun``.
     array_out : bool, optional
         Whether to force the output to be an array.
+    no_parse: bool, optional
+        True to skip parsing the service.
     sparse: bool, optional
         True to return output as scipy csr_matrix.
     """
@@ -801,8 +815,12 @@ class VarReduction(NumOp):
         A description of the operation.
     vtype : Type, optional
         The variable type.
-    model : str, optional
-        The model name associated with the operation.
+    rfun : Callable, optional
+        Function to apply to the output of ``fun``.
+    rargs : dict, optional
+        Keyword arguments to pass to ``rfun``.
+    no_parse: bool, optional
+        True to skip parsing the service.
     sparse: bool, optional
         True to return output as scipy csr_matrix.
     """
@@ -818,13 +836,11 @@ class VarReduction(NumOp):
                  rfun: Callable = None,
                  rargs: dict = None,
                  no_parse: bool = False,
-                 sparse: bool = False,
-                 **kwargs):
+                 sparse: bool = False,):
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=None, rfun=rfun, rargs=rargs,
-                         no_parse=no_parse, sparse=sparse,
-                         **kwargs)
+                         no_parse=no_parse, sparse=sparse,)
         self.fun = fun
 
     @property
@@ -859,8 +875,12 @@ class RampSub(NumOp):
         Description.
     vtype : Type
         Variable type.
-    model : str
-        Model name.
+    rfun : Callable, optional
+        Function to apply to the output of ``fun``.
+    rargs : dict, optional
+        Keyword arguments to pass to ``rfun``.
+    no_parse: bool, optional
+        True to skip parsing the service.
     sparse: bool, optional
         True to return output as scipy csr_matrix.
     """

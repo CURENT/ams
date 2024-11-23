@@ -16,7 +16,8 @@ from ams.core.param import RParam
 from ams.core.symprocessor import SymProcessor
 from ams.core.documenter import RDocumenter
 from ams.core.service import RBaseService, ValueService
-from ams.opt.omodel import OModel, Param, Var, Constraint, Objective, ExpressionCalc
+from ams.opt import OModel
+from ams.opt import Param, Var, Constraint, Objective, ExpressionCalc, Expression
 
 from ams.shared import pd
 
@@ -51,6 +52,8 @@ class RoutineBase:
         Registry for Var objects.
     constrs : OrderedDict
         Registry for Constraint objects.
+    exprcs : OrderedDict
+        Registry for ExpressionCalc objects.
     exprs : OrderedDict
         Registry for Expression objects.
     obj : Optional[Objective]
@@ -105,6 +108,7 @@ class RoutineBase:
         self.params = OrderedDict()         # Param registry
         self.vars = OrderedDict()           # Var registry
         self.constrs = OrderedDict()        # Constraint registry
+        self.exprcs = OrderedDict()         # ExpressionCalc registry
         self.exprs = OrderedDict()          # Expression registry
         self.obj = None                     # Objective
         self.initialized = False            # initialization flag
@@ -544,7 +548,7 @@ class RoutineBase:
         Called within ``__setattr__``, this is where the magic happens.
         Subclass attributes are automatically registered based on the variable type.
         """
-        if isinstance(value, (Param, Var, Constraint, Objective, ExpressionCalc)):
+        if isinstance(value, (Param, Var, Constraint, Objective, ExpressionCalc, Expression)):
             value.om = self.om
             value.rtn = self
         if isinstance(value, Param):
@@ -556,8 +560,11 @@ class RoutineBase:
         elif isinstance(value, Constraint):
             self.constrs[key] = value
             self.om.constrs[key] = None  # cp.Constraint
-        elif isinstance(value, ExpressionCalc):
+        elif isinstance(value, Expression):
             self.exprs[key] = value
+            self.om.exprs[key] = None  # cp.Expression
+        elif isinstance(value, ExpressionCalc):
+            self.exprcs[key] = value
         elif isinstance(value, RParam):
             self.rparams[key] = value
         elif isinstance(value, RBaseService):
@@ -807,8 +814,7 @@ class RoutineBase:
                    tex_name: str = None,
                    unit: str = None,
                    info: str = None,
-                   vtype: Type = None,
-                   model: str = None,):
+                   vtype: Type = None,):
         """
         Add `ValueService` to the routine.
 
@@ -826,8 +832,6 @@ class RoutineBase:
             Description.
         vtype : Type, optional
             Variable type.
-        model : str, optional
-            Model name.
         """
         item = ValueService(name=name, tex_name=tex_name,
                             unit=unit, info=info,
@@ -843,8 +847,7 @@ class RoutineBase:
                    name: str,
                    e_str: str,
                    info: Optional[str] = None,
-                   is_eq: Optional[str] = False,
-                   ):
+                   is_eq: Optional[str] = False,):
         """
         Add `Constraint` to the routine. to the routine.
 

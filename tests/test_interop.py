@@ -127,9 +127,7 @@ class TestAndesConversion(unittest.TestCase):
         sa = to_andes(sp,
                       setup=True, no_output=True, default_config=True,
                       verify=False, tol=1e-3)
-        # NOTE: it is known that there is 1e-7~1e-6 diff in case300.m
-        self.assertFalse(verify_pf(amsys=sp, adsys=sa, tol=1e-6))
-        self.assertTrue(verify_pf(amsys=sp, adsys=sa, tol=1e-3))
+        self.assertTrue(verify_pf(amsys=sp, adsys=sa, tol=1e-7))
 
 
 class TestDataExchange(unittest.TestCase):

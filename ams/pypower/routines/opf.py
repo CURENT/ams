@@ -1203,7 +1203,7 @@ class opf_model(object):
 #            nnzA = nnzA + nnz(self.lin["data"].A.(self.lin.order{k}))
 
         if self.lin["N"]:
-            A = sp.sparse.lil_matrix((self.lin["N"], self.var["N"]))
+            A = sp.lil_matrix((self.lin["N"], self.var["N"]))
             u = inf * np.ones(self.lin["N"])
             l = -u
         else:
