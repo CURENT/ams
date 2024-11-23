@@ -27,7 +27,8 @@ class PFlow(RoutineBase):
     ----------
     [1] M. L. Crow, Computational methods for electric power systems. 2015.
 
-    [2] ANDES Documentation - Simulation and Plot. [Online]. Available: https://docs.andes.app/en/latest/_examples/ex1.html
+    [2] ANDES Documentation - Simulation and Plot. [Online]. Available:
+    https://docs.andes.app/en/latest/_examples/ex1.html
     """
 
     def __init__(self, system, config):
