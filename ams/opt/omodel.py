@@ -209,7 +209,7 @@ class OModel(OModelBase):
                 self.rtn.obj.parse()
             except Exception as e:
                 raise Exception(f"Failed to parse Objective <{self.rtn.obj.name}>.\n{e}")
-        elif self.rtn.class_name not in ['PFlow', 'DCPF0']:
+        elif self.rtn.class_name not in ['DCPF0']:
             logger.warning(f"{self.rtn.class_name} has no objective function!")
             self.parsed = False
             return self.parsed
@@ -341,7 +341,7 @@ class OModel(OModelBase):
             Returns True if the finalization is successful, False otherwise.
         """
         # NOTE: for power flow type, we skip the finalization
-        if self.rtn.class_name in ['PFlow', 'DCPF0']:
+        if self.rtn.class_name in ['DCPF0']:
             self.finalized = True
             return self.finalized
         if self.finalized and not force:

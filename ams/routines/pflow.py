@@ -8,7 +8,7 @@ from andes.utils.misc import elapsed
 
 from ams.core.param import RParam
 from ams.routines.routine import RoutineBase
-from ams.opt import Var, Expression
+from ams.opt import Var, Expression, Objective
 from ams.interface import _to_andes_pflow, sync_adsys
 
 logger = logging.getLogger(__name__)
@@ -91,6 +91,10 @@ class PFlow(RoutineBase):
                               unit='p.u.',
                               e_str='Bf@aBus + Pfinj',
                               model='Line', src=None,)
+
+        self.obj = Objective(name='obj',
+                             info='place holder', unit='$',
+                             sense='min', e_str='0',)
 
     def init(self, **kwargs):
         """
