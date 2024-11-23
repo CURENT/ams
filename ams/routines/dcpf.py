@@ -137,14 +137,12 @@ class DCPFBase(RoutineBase):
                     idx = var.owner.get_idx()
                 except AttributeError:
                     idx = var.owner.idx.v
-                else:
-                    pass
+
                 # NOTE: only unpack the variables that are in the model or group
                 try:
                     var.owner.set(src=var.src, idx=idx, attr='v', value=var.v)
                 except (KeyError, TypeError):
                     logger.error(f'Failed to unpack <{var}> to <{var.owner.class_name}>.')
-                    pass
 
         # --- solver ExpressionCalc results to routine algeb ---
         for _, exprc in self.exprcs.items():
