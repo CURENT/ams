@@ -21,7 +21,7 @@ class DCPF0(RoutineBase):
     """
     DC power flow using PYPOWER.
 
-    This class is deprecated as of version 0.9.12 and will be removed in 1.0.0.
+    This class is deprecated as of version 0.9.12 and will be removed in 1.1.0.
 
     Notes
     -----
