@@ -28,6 +28,10 @@ class DCPF(RoutineBase):
         self.info = 'DC Power Flow'
         self.type = 'PF'
 
+        self.ug = RParam(info='Gen connection status',
+                         name='ug', tex_name=r'u_{g}',
+                         model='StaticGen', src='u',
+                         no_parse=True)
         self.gsh = RParam(info='shunt conductance',
                           name='gsh', tex_name=r'g_{sh}',
                           model='Shunt', src='g',
@@ -104,7 +108,7 @@ class DCPF(RoutineBase):
         self.pb = Constraint(name='pb', info='power balance',
                              e_str=pb, is_eq=True,)
         self.pvb = Constraint(name='pvb', info='PV generator',
-                              e_str='cpv @ (pg - pg0)',
+                              e_str='cpv @ (pg - mul(ug, pg0))',
                               is_eq=True,)
 
         self.csb = VarSelect(info='select slack bus',
@@ -121,7 +125,7 @@ class DCPF(RoutineBase):
                               model='Line', src=None,)
 
         self.obj = Objective(name='obj',
-                             info='total cost', unit='$',
+                             info='place holder', unit='$',
                              sense='min', e_str='0',)
 
     def solve(self, **kwargs):
