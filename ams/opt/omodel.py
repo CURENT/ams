@@ -209,8 +209,7 @@ class OModel(OModelBase):
                 self.rtn.obj.parse()
             except Exception as e:
                 raise Exception(f"Failed to parse Objective <{self.rtn.obj.name}>.\n{e}")
-        # NOTE: after migrating to CVXPY DCPF, we should remove it from here
-        elif self.rtn.class_name not in ['PFlow', 'DCPF']:
+        elif self.rtn.class_name not in ['PFlow', 'DCPF0']:
             logger.warning(f"{self.rtn.class_name} has no objective function!")
             self.parsed = False
             return self.parsed
@@ -342,8 +341,7 @@ class OModel(OModelBase):
             Returns True if the finalization is successful, False otherwise.
         """
         # NOTE: for power flow type, we skip the finalization
-        # NOTE: after migrating to CVXPY DCPF, we should remove it from here
-        if self.rtn.class_name in ['PFlow', 'DCPF']:
+        if self.rtn.class_name in ['PFlow', 'DCPF0']:
             self.finalized = True
             return self.finalized
         if self.finalized and not force:

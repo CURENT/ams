@@ -29,7 +29,7 @@ class ACOPF(DCPF0):
     """
 
     def __init__(self, system, config):
-        DCPF.__init__(self, system, config)
+        DCPF0.__init__(self, system, config)
         self.info = 'AC Optimal Power Flow'
         self.type = 'ACED'
 

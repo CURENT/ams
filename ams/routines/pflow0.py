@@ -29,7 +29,7 @@ class PFlow0(DCPF0):
     """
 
     def __init__(self, system, config):
-        DCPF.__init__(self, system, config)
+        DCPF0.__init__(self, system, config)
         self.info = "AC Power Flow"
         self.type = "PF"
 

@@ -104,7 +104,7 @@ class DCPF(RoutineBase):
         self.pb = Constraint(name='pb', info='power balance',
                              e_str=pb, is_eq=True,)
         self.pvb = Constraint(name='pvb', info='PV generator',
-                              e_str='cpv * (pg - pg0)',
+                              e_str='cpv @ (pg - pg0)',
                               is_eq=True,)
 
         self.csb = VarSelect(info='select slack bus',
