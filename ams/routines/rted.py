@@ -303,7 +303,7 @@ class DGBase:
                             name='gendg', tex_name=r'g_{DG}',
                             model='DG', src='gen',
                             no_parse=True,)
-        info = 'Ratio of DG.pge w.r.t to that of static generator',
+        info = 'Ratio of DG.pge w.r.t to that of static generator'
         self.gammapdg = RParam(name='gammapd', tex_name=r'\gamma_{p,DG}',
                                model='DG', src='gammap',
                                no_parse=True, info=info)

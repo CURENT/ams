@@ -18,20 +18,16 @@ class PFlow(RoutineBase):
     """
     Power flow analysis using ANDES PFlow routine.
 
-    More settings can be changed via `PFlow2._adsys.config` and `PFlow2._adsys.PFlow.config`.
+    More settings can be changed via ``PFlow2._adsys.config`` and ``PFlow2._adsys.PFlow.config``.
 
     All generator output powers, bus voltages, and angles are included in the variable definitions.
     However, not all of these are unknowns; the definitions are provided for easy access.
 
-    Reference
-    ---------
-
+    References
+    ----------
     [1] M. L. Crow, Computational methods for electric power systems. 2015.
-    [2] ANDES Documentation - Simulation and Plot. [Online].
 
-    Available:
-
-    https://docs.andes.app/en/latest/_examples/ex1.html
+    [2] ANDES Documentation - Simulation and Plot. [Online]. Available: https://docs.andes.app/en/latest/_examples/ex1.html
     """
 
     def __init__(self, system, config):
