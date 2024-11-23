@@ -28,7 +28,8 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 
 # Why AMS
 
-With the built-in interface with ANDES, AMS enables **Dynamics Incorporated Stability-Constrained Scheduling**.
+With the built-in interface with ANDES, AMS enables **Dynamics Incorporated**
+**Stability-Constrained Scheduling**.
 
 AMS is a **Modeling Framework** that provides a descriptive way to formulate
 scheduling problems. The optimization problems are then handled by **CVXPY**
