@@ -171,11 +171,11 @@ class DCOPF(RoutineBase):
         self.pmaxe = Expression(info='Effective pmax',
                                 name='pmaxe', tex_name=r'p_{g, max, e}',
                                 e_str='mul(nctrle, pg0) + mul(ctrle, pmax)',
-                                model='StaticGen', src=None,)
+                                model='StaticGen', src=None, unit='p.u.',)
         self.pmine = Expression(info='Effective pmin',
                                 name='pmine', tex_name=r'p_{g, min, e}',
                                 e_str='mul(nctrle, pg0) + mul(ctrle, pmin)',
-                                model='StaticGen', src=None,)
+                                model='StaticGen', src=None, unit='p.u.',)
         self.pglb = Constraint(name='pglb', info='pg min',
                                e_str='-pg + pmine', is_eq=False,)
         self.pgub = Constraint(name='pgub', info='pg max',
