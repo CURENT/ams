@@ -155,13 +155,11 @@ class DCPFBase(RoutineBase):
                     idx = exprc.owner.get_idx()
                 except AttributeError:
                     idx = exprc.owner.idx.v
-                else:
-                    pass
+
                 try:
                     exprc.owner.set(src=exprc.src, idx=idx, attr='v', value=exprc.v)
                 except (KeyError, TypeError):
                     logger.error(f'Failed to unpack <{exprc}> to <{exprc.owner.class_name}>.')
-                    pass
 
         # label the most recent solved routine
         self.system.recent = self.system.routines[self.class_name]

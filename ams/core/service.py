@@ -804,7 +804,7 @@ class VarReduction(NumOp):
     u : Callable
         The input matrix variable.
     fun : Callable
-        The reduction function that takes a shape parameter (1D shape) as input.
+        The reduction function that takes a shape argument (1D shape) as input.
     name : str, optional
         The name of the instance.
     tex_name : str, optional

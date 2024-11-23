@@ -171,9 +171,11 @@ class PFlow(RoutineBase):
         self.vBus.optz.value = sys.Bus.get(src='v', attr='v', idx=self.vBus.get_idx())
         return True
 
-    def update(self, **kwargs):
+    def update(self, params=None, build_mats=False):
         """
-        Placeholder.
+        This method updates the parameters in the optimization model. In this routine,
+        the `params` and `build_mats` arguments are not used because the parameters
+        are updated directly to the ANDES system.
         """
         if not self.initialized:
             self.init()
