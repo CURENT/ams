@@ -6,7 +6,6 @@ This module is supplementary to the ``andes.shared`` module.
 import logging
 import unittest
 from functools import wraps
-from datetime import datetime
 from collections import OrderedDict
 
 import cvxpy as cp
@@ -36,8 +35,7 @@ _prefix = r" - --------------> | "  # NOQA
 _max_length = 80                    # NOQA
 
 # NOTE: copyright
-year_end = datetime.now().year
-copyright_msg = f'Copyright (C) 2023-{year_end} Jinning Wang'
+copyright_msg = f'Copyright (C) 2023-2024 Jinning Wang'
 
 # NOTE: copied from CVXPY documentation, last checked on 2024/10/30, v1.5
 mip_solvers = ['CBC', 'COPT', 'GLPK_MI', 'CPLEX', 'GUROBI',
