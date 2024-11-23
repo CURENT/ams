@@ -14,8 +14,8 @@ v0.9.12 (202x-xx-xx)
 
 - Refactor ``OModel.initialized`` as a property method
 - Add a demo to show using ``Constraint.e`` for debugging
-- Fix ``ams.opt.omodel.Param.evaluate()`` when its value is a number
-- Improve ``ams.opt.omodel.ExpressionCalc()`` for better performance
+- Fix ``ams.opt.omodel.Param.evaluate`` when its value is a number
+- Improve ``ams.opt.omodel.ExpressionCalc`` for better performance
 - Refactor module ``ams.opt``
 - Add class ``ams.opt.Expression``
 - Switch from PYPOWER to ANDES in routine ``PFlow``
@@ -38,15 +38,15 @@ v0.9.11 (2024-11-14)
 - Add parameter ``uf`` for enforced generator on/off status
 - In servicee ``LoadScale``, consider load online status
 - Consider line online status in routine ``ED``
-- Add methods ``evaluate`` and ``finalize`` in the class ``OModel`` to handle optimization
-    elements generation and assembling
-- Refactor ``OModel.init()`` and ``Routine.init()``
-- Add ANDES paper as a citation file for now
+- Add methods ``evaluate`` and ``finalize`` in the class ``OModel`` to handle optimization 
+  elements generation and assembling
+- Refactor ``OModel.init`` and ``Routine.init``
+- Add ANDES paper as the citation file for now
 - Add more routine tests for generator trip, line trip, and load trip
 - Add a README to overview built-in cases
 - Rename methods ``v2`` as ``e`` for classes ``Constraint`` and ``Objective``
 - Add benchmark functions
-- Improve the usage of ``eval()`` in module ``omodel``
+- Improve the usage of ``eval`` in module ``omodel``
 - Refactor module ``interop.andes`` as module ``interface`` for simplicity
 
 v0.9.10 (2024-09-03)
@@ -65,17 +65,17 @@ Hotfix of import issue in ``v0.9.9``.
 v0.9.9 (2024-09-02)
 -------------------
 
-**IMPORTANT NOTICE: This version has known issues and should be avoided.**
+**NOTICE: This version has known issues and has been yanked on PyPI.**
 
 v0.9.8 (2024-06-18)
 -------------------
 
 - Assign ``MParam.owner`` when declaring
-- In ``MatProcessor``, improve ``build_ptdf` and ``build_lodf` to allow partial building and
-    incremental building
+- In ``MatProcessor``, improve ``build_ptdf`` and ``build_lodf`` to allow partial building and
+  incremental building
 - Add file ``cases/matpower/Benchmark.json`` for benchmark with MATPOWER
 - Improve known good results test
-- Minor fix in ``main.py` selftest part
+- Minor fix in ``main.py`` selftest part
 - Set dependency NumPy version to be <2.0.0 to avoid CVXPY compatibility issues
 
 v0.9.7 (2024-05-24)
@@ -91,30 +91,30 @@ Frequency Regulation," in IEEE Transactions on Smart Grid, doi: 10.1109/TSG.2024
 
 - Fix OTDF calculation
 - Add parameter ``dtype='float64'`` and ``no_store=False`` in ``MatProcessor`` PTDF, LODF, and OTDF
-    calculation, to save memory
+  calculation, to save memory
 - Add placeholder parameter ``Bus.type``
 
 v0.9.6 (2024-04-21)
 -------------------
 
-This patch release refactor and improve ``MatProcessor`, where it support PTDF, LODF,
+This patch release refactor and improve ``MatProcessor``, where it support PTDF, LODF,
 and OTDF for static analysis.
 
 The reference can be found online "PowerWorld > Web Help > Sensitivities > Line
 Outage Distribution Factors".
 
 - Refactor DCPF, PFlow, and ACOPF
-- Add a loss factor in ``RTED.dc2ac()``
-- Add ``DCOPF.dc2ac()``
+- Add a loss factor in ``RTED.dc2ac``
+- Add ``DCOPF.dc2ac``
 - Fix OModel parse status to ensure no_parsed params can be updated
 - Fix and rerun ex2
-- Format ``Routine.get()`` return type to be consistent with input idx type
-- Remove unused ``Routine.prepare()``
-- Refactor ``MatProcessor` to separate matrix building
-- Add Var ``plf`` in ``DCPF`, ``PFlow`, and ``ACOPF`` to store the line flow
-- Add ``build_ptdf``, ``build_lodf`, and ``build_otdf`
-- Fix ``Routine.get()`` to support pd.Series type idx input
-- Reserve ``exec_time`` after ``dc2ac()``
+- Format ``Routine.get`` return type to be consistent with input idx type
+- Remove unused ``Routine.prepare``
+- Refactor ``MatProcessor`` to separate matrix building
+- Add Var ``plf`` in ``DCPF``, ``PFlow``, and ``ACOPF`` to store the line flow
+- Add ``build_ptdf``, ``build_lodf``, and ``build_otdf``
+- Fix ``Routine.get`` to support pd.Series type idx input
+- Reserve ``exec_time`` after ``dc2ac``
 - Adjust kloss to fix ex2
 
 v0.9.5 (2024-03-25)
@@ -140,7 +140,7 @@ v0.9.3 (2024-03-06)
 -------------------
 
 - Major improvemets on demo_AGC
-- Bug fix in ``RTED.dc2ac()``
+- Bug fix in ``RTED.dc2ac``
 
 v0.9.2 (2024-03-04)
 -------------------
@@ -166,7 +166,7 @@ v0.9.0 (2024-02-27)
 - Fix ``addService``, ``addVars``
 - Rename ``RoutineModel`` to ``RoutineBase`` for better naming
 - Fix ANDES file converter issue
-- Initial release to conda-forge
+- Initial release on conda-forge
 
 v0.8.5 (2024-01-31)
 -------------------
@@ -182,7 +182,7 @@ v0.8.4 (2024-01-30)
 v0.8.3 (2024-01-30)
 -------------------
 
-- Initial release to PyPI
+- Initial release on PyPI
 
 v0.8.2 (2024-01-30)
 -------------------
