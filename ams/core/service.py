@@ -676,7 +676,7 @@ class VarSelect(NumOp):
     A numerical matrix to select a subset of a 2D variable,
     ``u.v[:, idx]``.
 
-    For example, if nned to select Energy Storage output
+    For example, if need to select Energy Storage output
     power from StaticGen `pg`, following definition can be used:
     ```python
     class RTED:
