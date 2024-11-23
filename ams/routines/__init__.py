@@ -16,7 +16,7 @@ all_routines = OrderedDict([
     ('uc', ['UC', 'UCDG', 'UCES']),
     ('dopf', ['DOPF', 'DOPFVIS']),
     ('pflow0', ['PFlow0']),
-    ('dcpf2', ['DCPF2']),
+    ('dcpf0', ['DCPF0']),
 ])
 
 class_names = list_flatten(list(all_routines.values()))

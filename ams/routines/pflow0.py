@@ -10,13 +10,13 @@ from ams.io.pypower import system2ppc
 from ams.pypower.core import ppoption
 from ams.core.param import RParam
 
-from ams.routines.dcpf import DCPF
+from ams.routines.dcpf0 import DCPF0
 from ams.opt import Var
 
 logger = logging.getLogger(__name__)
 
 
-class PFlow0(DCPF):
+class PFlow0(DCPF0):
     """
     AC Power Flow routine.
 

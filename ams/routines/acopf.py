@@ -10,13 +10,13 @@ from ams.pypower.core import ppoption
 from ams.io.pypower import system2ppc
 from ams.core.param import RParam
 
-from ams.routines.dcpf import DCPF
+from ams.routines.dcpf0 import DCPF0
 from ams.opt import Var, Constraint, Objective
 
 logger = logging.getLogger(__name__)
 
 
-class ACOPF(DCPF):
+class ACOPF(DCPF0):
     """
     Standard AC optimal power flow.
 
