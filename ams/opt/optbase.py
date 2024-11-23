@@ -58,7 +58,7 @@ def ensure_mats_and_parsed(func):
                     self.parse()
         except Exception as e:
             logger.error(f"Error during initialization or parsing: {e}")
-            raise
+            raise e
         return func(self, *args, **kwargs)
     return wrapper
 
