@@ -22,6 +22,7 @@ v0.9.12 (202x-xx-xx)
 - Switch from PYPOWER to regular formulation in routine ``DCPF``
 - Refactor routines ``DCPF`` and ``DCOPF``
 - In ``RDocumenter``, set Srouce to be owner if there is no src
+- Specify ``multiprocess<=0.70.16`` in requirements as 0.70.17 does not support Linux
 
 RC1
 ~~~~
