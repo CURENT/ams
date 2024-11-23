@@ -19,7 +19,9 @@ logger = logging.getLogger(__name__)
 
 class DCPF0(RoutineBase):
     """
-    DC power flow, overload the ``solve``, ``unpack``, and ``run`` methods.
+    DC power flow using PYPOWER.
+
+    This class is deprecated as of version 0.9.12 and will be removed in 1.0.0.
 
     Notes
     -----

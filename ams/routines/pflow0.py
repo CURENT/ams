@@ -18,7 +18,9 @@ logger = logging.getLogger(__name__)
 
 class PFlow0(DCPF0):
     """
-    AC Power Flow routine.
+    AC Power Flow using PYPOWER.
+
+    This class is deprecated as of version 0.9.12 and will be removed in 1.0.0.
 
     Notes
     -----
