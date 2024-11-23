@@ -9,7 +9,7 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v0.9.12 (202x-xx-xx)
+v0.9.12 (2024-11-23)
 --------------------
 
 - Refactor ``OModel.initialized`` as a property method
