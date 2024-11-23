@@ -14,13 +14,7 @@ logger = logging.getLogger(__name__)
 
 class DCPF(RoutineBase):
     """
-    DC power flow, overload the ``solve``, ``unpack``, and ``run`` methods.
-
-    Notes
-    -----
-    1. DCPF is solved with PYPOWER ``runpf`` function.
-    2. DCPF formulation is not complete yet, but this does not affect the
-       results because the data are passed to PYPOWER for solving.
+    DC power flow.
     """
 
     def __init__(self, system, config):
@@ -95,7 +89,7 @@ class DCPF(RoutineBase):
                         model='Bus', src='a',)
 
         self.cpv = VarSelect(u=self.pg, indexer='genpv',
-                             name='cpv', tex_name=r'C_{ESD}',
+                             name='cpv', tex_name=r'C_{PV}',
                              info='Select PV from pg',
                              no_parse=True,)
         self.pg0 = RParam(info='Gen initial active power',
