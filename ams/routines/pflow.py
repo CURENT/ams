@@ -2,7 +2,10 @@
 Power flow routines independent from PYPOWER.
 """
 import logging
+from typing import Optional, Union, Type
 from collections import OrderedDict
+
+import numpy as np
 
 from andes.utils.misc import elapsed
 
@@ -185,14 +188,66 @@ class PFlow(RoutineBase):
     def disable(self, name):
         raise NotImplementedError
 
-    def addRParam(self, **kwargs):
+    def addRParam(self,
+                  name: str,
+                  tex_name: Optional[str] = None,
+                  info: Optional[str] = None,
+                  src: Optional[str] = None,
+                  unit: Optional[str] = None,
+                  model: Optional[str] = None,
+                  v: Optional[np.ndarray] = None,
+                  indexer: Optional[str] = None,
+                  imodel: Optional[str] = None,):
+        """
+        Not supported!
+        """
         raise NotImplementedError
 
-    def addService(self, **kwargs):
+    def addService(self,
+                   name: str,
+                   value: np.ndarray,
+                   tex_name: str = None,
+                   unit: str = None,
+                   info: str = None,
+                   vtype: Type = None,):
+        """
+        Not supported!
+        """
         raise NotImplementedError
 
-    def addConstrs(self, **kwargs):
+    def addConstrs(self,
+                   name: str,
+                   e_str: str,
+                   info: Optional[str] = None,
+                   is_eq: Optional[str] = False,):
+        """
+        Not supported!
+        """
         raise NotImplementedError
 
-    def addVars(self, **kwargs):
+    def addVars(self,
+                name: str,
+                model: Optional[str] = None,
+                shape: Optional[Union[int, tuple]] = None,
+                tex_name: Optional[str] = None,
+                info: Optional[str] = None,
+                src: Optional[str] = None,
+                unit: Optional[str] = None,
+                horizon: Optional[RParam] = None,
+                nonneg: Optional[bool] = False,
+                nonpos: Optional[bool] = False,
+                cplx: Optional[bool] = False,
+                imag: Optional[bool] = False,
+                symmetric: Optional[bool] = False,
+                diag: Optional[bool] = False,
+                psd: Optional[bool] = False,
+                nsd: Optional[bool] = False,
+                hermitian: Optional[bool] = False,
+                boolean: Optional[bool] = False,
+                integer: Optional[bool] = False,
+                pos: Optional[bool] = False,
+                neg: Optional[bool] = False,):
+        """
+        Not supported!
+        """
         raise NotImplementedError

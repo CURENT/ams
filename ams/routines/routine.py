@@ -814,8 +814,7 @@ class RoutineBase:
                    tex_name: str = None,
                    unit: str = None,
                    info: str = None,
-                   vtype: Type = None,
-                   model: str = None,):
+                   vtype: Type = None,):
         """
         Add `ValueService` to the routine.
 
@@ -833,8 +832,6 @@ class RoutineBase:
             Description.
         vtype : Type, optional
             Variable type.
-        model : str, optional
-            Model name.
         """
         item = ValueService(name=name, tex_name=tex_name,
                             unit=unit, info=info,
@@ -850,8 +847,7 @@ class RoutineBase:
                    name: str,
                    e_str: str,
                    info: Optional[str] = None,
-                   is_eq: Optional[str] = False,
-                   ):
+                   is_eq: Optional[str] = False,):
         """
         Add `Constraint` to the routine. to the routine.
 
