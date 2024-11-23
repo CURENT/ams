@@ -89,6 +89,9 @@ class SymProcessor:
             (r'(== 0|<= 0)$', ''),  # remove the comparison operator
             (r'cp\.(Minimize|Maximize)', r'float'),  # remove cp.Minimize/Maximize
             (r'\bcp.\b', 'np.'),
+            (r'\bexp\b', 'np.exp'),
+            (r'\blog\b', 'np.log'),
+            (r'\bconj\b', 'np.conj'),
         ])
 
         self.status = {
@@ -124,9 +127,7 @@ class SymProcessor:
 
         # Vars
         for vname, var in self.parent.vars.items():
-            tmp = sp.symbols(f'{var.name}')
-            # tmp = sp.symbols(var.name)
-            self.inputs_dict[vname] = tmp
+            self.inputs_dict[vname] = sp.symbols(f'{vname}')
             self.sub_map[rf"\b{vname}\b"] = f"self.om.{vname}"
             self.tex_map[rf"\b{vname}\b"] = rf'{var.tex_name}'
             self.val_map[rf"\b{vname}\b"] = f"rtn.{vname}.v"
@@ -162,6 +163,13 @@ class SymProcessor:
             self.tex_map[rf"\b{sname}\b"] = f'{service.tex_name}'
             if not service.no_parse:
                 self.val_map[rf"\b{sname}\b"] = f"rtn.{sname}.v"
+
+        # Expressions
+        for ename, expr in self.parent.exprs.items():
+            self.inputs_dict[ename] = sp.symbols(f'{ename}')
+            self.sub_map[rf"\b{ename}\b"] = f"self.om.{ename}"
+            self.val_map[rf"\b{ename}\b"] = f"rtn.{ename}.v"
+            self.tex_map[rf"\b{ename}\b"] = f'{expr.tex_name}'
 
         # Constraints
         # NOTE: constraints are included in sub_map for ExpressionCalc

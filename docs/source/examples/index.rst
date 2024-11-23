@@ -31,3 +31,4 @@ folder of the repository
 
    ../_examples/demo/demo_ESD1.ipynb
    ../_examples/demo/demo_AGC.ipynb
+   ../_examples/demo/demo_debug.ipynb

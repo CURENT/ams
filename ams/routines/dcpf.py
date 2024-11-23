@@ -3,186 +3,203 @@ Power flow routines.
 """
 import logging
 
-from andes.shared import deg2rad
-from andes.utils.misc import elapsed
-
+from ams.opt import Var, Constraint, Expression, Objective
 from ams.routines.routine import RoutineBase
-from ams.opt.omodel import Var
-from ams.pypower import runpf
-from ams.pypower.core import ppoption
 
-from ams.io.pypower import system2ppc
 from ams.core.param import RParam
+from ams.core.service import VarSelect
 
 logger = logging.getLogger(__name__)
 
 
-class DCPF(RoutineBase):
+class DCPFBase(RoutineBase):
     """
-    DC power flow, overload the ``solve``, ``unpack``, and ``run`` methods.
-
-    Notes
-    -----
-    1. DCPF is solved with PYPOWER ``runpf`` function.
-    2. DCPF formulation is not complete yet, but this does not affect the
-       results because the data are passed to PYPOWER for solving.
+    Base class for DC power flow.
     """
 
     def __init__(self, system, config):
         RoutineBase.__init__(self, system, config)
-        self.info = 'DC Power Flow'
-        self.type = 'PF'
 
-        # --- routine data ---
-        self.x = RParam(info="line reactance",
-                        name='x', tex_name='x',
-                        unit='p.u.',
-                        model='Line', src='x',)
-        self.tap = RParam(info="transformer branch tap ratio",
-                          name='tap', tex_name=r't_{ap}',
-                          model='Line', src='tap',
-                          unit='float',)
-        self.phi = RParam(info="transformer branch phase shift in rad",
-                          name='phi', tex_name=r'\phi',
-                          model='Line', src='phi',
-                          unit='radian',)
+        self.ug = RParam(info='Gen connection status',
+                         name='ug', tex_name=r'u_{g}',
+                         model='StaticGen', src='u',
+                         no_parse=True)
+        self.pg0 = RParam(info='Gen initial active power',
+                          name='pg0', tex_name=r'p_{g, 0}',
+                          unit='p.u.', model='StaticGen',
+                          src='p0', no_parse=False,)
+        # --- shunt ---
+        self.gsh = RParam(info='shunt conductance',
+                          name='gsh', tex_name=r'g_{sh}',
+                          model='Shunt', src='g',
+                          no_parse=True,)
 
+        self.buss = RParam(info='Bus slack',
+                           name='buss', tex_name=r'B_{us,s}',
+                           model='Slack', src='bus',
+                           no_parse=True,)
         # --- load ---
-        self.pd = RParam(info='active deman',
+        self.pd = RParam(info='active demand',
                          name='pd', tex_name=r'p_{d}',
-                         unit='p.u.',
-                         model='StaticLoad', src='p0')
-        # --- gen ---
+                         model='StaticLoad', src='p0',
+                         unit='p.u.',)
+
+        # --- connection matrix ---
+        self.Cg = RParam(info='Gen connection matrix',
+                         name='Cg', tex_name=r'C_{g}',
+                         model='mats', src='Cg',
+                         no_parse=True, sparse=True,)
+        self.Cl = RParam(info='Load connection matrix',
+                         name='Cl', tex_name=r'C_{l}',
+                         model='mats', src='Cl',
+                         no_parse=True, sparse=True,)
+        self.CftT = RParam(info='Transpose of line connection matrix',
+                           name='CftT', tex_name=r'C_{ft}^T',
+                           model='mats', src='CftT',
+                           no_parse=True, sparse=True,)
+        self.Csh = RParam(info='Shunt connection matrix',
+                          name='Csh', tex_name=r'C_{sh}',
+                          model='mats', src='Csh',
+                          no_parse=True, sparse=True,)
+
+        # --- system matrix ---
+        self.Bbus = RParam(info='Bus admittance matrix',
+                           name='Bbus', tex_name=r'B_{bus}',
+                           model='mats', src='Bbus',
+                           no_parse=True, sparse=True,)
+        self.Bf = RParam(info='Bf matrix',
+                         name='Bf', tex_name=r'B_{f}',
+                         model='mats', src='Bf',
+                         no_parse=True, sparse=True,)
+        self.Pbusinj = RParam(info='Bus power injection vector',
+                              name='Pbusinj', tex_name=r'P_{bus}^{inj}',
+                              model='mats', src='Pbusinj',
+                              no_parse=True,)
+        self.Pfinj = RParam(info='Line power injection vector',
+                            name='Pfinj', tex_name=r'P_{f}^{inj}',
+                            model='mats', src='Pfinj',
+                            no_parse=True,)
+
+        # --- generation ---
         self.pg = Var(info='Gen active power',
                       unit='p.u.',
-                      name='pg', tex_name=r'p_{g}',
-                      model='StaticGen', src='p',)
+                      name='pg', tex_name=r'p_g',
+                      model='StaticGen', src='p',
+                      v0=self.pg0)
 
         # --- bus ---
-        self.aBus = Var(info='bus voltage angle',
+        self.aBus = Var(info='Bus voltage angle',
                         unit='rad',
-                        name='aBus', tex_name=r'a_{Bus}',
+                        name='aBus', tex_name=r'\theta_{bus}',
                         model='Bus', src='a',)
 
+        # --- power balance ---
+        pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
+        self.pb = Constraint(name='pb', info='power balance',
+                             e_str=pb, is_eq=True,)
+
+        # --- bus ---
+        self.csb = VarSelect(info='select slack bus',
+                             name='csb', tex_name=r'c_{sb}',
+                             u=self.aBus, indexer='buss',
+                             no_parse=True,)
+        self.sba = Constraint(info='align slack bus angle',
+                              name='sbus', is_eq=True,
+                              e_str='csb@aBus',)
+
         # --- line flow ---
-        self.plf = Var(info='Line flow',
-                       unit='p.u.',
-                       name='plf', tex_name=r'p_{lf}',
-                       model='Line',)
+        self.plf = Expression(info='Line flow',
+                              name='plf', tex_name=r'p_{lf}',
+                              unit='p.u.',
+                              e_str='Bf@aBus + Pfinj',
+                              model='Line', src=None,)
 
-    def unpack(self, res):
+    def solve(self, **kwargs):
         """
-        Unpack results from PYPOWER.
+        Solve the routine optimization model.
+        args and kwargs go to `self.om.prob.solve()` (`cvxpy.Problem.solve()`).
         """
-        system = self.system
-        mva = res['baseMVA']
+        return self.om.prob.solve(**kwargs)
 
-        # --- copy results from ppc into system algeb ---
-        # --- Bus ---
-        system.Bus.v.v = res['bus'][:, 7]               # voltage magnitude
-        system.Bus.a.v = res['bus'][:, 8] * deg2rad     # voltage angle
-
-        # --- PV ---
-        system.PV.p.v = res['gen'][system.Slack.n:, 1] / mva        # active power
-        system.PV.q.v = res['gen'][system.Slack.n:, 2] / mva        # reactive power
-
-        # --- Slack ---
-        system.Slack.p.v = res['gen'][:system.Slack.n, 1] / mva     # active power
-        system.Slack.q.v = res['gen'][:system.Slack.n, 2] / mva     # reactive power
-
-        # --- Line ---
-        self.plf.optz.value = res['branch'][:, 13] / mva  # line flow
-
-        # --- copy results from system algeb into routine algeb ---
-        for vname, var in self.vars.items():
-            owner = getattr(system, var.model)  # instance of owner, Model or Group
-            if var.src is None:          # skip if no source variable is specified
+    def unpack(self, **kwargs):
+        """
+        Unpack the results from CVXPY model.
+        """
+        # --- solver Var results to routine algeb ---
+        for _, var in self.vars.items():
+            # --- copy results from routine algeb into system algeb ---
+            if var.model is None:          # if no owner
                 continue
-            elif hasattr(owner, 'group'):   # if owner is a Model instance
-                grp = getattr(system, owner.group)
-                idx = grp.get_idx()
-            elif hasattr(owner, 'get_idx'):  # if owner is a Group instance
-                idx = owner.get_idx()
+            if var.src is None:            # if no source
+                continue
             else:
-                msg = f"Failed to find valid source variable `{owner.class_name}.{var.src}` for "
-                msg += f"{self.class_name}.{vname}, skip unpacking."
-                logger.warning(msg)
+                try:
+                    idx = var.owner.get_idx()
+                except AttributeError:
+                    idx = var.owner.idx.v
+
+                # NOTE: only unpack the variables that are in the model or group
+                try:
+                    var.owner.set(src=var.src, idx=idx, attr='v', value=var.v)
+                except (KeyError, TypeError):
+                    logger.error(f'Failed to unpack <{var}> to <{var.owner.class_name}>.')
+
+        # --- solver ExpressionCalc results to routine algeb ---
+        for _, exprc in self.exprcs.items():
+            if exprc.model is None:
                 continue
-            try:
-                logger.debug(f"Unpacking {vname} into {owner.class_name}.{var.src}.")
-                var.optz.value = owner.get(src=var.src, attr='v', idx=idx)
-            except AttributeError:
-                logger.debug(f"Failed to unpack {vname} into {owner.class_name}.{var.src}.")
+            if exprc.src is None:
                 continue
+            else:
+                try:
+                    idx = exprc.owner.get_idx()
+                except AttributeError:
+                    idx = exprc.owner.idx.v
+
+                try:
+                    exprc.owner.set(src=exprc.src, idx=idx, attr='v', value=exprc.v)
+                except (KeyError, TypeError):
+                    logger.error(f'Failed to unpack <{exprc}> to <{exprc.owner.class_name}>.')
+
+        # label the most recent solved routine
         self.system.recent = self.system.routines[self.class_name]
         return True
 
-    def solve(self, method=None):
+    def _post_solve(self):
         """
-        Solve DC power flow using PYPOWER.
+        Post-solve calculations.
         """
-        ppc = system2ppc(self.system)
-        ppopt = ppoption(PF_DC=True)
+        # NOTE: unpack Expressions if owner and arc are available
+        for expr in self.exprs.values():
+            if expr.owner and expr.src:
+                expr.owner.set(src=expr.src, attr='v',
+                               idx=expr.get_idx(), value=expr.v)
+        return True
 
-        res, sstats = runpf(casedata=ppc, ppopt=ppopt)
-        return res, sstats
 
-    def run(self, **kwargs):
-        """
-        Run DC pwoer flow.
-        *args and **kwargs go to `self.solve()`, which are not used yet.
+class DCPF(DCPFBase):
+    """
+    DC power flow.
+    """
 
-        Examples
-        --------
-        >>> ss = ams.load(ams.get_case('matpower/case14.m'))
-        >>> ss.DCPF.run()
+    def __init__(self, system, config):
+        DCPFBase.__init__(self, system, config)
+        self.info = 'DC Power Flow'
+        self.type = 'PF'
 
-        Parameters
-        ----------
-        method : str
-            Placeholder for future use.
+        self.genpv = RParam(info='gen of PV',
+                            name='genpv', tex_name=r'g_{DG}',
+                            model='PV', src='idx',
+                            no_parse=True,)
+        self.cpv = VarSelect(u=self.pg, indexer='genpv',
+                             name='cpv', tex_name=r'C_{PV}',
+                             info='Select PV from pg',
+                             no_parse=True,)
 
-        Returns
-        -------
-        exit_code : int
-            Exit code of the routine.
-        """
-        if not self.initialized:
-            self.init()
-        t0, _ = elapsed()
+        self.pvb = Constraint(name='pvb', info='PV generator',
+                              e_str='cpv @ (pg - mul(ug, pg0))',
+                              is_eq=True,)
 
-        res, sstats = self.solve(**kwargs)
-        self.converged = res['success']
-        self.exit_code = 0 if res['success'] else 1
-        _, s = elapsed(t0)
-        self.exec_time = float(s.split(' ')[0])
-        n_iter = int(sstats['num_iters'])
-        n_iter_str = f"{n_iter} iterations " if n_iter > 1 else f"{n_iter} iteration "
-        if self.exit_code == 0:
-            msg = f"<{self.class_name}> solved in {s}, converged in "
-            msg += n_iter_str + f"with {sstats['solver_name']}."
-            logger.info(msg)
-            try:
-                self.unpack(res)
-            except Exception as e:
-                logger.error(f"Failed to unpack results from {self.class_name}.\n{e}")
-                return False
-            return True
-        else:
-            msg = f"{self.class_name} failed in "
-            msg += f"{int(sstats['num_iters'])} iterations with "
-            msg += f"{sstats['solver_name']}!"
-            logger.warning(msg)
-            return False
-
-    def summary(self, **kwargs):
-        """
-        # TODO: Print power flow summary.
-        """
-        raise NotImplementedError
-
-    def enable(self, name):
-        raise NotImplementedError
-
-    def disable(self, name):
-        raise NotImplementedError
+        self.obj = Objective(name='obj',
+                             info='place holder', unit='$',
+                             sense='min', e_str='0',)

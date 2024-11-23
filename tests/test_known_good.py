@@ -164,8 +164,10 @@ class TestKnownResultsIEEE118(unittest.TestCase):
         Test DC power flow for case118.
         """
         self.sp.DCPF.run()
-        np.testing.assert_allclose(self.sp.DCPF.aBus.v * rad2deg,
-                                   np.array(self.mpres['case118']['DCPF']['aBus']).reshape(-1),
+        aBus_mp = np.array(self.mpres['case118']['DCPF']['aBus']).reshape(-1)
+        aBus_mp -= aBus_mp[0]
+        np.testing.assert_allclose((self.sp.DCPF.aBus.v - self.sp.DCPF.aBus.v[0]) * rad2deg,
+                                   aBus_mp,
                                    rtol=1e-2, atol=1e-2)
 
         np.testing.assert_allclose(self.sp.DCPF.pg.v.sum() * self.sp.config.mva,

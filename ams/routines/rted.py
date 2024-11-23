@@ -9,7 +9,7 @@ from ams.core.param import RParam
 from ams.core.service import ZonalSum, VarSelect, NumOp, NumOpDual
 from ams.routines.dcopf import DCOPF
 
-from ams.opt.omodel import Var, Constraint
+from ams.opt import Var, Constraint
 
 logger = logging.getLogger(__name__)
 
@@ -161,8 +161,8 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.rbu.e_str = 'gs @ mul(ug, pru) - dud'
         self.rbd.e_str = 'gs @ mul(ug, prd) - ddd'
         # RegUp/Dn reserve source
-        self.rru.e_str = 'mul(ug, (pg + pru)) - mul(ug, pmax)'
-        self.rrd.e_str = 'mul(ug, (-pg + prd)) + mul(ug, pmin)'
+        self.rru.e_str = 'mul(ug, (pg + pru)) - mul(ug, pmaxe)'
+        self.rrd.e_str = 'mul(ug, (-pg + prd)) + mul(ug, pmine)'
         # Gen ramping up/down
         self.rgu.e_str = 'mul(ug, (pg-pg0-R10))'
         self.rgd.e_str = 'mul(ug, (-pg+pg0-R10))'
@@ -303,7 +303,7 @@ class DGBase:
                             name='gendg', tex_name=r'g_{DG}',
                             model='DG', src='gen',
                             no_parse=True,)
-        info = 'Ratio of DG.pge w.r.t to that of static generator',
+        info = 'Ratio of DG.pge w.r.t to that of static generator'
         self.gammapdg = RParam(name='gammapd', tex_name=r'\gamma_{p,DG}',
                                model='DG', src='gammap',
                                no_parse=True, info=info)

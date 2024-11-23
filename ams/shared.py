@@ -6,7 +6,6 @@ This module is supplementary to the ``andes.shared`` module.
 import logging
 import unittest
 from functools import wraps
-from datetime import datetime
 from collections import OrderedDict
 
 import cvxpy as cp
@@ -23,7 +22,7 @@ np = LazyImport('import numpy as np')
 pd = LazyImport('import pandas as pd')
 
 # --- an empty ANDES system ---
-empty_adsys = adSystem()
+empty_adsys = adSystem(autogen_stale=False)
 ad_models = list(empty_adsys.models.keys())
 
 # --- NumPy constants ---
@@ -31,9 +30,12 @@ ad_models = list(empty_adsys.models.keys())
 inf = np.inf
 nan = np.nan
 
+# --- misc constants ---
+_prefix = r" - --------------> | "  # NOQA
+_max_length = 80                    # NOQA
+
 # NOTE: copyright
-year_end = datetime.now().year
-copyright_msg = f'Copyright (C) 2023-{year_end} Jinning Wang'
+copyright_msg = 'Copyright (C) 2023-2024 Jinning Wang'
 
 # NOTE: copied from CVXPY documentation, last checked on 2024/10/30, v1.5
 mip_solvers = ['CBC', 'COPT', 'GLPK_MI', 'CPLEX', 'GUROBI',

@@ -1,6 +1,7 @@
 from . import _version
 __version__ = _version.get_versions()['version']
 
+from ams import opt  # NOQA
 from ams import benchmarks  # NOQA
 
 from ams.main import config_logger, load, run  # NOQA
@@ -10,4 +11,4 @@ from ams.shared import ppc2df  # NOQA
 
 __author__ = 'Jining Wang'
 
-__all__ = ['System', 'get_case', 'System']
+__all__ = ['System', 'get_case']

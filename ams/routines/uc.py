@@ -12,7 +12,7 @@ from ams.routines.dcopf import DCOPF
 from ams.routines.rted import RTEDBase
 from ams.routines.ed import SRBase, MPBase, ESD1MPBase, DGBase
 
-from ams.opt.omodel import Var, Constraint
+from ams.opt import Var, Constraint
 
 logger = logging.getLogger(__name__)
 
@@ -153,12 +153,12 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         self.ctrle.info = 'Reshaped controllability'
         self.nctrle.u2 = self.tlv
         self.nctrle.info = 'Reshaped non-controllability'
-        pglb = '-pg + mul(mul(nctrl, pg0), ugd)'
-        pglb += '+ mul(mul(ctrl, pmin), ugd)'
-        self.pglb.e_str = pglb
-        pgub = 'pg - mul(mul(nctrl, pg0), ugd)'
-        pgub += '- mul(mul(ctrl, pmax), ugd)'
-        self.pgub.e_str = pgub
+        pmaxe = 'mul(mul(nctrl, pg0), ugd) + mul(mul(ctrl, pmax), ugd)'
+        self.pmaxe.e_str = pmaxe
+        pmine = 'mul(mul(ctrl, pmin), ugd) + mul(mul(nctrl, pg0), ugd)'
+        self.pmine.e_str = pmine
+        self.pglb.e_str = '-pg + pmine'
+        self.pgub.e_str = 'pg - pmaxe'
 
         self.ugd = Var(info='commitment decision',
                        horizon=self.timeslot,

@@ -18,6 +18,7 @@ import textwrap
 from ._version import get_versions
 
 from andes.main import _find_cases
+from andes.main import config_logger as ad_config_logger
 from andes.shared import Pool, Process, coloredlogs, unittest, NCPUS_PHYSICAL
 from andes.utils.misc import elapsed, is_interactive
 
@@ -71,6 +72,7 @@ def config_logger(stream_level=logging.INFO, *,
     Original author: Hantao Cui
     License: GPL3
     """
+    ad_config_logger(stream_level)
     lg = logging.getLogger('ams')
     lg.setLevel(logging.DEBUG)
 
@@ -570,14 +572,14 @@ def versioninfo():
     import numpy as np
     import cvxpy
     import andes
-    from ams.shared import INSTALLED_SOLVERS
+    from ams.shared import installed_solvers
 
     versions = {'Python': platform.python_version(),
                 'ams': get_versions()['version'],
                 'andes': andes.__version__,
                 'numpy': np.__version__,
                 'cvxpy': cvxpy.__version__,
-                'solvers': ', '.join(INSTALLED_SOLVERS),
+                'solvers': ', '.join(installed_solvers),
                 }
     maxwidth = max([len(k) for k in versions.keys()])
 
