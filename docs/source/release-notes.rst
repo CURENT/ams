@@ -9,6 +9,12 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.9.13 (2024-xx-xx)
+--------------------
+
+- Add a step to report in ``RoutineBase.run``
+- Add more tests to cover DG and ES related routines
+
 v0.9.12 (2024-11-23)
 --------------------
 
