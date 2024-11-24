@@ -320,6 +320,13 @@ v0.4 (2023-01)
 
 This release outlines the package.
 
+Known Limitations
+=================
+
+- For PYPOWER-based ACOPF, the largest converged case is "pglib_opf_case1354_pegase.m"
+- There is no routine to handle the cases where both ``PVD1`` and ``ESD1`` exist
+- Batch processing is not supported yet
+
 Roadmap
 =======
 
