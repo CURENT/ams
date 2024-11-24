@@ -87,10 +87,17 @@ class Report:
         # initialize data section by model
         owners_all = ['Bus', 'Line', 'StaticGen',
                       'PV', 'Slack', 'RenGen',
-                      'DG', 'ESD1', 'PVD1']
+                      'DG', 'ESD1', 'PVD1',
+                      'StaticLoad']
 
         # Filter owners that exist in the system
-        owners_e = [var.owner.class_name for var in rtn.vars.values() if var.owner is not None]
+        owners_e = list({
+            var.owner.class_name for var in rtn.vars.values() if var.owner is not None
+        }.union(
+            expr.owner.class_name for expr in rtn.exprs.values() if expr.owner is not None
+        ).union(
+            exprc.owner.class_name for exprc in rtn.exprcs.values() if exprc.owner is not None
+        ))
 
         # Use a dictionary comprehension to create vars_by_owner
         owners = {
@@ -112,9 +119,33 @@ class Report:
 
         # --- variables data ---
         for key, var in rtn.vars.items():
+            if var.owner is None:
+                continue
             owner_name = var.owner.class_name
             idx_v = owners[owner_name]['idx']
             header_v = key if var.unit is None else f'{key} ({var.unit})'
+            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
+            owners[owner_name]['header'].append(header_v)
+            owners[owner_name]['data'].append(data_v)
+
+        # --- Expressions data ---
+        for key, expr in rtn.exprs.items():
+            if expr.owner is None:
+                continue
+            owner_name = expr.owner.class_name
+            idx_v = owners[owner_name]['idx']
+            header_v = key if expr.unit is None else f'{key} ({expr.unit})'
+            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
+            owners[owner_name]['header'].append(header_v)
+            owners[owner_name]['data'].append(data_v)
+
+        # --- ExpressionCalc data ---
+        for key, exprc in rtn.exprcs.items():
+            if exprc.owner is None:
+                continue
+            owner_name = exprc.owner.class_name
+            idx_v = owners[owner_name]['idx']
+            header_v = key if exprc.unit is None else f'{key} ({exprc.unit})'
             data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
             owners[owner_name]['header'].append(header_v)
             owners[owner_name]['data'].append(data_v)
