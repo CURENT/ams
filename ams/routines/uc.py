@@ -155,8 +155,10 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         self.nctrle.info = 'Reshaped non-controllability'
         pmaxe = 'mul(mul(nctrl, pg0), ugd) + mul(mul(ctrl, pmax), ugd)'
         self.pmaxe.e_str = pmaxe
+        self.pmaxe.horizon = self.timeslot
         pmine = 'mul(mul(ctrl, pmin), ugd) + mul(mul(nctrl, pg0), ugd)'
         self.pmine.e_str = pmine
+        self.pmine.horizon = self.timeslot
         self.pglb.e_str = '-pg + pmine'
         self.pgub.e_str = 'pg - pmaxe'
 
