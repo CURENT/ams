@@ -51,14 +51,14 @@ class TestUC(unittest.TestCase):
         Test setting and tripping load.
         """
         self.ss.UC.run(solver='SCIP')
-        pgs = self.ss.UC.obj.v.sum()
+        pgs = self.ss.UC.pg.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.UC.update()
 
         self.ss.UC.run(solver='SCIP')
-        pgs_pqt = self.ss.UC.obj.v.sum()
+        pgs_pqt = self.ss.UC.pg.v.sum()
         self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
         # --- trip load ---
@@ -66,7 +66,7 @@ class TestUC(unittest.TestCase):
         self.ss.UC.update()
 
         self.ss.UC.run(solver='SCIP')
-        pgs_pqt2 = self.ss.UC.obj.v.sum()
+        pgs_pqt2 = self.ss.UC.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
     @skip_unittest_without_MIP

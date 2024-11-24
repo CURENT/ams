@@ -61,23 +61,23 @@ class TestRTED(unittest.TestCase):
         Test setting and tripping load.
         """
         self.ss.RTED.run(solver='CLARABEL')
-        obj = self.ss.RTED.obj.v
+        pgs = self.ss.RTED.pg.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.RTED.update()
 
         self.ss.RTED.run(solver='CLARABEL')
-        obj_pqt = self.ss.RTED.obj.v
-        self.assertLess(obj_pqt, obj, "Load set does not take effect!")
+        pgs_pqt = self.ss.RTED.pg.v.sum()
+        self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
         # --- trip load ---
         self.ss.PQ.set(src='u', attr='v', idx='PQ_2', value=0)
         self.ss.RTED.update()
 
         self.ss.RTED.run(solver='CLARABEL')
-        obj_pqt2 = self.ss.RTED.obj.v
-        self.assertLess(obj_pqt2, obj_pqt, "Load trip does not take effect!")
+        pgs_pqt2 = self.ss.RTED.pg.v.sum()
+        self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
     def test_dc2ac(self):
         """
@@ -157,14 +157,14 @@ class TestRTEDES(unittest.TestCase):
         Test setting and tripping load.
         """
         self.ss.RTEDES.run(solver='SCIP')
-        pgs = self.ss.RTEDES.obj.v.sum()
+        pgs = self.ss.RTEDES.pg.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=1)
         self.ss.RTEDES.update()
 
         self.ss.RTEDES.run(solver='SCIP')
-        pgs_pqt = self.ss.RTEDES.obj.v.sum()
+        pgs_pqt = self.ss.RTEDES.pg.v.sum()
         self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
         # --- trip load ---
@@ -172,5 +172,5 @@ class TestRTEDES(unittest.TestCase):
         self.ss.RTEDES.update()
 
         self.ss.RTEDES.run(solver='SCIP')
-        pgs_pqt2 = self.ss.RTEDES.obj.v.sum()
+        pgs_pqt2 = self.ss.RTEDES.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
