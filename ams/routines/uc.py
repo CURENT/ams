@@ -195,6 +195,10 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
                                 info='initial shutdown action',
                                 e_str='-ugd[:, 0] + ug[:, 0] - wgd[:, 0]',)
 
+        # NOTE: suspend pi.owner as it is empty in this routine
+        self.pi.model = None
+        self.pi.info = 'Place holder of LMP'
+
         self.prs.horizon = self.timeslot
         self.prs.info = '2D Spinning reserve'
 
