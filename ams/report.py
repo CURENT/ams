@@ -203,7 +203,6 @@ def dump_collected_data(owners: dict, text: List, header: List, row_name: List, 
         data.append(val['data'])
 
 
-
 def collect_exprcs(owners: Dict, rtn, horizon: Optional[str], decimals: int) -> Dict:
     """
     Collect expression calculations and populate the data dictionary.
