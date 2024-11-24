@@ -349,6 +349,7 @@ class ESD1Base(DGBase):
 
     def __init__(self):
         DGBase.__init__(self)
+
         # --- params ---
         self.En = RParam(info='Rated energy capacity',
                          name='En', src='En',
@@ -374,14 +375,6 @@ class ESD1Base(DGBase):
                            name='EtaD', src='EtaD',
                            tex_name=r'\eta_d', unit='%',
                            model='ESD1', no_parse=True,)
-        self.genesd = RParam(info='gen of ESD1',
-                             name='genesd', tex_name=r'g_{ESD}',
-                             model='ESD1', src='gen',
-                             no_parse=True,)
-        info = 'Ratio of ESD1.pge w.r.t to that of static generator'
-        self.gammapesd = RParam(name='gammapesd', tex_name=r'\gamma_{p,ESD}',
-                                model='ESD1', src='gammap',
-                                no_parse=True, info=info)
 
         # --- service ---
         self.REtaD = NumOp(name='REtaD', tex_name=r'\frac{1}{\eta_d}',
@@ -426,17 +419,27 @@ class ESD1Base(DGBase):
         self.zde.info = 'Aux var for discharging, '
         self.zde.info += ':math:`z_{d,ESD}=u_{d,ESD}*p_{d,ESD}`'
 
+        # NOTE: to ensure consistency with DG based routiens,
+        # here we select ESD1 power from DG rather than StaticGen
+        self.genesd = RParam(info='gen of ESD1',
+                             name='genesd', tex_name=r'g_{ESD}',
+                             model='ESD1', src='idx',
+                             no_parse=True,)
+        self.ces = VarSelect(u=self.pgdg, indexer='genesd',
+                             name='ces', tex_name=r'C_{ESD}',
+                             info='Select ESD power from DG',
+                             no_parse=True)
+        self.cescb = Constraint(name='cescb', is_eq=True,
+                                info='Select pce from DG',
+                                e_str='ces @ pgdg - pce',)
+        self.cesdb = Constraint(name='cesdb', is_eq=True,
+                                info='Select pde from DG',
+                                e_str='ces @ pgdg - pde',)
+
         # --- constraints ---
         self.cdb = Constraint(name='cdb', is_eq=True,
                               info='Charging decision bound',
                               e_str='uce + ude - 1',)
-        self.ces = VarSelect(u=self.pg, indexer='genesd',
-                             name='ce', tex_name=r'C_{ESD}',
-                             info='Select zue from pg',
-                             gamma='gammapesd', no_parse=True,)
-        self.cesb = Constraint(name='cesb', is_eq=True,
-                               info='Select ESD1 power from pg',
-                               e_str='ces @ pg + zce - zde',)
 
         self.zce1 = Constraint(name='zce1', is_eq=False, info='zce bound 1',
                                e_str='-zce + pce',)

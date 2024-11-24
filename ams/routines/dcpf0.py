@@ -169,6 +169,7 @@ class DCPF0(RoutineBase):
             except Exception as e:
                 logger.error(f"Failed to unpack results from {self.class_name}.\n{e}")
                 return False
+            self.system.report()
             return True
         else:
             msg = f"{self.class_name} failed in "

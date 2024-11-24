@@ -9,6 +9,14 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.9.13 (2024-xx-xx)
+--------------------
+
+- Add a step to report in ``RoutineBase.run``
+- Add more tests to cover DG and ES related routines
+- Improve formulation for DG and ESD involved routines
+- Improve module ``Report`` and method ``RoutineBase.export_csv``
+
 v0.9.12 (2024-11-23)
 --------------------
 
@@ -313,6 +321,14 @@ v0.4 (2023-01)
 -------------------
 
 This release outlines the package.
+
+Known Limitations
+=================
+
+- For builit-in PYPOWER-based ACOPF, the known largest solvable case is "pglib_opf_case1354_pegase.m"
+- Batch processing is not supported yet
+- Routine ``DCOPF`` has been extensively benchmarked with pandapower and MATPOWER.
+- Routines besides above mentioned are not fully benchmarked yet.
 
 Roadmap
 =======

@@ -4,7 +4,7 @@ Module for routine data.
 
 import logging
 import os
-from typing import Optional, Union, Type, Iterable
+from typing import Optional, Union, Type, Iterable, Dict
 from collections import OrderedDict
 
 import numpy as np
@@ -422,6 +422,7 @@ class RoutineBase:
             logger.warning(msg)
             self.unpack(**kwargs)
             self._post_solve()
+            self.system.report()
             return True
         else:
             msg = f"{self.class_name} failed as {status} in "
@@ -445,12 +446,13 @@ class RoutineBase:
 
         Returns
         -------
-        str
+        export_path
             The path of the exported csv file
         """
         if not self.converged:
             logger.warning("Routine did not converge, aborting export.")
             return None
+
         if not path:
             if self.system.files.fullname is None:
                 logger.info("Input file name not detacted. Using `Untitled`.")
@@ -460,25 +462,17 @@ class RoutineBase:
                 file_name += f'_{self.class_name}'
             path = os.path.join(os.getcwd(), file_name + '.csv')
 
-        idxes = [var.get_idx() for var in self.vars.values()]
-        var_names = [var for var in self.vars.keys()]
+        data_dict = initialize_data_dict(self)
 
-        if hasattr(self, 'timeslot'):
-            timeslot = self.timeslot.v.copy()
-            data_dict = OrderedDict([('Time', timeslot)])
-        else:
-            timeslot = None
-            data_dict = OrderedDict([('Time', 'T1')])
+        collect_data(self, data_dict, self.vars, 'v')
+        collect_data(self, data_dict, self.exprs, 'v')
+        collect_data(self, data_dict, self.exprcs, 'v')
 
-        for var, idx in zip(var_names, idxes):
-            header = [f'{var} {dev}' for dev in idx]
-            data = self.get(src=var, idx=idx, horizon=timeslot).round(6)
-            data_dict.update(OrderedDict(zip(header, data)))
-
-        if timeslot is None:
+        if 'T1' in data_dict['Time']:
             data_dict = OrderedDict([(k, [v]) for k, v in data_dict.items()])
 
         pd.DataFrame(data_dict).to_csv(path, index=False)
+
         return file_name + '.csv'
 
     def summary(self, **kwargs):
@@ -988,3 +982,52 @@ class RoutineBase:
         Generate initial guess for the optimization model.
         """
         raise NotImplementedError
+
+
+def initialize_data_dict(rtn: RoutineBase):
+    """
+    Initialize the data dictionary for export.
+
+    Parameters
+    ----------
+    rtn : ams.routines.routine.RoutineBase
+        The routine to collect data from
+
+    Returns
+    -------
+    OrderedDict
+        The initialized data dictionary.
+    """
+    if hasattr(rtn, 'timeslot'):
+        timeslot = rtn.timeslot.v.copy()
+        return OrderedDict([('Time', timeslot)])
+    else:
+        return OrderedDict([('Time', 'T1')])
+
+
+def collect_data(rtn: RoutineBase, data_dict: Dict, items: Dict, attr: str):
+    """
+    Collect data for export.
+
+    Parameters
+    ----------
+    rtn : ams.routines.routine.RoutineBase
+        The routine to collect data from.
+    data_dict : OrderedDict
+        The data dictionary to populate.
+    items : dict
+        Dictionary of items to collect data from.
+    attr : str
+        Attribute to collect data for.
+    """
+    for key, item in items.items():
+        if item.owner is None:
+            continue
+        idx_v = item.get_idx()
+        try:
+            data_v = rtn.get(src=key, attr=attr, idx=idx_v,
+                             horizon=rtn.timeslot.v if hasattr(rtn, 'timeslot') else None).round(6)
+        except Exception as e:
+            logger.error(f"Error collecting data for '{key}': {e}")
+            data_v = [np.nan] * len(idx_v)
+        data_dict.update(OrderedDict(zip([f'{key} {dev}' for dev in idx_v], data_v)))

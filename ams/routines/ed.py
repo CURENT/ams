@@ -160,8 +160,10 @@ class ED(RTED, MPBase, SRBase):
         self.nctrle.u2 = self.ugt
         pmaxe = 'mul(mul(nctrle, pg0), tlv) + mul(mul(ctrle, tlv), pmax)'
         self.pmaxe.e_str = pmaxe
+        self.pmaxe.horizon = self.timeslot
         pmine = 'mul(mul(nctrle, pg0), tlv) + mul(mul(ctrle, tlv), pmin)'
         self.pmine.e_str = pmine
+        self.pmine.horizon = self.timeslot
         self.pglb.e_str = '-pg + pmine'
         self.pgub.e_str = 'pg - pmaxe'
 
