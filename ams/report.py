@@ -15,6 +15,9 @@ from ams.shared import copyright_msg
 logger = logging.getLogger(__name__)
 
 
+DECIMALS = 6
+
+
 def report_info(system) -> list:
     info = list()
     info.append('AMS' + ' ' + version + '\n')
@@ -112,7 +115,7 @@ class Report:
             owner_name = var.owner.class_name
             idx_v = owners[owner_name]['idx']
             header_v = key if var.unit is None else f'{key} ({var.unit})'
-            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(6)
+            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
             owners[owner_name]['header'].append(header_v)
             owners[owner_name]['data'].append(data_v)
 
@@ -182,22 +185,22 @@ class Report:
                     ['Generation', 'Load'])
 
                 if hasattr(rtn, 'pd'):
-                    pd = rtn.pd.v.sum().round(6)
+                    pd = rtn.pd.v.sum().round(DECIMALS)
                 else:
-                    pd = rtn.system.PQ.p0.v.sum().round(6)
+                    pd = rtn.system.PQ.p0.v.sum().round(DECIMALS)
                 if hasattr(rtn, 'qd'):
-                    qd = rtn.qd.v.sum().round(6)
+                    qd = rtn.qd.v.sum().round(DECIMALS)
                 else:
-                    qd = rtn.system.PQ.q0.v.sum().round(6)
+                    qd = rtn.system.PQ.q0.v.sum().round(DECIMALS)
 
                 if rtn.type in ['ACED', 'PF']:
                     header.append(['P (p.u.)', 'Q (p.u.)'])
-                    Pcol = [rtn.pg.v.sum().round(6), pd]
-                    Qcol = [rtn.qg.v.sum().round(6), qd]
+                    Pcol = [rtn.pg.v.sum().round(DECIMALS), pd]
+                    Qcol = [rtn.qg.v.sum().round(DECIMALS), qd]
                     data.append([Pcol, Qcol])
                 else:
                     header.append(['P (p.u.)'])
-                    Pcol = [rtn.pg.v.sum().round(6), pd]
+                    Pcol = [rtn.pg.v.sum().round(DECIMALS), pd]
                     data.append([Pcol])
 
                 # --- routine data ---
