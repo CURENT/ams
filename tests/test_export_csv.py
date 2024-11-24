@@ -35,7 +35,7 @@ class TestExportCSV(unittest.TestCase):
         Test export DCOPF to CSV.
         """
         self.ss.DCOPF.run(solver='CLARABEL')
-        self.ss.DCOPF.export_csv(self.expected_csv_DCOPF)
+        self.ss.DCOPF.export_csv()
         self.assertTrue(os.path.exists(self.expected_csv_DCOPF))
 
         n_rows = 0
@@ -64,7 +64,7 @@ class TestExportCSV(unittest.TestCase):
         Test export ED to CSV.
         """
         self.ss.ED.run(solver='CLARABEL')
-        self.ss.ED.export_csv(self.expected_csv_ED)
+        self.ss.ED.export_csv()
         self.assertTrue(os.path.exists(self.expected_csv_ED))
 
         n_rows = 0

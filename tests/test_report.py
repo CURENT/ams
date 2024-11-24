@@ -60,9 +60,9 @@ class TestReport(unittest.TestCase):
             self.assertIn("DCOPF", file_contents)
         os.remove(self.expected_report)
 
-        self.ss.DCOPF.export_csv('./DCOPF.csv')
-        self.assertTrue(os.path.exists('./DCOPF.csv'))
-        os.remove('./DCOPF.csv')
+        self.ss.DCOPF.export_csv()
+        self.assertTrue(os.path.exists('pjm5bus_demo_DCOPF.csv'))
+        os.remove('pjm5bus_demo_DCOPF.csv')
 
     def test_DCPF_report(self):
         """
@@ -78,9 +78,9 @@ class TestReport(unittest.TestCase):
             self.assertIn("DCPF", file_contents)
         os.remove(self.expected_report)
 
-        self.ss.DCPF.export_csv('./DCPF.csv')
-        self.assertTrue(os.path.exists('./DCPF.csv'))
-        os.remove('./DCPF.csv')
+        self.ss.DCPF.export_csv()
+        self.assertTrue(os.path.exists('pjm5bus_demo_DCPF.csv'))
+        os.remove('pjm5bus_demo_DCPF.csv')
 
     def test_RTED_report(self):
         """
@@ -96,9 +96,9 @@ class TestReport(unittest.TestCase):
             self.assertIn("RTED", file_contents)
         os.remove(self.expected_report)
 
-        self.ss.RTED.export_csv('./RTED.csv')
-        self.assertTrue(os.path.exists('./RTED.csv'))
-        os.remove('./RTED.csv')
+        self.ss.RTED.export_csv()
+        self.assertTrue(os.path.exists('pjm5bus_demo_RTED.csv'))
+        os.remove('pjm5bus_demo_RTED.csv')
 
     def test_RTEDDG_report(self):
         """
@@ -114,9 +114,9 @@ class TestReport(unittest.TestCase):
             self.assertIn("RTEDDG", file_contents)
         os.remove(self.expected_report)
 
-        self.ss.RTEDDG.export_csv('./RTEDDG.csv')
-        self.assertTrue(os.path.exists('./RTEDDG.csv'))
-        os.remove('./RTEDDG.csv')
+        self.ss.RTEDDG.export_csv()
+        self.assertTrue(os.path.exists('pjm5bus_demo_RTEDDG.csv'))
+        os.remove('pjm5bus_demo_RTEDDG.csv')
 
     def test_RTEDES_report(self):
         """
@@ -132,9 +132,9 @@ class TestReport(unittest.TestCase):
             self.assertIn("RTEDES", file_contents)
         os.remove(self.expected_report)
 
-        self.ss.RTEDES.export_csv('./RTEDES.csv')
-        self.assertTrue(os.path.exists('./RTEDES.csv'))
-        os.remove('./RTEDES.csv')
+        self.ss.RTEDES.export_csv()
+        self.assertTrue(os.path.exists('pjm5bus_demo_RTEDES.csv'))
+        os.remove('pjm5bus_demo_RTEDES.csv')
 
     def test_ED_report(self):
         """
@@ -150,9 +150,9 @@ class TestReport(unittest.TestCase):
             self.assertIn("ED", file_contents)
         os.remove(self.expected_report)
 
-        self.ss.ED.export_csv('./ED.csv')
-        self.assertTrue(os.path.exists('./ED.csv'))
-        os.remove('./ED.csv')
+        self.ss.ED.export_csv()
+        self.assertTrue(os.path.exists('pjm5bus_demo_ED.csv'))
+        os.remove('pjm5bus_demo_ED.csv')
 
     def test_EDDG_report(self):
         """
@@ -168,9 +168,9 @@ class TestReport(unittest.TestCase):
             self.assertIn("EDDG", file_contents)
         os.remove(self.expected_report)
 
-        self.ss.EDDG.export_csv('./EDDG.csv')
-        self.assertTrue(os.path.exists('./EDDG.csv'))
-        os.remove('./EDDG.csv')
+        self.ss.EDDG.export_csv()
+        self.assertTrue(os.path.exists('pjm5bus_demo_EDDG.csv'))
+        os.remove('pjm5bus_demo_EDDG.csv')
 
     def test_EDES_report(self):
         """
@@ -186,9 +186,9 @@ class TestReport(unittest.TestCase):
             self.assertIn("EDES", file_contents)
         os.remove(self.expected_report)
 
-        self.ss.EDES.export_csv('./EDES.csv')
-        self.assertTrue(os.path.exists('./EDES.csv'))
-        os.remove('./EDES.csv')
+        self.ss.EDES.export_csv()
+        self.assertTrue(os.path.exists('pjm5bus_demo_EDES.csv'))
+        os.remove('pjm5bus_demo_EDES.csv')
 
     def test_UC_report(self):
         """
@@ -204,9 +204,9 @@ class TestReport(unittest.TestCase):
             self.assertIn("UC", file_contents)
         os.remove(self.expected_report)
 
-        self.ss.UC.export_csv('./UC.csv')
-        self.assertTrue(os.path.exists('./UC.csv'))
-        os.remove('./UC.csv')
+        self.ss.UC.export_csv()
+        self.assertTrue(os.path.exists('pjm5bus_demo_UC.csv'))
+        os.remove('pjm5bus_demo_UC.csv')
 
     def test_UCDG_report(self):
         """
@@ -222,9 +222,9 @@ class TestReport(unittest.TestCase):
             self.assertIn("UCDG", file_contents)
         os.remove(self.expected_report)
 
-        self.ss.UCDG.export_csv('./UCDG.csv')
-        self.assertTrue(os.path.exists('./UCDG.csv'))
-        os.remove('./UCDG.csv')
+        self.ss.UCDG.export_csv()
+        self.assertTrue(os.path.exists('pjm5bus_demo_UCDG.csv'))
+        os.remove('pjm5bus_demo_UCDG.csv')
 
     def test_UCES_report(self):
         """
@@ -240,6 +240,6 @@ class TestReport(unittest.TestCase):
             self.assertIn("UCES", file_contents)
         os.remove(self.expected_report)
 
-        self.ss.UCES.export_csv('./UCES.csv')
-        self.assertTrue(os.path.exists('./UCES.csv'))
-        os.remove('./UCES.csv')
+        self.ss.UCES.export_csv()
+        self.assertTrue(os.path.exists('pjm5bus_demo_UCES.csv'))
+        os.remove('pjm5bus_demo_UCES.csv')

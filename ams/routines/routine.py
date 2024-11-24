@@ -453,7 +453,15 @@ class RoutineBase:
             logger.warning("Routine did not converge, aborting export.")
             return None
 
-        export_path = get_export_path(self, path)
+        if not path:
+            if self.system.files.fullname is None:
+                logger.info("Input file name not detacted. Using `Untitled`.")
+                file_name = f'Untitled_{self.class_name}'
+            else:
+                file_name = os.path.splitext(self.system.files.fullname)[0]
+                file_name += f'_{self.class_name}'
+            path = os.path.join(os.getcwd(), file_name + '.csv')
+
         data_dict = initialize_data_dict(self)
 
         collect_data(self, data_dict, self.vars, 'v')
@@ -465,7 +473,7 @@ class RoutineBase:
 
         pd.DataFrame(data_dict).to_csv(path, index=False)
 
-        return export_path
+        return file_name + '.csv'
 
     def summary(self, **kwargs):
         """
@@ -974,35 +982,6 @@ class RoutineBase:
         Generate initial guess for the optimization model.
         """
         raise NotImplementedError
-
-
-def get_export_path(rtn: RoutineBase, path: Optional[str]):
-    """
-    Get the export path for the csv file.
-
-    Parameters
-    ----------
-    rtn : ams.routines.routine.RoutineBase
-        The routine to export.
-    path : str
-        Path of the csv file to save.
-
-    Returns
-    -------
-    str
-        The path of the exported csv file.
-    """
-    if path:
-        return path
-
-    if rtn.system.files.fullname is None:
-        logger.info("Input file name not detected. Using `Untitled`.")
-        file_name = f'Untitled_{rtn.class_name}'
-    else:
-        file_name = os.path.splitext(rtn.system.files.fullname)[0]
-        file_name += f'_{rtn.class_name}'
-
-    return os.path.join(os.getcwd(), file_name + '.csv')
 
 
 def initialize_data_dict(rtn: RoutineBase):
