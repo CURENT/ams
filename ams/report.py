@@ -124,7 +124,10 @@ class Report:
             owner_name = var.owner.class_name
             idx_v = owners[owner_name]['idx']
             header_v = key if var.unit is None else f'{key} ({var.unit})'
-            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
+            try:
+                data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
+            except Exception:
+                data_v = [np.nan] * len(idx_v)
             owners[owner_name]['header'].append(header_v)
             owners[owner_name]['data'].append(data_v)
 
@@ -135,7 +138,10 @@ class Report:
             owner_name = expr.owner.class_name
             idx_v = owners[owner_name]['idx']
             header_v = key if expr.unit is None else f'{key} ({expr.unit})'
-            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
+            try:
+                data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
+            except Exception:
+                data_v = [np.nan] * len(idx_v)
             owners[owner_name]['header'].append(header_v)
             owners[owner_name]['data'].append(data_v)
 
@@ -146,7 +152,10 @@ class Report:
             owner_name = exprc.owner.class_name
             idx_v = owners[owner_name]['idx']
             header_v = key if exprc.unit is None else f'{key} ({exprc.unit})'
-            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
+            try:
+                data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
+            except Exception:
+                data_v = [np.nan] * len(idx_v)
             owners[owner_name]['header'].append(header_v)
             owners[owner_name]['data'].append(data_v)
 
