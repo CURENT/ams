@@ -326,6 +326,8 @@ Known Limitations
 
 - For builit-in PYPOWER-based ACOPF, the known largest solvable case is "pglib_opf_case1354_pegase.m"
 - Batch processing is not supported yet
+- Routine ``DCOPF`` has been extensively benchmarked with pandapower and MATPOWER.
+- Routines besides above mentioned are not fully benchmarked yet.
 
 Roadmap
 =======
