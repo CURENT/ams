@@ -74,8 +74,6 @@ class Report:
         horizon : str, optional
             Timeslot to collect data from. Only single timeslot is supported.
         """
-        system = self.system
-
         text = list()
         header = list()
         row_name = list()
@@ -84,30 +82,7 @@ class Report:
         if not rtn.converged:
             return text, header, row_name, data
 
-        # initialize data section by model
-        owners_all = ['Bus', 'Line', 'StaticGen',
-                      'PV', 'Slack', 'RenGen',
-                      'DG', 'ESD1', 'PVD1',
-                      'StaticLoad']
-
-        # Filter owners that exist in the system
-        owners_e = list({
-            var.owner.class_name for var in rtn.vars.values() if var.owner is not None
-        }.union(
-            expr.owner.class_name for expr in rtn.exprs.values() if expr.owner is not None
-        ).union(
-            exprc.owner.class_name for exprc in rtn.exprcs.values() if exprc.owner is not None
-        ))
-
-        # Use a dictionary comprehension to create vars_by_owner
-        owners = {
-            name: {'idx': [],
-                   'name': [],
-                   'header': [],
-                   'data': [], }
-            for name in owners_all if name in owners_e and getattr(system, name).n > 0
-        }
-
+        owners = _collect_owners(rtn=rtn)
         _collect_vars(owners=owners, rtn=rtn, horizon=horizon, DECIMALS=DECIMALS)
         _collect_exprs(owners=owners, rtn=rtn, horizon=horizon, DECIMALS=DECIMALS)
         _collect_exprcs(owners=owners, rtn=rtn, horizon=horizon, DECIMALS=DECIMALS)
@@ -251,13 +226,6 @@ def _collect_vars(owners, rtn, horizon, DECIMALS):
     """
     Collect variables and populate the data dictionary.
     """
-    for key, val in owners.items():
-        owner = getattr(rtn.system, key)
-        idx_v = owner.get_idx()
-        val['idx'] = idx_v
-        val['name'] = owner.get(src='name', attr='v', idx=idx_v)
-        val['header'].append('Name')
-        val['data'].append(val['name'])
 
     for key, var in rtn.vars.items():
         if var.owner is None:
@@ -271,5 +239,44 @@ def _collect_vars(owners, rtn, horizon, DECIMALS):
             data_v = [np.nan] * len(idx_v)
         owners[owner_name]['header'].append(header_v)
         owners[owner_name]['data'].append(data_v)
+
+    return owners
+
+
+def _collect_owners(rtn):
+    """
+    Initialize an owners dictionary for data collection.
+    """
+    # initialize data section by model
+    owners_all = ['Bus', 'Line', 'StaticGen',
+                  'PV', 'Slack', 'RenGen',
+                  'DG', 'ESD1', 'PVD1',
+                  'StaticLoad']
+
+    # Filter owners that exist in the system
+    owners_e = list({
+        var.owner.class_name for var in rtn.vars.values() if var.owner is not None
+    }.union(
+        expr.owner.class_name for expr in rtn.exprs.values() if expr.owner is not None
+    ).union(
+        exprc.owner.class_name for exprc in rtn.exprcs.values() if exprc.owner is not None
+    ))
+
+    # Use a dictionary comprehension to create vars_by_owner
+    owners = {
+        name: {'idx': [],
+               'name': [],
+               'header': [],
+               'data': [], }
+        for name in owners_all if name in owners_e and getattr(rtn.system, name).n > 0
+    }
+
+    for key, val in owners.items():
+        owner = getattr(rtn.system, key)
+        idx_v = owner.get_idx()
+        val['idx'] = idx_v
+        val['name'] = owner.get(src='name', attr='v', idx=idx_v)
+        val['header'].append('Name')
+        val['data'].append(val['name'])
 
     return owners
