@@ -4,7 +4,7 @@ Module for report generation.
 import logging
 from collections import OrderedDict
 from time import strftime
-from typing import List
+from typing import List, Dict, Optional
 
 from andes.io.txt import dump_data
 from andes.shared import np
@@ -83,10 +83,10 @@ class Report:
         if not rtn.converged:
             return text, header, row_name, data
 
-        owners = _collect_owners(rtn=rtn)
-        _collect_vars(owners=owners, rtn=rtn, horizon=horizon, DECIMALS=DECIMALS)
-        _collect_exprs(owners=owners, rtn=rtn, horizon=horizon, DECIMALS=DECIMALS)
-        _collect_exprcs(owners=owners, rtn=rtn, horizon=horizon, DECIMALS=DECIMALS)
+        owners = collect_owners(rtn=rtn)
+        collect_vars(owners=owners, rtn=rtn, horizon=horizon, decimals=DECIMALS)
+        collect_exprs(owners=owners, rtn=rtn, horizon=horizon, decimals=DECIMALS)
+        collect_exprcs(owners=owners, rtn=rtn, horizon=horizon, decimals=DECIMALS)
         dump_collected_data(owners, text, header, row_name, data)
 
         return text, header, row_name, data
@@ -202,7 +202,7 @@ def dump_collected_data(owners: dict, text: List, header: List, row_name: List, 
         data.append(val['data'])
 
 
-def _collect_exprcs(owners, rtn, horizon, DECIMALS):
+def collect_exprcs(owners, rtn, horizon, decimals):
     """
     Collect expression calculations and populate the data dictionary.
     """
@@ -213,18 +213,32 @@ def _collect_exprcs(owners, rtn, horizon, DECIMALS):
         idx_v = owners[owner_name]['idx']
         header_v = key if exprc.unit is None else f'{key} ({exprc.unit})'
         try:
-            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
+            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(decimals)
         except Exception:
             data_v = [np.nan] * len(idx_v)
         owners[owner_name]['header'].append(header_v)
         owners[owner_name]['data'].append(data_v)
 
-    return owners
 
-
-def _collect_exprs(owners, rtn, horizon, DECIMALS):
+def collect_exprs(owners: Dict, rtn, horizon: Optional[str], decimals: int) -> Dict:
     """
     Collect expressions and populate the data dictionary.
+
+    Parameters
+    ----------
+    owners : dict
+        Dictionary of owners.
+    rtn : Routine
+        Routine object to collect data from.
+    horizon : str, optional
+        Timeslot to collect data from. Only single timeslot is supported.
+    decimals : int
+        Number of decimal places to round the data.
+
+    Returns
+    -------
+    dict
+        Updated dictionary of owners with collected expression data.
     """
     for key, expr in rtn.exprs.items():
         if expr.owner is None:
@@ -233,18 +247,32 @@ def _collect_exprs(owners, rtn, horizon, DECIMALS):
         idx_v = owners[owner_name]['idx']
         header_v = key if expr.unit is None else f'{key} ({expr.unit})'
         try:
-            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
+            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(decimals)
         except Exception:
             data_v = [np.nan] * len(idx_v)
         owners[owner_name]['header'].append(header_v)
         owners[owner_name]['data'].append(data_v)
 
-    return owners
 
-
-def _collect_vars(owners, rtn, horizon, DECIMALS):
+def collect_vars(owners: Dict, rtn, horizon: Optional[str], decimals: int) -> Dict:
     """
     Collect variables and populate the data dictionary.
+
+    Parameters
+    ----------
+    owners : dict
+        Dictionary of owners.
+    rtn : Routine
+        Routine object to collect data from.
+    horizon : str, optional
+        Timeslot to collect data from. Only single timeslot is supported.
+    decimals : int
+        Number of decimal places to round the data.
+
+    Returns
+    -------
+    dict
+        Updated dictionary of owners with collected variable data.
     """
 
     for key, var in rtn.vars.items():
@@ -254,16 +282,14 @@ def _collect_vars(owners, rtn, horizon, DECIMALS):
         idx_v = owners[owner_name]['idx']
         header_v = key if var.unit is None else f'{key} ({var.unit})'
         try:
-            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
+            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(decimals)
         except Exception:
             data_v = [np.nan] * len(idx_v)
         owners[owner_name]['header'].append(header_v)
         owners[owner_name]['data'].append(data_v)
 
-    return owners
 
-
-def _collect_owners(rtn):
+def collect_owners(rtn):
     """
     Initialize an owners dictionary for data collection.
     """
