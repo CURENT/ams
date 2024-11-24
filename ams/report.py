@@ -4,6 +4,7 @@ Module for report generation.
 import logging
 from collections import OrderedDict
 from time import strftime
+from typing import List
 
 from andes.io.txt import dump_data
 from andes.shared import np
@@ -86,13 +87,8 @@ class Report:
         _collect_vars(owners=owners, rtn=rtn, horizon=horizon, DECIMALS=DECIMALS)
         _collect_exprs(owners=owners, rtn=rtn, horizon=horizon, DECIMALS=DECIMALS)
         _collect_exprcs(owners=owners, rtn=rtn, horizon=horizon, DECIMALS=DECIMALS)
+        dump_collected_data(owners, text, header, row_name, data)
 
-        # --- dump data ---
-        for key, val in owners.items():
-            text.append([f'{key} DATA:\n'])
-            row_name.append(val['idx'])
-            header.append(val['header'])
-            data.append(val['data'])
         return text, header, row_name, data
 
     def write(self):
@@ -180,6 +176,30 @@ class Report:
 
         _, s = elapsed(t)
         logger.info(f'Report saved to "{system.files.txt}" in {s}.')
+
+
+def dump_collected_data(owners: dict, text: List, header: List, row_name: List, data: List) -> None:
+    """
+    Dump collected data into the provided lists.
+
+    Parameters
+    ----------
+    owners : dict
+        Dictionary of owners.
+    text : list
+        List to append text data to.
+    header : list
+        List to append header data to.
+    row_name : list
+        List to append row names to.
+    data : list
+        List to append data to.
+    """
+    for key, val in owners.items():
+        text.append([f'{key} DATA:\n'])
+        row_name.append(val['idx'])
+        header.append(val['header'])
+        data.append(val['data'])
 
 
 def _collect_exprcs(owners, rtn, horizon, DECIMALS):
