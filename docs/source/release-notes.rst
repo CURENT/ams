@@ -14,6 +14,7 @@ v0.9.13 (2024-xx-xx)
 
 - Add a step to report in ``RoutineBase.run``
 - Add more tests to cover DG and ES related routines
+- Improve formulation for DG and ESD involved routines
 
 v0.9.12 (2024-11-23)
 --------------------
@@ -323,8 +324,7 @@ This release outlines the package.
 Known Limitations
 =================
 
-- For PYPOWER-based ACOPF, the largest converged case is "pglib_opf_case1354_pegase.m"
-- There is no routine to handle the cases where both ``PVD1`` and ``ESD1`` exist
+- For builit-in PYPOWER-based ACOPF, the known largest solvable case is "pglib_opf_case1354_pegase.m"
 - Batch processing is not supported yet
 
 Roadmap
