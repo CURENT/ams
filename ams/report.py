@@ -108,7 +108,7 @@ class Report:
             for name in owners_all if name in owners_e and getattr(system, name).n > 0
         }
 
-        _collect_vars(system=system, owners=owners, rtn=rtn, horizon=horizon, DECIMALS=DECIMALS)
+        _collect_vars(owners=owners, rtn=rtn, horizon=horizon, DECIMALS=DECIMALS)
         _collect_exprs(owners=owners, rtn=rtn, horizon=horizon, DECIMALS=DECIMALS)
         _collect_exprcs(owners=owners, rtn=rtn, horizon=horizon, DECIMALS=DECIMALS)
 
@@ -247,13 +247,12 @@ def _collect_exprs(owners, rtn, horizon, DECIMALS):
     return owners
 
 
-def _collect_vars(system, owners, rtn, horizon, DECIMALS):
+def _collect_vars(owners, rtn, horizon, DECIMALS):
     """
     Collect variables and populate the data dictionary.
     """
-    # --- owner data: idx and name ---
     for key, val in owners.items():
-        owner = getattr(system, key)
+        owner = getattr(rtn.system, key)
         idx_v = owner.get_idx()
         val['idx'] = idx_v
         val['name'] = owner.get(src='name', attr='v', idx=idx_v)
