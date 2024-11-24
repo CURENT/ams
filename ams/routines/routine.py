@@ -422,6 +422,7 @@ class RoutineBase:
             logger.warning(msg)
             self.unpack(**kwargs)
             self._post_solve()
+            self.system.report()
             return True
         else:
             msg = f"{self.class_name} failed as {status} in "
