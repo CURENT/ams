@@ -12,11 +12,9 @@ class TestRTED(unittest.TestCase):
 
     def setUp(self) -> None:
         self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.xlsx"),
-                           setup=True,
-                           default_config=True,
-                           no_output=True,
-                           )
-        self.ss.RTED.run(solver='CLARABEL')
+                           setup=True, default_config=True, no_output=True)
+        # decrease load first
+        self.ss.PQ.set(src='p0', attr='v', idx=['PQ_1', 'PQ_2'], value=[0.3, 0.3])
 
     def test_init(self):
         """
@@ -83,6 +81,7 @@ class TestRTED(unittest.TestCase):
         """
         Test `RTED.dc2ac()` method.
         """
+        self.ss.RTED.run(solver='CLARABEL')
         self.ss.RTED.dc2ac()
         self.assertTrue(self.ss.RTED.converted, "AC conversion failed!")
         self.assertTrue(self.ss.RTED.exec_time > 0, "Execution time is not greater than 0.")
@@ -110,7 +109,8 @@ class TestRTEDDG(unittest.TestCase):
     def setUp(self) -> None:
         self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.xlsx"),
                            setup=True, default_config=True, no_output=True)
-        self.ss.RTEDDG.run(solver='CLARABEL')
+        # decrease load first
+        self.ss.PQ.set(src='p0', attr='v', idx=['PQ_1', 'PQ_2'], value=[0.3, 0.3])
 
     def test_init(self):
         """
@@ -177,6 +177,7 @@ class TestRTEDDG(unittest.TestCase):
         """
         Test `RTEDDG.dc2ac()` method.
         """
+        self.ss.RTEDDG.run(solver='CLARABEL')
         self.ss.RTEDDG.dc2ac()
         self.assertTrue(self.ss.RTEDDG.converted, "AC conversion failed!")
         self.assertTrue(self.ss.RTEDDG.exec_time > 0, "Execution time is not greater than 0.")
@@ -204,6 +205,8 @@ class TestRTEDES(unittest.TestCase):
     def setUp(self) -> None:
         self.ss = ams.load(ams.get_case("5bus/pjm5bus_uced_esd1.xlsx"),
                            setup=True, default_config=True, no_output=True)
+        # decrease load first
+        self.ss.PQ.set(src='p0', attr='v', idx=['PQ_1', 'PQ_2'], value=[0.3, 0.3])
 
     def test_init(self):
         """
@@ -254,7 +257,7 @@ class TestRTEDES(unittest.TestCase):
         pgs = self.ss.RTEDES.pg.v.sum()
 
         # --- set load ---
-        self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=1)
+        self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.05)
         self.ss.RTEDES.update()
 
         self.ss.RTEDES.run(solver='SCIP')
