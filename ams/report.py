@@ -233,15 +233,15 @@ class Report:
                 else:
                     qd = rtn.system.PQ.q0.v.sum().round(DECIMALS)
 
-                if rtn.type in ['ACED', 'PF']:
+                if not hasattr(rtn, 'qg'):
+                    header.append(['P (p.u.)'])
+                    Pcol = [rtn.pg.v.sum().round(DECIMALS), pd]
+                    data.append([Pcol])
+                else:
                     header.append(['P (p.u.)', 'Q (p.u.)'])
                     Pcol = [rtn.pg.v.sum().round(DECIMALS), pd]
                     Qcol = [rtn.qg.v.sum().round(DECIMALS), qd]
                     data.append([Pcol, Qcol])
-                else:
-                    header.append(['P (p.u.)'])
-                    Pcol = [rtn.pg.v.sum().round(DECIMALS), pd]
-                    data.append([Pcol])
 
                 # --- routine data ---
                 text.extend(text_sum)
