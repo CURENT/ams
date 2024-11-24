@@ -108,56 +108,9 @@ class Report:
             for name in owners_all if name in owners_e and getattr(system, name).n > 0
         }
 
-        # --- owner data: idx and name ---
-        for key, val in owners.items():
-            owner = getattr(system, key)
-            idx_v = owner.get_idx()
-            val['idx'] = idx_v
-            val['name'] = owner.get(src='name', attr='v', idx=idx_v)
-            val['header'].append('Name')
-            val['data'].append(val['name'])
-
-        # --- variables data ---
-        for key, var in rtn.vars.items():
-            if var.owner is None:
-                continue
-            owner_name = var.owner.class_name
-            idx_v = owners[owner_name]['idx']
-            header_v = key if var.unit is None else f'{key} ({var.unit})'
-            try:
-                data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
-            except Exception:
-                data_v = [np.nan] * len(idx_v)
-            owners[owner_name]['header'].append(header_v)
-            owners[owner_name]['data'].append(data_v)
-
-        # --- Expressions data ---
-        for key, expr in rtn.exprs.items():
-            if expr.owner is None:
-                continue
-            owner_name = expr.owner.class_name
-            idx_v = owners[owner_name]['idx']
-            header_v = key if expr.unit is None else f'{key} ({expr.unit})'
-            try:
-                data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
-            except Exception:
-                data_v = [np.nan] * len(idx_v)
-            owners[owner_name]['header'].append(header_v)
-            owners[owner_name]['data'].append(data_v)
-
-        # --- ExpressionCalc data ---
-        for key, exprc in rtn.exprcs.items():
-            if exprc.owner is None:
-                continue
-            owner_name = exprc.owner.class_name
-            idx_v = owners[owner_name]['idx']
-            header_v = key if exprc.unit is None else f'{key} ({exprc.unit})'
-            try:
-                data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
-            except Exception:
-                data_v = [np.nan] * len(idx_v)
-            owners[owner_name]['header'].append(header_v)
-            owners[owner_name]['data'].append(data_v)
+        _collect_vars(system=system, owners=owners, rtn=rtn, horizon=horizon, DECIMALS=DECIMALS)
+        _collect_exprs(owners=owners, rtn=rtn, horizon=horizon, DECIMALS=DECIMALS)
+        _collect_exprcs(owners=owners, rtn=rtn, horizon=horizon, DECIMALS=DECIMALS)
 
         # --- dump data ---
         for key, val in owners.items():
@@ -252,3 +205,72 @@ class Report:
 
         _, s = elapsed(t)
         logger.info(f'Report saved to "{system.files.txt}" in {s}.')
+
+
+def _collect_exprcs(owners, rtn, horizon, DECIMALS):
+    """
+    Collect expression calculations and populate the data dictionary.
+    """
+    for key, exprc in rtn.exprcs.items():
+        if exprc.owner is None:
+            continue
+        owner_name = exprc.owner.class_name
+        idx_v = owners[owner_name]['idx']
+        header_v = key if exprc.unit is None else f'{key} ({exprc.unit})'
+        try:
+            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
+        except Exception:
+            data_v = [np.nan] * len(idx_v)
+        owners[owner_name]['header'].append(header_v)
+        owners[owner_name]['data'].append(data_v)
+
+    return owners
+
+
+def _collect_exprs(owners, rtn, horizon, DECIMALS):
+    """
+    Collect expressions and populate the data dictionary.
+    """
+    for key, expr in rtn.exprs.items():
+        if expr.owner is None:
+            continue
+        owner_name = expr.owner.class_name
+        idx_v = owners[owner_name]['idx']
+        header_v = key if expr.unit is None else f'{key} ({expr.unit})'
+        try:
+            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
+        except Exception:
+            data_v = [np.nan] * len(idx_v)
+        owners[owner_name]['header'].append(header_v)
+        owners[owner_name]['data'].append(data_v)
+
+    return owners
+
+
+def _collect_vars(system, owners, rtn, horizon, DECIMALS):
+    """
+    Collect variables and populate the data dictionary.
+    """
+    # --- owner data: idx and name ---
+    for key, val in owners.items():
+        owner = getattr(system, key)
+        idx_v = owner.get_idx()
+        val['idx'] = idx_v
+        val['name'] = owner.get(src='name', attr='v', idx=idx_v)
+        val['header'].append('Name')
+        val['data'].append(val['name'])
+
+    for key, var in rtn.vars.items():
+        if var.owner is None:
+            continue
+        owner_name = var.owner.class_name
+        idx_v = owners[owner_name]['idx']
+        header_v = key if var.unit is None else f'{key} ({var.unit})'
+        try:
+            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(DECIMALS)
+        except Exception:
+            data_v = [np.nan] * len(idx_v)
+        owners[owner_name]['header'].append(header_v)
+        owners[owner_name]['data'].append(data_v)
+
+    return owners
