@@ -366,6 +366,7 @@ class UCES(UC, ESD1MPBase):
         self.info = 'unit commitment with energy storage'
         self.type = 'DCUC'
 
+        self.pgdg.horizon = self.timeslot
         self.SOC.horizon = self.timeslot
         self.pce.horizon = self.timeslot
         self.pde.horizon = self.timeslot

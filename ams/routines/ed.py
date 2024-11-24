@@ -249,8 +249,6 @@ class EDDG(ED, DGBase):
 
         # NOTE: extend vars to 2D
         self.pgdg.horizon = self.timeslot
-        self.pmaxe.horizon = self.timeslot
-        self.pmine.horizon = self.timeslot
 
 
 class ESD1MPBase(ESD1Base):
