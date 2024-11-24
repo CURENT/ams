@@ -461,7 +461,7 @@ class RoutineBase:
                 file_name += f'_{self.class_name}'
             path = os.path.join(os.getcwd(), file_name + '.csv')
 
-        idxes = [var.get_idx() for var in self.vars.values()]
+        var_idxes = [var.get_idx() for var in self.vars.values()]
         var_names = [var for var in self.vars.keys()]
 
         if hasattr(self, 'timeslot'):
@@ -471,9 +471,31 @@ class RoutineBase:
             timeslot = None
             data_dict = OrderedDict([('Time', 'T1')])
 
-        for var, idx in zip(var_names, idxes):
+        for var, idx in zip(var_names, var_idxes):
             header = [f'{var} {dev}' for dev in idx]
             data = self.get(src=var, idx=idx, horizon=timeslot).round(6)
+            data_dict.update(OrderedDict(zip(header, data)))
+
+        expr_idxes = [expr.get_idx() for expr in self.exprs.values()]
+        expr_names = [expr for expr in self.exprs.keys()]
+
+        for expr, idx in zip(expr_names, expr_idxes):
+            header = [f'{expr} {dev}' for dev in idx]
+            try:
+                data = self.get(src=expr, attr='v', idx=idx).round(6)
+            except Exception:
+                data = [np.nan] * len(idx)
+            data_dict.update(OrderedDict(zip(header, data)))
+
+        exprc_idxes = [exprc.get_idx() for exprc in self.exprcs.values()]
+        exprc_names = [exprc for exprc in self.exprcs.keys()]
+
+        for exprc, idx in zip(exprc_names, exprc_idxes):
+            header = [f'{exprc} {dev}' for dev in idx]
+            try:
+                data = self.get(src=exprc, attr='v', idx=idx).round(6)
+            except Exception:
+                data = [np.nan] * len(idx)
             data_dict.update(OrderedDict(zip(header, data)))
 
         if timeslot is None:
