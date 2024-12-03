@@ -1,10 +1,11 @@
 # LTB AMS
 
-Python Software for Power System Scheduling Modeling and Co-Simulation with Dynanic, serving as the market simulator for the [CURENT Largescale Testbed][LTB Repository].
+Python Software for Power System Scheduling Modeling and Co-Simulation with Dynamics, serving as the market simulator for the [CURENT Largescale Testbed][LTB Repository].
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](https://github.com/CURENT/ams/blob/master/LICENSE)
 ![platforms](https://anaconda.org/conda-forge/ltbams/badges/platforms.svg)
 [![Python Versions](https://img.shields.io/badge/Python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/)
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 ![Repo Size](https://img.shields.io/github/repo-size/CURENT/ams)
 [![GitHub last commit (master)](https://img.shields.io/github/last-commit/CURENT/ams/master?label=last%20commit%20to%20master)](https://github.com/CURENT/ams/commits/master/)
 [![GitHub last commit (develop)](https://img.shields.io/github/last-commit/CURENT/ams/develop?label=last%20commit%20to%20develop)](https://github.com/CURENT/ams/commits/develop/)
@@ -67,7 +68,7 @@ Use the following resources to get involved.
 - Version **0.9.9** has known issues and has been yanked from PyPI
 - `kvxopt` is recommended to install via `conda` as sometimes ``pip`` struggles to set the correct path for compiled libraries
 - `cvxpy` versions **below 1.5** are incompatible with `numpy` versions **2.0 and above**
-- If solver `SCIP` run into import error, try to reinstall its Python interface by running `pip install pyscipopt --no-binary scip`
+- If solver `SCIP` run into import error, try to reinstall its Python interface by running `pip install pyscipopt --no-binary scip --force`
 
 AMS is released as ``ltbams`` on PyPI and conda-forge.
 Install from PyPI using pip:
