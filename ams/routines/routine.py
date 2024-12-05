@@ -21,8 +21,6 @@ from ams.opt import Param, Var, Constraint, Objective, ExpressionCalc, Expressio
 
 from ams.shared import pd
 
-from ams.plot import Plotter
-
 logger = logging.getLogger(__name__)
 
 
@@ -116,7 +114,6 @@ class RoutineBase:
         self.initialized = False            # initialization flag
         self.type = "UndefinedType"         # routine type
         self.docum = RDocumenter(self)      # documentation generator
-        self.plt = Plotter(self)            # plotter instance
 
         # --- sync mapping ---
         self.map1 = OrderedDict()  # from ANDES
