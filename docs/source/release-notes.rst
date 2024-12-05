@@ -9,13 +9,15 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v0.9.13 (2024-xx-xx)
+v0.9.13 (2024-12-05)
 --------------------
 
 - Add a step to report in ``RoutineBase.run``
 - Add more tests to cover DG and ES related routines
 - Improve formulation for DG and ESD involved routines
 - Improve module ``Report`` and method ``RoutineBase.export_csv``
+- Support ``TimedEvent`` in ANDES case conversion
+- Add Var ``vBus`` in ``DCOPF`` for placeholder
 
 v0.9.12 (2024-11-23)
 --------------------

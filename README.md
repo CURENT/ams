@@ -32,6 +32,10 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 With the built-in interface with ANDES, AMS enables **Dynamics Incorporated**
 **Stability-Constrained Scheduling**.
 
+This package can be helpful for power system engineers, researchers, and students
+who need to conduct scheduling studies and transient stability studies at given
+operating points.
+
 AMS is a **Modeling Framework** that provides a descriptive way to formulate
 scheduling problems. The optimization problems are then handled by **CVXPY**
 and solved with third-party solvers.
@@ -91,15 +95,22 @@ pip install git+https://github.com/CURENT/ams.git
 
 # Example Usage
 
-Using AMS to run a Real-Time Economic Dispatch (RTED) simulation:
-
 ```python
 import ams
 
-ss = ams.load(ams.get_case('ieee14_uced.xlsx'))
-ss.RTED.run()
+ss = ams.load(ams.get_case('ieee14/ieee14_uced.xlsx'))
 
-print(ss.RTED.pg.v)
+# solve RTED
+ss.RTED.run(solver='CLARABEL')
+
+ss.RTED.pg.v
+>>> array([1.8743862, 0.3226138, 0.01     , 0.02     , 0.01     ])
+
+# convert to ANDES case
+sa = ss.to_andes(addfile=andes.get_case('ieee14/ieee14_full.xlsx'),
+                 setup=True, verify=False)
+sa
+>>> <andes.system.System at 0x14bd98190>
 ```
 
 # Sponsors and Contributors
