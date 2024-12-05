@@ -10,4 +10,3 @@ openpyxl
 andes>=1.8.7
 pybind11
 cvxpy
-multiprocess<=0.70.16

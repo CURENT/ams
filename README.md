@@ -1,10 +1,11 @@
 # LTB AMS
 
-Python Software for Power System Scheduling Modeling and Co-Simulation with Dynanic, serving as the market simulator for the [CURENT Largescale Testbed][LTB Repository].
+Python Software for Power System Scheduling Modeling and Co-Simulation with Dynamics, serving as the market simulator for the [CURENT Largescale Testbed][LTB Repository].
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](https://github.com/CURENT/ams/blob/master/LICENSE)
 ![platforms](https://anaconda.org/conda-forge/ltbams/badges/platforms.svg)
 [![Python Versions](https://img.shields.io/badge/Python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/)
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 ![Repo Size](https://img.shields.io/github/repo-size/CURENT/ams)
 [![GitHub last commit (master)](https://img.shields.io/github/last-commit/CURENT/ams/master?label=last%20commit%20to%20master)](https://github.com/CURENT/ams/commits/master/)
 [![GitHub last commit (develop)](https://img.shields.io/github/last-commit/CURENT/ams/develop?label=last%20commit%20to%20develop)](https://github.com/CURENT/ams/commits/develop/)
@@ -30,6 +31,10 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 
 With the built-in interface with ANDES, AMS enables **Dynamics Incorporated**
 **Stability-Constrained Scheduling**.
+
+This package can be helpful for power system engineers, researchers, and students
+who need to conduct scheduling studies and transient stability studies at given
+operating points.
 
 AMS is a **Modeling Framework** that provides a descriptive way to formulate
 scheduling problems. The optimization problems are then handled by **CVXPY**
@@ -67,6 +72,7 @@ Use the following resources to get involved.
 - Version **0.9.9** has known issues and has been yanked from PyPI
 - `kvxopt` is recommended to install via `conda` as sometimes ``pip`` struggles to set the correct path for compiled libraries
 - `cvxpy` versions **below 1.5** are incompatible with `numpy` versions **2.0 and above**
+- If solver `SCIP` run into import error, try to reinstall its Python interface by running `pip install pyscipopt --no-binary scip --force`
 
 AMS is released as ``ltbams`` on PyPI and conda-forge.
 Install from PyPI using pip:
@@ -89,15 +95,22 @@ pip install git+https://github.com/CURENT/ams.git
 
 # Example Usage
 
-Using AMS to run a Real-Time Economic Dispatch (RTED) simulation:
-
 ```python
 import ams
 
-ss = ams.load(ams.get_case('ieee14_uced.xlsx'))
-ss.RTED.run()
+ss = ams.load(ams.get_case('ieee14/ieee14_uced.xlsx'))
 
-print(ss.RTED.pg.v)
+# solve RTED
+ss.RTED.run(solver='CLARABEL')
+
+ss.RTED.pg.v
+>>> array([1.8743862, 0.3226138, 0.01     , 0.02     , 0.01     ])
+
+# convert to ANDES case
+sa = ss.to_andes(addfile=andes.get_case('ieee14/ieee14_full.xlsx'),
+                 setup=True, verify=False)
+sa
+>>> <andes.system.System at 0x14bd98190>
 ```
 
 # Sponsors and Contributors

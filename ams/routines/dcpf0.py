@@ -35,6 +35,11 @@ class DCPF0(RoutineBase):
         self.info = 'DC Power Flow'
         self.type = 'PF'
 
+        self.ug = RParam(info='Gen connection status',
+                         name='ug', tex_name=r'u_{g}',
+                         model='StaticGen', src='u',
+                         no_parse=True)
+
         # --- routine data ---
         self.x = RParam(info="line reactance",
                         name='x', tex_name='x',
@@ -169,6 +174,7 @@ class DCPF0(RoutineBase):
             except Exception as e:
                 logger.error(f"Failed to unpack results from {self.class_name}.\n{e}")
                 return False
+            self.system.report()
             return True
         else:
             msg = f"{self.class_name} failed in "

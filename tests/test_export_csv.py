@@ -35,7 +35,7 @@ class TestExportCSV(unittest.TestCase):
         Test export DCOPF to CSV.
         """
         self.ss.DCOPF.run(solver='CLARABEL')
-        self.assertTrue(self.ss.DCOPF.export_csv())
+        self.ss.DCOPF.export_csv()
         self.assertTrue(os.path.exists(self.expected_csv_DCOPF))
 
         n_rows = 0
@@ -48,7 +48,9 @@ class TestExportCSV(unittest.TestCase):
                 if n_cols == 0 or len(row) > n_cols:
                     n_cols = len(row)
 
-        n_cols_expected = np.sum([v.shape[0] for v in self.ss.DCOPF.vars.values()])
+        n_cols_expected = np.sum([v.owner.n for v in self.ss.DCOPF.vars.values()])
+        n_cols_expected += np.sum([v.owner.n for v in self.ss.DCOPF.exprs.values()])
+        n_cols_expected += np.sum([v.owner.n for v in self.ss.DCOPF.exprcs.values()])
         # cols number plus one for the index column
         self.assertEqual(n_cols, n_cols_expected + 1)
         # header row plus data row
@@ -62,7 +64,7 @@ class TestExportCSV(unittest.TestCase):
         Test export ED to CSV.
         """
         self.ss.ED.run(solver='CLARABEL')
-        self.assertTrue(self.ss.ED.export_csv())
+        self.ss.ED.export_csv()
         self.assertTrue(os.path.exists(self.expected_csv_ED))
 
         n_rows = 0
@@ -75,7 +77,9 @@ class TestExportCSV(unittest.TestCase):
                 if n_cols == 0 or len(row) > n_cols:
                     n_cols = len(row)
 
-        n_cols_expected = np.sum([v.shape[0] for v in self.ss.ED.vars.values()])
+        n_cols_expected = np.sum([v.owner.n for v in self.ss.ED.vars.values()])
+        n_cols_expected += np.sum([v.owner.n for v in self.ss.ED.exprs.values()])
+        n_cols_expected += np.sum([v.owner.n for v in self.ss.ED.exprcs.values()])
         # cols number plus one for the index column
         self.assertEqual(n_cols, n_cols_expected + 1)
         # header row plus data row

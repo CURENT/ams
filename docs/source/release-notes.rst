@@ -9,6 +9,16 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v0.9.13 (2024-12-05)
+--------------------
+
+- Add a step to report in ``RoutineBase.run``
+- Add more tests to cover DG and ES related routines
+- Improve formulation for DG and ESD involved routines
+- Improve module ``Report`` and method ``RoutineBase.export_csv``
+- Support ``TimedEvent`` in ANDES case conversion
+- Add Var ``vBus`` in ``DCOPF`` for placeholder
+
 v0.9.12 (2024-11-23)
 --------------------
 
@@ -108,7 +118,7 @@ Outage Distribution Factors".
 - Add a loss factor in ``RTED.dc2ac``
 - Add ``DCOPF.dc2ac``
 - Fix OModel parse status to ensure no_parsed params can be updated
-- Fix and rerun ex2
+- Fix and rerun ``ex2``
 - Format ``Routine.get`` return type to be consistent with input idx type
 - Remove unused ``Routine.prepare``
 - Refactor ``MatProcessor`` to separate matrix building
@@ -116,12 +126,12 @@ Outage Distribution Factors".
 - Add ``build_ptdf``, ``build_lodf``, and ``build_otdf``
 - Fix ``Routine.get`` to support pd.Series type idx input
 - Reserve ``exec_time`` after ``dc2ac``
-- Adjust kloss to fix ex2
+- Adjust kloss to fix ``ex2``
 
 v0.9.5 (2024-03-25)
 -------------------
 
-- Add more plots in demo_AGC
+- Add more plots in ``demo_AGC``
 - Improve line rating adjustment
 - Adjust static import sequence in ``models.__init__.py``
 - Adjust pjm5bus case line rate_a
@@ -135,18 +145,18 @@ v0.9.4 (2024-03-16)
 
 - Add Var ``pi`` and ExpressionCalc ``pic`` to store the dual of constraint power balance
 - Add Param ``M`` and ``D`` to model ``REGCV1``
-- Add CPS1 score calculation in demo_AGC
+- Add CPS1 score calculation in ``demo_AGC``
 
 v0.9.3 (2024-03-06)
 -------------------
 
-- Major improvemets on demo_AGC
+- Major improvemets on ``demo_AGC``
 - Bug fix in ``RTED.dc2ac``
 
 v0.9.2 (2024-03-04)
 -------------------
 
-- Add demo_AGC to demonstrate detailed SFR study
+- Add ``demo_AGC`` to demonstrate detailed secondary frequency regulation study
 - Add ``ExpressionCalc`` to handle post-solving calculation
 - Rename ``type='eq'`` to ``is_eq=False`` in ``Constraint`` to avoid overriding built-in attribute
 - Several formatting improvements
@@ -154,7 +164,7 @@ v0.9.2 (2024-03-04)
 v0.9.1 (2024-03-02)
 -------------------
 
-- Change sphinx extension myst_nb to nbsphinx for math rendering in ex8
+- Change sphinx extension myst_nb to nbsphinx for math rendering in ``ex8``
 - Improve ``symprocessor`` to include routine config
 - Add config to Routine reference
 - Fix symbol processor issue with power operator
@@ -162,7 +172,7 @@ v0.9.1 (2024-03-02)
 v0.9.0 (2024-02-27)
 -------------------
 
-- Add ex8 to demonstrate customize existing formulations via API
+- Add ``ex8`` for formulation customization via API
 - Improve Development documentation
 - Fix ``addService``, ``addVars``
 - Rename ``RoutineModel`` to ``RoutineBase`` for better naming
@@ -189,7 +199,7 @@ v0.8.2 (2024-01-30)
 -------------------
 
 - Improve examples
-- Add report module and export_csv for results export
+- Add module ``report`` and func ``RoutineBase.export_csv`` for results export
 
 v0.8.1 (2024-01-20)
 -------------------
@@ -313,6 +323,14 @@ v0.4 (2023-01)
 -------------------
 
 This release outlines the package.
+
+Known Limitations
+=================
+
+- For builit-in PYPOWER-based ACOPF, the known largest solvable case is "pglib_opf_case1354_pegase.m"
+- Batch processing is not supported yet
+- Routine ``DCOPF`` has been extensively benchmarked with pandapower and MATPOWER.
+- Routines besides above mentioned are not fully benchmarked yet.
 
 Roadmap
 =======

@@ -129,6 +129,45 @@ class TestAndesConversion(unittest.TestCase):
                       verify=False, tol=1e-3)
         self.assertTrue(verify_pf(amsys=sp, adsys=sa, tol=1e-7))
 
+    def test_to_andes_toggle(self):
+        """
+        Test conversion when there is Toggle in ANDES case.
+        """
+        sp = ams.load(ams.get_case('5bus/pjm5bus_demo.xlsx'),
+                      setup=True,
+                      no_output=True,
+                      default_config=True)
+        sa = sp.to_andes(setup=True,
+                         addfile=andes.get_case('5bus/pjm5bus.xlsx'),
+                         verify=False)
+        self.assertGreater(sa.Toggle.n, 0)
+
+    def test_to_andes_alter(self):
+        """
+        Test conversion when there is Alter in ANDES case.
+        """
+        sp = ams.load(ams.get_case('ieee14/ieee14_uced.xlsx'),
+                      setup=True,
+                      no_output=True,
+                      default_config=True)
+        sa = sp.to_andes(setup=True,
+                         addfile=andes.get_case('ieee14/ieee14_alter.xlsx'),
+                         verify=False)
+        self.assertGreater(sa.Alter.n, 0)
+
+    def test_to_andes_fault(self):
+        """
+        Test conversion when there is Toggle in ANDES case.
+        """
+        sp = ams.load(ams.get_case('ieee14/ieee14_uced.xlsx'),
+                      setup=True,
+                      no_output=True,
+                      default_config=True)
+        sa = sp.to_andes(setup=True,
+                         addfile=andes.get_case('ieee14/ieee14_fault.xlsx'),
+                         verify=False)
+        self.assertGreater(sa.Fault.n, 0)
+
 
 class TestDataExchange(unittest.TestCase):
     """

@@ -4,6 +4,7 @@ Module for report generation.
 import logging
 from collections import OrderedDict
 from time import strftime
+from typing import List, Dict, Optional
 
 from andes.io.txt import dump_data
 from andes.shared import np
@@ -13,6 +14,9 @@ from ams import __version__ as version
 from ams.shared import copyright_msg
 
 logger = logging.getLogger(__name__)
+
+
+DECIMALS = 6
 
 
 def report_info(system) -> list:
@@ -71,8 +75,6 @@ class Report:
         horizon : str, optional
             Timeslot to collect data from. Only single timeslot is supported.
         """
-        system = self.system
-
         text = list()
         header = list()
         row_name = list()
@@ -81,47 +83,13 @@ class Report:
         if not rtn.converged:
             return text, header, row_name, data
 
-        # initialize data section by model
-        owners_all = ['Bus', 'Line', 'StaticGen',
-                      'PV', 'Slack', 'RenGen',
-                      'DG', 'ESD1', 'PVD1']
+        owners = collect_owners(rtn)
+        owners = collect_vars(owners, rtn, horizon, DECIMALS)
+        owners = collect_exprs(owners, rtn, horizon, DECIMALS)
+        owners = collect_exprcs(owners, rtn, horizon, DECIMALS)
 
-        # Filter owners that exist in the system
-        owners_e = [var.owner.class_name for var in rtn.vars.values() if var.owner is not None]
+        dump_collected_data(owners, text, header, row_name, data)
 
-        # Use a dictionary comprehension to create vars_by_owner
-        owners = {
-            name: {'idx': [],
-                   'name': [],
-                   'header': [],
-                   'data': [], }
-            for name in owners_all if name in owners_e and getattr(system, name).n > 0
-        }
-
-        # --- owner data: idx and name ---
-        for key, val in owners.items():
-            owner = getattr(system, key)
-            idx_v = owner.get_idx()
-            val['idx'] = idx_v
-            val['name'] = owner.get(src='name', attr='v', idx=idx_v)
-            val['header'].append('Name')
-            val['data'].append(val['name'])
-
-        # --- variables data ---
-        for key, var in rtn.vars.items():
-            owner_name = var.owner.class_name
-            idx_v = owners[owner_name]['idx']
-            header_v = key if var.unit is None else f'{key} ({var.unit})'
-            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(6)
-            owners[owner_name]['header'].append(header_v)
-            owners[owner_name]['data'].append(data_v)
-
-        # --- dump data ---
-        for key, val in owners.items():
-            text.append([f'{key} DATA:\n'])
-            row_name.append(val['idx'])
-            header.append(val['header'])
-            data.append(val['data'])
         return text, header, row_name, data
 
     def write(self):
@@ -182,23 +150,23 @@ class Report:
                     ['Generation', 'Load'])
 
                 if hasattr(rtn, 'pd'):
-                    pd = rtn.pd.v.sum().round(6)
+                    pd = rtn.pd.v.sum().round(DECIMALS)
                 else:
-                    pd = rtn.system.PQ.p0.v.sum().round(6)
+                    pd = rtn.system.PQ.p0.v.sum().round(DECIMALS)
                 if hasattr(rtn, 'qd'):
-                    qd = rtn.qd.v.sum().round(6)
+                    qd = rtn.qd.v.sum().round(DECIMALS)
                 else:
-                    qd = rtn.system.PQ.q0.v.sum().round(6)
+                    qd = rtn.system.PQ.q0.v.sum().round(DECIMALS)
 
-                if rtn.type in ['ACED', 'PF']:
-                    header.append(['P (p.u.)', 'Q (p.u.)'])
-                    Pcol = [rtn.pg.v.sum().round(6), pd]
-                    Qcol = [rtn.qg.v.sum().round(6), qd]
-                    data.append([Pcol, Qcol])
-                else:
+                if not hasattr(rtn, 'qg'):
                     header.append(['P (p.u.)'])
-                    Pcol = [rtn.pg.v.sum().round(6), pd]
+                    Pcol = [rtn.pg.v.sum().round(DECIMALS), pd]
                     data.append([Pcol])
+                else:
+                    header.append(['P (p.u.)', 'Q (p.u.)'])
+                    Pcol = [rtn.pg.v.sum().round(DECIMALS), pd]
+                    Qcol = [rtn.qg.v.sum().round(DECIMALS), qd]
+                    data.append([Pcol, Qcol])
 
                 # --- routine data ---
                 text.extend(text_sum)
@@ -209,3 +177,180 @@ class Report:
 
         _, s = elapsed(t)
         logger.info(f'Report saved to "{system.files.txt}" in {s}.')
+
+
+def dump_collected_data(owners: dict, text: List, header: List, row_name: List, data: List) -> None:
+    """
+    Dump collected data into the provided lists.
+
+    Parameters
+    ----------
+    owners : dict
+        Dictionary of owners.
+    text : list
+        List to append text data to.
+    header : list
+        List to append header data to.
+    row_name : list
+        List to append row names to.
+    data : list
+        List to append data to.
+    """
+    for key, val in owners.items():
+        text.append([f'{key} DATA:\n'])
+        row_name.append(val['idx'])
+        header.append(val['header'])
+        data.append(val['data'])
+
+
+def collect_exprcs(owners: Dict, rtn, horizon: Optional[str], decimals: int) -> Dict:
+    """
+    Collect expression calculations and populate the data dictionary.
+
+    Parameters
+    ----------
+    owners : dict
+        Dictionary of owners.
+    rtn : Routine
+        Routine object to collect data from.
+    horizon : str, optional
+        Timeslot to collect data from. Only single timeslot is supported.
+    decimals : int
+        Number of decimal places to round the data.
+
+    Returns
+    -------
+    dict
+        Updated dictionary of owners with collected ExpressionCalc data.
+    """
+    for key, exprc in rtn.exprcs.items():
+        if exprc.owner is None:
+            continue
+        owner_name = exprc.owner.class_name
+        idx_v = owners[owner_name]['idx']
+        header_v = key if exprc.unit is None else f'{key} ({exprc.unit})'
+        try:
+            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(decimals)
+        except Exception:
+            data_v = [np.nan] * len(idx_v)
+        owners[owner_name]['header'].append(header_v)
+        owners[owner_name]['data'].append(data_v)
+
+    return owners
+
+
+def collect_exprs(owners: Dict, rtn, horizon: Optional[str], decimals: int) -> Dict:
+    """
+    Collect expressions and populate the data dictionary.
+
+    Parameters
+    ----------
+    owners : dict
+        Dictionary of owners.
+    rtn : Routine
+        Routine object to collect data from.
+    horizon : str, optional
+        Timeslot to collect data from. Only single timeslot is supported.
+    decimals : int
+        Number of decimal places to round the data.
+
+    Returns
+    -------
+    dict
+        Updated dictionary of owners with collected Expression data.
+    """
+    for key, expr in rtn.exprs.items():
+        if expr.owner is None:
+            continue
+        owner_name = expr.owner.class_name
+        idx_v = owners[owner_name]['idx']
+        header_v = key if expr.unit is None else f'{key} ({expr.unit})'
+        try:
+            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(decimals)
+        except Exception:
+            data_v = [np.nan] * len(idx_v)
+        owners[owner_name]['header'].append(header_v)
+        owners[owner_name]['data'].append(data_v)
+
+    return owners
+
+
+def collect_vars(owners: Dict, rtn, horizon: Optional[str], decimals: int) -> Dict:
+    """
+    Collect variables and populate the data dictionary.
+
+    Parameters
+    ----------
+    owners : dict
+        Dictionary of owners.
+    rtn : Routine
+        Routine object to collect data from.
+    horizon : str, optional
+        Timeslot to collect data from. Only single timeslot is supported.
+    decimals : int
+        Number of decimal places to round the data.
+
+    Returns
+    -------
+    dict
+        Updated dictionary of owners with collected Var data.
+    """
+
+    for key, var in rtn.vars.items():
+        if var.owner is None:
+            continue
+        owner_name = var.owner.class_name
+        idx_v = owners[owner_name]['idx']
+        header_v = key if var.unit is None else f'{key} ({var.unit})'
+        try:
+            data_v = rtn.get(src=key, attr='v', idx=idx_v, horizon=horizon).round(decimals)
+        except Exception:
+            data_v = [np.nan] * len(idx_v)
+        owners[owner_name]['header'].append(header_v)
+        owners[owner_name]['data'].append(data_v)
+
+    return owners
+
+
+def collect_owners(rtn):
+    """
+    Initialize an owners dictionary for data collection.
+
+    Returns
+    -------
+    dict
+        A dictionary of initialized owners.
+    """
+    # initialize data section by model
+    owners_all = ['Bus', 'Line', 'StaticGen',
+                  'PV', 'Slack', 'RenGen',
+                  'DG', 'ESD1', 'PVD1',
+                  'StaticLoad']
+
+    # Filter owners that exist in the system
+    owners_e = list({
+        var.owner.class_name for var in rtn.vars.values() if var.owner is not None
+    }.union(
+        expr.owner.class_name for expr in rtn.exprs.values() if expr.owner is not None
+    ).union(
+        exprc.owner.class_name for exprc in rtn.exprcs.values() if exprc.owner is not None
+    ))
+
+    # Use a dictionary comprehension to create vars_by_owner
+    owners = {
+        name: {'idx': [],
+               'name': [],
+               'header': [],
+               'data': [], }
+        for name in owners_all if name in owners_e and getattr(rtn.system, name).n > 0
+    }
+
+    for key, val in owners.items():
+        owner = getattr(rtn.system, key)
+        idx_v = owner.get_idx()
+        val['idx'] = idx_v
+        val['name'] = owner.get(src='name', attr='v', idx=idx_v)
+        val['header'].append('Name')
+        val['data'].append(val['name'])
+
+    return owners
