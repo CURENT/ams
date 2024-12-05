@@ -78,7 +78,6 @@ def sync_adsys(amsys, adsys):
                 ad_mdl.set(src=param, attr='v', idx=idx,
                            value=am_mdl.get(src=param, attr='v', idx=idx))
             except Exception:
-                logger.debug(f"Skip updating {mname}.{param}")
                 continue
     return True
 
@@ -332,6 +331,27 @@ def parse_addfile(adsys, amsys, addfile):
                 logger.debug(f'Replace map for {mdl_guess} is {idx_map[mdl_guess]}')
                 df[idxn] = df[idxn].replace(idx_map[mdl_guess])
                 logger.debug(f'Adjust {idxp.class_name} <{name}.{idxp.name}>')
+
+    # NOTE: Group TimedEvent needs special treatment
+    # adjust Toggle and Fault models
+    toggle_df = df_models.get('Toggle') or df_models.get('Toggler')
+    if toggle_df is not None:
+        toggle_df['dev'] = toggle_df.apply(replace_dev, axis=1,
+                                           mdl='model', dev='dev',
+                                           idx_map=idx_map)
+
+    alter_df = df_models.get('Alter')
+    if alter_df is not None:
+        alter_df['dev'] = alter_df.apply(replace_dev, axis=1,
+                                         mdl='model', dev='dev',
+                                         idx_map=idx_map)
+
+    # adjust Fault model
+    fault_df = df_models.get('Fault')
+    if fault_df is not None:
+        fault_df['bus'] = fault_df.apply(replace_dev, axis=1,
+                                         mdl='bus', dev='bus',
+                                         idx_map=idx_map)
 
     # add dynamic models
     for name, df in df_models.items():
@@ -966,7 +986,7 @@ def make_link_table(adsys):
                         right=ssa_rg[['stg_idx', 'rg_idx']])
 
     # NOTE: use this instead of fillna to avoid type conversion
-    idxc = ['stg_idx', 'syg_idx', 'dg_idx', 'rg_idx']
+    idxc = ['syg_idx', 'dg_idx', 'rg_idx']
     ssa_key0[idxc] = ssa_key0[idxc].astype('str').replace({'nan': ''}).astype('bool')
 
     dyr = ssa_key0['syg_idx'] + ssa_key0['dg_idx'] + ssa_key0['rg_idx']
@@ -1037,3 +1057,27 @@ def verify_pf(amsys, adsys, tol=1e-3):
         logger.warning(msg)
         logger.warning(diff_msg)
     return check
+
+
+def replace_dev(row, mdl, dev, idx_map):
+    """
+    Replace the device idx in the row based on the idx_map.
+
+    Parameters
+    ----------
+    row : pd.Series
+        The row of the DataFrame.
+    mdl : str
+        The column name for the Model.
+    dev : str
+        The column name for the Device idx.
+    idx_map : dict
+        The index map for replacement.
+
+    Returns
+    -------
+    str
+        The new device idx.
+    """
+    old_idx = row[dev]
+    return idx_map.get(row[mdl], {}).get(old_idx, old_idx)

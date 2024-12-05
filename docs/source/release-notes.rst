@@ -16,6 +16,7 @@ v0.9.13 (2024-xx-xx)
 - Add more tests to cover DG and ES related routines
 - Improve formulation for DG and ESD involved routines
 - Improve module ``Report`` and method ``RoutineBase.export_csv``
+- Support ``TimedEvent`` in ANDES case conversion
 
 v0.9.12 (2024-11-23)
 --------------------
