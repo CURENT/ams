@@ -1,4 +1,5 @@
 import unittest
+import numpy as np
 
 import ams
 
@@ -75,3 +76,26 @@ class TestDCOPF(unittest.TestCase):
         self.ss.DCOPF.run(solver='CLARABEL')
         pgs_pqt2 = self.ss.DCOPF.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
+
+    def test_dc2ac(self):
+        """
+        Test `DCOPF.dc2ac()` method.
+        """
+        self.ss.DCOPF.run(solver='CLARABEL')
+        self.ss.DCOPF.dc2ac()
+        self.assertTrue(self.ss.DCOPF.converted, "AC conversion failed!")
+        self.assertTrue(self.ss.DCOPF.exec_time > 0, "Execution time is not greater than 0.")
+
+        stg_idx = self.ss.StaticGen.get_idx()
+        pg_dcopf = self.ss.DCOPF.get(src='pg', attr='v', idx=stg_idx)
+        pg_acopf = self.ss.ACOPF.get(src='pg', attr='v', idx=stg_idx)
+        np.testing.assert_almost_equal(pg_dcopf, pg_acopf, decimal=3)
+
+        bus_idx = self.ss.Bus.get_idx()
+        v_dcopf = self.ss.DCOPF.get(src='vBus', attr='v', idx=bus_idx)
+        v_acopf = self.ss.ACOPF.get(src='vBus', attr='v', idx=bus_idx)
+        np.testing.assert_almost_equal(v_dcopf, v_acopf, decimal=3)
+
+        a_dcopf = self.ss.DCOPF.get(src='aBus', attr='v', idx=bus_idx)
+        a_acopf = self.ss.ACOPF.get(src='aBus', attr='v', idx=bus_idx)
+        np.testing.assert_almost_equal(a_dcopf, a_acopf, decimal=3)
