@@ -146,6 +146,53 @@ class DCOPF(DCPFBase):
                              info='total cost', unit='$',
                              sense='min', e_str=obj,)
 
+    def dc2ac(self, kloss=1.0, **kwargs):
+        """
+        Convert the RTED results with ACOPF.
+
+        Parameters
+        ----------
+        kloss : float, optional
+            The loss factor for the conversion. Defaults to 1.2.
+        """
+        exec_time = self.exec_time
+        if self.exec_time == 0 or self.exit_code != 0:
+            logger.warning(f'{self.class_name} is not executed successfully, quit conversion.')
+            return False
+
+        # --- ACOPF ---
+        # scale up load
+        pq_idx = self.system.StaticLoad.get_idx()
+        pd0 = self.system.StaticLoad.get(src='p0', attr='v', idx=pq_idx).copy()
+        qd0 = self.system.StaticLoad.get(src='q0', attr='v', idx=pq_idx).copy()
+        self.system.StaticLoad.set(src='p0', idx=pq_idx, attr='v', value=pd0 * kloss)
+        self.system.StaticLoad.set(src='q0', idx=pq_idx, attr='v', value=qd0 * kloss)
+        # run ACOPF
+        ACOPF = self.system.ACOPF
+        ACOPF.run()
+        # scale load back
+        self.system.StaticLoad.set(src='p0', idx=pq_idx, attr='v', value=pd0)
+        self.system.StaticLoad.set(src='q0', idx=pq_idx, attr='v', value=qd0)
+        if not ACOPF.exit_code == 0:
+            logger.warning('<ACOPF> did not converge, conversion failed.')
+            # NOTE: mock results to fit interface with ANDES
+            self.vBus = ACOPF.vBus
+            self.vBus.optz.value = np.ones(self.system.Bus.n)
+            self.aBus.optz.value = np.zeros(self.system.Bus.n)
+            return False
+        self.pg.optz.value = ACOPF.pg.v
+
+        # NOTE: mock results to fit interface with ANDES
+        self.vBus.optz.value = ACOPF.vBus.v
+        self.aBus.optz.value = ACOPF.aBus.v
+        self.exec_time = exec_time
+
+        # --- set status ---
+        self.system.recent = self
+        self.converted = True
+        logger.warning(f'<{self.class_name}> converted to AC.')
+        return True
+
     def run(self, **kwargs):
         """
         Run the routine.

@@ -88,6 +88,10 @@ class DCPFBase(RoutineBase):
                       v0=self.pg0)
 
         # --- bus ---
+        self.vBus = Var(info='Bus voltage magnitude, placeholder',
+                        unit='p.u.',
+                        name='vBus', tex_name=r'v_{Bus}',
+                        src='v', model='Bus',)
         self.aBus = Var(info='Bus voltage angle',
                         unit='rad',
                         name='aBus', tex_name=r'\theta_{bus}',
