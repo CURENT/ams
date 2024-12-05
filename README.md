@@ -97,6 +97,7 @@ pip install git+https://github.com/CURENT/ams.git
 
 ```python
 import ams
+import andes
 
 ss = ams.load(ams.get_case('ieee14/ieee14_uced.xlsx'))
 
