@@ -34,14 +34,11 @@ class ACOPF(DCPF0):
         self.type = 'ACED'
 
         self.map1 = OrderedDict()   # ACOPF does not receive
-        self.map2 = OrderedDict([
-            ('Bus', {
-                'vBus': 'v0',
-            }),
-            ('StaticGen', {
-                'pg': 'p0',
-            }),
-        ])
+        self.map2.update({
+            'vBus': ('Bus', 'v0'),
+            'ug': ('StaticGen', 'u'),
+            'pg': ('StaticGen', 'p0'),
+        })
 
         # --- params ---
         self.c2 = RParam(info='Gen cost coefficient 2',

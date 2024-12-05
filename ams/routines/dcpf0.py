@@ -35,6 +35,11 @@ class DCPF0(RoutineBase):
         self.info = 'DC Power Flow'
         self.type = 'PF'
 
+        self.ug = RParam(info='Gen connection status',
+                         name='ug', tex_name=r'u_{g}',
+                         model='StaticGen', src='u',
+                         no_parse=True)
+
         # --- routine data ---
         self.x = RParam(info="line reactance",
                         name='x', tex_name='x',
