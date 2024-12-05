@@ -17,6 +17,7 @@ v0.9.13 (2024-xx-xx)
 - Improve formulation for DG and ESD involved routines
 - Improve module ``Report`` and method ``RoutineBase.export_csv``
 - Support ``TimedEvent`` in ANDES case conversion
+- Add Var ``vBus`` in ``DCOPF`` for placeholder
 
 v0.9.12 (2024-11-23)
 --------------------
