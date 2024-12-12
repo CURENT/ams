@@ -1028,6 +1028,6 @@ def collect_data(rtn: RoutineBase, data_dict: Dict, items: Dict, attr: str):
             data_v = rtn.get(src=key, attr=attr, idx=idx_v,
                              horizon=rtn.timeslot.v if hasattr(rtn, 'timeslot') else None).round(6)
         except Exception as e:
-            logger.error(f"Error collecting data for '{key}': {e}")
+            logger.debug(f"Error with collecting data for '{key}': {e}")
             data_v = [np.nan] * len(idx_v)
         data_dict.update(OrderedDict(zip([f'{key} {dev}' for dev in idx_v], data_v)))
