@@ -47,7 +47,9 @@ idx_guess = {'rego': 'RenGovernor',
              'busf': 'BusFreq',
              'zone': 'Zone',
              'gen': 'StaticGen',
-             'pq': 'PQ', }
+             'pq': 'PQ',
+             'vsg': 'VSG',
+             'regc': 'VSG', }
 
 
 def sync_adsys(amsys, adsys):
