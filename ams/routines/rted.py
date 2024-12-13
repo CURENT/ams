@@ -20,7 +20,7 @@ class RTEDBase:
     """
 
     def __init__(self):
-        # --- region ---
+        # --- zone ---
         self.zg = RParam(info='Gen zone',
                          name='zg', tex_name='z_{one,g}',
                          model='StaticGen', src='zone',
