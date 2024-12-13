@@ -215,14 +215,11 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.system.StaticLoad.set(src='q0', idx=pq_idx, attr='v', value=qd0)
         if not ACOPF.exit_code == 0:
             logger.warning('<ACOPF> did not converge, conversion failed.')
-            # NOTE: mock results to fit interface with ANDES
-            self.vBus = ACOPF.vBus
             self.vBus.optz.value = np.ones(self.system.Bus.n)
             self.aBus.optz.value = np.zeros(self.system.Bus.n)
             return False
-        self.pg.optz.value = ACOPF.pg.v
 
-        # NOTE: mock results to fit interface with ANDES
+        self.pg.optz.value = ACOPF.pg.v
         self.vBus.optz.value = ACOPF.vBus.v
         self.aBus.optz.value = ACOPF.aBus.v
         self.exec_time = exec_time
