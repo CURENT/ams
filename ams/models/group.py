@@ -290,7 +290,8 @@ class VSG(GroupBase):
     """
     Renewable generator with virtual synchronous generator (VSG) control group.
 
-    Note that this is a group separate from ``RenGen`` for VSG scheduling study.
+    Note that this is a group separate from ``RenGen`` for VSG scheduling study,
+    and there is not a group 'VSG' in ANDES.
     """
 
     def __init__(self):
