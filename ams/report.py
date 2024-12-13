@@ -61,7 +61,7 @@ class Report:
             'Lines': system.Line.n,
             'Transformers': np.count_nonzero(system.Line.trans.v == 1),
             'Areas': system.Area.n,
-            'Regions': system.Region.n,
+            'Zones': system.Zone.n,
         })
 
     def collect(self, rtn, horizon=None):

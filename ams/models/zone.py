@@ -9,24 +9,21 @@ from ams.core.model import Model
 logger = logging.getLogger(__name__)
 
 
-class RegionData(ModelData):
-    def __init__(self):
-        super().__init__()
-
-
-class Region(RegionData, Model):
+class Zone(ModelData, Model):
     """
-    Region model for zonal vars.
+    Zone model for zonal items.
+
+    An ``area`` can have multiple zones.
 
     Notes
     -----
-    1. Region is a collection of buses.
-    2. Model ``Region`` is not actually defined in ANDES.
+    1. Zone is a collection of buses.
+    2. Model ``Zone`` is not actually defined in ANDES.
 
     """
 
     def __init__(self, system, config):
-        RegionData.__init__(self)
+        ModelData.__init__(self)
         Model.__init__(self, system, config)
 
         self.group = 'Collection'

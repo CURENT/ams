@@ -29,11 +29,11 @@ class RTEDBase:
                          name='zd', tex_name='z_{one,d}',
                          model='StaticLoad', src='zone',
                          no_parse=True)
-        self.gs = ZonalSum(u=self.zg, zone='Region',
+        self.gs = ZonalSum(u=self.zg, zone='Zone',
                            name='gs', tex_name=r'S_{g}',
                            info='Sum Gen vars vector in shape of zone',
                            no_parse=True, sparse=True)
-        self.ds = ZonalSum(u=self.zd, zone='Region',
+        self.ds = ZonalSum(u=self.zd, zone='Zone',
                            name='ds', tex_name=r'S_{d}',
                            info='Sum pd vector in shape of zone',
                            no_parse=True,)
@@ -518,7 +518,7 @@ class VISBase:
                      model='VSG', src='D',
                      nonneg=True,)
 
-        self.gvsg = ZonalSum(u=self.zvsg, zone='Region',
+        self.gvsg = ZonalSum(u=self.zvsg, zone='Zone',
                              name='gvsg', tex_name=r'S_{g}',
                              info='Sum VSG vars vector in shape of zone',
                              no_parse=True)

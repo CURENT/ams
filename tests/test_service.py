@@ -15,7 +15,7 @@ class TestService(unittest.TestCase):
         self.ss = ams.load(ams.get_case("ieee39/ieee39_uced_esd1.xlsx"),
                            default_config=True,
                            no_output=True,)
-        self.nR = self.ss.Region.n
+        self.nR = self.ss.Zone.n
         self.nB = self.ss.Bus.n
         self.nL = self.ss.Line.n
         self.nD = self.ss.StaticLoad.n  # number of static loads
@@ -63,7 +63,7 @@ class TestService(unittest.TestCase):
         """
         Test `ZonalSum`.
         """
-        ds = ZonalSum(u=self.ss.RTED.zd, zone="Region",
+        ds = ZonalSum(u=self.ss.RTED.zd, zone="Zone",
                       name="ds", tex_name=r"S_{d}",
                       info="Sum pl vector in shape of zone",)
         ds.rtn = self.ss.RTED
