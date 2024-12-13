@@ -4,7 +4,6 @@ import numpy as np
 
 from andes.models.group import GroupBase as andes_GroupBase
 from andes.core.service import BackRef
-from andes.utils.func import validate_keys_values
 
 from ams.shared import pd
 
@@ -177,76 +176,6 @@ class GroupBase(andes_GroupBase):
             A dataframe containing all model data. An `uid` column is added.
         """
         return pd.DataFrame(self.as_dict(vin=vin))
-
-    def find_idx(self, keys, values, allow_none=False, default=None, allow_all=False):
-        """
-        Find indices of devices that satisfy the given `key=value` condition.
-
-        This method iterates over all models in this group.
-
-        .. note::
-            New in version 0.9.14. Duplicate of `andes.models.group.GroupBase.find_idx`.
-
-        Parameters
-        ----------
-        keys : str, array-like, Sized
-            A string or an array-like of strings containing the names of parameters for the search criteria.
-        values : array, array of arrays, Sized
-            Values for the corresponding key to search for. If keys is a str, values should be an array of
-            elements. If keys is a list, values should be an array of arrays, each corresponding to the key.
-        allow_none : bool, optional
-            Allow key, value to be not found. Used by groups. Default is False.
-        default : bool, optional
-            Default idx to return if not found (missing). Default is None.
-        allow_all : bool, optional
-            Return all matches if set to True. Default is False.
-
-        Returns
-        -------
-        list
-            Indices of devices.
-        """
-
-        keys, values = validate_keys_values(keys, values)
-
-        n_mdl, n_pair = len(self.models), len(values[0])
-
-        indices_found = []
-        # `indices_found` contains found indices returned from all models of this group
-        for model in self.models.values():
-            indices_found.append(model.find_idx(keys, values, allow_none=True, default=default, allow_all=True))
-
-        # --- find missing pairs ---
-        i_val_miss = []
-        for i in range(n_pair):
-            idx_cross_mdls = [indices_found[j][i] for j in range(n_mdl)]
-            if all(item == [default] for item in idx_cross_mdls):
-                i_val_miss.append(i)
-
-        if (not allow_none) and i_val_miss:
-            miss_pairs = []
-            for i in i_val_miss:
-                miss_pairs.append([values[j][i] for j in range(len(keys))])
-            raise IndexError(f'{keys} = {miss_pairs} not found in {self.class_name}')
-
-        # --- output ---
-        out_pre = []
-        for i in range(n_pair):
-            idx_cross_mdls = [indices_found[j][i] for j in range(n_mdl)]
-            if all(item == [default] for item in idx_cross_mdls):
-                out_pre.append([default])
-                continue
-            for item in idx_cross_mdls:
-                if item != [default]:
-                    out_pre.append(item)
-                    break
-
-        if allow_all:
-            out = out_pre
-        else:
-            out = [item[0] for item in out_pre]
-
-        return out
 
 
 class Undefined(GroupBase):
