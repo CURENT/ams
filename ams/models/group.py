@@ -1,16 +1,12 @@
 import logging
 
-import numpy as np
-
-from andes.models.group import GroupBase as andes_GroupBase
+from andes.models.group import GroupBase as adGroupBase
 from andes.core.service import BackRef
-
-from ams.shared import pd
 
 logger = logging.getLogger(__name__)
 
 
-class GroupBase(andes_GroupBase):
+class GroupBase(adGroupBase):
     """
     Base class for groups.
 
@@ -87,95 +83,6 @@ class GroupBase(andes_GroupBase):
 
         model = self.idx2model(to_idx)
         model.set_backref(name, from_idx, to_idx)
-
-    def alter(self, src, idx, value, attr='v'):
-        """
-        Alter values of input parameters or constant service for a group of models.
-
-        .. note::
-            New in version 0.9.14. Duplicate of `andes.models.group.GroupBase.alter`.
-
-        Parameters
-        ----------
-        src : str
-            The parameter name to alter
-        idx : str, float, int
-            The unique identifier for the device to alter
-        value : float
-            The desired value
-        attr : str, optional
-            The attribute to alter. Default is 'v'.
-        """
-        self._check_src(src)
-        self._check_idx(idx)
-
-        idx, _ = self._1d_vectorize(idx)
-        models = self.idx2model(idx)
-
-        if isinstance(value, (str, int, float, np.integer, np.floating)):
-            value = [value] * len(idx)
-
-        for mdl, ii, val in zip(models, idx, value):
-            mdl.alter(src, ii, val, attr=attr)
-
-        return True
-
-    def as_dict(self, vin=False):
-        """
-        Export group common parameters as a dictionary.
-
-        .. note::
-            New in version 0.9.14. Duplicate of `andes.models.group.GroupBase.as_dict`.
-
-        This method returns a dictionary where the keys are the `Model` parameter names
-        and the values are array-like structures containing the data in the order they were added.
-        Unlike `Model.as_dict()`, this dictionary does not include the `uid` field.
-
-        Parameters
-        ----------
-        vin : bool, optional
-            If True, includes the `vin` attribute in the dictionary. Default is False.
-
-        Returns
-        -------
-        dict
-            A dictionary of common parameters.
-        """
-        out_all = []
-        out_params = self.common_params.copy()
-        out_params.insert(2, 'idx')
-
-        for mdl in self.models.values():
-            if mdl.n <= 0:
-                continue
-            mdl_data = mdl.as_df(vin=True) if vin else mdl.as_dict()
-            mdl_dict = {k: mdl_data.get(k) for k in out_params if k in mdl_data}
-            out_all.append(mdl_dict)
-
-        if not out_all:
-            return {}
-
-        out = {key: np.concatenate([item[key] for item in out_all]) for key in out_all[0].keys()}
-        return out
-
-    def as_df(self, vin=False):
-        """
-        Export group common parameters as a `pandas.DataFrame` object.
-
-        .. note::
-            New in version 0.9.14. Duplicate of `andes.models.group.GroupBase.as_df`.
-
-        Parameters
-        ----------
-        vin : bool
-            If True, export all parameters from original input (``vin``).
-
-        Returns
-        -------
-        DataFrame
-            A dataframe containing all model data. An `uid` column is added.
-        """
-        return pd.DataFrame(self.as_dict(vin=vin))
 
 
 class Undefined(GroupBase):

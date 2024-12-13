@@ -14,8 +14,6 @@ v0.9.14 (2024-xx-xx)
 
 - **Breaking Change**: rename model ``Region`` to ``Zone`` for clarity. Prior case
   files without modification can run into error.
-- Duplicate ``Model.alter``, ``GroupBase.alter``, ``GroupBase.as_dict``, and ``GroupBase.as_df``
-  to ensure compatibility with ANDES. They maybe removed for simplicity in future versions.
 
 v0.9.13 (2024-12-05)
 --------------------
