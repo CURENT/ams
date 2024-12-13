@@ -2,6 +2,7 @@
 Module for optimization base classes.
 """
 import logging
+import warnings
 
 from typing import Optional
 
@@ -155,8 +156,27 @@ class OptzBase:
         return f'{self.__class__.__name__}: {self.name}'
 
     def get_idx(self):
+
+        warnings.warn(
+            "get_idx is deprecated and will be removed in a future release. Use get_all_idxes instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+
         if self.is_group:
             return self.owner.get_idx()
+        elif self.owner is None:
+            logger.info(f'{self.class_name} <{self.name}> has no owner.')
+            return None
+        else:
+            return self.owner.idx.v
+
+    def get_all_idxes(self):
+        """
+        Return all indices.
+        """
+        if self.is_group:
+            return self.owner.get_all_idxes()
         elif self.owner is None:
             logger.info(f'{self.class_name} <{self.name}> has no owner.')
             return None

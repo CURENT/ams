@@ -67,6 +67,9 @@ class Constraint(OptzBase):
     def get_idx(self):
         raise NotImplementedError
 
+    def get_all_idxes(self):
+        raise NotImplementedError
+
     @ensure_symbols
     def parse(self):
         """
