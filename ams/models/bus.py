@@ -21,10 +21,10 @@ class Bus(BusData, Model):
         Model.__init__(self, system, config)
 
         self.group = 'ACTopology'
-        # NOTE: in ANDES, self.zone is defined to trace a non-existing model "Region"
+        # NOTE: in ANDES, self.zone is defined to trace a non-existing model "Zone"
         # in AMS, model "Zone" is developed,
         # so we need to change the model name of IdxParam self.zone
-        self.zone.model = 'Region'
+        self.zone.model = 'Zone'
 
         self.type = NumParam(name='type',
                              info='bus type, 1=PQ, 2=PV, 3=ref, 4=isolated (place holder)',

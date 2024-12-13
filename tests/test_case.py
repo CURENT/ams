@@ -34,7 +34,7 @@ class Test5Bus(unittest.TestCase):
         self.assertEqual(self.ss.PV.n, 3)
         self.assertEqual(self.ss.Slack.n, 1)
         self.assertEqual(self.ss.Line.n, 7)
-        self.assertEqual(self.ss.Region.n, 2)
+        self.assertEqual(self.ss.Zone.n, 2)
         self.assertEqual(self.ss.SFR.n, 2)
         self.assertEqual(self.ss.SR.n, 2)
         self.assertEqual(self.ss.NSR.n, 2)

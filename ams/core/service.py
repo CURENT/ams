@@ -221,7 +221,7 @@ class LoadScale(ROperationService):
         ue = self.u.owner.get(src='u', attr='v', idx=u_idx)
         u_bus = self.u.owner.get(src='bus', attr='v', idx=u_idx)
         u_zone = sys.Bus.get(src='zone', attr='v', idx=u_bus)
-        u_yloc = np.array(sys.Region.idx2uid(u_zone))
+        u_yloc = np.array(sys.Zone.idx2uid(u_zone))
         p0s = np.multiply(self.sd.v[:, u_yloc].transpose(),
                           (ue * self.u.v)[:, np.newaxis])
         if self.sparse:
@@ -587,12 +587,12 @@ class NumHstack(NumOp):
 class ZonalSum(NumOp):
     """
     Build zonal sum matrix for a vector in the shape of collection model,
-    ``Area`` or ``Region``.
+    ``Area`` or ``Zone``.
     The value array is in the shape of (nr, nc), where nr is the length of
     rid instance idx, and nc is the length of the cid value.
 
     In an IEEE-14 Bus system, we have the zonal definition by the
-    ``Region`` model. Suppose in it we have two regions, "ZONE1" and
+    ``Zone`` model. Suppose in it we have two regions, "ZONE1" and
     "ZONE2".
 
     Follwing it, we have a zonal SFR requirement model ``SFR`` that
@@ -606,7 +606,7 @@ class ZonalSum(NumOp):
     In the `RTED` model, we have the Vars ``pru`` and ``prd`` in the
     shape of generators.
 
-    Then, the Region model has idx ['ZONE1', 'ZONE2'], and the ``gsm`` value
+    Then, the Zone model has idx ['ZONE1', 'ZONE2'], and the ``gsm`` value
     will be [[1, 1, 0, 0, 1], [0, 0, 1, 1, 0]].
 
     Finally, the zonal reserve requirements can be formulated as
@@ -621,7 +621,7 @@ class ZonalSum(NumOp):
     u : Callable
         Input.
     zone : str
-        Zonal model name, e.g., "Area" or "Region".
+        Zonal model name, e.g., "Area" or "Zone".
     name : str
         Instance name.
     tex_name : str

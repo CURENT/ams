@@ -212,17 +212,17 @@ class Model:
         self.__dict__[src].__dict__[attr][uid] = value
         return True
 
-    def alter(self, src, idx, value):
+    def alter(self, src, idx, value, attr='v'):
         """
         Alter values of input parameters or constant service.
 
         If the method operates on an input parameter, the new data should be in
-        the same base as that in the input file. This function will convert the
-        new value to per unit in the system base.
+        the same base as that in the input file. This function will convert
+        ``value`` to per unit in the system base whenever necessary.
 
-        The values for storing the input data, i.e., the ``vin`` field of the
-        parameter, will be overwritten, thus the update will be reflected in the
-        dumped case file.
+        The values for storing the input data, i.e., the parameter's ``vin``
+        field, will be overwritten. As a result, altered values will be
+        reflected in the dumped case file.
 
         Parameters
         ----------
@@ -232,14 +232,31 @@ class Model:
             The device to alter
         value : float
             The desired value
+        attr : str
+            The attribute to alter, default is 'v'.
+
+        Notes
+        -----
+        New in version 0.9.14: Added the signature `attr` to alter specific attributes.
+        This feature is useful when you need to manipulate parameter values in the system
+        base and ensure that these changes are reflected in the dumped case file.
         """
+
         instance = self.__dict__[src]
 
         if hasattr(instance, 'vin') and (instance.vin is not None):
-            self.set(src, idx, 'vin', value)
-            instance.v[:] = instance.vin * instance.pu_coeff
-        else:
+            uid = self.idx2uid(idx)
+            if attr == 'vin':
+                self.set(src, idx, 'vin', value / instance.pu_coeff[uid])
+                self.set(src, idx, 'v', value=value)
+            else:
+                self.set(src, idx, 'vin', value)
+                self.set(src, idx, 'v', value * instance.pu_coeff[uid])
+        elif not hasattr(instance, 'vin') and attr == 'vin':
+            logger.warning(f"{self.class_name}.{src} has no `vin` attribute, changing `v`.")
             self.set(src, idx, 'v', value)
+        else:
+            self.set(src, idx, attr=attr, value=value)
 
     def idx2uid(self, idx):
         """

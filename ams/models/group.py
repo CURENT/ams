@@ -1,12 +1,12 @@
-import logging  # NOQA
+import logging
 
-from andes.models.group import GroupBase as andes_GroupBase
+from andes.models.group import GroupBase as adGroupBase
 from andes.core.service import BackRef
 
 logger = logging.getLogger(__name__)
 
 
-class GroupBase(andes_GroupBase):
+class GroupBase(adGroupBase):
     """
     Base class for groups.
 

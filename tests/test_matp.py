@@ -20,7 +20,7 @@ class TestMatProcessorBasic(unittest.TestCase):
     def setUp(self) -> None:
         self.ss = ams.load(ams.get_case("matpower/case300.m"),
                            default_config=True, no_output=True)
-        self.nR = self.ss.Region.n
+        self.nR = self.ss.Zone.n
         self.nb = self.ss.Bus.n
         self.nl = self.ss.Line.n
         self.ng = self.ss.StaticGen.n

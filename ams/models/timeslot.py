@@ -39,7 +39,7 @@ class EDTSlot(TimeSlot):
 
     `sd` is the zonal load scaling factor.
     Cells in `sd` should have `nz` values seperated by comma,
-    where `nz` is the number of `Region` in the system.
+    where `nz` is the number of `Zone` in the system.
 
     `ug` is the unit commitment decisions.
     Cells in `ug` should have `ng` values seperated by comma,
@@ -62,7 +62,7 @@ class UCTSlot(TimeSlot):
 
     `sd` is the zonal load scaling factor.
     Cells in `sd` should have `nz` values seperated by comma,
-    where `nz` is the number of `Region` in the system.
+    where `nz` is the number of `Zone` in the system.
     """
 
     def __init__(self, system=None, config=None):

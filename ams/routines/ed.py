@@ -101,6 +101,8 @@ class MPBase:
         self.pg.info = '2D Gen power'
         self.aBus.horizon = self.timeslot
         self.aBus.info = '2D Bus angle'
+        self.vBus.horizon = self.timeslot
+        self.vBus.info = '2D Bus voltage'
         self.pi.horizon = self.timeslot
 
 

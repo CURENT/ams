@@ -74,3 +74,10 @@ class TestGroup(unittest.TestCase):
 
         # --- get group idx ---
         self.assertListEqual(ss.DG.get_idx(), ss.ESD1.idx.v)
+
+    def test_group_repr(self):
+        """
+        Test `Group.__repr__()` method.
+        """
+        for grp in self.ss.groups.items():
+            print(grp.__repr__())

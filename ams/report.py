@@ -61,7 +61,7 @@ class Report:
             'Lines': system.Line.n,
             'Transformers': np.count_nonzero(system.Line.trans.v == 1),
             'Areas': system.Area.n,
-            'Regions': system.Region.n,
+            'Zones': system.Zone.n,
         })
 
     def collect(self, rtn, horizon=None):
@@ -324,7 +324,7 @@ def collect_owners(rtn):
     # initialize data section by model
     owners_all = ['Bus', 'Line', 'StaticGen',
                   'PV', 'Slack', 'RenGen',
-                  'DG', 'ESD1', 'PVD1',
+                  'DG', 'ESD1', 'PVD1', 'VSG',
                   'StaticLoad']
 
     # Filter owners that exist in the system

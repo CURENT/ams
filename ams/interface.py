@@ -45,7 +45,7 @@ idx_guess = {'rego': 'RenGovernor',
              'rea': 'RenAerodynamics',
              'rep': 'RenPitch',
              'busf': 'BusFreq',
-             'zone': 'Region',
+             'zone': 'Zone',
              'gen': 'StaticGen',
              'pq': 'PQ', }
 

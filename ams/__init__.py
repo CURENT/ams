@@ -2,7 +2,6 @@ from . import _version
 __version__ = _version.get_versions()['version']
 
 from ams import opt  # NOQA
-from ams import benchmarks  # NOQA
 
 from ams.main import config_logger, load, run  # NOQA
 from ams.system import System  # NOQA
