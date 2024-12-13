@@ -241,7 +241,6 @@ class GroupBase(andes_GroupBase):
         indices_found = []
         # `indices_found` contains found indices returned from all models of this group
         for model in self.models.values():
-            print(model)
             indices_found.append(model.find_idx(keys, values, allow_none=True, default=default, allow_all=True))
 
         # --- find missing pairs ---
