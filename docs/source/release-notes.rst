@@ -14,6 +14,7 @@ v0.9.14 (2024-xx-xx)
 
 - **Breaking Change**: rename model ``Region`` to ``Zone`` for clarity. Prior case
   files without modification can run into error.
+- Fix bugs in ``RTED.dc2ac``
 
 v0.9.13 (2024-12-05)
 --------------------
