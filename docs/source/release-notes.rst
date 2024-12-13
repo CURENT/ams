@@ -16,6 +16,9 @@ v0.9.14 (2024-xx-xx)
   files without modification can run into error.
 - Duplicate ``Model.alter``, ``GroupBase.alter``, ``GroupBase.as_dict``, and ``GroupBase.as_df``
   to ensure compatibility with ANDES. They maybe removed for simplicity in future versions.
+- Add ``get_all_idxes()`` in ``GroupBase``, ``Model``, and ``OptzBase``. Also set a
+  deprecation warning for ``get_idx()``
+- Skip knowngood test of ``DCPF.aBus`` for case39 and case118, the reason of gap is unknown
 
 v0.9.13 (2024-12-05)
 --------------------

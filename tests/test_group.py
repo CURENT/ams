@@ -73,7 +73,7 @@ class TestGroup(unittest.TestCase):
                                                (100.0,)]),)
 
         # --- get group idx ---
-        self.assertListEqual(ss.DG.get_idx(), ss.ESD1.idx.v)
+        self.assertListEqual(ss.DG.get_all_idxes(), ss.ESD1.idx.v)
 
 
 class TestGroupAdditional(unittest.TestCase):

@@ -165,10 +165,10 @@ class PFlow(RoutineBase):
         sys.Slack.set(src='q', attr='v', idx=slack_idx,
                       value=self._adsys.Slack.get(src='q', attr='v', idx=slack_idx))
         # --- routine results ---
-        self.pg.optz.value = sys.StaticGen.get(src='p', attr='v', idx=self.pg.get_idx())
-        self.qg.optz.value = sys.StaticGen.get(src='q', attr='v', idx=self.qg.get_idx())
-        self.aBus.optz.value = sys.Bus.get(src='a', attr='v', idx=self.aBus.get_idx())
-        self.vBus.optz.value = sys.Bus.get(src='v', attr='v', idx=self.vBus.get_idx())
+        self.pg.optz.value = sys.StaticGen.get(src='p', attr='v', idx=self.pg.get_all_idxes())
+        self.qg.optz.value = sys.StaticGen.get(src='q', attr='v', idx=self.qg.get_all_idxes())
+        self.aBus.optz.value = sys.Bus.get(src='a', attr='v', idx=self.aBus.get_all_idxes())
+        self.vBus.optz.value = sys.Bus.get(src='v', attr='v', idx=self.vBus.get_all_idxes())
         return True
 
     def update(self, params=None, build_mats=False):

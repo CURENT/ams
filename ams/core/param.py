@@ -4,6 +4,7 @@ Base class for parameters.
 
 
 import logging
+import warnings
 
 from typing import Optional, Iterable
 
@@ -168,7 +169,7 @@ class RParam(Param):
                     out = self._v
             elif self.is_group:
                 out = self.owner.get(src=self.src, attr='v',
-                                     idx=self.owner.get_idx())
+                                     idx=self.owner.get_all_idxes())
             else:
                 src_param = getattr(self.owner, self.src)
                 out = getattr(src_param, 'v')
@@ -180,7 +181,7 @@ class RParam(Param):
                 msg += 'likely a modeling error.'
                 raise AttributeError(msg)
             try:
-                sorted_idx = self.owner.find_idx(keys=self.indexer, values=imodel.get_idx())
+                sorted_idx = self.owner.find_idx(keys=self.indexer, values=imodel.get_all_idxes())
             except AttributeError:
                 sorted_idx = self.owner.idx.v
             except Exception as e:
@@ -237,7 +238,7 @@ class RParam(Param):
         postfix = '' if self.src is None else f'.{self.src}'
         return f'{self.__class__.__name__}: {owner}' + postfix
 
-    def get_idx(self):
+    def get_all_idxes(self):
         """
         Get the index of the parameter.
 
@@ -252,7 +253,7 @@ class RParam(Param):
         """
         if self.indexer is None:
             if self.is_group:
-                return self.owner.get_idx()
+                return self.owner.get_all_idxes()
             elif self.owner is None:
                 logger.info(f'Param <{self.name}> has no owner.')
                 return None
@@ -269,9 +270,17 @@ class RParam(Param):
                 msg += 'likely a modeling error.'
                 raise AttributeError(msg)
             try:
-                sorted_idx = self.owner.find_idx(keys=self.indexer, values=imodel.get_idx())
+                sorted_idx = self.owner.find_idx(keys=self.indexer, values=imodel.get_all_idxes())
             except AttributeError:
                 msg = f'Indexer <{self.indexer}> not found in <{self.imodel}>, '
                 msg += 'likely a modeling error.'
                 raise AttributeError(msg)
             return sorted_idx
+
+    def get_idx(self):
+        warnings.warn(
+            "get_idx is deprecated and will be removed in a future release. Use get_all_idxes instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.get_all_idxes()

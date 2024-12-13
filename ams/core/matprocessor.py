@@ -262,7 +262,7 @@ class MatProcessor:
         ng = system.StaticGen.n
 
         # bus indices: idx -> uid
-        idx_gen = system.StaticGen.get_idx()
+        idx_gen = system.StaticGen.get_all_idxes()
         u_gen = system.StaticGen.get(src='u', attr='v', idx=idx_gen)
         on_gen = np.flatnonzero(u_gen)  # uid of online generators
         on_gen_idx = [idx_gen[i] for i in on_gen]  # idx of online generators

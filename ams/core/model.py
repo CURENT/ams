@@ -3,6 +3,8 @@ Module for Model class.
 """
 
 import logging
+import warnings
+
 from collections import OrderedDict
 from typing import Iterable
 
@@ -303,12 +305,25 @@ class Model:
         """
         return self.docum.get(max_width=max_width, export=export)
 
+    def get_all_idxes(self):
+        """
+        Return all the indices of the model instance.
+        Equivalent to ``self.idx.v``, developed for consistency with group method
+        ``get_all_idxes``.
+        """
+        return self.idx.v
+
     def get_idx(self):
         """
         Return the index of the model instance.
         Equivalent to ``self.idx.v``, develoepd for consistency with group method
         ``get_idx``.
         """
+
+        warnings.warn("Model.get_idx() is deprecated. Use Model.get_all_idxes() instead.",
+                      DeprecationWarning,
+                      stacklevel=2)
+
         return self.idx.v
 
     def __repr__(self):

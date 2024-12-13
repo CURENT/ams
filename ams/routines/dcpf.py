@@ -138,7 +138,7 @@ class DCPFBase(RoutineBase):
                 continue
             else:
                 try:
-                    idx = var.owner.get_idx()
+                    idx = var.owner.get_all_idxes()
                 except AttributeError:
                     idx = var.owner.idx.v
 
@@ -156,7 +156,7 @@ class DCPFBase(RoutineBase):
                 continue
             else:
                 try:
-                    idx = exprc.owner.get_idx()
+                    idx = exprc.owner.get_all_idxes()
                 except AttributeError:
                     idx = exprc.owner.idx.v
 
@@ -177,7 +177,7 @@ class DCPFBase(RoutineBase):
         for expr in self.exprs.values():
             if expr.owner and expr.src:
                 expr.owner.set(src=expr.src, attr='v',
-                               idx=expr.get_idx(), value=expr.v)
+                               idx=expr.get_all_idxes(), value=expr.v)
         return True
 
 
