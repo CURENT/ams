@@ -3,6 +3,10 @@ import numpy as np
 
 import ams
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class TestModelMethods(unittest.TestCase):
     """

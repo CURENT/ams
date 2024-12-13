@@ -5,8 +5,8 @@ import numpy as np
 
 from andes.models.group import GroupBase as andes_GroupBase
 from andes.core.service import BackRef
-from andes.utils.func import validate_keys_values
 
+from ams.utils.func import validate_keys_values
 from ams.shared import pd
 
 logger = logging.getLogger(__name__)
@@ -241,6 +241,7 @@ class GroupBase(andes_GroupBase):
         indices_found = []
         # `indices_found` contains found indices returned from all models of this group
         for model in self.models.values():
+            print(model)
             indices_found.append(model.find_idx(keys, values, allow_none=True, default=default, allow_all=True))
 
         # --- find missing pairs ---
