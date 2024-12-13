@@ -57,25 +57,13 @@ class Expression(OptzBase):
                  vtype: Optional[str] = float,
                  horizon: Optional[str] = None,
                  ):
-        OptzBase.__init__(self, name=name, info=info, unit=unit)
+        OptzBase.__init__(self, name=name, info=info, unit=unit, model=model)
         self.tex_name = tex_name
         self.e_str = e_str
         self.optz = None
         self.code = None
-        self.model = model
-        self.owner = None
         self.src = src
-        self.is_group = False
         self.horizon = horizon
-
-    def get_idx(self):
-        if self.is_group:
-            return self.owner.get_idx()
-        elif self.owner is None:
-            logger.info(f'ExpressionCalc <{self.name}> has no owner.')
-            return None
-        else:
-            return self.owner.idx.v
 
     @ensure_symbols
     def parse(self):

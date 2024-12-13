@@ -115,11 +115,8 @@ class Var(OptzBase):
         self.tex_name = tex_name if tex_name else name
         # variable internal index inside a model (assigned in run time)
         self.id = None
-        OptzBase.__init__(self, name=name, info=info, unit=unit)
+        OptzBase.__init__(self, name=name, info=info, unit=unit, model=model)
         self.src = src
-        self.is_group = False
-        self.model = model  # indicate if this variable is a group variable
-        self.owner = None  # instance of the owner model or group
         self.v0 = v0
         self.horizon = horizon
         self._shape = shape
@@ -165,15 +162,6 @@ class Var(OptzBase):
             logger.info(f"Variable <{self.name}> is not initialized yet.")
         else:
             self.optz.value = value
-
-    def get_idx(self):
-        if self.is_group:
-            return self.owner.get_idx()
-        elif self.owner is None:
-            logger.info(f'Variable <{self.name}> has no owner.')
-            return None
-        else:
-            return self.owner.idx.v
 
     @ensure_symbols
     def parse(self):

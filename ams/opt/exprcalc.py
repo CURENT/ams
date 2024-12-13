@@ -35,23 +35,11 @@ class ExpressionCalc(OptzBase):
                  model: Optional[str] = None,
                  src: Optional[str] = None,
                  ):
-        OptzBase.__init__(self, name=name, info=info, unit=unit)
+        OptzBase.__init__(self, name=name, info=info, unit=unit, model=model)
         self.optz = None
         self.e_str = e_str
         self.code = None
-        self.model = model
-        self.owner = None
         self.src = src
-        self.is_group = False
-
-    def get_idx(self):
-        if self.is_group:
-            return self.owner.get_idx()
-        elif self.owner is None:
-            logger.info(f'ExpressionCalc <{self.name}> has no owner.')
-            return None
-        else:
-            return self.owner.idx.v
 
     @ensure_symbols
     def parse(self):
