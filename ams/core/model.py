@@ -6,7 +6,7 @@ import logging
 import warnings
 
 from collections import OrderedDict
-from typing import Iterable
+from typing import Iterable, Sized
 
 import numpy as np
 from andes.core.common import Config
@@ -259,6 +259,67 @@ class Model:
             self.set(src, idx, 'v', value)
         else:
             self.set(src, idx, attr=attr, value=value)
+
+    def find_idx(self, keys, values, allow_none=False, default=False):
+        """
+        Find `idx` of devices whose values match the given pattern.
+
+        :note:
+            New in version 0.9.14. Duplicate of `andes.core.model.ModelData.find_idx`.
+
+        Parameters
+        ----------
+        keys : str, array-like, Sized
+            A string or an array-like of strings containing the names of parameters for the search criteria
+        values : array, array of arrays, Sized
+            Values for the corresponding key to search for. If keys is a str, values should be an array of
+            elements. If keys is a list, values should be an array of arrays, each corresponds to the key.
+        allow_none : bool, Sized
+            Allow key, value to be not found. Used by groups.
+        default : bool
+            Default idx to return if not found (missing)
+
+        Returns
+        -------
+        list
+            indices of devices
+        """
+        if isinstance(keys, str):
+            keys = (keys,)
+            if not isinstance(values, (int, float, str, np.floating)) and not isinstance(values, Iterable):
+                raise ValueError(f"value must be a string, scalar or an iterable, got {values}")
+
+            if len(values) > 0 and not isinstance(values[0], (list, tuple, np.ndarray)):
+                values = (values,)
+
+        elif isinstance(keys, Sized):
+            if not isinstance(values, Iterable):
+                raise ValueError(f"value must be an iterable, got {values}")
+
+            if len(values) > 0 and not isinstance(values[0], Iterable):
+                raise ValueError(f"if keys is an iterable, values must be an iterable of iterables. got {values}")
+
+            if len(keys) != len(values):
+                raise ValueError("keys and values must have the same length")
+
+        v_attrs = [self.__dict__[key].v for key in keys]
+
+        idxes = []
+        for v_search in zip(*values):
+            v_idx = None
+            for pos, v_attr in enumerate(zip(*v_attrs)):
+                if all([i == j for i, j in zip(v_search, v_attr)]):
+                    v_idx = self.idx.v[pos]
+                    break
+            if v_idx is None:
+                if allow_none is False:
+                    raise IndexError(f'{list(keys)}={v_search} not found in {self.class_name}')
+                else:
+                    v_idx = default
+
+            idxes.append(v_idx)
+
+        return idxes
 
     def idx2uid(self, idx):
         """
