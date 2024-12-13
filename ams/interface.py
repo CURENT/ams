@@ -109,7 +109,7 @@ def _to_andes_pflow(system, no_output=False, default_config=True, **kwargs):
 def to_andes(system, addfile=None,
              setup=False, no_output=False,
              default_config=True,
-             verify=True, tol=1e-3,
+             verify=False, tol=1e-3,
              **kwargs):
     """
     Convert the AMS system to an ANDES system.
@@ -993,7 +993,7 @@ def make_link_table(adsys):
 
     dyr = ssa_key0['syg_idx'] + ssa_key0['dg_idx'] + ssa_key0['rg_idx']
     non_dyr = np.logical_not(dyr)
-    ssa_dyr0 = ssa_key0[non_dyr]
+    ssa_dyr0 = ssa_key0[non_dyr].reset_index(drop=True)
     ssa_dyr0['gammap'] = 1
     ssa_dyr0['gammaq'] = 1
 
