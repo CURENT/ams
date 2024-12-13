@@ -64,6 +64,9 @@ class Constraint(OptzBase):
         self.dual = None
         self.code = None
 
+    def get_idx(self):
+        raise NotImplementedError
+
     @ensure_symbols
     def parse(self):
         """
