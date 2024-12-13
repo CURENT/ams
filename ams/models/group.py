@@ -1,4 +1,5 @@
 import logging
+import warnings
 
 import numpy as np
 
@@ -24,6 +25,25 @@ class GroupBase(andes_GroupBase):
         super().__init__()
         self.common_params.extend(('idx',))
 
+    def get_all_idxes(self):
+        """
+        Return all the devices idx in this group.
+
+        .. note::
+            New in version 0.9.14. Revised from `andes.models.group.GroupBase.get_all_idxes`.
+
+        Returns
+        -------
+        list
+            List of indices.
+
+        Notes
+        -----
+        The default models sequence depends on the order of the models in the group,
+        which comes from OrderedDict `file_classes` in `models.__init__.py`.
+        """
+        return list(self._idx2model.keys())
+
     def get_idx(self):
         """
         Return the value of group idx sorted in a human-readable style.
@@ -33,6 +53,13 @@ class GroupBase(andes_GroupBase):
         This function sorts the idx values using a custom sorting key,
         which handles varying length strings with letters and numbers.
         """
+
+        warnings.warn(
+            "get_idx is deprecated and will be removed in a future release. Use get_all_idxes instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+
         all_idx = [mdl.idx.v for mdl in self.models.values()]
 
         # Custom sorting function to handle varying length strings with letters and numbers
