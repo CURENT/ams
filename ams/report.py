@@ -324,7 +324,7 @@ def collect_owners(rtn):
     # initialize data section by model
     owners_all = ['Bus', 'Line', 'StaticGen',
                   'PV', 'Slack', 'RenGen',
-                  'DG', 'ESD1', 'PVD1',
+                  'DG', 'ESD1', 'PVD1', 'VSG',
                   'StaticLoad']
 
     # Filter owners that exist in the system
