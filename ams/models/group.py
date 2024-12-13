@@ -29,20 +29,7 @@ class GroupBase(adGroupBase):
         which handles varying length strings with letters and numbers.
         """
         all_idx = [mdl.idx.v for mdl in self.models.values()]
-
-        # Custom sorting function to handle varying length strings with letters and numbers
-        def custom_sort_key(item):
-            try:
-                return int(item)  # Try to convert to integer for pure numeric strings
-            except ValueError:
-                try:
-                    # Extract numeric part for strings with letters and numbers
-                    return int(''.join(filter(str.isdigit, item)))
-                except ValueError:
-                    return item  # Return as is if not numeric
-
-        group_idx = [sorted(mdl_idx, key=custom_sort_key) for mdl_idx in all_idx]
-        flat_list = [item for sublist in group_idx for item in sublist]
+        flat_list = [item for sublist in all_idx for item in sublist]
         return flat_list
 
     def _check_src(self, src: str):
