@@ -51,10 +51,6 @@ class Model:
                                      )))
         self.docum = Documenter(self)
 
-        # TODO: duplicate from ANDES, disable for now
-        # self.syms = SymProcessor(self)  # symbolic processor instance
-        # self.docum = Documenter(self)
-
     def _all_vars(self):
         """
         An OrderedDict of States, ExtStates, Algebs, ExtAlgebs
