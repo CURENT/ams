@@ -35,14 +35,11 @@ class ExpressionCalc(OptzBase):
                  model: Optional[str] = None,
                  src: Optional[str] = None,
                  ):
-        OptzBase.__init__(self, name=name, info=info, unit=unit)
+        OptzBase.__init__(self, name=name, info=info, unit=unit, model=model)
         self.optz = None
         self.e_str = e_str
         self.code = None
-        self.model = model
-        self.owner = None
         self.src = src
-        self.is_group = False
 
     @ensure_symbols
     def parse(self):

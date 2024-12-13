@@ -57,15 +57,12 @@ class Expression(OptzBase):
                  vtype: Optional[str] = float,
                  horizon: Optional[str] = None,
                  ):
-        OptzBase.__init__(self, name=name, info=info, unit=unit)
+        OptzBase.__init__(self, name=name, info=info, unit=unit, model=model)
         self.tex_name = tex_name
         self.e_str = e_str
         self.optz = None
         self.code = None
-        self.model = model
-        self.owner = None
         self.src = src
-        self.is_group = False
         self.horizon = horizon
 
     @ensure_symbols

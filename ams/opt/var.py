@@ -115,11 +115,8 @@ class Var(OptzBase):
         self.tex_name = tex_name if tex_name else name
         # variable internal index inside a model (assigned in run time)
         self.id = None
-        OptzBase.__init__(self, name=name, info=info, unit=unit)
+        OptzBase.__init__(self, name=name, info=info, unit=unit, model=model)
         self.src = src
-        self.is_group = False
-        self.model = model  # indicate if this variable is a group variable
-        self.owner = None  # instance of the owner model or group
         self.v0 = v0
         self.horizon = horizon
         self._shape = shape

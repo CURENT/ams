@@ -89,6 +89,7 @@ class OptzBase:
                  name: Optional[str] = None,
                  info: Optional[str] = None,
                  unit: Optional[str] = None,
+                 model: Optional[str] = None,
                  ):
         self.om = None
         self.name = name
@@ -98,6 +99,9 @@ class OptzBase:
         self.rtn = None
         self.optz = None  # corresponding optimization element
         self.code = None
+        self.model = model  # indicate if this element belongs to a model or group
+        self.owner = None  # instance of the owner model or group
+        self.is_group = False
 
     @ensure_symbols
     def parse(self):
