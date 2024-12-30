@@ -73,7 +73,8 @@ Use the following resources to get involved.
 -  Submit contributions using [pull requests][GitHub pull requests]
 -  Read release notes highlighted [here][release notes]
 -  Try in Jupyter Notebook on [Binder][Binder]
-<!-- + Check out and and cite our [paper][arxiv paper] -->
+-  Check out the source code used for [benchmark][benchmark]
+-  Check out and and cite our [paper][paper]
 
 # Installation
 
@@ -123,6 +124,13 @@ sa
 >>> <andes.system.System at 0x14bd98190>
 ```
 
+# Citing AMS
+If you use AMS for research or consulting, please cite the following paper in your publication that uses AMS:
+
+```
+H. Cui, F. Li and K. Tomsovic, "Hybrid Symbolic-Numeric Framework for Power System Modeling and Analysis," in IEEE Transactions on Power Systems, vol. 36, no. 2, pp. 1373-1384, March 2021, doi: 10.1109/TPWRS.2020.3017019.
+```
+
 # Sponsors and Contributors
 AMS is the scheduling simulation engine for the CURENT Largescale Testbed (LTB).
 More information about CURENT LTB can be found at the [LTB Repository][LTB Repository].
@@ -158,3 +166,5 @@ Some commercial solvers provide academic licenses, such as COPT, GUROBI, CPLEX, 
 [verification]:          https://github.com/CURENT/ams/tree/master/examples/verification
 [Binder]:                https://mybinder.org/v2/gh/curent/ams/master
 [LTB Repository]:        https://github.com/CURENT
+[benchmark]:             https://github.com/CURENT/demo/tree/master/demo/ams_benchmark
+[paper]:                 https://ieeexplore.ieee.org/document/9169830
