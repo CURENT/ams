@@ -75,12 +75,6 @@ Use the following resources to get involved.
 
 # Installation
 
-***NOTE:***
-- Version **0.9.9** has known issues and has been yanked from PyPI
-- `kvxopt` is recommended to install via `conda` as sometimes ``pip`` struggles to set the correct path for compiled libraries
-- `cvxpy` versions **below 1.5** are incompatible with `numpy` versions **2.0 and above**
-- If solver `SCIP` run into import error, try to reinstall its Python interface by running `pip install pyscipopt --no-binary scip --force`
-
 AMS is released as ``ltbams`` on PyPI and conda-forge.
 Install from PyPI using pip:
 
@@ -99,6 +93,12 @@ Install from GitHub source:
 ```bash
 pip install git+https://github.com/CURENT/ams.git
 ```
+
+***NOTE:***
+- Version **0.9.9** has known issues and has been yanked from PyPI
+- `kvxopt` is recommended to install via `conda` as sometimes ``pip`` struggles to set the correct path for compiled libraries
+- `cvxpy` versions **below 1.5** are incompatible with `numpy` versions **2.0 and above**
+- If solver `SCIP` run into import error, try to reinstall its Python interface by running `pip install pyscipopt --no-binary scip --force`
 
 # Example Usage
 
