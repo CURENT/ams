@@ -29,8 +29,8 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 
 # Why AMS
 
-With the built-in interface with ANDES, AMS enables **Dynamics Incorporated**
-**Stability-Constrained Scheduling**.
+AMS facilitates **Dynamics Incorporated Scheduling** and **Scheduling-Dynamics Co-Simulation**
+through an integrated interface with ANDES.
 
 This package is helpful for power system engineers, researchers, and students conducting
 scheduling and transient stability studies at specific operating points. It also benefits
@@ -60,7 +60,20 @@ The following results show the comparison of DCOPF between AMS and other tools.
 | EPIGRIDS 5658-Bus     | 1,195,466.12 | 1,195,466.12 | 1,195,466.12 |
 | EPIGRIDS 7336-Bus     | 1,855,870.94 | 1,855,870.94 | 1,855,870.94 |
 
-<img src="docs/source/images/dcopf_time.png" alt="DCOPF Time" width="400" height="auto">
+<div style="text-align: left;">
+  <img src="docs/source/images/dcopf_time.png" alt="DCOPF Time" width="480" height="auto">
+  <p><strong>Figure:</strong> Computation time of OPF on small-scale cases.</p>
+</div>
+
+In the bar chart, the gray bar labeled "AMS Symbolic Processing" represents the time spent
+on symbolic processing, while the wheat-colored bar "AMS Numeric Evaluation" represents the
+time spent on system matrices calculation and optimization model construction.
+The orange bar labeled "AMS GUROBI" represents the optimization-solving time using the GUROBI solver.
+Similarly, the red bar labeled "AMS MOSEK" and the pink bar labeled "AMS PIQP" represent the
+time used by the solvers MOSEK and PIQP, respectively.
+Regarding the baselines, the blue and green bars represent the running time of MATPOWER using
+solver MIPS and pandapower using solver PIPS, respectively.
+The results for AMS, pandapower, and matpower are the average time consumed over ten repeat tests.
 
 AMS is currently under active development.
 Use the following resources to get involved.
