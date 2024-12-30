@@ -16,6 +16,7 @@ v0.9.14 (2024-xx-xx)
   files without modification can run into error.
 - Fix bugs in ``RTED.dc2ac``
 - Minor refacot ``OptzBase.get_idx`` to reduce duplication
+- Update benchamrk figure in README
 
 v0.9.13 (2024-12-05)
 --------------------
