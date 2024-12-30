@@ -43,13 +43,20 @@ and solved with third-party solvers.
 AMS produces credible scheduling results and competitive performance.
 The following results show the comparison of DCOPF between AMS and other tools.
 
-| Cost [\$]       |      AMS       |  MATPOWER   | pandapower |
-|----------------:|--------------:|------------:|-----------:|
-| PEGASE 1354-Bus |  1,173,590.63  |  1,173,590.63 |  1,173,590.63 |
-| PEGASE 2869-Bus |  2,338,915.61  |  2,338,915.61 |  2,338,915.61 |
-| GOC 4020-Bus    |    793,634.11  |    793,634.11 |    793,634.11 |
-| EPIGRIDS 5658-Bus| 1,195,466.12  |  1,195,466.12 |  1,195,466.12 |
-| EPIGRIDS 7336-Bus| 1,855,870.94  |  1,855,870.94 |  1,855,870.94 |
+| Cost [\$]             | AMS          | pandapower   | MATPOWER     |
+|-----------------------|--------------|--------------|--------------|
+| IEEE 14-Bus           | 7,642.59     | 7,642.59     | 7,642.59     |
+| IEEE 39-Bus           | 41,263.94    | 41,263.94    | 41,263.94    |
+| PEGASE 89-Bus         | 5,733.37     | 5,733.37     | 5,733.37     |
+| IEEE 118-Bus          | 125,947.88   | 125,947.88   | 125,947.88   |
+| NPCC 140-Bus          | 810,033.37   | 810,016.06   | 810,033.37   |
+| WECC 179-Bus          | 411,706.13   | 411,706.13   | 411,706.13   |
+| IEEE 300-Bus          | 706,292.32   | 706,292.32   | 706,292.32   |
+| PEGASE 1354-Bus       | 1,218,096.86 | 1,218,096.86 | 1,218,096.86 |
+| PEGASE 2869-Bus       | 2,386,235.33 | 2,386,235.33 | 2,386,235.33 |
+| GOC 4020-Bus          | 793,634.11   | 793,634.11   | 793,634.11   |
+| EPIGRIDS 5658-Bus     | 1,195,466.12 | 1,195,466.12 | 1,195,466.12 |
+| EPIGRIDS 7336-Bus     | 1,855,870.94 | 1,855,870.94 | 1,855,870.94 |
 
 <img src="docs/source/images/dcopf_time.png" alt="DCOPF Time" width="400" height="auto">
 
