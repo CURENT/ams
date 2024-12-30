@@ -32,9 +32,11 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 With the built-in interface with ANDES, AMS enables **Dynamics Incorporated**
 **Stability-Constrained Scheduling**.
 
-This package can be helpful for power system engineers, researchers, and students
-who need to conduct scheduling studies and transient stability studies at given
-operating points.
+This package is helpful for power system engineers, researchers, and students conducting
+scheduling and transient stability studies at specific operating points. It also benefits
+those interested in developing new scheduling formulations and algorithms, particularly
+by extending existing formulations to include new decision variables, constraints, and
+objective functions.
 
 AMS is a **Modeling Framework** that provides a descriptive way to formulate
 scheduling problems. The optimization problems are then handled by **CVXPY**
