@@ -160,7 +160,7 @@ class OptzBase:
 
     def get_idx(self):
         if self.is_group:
-            return self.owner.get_idx()
+            return self.owner.get_all_idxes()
         elif self.owner is None:
             logger.info(f'{self.class_name} <{self.name}> has no owner.')
             return None

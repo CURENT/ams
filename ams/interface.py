@@ -627,14 +627,14 @@ class Dynamic:
                 continue
 
             var_ams = getattr(rtn, vname_ams)  # instance of AMS routine var
-            idx_ads = var_ams.get_idx()  # use AMS idx as target ANDES idx
+            idx_ads = var_ams.get_all_idxes()  # use AMS idx as target ANDES idx
 
             # --- special scenarios ---
             # 0. send PV bus voltage to StaticGen.v0 if not PFlow yet and AC converted
             cond_vpv = (mname_ads == 'Bus') and (pname_ads == 'v0')
             if cond_vpv and (not self.is_tds) and (rtn.converted):
                 # --- StaticGen ---
-                stg_idx = sp.StaticGen.get_idx()
+                stg_idx = sp.StaticGen.get_all_idxes()
                 bus_stg = sp.StaticGen.get(src='bus', attr='v', idx=stg_idx)
                 vBus = rtn.get(src='vBus', attr='v', idx=bus_stg)
                 sa.StaticGen.set(src='v0', idx=stg_idx, attr='v', value=vBus)
@@ -738,7 +738,7 @@ class Dynamic:
                 logger.debug(f'ANDES model <{mname_ads}> is empty.')
                 continue
 
-            idx_ads = rtn.__dict__[vname_ams].get_idx()  # use AMS idx as target ANDES idx
+            idx_ads = rtn.__dict__[vname_ams].get_all_idxes()  # use AMS idx as target ANDES idx
 
             # --- special scenarios ---
             # 1. gen online status; in TDS running, take from dynamic generator

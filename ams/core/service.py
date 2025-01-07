@@ -217,7 +217,7 @@ class LoadScale(ROperationService):
     @property
     def v(self):
         sys = self.rtn.system
-        u_idx = self.u.get_idx()
+        u_idx = self.u.get_all_idxes()
         ue = self.u.owner.get(src='u', attr='v', idx=u_idx)
         u_bus = self.u.owner.get(src='bus', attr='v', idx=u_idx)
         u_zone = sys.Bus.get(src='zone', attr='v', idx=u_bus)
@@ -671,7 +671,7 @@ class ZonalSum(NumOp):
         try:
             ridx = zone_mdl.idx.v
         except AttributeError:
-            ridx = zone_mdl.get_idx()
+            ridx = zone_mdl.get_all_idxes()
 
         row, col = np.meshgrid(self.u.v, ridx)
         # consistency check
@@ -759,7 +759,7 @@ class VarSelect(NumOp):
         group = model = None
         if indexer.model in self.rtn.system.groups.keys():
             group = self.rtn.system.groups[indexer.model]
-            group_idx = group.get_idx()
+            group_idx = group.get_all_idxes()
             try:
                 ref = group.get(src=indexer.src, attr='v', idx=group_idx)
             except AttributeError:
@@ -774,7 +774,7 @@ class VarSelect(NumOp):
             raise AttributeError(f'Indexer source model {indexer.model} has no ref.')
 
         try:
-            uidx = self.u.get_idx()
+            uidx = self.u.get_all_idxes()
         except AttributeError:
             raise AttributeError(f'Input {self.u.name} has no idx, likey a modeling error.')
 

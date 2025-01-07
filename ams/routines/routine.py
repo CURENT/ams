@@ -160,7 +160,7 @@ class RoutineBase:
         if not hasattr(item, attr):
             raise ValueError(f"{attr} does not exist in {self.class_name}.{src}.")
 
-        idx_all = item.get_idx()
+        idx_all = item.get_all_idxes()
 
         if idx_all is None:
             raise ValueError(f"<{self.class_name}> item <{src}> has no idx.")
@@ -185,7 +185,7 @@ class RoutineBase:
         if horizon is not None:
             if item.horizon is None:
                 raise ValueError(f"horizon is not defined for {self.class_name}.{src}.")
-            horizon_all = item.horizon.get_idx()
+            horizon_all = item.horizon.get_all_idxes()
             if not isinstance(horizon, list):
                 raise TypeError(f"horizon must be a list, not {type(horizon)}.")
             loc_h = [
@@ -1023,7 +1023,7 @@ def collect_data(rtn: RoutineBase, data_dict: Dict, items: Dict, attr: str):
     for key, item in items.items():
         if item.owner is None:
             continue
-        idx_v = item.get_idx()
+        idx_v = item.get_all_idxes()
         try:
             data_v = rtn.get(src=key, attr=attr, idx=idx_v,
                              horizon=rtn.timeslot.v if hasattr(rtn, 'timeslot') else None).round(6)

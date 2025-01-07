@@ -86,12 +86,12 @@ class TestRTED(unittest.TestCase):
         self.assertTrue(self.ss.RTED.converted, "AC conversion failed!")
         self.assertTrue(self.ss.RTED.exec_time > 0, "Execution time is not greater than 0.")
 
-        stg_idx = self.ss.StaticGen.get_idx()
+        stg_idx = self.ss.StaticGen.get_all_idxes()
         pg_rted = self.ss.RTED.get(src='pg', attr='v', idx=stg_idx)
         pg_acopf = self.ss.ACOPF.get(src='pg', attr='v', idx=stg_idx)
         np.testing.assert_almost_equal(pg_rted, pg_acopf, decimal=3)
 
-        bus_idx = self.ss.Bus.get_idx()
+        bus_idx = self.ss.Bus.get_all_idxes()
         v_rted = self.ss.RTED.get(src='vBus', attr='v', idx=bus_idx)
         v_acopf = self.ss.ACOPF.get(src='vBus', attr='v', idx=bus_idx)
         np.testing.assert_almost_equal(v_rted, v_acopf, decimal=3)
@@ -182,12 +182,12 @@ class TestRTEDDG(unittest.TestCase):
         self.assertTrue(self.ss.RTEDDG.converted, "AC conversion failed!")
         self.assertTrue(self.ss.RTEDDG.exec_time > 0, "Execution time is not greater than 0.")
 
-        stg_idx = self.ss.StaticGen.get_idx()
+        stg_idx = self.ss.StaticGen.get_all_idxes()
         pg_rted = self.ss.RTEDDG.get(src='pg', attr='v', idx=stg_idx)
         pg_acopf = self.ss.ACOPF.get(src='pg', attr='v', idx=stg_idx)
         np.testing.assert_almost_equal(pg_rted, pg_acopf, decimal=3)
 
-        bus_idx = self.ss.Bus.get_idx()
+        bus_idx = self.ss.Bus.get_all_idxes()
         v_rted = self.ss.RTEDDG.get(src='vBus', attr='v', idx=bus_idx)
         v_acopf = self.ss.ACOPF.get(src='vBus', attr='v', idx=bus_idx)
         np.testing.assert_almost_equal(v_rted, v_acopf, decimal=3)

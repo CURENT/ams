@@ -457,7 +457,7 @@ class System(andes_System):
         self.mats.CftT.col_names = self.Bus.idx.v
         self.mats.CftT.row_names = self.Line.idx.v
 
-        self.mats.Cg.col_names = self.StaticGen.get_idx()
+        self.mats.Cg.col_names = self.StaticGen.get_all_idxes()
         self.mats.Cg.row_names = self.Bus.idx.v
 
         self.mats.Cl.col_names = self.PQ.idx.v

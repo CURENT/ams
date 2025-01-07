@@ -189,14 +189,14 @@ class RTED(DCOPF, RTEDBase, SFRBase):
             logger.warning(f'{self.class_name} is not executed successfully, quit conversion.')
             return False
         # set pru and prd into pmin and pmax
-        pr_idx = self.pru.get_idx()
+        pr_idx = self.pru.get_all_idxes()
         pmin0 = self.system.StaticGen.get(src='pmin', attr='v', idx=pr_idx)
         pmax0 = self.system.StaticGen.get(src='pmax', attr='v', idx=pr_idx)
         p00 = self.system.StaticGen.get(src='p0', attr='v', idx=pr_idx)
 
         # --- ACOPF ---
         # scale up load
-        pq_idx = self.system.StaticLoad.get_idx()
+        pq_idx = self.system.StaticLoad.get_all_idxes()
         pd0 = self.system.StaticLoad.get(src='p0', attr='v', idx=pq_idx).copy()
         qd0 = self.system.StaticLoad.get(src='q0', attr='v', idx=pq_idx).copy()
         self.system.StaticLoad.set(src='p0', idx=pq_idx, attr='v', value=pd0 * kloss)
