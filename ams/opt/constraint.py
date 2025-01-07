@@ -45,8 +45,6 @@ class Constraint(OptzBase):
         The owner routine instance.
     is_disabled : bool, optional
         Flag indicating if the constraint is disabled, False by default.
-    dual : float, optional
-        The dual value of the constraint.
     code : str, optional
         The code string for the constraint
     """
@@ -61,7 +59,6 @@ class Constraint(OptzBase):
         self.e_str = e_str
         self.is_eq = is_eq
         self.is_disabled = False
-        self.dual = None
         self.code = None
 
     def get_idx(self):
