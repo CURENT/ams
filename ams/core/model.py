@@ -307,6 +307,20 @@ class Model:
         """
         return self.idx.v
 
+    def get_all_idxes(self):
+        """
+        Return all the indexes of this model.
+
+        .. note::
+            New in version 1.0.0. Add to follow the group method ``get_all_idxes``.
+
+        Returns
+        -------
+        list
+            A list of indexes.
+        """
+        return self.idx.v
+
     def __repr__(self):
         dev_text = 'device' if self.n == 1 else 'devices'
 

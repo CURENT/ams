@@ -275,3 +275,45 @@ class RParam(Param):
                 msg += 'likely a modeling error.'
                 raise AttributeError(msg)
             return sorted_idx
+
+    def get_all_idxes(self):
+        """
+        Get all the indexes of the parameter.
+
+        .. note::
+            New in version 1.0.0.
+
+        Returns
+        -------
+        idx : list
+            Index of the parameter.
+
+        Notes
+        -----
+        - The value will sort by the indexer if indexed.
+        """
+        if self.indexer is None:
+            if self.is_group:
+                return self.owner.get_all_idxes()
+            elif self.owner is None:
+                logger.info(f'Param <{self.name}> has no owner.')
+                return None
+            elif hasattr(self.owner, 'idx'):
+                return self.owner.idx.v
+            else:
+                logger.info(f'Param <{self.name}> owner <{self.owner.class_name}> has no idx.')
+                return None
+        else:
+            try:
+                imodel = getattr(self.rtn.system, self.imodel)
+            except AttributeError:
+                msg = f'Indexer source model <{self.imodel}> not found, '
+                msg += 'likely a modeling error.'
+                raise AttributeError(msg)
+            try:
+                sorted_idx = self.owner.find_idx(keys=self.indexer, values=imodel.get_all_idxes())
+            except AttributeError:
+                msg = f'Indexer <{self.indexer}> not found in <{self.imodel}>, '
+                msg += 'likely a modeling error.'
+                raise AttributeError(msg)
+            return sorted_idx
