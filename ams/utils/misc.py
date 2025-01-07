@@ -1,3 +1,6 @@
+import warnings
+import functools
+
 from andes.utils.misc import elapsed
 
 
@@ -54,3 +57,21 @@ def pretty_long_message(message, prefix="", max_length=80):
         lines = [message[i:i+max_length] for i in range(0, len(message), max_length)]
         formatted_message = lines[0] + "\n" + "\n".join([prefix + line for line in lines[1:]])
         return formatted_message
+
+
+def deprecated(message="This function is deprecated and will be removed in a future version."):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            warnings.warn(
+                message,
+                category=DeprecationWarning,
+                stacklevel=2
+            )
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+deprec_get_idx = deprecated(
+    "get_idx() is deprecated and will be removed in a future version. Please use get_all_idxes() instead.")

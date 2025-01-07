@@ -5,6 +5,8 @@ import logging
 
 from typing import Optional
 
+from ams.utils.misc import deprec_get_idx
+
 
 logger = logging.getLogger(__name__)
 
@@ -158,6 +160,7 @@ class OptzBase:
     def __repr__(self):
         return f'{self.__class__.__name__}: {self.name}'
 
+    @deprec_get_idx
     def get_idx(self):
         if self.is_group:
             return self.owner.get_all_idxes()

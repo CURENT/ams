@@ -15,6 +15,8 @@ from andes.utils.func import list_flatten
 from ams.core.documenter import Documenter
 from ams.core.var import Algeb
 
+from ams.utils.misc import deprec_get_idx
+
 logger = logging.getLogger(__name__)
 
 
@@ -299,6 +301,7 @@ class Model:
         """
         return self.docum.get(max_width=max_width, export=export)
 
+    @deprec_get_idx
     def get_idx(self):
         """
         Return the index of the model instance.

@@ -12,6 +12,8 @@ from scipy.sparse import issparse
 
 from ams.opt import Param
 
+from ams.utils.misc import deprec_get_idx
+
 logger = logging.getLogger(__name__)
 
 
@@ -237,6 +239,7 @@ class RParam(Param):
         postfix = '' if self.src is None else f'.{self.src}'
         return f'{self.__class__.__name__}: {owner}' + postfix
 
+    @deprec_get_idx
     def get_idx(self):
         """
         Get the index of the parameter.
