@@ -15,9 +15,11 @@ v0.9.14 (2024-xx-xx)
 - **Breaking Change**: rename model ``Region`` to ``Zone`` for clarity. Prior case
   files without modification can run into error.
 - Fix bugs in ``RTED.dc2ac``
-- Minor refacot ``OptzBase.get_idx`` to reduce duplication
+- Minor refacotr ``OptzBase.get_idx`` to reduce duplication
+- Rename module ``OptBase`` to ``OptzBase`` for clarity
 - Update benchamrk figure in README
-- Update ANDES requirement to v1.9.3
+- Set ANDES requirement to v1.9.3
+- Deprecate method ``get_idx`` and suggest using ``get_all_idxes`` instead
 
 v0.9.13 (2024-12-05)
 --------------------
