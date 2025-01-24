@@ -11,7 +11,9 @@ authors = [
     {name = "Jinning Wang", email = "jinninggm@gmail.com"}
 ]
 
-license = {file = "LICENSE"}
+[project]
+license = {text = "GPL-3.0-or-later"}
+license-files = ["LICENSE"]
 
 classifiers = [
     "Development Status :: 4 - Beta",

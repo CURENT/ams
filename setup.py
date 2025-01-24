@@ -97,7 +97,8 @@ setup(
     },
     install_requires=parse_requires('requirements.txt'),
     extras_require=extras_require,
-    license="GNU Public License v3",
+    license='GNU General Public License v3 or later (GPLv3+)',
+    license_files=('LICENSE',),
     classifiers=[
         'Development Status :: 4 - Beta',
         'Natural Language :: English',
