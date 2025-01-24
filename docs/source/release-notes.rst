@@ -20,6 +20,7 @@ v1.0.0 (2024-01-24)
 - Update benchamrk figure in README
 - Set ANDES requirement to v1.9.3
 - Deprecate method ``get_idx`` and suggest using ``get_all_idxes`` instead
+- Remove module ``benchmarks.py`` and its tests for simplicity
 
 v0.9.13 (2024-12-05)
 --------------------
