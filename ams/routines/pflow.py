@@ -1,5 +1,5 @@
 """
-Power flow routines independent from PYPOWER.
+Power flow routines using ANDES.
 """
 import logging
 from typing import Optional, Union, Type

@@ -1,5 +1,5 @@
 """
-Power flow routines.
+DC power flow routines using PYPOWER.
 """
 import logging
 

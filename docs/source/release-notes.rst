@@ -9,7 +9,7 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v0.9.14 (2024-xx-xx)
+v1.0.0 (2024-01-24)
 --------------------
 
 - **Breaking Change**: rename model ``Region`` to ``Zone`` for clarity. Prior case

@@ -1,5 +1,5 @@
 """
-Power flow routines.
+Power flow routines using PYPOWER.
 """
 import logging
 from collections import OrderedDict

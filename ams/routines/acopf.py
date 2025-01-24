@@ -1,5 +1,5 @@
 """
-ACOPF routines.
+ACOPF routines using PYPOWER.
 """
 import logging
 from collections import OrderedDict

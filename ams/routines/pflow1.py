@@ -1,5 +1,5 @@
 """
-Power flow routines using PyOptInterface
+Power flow routines using PyOptInterface.
 """
 from pyoptinterface import nlfunc, ipopt
 import pyoptinterface as poi
