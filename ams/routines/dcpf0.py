@@ -1,5 +1,5 @@
 """
-Power flow routines.
+DC power flow routines using PYPOWER.
 """
 import logging
 
@@ -107,9 +107,9 @@ class DCPF0(RoutineBase):
                 continue
             elif hasattr(owner, 'group'):   # if owner is a Model instance
                 grp = getattr(system, owner.group)
-                idx = grp.get_idx()
+                idx = grp.get_all_idxes()
             elif hasattr(owner, 'get_idx'):  # if owner is a Group instance
-                idx = owner.get_idx()
+                idx = owner.get_all_idxes()
             else:
                 msg = f"Failed to find valid source variable `{owner.class_name}.{var.src}` for "
                 msg += f"{self.class_name}.{vname}, skip unpacking."

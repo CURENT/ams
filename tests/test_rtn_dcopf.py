@@ -86,12 +86,12 @@ class TestDCOPF(unittest.TestCase):
         self.assertTrue(self.ss.DCOPF.converted, "AC conversion failed!")
         self.assertTrue(self.ss.DCOPF.exec_time > 0, "Execution time is not greater than 0.")
 
-        stg_idx = self.ss.StaticGen.get_idx()
+        stg_idx = self.ss.StaticGen.get_all_idxes()
         pg_dcopf = self.ss.DCOPF.get(src='pg', attr='v', idx=stg_idx)
         pg_acopf = self.ss.ACOPF.get(src='pg', attr='v', idx=stg_idx)
         np.testing.assert_almost_equal(pg_dcopf, pg_acopf, decimal=3)
 
-        bus_idx = self.ss.Bus.get_idx()
+        bus_idx = self.ss.Bus.get_all_idxes()
         v_dcopf = self.ss.DCOPF.get(src='vBus', attr='v', idx=bus_idx)
         v_acopf = self.ss.ACOPF.get(src='vBus', attr='v', idx=bus_idx)
         np.testing.assert_almost_equal(v_dcopf, v_acopf, decimal=3)

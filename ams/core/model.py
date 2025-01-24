@@ -15,6 +15,8 @@ from andes.utils.func import list_flatten
 from ams.core.documenter import Documenter
 from ams.core.var import Algeb
 
+from ams.utils.misc import deprec_get_idx
+
 logger = logging.getLogger(__name__)
 
 
@@ -50,10 +52,6 @@ class Model:
                                     ('adjust_upper', 1),
                                      )))
         self.docum = Documenter(self)
-
-        # TODO: duplicate from ANDES, disable for now
-        # self.syms = SymProcessor(self)  # symbolic processor instance
-        # self.docum = Documenter(self)
 
     def _all_vars(self):
         """
@@ -303,11 +301,26 @@ class Model:
         """
         return self.docum.get(max_width=max_width, export=export)
 
+    @deprec_get_idx
     def get_idx(self):
         """
         Return the index of the model instance.
         Equivalent to ``self.idx.v``, develoepd for consistency with group method
         ``get_idx``.
+        """
+        return self.idx.v
+
+    def get_all_idxes(self):
+        """
+        Return all the indexes of this model.
+
+        .. note::
+            New in version 1.0.0. Add to follow the group method ``get_all_idxes``.
+
+        Returns
+        -------
+        list
+            A list of indexes.
         """
         return self.idx.v
 

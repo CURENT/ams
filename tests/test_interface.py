@@ -80,7 +80,7 @@ class TestAndesConversion(unittest.TestCase):
                                addfile=andes.get_case(ad_case))
             sa.setup()
             set1 = set(sa.GENROU.gen.v)
-            set2 = set(sp.StaticGen.get_idx())
+            set2 = set(sp.StaticGen.get_all_idxes())
             # set2 includes set1, ensure GENROU.gen are all in StaticGen.idx
             self.assertEqual(set1, set1 & set2)
 
@@ -184,7 +184,7 @@ class TestDataExchange(unittest.TestCase):
                            default_config=True,)
         self.sp.RTED.run(solver='CLARABEL')
         self.sp.RTED.dc2ac()
-        self.stg_idx = self.sp.RTED.pg.get_idx()
+        self.stg_idx = self.sp.RTED.pg.get_all_idxes()
 
     def test_data_exchange(self):
         """

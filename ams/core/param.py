@@ -12,6 +12,8 @@ from scipy.sparse import issparse
 
 from ams.opt import Param
 
+from ams.utils.misc import deprec_get_idx
+
 logger = logging.getLogger(__name__)
 
 
@@ -168,7 +170,7 @@ class RParam(Param):
                     out = self._v
             elif self.is_group:
                 out = self.owner.get(src=self.src, attr='v',
-                                     idx=self.owner.get_idx())
+                                     idx=self.owner.get_all_idxes())
             else:
                 src_param = getattr(self.owner, self.src)
                 out = getattr(src_param, 'v')
@@ -180,7 +182,7 @@ class RParam(Param):
                 msg += 'likely a modeling error.'
                 raise AttributeError(msg)
             try:
-                sorted_idx = self.owner.find_idx(keys=self.indexer, values=imodel.get_idx())
+                sorted_idx = self.owner.find_idx(keys=self.indexer, values=imodel.get_all_idxes())
             except AttributeError:
                 sorted_idx = self.owner.idx.v
             except Exception as e:
@@ -237,6 +239,7 @@ class RParam(Param):
         postfix = '' if self.src is None else f'.{self.src}'
         return f'{self.__class__.__name__}: {owner}' + postfix
 
+    @deprec_get_idx
     def get_idx(self):
         """
         Get the index of the parameter.
@@ -252,7 +255,7 @@ class RParam(Param):
         """
         if self.indexer is None:
             if self.is_group:
-                return self.owner.get_idx()
+                return self.owner.get_all_idxes()
             elif self.owner is None:
                 logger.info(f'Param <{self.name}> has no owner.')
                 return None
@@ -269,7 +272,49 @@ class RParam(Param):
                 msg += 'likely a modeling error.'
                 raise AttributeError(msg)
             try:
-                sorted_idx = self.owner.find_idx(keys=self.indexer, values=imodel.get_idx())
+                sorted_idx = self.owner.find_idx(keys=self.indexer, values=imodel.get_all_idxes())
+            except AttributeError:
+                msg = f'Indexer <{self.indexer}> not found in <{self.imodel}>, '
+                msg += 'likely a modeling error.'
+                raise AttributeError(msg)
+            return sorted_idx
+
+    def get_all_idxes(self):
+        """
+        Get all the indexes of the parameter.
+
+        .. note::
+            New in version 1.0.0.
+
+        Returns
+        -------
+        idx : list
+            Index of the parameter.
+
+        Notes
+        -----
+        - The value will sort by the indexer if indexed.
+        """
+        if self.indexer is None:
+            if self.is_group:
+                return self.owner.get_all_idxes()
+            elif self.owner is None:
+                logger.info(f'Param <{self.name}> has no owner.')
+                return None
+            elif hasattr(self.owner, 'idx'):
+                return self.owner.idx.v
+            else:
+                logger.info(f'Param <{self.name}> owner <{self.owner.class_name}> has no idx.')
+                return None
+        else:
+            try:
+                imodel = getattr(self.rtn.system, self.imodel)
+            except AttributeError:
+                msg = f'Indexer source model <{self.imodel}> not found, '
+                msg += 'likely a modeling error.'
+                raise AttributeError(msg)
+            try:
+                sorted_idx = self.owner.find_idx(keys=self.indexer, values=imodel.get_all_idxes())
             except AttributeError:
                 msg = f'Indexer <{self.indexer}> not found in <{self.imodel}>, '
                 msg += 'likely a modeling error.'

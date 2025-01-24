@@ -457,7 +457,7 @@ class System(andes_System):
         self.mats.CftT.col_names = self.Bus.idx.v
         self.mats.CftT.row_names = self.Line.idx.v
 
-        self.mats.Cg.col_names = self.StaticGen.get_idx()
+        self.mats.Cg.col_names = self.StaticGen.get_all_idxes()
         self.mats.Cg.row_names = self.Bus.idx.v
 
         self.mats.Cl.col_names = self.PQ.idx.v
@@ -542,7 +542,11 @@ class System(andes_System):
 
         raise NotImplementedError
 
-    def to_andes(self, setup=True, addfile=None, **kwargs):
+    def to_andes(self, addfile=None,
+                 setup=False, no_output=False,
+                 default_config=True,
+                 verify=False, tol=1e-3,
+                 **kwargs):
         """
         Convert the AMS system to an ANDES system.
 
@@ -552,30 +556,56 @@ class System(andes_System):
         3. Power flow models are in the same shape as the AMS system.
         4. Dynamic models, if any, are in the same shape as the AMS system.
 
+        This function is wrapped as the ``System`` class method ``to_andes()``.
+        Using the file conversion ``to_andes()`` will automatically
+        link the AMS system instance to the converted ANDES system instance
+        in the AMS system attribute ``dyn``.
+
+        It should be noted that detailed dynamic simualtion requires extra
+        dynamic models to be added to the ANDES system, which can be passed
+        through the ``addfile`` argument.
+
         Parameters
         ----------
-        setup : bool, optional
-            Whether to call `setup()` after the conversion. Default is True.
+        system : System
+            The AMS system to be converted to ANDES format.
         addfile : str, optional
             The additional file to be converted to ANDES dynamic mdoels.
-        **kwargs : dict
-            Keyword arguments to be passed to `andes.system.System`.
+        setup : bool, optional
+            Whether to call `setup()` after the conversion. Default is True.
+        no_output : bool, optional
+            To ANDES system.
+        default_config : bool, optional
+            To ANDES system.
+        verify : bool
+            If True, the converted ANDES system will be verified with the source
+            AMS system using AC power flow.
+        tol : float
+            The tolerance of error.
 
         Returns
         -------
-        andes : andes.system.System
+        adsys : andes.system.System
             The converted ANDES system.
 
         Examples
         --------
         >>> import ams
         >>> import andes
-        >>> sp = ams.load(ams.get_case('ieee14/ieee14_rted.xlsx'), setup=True)
-        >>> sa = sp.to_andes(setup=False,
-        ...                  addfile=andes.get_case('ieee14/ieee14_wt3.xlsx'),
-        ...                  overwrite=True, no_keep=True, no_output=True)
+        >>> sp = ams.load(ams.get_case('ieee14/ieee14_uced.xlsx'), setup=True)
+        >>> sa = sp.to_andes(addfile=andes.get_case('ieee14/ieee14_full.xlsx'),
+        ...                  setup=False, overwrite=True, no_output=True)
+
+        Notes
+        -----
+        1. Power flow models in the addfile will be skipped and only dynamic models will be used.
+        2. The addfile format is guessed based on the file extension. Currently only ``xlsx`` is supported.
+        3. Index in the addfile is automatically adjusted when necessary.
         """
-        return to_andes(self, setup=setup, addfile=addfile,
+        return to_andes(system=self, addfile=addfile,
+                        setup=setup, no_output=no_output,
+                        default_config=default_config,
+                        verify=verify, tol=tol,
                         **kwargs)
 
     def summary(self):

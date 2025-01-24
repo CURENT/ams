@@ -347,7 +347,7 @@ def collect_owners(rtn):
 
     for key, val in owners.items():
         owner = getattr(rtn.system, key)
-        idx_v = owner.get_idx()
+        idx_v = owner.get_all_idxes()
         val['idx'] = idx_v
         val['name'] = owner.get(src='name', attr='v', idx=idx_v)
         val['header'].append('Name')

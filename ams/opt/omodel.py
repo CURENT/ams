@@ -10,7 +10,7 @@ from andes.utils.misc import elapsed
 
 import cvxpy as cp
 
-from ams.opt.optbase import ensure_symbols, ensure_mats_and_parsed
+from ams.opt.optzbase import ensure_symbols, ensure_mats_and_parsed
 
 
 logger = logging.getLogger(__name__)
