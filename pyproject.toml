@@ -71,3 +71,6 @@ tag_prefix = "v"
 
 [tool.setuptools.packages.find]
 where = ["."]
+
+[tool.setuptools]
+license-files = []
