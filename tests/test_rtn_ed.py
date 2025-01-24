@@ -29,7 +29,7 @@ class TestED(unittest.TestCase):
         # a) ensure EDTSlot.ug takes effect
         # NOTE: manually chang ug.v for testing purpose
         stg = 'PV_1'
-        stg_uid = self.ss.ED.pg.get_idx().index(stg)
+        stg_uid = self.ss.ED.pg.get_all_idxes().index(stg)
         loc_offtime = np.array([0, 2, 4])
         self.ss.EDTSlot.ug.v[loc_offtime, stg_uid] = 0
 
@@ -120,7 +120,7 @@ class TestEDDG(unittest.TestCase):
         # a) ensure EDTSlot.ug takes effect
         # NOTE: manually chang ug.v for testing purpose
         stg = 'PV_1'
-        stg_uid = self.ss.EDDG.pg.get_idx().index(stg)
+        stg_uid = self.ss.EDDG.pg.get_all_idxes().index(stg)
         loc_offtime = np.array([0, 2, 4])
         self.ss.EDTSlot.ug.v[loc_offtime, stg_uid] = 0
 
@@ -211,7 +211,7 @@ class TestEDES(unittest.TestCase):
         # a) ensure EDTSlot.ug takes effect
         # NOTE: manually chang ug.v for testing purpose
         stg = 'PV_1'
-        stg_uid = self.ss.EDES.pg.get_idx().index(stg)
+        stg_uid = self.ss.EDES.pg.get_all_idxes().index(stg)
         loc_offtime = np.array([0, 2])
         self.ss.EDTSlot.ug.v[loc_offtime, stg_uid] = 0
 

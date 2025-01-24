@@ -19,7 +19,7 @@ A simplified code snippet for RTED is shown below as an example.
                               name='R10', tex_name=r'R_{10}',
                               model='StaticGen', src='R10',
                               unit='p.u./h',)
-            self.gs = ZonalSum(u=self.zg, zone='Region',
+            self.gs = ZonalSum(u=self.zg, zone='Zone',
                                name='gs', tex_name=r'S_{g}',
                                info='Sum Gen vars vector in shape of zone',
                                no_parse=True, sparse=True)

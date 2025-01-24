@@ -5,6 +5,8 @@ import logging
 
 from typing import Optional
 
+from ams.utils.misc import deprec_get_idx
+
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +90,7 @@ class OptzBase:
                  name: Optional[str] = None,
                  info: Optional[str] = None,
                  unit: Optional[str] = None,
+                 model: Optional[str] = None,
                  ):
         self.om = None
         self.name = name
@@ -97,6 +100,9 @@ class OptzBase:
         self.rtn = None
         self.optz = None  # corresponding optimization element
         self.code = None
+        self.model = model  # indicate if this element belongs to a model or group
+        self.owner = None  # instance of the owner model or group
+        self.is_group = False
 
     @ensure_symbols
     def parse(self):
@@ -153,3 +159,34 @@ class OptzBase:
 
     def __repr__(self):
         return f'{self.__class__.__name__}: {self.name}'
+
+    @deprec_get_idx
+    def get_idx(self):
+        if self.is_group:
+            return self.owner.get_all_idxes()
+        elif self.owner is None:
+            logger.info(f'{self.class_name} <{self.name}> has no owner.')
+            return None
+        else:
+            return self.owner.idx.v
+
+    def get_all_idxes(self):
+        """
+        Return all the indexes of this item.
+
+        .. note::
+            New in version 1.0.0.
+
+        Returns
+        -------
+        list
+            A list of indexes.
+        """
+
+        if self.is_group:
+            return self.owner.get_all_idxes()
+        elif self.owner is None:
+            logger.info(f'{self.class_name} <{self.name}> has no owner.')
+            return None
+        else:
+            return self.owner.idx.v

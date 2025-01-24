@@ -217,11 +217,11 @@ class LoadScale(ROperationService):
     @property
     def v(self):
         sys = self.rtn.system
-        u_idx = self.u.get_idx()
+        u_idx = self.u.get_all_idxes()
         ue = self.u.owner.get(src='u', attr='v', idx=u_idx)
         u_bus = self.u.owner.get(src='bus', attr='v', idx=u_idx)
         u_zone = sys.Bus.get(src='zone', attr='v', idx=u_bus)
-        u_yloc = np.array(sys.Region.idx2uid(u_zone))
+        u_yloc = np.array(sys.Zone.idx2uid(u_zone))
         p0s = np.multiply(self.sd.v[:, u_yloc].transpose(),
                           (ue * self.u.v)[:, np.newaxis])
         if self.sparse:
@@ -587,12 +587,12 @@ class NumHstack(NumOp):
 class ZonalSum(NumOp):
     """
     Build zonal sum matrix for a vector in the shape of collection model,
-    ``Area`` or ``Region``.
+    ``Area`` or ``Zone``.
     The value array is in the shape of (nr, nc), where nr is the length of
     rid instance idx, and nc is the length of the cid value.
 
     In an IEEE-14 Bus system, we have the zonal definition by the
-    ``Region`` model. Suppose in it we have two regions, "ZONE1" and
+    ``Zone`` model. Suppose in it we have two regions, "ZONE1" and
     "ZONE2".
 
     Follwing it, we have a zonal SFR requirement model ``SFR`` that
@@ -606,7 +606,7 @@ class ZonalSum(NumOp):
     In the `RTED` model, we have the Vars ``pru`` and ``prd`` in the
     shape of generators.
 
-    Then, the Region model has idx ['ZONE1', 'ZONE2'], and the ``gsm`` value
+    Then, the Zone model has idx ['ZONE1', 'ZONE2'], and the ``gsm`` value
     will be [[1, 1, 0, 0, 1], [0, 0, 1, 1, 0]].
 
     Finally, the zonal reserve requirements can be formulated as
@@ -621,7 +621,7 @@ class ZonalSum(NumOp):
     u : Callable
         Input.
     zone : str
-        Zonal model name, e.g., "Area" or "Region".
+        Zonal model name, e.g., "Area" or "Zone".
     name : str
         Instance name.
     tex_name : str
@@ -671,7 +671,7 @@ class ZonalSum(NumOp):
         try:
             ridx = zone_mdl.idx.v
         except AttributeError:
-            ridx = zone_mdl.get_idx()
+            ridx = zone_mdl.get_all_idxes()
 
         row, col = np.meshgrid(self.u.v, ridx)
         # consistency check
@@ -759,7 +759,7 @@ class VarSelect(NumOp):
         group = model = None
         if indexer.model in self.rtn.system.groups.keys():
             group = self.rtn.system.groups[indexer.model]
-            group_idx = group.get_idx()
+            group_idx = group.get_all_idxes()
             try:
                 ref = group.get(src=indexer.src, attr='v', idx=group_idx)
             except AttributeError:
@@ -774,7 +774,7 @@ class VarSelect(NumOp):
             raise AttributeError(f'Indexer source model {indexer.model} has no ref.')
 
         try:
-            uidx = self.u.get_idx()
+            uidx = self.u.get_all_idxes()
         except AttributeError:
             raise AttributeError(f'Input {self.u.name} has no idx, likey a modeling error.')
 

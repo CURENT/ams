@@ -14,7 +14,7 @@ ams_file_classes = list([
     ('distributed', ['PVD1', 'ESD1', 'EV1', 'EV2']),
     ('renewable', ['REGCA1', 'REGCV1', 'REGCV2']),
     ('area', ['Area']),
-    ('region', ['Region']),
+    ('zone', ['Zone']),
     ('reserve', ['SFR', 'SR', 'NSR', 'VSGR']),
     ('cost', ['GCost', 'SFRCost', 'SRCost', 'NSRCost', 'VSGCost']),
     ('cost', ['DCost']),

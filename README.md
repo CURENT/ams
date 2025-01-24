@@ -29,12 +29,14 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 
 # Why AMS
 
-With the built-in interface with ANDES, AMS enables **Dynamics Incorporated**
-**Stability-Constrained Scheduling**.
+AMS facilitates **Dynamics Incorporated Scheduling** and **Scheduling-Dynamics Co-Simulation**
+through an integrated interface with ANDES.
 
-This package can be helpful for power system engineers, researchers, and students
-who need to conduct scheduling studies and transient stability studies at given
-operating points.
+This package is helpful for power system engineers, researchers, and students conducting
+scheduling and transient stability studies at specific operating points. It also benefits
+those interested in developing new scheduling formulations and algorithms, particularly
+by extending existing formulations to include new decision variables, constraints, and
+objective functions.
 
 AMS is a **Modeling Framework** that provides a descriptive way to formulate
 scheduling problems. The optimization problems are then handled by **CVXPY**
@@ -43,15 +45,35 @@ and solved with third-party solvers.
 AMS produces credible scheduling results and competitive performance.
 The following results show the comparison of DCOPF between AMS and other tools.
 
-| Cost [\$]       |      AMS       |  MATPOWER   | pandapower |
-|----------------:|--------------:|------------:|-----------:|
-| PEGASE 1354-Bus |  1,173,590.63  |  1,173,590.63 |  1,173,590.63 |
-| PEGASE 2869-Bus |  2,338,915.61  |  2,338,915.61 |  2,338,915.61 |
-| GOC 4020-Bus    |    793,634.11  |    793,634.11 |    793,634.11 |
-| EPIGRIDS 5658-Bus| 1,195,466.12  |  1,195,466.12 |  1,195,466.12 |
-| EPIGRIDS 7336-Bus| 1,855,870.94  |  1,855,870.94 |  1,855,870.94 |
+| Cost [\$]             | AMS          | pandapower   | MATPOWER     |
+|-----------------------|--------------|--------------|--------------|
+| IEEE 14-Bus           | 7,642.59     | 7,642.59     | 7,642.59     |
+| IEEE 39-Bus           | 41,263.94    | 41,263.94    | 41,263.94    |
+| PEGASE 89-Bus         | 5,733.37     | 5,733.37     | 5,733.37     |
+| IEEE 118-Bus          | 125,947.88   | 125,947.88   | 125,947.88   |
+| NPCC 140-Bus          | 810,033.37   | 810,016.06   | 810,033.37   |
+| WECC 179-Bus          | 411,706.13   | 411,706.13   | 411,706.13   |
+| IEEE 300-Bus          | 706,292.32   | 706,292.32   | 706,292.32   |
+| PEGASE 1354-Bus       | 1,218,096.86 | 1,218,096.86 | 1,218,096.86 |
+| PEGASE 2869-Bus       | 2,386,235.33 | 2,386,235.33 | 2,386,235.33 |
+| GOC 4020-Bus          | 793,634.11   | 793,634.11   | 793,634.11   |
+| EPIGRIDS 5658-Bus     | 1,195,466.12 | 1,195,466.12 | 1,195,466.12 |
+| EPIGRIDS 7336-Bus     | 1,855,870.94 | 1,855,870.94 | 1,855,870.94 |
 
-<img src="docs/source/images/dcopf_time.png" alt="DCOPF Time" width="400" height="auto">
+<div style="text-align: left;">
+  <img src="docs/source/images/dcopf_time.png" alt="DCOPF Time" width="480" height="auto">
+  <p><strong>Figure:</strong> Computation time of OPF on small-scale cases.</p>
+</div>
+
+In the bar chart, the gray bar labeled "AMS Symbolic Processing" represents the time spent
+on symbolic processing, while the wheat-colored bar "AMS Numeric Evaluation" represents the
+time spent on system matrices calculation and optimization model construction.
+The orange bar labeled "AMS GUROBI" represents the optimization-solving time using the GUROBI solver.
+Similarly, the red bar labeled "AMS MOSEK" and the pink bar labeled "AMS PIQP" represent the
+time used by the solvers MOSEK and PIQP, respectively.
+Regarding the baselines, the blue and green bars represent the running time of MATPOWER using
+solver MIPS and pandapower using solver PIPS, respectively.
+The results for AMS, pandapower, and matpower are the average time consumed over ten repeat tests.
 
 AMS is currently under active development.
 Use the following resources to get involved.
@@ -64,15 +86,10 @@ Use the following resources to get involved.
 -  Submit contributions using [pull requests][GitHub pull requests]
 -  Read release notes highlighted [here][release notes]
 -  Try in Jupyter Notebook on [Binder][Binder]
-<!-- + Check out and and cite our [paper][arxiv paper] -->
+-  Check out the source code used for [benchmark][benchmark]
+-  Check out and and cite our [paper][paper]
 
 # Installation
-
-***NOTE:***
-- Version **0.9.9** has known issues and has been yanked from PyPI
-- `kvxopt` is recommended to install via `conda` as sometimes ``pip`` struggles to set the correct path for compiled libraries
-- `cvxpy` versions **below 1.5** are incompatible with `numpy` versions **2.0 and above**
-- If solver `SCIP` run into import error, try to reinstall its Python interface by running `pip install pyscipopt --no-binary scip --force`
 
 AMS is released as ``ltbams`` on PyPI and conda-forge.
 Install from PyPI using pip:
@@ -93,6 +110,12 @@ Install from GitHub source:
 pip install git+https://github.com/CURENT/ams.git
 ```
 
+***NOTE:***
+- Version **0.9.9** has known issues and has been yanked from PyPI
+- `kvxopt` is recommended to install via `conda` as sometimes ``pip`` struggles to set the correct path for compiled libraries
+- `cvxpy` versions **below 1.5** are incompatible with `numpy` versions **2.0 and above**
+- If solver `SCIP` run into import error, try to reinstall its Python interface by running `pip install pyscipopt --no-binary scip --force`
+
 # Example Usage
 
 ```python
@@ -112,6 +135,13 @@ sa = ss.to_andes(addfile=andes.get_case('ieee14/ieee14_full.xlsx'),
                  setup=True, verify=False)
 sa
 >>> <andes.system.System at 0x14bd98190>
+```
+
+# Citing AMS
+If you use AMS for research or consulting, please cite the following paper in your publication that uses AMS:
+
+```
+J. Wang et al., "Dynamics-incorporated Modeling Framework for Stability Constrained Scheduling Under High-penetration of Renewable Energy," in IEEE Transactions on Sustainable Energy, doi: 10.1109/TSTE.2025.3528027.
 ```
 
 # Sponsors and Contributors
@@ -149,3 +179,5 @@ Some commercial solvers provide academic licenses, such as COPT, GUROBI, CPLEX, 
 [verification]:          https://github.com/CURENT/ams/tree/master/examples/verification
 [Binder]:                https://mybinder.org/v2/gh/curent/ams/master
 [LTB Repository]:        https://github.com/CURENT
+[benchmark]:             https://github.com/CURENT/demo/tree/master/demo/ams_benchmark
+[paper]:                 https://ieeexplore.ieee.org/document/9169830

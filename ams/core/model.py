@@ -15,6 +15,8 @@ from andes.utils.func import list_flatten
 from ams.core.documenter import Documenter
 from ams.core.var import Algeb
 
+from ams.utils.misc import deprec_get_idx
+
 logger = logging.getLogger(__name__)
 
 
@@ -50,10 +52,6 @@ class Model:
                                     ('adjust_upper', 1),
                                      )))
         self.docum = Documenter(self)
-
-        # TODO: duplicate from ANDES, disable for now
-        # self.syms = SymProcessor(self)  # symbolic processor instance
-        # self.docum = Documenter(self)
 
     def _all_vars(self):
         """
@@ -212,17 +210,17 @@ class Model:
         self.__dict__[src].__dict__[attr][uid] = value
         return True
 
-    def alter(self, src, idx, value):
+    def alter(self, src, idx, value, attr='v'):
         """
         Alter values of input parameters or constant service.
 
         If the method operates on an input parameter, the new data should be in
-        the same base as that in the input file. This function will convert the
-        new value to per unit in the system base.
+        the same base as that in the input file. This function will convert
+        ``value`` to per unit in the system base whenever necessary.
 
-        The values for storing the input data, i.e., the ``vin`` field of the
-        parameter, will be overwritten, thus the update will be reflected in the
-        dumped case file.
+        The values for storing the input data, i.e., the parameter's ``vin``
+        field, will be overwritten. As a result, altered values will be
+        reflected in the dumped case file.
 
         Parameters
         ----------
@@ -232,14 +230,31 @@ class Model:
             The device to alter
         value : float
             The desired value
+        attr : str
+            The attribute to alter, default is 'v'.
+
+        Notes
+        -----
+        New in version 0.9.14: Added the signature `attr` to alter specific attributes.
+        This feature is useful when you need to manipulate parameter values in the system
+        base and ensure that these changes are reflected in the dumped case file.
         """
+
         instance = self.__dict__[src]
 
         if hasattr(instance, 'vin') and (instance.vin is not None):
-            self.set(src, idx, 'vin', value)
-            instance.v[:] = instance.vin * instance.pu_coeff
-        else:
+            uid = self.idx2uid(idx)
+            if attr == 'vin':
+                self.set(src, idx, 'vin', value / instance.pu_coeff[uid])
+                self.set(src, idx, 'v', value=value)
+            else:
+                self.set(src, idx, 'vin', value)
+                self.set(src, idx, 'v', value * instance.pu_coeff[uid])
+        elif not hasattr(instance, 'vin') and attr == 'vin':
+            logger.warning(f"{self.class_name}.{src} has no `vin` attribute, changing `v`.")
             self.set(src, idx, 'v', value)
+        else:
+            self.set(src, idx, attr=attr, value=value)
 
     def idx2uid(self, idx):
         """
@@ -286,11 +301,26 @@ class Model:
         """
         return self.docum.get(max_width=max_width, export=export)
 
+    @deprec_get_idx
     def get_idx(self):
         """
         Return the index of the model instance.
         Equivalent to ``self.idx.v``, develoepd for consistency with group method
         ``get_idx``.
+        """
+        return self.idx.v
+
+    def get_all_idxes(self):
+        """
+        Return all the indexes of this model.
+
+        .. note::
+            New in version 1.0.0. Add to follow the group method ``get_all_idxes``.
+
+        Returns
+        -------
+        list
+            A list of indexes.
         """
         return self.idx.v
 

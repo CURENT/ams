@@ -45,9 +45,11 @@ idx_guess = {'rego': 'RenGovernor',
              'rea': 'RenAerodynamics',
              'rep': 'RenPitch',
              'busf': 'BusFreq',
-             'zone': 'Region',
+             'zone': 'Zone',
              'gen': 'StaticGen',
-             'pq': 'PQ', }
+             'pq': 'PQ',
+             'vsg': 'VSG',
+             'regc': 'VSG', }
 
 
 def sync_adsys(amsys, adsys):
@@ -107,7 +109,7 @@ def _to_andes_pflow(system, no_output=False, default_config=True, **kwargs):
 def to_andes(system, addfile=None,
              setup=False, no_output=False,
              default_config=True,
-             verify=True, tol=1e-3,
+             verify=False, tol=1e-3,
              **kwargs):
     """
     Convert the AMS system to an ANDES system.
@@ -625,14 +627,14 @@ class Dynamic:
                 continue
 
             var_ams = getattr(rtn, vname_ams)  # instance of AMS routine var
-            idx_ads = var_ams.get_idx()  # use AMS idx as target ANDES idx
+            idx_ads = var_ams.get_all_idxes()  # use AMS idx as target ANDES idx
 
             # --- special scenarios ---
             # 0. send PV bus voltage to StaticGen.v0 if not PFlow yet and AC converted
             cond_vpv = (mname_ads == 'Bus') and (pname_ads == 'v0')
             if cond_vpv and (not self.is_tds) and (rtn.converted):
                 # --- StaticGen ---
-                stg_idx = sp.StaticGen.get_idx()
+                stg_idx = sp.StaticGen.get_all_idxes()
                 bus_stg = sp.StaticGen.get(src='bus', attr='v', idx=stg_idx)
                 vBus = rtn.get(src='vBus', attr='v', idx=bus_stg)
                 sa.StaticGen.set(src='v0', idx=stg_idx, attr='v', value=vBus)
@@ -736,7 +738,7 @@ class Dynamic:
                 logger.debug(f'ANDES model <{mname_ads}> is empty.')
                 continue
 
-            idx_ads = rtn.__dict__[vname_ams].get_idx()  # use AMS idx as target ANDES idx
+            idx_ads = rtn.__dict__[vname_ams].get_all_idxes()  # use AMS idx as target ANDES idx
 
             # --- special scenarios ---
             # 1. gen online status; in TDS running, take from dynamic generator
@@ -991,7 +993,7 @@ def make_link_table(adsys):
 
     dyr = ssa_key0['syg_idx'] + ssa_key0['dg_idx'] + ssa_key0['rg_idx']
     non_dyr = np.logical_not(dyr)
-    ssa_dyr0 = ssa_key0[non_dyr]
+    ssa_dyr0 = ssa_key0[non_dyr].reset_index(drop=True)
     ssa_dyr0['gammap'] = 1
     ssa_dyr0['gammaq'] = 1
 

@@ -231,11 +231,11 @@ def mpc2system(mpc: dict, system) -> bool:
                        c2=c2, c1=c1, c0=c0
                        )
 
-    # --- region ---
+    # --- Zone ---
     zone_id = np.unique(system.Bus.zone.v).astype(int)
     for zone in zone_id:
         zone_idx = f'ZONE_{zone}'
-        system.add('Region', idx=zone_idx, name=None)
+        system.add('Zone', idx=zone_idx, name=None)
     bus_zone = system.Bus.zone.v
     bus_zone = [f'ZONE_{int(zone)}' for zone in bus_zone]
     system.Bus.zone.v = bus_zone
@@ -313,7 +313,7 @@ def system2mpc(system) -> dict:
     bus[:, 12] = system.Bus.vmin.v
 
     # --- zone ---
-    ZONE_I = system.Region.idx.v
+    ZONE_I = system.Zone.idx.v
     if len(ZONE_I) > 0:
         mapping = {busi0: i for i, busi0 in enumerate(ZONE_I)}
         bus[:, 10] = np.array([mapping[busi0] for busi0 in system.Bus.zone.v])

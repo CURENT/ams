@@ -24,7 +24,7 @@ jobs:
       run: |
         mamba install -y nbmake pytest-xdist line_profiler  # add'l packages for notebook tests.
         mamba install --file requirements.txt --file requirements-extra.txt
-        python -m pip install pyscipopt
+        python -m pip install pyscipopt --no-binary scip --force
         python -m pip install -e .
     - shell: bash -el {0}
       name: Test with pytest and collect coverage

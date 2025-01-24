@@ -162,7 +162,7 @@ class DCOPF(DCPFBase):
 
         # --- ACOPF ---
         # scale up load
-        pq_idx = self.system.StaticLoad.get_idx()
+        pq_idx = self.system.StaticLoad.get_all_idxes()
         pd0 = self.system.StaticLoad.get(src='p0', attr='v', idx=pq_idx).copy()
         qd0 = self.system.StaticLoad.get(src='q0', attr='v', idx=pq_idx).copy()
         self.system.StaticLoad.set(src='p0', idx=pq_idx, attr='v', value=pd0 * kloss)

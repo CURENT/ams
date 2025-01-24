@@ -20,7 +20,7 @@ class RTEDBase:
     """
 
     def __init__(self):
-        # --- region ---
+        # --- zone ---
         self.zg = RParam(info='Gen zone',
                          name='zg', tex_name='z_{one,g}',
                          model='StaticGen', src='zone',
@@ -29,11 +29,11 @@ class RTEDBase:
                          name='zd', tex_name='z_{one,d}',
                          model='StaticLoad', src='zone',
                          no_parse=True)
-        self.gs = ZonalSum(u=self.zg, zone='Region',
+        self.gs = ZonalSum(u=self.zg, zone='Zone',
                            name='gs', tex_name=r'S_{g}',
                            info='Sum Gen vars vector in shape of zone',
                            no_parse=True, sparse=True)
-        self.ds = ZonalSum(u=self.zd, zone='Region',
+        self.ds = ZonalSum(u=self.zd, zone='Zone',
                            name='ds', tex_name=r'S_{d}',
                            info='Sum pd vector in shape of zone',
                            no_parse=True,)
@@ -189,14 +189,14 @@ class RTED(DCOPF, RTEDBase, SFRBase):
             logger.warning(f'{self.class_name} is not executed successfully, quit conversion.')
             return False
         # set pru and prd into pmin and pmax
-        pr_idx = self.pru.get_idx()
+        pr_idx = self.pru.get_all_idxes()
         pmin0 = self.system.StaticGen.get(src='pmin', attr='v', idx=pr_idx)
         pmax0 = self.system.StaticGen.get(src='pmax', attr='v', idx=pr_idx)
         p00 = self.system.StaticGen.get(src='p0', attr='v', idx=pr_idx)
 
         # --- ACOPF ---
         # scale up load
-        pq_idx = self.system.StaticLoad.get_idx()
+        pq_idx = self.system.StaticLoad.get_all_idxes()
         pd0 = self.system.StaticLoad.get(src='p0', attr='v', idx=pq_idx).copy()
         qd0 = self.system.StaticLoad.get(src='q0', attr='v', idx=pq_idx).copy()
         self.system.StaticLoad.set(src='p0', idx=pq_idx, attr='v', value=pd0 * kloss)
@@ -215,19 +215,11 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.system.StaticLoad.set(src='q0', idx=pq_idx, attr='v', value=qd0)
         if not ACOPF.exit_code == 0:
             logger.warning('<ACOPF> did not converge, conversion failed.')
-            # NOTE: mock results to fit interface with ANDES
-            self.vBus = ACOPF.vBus
             self.vBus.optz.value = np.ones(self.system.Bus.n)
             self.aBus.optz.value = np.zeros(self.system.Bus.n)
             return False
-        self.pg.optz.value = ACOPF.pg.v
 
-        # NOTE: mock results to fit interface with ANDES
-        self.addVars(name='vBus',
-                     info='Bus voltage', unit='p.u.',
-                     model='Bus', src='v',)
-        self.vBus.parse()
-        self.vBus.evaluate()
+        self.pg.optz.value = ACOPF.pg.v
         self.vBus.optz.value = ACOPF.vBus.v
         self.aBus.optz.value = ACOPF.aBus.v
         self.exec_time = exec_time
@@ -242,54 +234,6 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.converted = True
         logger.warning(f'<{self.class_name}> converted to AC.')
         return True
-
-    def run(self, no_code=True, **kwargs):
-        """
-        Run the routine.
-
-        Parameters
-        ----------
-        no_code : bool, optional
-            If True, print the generated CVXPY code. Defaults to False.
-
-        Other Parameters
-        ----------------
-        solver: str, optional
-            The solver to use. For example, 'GUROBI', 'ECOS', 'SCS', or 'OSQP'.
-        verbose : bool, optional
-            Overrides the default of hiding solver output and prints logging
-            information describing CVXPY's compilation process.
-        gp : bool, optional
-            If True, parses the problem as a disciplined geometric program
-            instead of a disciplined convex program.
-        qcp : bool, optional
-            If True, parses the problem as a disciplined quasiconvex program
-            instead of a disciplined convex program.
-        requires_grad : bool, optional
-            Makes it possible to compute gradients of a solution with respect to Parameters
-            by calling problem.backward() after solving, or to compute perturbations to the variables
-            given perturbations to Parameters by calling problem.derivative().
-            Gradients are only supported for DCP and DGP problems, not quasiconvex problems.
-            When computing gradients (i.e., when this argument is True), the problem must satisfy the DPP rules.
-        enforce_dpp : bool, optional
-            When True, a DPPError will be thrown when trying to solve a
-            non-DPP problem (instead of just a warning).
-            Only relevant for problems involving Parameters. Defaults to False.
-        ignore_dpp : bool, optional
-            When True, DPP problems will be treated as non-DPP, which may speed up compilation. Defaults to False.
-        method : function, optional
-            A custom solve method to use.
-        kwargs : keywords, optional
-            Additional solver specific arguments. See CVXPY documentation for details.
-
-        Notes
-        -----
-        1. remove ``vBus`` if has been converted with ``dc2ac``
-        """
-        if self.converted:
-            delattr(self, 'vBus')
-            self.converted = False
-        return super().run(**kwargs)
 
 
 class DGBase:
@@ -523,7 +467,7 @@ class VISBase:
                      model='VSG', src='D',
                      nonneg=True,)
 
-        self.gvsg = ZonalSum(u=self.zvsg, zone='Region',
+        self.gvsg = ZonalSum(u=self.zvsg, zone='Zone',
                              name='gvsg', tex_name=r'S_{g}',
                              info='Sum VSG vars vector in shape of zone',
                              no_parse=True)
