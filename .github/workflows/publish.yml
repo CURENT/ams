@@ -29,10 +29,10 @@ jobs:
         name: Test with pytest
         run: |
           pytest
-      - name: Build a distribution
+      - name: Build a distribution if tagged
         run: |
           python setup.py sdist
-      - name: Publish a Python distribution to PyPI
+      - name: Publish a Python distribution to PyPI if tagged
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
