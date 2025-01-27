@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   pretest:
-    name: AMS Pretest
+    name: Functional Tests
 
     runs-on: ubuntu-latest
 
