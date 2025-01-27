@@ -13,8 +13,8 @@ v1.0.2 (2024-01-27)
 
 --------------------
 
-- Enhance the GitHub Actions workflow file for the matrix strategy, with special thanks
-  to Daniele Nicolodi (@dnicolodi)
+- Enhance the GitHub Actions workflow file for the matrix strategy, with special
+  thanks to Daniele Nicolodi (@dnicolodi)
 - Deprecate andes logger configuration in ``config_logger``
 - Deprecate solver specification in ``demo_ESD1``
 
