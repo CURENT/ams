@@ -3,7 +3,7 @@ name: Functional Tests
 on: [push, pull_request]
 
 jobs:
-  pretest:
+  func:
     name: Functional Tests
 
     runs-on: ubuntu-latest
