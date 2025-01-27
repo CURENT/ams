@@ -5,9 +5,7 @@ on: [push, pull_request]
 jobs:
   func:
     name: Functional Tests
-
     runs-on: ubuntu-latest
-
     if: ${{ github.ref != 'refs/heads/misc' }}
 
     steps:

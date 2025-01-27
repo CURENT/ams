@@ -25,6 +25,10 @@ jobs:
         run: |
           mamba install --file requirements.txt --file requirements-extra.txt
           python -m pip install -e .
+      - shell: bash -el {0}
+        name: Test with pytest
+        run: |
+          pytest
       - name: Build a distribution
         run: |
           python setup.py sdist
