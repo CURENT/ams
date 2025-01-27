@@ -38,7 +38,7 @@ jobs:
     - shell: bash -el {0}
       name: Test notebooks.
       run: |
-        pytest --nbmake examples --ignore=examples/verification
+        pytest --nbmake examples --ignore=examples/verification --ignore=examples/demonstration/demo_ESD1.ipynb
 
   build:
     name: AMS Tests

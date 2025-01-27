@@ -9,6 +9,11 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v1.0.0 (2024-01-26)
+--------------------
+
+Hotfix: remove the dependency on ``SCIP`` and ``pyscipopt`` to avoid installation issues
+
 v1.0.0 (2024-01-24)
 --------------------
 

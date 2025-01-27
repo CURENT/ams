@@ -2,6 +2,7 @@ import unittest
 import numpy as np
 
 import ams
+from ams.shared import skip_unittest_without_MISOCP
 
 
 class TestED(unittest.TestCase):
@@ -204,6 +205,7 @@ class TestEDES(unittest.TestCase):
         self.ss.EDES.init()
         self.assertTrue(self.ss.EDES.initialized, "EDES initialization failed!")
 
+    @skip_unittest_without_MISOCP
     def test_trip_gen(self):
         """
         Test generator tripping.
@@ -215,7 +217,7 @@ class TestEDES(unittest.TestCase):
         loc_offtime = np.array([0, 2])
         self.ss.EDTSlot.ug.v[loc_offtime, stg_uid] = 0
 
-        self.ss.EDES.run(solver='SCIP')
+        self.ss.EDES.run()
         self.assertTrue(self.ss.EDES.converged, "ED did not converge under generator trip!")
         pg_pv1 = self.ss.EDES.get(src='pg', attr='v', idx=stg)
         np.testing.assert_almost_equal(np.zeros_like(loc_offtime),
@@ -230,7 +232,7 @@ class TestEDES(unittest.TestCase):
         self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
         self.ss.EDES.update()
 
-        self.ss.EDES.run(solver='SCIP')
+        self.ss.EDES.run()
         self.assertTrue(self.ss.EDES.converged, "ED did not converge under generator trip!")
         pg_pv1 = self.ss.EDES.get(src='pg', attr='v', idx=stg)
         np.testing.assert_array_less(np.zeros_like(pg_pv1), pg_pv1,
@@ -238,12 +240,13 @@ class TestEDES(unittest.TestCase):
 
         self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=1)  # reset
 
+    @skip_unittest_without_MISOCP
     def test_line_trip(self):
         """
         Test line tripping.
         """
         self.ss.Line.set(src='u', attr='v', idx=3, value=0)
-        self.ss.EDES.run(solver='SCIP')
+        self.ss.EDES.run()
         self.assertTrue(self.ss.EDES.converged, "EDES did not converge!")
         plf_l3 = self.ss.EDES.get(src='plf', attr='v', idx=3)
         np.testing.assert_almost_equal(np.zeros_like(plf_l3),
@@ -251,18 +254,19 @@ class TestEDES(unittest.TestCase):
 
         self.ss.Line.alter(src='u', idx=3, value=1)
 
+    @skip_unittest_without_MISOCP
     def test_set_load(self):
         """
         Test setting and tripping load.
         """
-        self.ss.EDES.run(solver='SCIP')
+        self.ss.EDES.run()
         pgs = self.ss.EDES.pg.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.EDES.update()
 
-        self.ss.EDES.run(solver='SCIP')
+        self.ss.EDES.run()
         pgs_pqt = self.ss.EDES.pg.v.sum()
         self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
@@ -270,6 +274,6 @@ class TestEDES(unittest.TestCase):
         self.ss.PQ.alter(src='u', idx='PQ_2', value=0)
         self.ss.EDES.update()
 
-        self.ss.EDES.run(solver='SCIP')
+        self.ss.EDES.run()
         pgs_pqt2 = self.ss.EDES.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
