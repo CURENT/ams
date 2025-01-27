@@ -12,7 +12,7 @@ Pre-v1.0.0
 v1.0.0 (2024-01-26)
 --------------------
 
-Hotfix: remove the dependency on ``SCIP`` and ``pyscipopt`` to avoid installation issues
+Hotfix: removed dependencies on `SCIP` and `pyscipopt` to resolve installation issues
 
 v1.0.0 (2024-01-24)
 --------------------
