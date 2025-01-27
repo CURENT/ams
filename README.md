@@ -114,7 +114,8 @@ pip install git+https://github.com/CURENT/ams.git
 - Version **0.9.9** has known issues and has been yanked from PyPI
 - `kvxopt` is recommended to install via `conda` as sometimes ``pip`` struggles to set the correct path for compiled libraries
 - `cvxpy` versions **below 1.5** are incompatible with `numpy` versions **2.0 and above**
-- If solver `SCIP` run into import error, try to reinstall its Python interface by running `pip install pyscipopt --no-binary scip --force`
+- If the solver `SCIP` encounters an import error caused by a missing `libscip.9.1.dylib`, try reinstalling its Python interface by running `pip install pyscipopt --no-binary scip --force`
+- Version **1.0.0** is only available on PyPI
 
 # Example Usage
 
