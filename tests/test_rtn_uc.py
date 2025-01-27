@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 import ams
-from ams.shared import skip_unittest_without_MIP
+from ams.shared import skip_unittest_without_MISOCP
 
 
 class TestUC(unittest.TestCase):
@@ -33,31 +33,31 @@ class TestUC(unittest.TestCase):
         self.ss.UC.init()
         self.assertTrue(self.ss.UC.initialized, "UC initialization failed!")
 
-    @skip_unittest_without_MIP
+    @skip_unittest_without_MISOCP
     def test_trip_gen(self):
         """
         Test generator tripping.
         """
-        self.ss.UC.run(solver='SCIP')
+        self.ss.UC.run()
         self.assertTrue(self.ss.UC.converged, "UC did not converge!")
         pg_off_gen = self.ss.UC.get(src='pg', attr='v', idx=self.off_gen)
         np.testing.assert_almost_equal(np.zeros_like(pg_off_gen),
                                        pg_off_gen, decimal=6,
                                        err_msg="Off generators are not turned off!")
 
-    @skip_unittest_without_MIP
+    @skip_unittest_without_MISOCP
     def test_set_load(self):
         """
         Test setting and tripping load.
         """
-        self.ss.UC.run(solver='SCIP')
+        self.ss.UC.run()
         pgs = self.ss.UC.pg.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.UC.update()
 
-        self.ss.UC.run(solver='SCIP')
+        self.ss.UC.run()
         pgs_pqt = self.ss.UC.pg.v.sum()
         self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
@@ -65,11 +65,11 @@ class TestUC(unittest.TestCase):
         self.ss.PQ.alter(src='u', idx='PQ_2', value=0)
         self.ss.UC.update()
 
-        self.ss.UC.run(solver='SCIP')
+        self.ss.UC.run()
         pgs_pqt2 = self.ss.UC.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
-    @skip_unittest_without_MIP
+    @skip_unittest_without_MISOCP
     def test_trip_line(self):
         """
         Test line tripping.
@@ -77,7 +77,7 @@ class TestUC(unittest.TestCase):
         self.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
         self.ss.UC.update()
 
-        self.ss.UC.run(solver='SCIP')
+        self.ss.UC.run()
         self.assertTrue(self.ss.UC.converged, "UC did not converge under line trip!")
         plf_l3 = self.ss.UC.get(src='plf', attr='v', idx='Line_3')
         np.testing.assert_almost_equal(np.zeros_like(plf_l3),
@@ -114,31 +114,31 @@ class TestUCDG(unittest.TestCase):
         self.ss.UCDG.init()
         self.assertTrue(self.ss.UCDG.initialized, "UCDG initialization failed!")
 
-    @skip_unittest_without_MIP
+    @skip_unittest_without_MISOCP
     def test_trip_gen(self):
         """
         Test generator tripping.
         """
-        self.ss.UCDG.run(solver='SCIP')
+        self.ss.UCDG.run()
         self.assertTrue(self.ss.UCDG.converged, "UCDG did not converge!")
         pg_off_gen = self.ss.UCDG.get(src='pg', attr='v', idx=self.off_gen)
         np.testing.assert_almost_equal(np.zeros_like(pg_off_gen),
                                        pg_off_gen, decimal=6,
                                        err_msg="Off generators are not turned off!")
 
-    @skip_unittest_without_MIP
+    @skip_unittest_without_MISOCP
     def test_set_load(self):
         """
         Test setting and tripping load.
         """
-        self.ss.UCDG.run(solver='SCIP')
+        self.ss.UCDG.run()
         pgs = self.ss.UCDG.pg.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.UCDG.update()
 
-        self.ss.UCDG.run(solver='SCIP')
+        self.ss.UCDG.run()
         pgs_pqt = self.ss.UCDG.pg.v.sum()
         self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
@@ -146,11 +146,11 @@ class TestUCDG(unittest.TestCase):
         self.ss.PQ.alter(src='u', idx='PQ_2', value=0)
         self.ss.UCDG.update()
 
-        self.ss.UCDG.run(solver='SCIP')
+        self.ss.UCDG.run()
         pgs_pqt2 = self.ss.UCDG.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
-    @skip_unittest_without_MIP
+    @skip_unittest_without_MISOCP
     def test_trip_line(self):
         """
         Test line tripping.
@@ -158,7 +158,7 @@ class TestUCDG(unittest.TestCase):
         self.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
         self.ss.UCDG.update()
 
-        self.ss.UCDG.run(solver='SCIP')
+        self.ss.UCDG.run()
         self.assertTrue(self.ss.UCDG.converged, "UCDG did not converge under line trip!")
         plf_l3 = self.ss.UCDG.get(src='plf', attr='v', idx='Line_3')
         np.testing.assert_almost_equal(np.zeros_like(plf_l3),
@@ -195,31 +195,31 @@ class TestUCES(unittest.TestCase):
         self.ss.UCES.init()
         self.assertTrue(self.ss.UCES.initialized, "UCES initialization failed!")
 
-    @skip_unittest_without_MIP
+    @skip_unittest_without_MISOCP
     def test_trip_gen(self):
         """
         Test generator tripping.
         """
-        self.ss.UCES.run(solver='SCIP')
+        self.ss.UCES.run()
         self.assertTrue(self.ss.UCES.converged, "UCES did not converge!")
         pg_off_gen = self.ss.UCES.get(src='pg', attr='v', idx=self.off_gen)
         np.testing.assert_almost_equal(np.zeros_like(pg_off_gen),
                                        pg_off_gen, decimal=6,
                                        err_msg="Off generators are not turned off!")
 
-    @skip_unittest_without_MIP
+    @skip_unittest_without_MISOCP
     def test_set_load(self):
         """
         Test setting and tripping load.
         """
-        self.ss.UCES.run(solver='SCIP')
+        self.ss.UCES.run()
         pgs = self.ss.UCES.pg.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.UCES.update()
 
-        self.ss.UCES.run(solver='SCIP')
+        self.ss.UCES.run()
         pgs_pqt = self.ss.UCES.pg.v.sum()
         self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
@@ -227,11 +227,11 @@ class TestUCES(unittest.TestCase):
         self.ss.PQ.alter(src='u', idx='PQ_2', value=0)
         self.ss.UCES.update()
 
-        self.ss.UCES.run(solver='SCIP')
+        self.ss.UCES.run()
         pgs_pqt2 = self.ss.UCES.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
-    @skip_unittest_without_MIP
+    @skip_unittest_without_MISOCP
     def test_trip_line(self):
         """
         Test line tripping.
@@ -239,7 +239,7 @@ class TestUCES(unittest.TestCase):
         self.ss.Line.set(src='u', attr='v', idx=3, value=0)
         self.ss.UCES.update()
 
-        self.ss.UCES.run(solver='SCIP')
+        self.ss.UCES.run()
         self.assertTrue(self.ss.UCES.converged, "UCES did not converge under line trip!")
         plf_l3 = self.ss.UCES.get(src='plf', attr='v', idx=3)
         np.testing.assert_almost_equal(np.zeros_like(plf_l3),

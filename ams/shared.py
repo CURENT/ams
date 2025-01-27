@@ -41,9 +41,25 @@ copyright_msg = 'Copyright (C) 2023-2024 Jinning Wang'
 mip_solvers = ['CBC', 'COPT', 'GLPK_MI', 'CPLEX', 'GUROBI',
                'MOSEK', 'SCIP', 'XPRESS', 'SCIPY']
 
+misocp_solvers = ['MOSEK', 'CPLEX', 'GUROBI', 'XPRESS', 'SCIP']
+
 installed_solvers = cp.installed_solvers()
 
 installed_mip_solvers = [s for s in installed_solvers if s in mip_solvers]
+
+
+def require_MISOCP_solver(f):
+    """
+    Decorator for functions that require MISOCP solver.
+    """
+
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if not any(s in misocp_solvers for s in installed_solvers):
+            raise ModuleNotFoundError("No MISOCP solver is available.")
+        return f(*args, **kwargs)
+
+    return wrapper
 
 
 def require_MIP_solver(f):
@@ -69,6 +85,19 @@ def skip_unittest_without_MIP(f):
             pass
         else:
             raise unittest.SkipTest("No MIP solver is available.")
+        return f(*args, **kwargs)
+    return wrapper
+
+
+def skip_unittest_without_MISOCP(f):
+    """
+    Decorator for skipping tests that require MISOCP solver.
+    """
+    def wrapper(*args, **kwargs):
+        if any(s in misocp_solvers for s in installed_solvers):
+            pass
+        else:
+            raise unittest.SkipTest("No MISOCP solver is available.")
         return f(*args, **kwargs)
     return wrapper
 

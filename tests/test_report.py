@@ -5,6 +5,7 @@ import unittest
 import os
 
 import ams
+from ams.shared import skip_unittest_without_MISOCP
 
 
 import logging
@@ -118,12 +119,13 @@ class TestReport(unittest.TestCase):
         self.assertTrue(os.path.exists('pjm5bus_demo_RTEDDG.csv'))
         os.remove('pjm5bus_demo_RTEDDG.csv')
 
+    @skip_unittest_without_MISOCP
     def test_RTEDES_report(self):
         """
         Test report with RTEDES solved.
         """
         self.ss.files.no_output = False
-        self.ss.RTEDES.run(solver='SCIP')
+        self.ss.RTEDES.run()
         self.assertTrue(self.ss.report())
         self.assertTrue(os.path.exists(self.expected_report))
 
@@ -172,12 +174,13 @@ class TestReport(unittest.TestCase):
         self.assertTrue(os.path.exists('pjm5bus_demo_EDDG.csv'))
         os.remove('pjm5bus_demo_EDDG.csv')
 
+    @skip_unittest_without_MISOCP
     def test_EDES_report(self):
         """
         Test report with EDES solved.
         """
         self.ss.files.no_output = False
-        self.ss.EDES.run(solver='SCIP')
+        self.ss.EDES.run()
         self.assertTrue(self.ss.report())
         self.assertTrue(os.path.exists(self.expected_report))
 
@@ -190,12 +193,13 @@ class TestReport(unittest.TestCase):
         self.assertTrue(os.path.exists('pjm5bus_demo_EDES.csv'))
         os.remove('pjm5bus_demo_EDES.csv')
 
+    @skip_unittest_without_MISOCP
     def test_UC_report(self):
         """
         Test report with UC solved.
         """
         self.ss.files.no_output = False
-        self.ss.UC.run(solver='SCIP')
+        self.ss.UC.run()
         self.assertTrue(self.ss.report())
         self.assertTrue(os.path.exists(self.expected_report))
 
@@ -208,12 +212,13 @@ class TestReport(unittest.TestCase):
         self.assertTrue(os.path.exists('pjm5bus_demo_UC.csv'))
         os.remove('pjm5bus_demo_UC.csv')
 
+    @skip_unittest_without_MISOCP
     def test_UCDG_report(self):
         """
         Test report with UCDG solved.
         """
         self.ss.files.no_output = False
-        self.ss.UCDG.run(solver='SCIP')
+        self.ss.UCDG.run()
         self.assertTrue(self.ss.report())
         self.assertTrue(os.path.exists(self.expected_report))
 
@@ -226,12 +231,13 @@ class TestReport(unittest.TestCase):
         self.assertTrue(os.path.exists('pjm5bus_demo_UCDG.csv'))
         os.remove('pjm5bus_demo_UCDG.csv')
 
+    @skip_unittest_without_MISOCP
     def test_UCES_report(self):
         """
         Test report with UCES solved.
         """
         self.ss.files.no_output = False
-        self.ss.UCES.run(solver='SCIP')
+        self.ss.UCES.run()
         self.assertTrue(self.ss.report())
         self.assertTrue(os.path.exists(self.expected_report))
 
