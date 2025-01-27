@@ -9,7 +9,16 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v1.0.0 (2024-01-26)
+v1.0.2 (2024-01-27)
+
+--------------------
+
+- Enhance the GitHub Actions workflow file for the matrix strategy, with special thanks
+  to Daniele Nicolodi (@dnicolodi)
+- Deprecate andes logger configuration in ``config_logger``
+- Deprecate solver specification in ``demo_ESD1``
+
+v1.0.1 (2024-01-26)
 --------------------
 
 Hotfix: removed dependencies on `SCIP` and `pyscipopt` to resolve installation issues

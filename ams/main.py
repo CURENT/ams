@@ -18,7 +18,6 @@ import textwrap
 from ._version import get_versions
 
 from andes.main import _find_cases
-from andes.main import config_logger as ad_config_logger
 from andes.shared import Pool, Process, coloredlogs, unittest, NCPUS_PHYSICAL
 from andes.utils.misc import elapsed, is_interactive
 
@@ -72,7 +71,6 @@ def config_logger(stream_level=logging.INFO, *,
     Original author: Hantao Cui
     License: GPL3
     """
-    ad_config_logger(stream_level)
     lg = logging.getLogger('ams')
     lg.setLevel(logging.DEBUG)
 
