@@ -56,9 +56,9 @@ def get_extra_requires(filename, add_all=True):
                     k, v = k.split('#')
                     tags.update(vv.strip() for vv in v.split(','))
 
-                tags.add(re.split('[<=>]', k)[0])
+                # Do not add the package name itself as a tag
                 for t in tags:
-                    extra_deps[t].add(k)
+                    extra_deps[t].add(k.strip())
 
         # add tag `all` at the end
         if add_all:
