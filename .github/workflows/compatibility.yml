@@ -1,4 +1,4 @@
-name: Python application
+name: Compatibility Tests
 
 on: [push, pull_request]
 

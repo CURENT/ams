@@ -1,4 +1,4 @@
-name: Pre Test
+name: Functional Tests
 
 on: [push, pull_request]
 
