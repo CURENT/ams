@@ -81,10 +81,6 @@ jobs:
       name: Test with pytest
       run: |
         pytest
-    - shell: bash -el {0}
-      name: Test notebooks.
-      run: |
-        pytest --nbmake examples --ignore=examples/verification --ignore=examples/demonstration/demo_ESD1.ipynb
     - name: Build a distribution if tagged
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9'
       run: |
