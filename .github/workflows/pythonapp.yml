@@ -25,7 +25,53 @@ jobs:
       run: |
         mamba install -y nbmake pytest-xdist line_profiler  # add'l packages for notebook tests.
         mamba install --file requirements.txt --file requirements-extra.txt
-        python -m pip install pyscipopt --no-binary scip --force
+        python -m pip install -e .
+    - shell: bash -el {0}
+      name: Try installing optional packages
+      run: |
+        # Try installing one of the optional packages
+        pip install gurobipy || pip install coptpy || pip install xpress || pip install cplex || echo "All optional packages failed to install. Skipping."
+    - shell: bash -el {0}
+      name: Run pip check
+      run: |
+        if ! pip check; then
+          echo "pip check failed, but the job will continue."
+        fi
+    - shell: bash -el {0}
+      name: Test with pytest
+      run: |
+        pytest
+    - shell: bash -el {0}
+      name: Test notebooks.
+      run: |
+        pytest --nbmake examples --ignore=examples/verification
+
+  build:
+    name: AMS Tests
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+
+    runs-on: ${{ matrix.os }}
+
+    if: ${{ github.ref != 'refs/heads/misc' }}
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: conda-incubator/setup-miniconda@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+        mamba-version: "*"
+        miniforge-version: "latest"
+        channels: conda-forge,defaults
+        channel-priority: true
+        activate-environment: anaconda-client-env
+    - shell: bash -el {0}
+      name: Install dependencies
+      run: |
+        mamba install -y nbmake pytest-xdist line_profiler  # add'l packages for notebook tests.
+        mamba install --file requirements.txt --file requirements-extra.txt
         python -m pip install -e .
     - shell: bash -el {0}
       name: Run pip check
@@ -39,47 +85,6 @@ jobs:
       name: Test notebooks.
       run: |
         pytest --nbmake examples --ignore=examples/verification --ignore=examples/demonstration/demo_ESD1.ipynb
-
-  build:
-    name: AMS Tests
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: [3.9, 3.10, 3.11, 3.12, 3.13]
-
-    runs-on: ubuntu-latest
-
-    if: ${{ github.ref != 'refs/heads/misc' }}
-
-    steps:
-    - uses: actions/checkout@v4
-    - uses: conda-incubator/setup-miniconda@v3
-      with:
-        python-version: 3.11
-        mamba-version: "*"
-        miniforge-version: "latest"
-        channels: conda-forge,defaults
-        channel-priority: true
-        activate-environment: anaconda-client-env
-    - shell: bash -el {0}
-      name: Install dependencies
-      run: |
-        mamba install -y nbmake pytest-xdist line_profiler  # add'l packages for notebook tests.
-        mamba install --file requirements.txt --file requirements-extra.txt
-        python -m pip install pyscipopt --no-binary scip --force
-        python -m pip install -e .
-    - shell: bash -el {0}
-      name: Run pip check
-      run: |
-        pip check || true  # Allow pip check to fail without failing the job
-    - shell: bash -el {0}
-      name: Test with pytest
-      run: |
-        pytest
-    - shell: bash -el {0}
-      name: Test notebooks.
-      run: |
-        pytest --nbmake examples --ignore=examples/verification
     - name: Build a distribution if tagged
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9'
       run: |

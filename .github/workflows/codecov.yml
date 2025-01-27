@@ -3,7 +3,7 @@ name: Code coverage
 on: [push, pull_request]
 
 jobs:
-  build:
+  cov:
     name: Report coverage
     runs-on: ubuntu-latest
 
@@ -24,8 +24,18 @@ jobs:
       run: |
         mamba install -y nbmake pytest-xdist line_profiler  # add'l packages for notebook tests.
         mamba install --file requirements.txt --file requirements-extra.txt
-        python -m pip install pyscipopt --no-binary scip --force
         python -m pip install -e .
+    - shell: bash -el {0}
+      name: Try installing optional packages
+      run: |
+        # Try installing one of the optional packages
+        pip install gurobipy || pip install coptpy || pip install xpress || pip install cplex || echo "All optional packages failed to install. Skipping."
+    - shell: bash -el {0}
+      name: Run pip check
+      run: |
+        if ! pip check; then
+          echo "pip check failed, but the job will continue."
+        fi
     - shell: bash -el {0}
       name: Test with pytest and collect coverage
       run: |
