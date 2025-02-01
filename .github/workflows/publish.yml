@@ -31,7 +31,7 @@ jobs:
           pytest
       - name: Build a distribution if tagged
         run: |
-          python setup.py sdist
+          python -m build
       - name: Publish a Python distribution to PyPI if tagged
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
