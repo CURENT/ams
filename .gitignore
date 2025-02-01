@@ -8,6 +8,7 @@ dist/
 
 # cache
 __pycache__/
+.pytest_cache/
 
 # Editor files
 #mac
