@@ -44,3 +44,6 @@ icebar
 # coverage
 .coverage
 coverage.xml
+
+# secrets
+.env
