@@ -1,0 +1,14 @@
+pytest
+pytest-cov
+coverage
+flake8
+numpydoc
+toml
+pandoc
+ipython
+sphinx
+pydata-sphinx-theme
+sphinx-copybutton
+sphinx-panels
+myst-parser
+nbsphinx

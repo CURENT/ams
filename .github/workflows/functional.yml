@@ -22,7 +22,7 @@ jobs:
       name: Install dependencies
       run: |
         mamba install -y nbmake pytest-xdist line_profiler  # add'l packages for notebook tests.
-        mamba install --file requirements.txt --file requirements-extra.txt
+        mamba install --file requirements.txt --file requirements-dev.txt
         python -m pip install -e .
     - shell: bash -el {0}
       name: Try installing optional packages
