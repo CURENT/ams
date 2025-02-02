@@ -12,11 +12,15 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 [![libraries](https://img.shields.io/librariesio/release/pypi/ltbams)](https://libraries.io/pypi/ltbams)
 [![Structure](https://img.shields.io/badge/code_base-visualize-blue)](https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=CURENT%2Fams)
 
+[![Compatibility Tests](https://github.com/CURENT/ams/actions/workflows/compatibility.yml/badge.svg)](https://github.com/CURENT/ams/actions/workflows/compatibility.yml)
+[![Publish to TestPyPI and PyPI](https://github.com/CURENT/ams/actions/workflows/publish-pypi.yml/badge.svg?branch=master)](https://github.com/CURENT/ams/actions/workflows/publish-pypi.yml)
+[![Azure Pipline](https://dev.azure.com/curentltb/ams/_apis/build/status%2FCURENT.ams?branchName=master)](https://dev.azure.com/curentltb/ams/_build/latest?definitionId=2&branchName=master)
+
 <img src="docs/source/images/sponsors/CURENT_Logo_NameOnTrans.png" alt="CURENT ERC Logo" width="300" height="auto">
 
-|               | Latest                                                                                                                                        | Stable                                                                                                                                        |
+|               | Stable                                                                                                                                        | Latest                                                                                                                                        |
 |---------------|-----------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| Documentation | [![Latest Documentation](https://readthedocs.org/projects/ams/badge/?version=latest)](https://ams.readthedocs.io/en/latest/?badge=latest) | [![Documentation Status](https://readthedocs.org/projects/ams/badge/?version=stable)](https://ams.readthedocs.io/en/stable/?badge=stable) |
+| Documentation | [![Documentation Status](https://readthedocs.org/projects/ams/badge/?version=stable)](https://ams.readthedocs.io/en/stable/?badge=stable) | [![Latest Documentation](https://readthedocs.org/projects/ams/badge/?version=latest)](https://ams.readthedocs.io/en/latest/?badge=latest) | 
 
 
 | Badges        |                                                                                                                                                                                                                                                     |                                                                                                                                                                                                            |
@@ -24,7 +28,7 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 | Downloads     | [![PyPI Version](https://img.shields.io/pypi/v/ltbams.svg)](https://pypi.python.org/pypi/ltbams)         | [![Conda Version](https://anaconda.org/conda-forge/ltbams/badges/version.svg)](https://anaconda.org/conda-forge/ltbams) |
 | Try on Binder | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/curent/ams/master)                                                                                                                                                 |                                                                                                                                                                                                            |
 | Code Quality  |[![Codacy Badge](https://app.codacy.com/project/badge/Grade/69456da1b8634f2f984bd769e35f0050)](https://app.codacy.com/gh/CURENT/ams/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)| [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/69456da1b8634f2f984bd769e35f0050)](https://app.codacy.com/gh/CURENT/ams/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage) |
-| Build Status  | [![GitHub Action Status](https://github.com/CURENT/ams/workflows/Python%20application/badge.svg)](https://github.com/curent/ams/actions)  | [![Build Status](https://dev.azure.com/curentltb/ams/_apis/build/status%2FCURENT.ams?branchName=master)](https://dev.azure.com/curentltb/ams/_build/latest?definitionId=2&branchName=master) |
+
 
 
 # Why AMS
@@ -115,7 +119,7 @@ pip install git+https://github.com/CURENT/ams.git
 - `kvxopt` is recommended to install via `conda` as sometimes ``pip`` struggles to set the correct path for compiled libraries
 - `cvxpy` versions **below 1.5** are incompatible with `numpy` versions **2.0 and above**
 - If the solver `SCIP` encounters an import error caused by a missing `libscip.9.1.dylib`, try reinstalling its Python interface by running `pip install pyscipopt --no-binary scip --force`
-- Version **1.0.0** is only available on PyPI
+- Versions **1.0.0** and **1.0.1** are only available on PyPI
 
 # Example Usage
 
