@@ -201,3 +201,6 @@ shutil.copytree("../../examples/demonstration", "_examples/demo", )
 # sphinx-panels shouldn't add bootstrap css since the pydata-sphinx-theme
 # already loads it
 panels_add_bootstrap_css = False
+
+# specify image loading behavior
+image_loading = 'link'
