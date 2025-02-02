@@ -115,11 +115,12 @@ pip install git+https://github.com/CURENT/ams.git
 ```
 
 ***NOTE:***
-- Version **0.9.9** has known issues and has been yanked from PyPI
-- `kvxopt` is recommended to install via `conda` as sometimes ``pip`` struggles to set the correct path for compiled libraries
+- `cvxpy` is distributed with the open source solvers CLARABEL, OSQP, and SCS, but MIP-capable solvers need separate installation
 - `cvxpy` versions **below 1.5** are incompatible with `numpy` versions **2.0 and above**
 - If the solver `SCIP` encounters an import error caused by a missing `libscip.9.1.dylib`, try reinstalling its Python interface by running `pip install pyscipopt --no-binary scip --force`
+- `kvxopt` is recommended to install via `conda` as sometimes ``pip`` struggles to set the correct path for compiled libraries
 - Versions **1.0.0** and **1.0.1** are only available on PyPI
+- Version **0.9.9** has known issues and has been yanked from PyPI
 
 # Example Usage
 
