@@ -141,9 +141,7 @@ sa
 # Citing AMS
 If you use AMS for research or consulting, please cite the following paper in your publication that uses AMS:
 
-```
-J. Wang et al., "Dynamics-incorporated Modeling Framework for Stability Constrained Scheduling Under High-penetration of Renewable Energy," in IEEE Transactions on Sustainable Energy, doi: 10.1109/TSTE.2025.3528027.
-```
+> J. Wang et al., "Dynamics-incorporated Modeling Framework for Stability Constrained Scheduling Under High-penetration of Renewable Energy," in IEEE Transactions on Sustainable Energy, doi: 10.1109/TSTE.2025.3528027.
 
 # Sponsors and Contributors
 AMS is the scheduling simulation engine for the CURENT Largescale Testbed (LTB).
