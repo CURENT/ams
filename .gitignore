@@ -8,6 +8,7 @@ dist/
 
 # cache
 __pycache__/
+.pytest_cache/
 
 # Editor files
 #mac
@@ -43,3 +44,6 @@ icebar
 # coverage
 .coverage
 coverage.xml
+
+# secrets
+.env

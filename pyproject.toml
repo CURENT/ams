@@ -35,28 +35,6 @@ dependencies = [
     "cvxpy"
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest",
-    "pytest-cov",
-    "coverage",
-    "flake8",
-    "numpydoc",
-    "toml",
-    "toml"
-]
-doc = [
-    "pandoc",
-    "ipython",
-    "sphinx",
-    "pydata-sphinx-theme",
-    "numpydoc",
-    "sphinx-copybutton",
-    "sphinx-panels",
-    "myst-parser",
-    "nbsphinx",
-]
-
 [project.scripts]
 ams = "ams.cli:main"
 

@@ -1,0 +1,9 @@
+pandoc
+ipython
+sphinx
+pydata-sphinx-theme
+numpydoc
+sphinx-copybutton
+sphinx-panels
+myst-parser
+nbsphinx

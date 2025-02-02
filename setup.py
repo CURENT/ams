@@ -66,7 +66,7 @@ def get_extra_requires(filename, add_all=True):
     return extra_deps
 
 
-extras_require = get_extra_requires("requirements-extra.txt")
+extras_require = get_extra_requires("requirements-dev.txt")
 
 # --- update `extras_conda` to include packages only available in PyPI ---
 

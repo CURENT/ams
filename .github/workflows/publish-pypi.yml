@@ -1,0 +1,166 @@
+name: Publish to TestPyPI and PyPI
+
+on: [push, pull_request]
+
+jobs:
+  func:
+    name: Functional Tests
+    runs-on: ubuntu-latest
+    if: ${{ github.ref != 'refs/heads/misc' }}
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: conda-incubator/setup-miniconda@v3
+      with:
+        python-version: 3.11
+        mamba-version: "*"
+        miniforge-version: "latest"
+        channels: conda-forge,defaults
+        channel-priority: true
+        activate-environment: anaconda-client-env
+    - shell: bash -el {0}
+      name: Install dependencies
+      run: |
+        mamba install -y nbmake pytest-xdist line_profiler  # add'l packages for notebook tests.
+        mamba install --file requirements.txt --file requirements-dev.txt
+        python -m pip install -e .
+    - shell: bash -el {0}
+      name: Try installing optional packages
+      run: |
+        # Try installing one of the optional packages
+        pip install gurobipy || pip install coptpy || pip install xpress || pip install cplex || echo "All optional packages failed to install. Skipping."
+    - shell: bash -el {0}
+      name: Run pip check
+      run: |
+        if ! pip check; then
+          echo "pip check failed, but the job will continue."
+        fi
+    - shell: bash -el {0}
+      name: Lint with flake8
+      if: github.event_name == 'pull_request'
+      run: |
+        flake8 .
+    - shell: bash -el {0}
+      name: Test with pytest
+      run: |
+        pytest
+    - shell: bash -el {0}
+      name: Test notebooks.
+      run: |
+        pytest --nbmake examples --ignore=examples/verification
+
+  build:
+    name: Build distribution
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.x"
+    - name: Install pypa/build
+      run: >-
+        python3 -m
+        pip install
+        build
+        --user
+    - name: Build a binary wheel and a source tarball
+      run: python3 -m build
+    - name: Store the distribution packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+
+  publish-to-testpypi:
+    name: Publish to TestPyPI
+    needs:
+    - build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/ltbams
+
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish TestPyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+
+  publish-to-pypi:
+    name: >-
+      Publish to PyPI
+    if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
+    needs:
+    - build
+    - publish-to-testpypi
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/ltbams
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    name: >-
+      Sign and upload to GitHub Release
+    needs:
+    - publish-to-pypi
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write  # IMPORTANT: mandatory for making GitHub Releases
+      id-token: write  # IMPORTANT: mandatory for sigstore
+
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Sign the dists with Sigstore
+      uses: sigstore/gh-action-sigstore-python@v3.0.0
+      with:
+        inputs: >-
+          ./dist/*.tar.gz
+          ./dist/*.whl
+    - name: Create GitHub Release
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: >-
+        gh release create
+        "$GITHUB_REF_NAME"
+        --repo "$GITHUB_REPOSITORY"
+        --notes ""
+    - name: Upload artifact signatures to GitHub Release
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      # Upload to GitHub Release using the `gh` CLI.
+      # `dist/` contains the built packages, and the
+      # sigstore-produced signatures and certificates.
+      run: >-
+        gh release upload
+        "$GITHUB_REF_NAME" dist/**
+        --repo "$GITHUB_REPOSITORY"
