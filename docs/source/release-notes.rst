@@ -9,6 +9,12 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
+v1.0.2 (2024-02-02)
+
+--------------------
+
+- Bug fix in function ``ams.interface.parse_addfile``
+
 v1.0.2 (2024-02-01)
 
 --------------------

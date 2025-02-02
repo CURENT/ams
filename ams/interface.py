@@ -336,7 +336,12 @@ def parse_addfile(adsys, amsys, addfile):
 
     # NOTE: Group TimedEvent needs special treatment
     # adjust Toggle and Fault models
-    toggle_df = df_models.get('Toggle') or df_models.get('Toggler')
+    keys_toggle = ['Toggle', 'Toggler']
+    toggle_df = None
+    for key in keys_toggle:
+        if key in df_models:
+            toggle_df = df_models[key]
+            break
     if toggle_df is not None:
         toggle_df['dev'] = toggle_df.apply(replace_dev, axis=1,
                                            mdl='model', dev='dev',
