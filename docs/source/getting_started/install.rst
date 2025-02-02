@@ -71,7 +71,8 @@ development packages. Other packages will be required for interoperability.
 The extra support packages are specified in groups. The following group names
 are supported, with descriptions given below:
 
-- ``dev``: packages to support development such as testing and documentation
+- ``dev``: packages to support development such as testing
+- ``doc``: packages to support documentation building
 
 .. note::
 
@@ -82,15 +83,9 @@ To install packages in the ``dev`` when installing AMS, do:
 
 .. code:: bash
 
-    pip install ltbams[dev]
+    pip install -r requirements-dev.txt
 
-To install all extra packages, do:
-
-.. code:: bash
-
-    pip install ltbams[all]
-
-One can also inspect the ``requirements-extra.txt`` to identify the packages
+One can also inspect the ``requirements-dev.txt`` to identify the packages
 for manual installation.
 
 .. _Develop Install:
@@ -134,14 +129,16 @@ Install dependencies with
 .. code:: bash
 
     mamba install --file requirements.txt
-    mamba install --file requirements-extra.txt
+    mamba install --file requirements-dev.txt
+    mamba install --file requirements-doc.txt
 
 Alternatively, you can install them with ``pip``:
 
 .. code:: bash
 
     pip install -r requirements.txt
-    pip install -r requirements-extra.txt
+    pip install -r requirements-dev.txt
+    pip install -r requirements-doc.txt
 
 Step 3: Install AMS in the development mode using
 
