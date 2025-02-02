@@ -9,12 +9,11 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 Pre-v1.0.0
 ==========
 
-v1.0.2 (2024-01-27)
+v1.0.2 (2024-02-01)
 
 --------------------
 
-- Enhance the GitHub Actions workflow file for the matrix strategy, with special
-  thanks to Daniele Nicolodi (@dnicolodi)
+- Enhance the GitHub Actions workflow file
 - Deprecate andes logger configuration in ``config_logger``
 - Deprecate solver specification in ``demo_ESD1``
 
