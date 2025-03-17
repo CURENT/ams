@@ -6,7 +6,7 @@ Release notes
 
 The APIs before v3.0.0 are in beta and may change without prior notice.
 
-Pre-v1.0.0
+v1.0
 ==========
 
 v1.0.3 (2024-xx-xx)
@@ -40,6 +40,9 @@ v1.0.0 (2024-01-24)
 - Set ANDES requirement to v1.9.3
 - Deprecate method ``get_idx`` and suggest using ``get_all_idxes`` instead
 - Remove module ``benchmarks.py`` and its tests for simplicity
+
+Pre-v1.0
+==========
 
 v0.9.13 (2024-12-05)
 --------------------
