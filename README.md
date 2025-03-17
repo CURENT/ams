@@ -5,6 +5,7 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](https://github.com/CURENT/ams/blob/master/LICENSE)
 ![platforms](https://anaconda.org/conda-forge/ltbams/badges/platforms.svg)
 [![Python Versions](https://img.shields.io/badge/Python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/)
+[![DOI:10.1109/TSTE.2025.3528027](https://zenodo.org/badge/DOI/10.1109/TSTE.2025.3528027.svg)](https://ieeexplore.ieee.org/document/10836855)
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![codecov](https://codecov.io/gh/CURENT/ams/graph/badge.svg?token=RZI5GLLBQH)](https://codecov.io/gh/CURENT/ams)
 ![Repo Size](https://img.shields.io/github/repo-size/CURENT/ams)
