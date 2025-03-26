@@ -9,6 +9,12 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
+v1.0.4 (2024-xx-xx)
+--------------------
+
+- Fix format in release notes
+- Add a badge of GitHub relesase in README
+
 v1.0.3 (2024-03-17)
 --------------------
 

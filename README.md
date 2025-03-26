@@ -9,6 +9,7 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![codecov](https://codecov.io/gh/CURENT/ams/graph/badge.svg?token=RZI5GLLBQH)](https://codecov.io/gh/CURENT/ams)
 ![Repo Size](https://img.shields.io/github/repo-size/CURENT/ams)
+![GitHub Tag](https://img.shields.io/github/v/tag/CURENT/ams)
 [![GitHub last commit (master)](https://img.shields.io/github/last-commit/CURENT/ams/master?label=last%20commit%20to%20master)](https://github.com/CURENT/ams/commits/master/)
 [![GitHub last commit (develop)](https://img.shields.io/github/last-commit/CURENT/ams/develop?label=last%20commit%20to%20develop)](https://github.com/CURENT/ams/commits/develop/)
 [![libraries](https://img.shields.io/librariesio/release/pypi/ltbams)](https://libraries.io/pypi/ltbams)
