@@ -13,7 +13,7 @@ v1.0.4 (2024-xx-xx)
 --------------------
 
 - Fix format in release notes
-- Add a badge of GitHub relesase in README
+- Add badges of GitHub relesase and commits in README
 
 v1.0.3 (2024-03-17)
 --------------------
