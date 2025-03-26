@@ -10,13 +10,11 @@ v1.0
 ==========
 
 v1.0.3 (2024-03-17)
-
 --------------------
 
 - Bug fix in function ``ams.interface.parse_addfile``, released in v1.0.3a1
 
 v1.0.2 (2024-02-01)
-
 --------------------
 
 - Enhance the GitHub Actions workflow file
