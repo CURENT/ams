@@ -485,25 +485,6 @@ class MatProcessor:
             If True, use UMFPACK as the solver. Effective only when (`incremental=True`)
             & (`line` contains a single line or `step` is 1). Default is True.
 
-        Parameters
-        ----------
-        line: int, str, list, optional
-            Lines index for which the PTDF is calculated. It takes both single
-            or multiple line indices. Note that if `line` is given, the PTDF will
-            not be stored in the MParam.
-        no_store : bool, optional
-            If False, the PTDF will be stored into `MatProcessor.PTDF._v`.
-        incremental : bool, optional
-            If True, the sparse PTDF will be calculated in chunks to save memory.
-        step : int, optional
-            Step for incremental calculation.
-        no_tqdm : bool, optional
-            If True, the progress bar will be disabled.
-        permc_spec : str, optional
-            How to permute the columns of the matrix for sparsity preservation. (default: 'COLAMD')
-        use_umfpack : bool, optional
-            If True, use UMFPACK as the solver. (default: True)
-
         Returns
         -------
         PTDF : np.ndarray or scipy.sparse.lil_matrix
