@@ -190,4 +190,4 @@ Some commercial solvers provide academic licenses, such as COPT, GUROBI, CPLEX, 
 [Binder]:                https://mybinder.org/v2/gh/curent/ams/master
 [LTB Repository]:        https://github.com/CURENT
 [benchmark]:             https://github.com/CURENT/demo/tree/master/demo/ams_benchmark
-[paper]:                 https://ieeexplore.ieee.org/document/9169830
+[paper]:                 https://ieeexplore.ieee.org/document/10836855
