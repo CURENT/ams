@@ -9,11 +9,12 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
-v1.0.4 (2024-xx-xx)
+v1.0.4 (2024-04-05)
 --------------------
 
 - Fix format in release notes
 - Add badges of GitHub relesase and commits in README
+- Add a demo to show sensitivity matrices calculation
 
 v1.0.3 (2024-03-17)
 --------------------
