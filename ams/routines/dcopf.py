@@ -19,7 +19,11 @@ class DCOPF(DCPFBase):
     """
     DC optimal power flow (DCOPF).
 
-    The nodal price is calculated as ``pi`` in ``pic``.
+    Notes
+    -----
+    1. The nodal price is calculated as ``pi`` in ``pic``.
+    1. Devices online status of `StaticGen`, `StaticLoad`, and `Shunt` are considered in the connectivity
+    matrices `Cft`, `Cg`, `Cl`, and `Csh`.
 
     References
     ----------
