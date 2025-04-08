@@ -90,6 +90,6 @@ class DCOPF2(DCOPF):
 
     def init(self, **kwargs):
         if self.system.mats.PTDF._v is None:
-            logger.info('PTDF matrix is not built, build it now')
+            logger.warning('PTDF is not available, build it now')
             self.system.mats.build_ptdf()
         return super().init(**kwargs)
