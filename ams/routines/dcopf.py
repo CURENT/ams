@@ -19,7 +19,11 @@ class DCOPF(DCPFBase):
     """
     DC optimal power flow (DCOPF).
 
-    The nodal price is calculated as ``pi`` in ``pic``.
+    Notes
+    -----
+    1. The nodal price is calculated as ``pi`` in ``pic``.
+    1. Devices online status of `StaticGen`, `StaticLoad`, and `Shunt` are considered in the connectivity
+    matrices `Cft`, `Cg`, `Cl`, and `Csh`.
 
     References
     ----------
@@ -153,7 +157,7 @@ class DCOPF(DCPFBase):
         Parameters
         ----------
         kloss : float, optional
-            The loss factor for the conversion. Defaults to 1.2.
+            The loss factor for the conversion. Defaults to 1.0.
         """
         exec_time = self.exec_time
         if self.exec_time == 0 or self.exit_code != 0:
