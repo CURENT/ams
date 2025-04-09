@@ -27,8 +27,8 @@ jobs:
     - shell: bash -el {0}
       name: Install dependencies
       run: |
+        source activate anaconda-client-env
         mamba install --file requirements.txt --file requirements-dev.txt
-        mamba install pytest
         python -m pip install -e .
     - shell: bash -el {0}
       name: Run pip check
