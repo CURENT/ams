@@ -3,7 +3,7 @@ name: Conda Env Tests
 on: [push, pull_request]
 
 jobs:
-  compat:
+  condaenv:
     name: Compatibility Tests for environment.yml
     strategy:
       matrix:
@@ -34,6 +34,6 @@ jobs:
     - shell: bash -el {0}
       name: Activate and test environment
       run: |
-        source activate ams_env || conda activate ams_env
+        source activate ltb || conda activate ltb
         python -m pip install -e .
         ams misc --version
