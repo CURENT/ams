@@ -28,6 +28,7 @@ jobs:
       name: Install dependencies
       run: |
         mamba install --file requirements.txt --file requirements-dev.txt
+        mamba install pytest
         python -m pip install -e .
     - shell: bash -el {0}
       name: Run pip check
