@@ -1,0 +1,39 @@
+name: Conda Env Tests
+
+on: [push, pull_request]
+
+jobs:
+  compat:
+    name: Compatibility Tests for environment.yml
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    runs-on: ${{ matrix.os }}
+
+    if: ${{ github.ref != 'refs/heads/misc' }}
+
+    steps:
+    - uses: actions/checkout@v4
+  
+    - uses: conda-incubator/setup-miniconda@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+        mamba-version: "*"
+        miniforge-version: "latest"
+        channels: conda-forge,defaults
+        channel-priority: true
+        activate-environment: anaconda-client-env
+
+    - shell: bash -el {0}
+      name: Create environment from environment.yml
+      run: |
+        mamba env create -f environment.yml
+
+    - shell: bash -el {0}
+      name: Activate and test environment
+      run: |
+        source activate ams_env || conda activate ams_env
+        python -m pip install -e .
+        ams misc --version

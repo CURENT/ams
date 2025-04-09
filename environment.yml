@@ -1,0 +1,18 @@
+name: ltb
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.9
+  - kvxopt>=1.3.2.1
+  - numpy
+  - scipy
+  - sympy>=1.6
+  - pandas
+  - matplotlib
+  - psutil
+  - openpyxl
+  - andes>=1.9.3
+  - pybind11
+  - cvxpy
+  - pip
