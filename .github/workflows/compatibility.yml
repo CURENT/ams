@@ -1,4 +1,4 @@
-name: Compatibility Tests
+name: Compatibility
 
 on: [push, pull_request]
 
