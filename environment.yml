@@ -15,4 +15,5 @@ dependencies:
   - andes>=1.9.3
   - pybind11
   - cvxpy
+  - openblas
   - pip
