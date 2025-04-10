@@ -25,8 +25,8 @@ class DCOPF2(DCOPF):
     Notes
     -----
     1. This routine requires PTDF matrix.
-    1. Nodal price ``pi`` is calculated with three parts.
-    1. Bus angle ``aBus`` is calculated after solving the problem.
+    2. Nodal price ``pi`` is calculated with three parts.
+    3. Bus angle ``aBus`` is calculated after solving the problem.
     """
 
     def __init__(self, system, config):
