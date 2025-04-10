@@ -9,6 +9,13 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
+v1.0.5 (2024-04-09)
+--------------------
+
+- Include sensitivity matrices calculation demo in documentation
+- Add ``DCOPF2``, a PTDF-based DCOPF routine
+- Fix bug when update routine parameters before it is initialized
+
 v1.0.4 (2024-04-05)
 --------------------
 

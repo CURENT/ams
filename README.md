@@ -9,7 +9,7 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![codecov](https://codecov.io/gh/CURENT/ams/graph/badge.svg?token=RZI5GLLBQH)](https://codecov.io/gh/CURENT/ams)
 
-![GitHub Tag](https://img.shields.io/github/v/tag/CURENT/ams)
+[![GitHub Tag](https://img.shields.io/github/v/tag/CURENT/ams)](https://github.com/CURENT/ams/tags)
 ![GitHub commits since latest release (branch)](https://img.shields.io/github/commits-since/curent/ams/latest/develop)
 [![GitHub last commit (master)](https://img.shields.io/github/last-commit/CURENT/ams/master?label=last%20commit%20to%20master)](https://github.com/CURENT/ams/commits/master/)
 [![GitHub last commit (develop)](https://img.shields.io/github/last-commit/CURENT/ams/develop?label=last%20commit%20to%20develop)](https://github.com/CURENT/ams/commits/develop/)
@@ -124,7 +124,7 @@ pip install git+https://github.com/CURENT/ams.git
 - `cvxpy` is distributed with the open source solvers CLARABEL, OSQP, and SCS, but MIP-capable solvers need separate installation
 - `cvxpy` versions **below 1.5** are incompatible with `numpy` versions **2.0 and above**
 - If the solver `SCIP` encounters an import error caused by a missing `libscip.9.1.dylib`, try reinstalling its Python interface by running `pip install pyscipopt --no-binary scip --force`
-- `kvxopt` is recommended to install via `conda` as sometimes ``pip`` struggles to set the correct path for compiled libraries
+- `kvxopt` is recommended to install via `conda` as sometimes ``pip`` struggles to set the correct path for compiled libraries, more detailes can be found in this closed issue [Bug with dependency kvxopt 1.3.2.0](https://github.com/CURENT/andes/issues/508)
 - Versions **1.0.0** and **1.0.1** are only available on PyPI
 - Version **0.9.9** has known issues and has been yanked from PyPI
 

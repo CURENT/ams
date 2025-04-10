@@ -8,6 +8,8 @@ import re
 
 import numpy as np
 
+from ams.shared import sps  # NOQA
+
 import cvxpy as cp
 
 from ams.utils import pretty_long_message
@@ -68,7 +70,7 @@ class ExpressionCalc(OptzBase):
         msg = f" - Expression <{self.name}>: {self.code}"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         try:
-            local_vars = {'self': self, 'np': np, 'cp': cp}
+            local_vars = {'self': self, 'np': np, 'cp': cp, 'sps': sps}
             self.optz = self._evaluate_expression(self.code, local_vars=local_vars)
         except Exception as e:
             raise Exception(f"Error in evaluating ExpressionCalc <{self.name}>.\n{e}")

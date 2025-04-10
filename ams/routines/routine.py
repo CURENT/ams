@@ -585,6 +585,8 @@ class RoutineBase:
             True to rebuild the system matrices. Set to False to speed up the process
             if no system matrices are changed.
         """
+        if not self.initialized:
+            return self.init()
         t0, _ = elapsed()
         re_finalize = False
         # sanitize input
