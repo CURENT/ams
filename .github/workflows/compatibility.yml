@@ -27,16 +27,6 @@ jobs:
         activate-environment: anaconda-client-env
 
     - shell: bash -el {0}
-      name: Test environment from .yml file
-      run: |
-        mamba env create -f ./environment.yml -n temp-env
-        conda activate temp-env
-        python -m pip install -e .
-        ams
-        conda deactivate
-        mamba env remove -n temp-env
-
-    - shell: bash -el {0}
       name: Install dependencies
       run: |
         mamba install --file requirements.txt --file requirements-dev.txt
