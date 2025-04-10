@@ -9,7 +9,7 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
-v1.0.5 (2024-xx-xx)
+v1.0.5 (2024-04-09)
 --------------------
 
 - Include sensitivity matrices calculation demo in documentation
