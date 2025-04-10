@@ -30,3 +30,12 @@ class TestMATPOWER(unittest.TestCase):
         # In case14.m, the gencost has type 2 cost model, with 3 parameters.
         np.testing.assert_array_less(np.zeros(system14.StaticGen.n),
                                      system14.GCost.c2.v,)
+
+    def test_gencost1(self):
+        """Test when gencost is type 1."""
+        mpcgc1 = self.mpc14.copy()
+        mpcgc1['gencost'] = np.repeat(np.array([[1, 0, 0, 3, 0.01, 40, 0]]), 5, axis=0)
+
+        system = ams.system.System()
+        ams.io.matpower.mpc2system(mpcgc1, system)
+        self.assertEqual(system.GCost.n, 5)
