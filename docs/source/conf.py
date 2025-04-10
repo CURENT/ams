@@ -67,7 +67,7 @@ language = "en"
 
 # General information about the project.
 project = 'AMS'
-copyright = '2023-2024, Jinning Wang'
+copyright = '2023-2025, Jinning Wang'
 author = 'Jinning Wang'
 
 version = ams.__version__
