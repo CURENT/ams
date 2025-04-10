@@ -29,7 +29,7 @@ jobs:
     - shell: bash -el {0}
       name: Test environment from .yml file
       run: |
-        mamba env create -f /path/to/environment.yml -n temp-env
+        mamba env create -f ./environment.yml -n temp-env
         conda activate temp-env
         python -m pip install -e .
         ams
