@@ -109,7 +109,7 @@ class MPBase:
 class ED(RTED, MPBase, SRBase):
     """
     DC-based multi-period economic dispatch (ED).
-    Dispath interval ``config.t`` (:math:``T_{cfg}``) is introduced, 1 [Hour] by default.
+    Dispath interval ``config.t`` ($T_{cfg}$) is introduced, 1 [Hour] by default.
 
     ED extends DCOPF as follows:
 
@@ -120,10 +120,10 @@ class ED(RTED, MPBase, SRBase):
     Notes
     -----
     1. Formulations has been adjusted with interval ``config.t``
-
     2. The tie-line flow is not implemented in this model.
-
     3. ``EDTSlot.ug`` is used instead of ``StaticGen.u`` for generator commitment.
+    4. Following reserves are balanced for each "Area": RegUp reserve ``rbu``,
+       RegDn reserve ``rbd``, and Spinning reserve ``rsr``.
     """
 
     def __init__(self, system, config):
