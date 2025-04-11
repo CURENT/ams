@@ -175,14 +175,6 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.obj.e_str = cost
 
     def dc2ac(self, kloss=1.0, **kwargs):
-        """
-        Convert the RTED results with ACOPF.
-
-        Parameters
-        ----------
-        kloss : float, optional
-            The loss factor for the conversion. Defaults to 1.0.
-        """
         exec_time = self.exec_time
         if self.exec_time == 0 or self.exit_code != 0:
             logger.warning(f'{self.class_name} is not executed successfully, quit conversion.')
