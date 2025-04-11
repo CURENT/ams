@@ -23,11 +23,11 @@ class RTEDBase:
         # --- zone ---
         self.zg = RParam(info='Gen zone',
                          name='zg', tex_name='z_{one,g}',
-                         model='StaticGen', src='zone',
+                         model='StaticGen', src='area',
                          no_parse=True)
         self.zd = RParam(info='Load zone',
                          name='zd', tex_name='z_{one,d}',
-                         model='StaticLoad', src='zone',
+                         model='StaticLoad', src='area',
                          no_parse=True)
         self.gs = ZonalSum(u=self.zg, zone='Area',
                            name='gs', tex_name=r'S_{g}',

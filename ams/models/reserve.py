@@ -10,8 +10,8 @@ from ams.core.model import Model
 class ReserveData(ModelData):
     def __init__(self):
         super().__init__()
-        self.zone = IdxParam(model='Zone',
-                             default=None, info="Zone code",)
+        self.area = IdxParam(model='Area',
+                             default=None, info="Area idx",)
 
 
 class SFR(ReserveData, Model):
