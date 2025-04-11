@@ -127,7 +127,6 @@ class RTED(DCOPF, RTEDBase, SFRBase):
     Notes
     -----
     1. Formulations has been adjusted with interval ``config.t``, 5/60 [Hour] by default.
-
     2. The tie-line flow has not been implemented in formulations.
     """
 
