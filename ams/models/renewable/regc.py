@@ -80,10 +80,6 @@ class REGCV1(REGCData, Model):
         REGCData.__init__(self)
         Model.__init__(self, system, config)
         self.group = 'VSG'
-        self.zone = ExtParam(model='Bus', src='zone',
-                             indexer=self.bus, export=False,
-                             info='Retrieved zone idx',
-                             vtype=str, default=None)
         self.M = NumParam(default=10, tex_name='M',
                           info='Inertia emulation',
                           unit='s',
