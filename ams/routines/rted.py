@@ -181,7 +181,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         Parameters
         ----------
         kloss : float, optional
-            The loss factor for the conversion. Defaults to 1.2.
+            The loss factor for the conversion. Defaults to 1.0.
         """
         exec_time = self.exec_time
         if self.exec_time == 0 or self.exit_code != 0:
