@@ -1,10 +1,10 @@
-name: Compatibility Tests
+name: Compatibility
 
 on: [push, pull_request]
 
 jobs:
   compat:
-    name: Compatibility Tests
+    name: Tests
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -34,11 +34,11 @@ jobs:
         python -m pip install -e .
 
     - shell: bash -el {0}
-      name: Run pip check
+      name: pip check
       run: |
         pip check || true  # Allow pip check to fail without failing the job
 
     - shell: bash -el {0}
-      name: Test with pytest
+      name: pytest
       run: |
         pytest

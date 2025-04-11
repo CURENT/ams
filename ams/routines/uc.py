@@ -70,17 +70,15 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
     Notes
     -----
     1. Formulations has been adjusted with interval ``config.t``
-
-    3. The tie-line flow has not been implemented in formulations.
+    2. The tie-line flow has not been implemented in formulations.
 
     References
     ----------
     1. Huang, Y., Pardalos, P. M., & Zheng, Q. P. (2017). Electrical power unit commitment: deterministic and
-    two-stage stochastic programming models and algorithms. Springer.
-
+       two-stage stochastic programming models and algorithms. Springer.
     2. D. A. Tejada-Arango, S. Lumbreras, P. Sánchez-Martín and A. Ramos, "Which Unit-Commitment Formulation
-    is Best? A Comparison Framework," in IEEE Transactions on Power Systems, vol. 35, no. 4, pp. 2926-2936,
-    July 2020, doi: 10.1109/TPWRS.2019.2962024.
+       is Best? A Comparison Framework," in IEEE Transactions on Power Systems, vol. 35, no. 4, pp. 2926-2936,
+       July 2020, doi: 10.1109/TPWRS.2019.2962024.
     """
 
     def __init__(self, system, config):

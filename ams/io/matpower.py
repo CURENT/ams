@@ -203,6 +203,13 @@ def mpc2system(mpc: dict, system) -> bool:
         gcost_idx = 0
         gen_idx = np.arange(mpc['gen'].shape[0]) + 1
         mpc_cost = mpc['gencost']
+        if mpc_cost[0, 0] == 1:
+            logger.warning("Type 1 gencost detected. "
+                           "This is not supported in AMS. "
+                           "Default type 2 cost parameters will be used as a fallback."
+                           "It is recommended to manually convert the gencost data to type 2.")
+            mpc_cost = np.repeat(np.array([[2, 0, 0, 3, 0, 0, 0]]),
+                                 mpc_cost.shape[0], axis=0)
         for data, gen in zip(mpc_cost, gen_idx):
             # NOTE: only type 2 costs are supported for now
             # type  startup shutdown	n	c2  c1  c0

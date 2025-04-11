@@ -3,10 +3,6 @@
 Examples
 ========
 
-.. _`development demos`: https://github.com/CURENT/ams/tree/master/dev/demo
-
-Refer to the development `development demos`_ for examples prior to preparing this section.
-
 A collection of examples are presented to supplement the tutorial. The
 examples below are identical to the Jupyter Notebook in the ``examples``
 folder of the repository

@@ -35,7 +35,7 @@ _prefix = r" - --------------> | "  # NOQA
 _max_length = 80                    # NOQA
 
 # NOTE: copyright
-copyright_msg = 'Copyright (C) 2023-2024 Jinning Wang'
+copyright_msg = 'Copyright (C) 2023-2025 Jinning Wang'
 
 # NOTE: copied from CVXPY documentation, last checked on 2024/10/30, v1.5
 mip_solvers = ['CBC', 'COPT', 'GLPK_MI', 'CPLEX', 'GUROBI',
