@@ -120,8 +120,8 @@ class PVModel(Model):
                               err_tol=r"\epsilon_{tol}"
                               )
 
-        self.zone = ExtParam(model='Bus', src='zone', indexer=self.bus, export=False,
-                             info='Retrieved zone idx', vtype=str, default=None,
+        self.area = ExtParam(model='Bus', src='area', indexer=self.bus, export=False,
+                             info='Retrieved area idx', vtype=str, default=None,
                              )
 
         self.ud = Algeb(info='commitment decision',
