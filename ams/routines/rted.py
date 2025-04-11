@@ -112,8 +112,6 @@ class RTED(DCOPF, RTEDBase, SFRBase):
     DC-based real-time economic dispatch (RTED).
     RTED extends DCOPF with:
 
-    - Mapping dicts to interface with ANDES
-    - Function ``dc2ac`` to do the AC conversion
     - Vars for SFR reserve: ``pru`` and ``prd``
     - Param for linear SFR cost: ``cru`` and ``crd``
     - Param for SFR requirement: ``du`` and ``dd``
