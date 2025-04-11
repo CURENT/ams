@@ -264,3 +264,30 @@ class TestCaseInit(unittest.TestCase):
 
         self.assertEqual(ss.EDES.exit_code, 0, "Exit code is not 0.")
         self.assertEqual(ss.UCES.exit_code, 0, "Exit code is not 0.")
+
+
+class TestCase14(unittest.TestCase):
+    """
+    Test parameter correction using case14.m
+    """
+
+    def test_parameter_correction(self):
+        """
+        Test if the parameter correction works.
+        """
+        mpc = ams.io.matpower.m2mpc(get_case("matpower/case14.m"))
+        mpc['branch'][:, 11] = 0.0
+        mpc['branch'][:, 12] = 0.0
+
+        ss = ams.system.System()
+        ams.io.matpower.mpc2system(mpc, ss)
+        ss.setup()
+
+        # line rate
+        np.testing.assert_array_less(0.0, ss.Line.rate_a.v)
+        np.testing.assert_array_less(0.0, ss.Line.rate_b.v)
+        np.testing.assert_array_less(0.0, ss.Line.rate_c.v)
+
+        # line angle difference
+        np.testing.assert_array_less(0.0, ss.Line.amax.v)
+        np.testing.assert_array_less(ss.Line.amin.v, 0.0)
