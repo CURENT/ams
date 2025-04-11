@@ -112,8 +112,6 @@ class RTED(DCOPF, RTEDBase, SFRBase):
     DC-based real-time economic dispatch (RTED).
     RTED extends DCOPF with:
 
-    - Mapping dicts to interface with ANDES
-    - Function ``dc2ac`` to do the AC conversion
     - Vars for SFR reserve: ``pru`` and ``prd``
     - Param for linear SFR cost: ``cru`` and ``crd``
     - Param for SFR requirement: ``du`` and ``dd``
@@ -127,8 +125,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
     Notes
     -----
     1. Formulations has been adjusted with interval ``config.t``, 5/60 [Hour] by default.
-
-    2. The tie-line flow has not been implemented in formulations.
+    2. The tie-line flow related constraints are ommited in this formulation.
     """
 
     def __init__(self, system, config):
@@ -176,14 +173,6 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.obj.e_str = cost
 
     def dc2ac(self, kloss=1.0, **kwargs):
-        """
-        Convert the RTED results with ACOPF.
-
-        Parameters
-        ----------
-        kloss : float, optional
-            The loss factor for the conversion. Defaults to 1.2.
-        """
         exec_time = self.exec_time
         if self.exec_time == 0 or self.exit_code != 0:
             logger.warning(f'{self.class_name} is not executed successfully, quit conversion.')

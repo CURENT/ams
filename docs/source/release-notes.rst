@@ -9,6 +9,11 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
+v1.0.7 (2024-xx-xx)
+--------------------
+
+- Address several wording issues in the documentation
+
 v1.0.6 (2024-04-10)
 --------------------
 
