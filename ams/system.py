@@ -422,6 +422,13 @@ class System(andes_System):
             msg = f"Zero line rates detacted in {adjusted_rate}, "
             msg += f"adjusted to {default_rate}."
             logger.info(msg)
+        # Line max angle difference
+        if np.any(self.Line.amax.v == 0):
+            self.Line.amax.v[self.Line.amax.v == 0] = 2 * np.pi
+            logger.info("Zero line amax detected, adjusted to 2*pi.")
+        if np.any(self.Line.amin.v == 0):
+            self.Line.amin.v[self.Line.amin.v == 0] = -2 * np.pi
+            logger.info("Zero line amin detected, adjusted to -2*pi.")
         # === no device addition or removal after this point ===
         self.calc_pu_coeff()   # calculate parameters in system per units
 

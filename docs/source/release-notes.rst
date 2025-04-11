@@ -9,10 +9,11 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
-v1.0.6 (2024-xx-xx)
+v1.0.6 (2024-04-10)
 --------------------
 
 - Enhance handling of Type 1 gencost: Automatically fallback to Type 2 gencost
+- Add parameter correction for zero line angle difference
 
 v1.0.5 (2024-04-09)
 --------------------
