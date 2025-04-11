@@ -20,12 +20,12 @@ class RTEDBase:
     """
 
     def __init__(self):
-        # --- zone ---
-        self.zg = RParam(info='Gen zone',
+        # --- area ---
+        self.zg = RParam(info='Gen area',
                          name='zg', tex_name='z_{one,g}',
                          model='StaticGen', src='area',
                          no_parse=True)
-        self.zd = RParam(info='Load zone',
+        self.zd = RParam(info='Load area',
                          name='zd', tex_name='z_{one,d}',
                          model='StaticLoad', src='area',
                          no_parse=True)
