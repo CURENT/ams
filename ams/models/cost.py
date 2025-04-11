@@ -100,6 +100,7 @@ class SRCost(ModelData, Model):
     def __init__(self, system, config):
         ModelData.__init__(self)
         Model.__init__(self, system, config)
+        self.group = 'Cost'
         self.gen = IdxParam(info="static generator index",
                             model='StaticGen',
                             mandatory=True,)
@@ -116,6 +117,7 @@ class NSRCost(ModelData, Model):
     def __init__(self, system, config):
         ModelData.__init__(self)
         Model.__init__(self, system, config)
+        self.group = 'Cost'
         self.gen = IdxParam(info="static generator index",
                             model='StaticGen',
                             mandatory=True,)
