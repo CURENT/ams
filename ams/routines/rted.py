@@ -29,13 +29,13 @@ class RTEDBase:
                          name='zd', tex_name='z_{one,d}',
                          model='StaticLoad', src='zone',
                          no_parse=True)
-        self.gs = ZonalSum(u=self.zg, zone='Zone',
+        self.gs = ZonalSum(u=self.zg, zone='Area',
                            name='gs', tex_name=r'S_{g}',
-                           info='Sum Gen vars vector in shape of zone',
+                           info='Sum Gen vars vector in shape of area',
                            no_parse=True, sparse=True)
-        self.ds = ZonalSum(u=self.zd, zone='Zone',
+        self.ds = ZonalSum(u=self.zd, zone='Area',
                            name='ds', tex_name=r'S_{d}',
-                           info='Sum pd vector in shape of zone',
+                           info='Sum pd vector in shape of area',
                            no_parse=True,)
         self.pdz = NumOpDual(u=self.ds, u2=self.pd,
                              fun=np.multiply,
@@ -110,6 +110,7 @@ class SFRBase:
 class RTED(DCOPF, RTEDBase, SFRBase):
     """
     DC-based real-time economic dispatch (RTED).
+
     RTED extends DCOPF with:
 
     - Vars for SFR reserve: ``pru`` and ``prd``
@@ -126,6 +127,8 @@ class RTED(DCOPF, RTEDBase, SFRBase):
     -----
     1. Formulations has been adjusted with interval ``config.t``, 5/60 [Hour] by default.
     2. The tie-line flow related constraints are ommited in this formulation.
+    3. The power balance is solved for the entire system.
+    4. The SFR is solved for each area.
     """
 
     def __init__(self, system, config):
@@ -456,9 +459,9 @@ class VISBase:
                      model='VSG', src='D',
                      nonneg=True,)
 
-        self.gvsg = ZonalSum(u=self.zvsg, zone='Zone',
+        self.gvsg = ZonalSum(u=self.zvsg, zone='Area',
                              name='gvsg', tex_name=r'S_{g}',
-                             info='Sum VSG vars vector in shape of zone',
+                             info='Sum VSG vars vector in shape of area',
                              no_parse=True)
         self.Mub = Constraint(name='Mub', is_eq=False,
                               info='M upper bound',

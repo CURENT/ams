@@ -13,6 +13,7 @@ v1.0.7 (2024-xx-xx)
 --------------------
 
 - Address several wording issues in the documentation
+- Switch to ``Area`` from ``Zone`` for zonal calculation
 
 v1.0.6 (2024-04-10)
 --------------------
