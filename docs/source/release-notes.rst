@@ -15,6 +15,7 @@ v1.0.7 (2024-xx-xx)
 - Address several wording issues in the documentation
 - Switch to ``Area`` from ``Zone`` for zonal calculation
 - Extend common parameters in groups ``StaticGen`` and ``StaticLoad`` with ``area``
+- Set case ``pjm5bus_demo.xlsx`` as a all-inclusive case
 
 v1.0.6 (2024-04-10)
 --------------------
