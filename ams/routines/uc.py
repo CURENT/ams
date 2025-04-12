@@ -288,7 +288,7 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         gen['idx'] = self.system.PV.idx.v
         gen['pmax'] = self.system.PV.get(src='pmax', attr='v', idx=gen['idx'])
         gen['bus'] = self.system.PV.get(src='bus', attr='v', idx=gen['idx'])
-        gen['zone'] = self.system.PV.get(src='zone', attr='v', idx=gen['idx'])
+        gen['area'] = self.system.PV.get(src='area', attr='v', idx=gen['idx'])
         gcost_idx = self.system.GCost.find_idx(keys='gen', values=gen['idx'])
         gen['c2'] = self.system.GCost.get(src='c2', attr='v', idx=gcost_idx)
         gen['c1'] = self.system.GCost.get(src='c1', attr='v', idx=gcost_idx)

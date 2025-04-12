@@ -193,7 +193,7 @@ class TestEDES(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.ss = ams.load(ams.get_case("5bus/pjm5bus_uced_esd1.xlsx"),
+        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.xlsx"),
                            setup=True, default_config=True, no_output=True)
         # decrease load first
         self.ss.PQ.set(src='p0', attr='v', idx=['PQ_1', 'PQ_2'], value=[0.3, 0.3])
@@ -245,14 +245,14 @@ class TestEDES(unittest.TestCase):
         """
         Test line tripping.
         """
-        self.ss.Line.set(src='u', attr='v', idx=3, value=0)
+        self.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
         self.ss.EDES.run()
         self.assertTrue(self.ss.EDES.converged, "EDES did not converge!")
-        plf_l3 = self.ss.EDES.get(src='plf', attr='v', idx=3)
+        plf_l3 = self.ss.EDES.get(src='plf', attr='v', idx='Line_3')
         np.testing.assert_almost_equal(np.zeros_like(plf_l3),
                                        plf_l3, decimal=6)
 
-        self.ss.Line.alter(src='u', idx=3, value=1)
+        self.ss.Line.alter(src='u', idx='Line_3', value=1)
 
     @skip_unittest_without_MISOCP
     def test_set_load(self):

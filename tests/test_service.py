@@ -63,9 +63,9 @@ class TestService(unittest.TestCase):
         """
         Test `ZonalSum`.
         """
-        ds = ZonalSum(u=self.ss.RTED.zd, zone="Zone",
+        ds = ZonalSum(u=self.ss.RTED.zd, zone="Area",
                       name="ds", tex_name=r"S_{d}",
-                      info="Sum pl vector in shape of zone",)
+                      info="Sum pl vector in shape of area",)
         ds.rtn = self.ss.RTED
         # check if the shape is correct
         np.testing.assert_array_equal(ds.v.shape, (self.nR, self.nD))

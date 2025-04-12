@@ -716,7 +716,7 @@ class MatProcessor:
     def build_otdf(self, line=None):
         """
         Build the Outrage Transfer Distribution Factor (OTDF) matrix for line
-        k outage: :math:`OTDF_k = PTDF + LODF[:, k] @ PTDF[k, ]`.
+        k outage: $OTDF_k = PTDF + LODF[:, k] @ PTDF[k, ]$.
 
         OTDF_k[m, n] means the increased line flow on line `m` when there is
         1 p.u. power injection at bus `n` when line `k` is outage.
