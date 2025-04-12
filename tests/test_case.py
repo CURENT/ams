@@ -34,12 +34,12 @@ class Test5Bus(unittest.TestCase):
         nArea = 3
         nZone = 5
         # --- test device counts
-        self.assertEqual(self.ss.Bus.n, 5)
+        self.assertEqual(self.ss.Bus.n, nBus)
         self.assertEqual(self.ss.PQ.n, nPQ)
         self.assertEqual(self.ss.PV.n, 4)
         self.assertEqual(self.ss.Slack.n, 1)
         self.assertEqual(self.ss.Line.n, 7)
-        self.assertEqual(self.ss.Zone.n, 5)
+        self.assertEqual(self.ss.Zone.n, nZone)
         self.assertEqual(self.ss.Area.n, nArea)
         self.assertEqual(self.ss.SFR.n, nArea)
         self.assertEqual(self.ss.SR.n, nArea)
