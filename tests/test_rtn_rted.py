@@ -203,7 +203,7 @@ class TestRTEDES(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.ss = ams.load(ams.get_case("5bus/pjm5bus_uced_esd1.xlsx"),
+        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.xlsx"),
                            setup=True, default_config=True, no_output=True)
         # decrease load first
         self.ss.PQ.set(src='p0', attr='v', idx=['PQ_1', 'PQ_2'], value=[0.3, 0.3])
@@ -237,16 +237,16 @@ class TestRTEDES(unittest.TestCase):
         """
         Test line tripping.
         """
-        self.ss.Line.set(src='u', attr='v', idx=3, value=0)
+        self.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
 
         self.ss.RTEDES.update()
         self.ss.RTEDES.run()
         self.assertTrue(self.ss.RTEDES.converged, "RTEDES did not converge under line trip!")
-        self.assertAlmostEqual(self.ss.RTEDES.get(src='plf', attr='v', idx=3),
+        self.assertAlmostEqual(self.ss.RTEDES.get(src='plf', attr='v', idx='Line_3'),
                                0, places=6,
                                msg="Line trip does not take effect!")
 
-        self.ss.Line.alter(src='u', idx=3, value=1)
+        self.ss.Line.alter(src='u', idx='Line_3', value=1)
 
     @skip_unittest_without_MISOCP
     def test_set_load(self):
