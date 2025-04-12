@@ -14,7 +14,7 @@ class Test5Bus(unittest.TestCase):
 
     def setUp(self) -> None:
         self.ss = ams.main.load(
-            get_case("5bus/pjm5bus_uced.xlsx"),
+            get_case("5bus/pjm5bus_demo.xlsx"),
             default_config=True,
             no_output=True,
         )
@@ -28,25 +28,32 @@ class Test5Bus(unittest.TestCase):
         self.assertTrue("Bus" in self.ss.models)
         self.assertTrue("PQ" in self.ss.models)
 
+        nBus = 5
+        nGen = 5
+        nPQ = 3
+        nArea = 3
+        nZone = 5
         # --- test device counts
         self.assertEqual(self.ss.Bus.n, 5)
-        self.assertEqual(self.ss.PQ.n, 3)
-        self.assertEqual(self.ss.PV.n, 3)
+        self.assertEqual(self.ss.PQ.n, nPQ)
+        self.assertEqual(self.ss.PV.n, 4)
         self.assertEqual(self.ss.Slack.n, 1)
         self.assertEqual(self.ss.Line.n, 7)
-        self.assertEqual(self.ss.Zone.n, 2)
-        self.assertEqual(self.ss.SFR.n, 2)
-        self.assertEqual(self.ss.SR.n, 2)
-        self.assertEqual(self.ss.NSR.n, 2)
-        self.assertEqual(self.ss.GCost.n, 4)
-        self.assertEqual(self.ss.SFRCost.n, 4)
-        self.assertEqual(self.ss.SRCost.n, 4)
-        self.assertEqual(self.ss.NSRCost.n, 4)
-        self.assertEqual(self.ss.EDTSlot.n, 24)
-        self.assertEqual(self.ss.UCTSlot.n, 24)
+        self.assertEqual(self.ss.Zone.n, 5)
+        self.assertEqual(self.ss.Area.n, nArea)
+        self.assertEqual(self.ss.SFR.n, nArea)
+        self.assertEqual(self.ss.SR.n, nArea)
+        self.assertEqual(self.ss.NSR.n, nArea)
+        self.assertEqual(self.ss.GCost.n, nGen)
+        self.assertEqual(self.ss.DCost.n, nPQ)
+        self.assertEqual(self.ss.SFRCost.n, nGen)
+        self.assertEqual(self.ss.SRCost.n, nGen)
+        self.assertEqual(self.ss.NSRCost.n, nGen)
+        self.assertEqual(self.ss.EDTSlot.n, 5)
+        self.assertEqual(self.ss.UCTSlot.n, 5)
 
         # test idx values
-        self.assertSequenceEqual(self.ss.Bus.idx.v, ['Bus_1', 'Bus_2', 'Bus_3', 'Bus_4', 'Bus_5'])
+        self.assertSequenceEqual(self.ss.Bus.idx.v, [0, 1, 2, 3, 4])
         self.assertSequenceEqual(self.ss.Area.idx.v, [1, 2, 3])
 
         # test cache refreshing
@@ -87,9 +94,9 @@ class Test5Bus(unittest.TestCase):
         """
 
         self.ss.GCost.alter("c1", ['GCost_1', 'GCost_2'], [1500., 3100.])
-        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1])
+        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1, 0.01])
         self.ss.ACOPF.run()
-        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1])
+        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1, 0.01])
 
     def test_alter_param_after_routine(self):
         """
@@ -98,9 +105,9 @@ class Test5Bus(unittest.TestCase):
 
         self.ss.ACOPF.run()
         self.ss.GCost.alter("c1", ['GCost_1', 'GCost_2'], [1500., 3100.])
-        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1])
+        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1, 0.01])
         self.ss.ACOPF.run()
-        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1])
+        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1, 0.01])
 
     def test_multiple_disconnected_line(self):
         """
