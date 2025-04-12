@@ -132,7 +132,7 @@ class PFlow(RoutineBase):
         self.exec_time = float(s.split(" ")[0])
 
         self.unpack()
-        return True
+        return self.converged
 
     def _post_solve(self):
         """
