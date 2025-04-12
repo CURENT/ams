@@ -33,6 +33,7 @@ class Test5Bus(unittest.TestCase):
         nPQ = 3
         nArea = 3
         nZone = 5
+        nDT = 24
         # --- test device counts
         self.assertEqual(self.ss.Bus.n, nBus)
         self.assertEqual(self.ss.PQ.n, nPQ)
@@ -49,8 +50,8 @@ class Test5Bus(unittest.TestCase):
         self.assertEqual(self.ss.SFRCost.n, nGen)
         self.assertEqual(self.ss.SRCost.n, nGen)
         self.assertEqual(self.ss.NSRCost.n, nGen)
-        self.assertEqual(self.ss.EDTSlot.n, 5)
-        self.assertEqual(self.ss.UCTSlot.n, 5)
+        self.assertEqual(self.ss.EDTSlot.n, nDT)
+        self.assertEqual(self.ss.UCTSlot.n, nDT)
 
         # test idx values
         self.assertSequenceEqual(self.ss.Bus.idx.v, [0, 1, 2, 3, 4])
