@@ -25,6 +25,8 @@ v1.0.7 (2024-04-14)
 - Include module ``MatProcessor`` in the API documentation
 - Improve Line parameters correction in ``System.setup()``
 - Make func ``interface._to_andes_pflow`` public
+- Discard ``sync_adsys`` step in func ``to_andes_pflow`` to fix mistake in
+  parameters conversion
 - Update case files
 
 v1.0.6 (2024-04-10)
