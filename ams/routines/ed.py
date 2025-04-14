@@ -109,8 +109,7 @@ class MPBase:
 class ED(RTED, MPBase, SRBase):
     """
     DC-based multi-period economic dispatch (ED).
-    Dispath interval ``config.t`` ($T_{cfg}$) is introduced, 1 [Hour] by default.
-
+    Dispatch interval ``config.t`` ($T_{cfg}$) is introduced, 1 [Hour] by default.
     ED extends DCOPF as follows:
 
     - Vars ``pg``, ``pru``, ``prd`` are extended to 2D
