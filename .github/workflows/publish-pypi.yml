@@ -28,7 +28,7 @@ jobs:
       name: Try installing optional packages
       run: |
         # Try installing one of the optional packages
-        pip install gurobipy || pip install coptpy || pip install xpress || pip install cplex || echo "All optional packages failed to install. Skipping."
+        pip install Mosek || pip install gurobipy || pip install coptpy || pip install xpress || pip install cplex || echo "All optional packages failed to install. Skipping."
     - shell: bash -el {0}
       name: Run pip check
       run: |
