@@ -31,3 +31,34 @@ class TestCodegen(unittest.TestCase):
             docum._service_doc(max_width=78, export=export)
             docum._param_doc(max_width=78, export=export)
             docum.config.doc(max_width=78, export=export)
+
+
+class TestParamCorrection(unittest.TestCase):
+    """
+    Test parameter correction.
+    """
+
+    def setUp(self) -> None:
+        """
+        Test setup.
+        """
+        self.ss = ams.load(ams.get_case('matpower/case14.m'),
+                           setup=False, no_output=True, default_config=True,)
+
+    def test_line_correction(self):
+        """
+        Test line correction.
+        """
+        self.ss.Line.rate_a.v[5] = 0.0
+        self.ss.Line.rate_b.v[6] = 0.0
+        self.ss.Line.rate_c.v[7] = 0.0
+        self.ss.Line.amax.v[8] = 0.0
+        self.ss.Line.amin.v[9] = 0.0
+
+        self.ss.setup()
+
+        self.assertIsNot(self.ss.Line.rate_a.v[5], 0.0)
+        self.assertIsNot(self.ss.Line.rate_b.v[6], 0.0)
+        self.assertIsNot(self.ss.Line.rate_c.v[7], 0.0)
+        self.assertIsNot(self.ss.Line.amax.v[8], 0.0)
+        self.assertIsNot(self.ss.Line.amin.v[9], 0.0)
