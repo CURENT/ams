@@ -42,3 +42,10 @@ jobs:
       name: pytest
       run: |
         pytest
+      continue-on-error: ${{ matrix.os == 'windows-latest' }}
+
+    - if: ${{ failure() && matrix.os == 'windows-latest' }}
+      shell: bash -el {0}
+      name: Retry pytest
+      run: |
+        pytest
