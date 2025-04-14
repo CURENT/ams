@@ -17,6 +17,7 @@ v1.0.7 (2024-xx-xx)
 - Extend common parameters in groups ``StaticGen`` and ``StaticLoad`` with ``area``
 - Set case ``pjm5bus_demo.xlsx`` as a all-inclusive case
 - Include module ``MatProcessor`` in the API documentation
+- Improve Line parameters correction in ``System.setup()``
 
 v1.0.6 (2024-04-10)
 --------------------
