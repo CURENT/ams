@@ -18,6 +18,7 @@ v1.0.7 (2024-xx-xx)
 - Set case ``pjm5bus_demo.xlsx`` as a all-inclusive case
 - Include module ``MatProcessor`` in the API documentation
 - Improve Line parameters correction in ``System.setup()``
+- Make func ``interface._to_andes_pflow`` public
 
 v1.0.6 (2024-04-10)
 --------------------
