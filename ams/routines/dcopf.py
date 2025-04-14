@@ -152,7 +152,7 @@ class DCOPF(DCPFBase):
 
     def dc2ac(self, kloss=1.0, **kwargs):
         """
-        Convert the RTED results with ACOPF.
+        Convert the results using ACOPF.
 
         Parameters
         ----------

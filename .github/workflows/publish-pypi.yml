@@ -18,32 +18,38 @@ jobs:
         channels: conda-forge,defaults
         channel-priority: true
         activate-environment: anaconda-client-env
+
     - shell: bash -el {0}
       name: Install dependencies
       run: |
         mamba install -y nbmake pytest-xdist line_profiler  # add'l packages for notebook tests.
         mamba install --file requirements.txt --file requirements-dev.txt
         python -m pip install -e .
+
     - shell: bash -el {0}
       name: Try installing optional packages
       run: |
         # Try installing one of the optional packages
-        pip install gurobipy || pip install coptpy || pip install xpress || pip install cplex || echo "All optional packages failed to install. Skipping."
+        pip install PySCIPOpt || pip install xpress || pip install gurobipy || pip install cplex || echo "All optional packages failed to install. Skipping."
+
     - shell: bash -el {0}
       name: Run pip check
       run: |
         if ! pip check; then
           echo "pip check failed, but the job will continue."
         fi
+
     - shell: bash -el {0}
       name: Lint with flake8
       if: github.event_name == 'pull_request'
       run: |
         flake8 .
+
     - shell: bash -el {0}
       name: Test with pytest
       run: |
         pytest
+
     - shell: bash -el {0}
       name: Test notebooks.
       run: |

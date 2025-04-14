@@ -410,25 +410,18 @@ class System(andes_System):
 
         # --- model parameters range check ---
         # TODO: there might be other parameters check?
-        # Line rate
-        adjust_rate = []
-        default_rate = 999
-        for rate in [self.Line.rate_a, self.Line.rate_b, self.Line.rate_c]:
-            if np.any(rate.v == 0):
-                adjust_rate.append(rate.name)
-                rate.v[rate.v == 0] = default_rate
-        if adjust_rate:
-            adjusted_rate = ', '.join(adjust_rate)
-            msg = f"Zero line rates detacted in {adjusted_rate}, "
-            msg += f"adjusted to {default_rate}."
+        adjusted_params = []
+        param_to_check = ['rate_a', 'rate_b', 'rate_c', 'amax', 'amin']
+        for pname in param_to_check:
+            param = self.Line.params[pname]
+            if np.any(param.v == 0):
+                adjusted_params.append(pname)
+                param.v[param.v == 0] = param.default
+        if adjusted_params:
+            adjusted_params_str = ', '.join(adjusted_params)
+            msg = f"Zero Line parameters detected, adjusted to default values: {adjusted_params_str}."
             logger.info(msg)
-        # Line max angle difference
-        if np.any(self.Line.amax.v == 0):
-            self.Line.amax.v[self.Line.amax.v == 0] = 2 * np.pi
-            logger.info("Zero line amax detected, adjusted to 2*pi.")
-        if np.any(self.Line.amin.v == 0):
-            self.Line.amin.v[self.Line.amin.v == 0] = -2 * np.pi
-            logger.info("Zero line amin detected, adjusted to -2*pi.")
+
         # === no device addition or removal after this point ===
         self.calc_pu_coeff()   # calculate parameters in system per units
 

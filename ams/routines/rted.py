@@ -20,22 +20,22 @@ class RTEDBase:
     """
 
     def __init__(self):
-        # --- zone ---
-        self.zg = RParam(info='Gen zone',
+        # --- area ---
+        self.zg = RParam(info='Gen area',
                          name='zg', tex_name='z_{one,g}',
-                         model='StaticGen', src='zone',
+                         model='StaticGen', src='area',
                          no_parse=True)
-        self.zd = RParam(info='Load zone',
+        self.zd = RParam(info='Load area',
                          name='zd', tex_name='z_{one,d}',
-                         model='StaticLoad', src='zone',
+                         model='StaticLoad', src='area',
                          no_parse=True)
-        self.gs = ZonalSum(u=self.zg, zone='Zone',
+        self.gs = ZonalSum(u=self.zg, zone='Area',
                            name='gs', tex_name=r'S_{g}',
-                           info='Sum Gen vars vector in shape of zone',
+                           info='Sum Gen vars vector in shape of area',
                            no_parse=True, sparse=True)
-        self.ds = ZonalSum(u=self.zd, zone='Zone',
+        self.ds = ZonalSum(u=self.zd, zone='Area',
                            name='ds', tex_name=r'S_{d}',
-                           info='Sum pd vector in shape of zone',
+                           info='Sum pd vector in shape of area',
                            no_parse=True,)
         self.pdz = NumOpDual(u=self.ds, u2=self.pd,
                              fun=np.multiply,
@@ -110,10 +110,9 @@ class SFRBase:
 class RTED(DCOPF, RTEDBase, SFRBase):
     """
     DC-based real-time economic dispatch (RTED).
+
     RTED extends DCOPF with:
 
-    - Mapping dicts to interface with ANDES
-    - Function ``dc2ac`` to do the AC conversion
     - Vars for SFR reserve: ``pru`` and ``prd``
     - Param for linear SFR cost: ``cru`` and ``crd``
     - Param for SFR requirement: ``du`` and ``dd``
@@ -127,8 +126,9 @@ class RTED(DCOPF, RTEDBase, SFRBase):
     Notes
     -----
     1. Formulations has been adjusted with interval ``config.t``, 5/60 [Hour] by default.
-
-    2. The tie-line flow has not been implemented in formulations.
+    2. The tie-line flow related constraints are ommited in this formulation.
+    3. The power balance is solved for the entire system.
+    4. The SFR is solved for each area.
     """
 
     def __init__(self, system, config):
@@ -176,14 +176,6 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         self.obj.e_str = cost
 
     def dc2ac(self, kloss=1.0, **kwargs):
-        """
-        Convert the RTED results with ACOPF.
-
-        Parameters
-        ----------
-        kloss : float, optional
-            The loss factor for the conversion. Defaults to 1.2.
-        """
         exec_time = self.exec_time
         if self.exec_time == 0 or self.exit_code != 0:
             logger.warning(f'{self.class_name} is not executed successfully, quit conversion.')
@@ -467,9 +459,9 @@ class VISBase:
                      model='VSG', src='D',
                      nonneg=True,)
 
-        self.gvsg = ZonalSum(u=self.zvsg, zone='Zone',
+        self.gvsg = ZonalSum(u=self.zvsg, zone='Area',
                              name='gvsg', tex_name=r'S_{g}',
-                             info='Sum VSG vars vector in shape of zone',
+                             info='Sum VSG vars vector in shape of area',
                              no_parse=True)
         self.Mub = Constraint(name='Mub', is_eq=False,
                               info='M upper bound',
@@ -494,12 +486,11 @@ class RTEDVIS(RTED, VISBase):
     This class implements real-time economic dispatch with virtual inertia scheduling.
     Please ensure that the parameters `dvm` and `dvd` are set according to the system base.
 
-    Reference:
-
-    [1] B. She, F. Li, H. Cui, J. Wang, Q. Zhang and R. Bo, "Virtual
-    Inertia Scheduling (VIS) for Real-time Economic Dispatch of
-    IBRs-penetrated Power Systems," in IEEE Transactions on
-    Sustainable Energy, doi: 10.1109/TSTE.2023.3319307.
+    References
+    -----------------
+    1. B. She, F. Li, H. Cui, J. Wang, Q. Zhang and R. Bo, "Virtual Inertia Scheduling (VIS) for
+       Real-Time Economic Dispatch of IBR-Penetrated Power Systems," in IEEE Transactions on
+       Sustainable Energy, vol. 15, no. 2, pp. 938-951, April 2024, doi: 10.1109/TSTE.2023.3319307.
     """
 
     def __init__(self, system, config):

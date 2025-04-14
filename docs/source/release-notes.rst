@@ -9,6 +9,18 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
+v1.0.7 (2024-04-14)
+--------------------
+
+- Address several wording issues in the documentation
+- Switch to ``Area`` from ``Zone`` for zonal calculation
+- Extend common parameters in groups ``StaticGen`` and ``StaticLoad`` with ``area``
+- Set case ``pjm5bus_demo.xlsx`` as a all-inclusive case
+- Include module ``MatProcessor`` in the API documentation
+- Improve Line parameters correction in ``System.setup()``
+- Make func ``interface._to_andes_pflow`` public
+- Update case files
+
 v1.0.6 (2024-04-10)
 --------------------
 
