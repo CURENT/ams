@@ -56,6 +56,8 @@ def sync_adsys(amsys, adsys):
     """
     Sync parameters value of PFlow models between AMS and ANDES systems.
 
+    This function should be used carefully when per unit conversion is involved.
+
     Parameters
     ----------
     amsys : AMS.system.System
@@ -89,18 +91,18 @@ def to_andes_pflow(system, no_output=False, default_config=True, **kwargs):
     Helper function to convert the AMS system to an ANDES system with only
     power flow models.
 
-    The returned ANDES system is not and should not be setup.
+    The returned ANDES system is ***not*** setup.
 
     Parameters
     ----------
-    system : System
+    system: System
         The AMS system to be converted to ANDES format.
-    no_output : bool, optional
+    no_output: bool, optional
         To ANDES system.
-    default_config : bool, optional
+    default_config: bool, optional
         To ANDES system.
-    kwargs :
-        Additional arguments to be passed to andes.system.System().
+    kwargs:
+        Additional arguments to be passed to ``andes.system.System()``.
     """
 
     adsys = andes_System(no_outpu=no_output, default_config=default_config, **kwargs)
@@ -113,8 +115,6 @@ def to_andes_pflow(system, no_output=False, default_config=True, **kwargs):
         mdl.cache.refresh("df_in")  # refresh cache
         for row in mdl.cache.df_in[mdl_cols].to_dict(orient='records'):
             adsys.add(mdl_name, row)
-
-    sync_adsys(amsys=system, adsys=adsys)
 
     return adsys
 
