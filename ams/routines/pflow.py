@@ -29,7 +29,7 @@ class PFlow(RoutineBase):
     References
     ----------
     1. M. L. Crow, Computational methods for electric power systems. 2015.
-    2. ANDES Documentation - Simulation and Plot. [Online]. Available:
+    2. ANDES Documentation - Simulation and Plot.
        https://docs.andes.app/en/latest/_examples/ex1.html
     """
 
