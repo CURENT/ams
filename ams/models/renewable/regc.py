@@ -2,7 +2,7 @@
 RenGen scheduling model.
 """
 
-from andes.core.param import NumParam, IdxParam, ExtParam
+from andes.core.param import NumParam, IdxParam
 from andes.core.model import ModelData
 from ams.core.model import Model
 

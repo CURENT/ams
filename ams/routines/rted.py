@@ -486,12 +486,11 @@ class RTEDVIS(RTED, VISBase):
     This class implements real-time economic dispatch with virtual inertia scheduling.
     Please ensure that the parameters `dvm` and `dvd` are set according to the system base.
 
-    Reference:
-
-    [1] B. She, F. Li, H. Cui, J. Wang, Q. Zhang and R. Bo, "Virtual
-    Inertia Scheduling (VIS) for Real-time Economic Dispatch of
-    IBRs-penetrated Power Systems," in IEEE Transactions on
-    Sustainable Energy, doi: 10.1109/TSTE.2023.3319307.
+    References
+    -----------------
+    1. B. She, F. Li, H. Cui, J. Wang, Q. Zhang and R. Bo, "Virtual Inertia Scheduling (VIS) for
+       Real-Time Economic Dispatch of IBR-Penetrated Power Systems," in IEEE Transactions on
+       Sustainable Energy, vol. 15, no. 2, pp. 938-951, April 2024, doi: 10.1109/TSTE.2023.3319307.
     """
 
     def __init__(self, system, config):

@@ -30,7 +30,9 @@ Model
 
    ams.core.model
    ams.core.param
+   ams.core.var
    ams.core.service
+   ams.core.matprocessor
 
 
 Routines
