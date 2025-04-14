@@ -176,7 +176,8 @@ class ROperationService(RBaseService):
 
 class LoadScale(ROperationService):
     """
-    Get zonal load by scale nodal load given the corresponding load scale factor.
+    Retrieve zonal load by scaling nodal load using the specified load scale factor.
+    The load scale factor is defined for each "Area".
 
     Parameters
     ----------
@@ -220,8 +221,8 @@ class LoadScale(ROperationService):
         u_idx = self.u.get_all_idxes()
         ue = self.u.owner.get(src='u', attr='v', idx=u_idx)
         u_bus = self.u.owner.get(src='bus', attr='v', idx=u_idx)
-        u_zone = sys.Bus.get(src='zone', attr='v', idx=u_bus)
-        u_yloc = np.array(sys.Zone.idx2uid(u_zone))
+        u_area = sys.Bus.get(src='area', attr='v', idx=u_bus)
+        u_yloc = np.array(sys.Area.idx2uid(u_area))
         p0s = np.multiply(self.sd.v[:, u_yloc].transpose(),
                           (ue * self.u.v)[:, np.newaxis])
         if self.sparse:

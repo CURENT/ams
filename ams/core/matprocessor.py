@@ -492,11 +492,8 @@ class MatProcessor:
 
         References
         ----------
-        [1] PowerWorld Documentation, Power Transfer Distribution Factors, [Online]
-
-        Available:
-
-        https://www.powerworld.com/WebHelp/Content/MainDocumentation_HTML/Power_Transfer_Distribution_Factors.htm
+        1. PowerWorld Documentation, Power Transfer Distribution Factors,
+           https://www.powerworld.com/WebHelp/Content/MainDocumentation_HTML/Power_Transfer_Distribution_Factors.htm
         """
         system = self.system
 
@@ -616,11 +613,8 @@ class MatProcessor:
 
         References
         ----------
-        [1] PowerWorld Documentation, Line Outage Distribution Factors, [Online]
-
-        Available:
-
-        https://www.powerworld.com/WebHelp/Content/MainDocumentation_HTML/Line_Outage_Distribution_Factors_LODFs.htm
+        1. PowerWorld Documentation, Line Outage Distribution Factors,
+           https://www.powerworld.com/WebHelp/Content/MainDocumentation_HTML/Line_Outage_Distribution_Factors_LODFs.htm
         """
         system = self.system
 
@@ -716,7 +710,7 @@ class MatProcessor:
     def build_otdf(self, line=None):
         """
         Build the Outrage Transfer Distribution Factor (OTDF) matrix for line
-        k outage: :math:`OTDF_k = PTDF + LODF[:, k] @ PTDF[k, ]`.
+        k outage: $OTDF_k = PTDF + LODF[:, k] @ PTDF[k, ]$.
 
         OTDF_k[m, n] means the increased line flow on line `m` when there is
         1 p.u. power injection at bus `n` when line `k` is outage.
@@ -737,11 +731,8 @@ class MatProcessor:
 
         References
         ----------
-        [1] PowerWorld Documentation, Line Outage Distribution Factors, [Online]
-
-        Available:
-
-        https://www.powerworld.com/WebHelp/Content/MainDocumentation_HTML/Line_Outage_Distribution_Factors_LODFs.htm
+        1. PowerWorld Documentation, Line Outage Distribution Factors,
+           https://www.powerworld.com/WebHelp/Content/MainDocumentation_HTML/Line_Outage_Distribution_Factors_LODFs.htm
         """
         if (self.PTDF._v is None) or (self.LODF._v is None):
             raise ValueError("Internal PTDF and LODF are not available. Please build them first.")

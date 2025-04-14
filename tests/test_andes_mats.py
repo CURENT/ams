@@ -19,7 +19,7 @@ class TestMatrices(unittest.TestCase):
     if parse_version(andes_version) < parse_version('1.9.2'):
         raise unittest.SkipTest("Requires ANDES version >= 1.9.2")
 
-    sp = ams.load(ams.get_case('5bus/pjm5bus_demo.xlsx'),
+    sp = ams.load(ams.get_case('matpower/case14.m'),
                   setup=True, no_output=True, default_config=True,)
     sa = sp.to_andes(setup=True, no_output=True, default_config=True,)
 

@@ -53,8 +53,8 @@ class PQ(PQData, Model):
                               q2z=r"\gamma_{q2z}",
                               )
 
-        self.zone = ExtParam(model='Bus', src='zone', indexer=self.bus, export=False,
-                             info='Retrieved zone idx', vtype=str, default=None,
+        self.area = ExtParam(model='Bus', src='area', indexer=self.bus, export=False,
+                             info='Retrieved area idx', vtype=str, default=None,
                              )
         self.ctrl = NumParam(default=1,
                              info="load controllability",

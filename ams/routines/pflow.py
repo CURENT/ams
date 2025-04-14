@@ -12,7 +12,7 @@ from andes.utils.misc import elapsed
 from ams.core.param import RParam
 from ams.routines.routine import RoutineBase
 from ams.opt import Var, Expression, Objective
-from ams.interface import _to_andes_pflow, sync_adsys
+from ams.interface import to_andes_pflow, sync_adsys
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +28,9 @@ class PFlow(RoutineBase):
 
     References
     ----------
-    [1] M. L. Crow, Computational methods for electric power systems. 2015.
-
-    [2] ANDES Documentation - Simulation and Plot. [Online]. Available:
-    https://docs.andes.app/en/latest/_examples/ex1.html
+    1. M. L. Crow, Computational methods for electric power systems. 2015.
+    2. ANDES Documentation - Simulation and Plot.
+       https://docs.andes.app/en/latest/_examples/ex1.html
     """
 
     def __init__(self, system, config):
@@ -102,10 +101,10 @@ class PFlow(RoutineBase):
 
         kwargs go to andes.system.System().
         """
-        self._adsys = _to_andes_pflow(self.system,
-                                      no_output=self.system.files.no_output,
-                                      config=self.config.as_dict(),
-                                      **kwargs)
+        self._adsys = to_andes_pflow(self.system,
+                                     no_output=self.system.files.no_output,
+                                     config=self.config.as_dict(),
+                                     **kwargs)
         self._adsys.setup()
         self.om.init()
         self.initialized = True
@@ -132,7 +131,7 @@ class PFlow(RoutineBase):
         self.exec_time = float(s.split(" ")[0])
 
         self.unpack()
-        return True
+        return self.converged
 
     def _post_solve(self):
         """

@@ -18,7 +18,7 @@ ams_file_classes = list([
     ('reserve', ['SFR', 'SR', 'NSR', 'VSGR']),
     ('cost', ['GCost', 'SFRCost', 'SRCost', 'NSRCost', 'VSGCost']),
     ('cost', ['DCost']),
-    ('timeslot', ['TimeSlot', 'EDTSlot', 'UCTSlot']),
+    ('timeslot', ['EDTSlot', 'UCTSlot']),
 ])
 
 file_classes = ams_file_classes
