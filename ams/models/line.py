@@ -18,8 +18,8 @@ class Line(LineData, Model):
 
     Notes
     -----
-    There is a known issue that adding Algeb ``ud`` will cause Line.algebs run into
-    AttributeError: 'NoneType' object has no attribute 'n'. Not figured out why yet.
+    1. Adding Algeb ``ud`` causes Line.algebs to encounter an AttributeError: 'NoneType'
+       object has no attribute 'n'. The root cause is still under investigation.
     """
 
     def __init__(self, system=None, config=None) -> None:
