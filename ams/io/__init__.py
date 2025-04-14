@@ -10,7 +10,7 @@ import os
 from andes.utils.misc import elapsed
 from andes.io import dump  # NOQA
 
-from ams.io import xlsx, psse, matpower, pypower, json   # NOQA
+from ams.io import xlsx, psse, matpower, pypower, json, powerworld   # NOQA
 
 
 logger = logging.getLogger(__name__)
@@ -25,6 +25,7 @@ input_formats = {
     'matpower': ('m', ),
     'psse': ('raw', 'dyr'),
     'pypower': ('py',),
+    'powerworld': ('aux',),
 }
 
 # Output formats is a dictionary of supported output formats and their extensions
