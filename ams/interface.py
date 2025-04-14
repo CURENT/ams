@@ -84,10 +84,23 @@ def sync_adsys(amsys, adsys):
     return True
 
 
-def _to_andes_pflow(system, no_output=False, default_config=True, **kwargs):
+def to_andes_pflow(system, no_output=False, default_config=True, **kwargs):
     """
     Helper function to convert the AMS system to an ANDES system with only
     power flow models.
+
+    The returned ANDES system is not and should not be setup.
+
+    Parameters
+    ----------
+    system : System
+        The AMS system to be converted to ANDES format.
+    no_output : bool, optional
+        To ANDES system.
+    default_config : bool, optional
+        To ANDES system.
+    kwargs :
+        Additional arguments to be passed to andes.system.System().
     """
 
     adsys = andes_System(no_outpu=no_output, default_config=default_config, **kwargs)
@@ -169,7 +182,7 @@ def to_andes(system, addfile=None,
     t0, _ = elapsed()
 
     # --- convert power flow models ---
-    adsys = _to_andes_pflow(system, no_output=no_output, default_config=default_config, **kwargs)
+    adsys = to_andes_pflow(system, no_output=no_output, default_config=default_config, **kwargs)
 
     _, s = elapsed(t0)
 

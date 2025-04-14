@@ -12,7 +12,7 @@ from andes.utils.misc import elapsed
 from ams.core.param import RParam
 from ams.routines.routine import RoutineBase
 from ams.opt import Var, Expression, Objective
-from ams.interface import _to_andes_pflow, sync_adsys
+from ams.interface import to_andes_pflow, sync_adsys
 
 logger = logging.getLogger(__name__)
 
@@ -101,10 +101,10 @@ class PFlow(RoutineBase):
 
         kwargs go to andes.system.System().
         """
-        self._adsys = _to_andes_pflow(self.system,
-                                      no_output=self.system.files.no_output,
-                                      config=self.config.as_dict(),
-                                      **kwargs)
+        self._adsys = to_andes_pflow(self.system,
+                                     no_output=self.system.files.no_output,
+                                     config=self.config.as_dict(),
+                                     **kwargs)
         self._adsys.setup()
         self.om.init()
         self.initialized = True
