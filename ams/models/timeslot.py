@@ -18,7 +18,7 @@ def str_list_oconv(x):
 
 class TimeSlot(ModelData, Model):
     """
-    Base model for time slot data used in mutli-interval scheduling.
+    Base model for time slot data used in multi-interval scheduling.
     """
 
     def __init__(self, system=None, config=None):
