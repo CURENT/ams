@@ -13,6 +13,7 @@ v1.0.8 (2024-xx-xx)
 --------------------
 
 - Run workflow "Publish" only on push tag event
+- Include Hawaii synthetic case from `Electric Grid Test Case Repository: Hawaii Synthetic Grid - 37 Buses <https://electricgrids.engr.tamu.edu/hawaii40/>`_
 
 v1.0.7 (2024-04-14)
 --------------------
