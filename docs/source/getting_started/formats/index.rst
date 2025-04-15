@@ -18,3 +18,4 @@ AMS currently supports the following input formats:
    psse
    matpower
    pypower
+   powerworld
