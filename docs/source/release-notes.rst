@@ -16,6 +16,7 @@ v1.0.8 (2024-xx-xx)
 - Include Hawaii synthetic case from
   `Hawaii Synthetic Grid <https://electricgrids.engr.tamu.edu/hawaii40/>`_
 - Remove matrices calculation functions in model ``Line``
+- Include ``gentype`` and ``genfuel`` when parsing MATPOWER cases
 
 v1.0.7 (2024-04-14)
 --------------------
