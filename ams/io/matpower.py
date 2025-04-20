@@ -364,9 +364,8 @@ def mpc2system(mpc: dict, system) -> bool:
         gen_idx = np.arange(mpc['gen'].shape[0]) + 1
         mpc_cost = mpc['gencost']
         if mpc_cost[0, 0] == 1:
-            logger.warning("Type 1 gencost detected. "
-                           "This is not supported in AMS. "
-                           "Default type 2 cost parameters will be used as a fallback."
+            logger.warning("Type 1 gencost detected, which is not supported in AMS.\n"
+                           "Default type 2 cost parameters will be used as a fallback.\n"
                            "It is recommended to manually convert the gencost data to type 2.")
             mpc_cost = np.repeat(np.array([[2, 0, 0, 3, 0, 0, 0]]),
                                  mpc_cost.shape[0], axis=0)
