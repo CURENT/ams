@@ -2,9 +2,10 @@
 MATPOWER parser.
 """
 import logging
+import re
 import numpy as np
 
-from andes.io.matpower import m2mpc
+from andes.io import read_file_like
 from andes.shared import deg2rad, rad2deg
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,140 @@ def read(system, file):
 
     mpc = m2mpc(file)
     return mpc2system(mpc, system)
+
+
+def m2mpc(infile: str) -> dict:
+    """
+    Parse MATPOWER file and return a dictionary with the data.
+
+    Revised from ``andes.io.matpower.m2mpc``.
+
+    Supported fields include
+
+    - baseMVA
+    - bus
+    - bus_names
+    - gen
+    - branch
+    - gencost (parsed but not used)
+    - areas (parsed but not used)
+
+    Parameters
+    ----------
+    infile : str
+        Path to the MATPOWER file.
+
+    Returns
+    -------
+    dict
+        mpc struct names : numpy arrays
+    """
+
+    func = re.compile(r'function\s')
+    mva = re.compile(r'\s*mpc.baseMVA\s*=\s*')
+    bus = re.compile(r'\s*mpc.bus\s*=\s*\[?')
+    gen = re.compile(r'\s*mpc.gen\s*=\s*\[')
+    branch = re.compile(r'\s*mpc.branch\s*=\s*\[')
+    area = re.compile(r'\s*mpc.areas\s*=\s*\[')
+    gencost = re.compile(r'\s*mpc.gencost\s*=\s*\[')
+    bus_name = re.compile(r'\s*mpc.bus_name\s*=\s*{')
+    end = re.compile(r'\s*\];?')
+    has_digit = re.compile(r'.*\d+\s*]?;?')
+
+    field = None
+    info = True
+
+    mpc = {
+        'version': 2,  # not in use
+        'baseMVA': 100,
+        'bus': [],
+        'gen': [],
+        'branch': [],
+        'area': [],
+        'gencost': [],
+        'bus_name': [],
+    }
+
+    input_list = read_file_like(infile)
+
+    for line in input_list:
+        line = line.strip().rstrip(';')
+        if not line:
+            continue
+        elif func.search(line):  # skip function declaration
+            continue
+        elif len(line.split('%')[0]) == 0:
+            if info is True:
+                logger.info(line[1:])
+                info = False
+            else:
+                continue
+        elif mva.search(line):
+            mpc["baseMVA"] = float(line.split('=')[1])
+
+        if not field:
+            if bus.search(line):
+                field = 'bus'
+            elif gen.search(line):
+                field = 'gen'
+            elif branch.search(line):
+                field = 'branch'
+            elif area.search(line):
+                field = 'area'
+            elif gencost.search(line):
+                field = 'gencost'
+            elif bus_name.search(line):
+                field = 'bus_name'
+            else:
+                continue
+        elif end.search(line):
+            field = None
+            continue
+
+        # parse mpc sections
+        if field:
+            if line.find('=') >= 0:
+                line = line.split('=')[1]
+            if line.find('[') >= 0:
+                line = re.sub(r'\[', '', line)
+            elif line.find('{') >= 0:
+                line = re.sub(r'{', '', line)
+
+            if line.find('\'') >= 0:  # bus_name
+                line = line.split(';')
+                data = [i.strip('\'').strip() for i in line]
+                mpc['bus_name'].extend(data)
+            else:
+                if not has_digit.search(line):
+                    continue
+                line = line.split('%')[0].strip()
+                line = line.split(';')
+                for item in line:
+                    if not has_digit.search(item):
+                        continue
+                    try:
+                        data = np.array([float(val) for val in item.split()])
+                    except Exception as e:
+                        logger.error('Error parsing "%s"', infile)
+                        raise e
+                    mpc[field].append(data)
+
+    # convert mpc to np array
+    mpc_array = dict()
+    for key, val in mpc.items():
+        if isinstance(val, (float, int)):
+            mpc_array[key] = val
+        elif isinstance(val, list):
+            if len(val) == 0:
+                continue
+            if "name" in key:
+                mpc_array[key] = np.array(val, dtype=object)
+            else:
+                mpc_array[key] = np.array(val)
+        else:
+            raise NotImplementedError("Unkonwn type for mpc, ", type(val))
+
+    return mpc_array
 
 
 def mpc2system(mpc: dict, system) -> bool:
