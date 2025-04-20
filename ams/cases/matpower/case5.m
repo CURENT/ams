@@ -8,7 +8,7 @@ function mpc = case5
 
 %   Created by Rui Bo in 2006, modified in 2010, 2014.
 %   Distributed with permission.
-%   Add two sections gentype and genfuel for testing purposes.
+%   Add two sections gentype, genfuel, and bus_name for testing purposes.
 
 %   MATPOWER
 
@@ -74,6 +74,14 @@ mpc.genfuel = {
 	'coal';
 	'coal';
 	'coal';
-	'SUB';
-	'RFO';
+	'coal';
+	'coal';
+};
+
+mpc.bus_name = {
+	'A';
+	'B';
+	'C';
+	'D';
+	'E';
 };
