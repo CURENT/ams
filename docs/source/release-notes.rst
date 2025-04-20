@@ -15,6 +15,7 @@ v1.0.8 (2024-xx-xx)
 - Run workflow "Publish" only on push tag event
 - Include Hawaii synthetic case from
   `Hawaii Synthetic Grid <https://electricgrids.engr.tamu.edu/hawaii40/>`_
+- Remove matrices calculation functions in model ``Line``
 
 v1.0.7 (2024-04-14)
 --------------------
