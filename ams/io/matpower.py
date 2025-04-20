@@ -171,8 +171,7 @@ def m2mpc(infile: str) -> dict:
             else:
                 mpc_array[key] = np.array(val)
         else:
-            raise NotImplementedError("Unkonwn type for mpc, ", type(val))
-
+            raise NotImplementedError("Unknown type for mpc, ", type(val))
     return mpc_array
 
 
