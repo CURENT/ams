@@ -175,13 +175,84 @@ class Reserve(GroupBase):
 
 class StaticGen(GroupBase):
     """
-    Generator group.
+    Static Generator Group.
+
+    The generator types and fuel types are referenced from MATPOWER.
+
+    Generator Types
+    ---------------
+    The following codes represent the types of generators:
+        - BA  : Energy Storage, Battery
+        - CE  : Energy Storage, Compressed Air
+        - CP  : Energy Storage, Concentrated Solar Power
+        - FW  : Energy Storage, Flywheel
+        - PS  : Hydraulic Turbine, Reversible (pumped storage)
+        - ES  : Energy Storage, Other
+        - ST  : Steam Turbine (includes nuclear, geothermal, and solar steam)
+        - GT  : Combustion (Gas) Turbine
+        - IC  : Internal Combustion Engine (diesel, piston, reciprocating)
+        - CA  : Combined Cycle Steam Part
+        - CT  : Combined Cycle Combustion Turbine Part
+        - CS  : Combined Cycle Single Shaft
+        - CC  : Combined Cycle Total Unit
+        - HA  : Hydrokinetic, Axial Flow Turbine
+        - HB  : Hydrokinetic, Wave Buoy
+        - HK  : Hydrokinetic, Other
+        - HY  : Hydroelectric Turbine
+        - BT  : Turbines Used in a Binary Cycle
+        - PV  : Photovoltaic
+        - WT  : Wind Turbine, Onshore
+        - WS  : Wind Turbine, Offshore
+        - FC  : Fuel Cell
+        - OT  : Other
+        - UN  : Unknown
+        - JE  : Jet Engine
+        - NB  : ST - Boiling Water Nuclear Reactor
+        - NG  : ST - Graphite Nuclear Reactor
+        - NH  : ST - High Temperature Gas Nuclear Reactor
+        - NP  : ST - Pressurized Water Nuclear Reactor
+        - IT  : Internal Combustion Turbo Charged
+        - SC  : Synchronous Condenser
+        - DC  : DC ties
+        - MP  : Motor/Pump
+        - W1  : Wind Turbine, Type 1
+        - W2  : Wind Turbine, Type 2
+        - W3  : Wind Turbine, Type 3
+        - W4  : Wind Turbine, Type 4
+        - SV  : Static Var Compensator
+        - DL  : Dispatchable Load
+
+    Fuel Types
+    ----------
+    The following codes represent the fuel types:
+        - biomass     : Biomass
+        - coal        : Coal
+        - dfo         : Distillate Fuel Oil
+        - geothermal  : Geothermal
+        - hydro       : Hydro
+        - hydrops     : Hydro Pumped Storage
+        - jetfuel     : Jet Fuel
+        - lng         : Liquefied Natural Gas
+        - ng          : Natural Gas
+        - nuclear     : Nuclear
+        - oil         : Unspecified Oil
+        - refuse      : Refuse, Municipal Solid Waste
+        - rfo         : Residual Fuel Oil
+        - solar       : Solar
+        - syncgen     : Synchronous Condenser
+        - wasteheat   : Waste Heat
+        - wind        : Wind
+        - wood        : Wood or Wood Waste
+        - other       : Other
+        - unknown     : Unknown
+        - dl          : Dispatchable Load
+        - ess         : Energy Storage System
 
     Notes
     -----
-    For co-simulation with ANDES, check
-    `ANDES StaticGen <https://docs.andes.app/en/latest/groupdoc/StaticGen.html#staticgen>`_
-    for replacing static generators with dynamic generators.
+    For co-simulation with ANDES, refer to the `ANDES StaticGen Documentation
+    <https://docs.andes.app/en/latest/groupdoc/StaticGen.html#staticgen>`_ for
+    replacing static generators with dynamic generators.
     """
 
     def __init__(self):
