@@ -2,9 +2,10 @@
 MATPOWER parser.
 """
 import logging
+import re
 import numpy as np
 
-from andes.io.matpower import m2mpc
+from andes.io import read_file_like
 from andes.shared import deg2rad, rad2deg
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,152 @@ def read(system, file):
 
     mpc = m2mpc(file)
     return mpc2system(mpc, system)
+
+
+def m2mpc(infile: str) -> dict:
+    """
+    Parse a MATPOWER file and return a dictionary containing the parsed data.
+
+    This function processes MATPOWER case files and extracts relevant fields
+    into a structured dictionary. It is revised from ``andes.io.matpower.m2mpc``.
+
+    Supported fields include:
+    - `baseMVA`: The system base power in MVA.
+    - `bus`: Bus data, including voltage, load, and generation information.
+    - `bus_name`: Names of the buses (if available).
+    - `gen`: Generator data, including power limits and voltage setpoints.
+    - `branch`: Branch data, including line impedances and ratings.
+    - `gencost`: Generator cost data (parsed but not used in this implementation).
+    - `areas`: Area data (parsed but not used in this implementation).
+    - `gentype`: Generator type information (if available).
+    - `genfuel`: Generator fuel type information (if available).
+
+    Parameters
+    ----------
+    infile : str
+        Path to the MATPOWER file to be parsed.
+
+    Returns
+    -------
+    dict
+        A dictionary containing the parsed MATPOWER data, where keys correspond
+        to MATPOWER struct names and values are numpy arrays or lists.
+    """
+
+    func = re.compile(r'function\s')
+    mva = re.compile(r'\s*mpc.baseMVA\s*=\s*')
+    bus = re.compile(r'\s*mpc.bus\s*=\s*\[?')
+    gen = re.compile(r'\s*mpc.gen\s*=\s*\[')
+    branch = re.compile(r'\s*mpc.branch\s*=\s*\[')
+    area = re.compile(r'\s*mpc.areas\s*=\s*\[')
+    gencost = re.compile(r'\s*mpc.gencost\s*=\s*\[')
+    bus_name = re.compile(r'\s*mpc.bus_name\s*=\s*{')
+    gentype = re.compile(r'\s*mpc.gentype\s*=\s*{')
+    genfuel = re.compile(r'\s*mpc.genfuel\s*=\s*{')
+    end = re.compile(r'\s*[\];}]')
+    has_digit = re.compile(r'.*\d+\s*]?;?')
+
+    field = None
+    info = True
+
+    mpc = {
+        'version': 2,  # not in use
+        'baseMVA': 100,
+        'bus': [],
+        'gen': [],
+        'branch': [],
+        'area': [],
+        'gencost': [],
+        'bus_name': [],
+        'gentype': [],
+        'genfuel': [],
+    }
+
+    input_list = read_file_like(infile)
+
+    for line in input_list:
+        line = line.strip().rstrip(';')
+        if not line:
+            continue
+        elif func.search(line):  # skip function declaration
+            continue
+        elif len(line.split('%')[0]) == 0:
+            if info is True:
+                logger.info(line[1:])
+                info = False
+            else:
+                continue
+        elif mva.search(line):
+            mpc["baseMVA"] = float(line.split('=')[1])
+
+        if not field:
+            if bus.search(line):
+                field = 'bus'
+            elif gen.search(line):
+                field = 'gen'
+            elif branch.search(line):
+                field = 'branch'
+            elif area.search(line):
+                field = 'area'
+            elif gencost.search(line):
+                field = 'gencost'
+            elif bus_name.search(line):
+                field = 'bus_name'
+            elif gentype.search(line):
+                field = 'gentype'
+            elif genfuel.search(line):
+                field = 'genfuel'
+            else:
+                continue
+        elif end.search(line):
+            field = None
+            continue
+
+        # parse mpc sections
+        if field:
+            if line.find('=') >= 0:
+                line = line.split('=')[1]
+            if line.find('[') >= 0:
+                line = re.sub(r'\[', '', line)
+            elif line.find('{') >= 0:
+                line = re.sub(r'{', '', line)
+
+            if field in ['bus_name', 'gentype', 'genfuel']:
+                # Handle string-based fields
+                line = line.split(';')
+                data = [i.strip('\'').strip() for i in line if i.strip()]
+                mpc[field].extend(data)
+            else:
+                if not has_digit.search(line):
+                    continue
+                line = line.split('%')[0].strip()
+                line = line.split(';')
+                for item in line:
+                    if not has_digit.search(item):
+                        continue
+                    try:
+                        data = np.array([float(val) for val in item.split()])
+                    except Exception as e:
+                        logger.error('Error parsing "%s"', infile)
+                        raise e
+                    mpc[field].append(data)
+
+    # convert mpc to np array
+    mpc_array = dict()
+    for key, val in mpc.items():
+        if isinstance(val, (float, int)):
+            mpc_array[key] = val
+        elif isinstance(val, list):
+            if len(val) == 0:
+                continue
+            if key in ['bus_name', 'gentype', 'genfuel']:
+                mpc_array[key] = np.array(val, dtype=object)
+            else:
+                mpc_array[key] = np.array(val)
+        else:
+            raise NotImplementedError("Unkonwn type for mpc, ", type(val))
+
+    return mpc_array
 
 
 def mpc2system(mpc: dict, system) -> bool:
@@ -97,7 +244,20 @@ def mpc2system(mpc: dict, system) -> bool:
         mpc_gen[:, 19] = system.PV.Rq.default * base_mva / 60
     else:
         mpc_gen = mpc['gen']
-    for data in mpc_gen:
+
+    # Ensure 'gentype' and 'genfuel' keys exist in mpc, with default values if missing
+    gentype = mpc.get('gentype', [''] * mpc_gen.shape[0])
+    genfuel = mpc.get('genfuel', [''] * mpc_gen.shape[0])
+
+    # Validate lengths of 'gentype' and 'genfuel' against the number of generators
+    if len(gentype) != mpc_gen.shape[0]:
+        raise ValueError(
+            f"'gentype' length ({len(gentype)}) does not match the number of generators ({mpc_gen.shape[0]})")
+    if len(genfuel) != mpc_gen.shape[0]:
+        raise ValueError(
+            f"'genfuel' length ({len(genfuel)}) does not match the number of generators ({mpc_gen.shape[0]})")
+
+    for data, gt, gf in zip(mpc_gen, gentype, genfuel):
         # bus  pg  qg  qmax  qmin  vg  mbase  status  pmax  pmin
         # 0    1   2   3     4     5   6      7       8     9
         # pc1  pc2  qc1min  qc1max  qc2min  qc2max  ramp_agc  ramp_10
@@ -142,7 +302,7 @@ def mpc2system(mpc: dict, system) -> bool:
                        Qc2min=qc2min, Qc2max=qc2max,
                        Ragc=ramp_agc, R10=ramp_10,
                        R30=ramp_30, Rq=ramp_q,
-                       apf=apf)
+                       apf=apf, gentype=gt, genfuel=gf)
         else:
             system.add('PV', idx=gen_idx, bus=bus_idx, busr=bus_idx,
                        name=None,
@@ -155,7 +315,7 @@ def mpc2system(mpc: dict, system) -> bool:
                        Qc2min=qc2min, Qc2max=qc2max,
                        Ragc=ramp_agc, R10=ramp_10,
                        R30=ramp_30, Rq=ramp_q,
-                       apf=apf)
+                       apf=apf, gentype=gt, genfuel=gf)
 
     for data in mpc['branch']:
         # fbus	tbus	r	x	b	rateA	rateB	rateC	ratio	angle
