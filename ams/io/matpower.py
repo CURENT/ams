@@ -244,7 +244,20 @@ def mpc2system(mpc: dict, system) -> bool:
         mpc_gen[:, 19] = system.PV.Rq.default * base_mva / 60
     else:
         mpc_gen = mpc['gen']
-    for data in mpc_gen:
+
+    # Ensure 'gentype' and 'genfuel' keys exist in mpc, with default values if missing
+    gentype = mpc.get('gentype', [''] * mpc_gen.shape[0])
+    genfuel = mpc.get('genfuel', [''] * mpc_gen.shape[0])
+
+    # Validate lengths of 'gentype' and 'genfuel' against the number of generators
+    if len(gentype) != mpc_gen.shape[0]:
+        raise ValueError(
+            f"'gentype' length ({len(gentype)}) does not match the number of generators ({mpc_gen.shape[0]})")
+    if len(genfuel) != mpc_gen.shape[0]:
+        raise ValueError(
+            f"'genfuel' length ({len(genfuel)}) does not match the number of generators ({mpc_gen.shape[0]})")
+
+    for data, gt, gf in zip(mpc_gen, gentype, genfuel):
         # bus  pg  qg  qmax  qmin  vg  mbase  status  pmax  pmin
         # 0    1   2   3     4     5   6      7       8     9
         # pc1  pc2  qc1min  qc1max  qc2min  qc2max  ramp_agc  ramp_10
@@ -289,7 +302,7 @@ def mpc2system(mpc: dict, system) -> bool:
                        Qc2min=qc2min, Qc2max=qc2max,
                        Ragc=ramp_agc, R10=ramp_10,
                        R30=ramp_30, Rq=ramp_q,
-                       apf=apf)
+                       apf=apf, gentype=gt, genfuel=gf)
         else:
             system.add('PV', idx=gen_idx, bus=bus_idx, busr=bus_idx,
                        name=None,
@@ -302,7 +315,7 @@ def mpc2system(mpc: dict, system) -> bool:
                        Qc2min=qc2min, Qc2max=qc2max,
                        Ragc=ramp_agc, R10=ramp_10,
                        R30=ramp_30, Rq=ramp_q,
-                       apf=apf)
+                       apf=apf, gentype=gt, genfuel=gf)
 
     for data in mpc['branch']:
         # fbus	tbus	r	x	b	rateA	rateB	rateC	ratio	angle

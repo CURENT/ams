@@ -259,7 +259,7 @@ class StaticGen(GroupBase):
         super().__init__()
         self.common_params.extend(('bus', 'Sn', 'Vn', 'p0', 'q0', 'ra', 'xs', 'subidx',
                                    'pmax', 'pmin', 'pg0', 'ctrl', 'R10', 'td1', 'td2',
-                                   'area', 'zone'))
+                                   'area', 'zone', 'gentype', 'genfuel'))
         self.common_vars.extend(('p', 'q'))
 
 
