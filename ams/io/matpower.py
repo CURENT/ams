@@ -32,29 +32,32 @@ def read(system, file):
 
 def m2mpc(infile: str) -> dict:
     """
-    Parse MATPOWER file and return a dictionary with the data.
+    Parse a MATPOWER file and return a dictionary containing the parsed data.
 
-    Revised from ``andes.io.matpower.m2mpc``.
+    This function processes MATPOWER case files and extracts relevant fields
+    into a structured dictionary. It is revised from ``andes.io.matpower.m2mpc``.
 
-    Supported fields include
-
-    - baseMVA
-    - bus
-    - bus_names
-    - gen
-    - branch
-    - gencost (parsed but not used)
-    - areas (parsed but not used)
+    Supported fields include:
+    - `baseMVA`: The system base power in MVA.
+    - `bus`: Bus data, including voltage, load, and generation information.
+    - `bus_name`: Names of the buses (if available).
+    - `gen`: Generator data, including power limits and voltage setpoints.
+    - `branch`: Branch data, including line impedances and ratings.
+    - `gencost`: Generator cost data (parsed but not used in this implementation).
+    - `areas`: Area data (parsed but not used in this implementation).
+    - `gentype`: Generator type information (if available).
+    - `genfuel`: Generator fuel type information (if available).
 
     Parameters
     ----------
     infile : str
-        Path to the MATPOWER file.
+        Path to the MATPOWER file to be parsed.
 
     Returns
     -------
     dict
-        mpc struct names : numpy arrays
+        A dictionary containing the parsed MATPOWER data, where keys correspond
+        to MATPOWER struct names and values are numpy arrays or lists.
     """
 
     func = re.compile(r'function\s')
@@ -65,7 +68,9 @@ def m2mpc(infile: str) -> dict:
     area = re.compile(r'\s*mpc.areas\s*=\s*\[')
     gencost = re.compile(r'\s*mpc.gencost\s*=\s*\[')
     bus_name = re.compile(r'\s*mpc.bus_name\s*=\s*{')
-    end = re.compile(r'\s*\];?')
+    gentype = re.compile(r'\s*mpc.gentype\s*=\s*{')
+    genfuel = re.compile(r'\s*mpc.genfuel\s*=\s*{')
+    end = re.compile(r'\s*[\];}]')
     has_digit = re.compile(r'.*\d+\s*]?;?')
 
     field = None
@@ -80,6 +85,8 @@ def m2mpc(infile: str) -> dict:
         'area': [],
         'gencost': [],
         'bus_name': [],
+        'gentype': [],
+        'genfuel': [],
     }
 
     input_list = read_file_like(infile)
@@ -112,6 +119,10 @@ def m2mpc(infile: str) -> dict:
                 field = 'gencost'
             elif bus_name.search(line):
                 field = 'bus_name'
+            elif gentype.search(line):
+                field = 'gentype'
+            elif genfuel.search(line):
+                field = 'genfuel'
             else:
                 continue
         elif end.search(line):
@@ -127,10 +138,11 @@ def m2mpc(infile: str) -> dict:
             elif line.find('{') >= 0:
                 line = re.sub(r'{', '', line)
 
-            if line.find('\'') >= 0:  # bus_name
+            if field in ['bus_name', 'gentype', 'genfuel']:
+                # Handle string-based fields
                 line = line.split(';')
-                data = [i.strip('\'').strip() for i in line]
-                mpc['bus_name'].extend(data)
+                data = [i.strip('\'').strip() for i in line if i.strip()]
+                mpc[field].extend(data)
             else:
                 if not has_digit.search(line):
                     continue
@@ -154,7 +166,7 @@ def m2mpc(infile: str) -> dict:
         elif isinstance(val, list):
             if len(val) == 0:
                 continue
-            if "name" in key:
+            if key in ['bus_name', 'gentype', 'genfuel']:
                 mpc_array[key] = np.array(val, dtype=object)
             else:
                 mpc_array[key] = np.array(val)
