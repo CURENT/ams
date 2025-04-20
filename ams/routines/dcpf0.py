@@ -168,7 +168,7 @@ class DCPF0(RoutineBase):
         if self.exit_code == 0:
             msg = f"<{self.class_name}> solved in {s}, converged in "
             msg += n_iter_str + f"with {sstats['solver_name']}."
-            logger.info(msg)
+            logger.warning(msg)
             try:
                 self.unpack(res)
             except Exception as e:

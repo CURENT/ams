@@ -25,6 +25,7 @@ input_formats = {
     'matpower': ('m', ),
     'psse': ('raw', 'dyr'),
     'pypower': ('py',),
+    'powerworld': ('aux',),
 }
 
 # Output formats is a dictionary of supported output formats and their extensions

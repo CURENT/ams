@@ -9,6 +9,16 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
+v1.0.8 (2024-04-20)
+--------------------
+
+- Run workflow "Publish" only on push tag event
+- Include Hawaii synthetic case from
+  `Hawaii Synthetic Grid <https://electricgrids.engr.tamu.edu/hawaii40/>`_
+- Remove matrices calculation functions in model ``Line``
+- Include ``gentype`` and ``genfuel`` when parsing MATPOWER cases
+- Fix logging level in ``ACOPF.run``
+
 v1.0.7 (2024-04-14)
 --------------------
 
@@ -19,6 +29,8 @@ v1.0.7 (2024-04-14)
 - Include module ``MatProcessor`` in the API documentation
 - Improve Line parameters correction in ``System.setup()``
 - Make func ``interface._to_andes_pflow`` public
+- Discard ``sync_adsys`` step in func ``to_andes_pflow`` to fix mistake in
+  parameters conversion
 - Update case files
 
 v1.0.6 (2024-04-10)

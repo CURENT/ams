@@ -64,6 +64,13 @@ Western Electricity Coordinating Council system [SciData](#references)
 - `wecc.m`: Matpower case for the WECC system.
 - `wecc_uced.xlsx`: UCED case for the WECC system.
 
+## hawaii
+
+Hawaii Synthetic Grid – 37 Buses [synthetic](#references), source from [Hawaii Synthetic Grid – 37 Buses](https://electricgrids.engr.tamu.edu/hawaii40/)
+
+- `Hawaii40.m`: Matpower case for the synthetic Hawaii system.
+- `Hawaii40.AUX`: [Auxiliary File Format](https://www.powerworld.com/knowledge-base/auxiliary-file-format-10), can contain power flow, dynamics, contingencies, economic studies, etc. data.
+
 ## pglib
 
 Cases from the Power Grid Lib - Optimal Power Flow [pglib](#references)
@@ -83,3 +90,5 @@ Cases from the Power Grid Lib - Optimal Power Flow [pglib](#references)
 [SciData]: Q. Zhang and F. Li, “A Dataset for Electricity Market Studies on Western and Northeastern Power Grids in the United States,” Scientific Data, vol. 10, no. 1, p. 646, Sep. 2023, doi: 10.1038/s41597-023-02448-w.
 
 [pglib]: S. Babaeinejadsarookolaee et al., “The Power Grid Library for Benchmarking AC Optimal Power Flow Algorithms,” arXiv.org, 2019. https://arxiv.org/abs/1908.02788
+
+[synthetic] A. B. Birchfield, T. Xu, K. M. Gegner, K. S. Shetye and T. J. Overbye, "Grid Structural Characteristics as Validation Criteria for Synthetic Networks," in IEEE Transactions on Power Systems, vol. 32, no. 4, pp. 3258-3265, July 2017, doi: 10.1109/TPWRS.2016.2616385.

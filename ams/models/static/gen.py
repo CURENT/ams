@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from andes.core.param import NumParam, ExtParam
+from andes.core.param import NumParam, ExtParam, DataParam
 from andes.models.static.pv import PVData
 from andes.models.static.slack import SlackData
 
@@ -81,6 +81,14 @@ class GenParam:
                             tex_name=r't_{d2}',
                             unit='h',
                             )
+        self.gentype = DataParam(default=None,
+                                 info='generator type',
+                                 tex_name=r'g_{type}',
+                                 )
+        self.genfuel = DataParam(default=None,
+                                 info='generator fuel type',
+                                 tex_name=r'g_{fuel}',
+                                 )
 
 
 class PVModel(Model):
