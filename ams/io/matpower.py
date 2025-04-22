@@ -593,7 +593,7 @@ def mpc2m(mpc: dict, outfile: str) -> str:
     with open(outfile, 'w') as f:
         # Add version info
         f.write(f"%% Converted by AMS {version}\n")
-        f.write(f"%% {copyright_msg}\n")
+        f.write(f"%% {copyright_msg}\n\n")
         f.write(f"%% {nowarranty_msg}\n")
         f.write(f"%% Convert time: {report_time}\n\n")
 
