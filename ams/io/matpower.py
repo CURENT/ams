@@ -430,7 +430,7 @@ def _get_bus_id_caller(bus):
 
 def system2mpc(system) -> dict:
     """
-    Convert data from an AMS system to an mpc dict.
+    Convert a **setup** AMS system to an mpc dict.
 
     In the ``gen`` section, slack generators preceeds PV generators.
 
@@ -458,6 +458,10 @@ def system2mpc(system) -> dict:
                branch=np.zeros((system.Line.n, 17), dtype=np.float64),
                gencost=np.zeros((system.GCost.n, 7), dtype=np.float64),
                )
+
+    if not system.is_setup:
+        logger.warning("System is not setup and will be setup now.")
+        system.setup()
 
     if system.Bus.name.v is not None:
         mpc['bus_name'] = system.Bus.name.v
