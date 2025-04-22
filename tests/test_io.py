@@ -9,6 +9,9 @@ import ams
 
 
 class TestMATPOWER(unittest.TestCase):
+    """
+    Test IO functions for MATPOWER and PYPOWER.
+    """
 
     def setUp(self):
         self.mpc5 = ams.io.matpower.m2mpc(ams.get_case('matpower/case5.m'))
@@ -77,14 +80,14 @@ class TestMATPOWER(unittest.TestCase):
                 continue
             np.testing.assert_array_almost_equal(
                 mpc5[key], mpc5read[key], decimal=5,
-                err_msg=f"Mismatch in {key} for case5.m"
+                err_msg=f"Mismatch in {key} when converting case5.m"
             )
         for key in mpc14:
             if key in ['bus_name', 'gentype', 'genfuel']:
                 continue
             np.testing.assert_array_almost_equal(
                 mpc14[key], mpc14read[key], decimal=5,
-                err_msg=f"Mismatch in {key} for case14.m"
+                err_msg=f"Mismatch in {key} when converting case14.m"
             )
 
         # Clean up the generated files
