@@ -12,7 +12,7 @@ v1.0
 v1.0.9 (2024-xx-xx)
 --------------------
 
-- Add functions in ``ams.io.matpower`` to MATPOWER m file
+- Add functions in ``ams.io.matpower`` for exporting to MATPOWER m file
 
 v1.0.8 (2024-04-20)
 --------------------
