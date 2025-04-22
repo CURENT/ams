@@ -602,11 +602,9 @@ def mpc2m(mpc: dict, outfile: str) -> str:
         f.write("mpc.version = '2';\n\n")
 
         # Write baseMVA
-        logger.info("Writing baseMVA")
         f.write(f"%% system MVA base\nmpc.baseMVA = {mpc['baseMVA']};\n\n")
 
         # Write bus data
-        logger.info("Writing bus data")
         f.write("%% bus data\n")
         f.write("%% bus_i type Pd Qd Gs Bs area Vm Va baseKV zone Vmax Vmin\n")
         f.write("mpc.bus = [\n")
@@ -615,7 +613,6 @@ def mpc2m(mpc: dict, outfile: str) -> str:
         f.write("];\n\n")
 
         # Write generator data
-        logger.info("Writing generator data")
         f.write("%% generator data\n")
         f.write("%% bus Pg Qg Qmax Qmin Vg mBase status Pmax Pmin\n")
         f.write("%% Pc1 Pc2 Qc1min Qc1max Qc2min Qc2max ramp_agc ramp_10 ramp_30 ramp_q apf\n")
@@ -625,7 +622,6 @@ def mpc2m(mpc: dict, outfile: str) -> str:
         f.write("];\n\n")
 
         # Write branch data
-        logger.info("Writing branch data")
         f.write("%% branch data\n")
         f.write("%% fbus tbus r x b rateA rateB rateC ratio angle status angmin angmax\n")
         f.write("mpc.branch = [\n")
@@ -635,7 +631,6 @@ def mpc2m(mpc: dict, outfile: str) -> str:
 
         # Write generator cost data if available
         if 'gencost' in mpc:
-            logger.info("Writing generator cost data")
             f.write("%% generator cost data\n")
             f.write("%% 1 startup shutdown n x1 y1 ... xn yn\n")
             f.write("%% 2 startup shutdown n c(n-1) ... c0\n")
@@ -646,7 +641,6 @@ def mpc2m(mpc: dict, outfile: str) -> str:
 
         # Write bus names if available and not all None
         if 'bus_name' in mpc and any(mpc['bus_name']):
-            logger.info("Writing bus names")
             f.write("%% bus names\n")
             f.write("mpc.bus_name = {\n")
             for name in mpc['bus_name']:
@@ -655,7 +649,6 @@ def mpc2m(mpc: dict, outfile: str) -> str:
 
         # Write generator types if available and not all None
         if 'gentype' in mpc and any(mpc['gentype']):
-            logger.info("Writing generator types")
             f.write("%% generator types\n")
             f.write("mpc.gentype = {\n")
             for gentype in mpc['gentype']:
@@ -664,7 +657,6 @@ def mpc2m(mpc: dict, outfile: str) -> str:
 
         # Write generator fuels if available and not all None
         if 'genfuel' in mpc and any(mpc['genfuel']):
-            logger.info("Writing generator fuels")
             f.write("%% generator fuels\n")
             f.write("mpc.genfuel = {\n")
             for genfuel in mpc['genfuel']:
