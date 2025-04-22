@@ -1,7 +1,7 @@
 """
 Test file input/output.
 """
-
+import os
 import unittest
 import numpy as np
 
@@ -9,6 +9,9 @@ import ams
 
 
 class TestMATPOWER(unittest.TestCase):
+    """
+    Test IO functions for MATPOWER and PYPOWER.
+    """
 
     def setUp(self):
         self.mpc5 = ams.io.matpower.m2mpc(ams.get_case('matpower/case5.m'))
@@ -54,3 +57,39 @@ class TestMATPOWER(unittest.TestCase):
         system = ams.system.System()
         ams.io.matpower.mpc2system(mpcgc1, system)
         self.assertEqual(system.GCost.n, 5)
+
+    def test_mpc2m(self):
+        """Test conversion from MPC to M file."""
+        mpc5 = ams.io.matpower.m2mpc(ams.get_case('matpower/case5.m'))
+        mpc14 = ams.io.matpower.m2mpc(ams.get_case('matpower/case14.m'))
+
+        # Test conversion to M file
+        mfile5 = ams.io.matpower.mpc2m(mpc5, './case5out.m')
+        mfile14 = ams.io.matpower.mpc2m(mpc14, './case14out.m')
+
+        # Check if the files exist
+        self.assertTrue(os.path.exists(mfile5))
+        self.assertTrue(os.path.exists(mfile14))
+
+        mpc5read = ams.io.matpower.m2mpc(mfile5)
+        mpc14read = ams.io.matpower.m2mpc(mfile14)
+
+        # Check if the numerical values are the same
+        for key in mpc5:
+            if key in ['bus_name', 'gentype', 'genfuel']:
+                continue
+            np.testing.assert_array_almost_equal(
+                mpc5[key], mpc5read[key], decimal=5,
+                err_msg=f"Mismatch in {key} when converting case5.m"
+            )
+        for key in mpc14:
+            if key in ['bus_name', 'gentype', 'genfuel']:
+                continue
+            np.testing.assert_array_almost_equal(
+                mpc14[key], mpc14read[key], decimal=5,
+                err_msg=f"Mismatch in {key} when converting case14.m"
+            )
+
+        # Clean up the generated files
+        os.remove(mfile5)
+        os.remove(mfile14)
