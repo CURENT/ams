@@ -3,8 +3,7 @@
 PYPOWER
 --------
 
-AMS includes `PYPOWER cases <https://github.com/CURENT/ams/tree/develop/ams/cases/pypower>`_
-in version 2 for scheduling modeling and analysis. PYPOWER cases follow the same format as MATPOWER.
+AMS supports PYPOWER PY case file. PYPOWER cases follow a similar format as MATPOWER.
 
 The PYPOWER case is defined as a Python dictionary that includes ``bus``, ``gen``, ``branch``,
 ``areas``, and ``gencost``.

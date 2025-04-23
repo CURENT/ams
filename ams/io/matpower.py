@@ -445,17 +445,17 @@ def system2mpc(system) -> dict:
     """
     Convert a **setup** AMS system to a MATPOWER mpc dictionary.
 
-    In the ``gen`` section, slack generators are listed before PV generators.
-
     This function is revised from ``andes.io.matpower.system2mpc``.
 
-    Note:
-    - In the converted MPC, the indices of area (bus[:, 6]) and zone (bus[:, 10])
-      may differ from the original MPC. However, the mapping relationship is preserved.
-      For example, if the original MPC numbers areas starting from 1, the converted
-      MPC may number them starting from 0.
-    - The coefficients ``c2`` and ``c1`` in the generator cost data are scaled by
-      ``base_mva`` to match MATPOWER's unit convention (MW).
+    In the ``gen`` section, slack generators are listed before PV generators.
+
+    In the converted MPC, the indices of area (bus[:, 6]) and zone (bus[:, 10])
+    may differ from the original MPC. However, the mapping relationship is preserved.
+    For example, if the original MPC numbers areas starting from 1, the converted
+    MPC may number them starting from 0.
+
+    The coefficients ``c2`` and ``c1`` in the generator cost data are scaled by
+    ``base_mva`` to match MATPOWER's unit convention (MW).
 
     Parameters
     ----------
