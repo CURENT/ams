@@ -400,14 +400,24 @@ def mpc2system(mpc: dict, system) -> bool:
                        c2=c2, c1=c1, c0=c0
                        )
 
+    # --- Area ---
+    area_id = np.unique(system.Bus.area.v).astype(int)
+    for area in area_id:
+        area_idx = f'AREA_{area}'
+        system.add('Area', idx=area_idx, name=area)
+    bus_area = system.Bus.area.v
+    bus_area = [f'AREA_{int(area)}' for area in bus_area]
+    system.Bus.area.v = bus_area
+
     # --- Zone ---
     zone_id = np.unique(system.Bus.zone.v).astype(int)
     for zone in zone_id:
         zone_idx = f'ZONE_{zone}'
-        system.add('Zone', idx=zone_idx, name=None)
+        system.add('Zone', idx=zone_idx, name=zone)
     bus_zone = system.Bus.zone.v
     bus_zone = [f'ZONE_{int(zone)}' for zone in bus_zone]
     system.Bus.zone.v = bus_zone
+
     return True
 
 
@@ -433,25 +443,29 @@ def _get_bus_id_caller(bus):
 
 def system2mpc(system) -> dict:
     """
-    Convert a **setup** AMS system to an mpc dict.
+    Convert a **setup** AMS system to a MATPOWER mpc dictionary.
 
-    In the ``gen`` section, slack generators preceeds PV generators.
+    This function is revised from ``andes.io.matpower.system2mpc``.
 
-    Compared to the ``andes.io.matpower.system2mpc``,
-    this function includes the generator cost data in the ``gencost``
-    section.
-    Additionally, ``c2`` and ``c1`` are scaled by ``base_mva`` to match
-    MATPOWER unit ``MW``.
+    In the ``gen`` section, slack generators are listed before PV generators.
+
+    In the converted MPC, the indices of area (bus[:, 6]) and zone (bus[:, 10])
+    may differ from the original MPC. However, the mapping relationship is preserved.
+    For example, if the original MPC numbers areas starting from 1, the converted
+    MPC may number them starting from 0.
+
+    The coefficients ``c2`` and ``c1`` in the generator cost data are scaled by
+    ``base_mva`` to match MATPOWER's unit convention (MW).
 
     Parameters
     ----------
     system : ams.core.system.System
-        AMS system
+        The AMS system to be converted.
 
     Returns
     -------
-    mpc: dict
-        MATPOWER mpc dict
+    mpc : dict
+        A dictionary in MATPOWER format representing the converted AMS system.
     """
 
     mpc = dict(version='2',
@@ -471,7 +485,7 @@ def system2mpc(system) -> dict:
 
     base_mva = system.config.mva
 
-    # --- bus ---
+    # --- Bus ---
     bus = mpc['bus']
     gen = mpc['gen']
 
@@ -479,21 +493,15 @@ def system2mpc(system) -> dict:
 
     bus[:, 0] = to_busid(system.Bus.idx.v)
     bus[:, 1] = 1
+    if system.Area.n > 0:
+        bus[:, 6] = system.Area.idx2uid(system.Bus.area.v)
     bus[:, 7] = system.Bus.v0.v
     bus[:, 8] = system.Bus.a0.v * rad2deg
     bus[:, 9] = system.Bus.Vn.v
+    if system.Zone.n > 0:
+        bus[:, 10] = system.Zone.idx2uid(system.Bus.zone.v)
     bus[:, 11] = system.Bus.vmax.v
     bus[:, 12] = system.Bus.vmin.v
-
-    # --- area ---
-    if system.Area.n > 0:
-        mapping = {busi0: i for i, busi0 in enumerate(system.Area.idx.v)}
-        bus[:, 6] = np.array([mapping[busi0] for busi0 in system.Bus.area.v])
-
-    # --- zone ---
-    if system.Zone.n > 0:
-        mapping = {busi0: i for i, busi0 in enumerate(system.Zone.idx.v)}
-        bus[:, 10] = np.array([mapping[busi0] for busi0 in system.Bus.zone.v])
 
     # --- PQ ---
     if system.PQ.n > 0:
@@ -580,6 +588,21 @@ def system2mpc(system) -> dict:
     else:
         mpc.pop('gencost')
 
+    # --- gentype ---
+    stg = system.StaticGen.get_all_idxes()
+    gentype = system.StaticGen.get(src='gentype', attr='v', idx=stg)
+    if any(gentype):
+        mpc['gentype'] = np.array(gentype)
+
+    # --- genfuel ---
+    genfuel = system.StaticGen.get(src='genfuel', attr='v', idx=stg)
+    if any(genfuel):
+        mpc['genfuel'] = np.array(genfuel)
+
+    # --- Bus Name ---
+    if any(system.Bus.name.v):
+        mpc['bus_name'] = np.array(system.Bus.name.v)
+
     return mpc
 
 
@@ -627,7 +650,7 @@ def mpc2m(mpc: dict, outfile: str) -> str:
 
         # Write branch data
         f.write("%% branch data\n")
-        f.write("%% fbus tbus r x b rateA rateB rateC ratio angle status angmin angmax\n")
+        f.write("%% fbus tbus r x b rateA rateB rateC ratio angle status angmin angmax PF QF PT QT\n")
         f.write("mpc.branch = [\n")
         for row in mpc['branch']:
             f.write("    " + "\t".join(f"{val:.6g}" for val in row) + ";\n")
