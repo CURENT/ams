@@ -485,10 +485,14 @@ def system2mpc(system) -> dict:
     bus[:, 11] = system.Bus.vmax.v
     bus[:, 12] = system.Bus.vmin.v
 
+    # --- area ---
+    if system.Area.n > 0:
+        mapping = {busi0: i for i, busi0 in enumerate(system.Area.idx.v)}
+        bus[:, 6] = np.array([mapping[busi0] for busi0 in system.Bus.area.v])
+
     # --- zone ---
-    ZONE_I = system.Zone.idx.v
-    if len(ZONE_I) > 0:
-        mapping = {busi0: i for i, busi0 in enumerate(ZONE_I)}
+    if system.Zone.n > 0:
+        mapping = {busi0: i for i, busi0 in enumerate(system.Zone.idx.v)}
         bus[:, 10] = np.array([mapping[busi0] for busi0 in system.Bus.zone.v])
 
     # --- PQ ---
