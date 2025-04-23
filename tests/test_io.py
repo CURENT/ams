@@ -37,6 +37,12 @@ class TestMATPOWER(unittest.TestCase):
         np.testing.assert_array_equal(system5.GCost.c2.v,
                                       np.zeros(system5.StaticGen.n))
 
+        # Check if Area is added
+        self.assertGreater(system5.Area.n, 0)
+
+        # Check if Zone is added
+        self.assertGreater(system5.Zone.n, 0)
+
         system14 = ams.system.System()
         # Test gentype length check
         mpc14 = self.mpc14.copy()
