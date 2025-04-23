@@ -624,8 +624,7 @@ def mpc2m(mpc: dict, outfile: str) -> str:
         f.write(f"%% {nowarranty_msg}\n")
         f.write(f"%% Convert time: {report_time}\n\n")
 
-        f.write("function mpc = case\n")
-        f.write("%% MATPOWER Case Format : Version 2\n")
+        f.write("function mpc = mpc_case\n")
         f.write("mpc.version = '2';\n\n")
 
         # Write baseMVA
