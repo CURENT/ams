@@ -485,10 +485,14 @@ def system2mpc(system) -> dict:
     bus[:, 11] = system.Bus.vmax.v
     bus[:, 12] = system.Bus.vmin.v
 
+    # --- area ---
+    if system.Area.n > 0:
+        mapping = {busi0: i for i, busi0 in enumerate(system.Area.idx.v)}
+        bus[:, 6] = np.array([mapping[busi0] for busi0 in system.Bus.area.v])
+
     # --- zone ---
-    ZONE_I = system.Zone.idx.v
-    if len(ZONE_I) > 0:
-        mapping = {busi0: i for i, busi0 in enumerate(ZONE_I)}
+    if system.Zone.n > 0:
+        mapping = {busi0: i for i, busi0 in enumerate(system.Zone.idx.v)}
         bus[:, 10] = np.array([mapping[busi0] for busi0 in system.Bus.zone.v])
 
     # --- PQ ---
@@ -667,7 +671,7 @@ def mpc2m(mpc: dict, outfile: str) -> str:
     return outfile
 
 
-def write(system, outfile: str, overwrite=None) -> bool:
+def write(system, outfile: str, overwrite: bool = None) -> bool:
     """
     Export an AMS system to a MATPOWER mpc file.
 
@@ -677,11 +681,11 @@ def write(system, outfile: str, overwrite=None) -> bool:
     Parameters
     ----------
     system : ams.system.System
-        A loaded system
+        A loaded system.
     outfile : str
-        Path to the output file
+        Path to the output file.
     overwrite : bool, optional
-        None to prompt for overwrite selection; True to overwrite; False to not overwrite
+        None to prompt for overwrite selection; True to overwrite; False to not overwrite.
 
     Returns
     -------
@@ -693,5 +697,5 @@ def write(system, outfile: str, overwrite=None) -> bool:
 
     mpc = system2mpc(system)
     mpc2m(mpc, outfile)
-    logger.info('m file written to "%s"', outfile)
+    logger.info('MATPOWER m case file written to "%s"', outfile)
     return True
