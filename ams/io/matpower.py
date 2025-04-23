@@ -592,16 +592,16 @@ def system2mpc(system) -> dict:
     stg = system.StaticGen.get_all_idxes()
     gentype = system.StaticGen.get(src='gentype', attr='v', idx=stg)
     if any(gentype):
-        mpc['gentype'] = gentype
+        mpc['gentype'] = np.array(gentype)
 
     # --- genfuel ---
     genfuel = system.StaticGen.get(src='genfuel', attr='v', idx=stg)
     if any(genfuel):
-        mpc['genfuel'] = genfuel
+        mpc['genfuel'] = np.array(genfuel)
 
     # --- Bus Name ---
     if any(system.Bus.name.v):
-        mpc['bus_name'] = system.Bus.name.v
+        mpc['bus_name'] = np.array(system.Bus.name.v)
 
     return mpc
 
