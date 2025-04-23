@@ -13,6 +13,7 @@ v1.0.9 (2024-xx-xx)
 --------------------
 
 - Add functions in ``ams.io.matpower`` for exporting to MATPOWER m file
+- Include Area and Zone in MATPOWEr conversion
 
 v1.0.8 (2024-04-20)
 --------------------
