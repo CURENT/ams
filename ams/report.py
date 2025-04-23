@@ -3,7 +3,6 @@ Module for report generation.
 """
 import logging
 from collections import OrderedDict
-from time import strftime
 from typing import List, Dict, Optional
 
 from andes.io.txt import dump_data
@@ -11,7 +10,7 @@ from andes.shared import np
 from andes.utils.misc import elapsed
 
 from ams import __version__ as version
-from ams.shared import copyright_msg
+from ams.shared import copyright_msg, nowarranty_msg, report_time
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +22,9 @@ def report_info(system) -> list:
     info = list()
     info.append('AMS' + ' ' + version + '\n')
     info.append(f'{copyright_msg}\n\n')
-    info.append('AMS comes with ABSOLUTELY NO WARRANTY\n')
+    info.append(f"{nowarranty_msg}\n")
     info.append('Case file: ' + str(system.files.case) + '\n')
-    info.append('Report time: ' + strftime("%m/%d/%Y %I:%M:%S %p") + '\n\n')
+    info.append(f'Report time: {report_time}\n\n')
     return info
 
 

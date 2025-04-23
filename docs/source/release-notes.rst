@@ -9,6 +9,14 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
+v1.0.9 (2024-04-23)
+--------------------
+
+Improve MATPOWER file converter:
+
+- Add a M file case writer
+- Include Area and Zone in both MATPOWER read and write
+
 v1.0.8 (2024-04-20)
 --------------------
 

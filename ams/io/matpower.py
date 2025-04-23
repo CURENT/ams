@@ -6,7 +6,11 @@ import re
 import numpy as np
 
 from andes.io import read_file_like
+from andes.io.xlsx import confirm_overwrite
 from andes.shared import deg2rad, rad2deg
+
+from ams import __version__ as version
+from ams.shared import copyright_msg, nowarranty_msg, report_time
 
 logger = logging.getLogger(__name__)
 
@@ -396,14 +400,24 @@ def mpc2system(mpc: dict, system) -> bool:
                        c2=c2, c1=c1, c0=c0
                        )
 
+    # --- Area ---
+    area_id = np.unique(system.Bus.area.v).astype(int)
+    for area in area_id:
+        area_idx = f'AREA_{area}'
+        system.add('Area', idx=area_idx, name=area)
+    bus_area = system.Bus.area.v
+    bus_area = [f'AREA_{int(area)}' for area in bus_area]
+    system.Bus.area.v = bus_area
+
     # --- Zone ---
     zone_id = np.unique(system.Bus.zone.v).astype(int)
     for zone in zone_id:
         zone_idx = f'ZONE_{zone}'
-        system.add('Zone', idx=zone_idx, name=None)
+        system.add('Zone', idx=zone_idx, name=zone)
     bus_zone = system.Bus.zone.v
     bus_zone = [f'ZONE_{int(zone)}' for zone in bus_zone]
     system.Bus.zone.v = bus_zone
+
     return True
 
 
@@ -429,25 +443,29 @@ def _get_bus_id_caller(bus):
 
 def system2mpc(system) -> dict:
     """
-    Convert data from an AMS system to an mpc dict.
+    Convert a **setup** AMS system to a MATPOWER mpc dictionary.
 
-    In the ``gen`` section, slack generators preceeds PV generators.
+    This function is revised from ``andes.io.matpower.system2mpc``.
 
-    Compared to the ``andes.io.matpower.system2mpc``,
-    this function includes the generator cost data in the ``gencost``
-    section.
-    Additionally, ``c2`` and ``c1`` are scaled by ``base_mva`` to match
-    MATPOWER unit ``MW``.
+    In the ``gen`` section, slack generators are listed before PV generators.
+
+    In the converted MPC, the indices of area (bus[:, 6]) and zone (bus[:, 10])
+    may differ from the original MPC. However, the mapping relationship is preserved.
+    For example, if the original MPC numbers areas starting from 1, the converted
+    MPC may number them starting from 0.
+
+    The coefficients ``c2`` and ``c1`` in the generator cost data are scaled by
+    ``base_mva`` to match MATPOWER's unit convention (MW).
 
     Parameters
     ----------
     system : ams.core.system.System
-        AMS system
+        The AMS system to be converted.
 
     Returns
     -------
-    mpc: dict
-        MATPOWER mpc dict
+    mpc : dict
+        A dictionary in MATPOWER format representing the converted AMS system.
     """
 
     mpc = dict(version='2',
@@ -458,12 +476,16 @@ def system2mpc(system) -> dict:
                gencost=np.zeros((system.GCost.n, 7), dtype=np.float64),
                )
 
+    if not system.is_setup:
+        logger.warning("System is not setup and will be setup now.")
+        system.setup()
+
     if system.Bus.name.v is not None:
         mpc['bus_name'] = system.Bus.name.v
 
     base_mva = system.config.mva
 
-    # --- bus ---
+    # --- Bus ---
     bus = mpc['bus']
     gen = mpc['gen']
 
@@ -471,17 +493,15 @@ def system2mpc(system) -> dict:
 
     bus[:, 0] = to_busid(system.Bus.idx.v)
     bus[:, 1] = 1
+    if system.Area.n > 0:
+        bus[:, 6] = system.Area.idx2uid(system.Bus.area.v)
     bus[:, 7] = system.Bus.v0.v
     bus[:, 8] = system.Bus.a0.v * rad2deg
     bus[:, 9] = system.Bus.Vn.v
+    if system.Zone.n > 0:
+        bus[:, 10] = system.Zone.idx2uid(system.Bus.zone.v)
     bus[:, 11] = system.Bus.vmax.v
     bus[:, 12] = system.Bus.vmin.v
-
-    # --- zone ---
-    ZONE_I = system.Zone.idx.v
-    if len(ZONE_I) > 0:
-        mapping = {busi0: i for i, busi0 in enumerate(ZONE_I)}
-        bus[:, 10] = np.array([mapping[busi0] for busi0 in system.Bus.zone.v])
 
     # --- PQ ---
     if system.PQ.n > 0:
@@ -568,4 +588,136 @@ def system2mpc(system) -> dict:
     else:
         mpc.pop('gencost')
 
+    # --- gentype ---
+    stg = system.StaticGen.get_all_idxes()
+    gentype = system.StaticGen.get(src='gentype', attr='v', idx=stg)
+    if any(gentype):
+        mpc['gentype'] = np.array(gentype)
+
+    # --- genfuel ---
+    genfuel = system.StaticGen.get(src='genfuel', attr='v', idx=stg)
+    if any(genfuel):
+        mpc['genfuel'] = np.array(genfuel)
+
+    # --- Bus Name ---
+    if any(system.Bus.name.v):
+        mpc['bus_name'] = np.array(system.Bus.name.v)
+
     return mpc
+
+
+def mpc2m(mpc: dict, outfile: str) -> str:
+    """
+    Write a MATPOWER mpc dict to a M-file.
+
+    Parameters
+    ----------
+    mpc : dict
+        MATPOWER mpc dictionary.
+    outfile : str
+        Path to the output M-file.
+    """
+    with open(outfile, 'w') as f:
+        # Add version info
+        f.write(f"%% Converted by AMS {version}\n")
+        f.write(f"%% {copyright_msg}\n\n")
+        f.write(f"%% {nowarranty_msg}\n")
+        f.write(f"%% Convert time: {report_time}\n\n")
+
+        f.write("function mpc = mpc_case\n")
+        f.write("mpc.version = '2';\n\n")
+
+        # Write baseMVA
+        f.write(f"%% system MVA base\nmpc.baseMVA = {mpc['baseMVA']};\n\n")
+
+        # Write bus data
+        f.write("%% bus data\n")
+        f.write("%% bus_i type Pd Qd Gs Bs area Vm Va baseKV zone Vmax Vmin\n")
+        f.write("mpc.bus = [\n")
+        for row in mpc['bus']:
+            f.write("    " + "\t".join(f"{val:.6g}" for val in row) + ";\n")
+        f.write("];\n\n")
+
+        # Write generator data
+        f.write("%% generator data\n")
+        f.write("%% bus Pg Qg Qmax Qmin Vg mBase status Pmax Pmin\n")
+        f.write("%% Pc1 Pc2 Qc1min Qc1max Qc2min Qc2max ramp_agc ramp_10 ramp_30 ramp_q apf\n")
+        f.write("mpc.gen = [\n")
+        for row in mpc['gen']:
+            f.write("    " + "\t".join(f"{val:.6g}" for val in row) + ";\n")
+        f.write("];\n\n")
+
+        # Write branch data
+        f.write("%% branch data\n")
+        f.write("%% fbus tbus r x b rateA rateB rateC ratio angle status angmin angmax PF QF PT QT\n")
+        f.write("mpc.branch = [\n")
+        for row in mpc['branch']:
+            f.write("    " + "\t".join(f"{val:.6g}" for val in row) + ";\n")
+        f.write("];\n\n")
+
+        # Write generator cost data if available
+        if 'gencost' in mpc:
+            f.write("%% generator cost data\n")
+            f.write("%% 1 startup shutdown n x1 y1 ... xn yn\n")
+            f.write("%% 2 startup shutdown n c(n-1) ... c0\n")
+            f.write("mpc.gencost = [\n")
+            for row in mpc['gencost']:
+                f.write("    " + "\t".join(f"{val:.6g}" for val in row) + ";\n")
+            f.write("];\n\n")
+
+        # Write bus names if available and not all None
+        if 'bus_name' in mpc and any(mpc['bus_name']):
+            f.write("%% bus names\n")
+            f.write("mpc.bus_name = {\n")
+            for name in mpc['bus_name']:
+                f.write(f"    '{name}';\n")
+            f.write("};\n\n")
+
+        # Write generator types if available and not all None
+        if 'gentype' in mpc and any(mpc['gentype']):
+            f.write("%% generator types\n")
+            f.write("mpc.gentype = {\n")
+            for gentype in mpc['gentype']:
+                f.write(f"    '{gentype}';\n")
+            f.write("};\n\n")
+
+        # Write generator fuels if available and not all None
+        if 'genfuel' in mpc and any(mpc['genfuel']):
+            f.write("%% generator fuels\n")
+            f.write("mpc.genfuel = {\n")
+            for genfuel in mpc['genfuel']:
+                f.write(f"    '{genfuel}';\n")
+            f.write("};\n\n")
+
+    logger.info(f"Finished writing MATPOWER case to {outfile}")
+    return outfile
+
+
+def write(system, outfile: str, overwrite: bool = None) -> bool:
+    """
+    Export an AMS system to a MATPOWER mpc file.
+
+    This function converts an AMS system object into a MATPOWER-compatible
+    mpc dictionary and writes it to a specified output file in MATPOWER format.
+
+    Parameters
+    ----------
+    system : ams.system.System
+        A loaded system.
+    outfile : str
+        Path to the output file.
+    overwrite : bool, optional
+        None to prompt for overwrite selection; True to overwrite; False to not overwrite.
+
+    Returns
+    -------
+    bool
+        True if the file was successfully written, False otherwise.
+    """
+    if not confirm_overwrite(outfile, overwrite=overwrite):
+        return False
+
+    mpc = system2mpc(system)
+    mpc2m(mpc, outfile)
+    logger.info('MATPOWER m case file written to "%s"', outfile)
+    return True

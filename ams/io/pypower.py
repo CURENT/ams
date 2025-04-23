@@ -101,3 +101,17 @@ def system2ppc(system) -> dict:
     mpc['branch'][:, 0] = np.array([bus_map[busi0] for busi0 in mpc['branch'][:, 0].astype(int)])
     mpc['branch'][:, 1] = np.array([bus_map[busi0] for busi0 in mpc['branch'][:, 1].astype(int)])
     return mpc
+
+
+def ppc2py(ppc: dict, outfile: str) -> str:
+    """
+    Placeholder.
+    """
+    return NotImplemented
+
+
+def write(system, outfile: str) -> bool:
+    """
+    Placeholder.
+    """
+    return NotImplemented

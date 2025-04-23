@@ -24,9 +24,9 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 
 <img src="docs/source/images/sponsors/CURENT_Logo_NameOnTrans.png" alt="CURENT ERC Logo" width="300" height="auto">
 
-|               | Stable                                                                                                                                        | Latest                                                                                                                                        |
+|               | Stable                                                                                                                                        | Develop                                                                                                                                       |
 |---------------|-----------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| Documentation | [![Documentation Status](https://readthedocs.org/projects/ams/badge/?version=stable)](https://ams.readthedocs.io/en/stable/?badge=stable) | [![Latest Documentation](https://readthedocs.org/projects/ams/badge/?version=latest)](https://ams.readthedocs.io/en/latest/?badge=latest) | 
+| Documentation | [![Documentation Status](https://readthedocs.org/projects/ams/badge/?version=stable)](https://ams.readthedocs.io/en/stable/?badge=stable) | [![Develop Documentation](https://readthedocs.org/projects/ams/badge/?version=develop)](https://ams.readthedocs.io/en/develop/?badge=develop) | 
 
 
 | Badges        |                                                                                                                                                                                                                                                     |                                                                                                                                                                                                            |

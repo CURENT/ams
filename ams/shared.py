@@ -7,6 +7,7 @@ import logging
 import unittest
 from functools import wraps
 from collections import OrderedDict
+from time import strftime
 
 import cvxpy as cp
 
@@ -35,7 +36,9 @@ _prefix = r" - --------------> | "  # NOQA
 _max_length = 80                    # NOQA
 
 # NOTE: copyright
-copyright_msg = 'Copyright (C) 2023-2025 Jinning Wang'
+copyright_msg = "Copyright (C) 2023-2025 Jinning Wang"
+nowarranty_msg = "AMS comes with ABSOLUTELY NO WARRANTY"
+report_time = strftime("%m/%d/%Y %I:%M:%S %p")
 
 # NOTE: copied from CVXPY documentation, last checked on 2024/10/30, v1.5
 mip_solvers = ['CBC', 'COPT', 'GLPK_MI', 'CPLEX', 'GUROBI',
