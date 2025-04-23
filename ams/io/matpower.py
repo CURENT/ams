@@ -650,7 +650,7 @@ def mpc2m(mpc: dict, outfile: str) -> str:
 
         # Write branch data
         f.write("%% branch data\n")
-        f.write("%% fbus tbus r x b rateA rateB rateC ratio angle status angmin angmax\n")
+        f.write("%% fbus tbus r x b rateA rateB rateC ratio angle status angmin angmax PF QF PT QT\n")
         f.write("mpc.branch = [\n")
         for row in mpc['branch']:
             f.write("    " + "\t".join(f"{val:.6g}" for val in row) + ";\n")
