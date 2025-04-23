@@ -408,6 +408,16 @@ def mpc2system(mpc: dict, system) -> bool:
     bus_zone = system.Bus.zone.v
     bus_zone = [f'ZONE_{int(zone)}' for zone in bus_zone]
     system.Bus.zone.v = bus_zone
+
+    # --- Area ---
+    area_id = np.unique(system.Bus.area.v).astype(int)
+    for area in area_id:
+        area_idx = f'AREA_{area}'
+        system.add('Area', idx=area_idx, name=None)
+    bus_area = system.Bus.area.v
+    bus_area = [f'AREA_{int(area)}' for area in bus_area]
+    system.Bus.area.v = bus_area
+
     return True
 
 
