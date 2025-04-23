@@ -12,9 +12,10 @@ v1.0
 v1.0.9 (2024-04-23)
 --------------------
 
-- Add functions in ``ams.io.matpower`` for exporting to MATPOWER m file
-- Improve MATPOWER file converter. 1) Add a M file case writer. 2) Include Area and
-  Zone in both MATPOWER read and write
+Improve MATPOWER file converter:
+
+- Add a M file case writer
+- Include Area and Zone in both MATPOWER read and write
 
 v1.0.8 (2024-04-20)
 --------------------
