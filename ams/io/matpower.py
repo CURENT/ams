@@ -481,7 +481,7 @@ def system2mpc(system) -> dict:
 
     base_mva = system.config.mva
 
-    # --- bus ---
+    # --- Bus ---
     bus = mpc['bus']
     gen = mpc['gen']
 
