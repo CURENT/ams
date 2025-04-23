@@ -667,7 +667,7 @@ def mpc2m(mpc: dict, outfile: str) -> str:
     return outfile
 
 
-def write(system, outfile: str, overwrite=None) -> bool:
+def write(system, outfile: str, overwrite: bool = None) -> bool:
     """
     Export an AMS system to a MATPOWER mpc file.
 
@@ -677,11 +677,11 @@ def write(system, outfile: str, overwrite=None) -> bool:
     Parameters
     ----------
     system : ams.system.System
-        A loaded system
+        A loaded system.
     outfile : str
-        Path to the output file
+        Path to the output file.
     overwrite : bool, optional
-        None to prompt for overwrite selection; True to overwrite; False to not overwrite
+        None to prompt for overwrite selection; True to overwrite; False to not overwrite.
 
     Returns
     -------
@@ -693,5 +693,5 @@ def write(system, outfile: str, overwrite=None) -> bool:
 
     mpc = system2mpc(system)
     mpc2m(mpc, outfile)
-    logger.info('m file written to "%s"', outfile)
+    logger.info('MATPOWER m case file written to "%s"', outfile)
     return True
