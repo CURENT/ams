@@ -421,6 +421,16 @@ class System(andes_System):
             adjusted_params_str = ', '.join(adjusted_params)
             msg = f"Zero Line parameters detected, adjusted to default values: {adjusted_params_str}."
             logger.info(msg)
+        # --- bus type correction ---
+        pq_bus = self.PQ.bus.v
+        pv_bus = self.PV.bus.v
+        slack_bus = self.Slack.bus.v
+        # TODO: how to include islanded buses?
+        if np.all(self.Bus.type.v == 1):
+            self.Bus.alter(src='type', idx=pq_bus, value=1)
+            self.Bus.alter(src='type', idx=pv_bus, value=2)
+            self.Bus.alter(src='type', idx=slack_bus, value=3)
+            logger.info("All bus type are PQ, adjusted given load and generator connection status.")
 
         # === no device addition or removal after this point ===
         self.calc_pu_coeff()   # calculate parameters in system per units
