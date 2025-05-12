@@ -101,8 +101,7 @@ def write(system, outfile: str, overwrite: bool = None):
                 int(row.bus),
                 int(system.Shunt.idx2uid(row.idx) + 1),
                 int(row.u),
-                float(row.g * mva / row.Vn**2),
-                float(row.b * mva / row.Vn**2)]
+                float(row.g * mva), float(row.b * mva)]
 
             # Format each column with ',' as the delimiter
             formatted_row = ",".join(
