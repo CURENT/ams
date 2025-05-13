@@ -435,9 +435,9 @@ class System(andes_System):
         input_zone = self.Bus.zone.v
         if len(set(input_zone)) > 0 and self.Zone.n == 0:
             zone_map = {}
-            for i, zone in enumerate(set(self.Bus.zone.v)):
+            for zone in set(self.Bus.zone.v):
                 zone_map[zone] = self.add(model='Zone', param_dict=dict())
-        self.Bus.zone.v = [zone_map.get(zone, zone) for zone in self.Bus.zone.v] 
+        self.Bus.zone.v = [zone_map.get(zone, zone) for zone in self.Bus.zone.v]
         # === no device addition or removal after this point ===
         self.calc_pu_coeff()   # calculate parameters in system per units
 
