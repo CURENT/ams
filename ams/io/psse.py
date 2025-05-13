@@ -35,7 +35,7 @@ def read(system, file):
             # Add new zone and update the mapping
             z_new = system.add(
                 'Zone',
-                param_dict=dict(idx=n_zone + 1, name=f'ZONE {n_zone + 1}')
+                param_dict=dict(idx=n_zone + 1, name=f'{n_zone + 1}')
             )
             zone_map[z] = z_new
             n_zone += 1
