@@ -464,18 +464,11 @@ class System(andes_System):
         pv_bus = self.PV.bus.v
         slack_bus = self.Slack.bus.v
         # TODO: how to include islanded buses?
-        if np.all(self.Bus.type.v == 1):
+        if self.Bus.n > 0 and np.all(self.Bus.type.v == 1):
             self.Bus.alter(src='type', idx=pq_bus, value=1)
             self.Bus.alter(src='type', idx=pv_bus, value=2)
             self.Bus.alter(src='type', idx=slack_bus, value=3)
             logger.info("All bus type are PQ, adjusted given load and generator connection status.")
-        # --- add Zone if not exist ---
-        input_zone = self.Bus.zone.v
-        if len(set(input_zone)) > 0 and self.Zone.n == 0:
-            zone_map = {}
-            for zone in set(self.Bus.zone.v):
-                zone_map[zone] = self.add(model='Zone', param_dict=dict())
-        self.Bus.zone.v = [zone_map.get(zone, zone) for zone in self.Bus.zone.v]
         # === no device addition or removal after this point ===
         self.calc_pu_coeff()   # calculate parameters in system per units
 
