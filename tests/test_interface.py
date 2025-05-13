@@ -17,7 +17,7 @@ class TestAndesConversion(unittest.TestCase):
     Tests conversion from AMS to ANDES.
     """
     ad_cases = [
-        'ieee14/ieee14_full.xlsx',
+        'ieee14/ieee14_exac1.json',
         'ieee39/ieee39_full.xlsx',
         'npcc/npcc.xlsx',
     ]
