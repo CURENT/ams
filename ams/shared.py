@@ -25,6 +25,8 @@ pd = LazyImport('import pandas as pd')
 # --- an empty ANDES system ---
 empty_adsys = adSystem(autogen_stale=False)
 ad_models = list(empty_adsys.models.keys())
+ad_pf_models = [mname for mname, model in empty_adsys.models.items() if model.flags.pflow]
+ad_dyn_models = [mname for mname, model in empty_adsys.models.items() if model.flags.tds and not model.flags.pflow]
 
 # --- NumPy constants ---
 # NOTE: In NumPy 2.0, np.Inf and np.NaN are deprecated.
