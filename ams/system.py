@@ -26,6 +26,7 @@ from ams.utils.paths import get_config_path
 from ams.core.matprocessor import MatProcessor
 from ams.interface import to_andes
 from ams.report import Report
+from ams.shared import ad_dyn_models
 
 logger = logging.getLogger(__name__)
 
@@ -389,6 +390,43 @@ class System(andes_System):
         self.is_setup = False
         self.setup()
 
+    def add(self, model, param_dict=None, **kwargs):
+        """
+        Add a device instance for an existing model.
+
+        Revised from ``andes.system.System.add()``.
+        """
+        if model not in self.models and (model not in self.model_aliases):
+            if model in ad_dyn_models:
+                logger.debug("ANDES dynamic model <%s> is skipped.", model)
+            else:
+                logger.warning("<%s> is not an existing model.", model)
+            return
+
+        if self.is_setup:
+            raise NotImplementedError("Adding devices are not allowed after setup.")
+
+        group_name = self.__dict__[model].group
+        group = self.groups[group_name]
+
+        if param_dict is None:
+            param_dict = {}
+        if kwargs is not None:
+            param_dict.update(kwargs)
+
+        # remove `uid` field
+        param_dict.pop('uid', None)
+
+        idx = param_dict.pop('idx', None)
+        if idx is not None and (not isinstance(idx, str) and np.isnan(idx)):
+            idx = None
+
+        idx = group.get_next_idx(idx=idx, model_name=model)
+        self.__dict__[model].add(idx=idx, **param_dict)
+        group.add(idx=idx, model=self.__dict__[model])
+
+        return idx
+
     def setup(self):
         """
         Set up system for studies.
@@ -421,7 +459,16 @@ class System(andes_System):
             adjusted_params_str = ', '.join(adjusted_params)
             msg = f"Zero Line parameters detected, adjusted to default values: {adjusted_params_str}."
             logger.info(msg)
-
+        # --- bus type correction ---
+        pq_bus = self.PQ.bus.v
+        pv_bus = self.PV.bus.v
+        slack_bus = self.Slack.bus.v
+        # TODO: how to include islanded buses?
+        if self.Bus.n > 0 and np.all(self.Bus.type.v == 1):
+            self.Bus.alter(src='type', idx=pq_bus, value=1)
+            self.Bus.alter(src='type', idx=pv_bus, value=2)
+            self.Bus.alter(src='type', idx=slack_bus, value=3)
+            logger.info("All bus type are PQ, adjusted given load and generator connection status.")
         # === no device addition or removal after this point ===
         self.calc_pu_coeff()   # calculate parameters in system per units
 

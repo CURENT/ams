@@ -17,7 +17,7 @@ class TestAndesConversion(unittest.TestCase):
     Tests conversion from AMS to ANDES.
     """
     ad_cases = [
-        'ieee14/ieee14_full.xlsx',
+        'ieee14/ieee14_exac1.json',
         'ieee39/ieee39_full.xlsx',
         'npcc/npcc.xlsx',
     ]
@@ -214,3 +214,25 @@ class TestDataExchange(unittest.TestCase):
         sa.TDS.run()
         self.sp.dyn.send(adsys=sa, routine='RTED')
         self.sp.dyn.receive(adsys=sa, routine='RTED', no_update=False)
+
+
+class TestLoadANDESFile(unittest.TestCase):
+    """
+    Test loading ANDES file.
+    """
+
+    def test_no_dyn_models(self):
+        """
+        Test loading ANDES file without dynamic models.
+        """
+        sp1 = ams.load(andes.get_case('ieee14/ieee14_exac1.json'),
+                       setup=True,
+                       no_output=True,
+                       default_config=True,)
+        self.assertNotIn('EXAC1', sp1.models.keys())
+
+        sp2 = ams.load(andes.get_case('ieee14/ieee14_pvd1.json'),
+                       setup=True,
+                       no_output=True,
+                       default_config=True,)
+        self.assertIn('PVD1', sp2.models.keys())

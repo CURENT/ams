@@ -401,22 +401,27 @@ def mpc2system(mpc: dict, system) -> bool:
                        )
 
     # --- Area ---
-    area_id = np.unique(system.Bus.area.v).astype(int)
-    for area in area_id:
-        area_idx = f'AREA_{area}'
-        system.add('Area', idx=area_idx, name=area)
-    bus_area = system.Bus.area.v
-    bus_area = [f'AREA_{int(area)}' for area in bus_area]
-    system.Bus.area.v = bus_area
+    area = system.Bus.area.v
+    area_map = {}
+    if area:
+        for a in set(area):
+            a_new = system.add('Area',
+                               para_dict=dict(idx=a, name=a))
+            area_map[a] = a_new
+        system.Bus.area.v = [area_map[a] for a in area]
 
     # --- Zone ---
-    zone_id = np.unique(system.Bus.zone.v).astype(int)
-    for zone in zone_id:
-        zone_idx = f'ZONE_{zone}'
-        system.add('Zone', idx=zone_idx, name=zone)
-    bus_zone = system.Bus.zone.v
-    bus_zone = [f'ZONE_{int(zone)}' for zone in bus_zone]
-    system.Bus.zone.v = bus_zone
+    zone = system.Bus.zone.v
+    zone_map = {}
+    if zone:
+        n_zone = system.Area.n
+        for z in set(zone):
+            z_new = system.add('Zone',
+                               param_dict=dict(idx=int(n_zone + 1),
+                                               name=f'{n_zone + 1}'))
+            zone_map[z] = z_new
+            n_zone += 1
+        system.Bus.zone.v = [zone_map[z] for z in zone]
 
     return True
 

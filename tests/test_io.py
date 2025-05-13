@@ -50,6 +50,7 @@ class TestMATPOWER(unittest.TestCase):
         with self.assertRaises(ValueError, msg='gentype length check failed!'):
             ams.io.matpower.mpc2system(mpc14, system14)
 
+        system14 = ams.system.System()
         ams.io.matpower.mpc2system(self.mpc14, system14)
         # In case14.m, the gencost has type 2 cost model, with 3 parameters.
         np.testing.assert_array_less(np.zeros(system14.StaticGen.n),
