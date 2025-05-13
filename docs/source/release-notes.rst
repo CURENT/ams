@@ -15,7 +15,7 @@ v1.0.10 (2024-xx-xx)
 - Add bus type correction in ``system.System.setup()``
 - Revise ``ams.io.psse.read`` to complete model Zone when necessary
 - Use numerical Area and Zone idx in MATPOWER and PSSE RAW file conversion
-
+- Support JSON format addfile when converting to ANDES case
 
 v1.0.9 (2024-04-23)
 --------------------
