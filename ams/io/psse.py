@@ -27,6 +27,8 @@ def read(system, file):
     zone_map = {}
 
     # Check if there are zones to process
+    # NOTE: sinece `Zone` and `Area` below to group `Collection`, we add
+    # numerical Zone idx after the last Area idx.
     if zone:
         n_zone = system.Area.n
         for z in set(zone):
