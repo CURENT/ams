@@ -5,13 +5,42 @@ This module is the existing module in ``andes.io.psse``.
 
 import numpy as np
 
-from andes.io.psse import (read, testlines)  # NOQA
+from andes.io.psse import testlines  # NOQA
+from andes.io.psse import read as ad_read
 from andes.io.xlsx import confirm_overwrite
 
 from andes.shared import rad2deg
 
 from ams import __version__ as version
 from ams.shared import copyright_msg, nowarranty_msg, report_time
+
+
+def read(system, file):
+    """
+    Read PSS/E RAW file v32/v33 formats.
+
+    Revised from ``andes.io.psse.read`` to complete model ``Zone`` when necessary.
+    """
+    ret = ad_read(system, file)
+    # Extract zone data
+    zone = system.Bus.zone.v
+    zone_map = {}
+
+    # Check if there are zones to process
+    if zone:
+        n_zone = system.Area.n
+        for z in set(zone):
+            # Add new zone and update the mapping
+            z_new = system.add(
+                'Zone',
+                param_dict=dict(idx=n_zone + 1, name=f'ZONE {n_zone + 1}')
+            )
+            zone_map[z] = z_new
+            n_zone += 1
+
+        # Update the zone values in the system
+        system.Bus.zone.v = [zone_map[z] for z in zone]
+    return ret
 
 
 def write(system, outfile: str, overwrite: bool = None):
