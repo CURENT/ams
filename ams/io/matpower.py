@@ -406,7 +406,7 @@ def mpc2system(mpc: dict, system) -> bool:
     if area:
         for a in set(area):
             a_new = system.add('Area',
-                               para_dict=dict(idx=a, name=a))
+                               param_dict=dict(idx=a, name=a))
             area_map[a] = a_new
         system.Bus.area.v = [area_map[a] for a in area]
 
