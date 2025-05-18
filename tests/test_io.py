@@ -129,3 +129,13 @@ class TestMATPOWER(unittest.TestCase):
         # Clean up the generated files
         os.remove(mfile5)
         os.remove(mfile14)
+
+    def test_system2m(self):
+        """Test conversion from AMS System to M file."""
+        s5 = ams.load(ams.get_case('matpower/case5.m'),
+                      no_output=True)
+        mfile5 = './case5out.m'
+        ams.io.matpower.write(s5, mfile5)
+
+        # Clean up the generated file
+        os.remove(mfile5)
