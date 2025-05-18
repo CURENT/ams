@@ -700,7 +700,7 @@ def mpc2m(mpc: dict, outfile: str) -> str:
 
 def write(system, outfile: str, overwrite: bool = None) -> bool:
     """
-    Export an AMS system to a MATPOWER mpc file.
+    Export an AMS system to a MATPOWER M-file.
 
     This function converts an AMS system object into a MATPOWER-compatible
     mpc dictionary and writes it to a specified output file in MATPOWER format.
