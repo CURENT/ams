@@ -105,8 +105,8 @@ def config_logger(stream_level=logging.INFO, *,
 
     else:
         # update the handlers
-        set_logger_level(logger, logging.StreamHandler, stream_level)
-        set_logger_level(logger, logging.FileHandler, file_level)
+        set_logger_level(lg, logging.StreamHandler, stream_level)
+        set_logger_level(lg, logging.FileHandler, file_level)
 
     if not is_interactive():
         coloredlogs.install(logger=lg, level=stream_level, fmt=sh_formatter_str)
