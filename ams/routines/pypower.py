@@ -90,20 +90,6 @@ class DCPF1(RoutineBase):
                              e_str='0',
                              sense='min',)
 
-        self.pi = Var(info='Lagrange multiplier on real power mismatch',
-                      name='pi', unit='$/p.u.',
-                      model='Bus', src=None,)
-        self.piq = Var(info='Lagrange multiplier on reactive power mismatch',
-                       name='piq', unit='$/p.u.',
-                       model='Bus', src=None,)
-
-        self.mu1 = Var(info='Kuhn-Tucker multiplier on MVA limit at bus1',
-                       name='mu1', unit='$/p.u.',
-                       model='Line', src=None,)
-        self.mu2 = Var(info='Kuhn-Tucker multiplier on MVA limit at bus2',
-                       name='mu2', unit='$/p.u.',
-                       model='Line', src=None,)
-
         # --- total cost ---
         tcost = 'sum(mul(c2, pg**2))'
         tcost += '+ sum(mul(c1, pg))'
@@ -144,10 +130,6 @@ class DCPF1(RoutineBase):
 
         # --- Line ---
         self.plf.optz.value = res['branch'][:, 13] / mva  # line flow
-        self.pi.optz.value = res['bus'][:, 13] / mva
-        self.piq.optz.value = res['bus'][:, 14] / mva
-        self.mu1.optz.value = res['branch'][:, 17] / mva
-        self.mu2.optz.value = res['branch'][:, 18] / mva
 
         # --- copy results from system algeb into routine algeb ---
         for vname, var in self.vars.items():
@@ -363,9 +345,23 @@ class DCOPF1(DCPF1):
         })
 
         self.obj = Objective(name='obj',
-                             info='total cost',
+                             info='total cost, placeholder',
                              e_str='sum(c2 * pg**2 + c1 * pg + c0)',
                              sense='min',)
+
+        self.pi = Var(info='Lagrange multiplier on real power mismatch',
+                      name='pi', unit='$/p.u.',
+                      model='Bus', src=None,)
+        self.piq = Var(info='Lagrange multiplier on reactive power mismatch',
+                       name='piq', unit='$/p.u.',
+                       model='Bus', src=None,)
+
+        self.mu1 = Var(info='Kuhn-Tucker multiplier on MVA limit at bus1',
+                       name='mu1', unit='$/p.u.',
+                       model='Line', src=None,)
+        self.mu2 = Var(info='Kuhn-Tucker multiplier on MVA limit at bus2',
+                       name='mu2', unit='$/p.u.',
+                       model='Line', src=None,)
 
     def solve(self, OUT_ALL=0, VERBOSE=1, OPF_ALG_DC=200, **kwargs):
         ppc = system2ppc(self.system)
@@ -373,6 +369,14 @@ class DCOPF1(DCPF1):
                          OPF_ALG_DC=OPF_ALG_DC, **kwargs)
         res = runopf(casedata=ppc, ppopt=ppopt)
         return res
+
+    def unpack(self, res):
+        mva = res['baseMVA']
+        self.pi.optz.value = res['bus'][:, 13] / mva
+        self.piq.optz.value = res['bus'][:, 14] / mva
+        self.mu1.optz.value = res['branch'][:, 17] / mva
+        self.mu2.optz.value = res['branch'][:, 18] / mva
+        return super().unpack(res)
 
     def run(self, OUT_ALL=0, VERBOSE=1, OPF_ALG_DC=200, **kwargs):
         """
