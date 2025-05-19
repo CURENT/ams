@@ -287,28 +287,28 @@ class PFlow1(DCPF1):
         return super().run(OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, **kwargs)
 
 
-class ACOPF1(DCPF1):
+class DCOPF1(DCPF1):
     """
-    AC optimal power flow using PYPOWER.
+    DC optimal power flow using PYPOWER.
 
-    This routine provides a wrapper for running AC optimal power flow analysis using
+    This routine provides a wrapper for running DC optimal power flow analysis using
     the PYPOWER.
-    It leverages PYPOWER's internal AC optimal power flow solver and maps results
+    It leverages PYPOWER's internal DC optimal power flow solver and maps results
     back to the AMS system.
 
     Notes
     -----
-    - This class does not implement the AMS-style AC optimal power flow formulation.
+    - This class does not implement the AMS-style DC optimal power flow formulation.
     - For detailed mathematical formulations and algorithmic details, refer to the
       MATPOWER User's Manual, section on Optimal Power Flow.
     """
 
     def __init__(self, system, config):
         DCPF1.__init__(self, system, config)
-        self.info = 'AC Optimal Power Flow'
-        self.type = 'ACED'
+        self.info = 'DC Optimal Power Flow'
+        self.type = 'DCED'
 
-        self.map1 = OrderedDict()   # ACOPF does not receive
+        self.map1 = OrderedDict()   # DCOPF does not receive
         self.map2.update({
             'vBus': ('Bus', 'v0'),
             'ug': ('StaticGen', 'u'),
@@ -343,9 +343,10 @@ class ACOPF1(DCPF1):
                              e_str='sum(c2 * pg**2 + c1 * pg + c0)',
                              sense='min',)
 
-    def solve(self, OUT_ALL=0, VERBOSE=1, **kwargs):
+    def solve(self, OUT_ALL=0, VERBOSE=1, OPF_ALG_DC=200, **kwargs):
         ppc = system2ppc(self.system)
-        ppopt = ppoption(OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, **kwargs)
+        ppopt = ppoption(PF_DC=True, OUT_ALL=OUT_ALL, VERBOSE=VERBOSE,
+                         OPF_ALG_DC=OPF_ALG_DC, **kwargs)
         res = runopf(casedata=ppc, ppopt=ppopt)
         return res
 
@@ -354,6 +355,71 @@ class ACOPF1(DCPF1):
         self.pi.optz.value = res['bus'][:, 13] / res['baseMVA']
         self.piq.optz.value = res['bus'][:, 14] / res['baseMVA']
         super().unpack(res)
+
+    def run(self, OUT_ALL=0, VERBOSE=1, OPF_ALG_DC=200, **kwargs):
+        """
+        Run the DCOPF routine using PYPOWER.
+
+        This method invokes `self.solve(**kwargs)`, which internally utilizes
+        `pypower.ppoption` and `pypower.runopf` to solve the DCOPF problem.
+
+        Parameters
+        ----------
+        OUT_ALL : int, optional
+            Controls the amount of output printed (default: 0; 0: none, 1: little,
+            2: lots, 3: all). This is passed to `self.solve()`.
+        VERBOSE : int, optional
+            Controls the verbosity of the output (default: 1; 0: none, 1: little,
+            2: lots, 3: all). This is passed to `self.solve()`.
+
+        Keyword Arguments
+        -------------------
+        - ``OPF_ALG_DC``
+            DC OPF algorithm (default: 200; 0: choose default solver based on availability,
+            200: PIPS, 250: PIPS-sc, 400: IPOPT, 500: CPLEX, 600: MOSEK,
+            700: GUROBI).
+
+        Returns
+        -------
+        bool
+            True if the optimization converged successfully, False otherwise.
+        """
+        return super().run(OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, OPF_ALG_DC=OPF_ALG_DC, **kwargs)
+
+
+class ACOPF1(DCOPF1):
+    """
+    AC optimal power flow using PYPOWER.
+
+    This routine provides a wrapper for running AC optimal power flow analysis using
+    the PYPOWER.
+    It leverages PYPOWER's internal AC optimal power flow solver and maps results
+    back to the AMS system.
+
+    Notes
+    -----
+    - This class does not implement the AMS-style AC optimal power flow formulation.
+    - For detailed mathematical formulations and algorithmic details, refer to the
+      MATPOWER User's Manual, section on Optimal Power Flow.
+    """
+
+    def __init__(self, system, config):
+        DCOPF1.__init__(self, system, config)
+        self.info = 'AC Optimal Power Flow'
+        self.type = 'ACED'
+
+        self.map1 = OrderedDict()   # ACOPF does not receive
+        self.map2.update({
+            'vBus': ('Bus', 'v0'),
+            'ug': ('StaticGen', 'u'),
+            'pg': ('StaticGen', 'p0'),
+        })
+
+    def solve(self, OUT_ALL=0, VERBOSE=1, **kwargs):
+        ppc = system2ppc(self.system)
+        ppopt = ppoption(OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, **kwargs)
+        res = runopf(casedata=ppc, ppopt=ppopt)
+        return res
 
     def run(self, OUT_ALL=0, VERBOSE=1, **kwargs):
         """
