@@ -28,6 +28,11 @@ from ams.interface import to_andes
 from ams.report import Report
 from ams.shared import ad_dyn_models
 
+from ams.io.matpower import system2mpc
+from ams.io.matpower import write as wrtite_m
+from ams.io.xlsx import write as write_xlsx
+from ams.io.json import write as write_json
+
 logger = logging.getLogger(__name__)
 
 
@@ -708,6 +713,56 @@ class System(andes_System):
             return True
 
         return False
+
+    def to_mpc(self):
+        """
+        Export an AMS system to a MATPOWER dict.
+
+        Returns
+        -------
+        dict
+            A dictionary representing the MATPOWER case.
+        """
+        return system2mpc(self)
+
+    def to_m(self, outfile: str, overwrite: bool = None):
+        """
+        Export an AMS system to a MATPOWER M-file.
+
+        Parameters
+        ----------
+        outfile : str
+            The output file name.
+        overwrite : bool, optional
+            If True, overwrite the existing file. Default is None.
+        """
+        return wrtite_m(self, outfile=outfile, overwrite=overwrite)
+
+    def to_xlsx(self, outfile: str, overwrite: bool = None):
+        """
+        Export an AMS system to an Excel file.
+
+        Parameters
+        ----------
+        outfile : str
+            The output file name.
+        overwrite : bool, optional
+            If True, overwrite the existing file. Default is None.
+        """
+        return write_xlsx(self, outfile=outfile, overwrite=overwrite)
+
+    def to_json(self, outfile: str, overwrite: bool = None):
+        """
+        Export an AMS system to a JSON file.
+
+        Parameters
+        ----------
+        outfile : str
+            The output file name.
+        overwrite : bool, optional
+            If True, overwrite the existing file. Default is None.
+        """
+        return write_json(self, outfile=outfile, overwrite=overwrite)
 
 
 # --------------- Helper Functions ---------------
