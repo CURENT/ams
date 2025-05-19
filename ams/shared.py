@@ -116,7 +116,7 @@ def skip_unittest_without_PYPOWER(f):
     """
     def wrapper(*args, **kwargs):
         try:
-            import pypower
+            import pypower  # NOQA
         except ImportError:
             raise unittest.SkipTest("PYPOWER is not installed.")
         return f(*args, **kwargs)
