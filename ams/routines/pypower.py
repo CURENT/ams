@@ -337,60 +337,10 @@ class ACOPF1(DCPF1):
                              sense='min',)
 
     def solve(self, OUT_ALL=0, VERBOSE=1, **kwargs):
-        """
-        Solve ACOPF using PYPOWER.
-        """
         ppc = system2ppc(self.system)
-        res = runopf(casedata=ppc,
-                     ppopt=ppoption(OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, **kwargs))
+        ppopt = ppoption(OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, **kwargs)
+        res = runopf(casedata=ppc, ppopt=ppopt)
         return res
-
-    def unpack(self, res):
-        """
-        Unpack results from PYPOWER.
-        """
-        system = self.system
-        mva = res['baseMVA']
-
-        # --- copy results from ppc into system algeb ---
-        # --- Bus ---
-        system.Bus.v.v = res['bus'][:, 7]               # voltage magnitude
-        system.Bus.a.v = res['bus'][:, 8] * deg2rad     # voltage angle
-
-        # --- PV ---
-        system.PV.p.v = res['gen'][system.Slack.n:, 1] / mva        # active power
-        system.PV.q.v = res['gen'][system.Slack.n:, 2] / mva        # reactive power
-
-        # --- Slack ---
-        system.Slack.p.v = res['gen'][:system.Slack.n, 1] / mva     # active power
-        system.Slack.q.v = res['gen'][:system.Slack.n, 2] / mva     # reactive power
-
-        # --- Line ---
-        self.plf.optz.value = res['branch'][:, 13] / mva  # line flow
-
-        # --- copy results from system algeb into routine algeb ---
-        for vname, var in self.vars.items():
-            owner = getattr(system, var.model)  # instance of owner, Model or Group
-            if var.src is None:          # skip if no source variable is specified
-                continue
-            elif hasattr(owner, 'group'):   # if owner is a Model instance
-                grp = getattr(system, owner.group)
-                idx = grp.get_all_idxes()
-            elif hasattr(owner, 'get_idx'):  # if owner is a Group instance
-                idx = owner.get_all_idxes()
-            else:
-                msg = f"Failed to find valid source variable `{owner.class_name}.{var.src}` for "
-                msg += f"{self.class_name}.{vname}, skip unpacking."
-                logger.warning(msg)
-                continue
-            try:
-                logger.debug(f"Unpacking {vname} into {owner.class_name}.{var.src}.")
-                var.optz.value = owner.get(src=var.src, attr='v', idx=idx)
-            except AttributeError:
-                logger.debug(f"Failed to unpack {vname} into {owner.class_name}.{var.src}.")
-                continue
-        self.system.recent = self.system.routines[self.class_name]
-        return True
 
     def run(self, OUT_ALL=0, VERBOSE=1, **kwargs):
         """
