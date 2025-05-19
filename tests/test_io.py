@@ -139,3 +139,38 @@ class TestMATPOWER(unittest.TestCase):
 
         # Clean up the generated file
         os.remove(mfile5)
+
+
+class TestSystemExport(unittest.TestCase):
+    """
+    Test system export functions.
+    """
+
+    def test_system_to(self):
+        """Test conversion from AMS System to several formats."""
+        ss = ams.load(ams.get_case('matpower/case5.m'),
+                      no_output=True)
+
+        mpc = ss.to_mpc()
+
+        self.assertIsInstance(mpc, dict)
+        self.assertIn('bus', mpc)
+        self.assertIn('branch', mpc)
+        self.assertIn('gen', mpc)
+        self.assertIn('gencost', mpc)
+        self.assertIn('baseMVA', mpc)
+        self.assertIn('bus_name', mpc)
+        self.assertIn('gentype', mpc)
+        self.assertIn('genfuel', mpc)
+
+        ss.to_m("./case5_out.m")
+        self.assertTrue(os.path.exists("./case5_out.m"))
+        os.remove("./case5_out.m")
+
+        ss.to_json("./case5_out.json")
+        self.assertTrue(os.path.exists("./case5_out.json"))
+        os.remove("./case5_out.json")
+
+        ss.to_xlsx("./case5_out.xlsx")
+        self.assertTrue(os.path.exists("./case5_out.xlsx"))
+        os.remove("./case5_out.xlsx")
