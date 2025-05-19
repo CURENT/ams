@@ -2,9 +2,10 @@
 Routines using PYPOWER.
 """
 import logging
+from typing import Optional, Union, Type
 from collections import OrderedDict
 
-from andes.shared import deg2rad
+from andes.shared import deg2rad, np
 from andes.utils.misc import elapsed
 
 from ams.io.pypower import system2ppc
@@ -212,31 +213,71 @@ class DCPF1(RoutineBase):
     def _get_off_constrs(self):
         pass
 
-    def _data_check(self, **kwargs):
+    def _data_check(self, info=True, **kwargs):
         pass
 
-    def update(self, **kwargs):
+    def update(self, params=None, build_mats=False, **kwargs):
         pass
 
-    def enable(self, **kwargs):
+    def enable(self, name):
         raise NotImplementedError
 
-    def disable(self, **kwargs):
+    def disable(self, name):
         raise NotImplementedError
 
-    def _post_add_check(self, **kwargs):
+    def _post_add_check(self):
         pass
 
-    def addRParam(self, **kwargs):
+    def addRParam(self,
+                  name: str,
+                  tex_name: Optional[str] = None,
+                  info: Optional[str] = None,
+                  src: Optional[str] = None,
+                  unit: Optional[str] = None,
+                  model: Optional[str] = None,
+                  v: Optional[np.ndarray] = None,
+                  indexer: Optional[str] = None,
+                  imodel: Optional[str] = None,):
         raise NotImplementedError
 
-    def addServices(self, **kwargs):
+    def addService(self,
+                   name: str,
+                   value: np.ndarray,
+                   tex_name: str = None,
+                   unit: str = None,
+                   info: str = None,
+                   vtype: Type = None,):
         raise NotImplementedError
 
-    def addConstrs(self, **kwargs):
+    def addConstrs(self,
+                   name: str,
+                   e_str: str,
+                   info: Optional[str] = None,
+                   is_eq: Optional[str] = False,):
         raise NotImplementedError
 
-    def addVars(self, **kwargs):
+    def addVars(self,
+                name: str,
+                model: Optional[str] = None,
+                shape: Optional[Union[int, tuple]] = None,
+                tex_name: Optional[str] = None,
+                info: Optional[str] = None,
+                src: Optional[str] = None,
+                unit: Optional[str] = None,
+                horizon: Optional[RParam] = None,
+                nonneg: Optional[bool] = False,
+                nonpos: Optional[bool] = False,
+                cplx: Optional[bool] = False,
+                imag: Optional[bool] = False,
+                symmetric: Optional[bool] = False,
+                diag: Optional[bool] = False,
+                psd: Optional[bool] = False,
+                nsd: Optional[bool] = False,
+                hermitian: Optional[bool] = False,
+                boolean: Optional[bool] = False,
+                integer: Optional[bool] = False,
+                pos: Optional[bool] = False,
+                neg: Optional[bool] = False,):
         raise NotImplementedError
 
 
