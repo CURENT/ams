@@ -108,6 +108,20 @@ Install from PyPI using pip:
 pip install ltbams
 ```
 
+You can also install with optional dependencies, such as ``dev``, ``docs``, and ``nlp``:
+
+```bash
+pip install ltbams[dev]
+pip install ltbams[docs]
+pip install ltbams[nlp]
+```
+
+Or install with all optional dependencies:
+
+```bash
+pip install ltbams[all]
+```
+
 Install from conda-forge using conda:
 
 ```bash

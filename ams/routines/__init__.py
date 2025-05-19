@@ -8,7 +8,6 @@ from andes.utils.func import list_flatten
 all_routines = OrderedDict([
     ('dcpf', ['DCPF']),
     ('pflow', ['PFlow']),
-    ('cpf', ['CPF']),
     ('acopf', ['ACOPF']),
     ('dcopf', ['DCOPF']),
     ('dcopf2', ['DCOPF2']),
@@ -18,6 +17,7 @@ all_routines = OrderedDict([
     ('dopf', ['DOPF', 'DOPFVIS']),
     ('pflow0', ['PFlow0']),
     ('dcpf0', ['DCPF0']),
+    ('pypower', ['DCPF1', 'PFlow1', 'DCOPF1', 'ACOPF1']),
 ])
 
 class_names = list_flatten(list(all_routines.values()))

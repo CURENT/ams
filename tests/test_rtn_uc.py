@@ -38,7 +38,7 @@ class TestUC(unittest.TestCase):
         """
         Test generator tripping.
         """
-        self.ss.UC.run()
+        self.ss.UC.run(solver='SCIP')
         self.assertTrue(self.ss.UC.converged, "UC did not converge!")
         pg_off_gen = self.ss.UC.get(src='pg', attr='v', idx=self.off_gen)
         np.testing.assert_almost_equal(np.zeros_like(pg_off_gen),
@@ -50,14 +50,14 @@ class TestUC(unittest.TestCase):
         """
         Test setting and tripping load.
         """
-        self.ss.UC.run()
+        self.ss.UC.run(solver='SCIP')
         pgs = self.ss.UC.pg.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.UC.update()
 
-        self.ss.UC.run()
+        self.ss.UC.run(solver='SCIP')
         pgs_pqt = self.ss.UC.pg.v.sum()
         self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
@@ -65,7 +65,7 @@ class TestUC(unittest.TestCase):
         self.ss.PQ.alter(src='u', idx='PQ_2', value=0)
         self.ss.UC.update()
 
-        self.ss.UC.run()
+        self.ss.UC.run(solver='SCIP')
         pgs_pqt2 = self.ss.UC.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
@@ -77,7 +77,7 @@ class TestUC(unittest.TestCase):
         self.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
         self.ss.UC.update()
 
-        self.ss.UC.run()
+        self.ss.UC.run(solver='SCIP')
         self.assertTrue(self.ss.UC.converged, "UC did not converge under line trip!")
         plf_l3 = self.ss.UC.get(src='plf', attr='v', idx='Line_3')
         np.testing.assert_almost_equal(np.zeros_like(plf_l3),
@@ -119,7 +119,7 @@ class TestUCDG(unittest.TestCase):
         """
         Test generator tripping.
         """
-        self.ss.UCDG.run()
+        self.ss.UCDG.run(solver='SCIP')
         self.assertTrue(self.ss.UCDG.converged, "UCDG did not converge!")
         pg_off_gen = self.ss.UCDG.get(src='pg', attr='v', idx=self.off_gen)
         np.testing.assert_almost_equal(np.zeros_like(pg_off_gen),
@@ -131,14 +131,14 @@ class TestUCDG(unittest.TestCase):
         """
         Test setting and tripping load.
         """
-        self.ss.UCDG.run()
+        self.ss.UCDG.run(solver='SCIP')
         pgs = self.ss.UCDG.pg.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.UCDG.update()
 
-        self.ss.UCDG.run()
+        self.ss.UCDG.run(solver='SCIP')
         pgs_pqt = self.ss.UCDG.pg.v.sum()
         self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
@@ -146,7 +146,7 @@ class TestUCDG(unittest.TestCase):
         self.ss.PQ.alter(src='u', idx='PQ_2', value=0)
         self.ss.UCDG.update()
 
-        self.ss.UCDG.run()
+        self.ss.UCDG.run(solver='SCIP')
         pgs_pqt2 = self.ss.UCDG.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
@@ -158,7 +158,7 @@ class TestUCDG(unittest.TestCase):
         self.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
         self.ss.UCDG.update()
 
-        self.ss.UCDG.run()
+        self.ss.UCDG.run(solver='SCIP')
         self.assertTrue(self.ss.UCDG.converged, "UCDG did not converge under line trip!")
         plf_l3 = self.ss.UCDG.get(src='plf', attr='v', idx='Line_3')
         np.testing.assert_almost_equal(np.zeros_like(plf_l3),
@@ -200,7 +200,7 @@ class TestUCES(unittest.TestCase):
         """
         Test generator tripping.
         """
-        self.ss.UCES.run()
+        self.ss.UCES.run(solver='SCIP')
         self.assertTrue(self.ss.UCES.converged, "UCES did not converge!")
         pg_off_gen = self.ss.UCES.get(src='pg', attr='v', idx=self.off_gen)
         np.testing.assert_almost_equal(np.zeros_like(pg_off_gen),
@@ -212,14 +212,14 @@ class TestUCES(unittest.TestCase):
         """
         Test setting and tripping load.
         """
-        self.ss.UCES.run()
+        self.ss.UCES.run(solver='SCIP')
         pgs = self.ss.UCES.pg.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.UCES.update()
 
-        self.ss.UCES.run()
+        self.ss.UCES.run(solver='SCIP')
         pgs_pqt = self.ss.UCES.pg.v.sum()
         self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
@@ -227,7 +227,7 @@ class TestUCES(unittest.TestCase):
         self.ss.PQ.alter(src='u', idx='PQ_2', value=0)
         self.ss.UCES.update()
 
-        self.ss.UCES.run()
+        self.ss.UCES.run(solver='SCIP')
         pgs_pqt2 = self.ss.UCES.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
@@ -239,7 +239,7 @@ class TestUCES(unittest.TestCase):
         self.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
         self.ss.UCES.update()
 
-        self.ss.UCES.run()
+        self.ss.UCES.run(solver='SCIP')
         self.assertTrue(self.ss.UCES.converged, "UCES did not converge under line trip!")
         plf_l3 = self.ss.UCES.get(src='plf', attr='v', idx='Line_3')
         np.testing.assert_almost_equal(np.zeros_like(plf_l3),

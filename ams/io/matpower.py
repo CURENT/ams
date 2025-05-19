@@ -188,6 +188,9 @@ def mpc2system(mpc: dict, system) -> bool:
     Note that `mbase` in mpc is converted to `Sn`, but it is not actually used in
     MATPOWER nor AMS.
 
+    In converted AMS system, StaticGen idxes are 1-based, while the sequence follow
+    the order of the original MATPOWER data.
+
     Parameters
     ----------
     system : ams.system.System
@@ -406,7 +409,7 @@ def mpc2system(mpc: dict, system) -> bool:
     if area:
         for a in set(area):
             a_new = system.add('Area',
-                               para_dict=dict(idx=a, name=a))
+                               param_dict=dict(idx=a, name=a))
             area_map[a] = a_new
         system.Bus.area.v = [area_map[a] for a in area]
 
@@ -511,8 +514,9 @@ def system2mpc(system) -> dict:
     # --- PQ ---
     if system.PQ.n > 0:
         pq_pos = system.Bus.idx2uid(system.PQ.bus.v)
-        bus[pq_pos, 2] = system.PQ.p0.v * base_mva
-        bus[pq_pos, 3] = system.PQ.q0.v * base_mva
+        u = system.PQ.u.v
+        bus[pq_pos, 2] = u * system.PQ.p0.v * base_mva
+        bus[pq_pos, 3] = u * system.PQ.q0.v * base_mva
 
     # --- Shunt ---
     if system.Shunt.n > 0:
@@ -700,10 +704,15 @@ def mpc2m(mpc: dict, outfile: str) -> str:
 
 def write(system, outfile: str, overwrite: bool = None) -> bool:
     """
-    Export an AMS system to a MATPOWER mpc file.
+    Export an AMS system to a MATPOWER M-file.
 
     This function converts an AMS system object into a MATPOWER-compatible
     mpc dictionary and writes it to a specified output file in MATPOWER format.
+
+    In the converted MPC, the indices of area (bus[:, 6]) and zone (bus[:, 10])
+    may differ from the original MPC. However, the mapping relationship is preserved.
+    For example, if the original MPC numbers areas starting from 1, the converted
+    MPC may number them starting from 0.
 
     Parameters
     ----------

@@ -21,6 +21,9 @@ logger = logging.getLogger(__name__)
 sps = LazyImport('import scipy.sparse as sps')
 np = LazyImport('import numpy as np')
 pd = LazyImport('import pandas as pd')
+ppoption = LazyImport('from pypower.ppoption import ppoption')
+runpf = LazyImport('from pypower.runpf import runpf')
+runopf = LazyImport('from pypower.runopf import runopf')
 
 # --- an empty ANDES system ---
 empty_adsys = adSystem(autogen_stale=False)
@@ -103,6 +106,19 @@ def skip_unittest_without_MISOCP(f):
             pass
         else:
             raise unittest.SkipTest("No MISOCP solver is available.")
+        return f(*args, **kwargs)
+    return wrapper
+
+
+def skip_unittest_without_PYPOWER(f):
+    """
+    Decorator for skipping tests that require PYPOWER.
+    """
+    def wrapper(*args, **kwargs):
+        try:
+            import pypower  # NOQA
+        except ImportError:
+            raise unittest.SkipTest("PYPOWER is not installed.")
         return f(*args, **kwargs)
     return wrapper
 
