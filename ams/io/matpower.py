@@ -188,6 +188,9 @@ def mpc2system(mpc: dict, system) -> bool:
     Note that `mbase` in mpc is converted to `Sn`, but it is not actually used in
     MATPOWER nor AMS.
 
+    In converted AMS system, StaticGen idxes are 1-based, while the sequence follow
+    the order of the original MATPOWER data.
+
     Parameters
     ----------
     system : ams.system.System
