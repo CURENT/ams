@@ -104,6 +104,8 @@ class MPBase:
         self.vBus.horizon = self.timeslot
         self.vBus.info = '2D Bus voltage'
         self.pi.horizon = self.timeslot
+        self.mu1.horizon = self.timeslot
+        self.mu2.horizon = self.timeslot
 
 
 class ED(RTED, MPBase, SRBase):
