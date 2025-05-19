@@ -4,6 +4,7 @@ Test wrapper routines of PYPOWER.
 import unittest
 
 import ams
+from ams.shared import skip_unittest_without_PYPOWER
 
 
 class TestDCPF1(unittest.TestCase):
@@ -24,6 +25,7 @@ class TestDCPF1(unittest.TestCase):
         self.ss.DCPF1.init()
         self.assertTrue(self.ss.DCPF1.initialized, "DCPF1 initialization failed!")
 
+    @skip_unittest_without_PYPOWER
     def test_trip_gen(self):
         """
         Test generator tripping.
@@ -40,6 +42,7 @@ class TestDCPF1(unittest.TestCase):
 
         self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=1)  # reset
 
+    @skip_unittest_without_PYPOWER
     def test_trip_line(self):
         """
         Test line tripping.
@@ -55,6 +58,7 @@ class TestDCPF1(unittest.TestCase):
 
         self.ss.Line.alter(src='u', idx='Line_3', value=1)  # reset
 
+    @skip_unittest_without_PYPOWER
     def test_set_load(self):
         """
         Test setting and tripping load.
@@ -98,6 +102,7 @@ class TestPFlow1(unittest.TestCase):
         self.ss.PFlow1.init()
         self.assertTrue(self.ss.PFlow1.initialized, "PFlow1 initialization failed!")
 
+    @skip_unittest_without_PYPOWER
     def test_trip_gen(self):
         """
         Test generator tripping.
@@ -114,6 +119,7 @@ class TestPFlow1(unittest.TestCase):
 
         self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=1)  # reset
 
+    @skip_unittest_without_PYPOWER
     def test_trip_line(self):
         """
         Test line tripping.
@@ -129,6 +135,7 @@ class TestPFlow1(unittest.TestCase):
 
         self.ss.Line.alter(src='u', idx='Line_3', value=1)  # reset
 
+    @skip_unittest_without_PYPOWER
     def test_set_load(self):
         """
         Test setting and tripping load.
@@ -172,6 +179,7 @@ class TestDCOPF1(unittest.TestCase):
         self.ss.DCOPF1.init()
         self.assertTrue(self.ss.DCOPF1.initialized, "DCOPF initialization failed!")
 
+    @skip_unittest_without_PYPOWER
     def test_trip_gen(self):
         """
         Test generator tripping.
@@ -188,6 +196,7 @@ class TestDCOPF1(unittest.TestCase):
 
         self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=1)  # reset
 
+    @skip_unittest_without_PYPOWER
     def test_trip_line(self):
         """
         Test line tripping.
@@ -203,6 +212,7 @@ class TestDCOPF1(unittest.TestCase):
 
         self.ss.Line.alter(src='u', idx='Line_3', value=1)  # reset
 
+    @skip_unittest_without_PYPOWER
     def test_set_load(self):
         """
         Test setting and tripping load.
@@ -246,6 +256,7 @@ class TestACOPF1(unittest.TestCase):
         self.ss.ACOPF1.init()
         self.assertTrue(self.ss.ACOPF1.initialized, "ACOPF1 initialization failed!")
 
+    @skip_unittest_without_PYPOWER
     def test_trip_gen(self):
         """
         Test generator tripping.
@@ -262,6 +273,7 @@ class TestACOPF1(unittest.TestCase):
 
         self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=1)  # reset
 
+    @skip_unittest_without_PYPOWER
     def test_trip_line(self):
         """
         Test line tripping.
@@ -277,6 +289,7 @@ class TestACOPF1(unittest.TestCase):
 
         self.ss.Line.alter(src='u', idx='Line_3', value=1)  # reset
 
+    @skip_unittest_without_PYPOWER
     def test_set_load(self):
         """
         Test setting and tripping load.

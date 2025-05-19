@@ -110,6 +110,19 @@ def skip_unittest_without_MISOCP(f):
     return wrapper
 
 
+def skip_unittest_without_PYPOWER(f):
+    """
+    Decorator for skipping tests that require PYPOWER.
+    """
+    def wrapper(*args, **kwargs):
+        try:
+            import pypower
+        except ImportError:
+            raise unittest.SkipTest("PYPOWER is not installed.")
+        return f(*args, **kwargs)
+    return wrapper
+
+
 ppc_cols = OrderedDict([
     ('bus', ['bus_i', 'type', 'pd', 'qd', 'gs', 'bs', 'area', 'vm', 'va',
              'baseKV', 'zone', 'vmax', 'vmin', 'lam_p', 'lam_q',
