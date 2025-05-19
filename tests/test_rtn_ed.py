@@ -217,7 +217,7 @@ class TestEDES(unittest.TestCase):
         loc_offtime = np.array([0, 2])
         self.ss.EDTSlot.ug.v[loc_offtime, stg_uid] = 0
 
-        self.ss.EDES.run()
+        self.ss.EDES.run(solver='SCIP')
         self.assertTrue(self.ss.EDES.converged, "ED did not converge under generator trip!")
         pg_pv1 = self.ss.EDES.get(src='pg', attr='v', idx=stg)
         np.testing.assert_almost_equal(np.zeros_like(loc_offtime),
@@ -232,7 +232,7 @@ class TestEDES(unittest.TestCase):
         self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
         self.ss.EDES.update()
 
-        self.ss.EDES.run()
+        self.ss.EDES.run(solver='SCIP')
         self.assertTrue(self.ss.EDES.converged, "ED did not converge under generator trip!")
         pg_pv1 = self.ss.EDES.get(src='pg', attr='v', idx=stg)
         np.testing.assert_array_less(np.zeros_like(pg_pv1), pg_pv1,
@@ -246,7 +246,7 @@ class TestEDES(unittest.TestCase):
         Test line tripping.
         """
         self.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
-        self.ss.EDES.run()
+        self.ss.EDES.run(solver='SCIP')
         self.assertTrue(self.ss.EDES.converged, "EDES did not converge!")
         plf_l3 = self.ss.EDES.get(src='plf', attr='v', idx='Line_3')
         np.testing.assert_almost_equal(np.zeros_like(plf_l3),
@@ -259,14 +259,14 @@ class TestEDES(unittest.TestCase):
         """
         Test setting and tripping load.
         """
-        self.ss.EDES.run()
+        self.ss.EDES.run(solver='SCIP')
         pgs = self.ss.EDES.pg.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.EDES.update()
 
-        self.ss.EDES.run()
+        self.ss.EDES.run(solver='SCIP')
         pgs_pqt = self.ss.EDES.pg.v.sum()
         self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
@@ -274,6 +274,6 @@ class TestEDES(unittest.TestCase):
         self.ss.PQ.alter(src='u', idx='PQ_2', value=0)
         self.ss.EDES.update()
 
-        self.ss.EDES.run()
+        self.ss.EDES.run(solver='SCIP')
         pgs_pqt2 = self.ss.EDES.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")

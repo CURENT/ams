@@ -125,7 +125,7 @@ class TestReport(unittest.TestCase):
         Test report with RTEDES solved.
         """
         self.ss.files.no_output = False
-        self.ss.RTEDES.run()
+        self.ss.RTEDES.run(solver='SCIP')
         self.assertTrue(self.ss.report())
         self.assertTrue(os.path.exists(self.expected_report))
 
@@ -180,7 +180,7 @@ class TestReport(unittest.TestCase):
         Test report with EDES solved.
         """
         self.ss.files.no_output = False
-        self.ss.EDES.run()
+        self.ss.EDES.run(solver='SCIP')
         self.assertTrue(self.ss.report())
         self.assertTrue(os.path.exists(self.expected_report))
 
@@ -199,7 +199,7 @@ class TestReport(unittest.TestCase):
         Test report with UC solved.
         """
         self.ss.files.no_output = False
-        self.ss.UC.run()
+        self.ss.UC.run(solver='SCIP')
         self.assertTrue(self.ss.report())
         self.assertTrue(os.path.exists(self.expected_report))
 
@@ -218,7 +218,7 @@ class TestReport(unittest.TestCase):
         Test report with UCDG solved.
         """
         self.ss.files.no_output = False
-        self.ss.UCDG.run()
+        self.ss.UCDG.run(solver='SCIP')
         self.assertTrue(self.ss.report())
         self.assertTrue(os.path.exists(self.expected_report))
 
@@ -237,7 +237,7 @@ class TestReport(unittest.TestCase):
         Test report with UCES solved.
         """
         self.ss.files.no_output = False
-        self.ss.UCES.run()
+        self.ss.UCES.run(solver='SCIP')
         self.assertTrue(self.ss.report())
         self.assertTrue(os.path.exists(self.expected_report))
 
