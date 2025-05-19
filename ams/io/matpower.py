@@ -514,8 +514,9 @@ def system2mpc(system) -> dict:
     # --- PQ ---
     if system.PQ.n > 0:
         pq_pos = system.Bus.idx2uid(system.PQ.bus.v)
-        bus[pq_pos, 2] = system.PQ.p0.v * base_mva
-        bus[pq_pos, 3] = system.PQ.q0.v * base_mva
+        u = system.PQ.u.v
+        bus[pq_pos, 2] = u * system.PQ.p0.v * base_mva
+        bus[pq_pos, 3] = u * system.PQ.q0.v * base_mva
 
     # --- Shunt ---
     if system.Shunt.n > 0:
