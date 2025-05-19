@@ -4,10 +4,6 @@ Routines using PYPOWER.
 import logging
 from collections import OrderedDict
 
-from pypower.ppoption import ppoption
-from pypower.runpf import runpf
-from pypower.runopf import runopf
-
 from andes.shared import deg2rad
 from andes.utils.misc import elapsed
 
@@ -16,6 +12,7 @@ from ams.core.param import RParam
 
 from ams.opt import Var, Objective
 from ams.routines.routine import RoutineBase
+from ams.shared import ppoption, runpf, runopf
 
 logger = logging.getLogger(__name__)
 
