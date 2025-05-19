@@ -128,6 +128,7 @@ Install dependencies with
     mamba install --file requirements.txt
     mamba install --file requirements-dev.txt
     mamba install --file requirements-doc.txt
+    mamba install --file requirements-nlp.txt
 
 Alternatively, you can install them with ``pip``:
 
