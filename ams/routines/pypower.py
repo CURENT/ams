@@ -330,6 +330,13 @@ class ACOPF1(DCPF1):
                          indexer='gen', imodel='StaticGen',
                          no_parse=True)
 
+        self.pi = Var(info='Lagrange multiplier on real power mismatch',
+                      name='pi', unit='$/p.u.',
+                      model='Bus', src=None,)
+        self.piq = Var(info='Lagrange multiplier on reactive power mismatch',
+                       name='piq', unit='$/p.u.',
+                       model='Bus', src=None,)
+
         # --- objective ---
         self.obj = Objective(name='obj',
                              info='total cost',
@@ -341,6 +348,12 @@ class ACOPF1(DCPF1):
         ppopt = ppoption(OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, **kwargs)
         res = runopf(casedata=ppc, ppopt=ppopt)
         return res
+
+    def unpack(self, res):
+        # unpack pi and piq
+        self.pi.optz.value = res['bus'][:, 13] / res['baseMVA']
+        self.piq.optz.value = res['bus'][:, 14] / res['baseMVA']
+        super().unpack(res)
 
     def run(self, OUT_ALL=0, VERBOSE=1, **kwargs):
         """
