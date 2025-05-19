@@ -484,12 +484,6 @@ class RoutineBase:
     def __repr__(self):
         return f"{self.class_name} at {hex(id(self))}"
 
-    def _ppc2ams(self):
-        """
-        Convert PYPOWER results to AMS.
-        """
-        raise NotImplementedError
-
     def dc2ac(self, **kwargs):
         """
         Convert the DC-based results with ACOPF.
