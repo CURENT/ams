@@ -10,7 +10,7 @@ from andes.utils.misc import elapsed
 from ams.io.pypower import system2ppc
 from ams.core.param import RParam
 
-from ams.opt import Var, Objective
+from ams.opt import Var, Objective, ExpressionCalc
 from ams.routines.routine import RoutineBase
 from ams.shared import ppoption, runpf, runopf
 
@@ -45,6 +45,26 @@ class DCPF1(RoutineBase):
             'pg': ('StaticGen', 'p0'),
         })
 
+        self.ug = RParam(info='Gen connection status',
+                         name='ug', tex_name=r'u_{g}',
+                         model='StaticGen', src='u',
+                         no_parse=True)
+
+        self.c2 = RParam(info='Gen cost coefficient 2',
+                         name='c2', tex_name=r'c_{2}',
+                         unit=r'$/(p.u.^2)', model='GCost',
+                         indexer='gen', imodel='StaticGen',
+                         nonneg=True, no_parse=True)
+        self.c1 = RParam(info='Gen cost coefficient 1',
+                         name='c1', tex_name=r'c_{1}',
+                         unit=r'$/(p.u.)', model='GCost',
+                         indexer='gen', imodel='StaticGen',)
+        self.c0 = RParam(info='Gen cost coefficient 0',
+                         name='c0', tex_name=r'c_{0}',
+                         unit=r'$', model='GCost',
+                         indexer='gen', imodel='StaticGen',
+                         no_parse=True)
+
         # --- bus ---
         self.aBus = Var(info='bus voltage angle',
                         unit='rad',
@@ -69,6 +89,14 @@ class DCPF1(RoutineBase):
                              info='total cost',
                              e_str='0',
                              sense='min',)
+
+        # --- total cost ---
+        tcost = 'sum(mul(c2, pg**2))'
+        tcost += '+ sum(mul(c1, pg))'
+        tcost += '+ sum(mul(ug, c0))'
+        self.tcost = ExpressionCalc(info='Total cost', unit='$',
+                                    model=None, src=None,
+                                    e_str=tcost)
 
     def solve(self, OUT_ALL=0, VERBOSE=1, **kwargs):
         """
@@ -293,6 +321,10 @@ class DCOPF1(DCPF1):
     It leverages PYPOWER's internal DC optimal power flow solver and maps results
     back to the AMS system.
 
+    In PYPOWER, the ``c0`` term (the constant coefficient in the generator cost
+    function) is always included in the objective, regardless of the generator's
+    commitment status. See `pypower/opf_costfcn.py` for implementation details.
+
     Notes
     -----
     - This class does not implement the AMS-style DC optimal power flow formulation.
@@ -311,21 +343,6 @@ class DCOPF1(DCPF1):
             'ug': ('StaticGen', 'u'),
             'pg': ('StaticGen', 'p0'),
         })
-
-        self.c2 = RParam(info='Gen cost coefficient 2',
-                         name='c2', tex_name=r'c_{2}',
-                         unit=r'$/(p.u.^2)', model='GCost',
-                         indexer='gen', imodel='StaticGen',
-                         nonneg=True, no_parse=True)
-        self.c1 = RParam(info='Gen cost coefficient 1',
-                         name='c1', tex_name=r'c_{1}',
-                         unit=r'$/(p.u.)', model='GCost',
-                         indexer='gen', imodel='StaticGen',)
-        self.c0 = RParam(info='Gen cost coefficient 0',
-                         name='c0', tex_name=r'c_{0}',
-                         unit=r'$', model='GCost',
-                         indexer='gen', imodel='StaticGen',
-                         no_parse=True)
 
         self.pi = Var(info='Lagrange multiplier on real power mismatch',
                       name='pi', unit='$/p.u.',
@@ -424,6 +441,10 @@ class ACOPF1(DCOPF1):
 
         This method invokes `self.solve(**kwargs)`, which internally utilizes
         `pypower.ppoption` and `pypower.runopf` to solve the ACOPF problem.
+
+        In PYPOWER, the ``c0`` term (the constant coefficient in the generator cost
+        function) is always included in the objective, regardless of the generator's
+        commitment status. See `pypower/opf_costfcn.py` for implementation details.
 
         Parameters
         ----------
