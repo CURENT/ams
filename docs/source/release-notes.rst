@@ -17,6 +17,8 @@ v1.0.10 (2024-xx-xx)
 - Use numerical Area and Zone idx in MATPOWER and PSSE RAW file conversion
 - Support JSON format addfile when converting to ANDES case
 - Add wrapper routines for PYPOWER: ``DCPF1``, ``PFlow1``, ``DCOPF1``, and ``ACOPF1``
+- In routine ``DCOPF`` and its derivatives, add ExpressionCalc ``mu1`` ``mu2`` to
+  calculate Lagrange multipliers of line flow limits constraints
 
 v1.0.9 (2024-04-23)
 --------------------
