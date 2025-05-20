@@ -32,6 +32,7 @@ from ams.io.matpower import system2mpc
 from ams.io.matpower import write as wrtite_m
 from ams.io.xlsx import write as write_xlsx
 from ams.io.json import write as write_json
+from ams.io.psse import write_raw
 
 logger = logging.getLogger(__name__)
 
@@ -764,9 +765,22 @@ class System(andes_System):
         """
         return write_json(self, outfile=outfile, overwrite=overwrite)
 
+    def to_raw(self, outfile: str, overwrite: bool = None):
+        """
+        Export an AMS system to a v33 PSS/E RAW file.
+
+        Parameters
+        ----------
+        outfile : str
+            The output file name.
+        overwrite : bool, optional
+            If True, overwrite the existing file. Default is None.
+        """
+        return write_raw(self, outfile=outfile, overwrite=overwrite)
 
 # --------------- Helper Functions ---------------
 # NOTE: _config_numpy, load_config_rc are imported from andes.system
+
 
 def example(setup=True, no_output=True, **kwargs):
     """
