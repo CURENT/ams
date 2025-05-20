@@ -46,6 +46,10 @@ class OPF(DCPF1):
                       name='pi', unit='$/p.u.',
                       model='Bus', src=None,)
 
+        self.uld = Var(info='Line commitment decision',
+                       name='uld', tex_name=r'u_{l,d}',
+                       model='Line', src='u',)
+
     def solve(self, **kwargs):
         ppc = system2ppc(self.system)
         mat = io.BytesIO()
@@ -58,6 +62,11 @@ class OPF(DCPF1):
         """
         Unpack the results from the gurobi-optimods.
         """
+        # NOTE: Map gurobi-optimods results to PPC-compatible format.
+        # Only relevant columns are populated, as required by `DCOPF.unpack()`.
+        # If future versions of gurobi-optimods provide additional outputs,
+        # this mapping may need to be updated to extract and assign new fields.
+
         res_new = dict()
         res_new['success'] = res['success']
         res_new['et'] = res['et']
@@ -77,8 +86,9 @@ class OPF(DCPF1):
 
         branch = pd.DataFrame(res['branch'])
         res_new['branch'] = np.zeros((self.system.Line.n, 14))
-        res_new['branch'][:, 10] = branch['switching'].values
         res_new['branch'][:, 13] = branch['Pf'].values
+        # NOTE: unpack branch_switching decision
+        res_new['branch'][:, 10] = branch['switching'].values
         return super().unpack(res_new)
 
     def run(self, **kwargs):
