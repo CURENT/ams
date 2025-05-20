@@ -68,6 +68,7 @@ class OPF(DCPF1):
         res_new['bus'] = np.zeros((self.system.Bus.n, 17))
         res_new['bus'][:, 7] = bus['Vm'].values
         res_new['bus'][:, 8] = bus['Va'].values
+        # NOTE: As of v2.3.2, gurobi-optimods does not return LMP
 
         gen = pd.DataFrame(res['gen'])
         res_new['gen'] = np.zeros((self.system.StaticGen.n, 14))
