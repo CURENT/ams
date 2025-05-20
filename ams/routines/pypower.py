@@ -80,6 +80,10 @@ class DCPF1(RoutineBase):
                       unit='p.u.',
                       name='pg', tex_name=r'p_{g}',
                       model='StaticGen', src='p',)
+        self.qg = Var(info='Gen reactive power',
+                      unit='p.u.',
+                      name='qg', tex_name=r'q_{g}',
+                      model='StaticGen', src='q',)
         # --- line flow ---
         self.plf = Var(info='Line flow',
                        unit='p.u.',
