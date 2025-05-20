@@ -192,8 +192,70 @@ def write_raw(system, outfile: str, overwrite: bool = None):
             ) + "\n"
             # Write the formatted row to the file
             f.write(formatted_row)
-        # --- End of generator data ---
+
+        # --- Line ---
         f.write("0 / END OF GENERATOR DATA, BEGIN BRANCH DATA\n")
+        line = system.Line.cache.df_in
+        branch = line[line['trans'] == 0].reset_index(drop=True)
+        transf = line[line['trans'] == 1].reset_index(drop=True)
+        # 1) branch
+        # 0,  1,   2,   3,   4,   5,     6,     7,     8,   9,  10, 11, 12, 13,  14, 15, 16
+        # I,  J,  CKT,  R,   X,   B,  RATEA, RATEB, RATEC, GI,  BI, GJ, BJ, ST, LEN, O1, F1, ..., O4, F4
+        column_widths = [6, 6, 4, 10, 10, 10, 8, 8, 8, 8, 8, 8, 8, 3, 8]
+        for row in branch.itertuples():
+            data = [
+                int(row.bus1),                      # I: From bus number
+                int(row.bus2),                      # J: To bus number
+                "'1'",                              # CKT: Circuit ID (default '1')
+                float(row.r),                       # R: Resistance (p.u.)
+                float(row.x),                       # X: Reactance (p.u.)
+                float(row.b),                       # B: Total line charging (p.u.)
+                float(row.rate_a),                  # RATEA: Rating A (MVA)
+                float(row.rate_b),                  # RATEB: Rating B (MVA)
+                float(row.rate_c),                  # RATEC: Rating C (MVA)
+                0.0,                                # GI: From bus conductance (not tracked)
+                0.0,                                # BI: From bus susceptance (not tracked)
+                0.0,                                # GJ: To bus conductance (not tracked)
+                0.0,                                # BJ: To bus susceptance (not tracked)
+                int(row.u),                         # ST: Status
+                0.0                                 # LEN: Line length (not tracked)
+                # O1, F1, ..., O4, F4 omitted for v33
+            ]
+            formatted_row = ",".join(
+                f"{value:>{width}}" if isinstance(value, (int, float)) else f"{value:>{width}}"
+                for value, width in zip(data, column_widths)
+            ) + "\n"
+            f.write(formatted_row)
+        # 2) transformer
+        f.write("0 / END OF BRANCH DATA, BEGIN TRANSFORMER DATA\n")
+        for row in transf.itertuples():
+            # Map AMS Line (trans) fields to PSSE RAW transformer columns
+            # Only 2-winding transformers are supported here
+            # 0,  1,   2,   3,   4,   5,     6,     7,     8,   9,  10, 11, 12, 13,  14, 15, 16
+            # I,  J,  CKT,  R,   X,   B,  RATEA, RATEB, RATEC, GI,  BI, GJ, BJ, ST, LEN
+            data = [
+                int(row.bus1),                      # I: From bus number
+                int(row.bus2),                      # J: To bus number
+                "'1'",                              # CKT: Circuit ID (default '1')
+                float(row.r),                       # R: Resistance (p.u.)
+                float(row.x),                       # X: Reactance (p.u.)
+                float(row.b),                       # B: Total line charging (p.u.)
+                float(row.rate_a),                  # RATEA: Rating A (MVA)
+                float(row.rate_b),                  # RATEB: Rating B (MVA)
+                float(row.rate_c),                  # RATEC: Rating C (MVA)
+                0.0,                                # GI: From bus conductance (not tracked)
+                0.0,                                # BI: From bus susceptance (not tracked)
+                0.0,                                # GJ: To bus conductance (not tracked)
+                0.0,                                # BJ: To bus susceptance (not tracked)
+                int(row.u),                         # ST: Status
+                0.0                                 # LEN: Line length (not tracked)
+                # O1, F1, ..., O4, F4 omitted for v33
+            ]
+            formatted_row = ",".join(
+                f"{value:>{width}}" if isinstance(value, (int, float)) else f"{value:>{width}}"
+                for value, width in zip(data, column_widths)
+            ) + "\n"
+            f.write(formatted_row)
 
         # End of file
         f.write("Q\n")
