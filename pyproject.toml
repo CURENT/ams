@@ -37,7 +37,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-cov", "coverage", "flake8", "numpydoc", "toml"]
-nlp = ["gurobipy", "PYPOWER", "pyoptinterface"]
+nlp = ["PYPOWER", "pyoptinterface", "gurobipy", "gurobi-optimods"]
 doc = [
     "pandoc",
     "ipython",

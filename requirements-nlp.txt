@@ -1,4 +1,5 @@
 # Generated on 2025-05-19.
-gurobipy
 PYPOWER
 pyoptinterface
+gurobipy
+gurobi-optimods
