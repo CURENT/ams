@@ -24,6 +24,7 @@ pd = LazyImport('import pandas as pd')
 ppoption = LazyImport('from pypower.ppoption import ppoption')
 runpf = LazyImport('from pypower.runpf import runpf')
 runopf = LazyImport('from pypower.runopf import runopf')
+opf = LazyImport('from gurobi_optimods import opf')
 
 # --- an empty ANDES system ---
 empty_adsys = adSystem(autogen_stale=False)
