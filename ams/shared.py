@@ -24,6 +24,7 @@ pd = LazyImport('import pandas as pd')
 ppoption = LazyImport('from pypower.ppoption import ppoption')
 runpf = LazyImport('from pypower.runpf import runpf')
 runopf = LazyImport('from pypower.runopf import runopf')
+opf = LazyImport('from gurobi_optimods import opf')
 
 # --- an empty ANDES system ---
 empty_adsys = adSystem(autogen_stale=False)
@@ -119,6 +120,19 @@ def skip_unittest_without_PYPOWER(f):
             import pypower  # NOQA
         except ImportError:
             raise unittest.SkipTest("PYPOWER is not installed.")
+        return f(*args, **kwargs)
+    return wrapper
+
+
+def skip_unittest_without_gurobi_optimods(f):
+    """
+    Decorator for skipping tests that require gurobi_optimods.
+    """
+    def wrapper(*args, **kwargs):
+        try:
+            import gurobi_optimods  # NOQA
+        except ImportError:
+            raise unittest.SkipTest("Gurobi is not installed.")
         return f(*args, **kwargs)
     return wrapper
 

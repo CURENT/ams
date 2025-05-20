@@ -49,6 +49,7 @@ Routines
    ams.routines.dcopf
    ams.routines.pflow
    ams.routines.pypower
+   ams.routines.grbopt
 
 
 Optimization
