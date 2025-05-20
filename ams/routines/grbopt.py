@@ -22,20 +22,22 @@ logger = logging.getLogger(__name__)
 
 class OPF(DCPF1):
     """
-    Optimal power flow using gurobi-optimods.
+    Optimal Power Flow (OPF) routine using gurobi-optimods.
 
-    This routine provides a wrapper for running optimal power flow analysis using
-    the gurobi-optimods.
+    This class provides an interface for performing optimal power flow analysis
+    with gurobi-optimods, supporting both AC and DC OPF formulations.
 
-    See their documentation for more details:
+    In addition to optimizing generator dispatch, this routine can also optimize
+    transmission line statuses (branch switching), enabling topology optimization.
+    Refer to the gurobi-optimods documentation for further details:
 
     https://gurobi-optimods.readthedocs.io/en/stable/mods/opf/opf.html
     """
 
     def __init__(self, system, config):
         DCPF1.__init__(self, system, config)
-        self.info = 'DC Optimal Power Flow'
-        self.type = 'DCED'
+        self.info = 'Optimal Power Flow'
+        self.type = 'ACED'
 
         self.obj = Objective(name='obj',
                              info='total cost, placeholder',
