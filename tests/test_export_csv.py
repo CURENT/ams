@@ -17,7 +17,7 @@ class TestExportCSV(unittest.TestCase):
 
     def setUp(self) -> None:
         self.ss = ams.main.load(
-            ams.get_case("5bus/pjm5bus_demo.xlsx"),
+            ams.get_case("5bus/pjm5bus_demo.json"),
             default_config=True,
             no_output=True,
         )

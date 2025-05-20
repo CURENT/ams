@@ -14,7 +14,7 @@ class Test5Bus(unittest.TestCase):
 
     def setUp(self) -> None:
         self.ss = ams.main.load(
-            get_case("5bus/pjm5bus_demo.xlsx"),
+            get_case("5bus/pjm5bus_demo.json"),
             default_config=True,
             no_output=True,
         )

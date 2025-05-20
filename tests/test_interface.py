@@ -133,7 +133,7 @@ class TestAndesConversion(unittest.TestCase):
         """
         Test conversion when there is Toggle in ANDES case.
         """
-        sp = ams.load(ams.get_case('5bus/pjm5bus_demo.xlsx'),
+        sp = ams.load(ams.get_case('5bus/pjm5bus_demo.json'),
                       setup=True,
                       no_output=True,
                       default_config=True)
