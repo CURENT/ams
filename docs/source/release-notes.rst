@@ -23,6 +23,8 @@ v1.0.10 (2024-xx-xx)
 - In routine ``DCOPF`` and its derivatives, add ExpressionCalc ``mu1`` ``mu2`` to
   calculate Lagrange multipliers of line flow limits constraints
 - Add wrapper routine ``OPF`` for gurobi_optimods
+- Add a demo to show newly added wrapper routines, see
+  ``examples/demonstration/demo_wrapper_routines.ipynb``
 
 v1.0.9 (2024-04-23)
 --------------------

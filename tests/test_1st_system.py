@@ -19,7 +19,7 @@ class TestCodegen(unittest.TestCase):
             out += group.doc_all()
 
     def test_docum(self) -> None:
-        sp = ams.load(ams.get_case('5bus/pjm5bus_demo.xlsx'),
+        sp = ams.load(ams.get_case('5bus/pjm5bus_demo.json'),
                       setup=True, no_output=True)
         sp.DCOPF.init()
         docum = sp.DCOPF.docum

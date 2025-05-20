@@ -136,6 +136,13 @@ class DCPF1(RoutineBase):
         # --- Line ---
         self.plf.optz.value = res['branch'][:, 13] / mva  # line flow
 
+        # NOTE: In PYPOWER, branch status is not optimized and this assignment
+        # typically has no effect on results. However, in some extensions (e.g., gurobi-optimods),
+        # branch status may be optimized. This line ensures that the system's branch status
+        # is updated to reflect the results from the solver, if applicable.
+
+        system.Line.u.v = res['branch'][:, 10]
+
         # --- copy results from system algeb into routine algeb ---
         for vname, var in self.vars.items():
             owner = getattr(system, var.model)  # instance of owner, Model or Group

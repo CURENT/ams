@@ -11,7 +11,7 @@ class TestED(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.xlsx"),
+        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.json"),
                            setup=True, default_config=True, no_output=True)
         # decrease load first
         self.ss.PQ.set(src='p0', attr='v', idx=['PQ_1', 'PQ_2'], value=[0.3, 0.3])
@@ -102,7 +102,7 @@ class TestEDDG(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.xlsx"),
+        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.json"),
                            setup=True, default_config=True, no_output=True)
         # decrease load first
         self.ss.PQ.set(src='p0', attr='v', idx=['PQ_1', 'PQ_2'], value=[0.3, 0.3])
@@ -193,7 +193,7 @@ class TestEDES(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.xlsx"),
+        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.json"),
                            setup=True, default_config=True, no_output=True)
         # decrease load first
         self.ss.PQ.set(src='p0', attr='v', idx=['PQ_1', 'PQ_2'], value=[0.3, 0.3])

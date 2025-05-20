@@ -22,20 +22,22 @@ logger = logging.getLogger(__name__)
 
 class OPF(DCPF1):
     """
-    Optimal power flow using gurobi-optimods.
+    Optimal Power Flow (OPF) routine using gurobi-optimods.
 
-    This routine provides a wrapper for running optimal power flow analysis using
-    the gurobi-optimods.
+    This class provides an interface for performing optimal power flow analysis
+    with gurobi-optimods, supporting both AC and DC OPF formulations.
 
-    See their documentation for more details:
+    In addition to optimizing generator dispatch, this routine can also optimize
+    transmission line statuses (branch switching), enabling topology optimization.
+    Refer to the gurobi-optimods documentation for further details:
 
     https://gurobi-optimods.readthedocs.io/en/stable/mods/opf/opf.html
     """
 
     def __init__(self, system, config):
         DCPF1.__init__(self, system, config)
-        self.info = 'DC Optimal Power Flow'
-        self.type = 'DCED'
+        self.info = 'Optimal Power Flow'
+        self.type = 'ACED'
 
         self.obj = Objective(name='obj',
                              info='total cost, placeholder',
@@ -45,6 +47,10 @@ class OPF(DCPF1):
         self.pi = Var(info='Lagrange multiplier on real power mismatch',
                       name='pi', unit='$/p.u.',
                       model='Bus', src=None,)
+
+        self.uld = Var(info='Line commitment decision',
+                       name='uld', tex_name=r'u_{l,d}',
+                       model='Line', src='u',)
 
     def solve(self, **kwargs):
         ppc = system2ppc(self.system)
@@ -58,6 +64,11 @@ class OPF(DCPF1):
         """
         Unpack the results from the gurobi-optimods.
         """
+        # NOTE: Map gurobi-optimods results to PPC-compatible format.
+        # Only relevant columns are populated, as required by `DCOPF.unpack()`.
+        # If future versions of gurobi-optimods provide additional outputs,
+        # this mapping may need to be updated to extract and assign new fields.
+
         res_new = dict()
         res_new['success'] = res['success']
         res_new['et'] = res['et']
@@ -68,6 +79,7 @@ class OPF(DCPF1):
         res_new['bus'] = np.zeros((self.system.Bus.n, 17))
         res_new['bus'][:, 7] = bus['Vm'].values
         res_new['bus'][:, 8] = bus['Va'].values
+        # NOTE: As of v2.3.2, gurobi-optimods does not return LMP
 
         gen = pd.DataFrame(res['gen'])
         res_new['gen'] = np.zeros((self.system.StaticGen.n, 14))
@@ -76,8 +88,9 @@ class OPF(DCPF1):
 
         branch = pd.DataFrame(res['branch'])
         res_new['branch'] = np.zeros((self.system.Line.n, 14))
-        res_new['branch'][:, 10] = branch['switching'].values
         res_new['branch'][:, 13] = branch['Pf'].values
+        # NOTE: unpack branch_switching decision
+        res_new['branch'][:, 10] = branch['switching'].values
         return super().unpack(res_new)
 
     def run(self, **kwargs):
