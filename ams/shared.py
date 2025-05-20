@@ -124,6 +124,19 @@ def skip_unittest_without_PYPOWER(f):
     return wrapper
 
 
+def skip_unittest_without_gurobi_optimods(f):
+    """
+    Decorator for skipping tests that require gurobi_optimods.
+    """
+    def wrapper(*args, **kwargs):
+        try:
+            import gurobi_optimods  # NOQA
+        except ImportError:
+            raise unittest.SkipTest("Gurobi is not installed.")
+        return f(*args, **kwargs)
+    return wrapper
+
+
 ppc_cols = OrderedDict([
     ('bus', ['bus_i', 'type', 'pd', 'qd', 'gs', 'bs', 'area', 'vm', 'va',
              'baseKV', 'zone', 'vmax', 'vmin', 'lam_p', 'lam_q',
