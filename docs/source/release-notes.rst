@@ -16,6 +16,9 @@ v1.0.10 (2024-xx-xx)
 - Revise ``ams.io.psse.read`` to complete model Zone when necessary
 - Use numerical Area and Zone idx in MATPOWER and PSSE RAW file conversion
 - Support JSON format addfile when converting to ANDES case
+- Add PSS/E v33 RAW file writer
+- In class ``System``, add wrapper methods ``to_mpc``, ``to_m``, ``to_xlsx``,
+  ``to_json``, and ``to_raw`` for easier case file export
 - Add wrapper routines for PYPOWER: ``DCPF1``, ``PFlow1``, ``DCOPF1``, and ``ACOPF1``
 - In routine ``DCOPF`` and its derivatives, add ExpressionCalc ``mu1`` ``mu2`` to
   calculate Lagrange multipliers of line flow limits constraints
