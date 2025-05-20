@@ -257,6 +257,23 @@ def write_raw(system, outfile: str, overwrite: bool = None):
             ) + "\n"
             f.write(formatted_row)
 
+            # --- Area ---
+            f.write("0 / END OF TRANSFORMER DATA, BEGIN AREA DATA\n")
+            area = system.Area.cache.df_in
+            for row in area.itertuples():
+                # PSSE expects: ID, ISW, PDES, PTOL, NAME
+                # Here, ISW, PDES, PTOL are set to 0 by default
+                f.write(f"{int(system.Area.idx2uid(row.idx) + 1):6d}, 0, 0.0, 0.0, '{row.name}'\n")
+
+            # --- Zone ---
+            f.write("0 / END OF AREA DATA, BEGIN ZONE DATA\n")
+            zone = system.Zone.cache.df_in
+            # 0,    1
+            # ID, Name
+            for row in zone.itertuples():
+                f.write(f"{int(system.Zone.idx2uid(row.idx) + 1):6d}, '{row.name}'\n")
+            f.write("0 / END OF ZONE DATA\n")
+
         # End of file
         f.write("Q\n")
 
