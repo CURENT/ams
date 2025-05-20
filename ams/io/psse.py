@@ -78,13 +78,16 @@ def write_raw(system, outfile: str, overwrite: bool = None):
         # ID, Name, BaseKV, Type, Area, Zone, Owner, Vm, Va, Vmax, Vmin
         # Define column widths for alignment
         column_widths = [6, 8, 8, 2, 3, 3, 3, 8, 8, 8, 8]
+        bus_owner = {}
+        for i, o in enumerate(set(bus['owner'])):
+            bus_owner[o] = i + 1
         for row in bus.itertuples():
             # Prepare the data for each column
             data = [
                 int(row.idx), row.name, row.Vn, int(row.type),
                 int(system.Collection.idx2uid(row.area) + 1),
                 int(system.Collection.idx2uid(row.zone) + 1),
-                int(row.owner),
+                int(bus_owner[row.owner]),
                 float(row.v0), float(row.a0 * rad2deg),
                 float(row.vmax), float(row.vmin)]
             # Format each column with ',' as the delimiter
@@ -116,7 +119,7 @@ def write_raw(system, outfile: str, overwrite: bool = None):
                 0.0,  # IQ (ignored, set to 0)
                 0.0,  # YP (ignored, set to 0)
                 0.0,  # YQ (ignored, set to 0)
-                int(row.owner)  # Owner
+                int(bus_owner[row.owner])  # Owner
             ]
             # Format each column with ',' as the delimiter
             formatted_row = ",".join(
