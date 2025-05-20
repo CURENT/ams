@@ -174,3 +174,7 @@ class TestSystemExport(unittest.TestCase):
         ss.to_xlsx("./case5_out.xlsx")
         self.assertTrue(os.path.exists("./case5_out.xlsx"))
         os.remove("./case5_out.xlsx")
+
+        ss.to_raw("./case5_out.raw", overwrite=True)
+        self.assertTrue(os.path.exists("./case5_out.raw"))
+        os.remove("./case5_out.raw")
