@@ -6,7 +6,7 @@ This module is the existing module in ``andes.io.psse``.
 from andes.io.psse import testlines  # NOQA
 from andes.io.psse import read as ad_read
 from andes.io.xlsx import confirm_overwrite
-from andes.shared import rad2deg
+from andes.shared import rad2deg, pd
 
 from ams import __version__ as version
 from ams.shared import copyright_msg, nowarranty_msg, report_time
@@ -105,14 +105,19 @@ def write_raw(system, outfile: str, overwrite: bool = None):
         for row in load.itertuples():
             # Prepare the data for each column
             data = [
-                int(row.bus),
-                int(system.PQ.idx2uid(row.idx) + 1),
-                int(row.u),
-                int(system.Collection.idx2uid(system.PQ.get('area', row.idx, 'v')) + 1),
-                int(system.Collection.idx2uid(system.PQ.get('zone', row.idx, 'v')) + 1),
-                float(row.p0 * mva), float(row.q0 * mva),
-                float(0), float(0), float(0), float(0),
-                int(row.owner)]
+                int(row.bus),  # Bus number
+                int(system.PQ.idx2uid(row.idx) + 1),  # Load ID (unique index + 1)
+                int(row.u),  # Status
+                int(system.Collection.idx2uid(system.PQ.get('area', row.idx, 'v')) + 1),  # Area number
+                int(system.Collection.idx2uid(system.PQ.get('zone', row.idx, 'v')) + 1),  # Zone number
+                float(row.p0 * mva),  # PL (MW)
+                float(row.q0 * mva),  # QL (MVar)
+                0.0,  # IP (ignored, set to 0)
+                0.0,  # IQ (ignored, set to 0)
+                0.0,  # YP (ignored, set to 0)
+                0.0,  # YQ (ignored, set to 0)
+                int(row.owner)  # Owner
+            ]
             # Format each column with ',' as the delimiter
             formatted_row = ",".join(
                 f"{value:>{width}}" if isinstance(value, (int, float)) else f"'{value:>{width - 2}}'"
@@ -131,10 +136,12 @@ def write_raw(system, outfile: str, overwrite: bool = None):
         for row in shunt.itertuples():
             # Prepare the data for each column
             data = [
-                int(row.bus),
-                int(system.Shunt.idx2uid(row.idx) + 1),
-                int(row.u),
-                float(row.g * mva), float(row.b * mva)]
+                int(row.bus),                                   # Bus number
+                int(system.Shunt.idx2uid(row.idx) + 1),         # Shunt ID (unique index + 1)
+                int(row.u),                                     # Status
+                float(row.g * mva),                             # Conductance (MW at system base)
+                float(row.b * mva)                              # Susceptance (Mvar at system base)
+            ]
 
             # Format each column with ',' as the delimiter
             formatted_row = ",".join(
@@ -143,6 +150,50 @@ def write_raw(system, outfile: str, overwrite: bool = None):
             ) + "\n"
             # Write the formatted row to the file
             f.write(formatted_row)
+
+        # --- Generator ---
+        f.write("0 / END OF FIXED SHUNT DATA, BEGIN GENERATOR DATA\n")
+        pv = system.PV.cache.df_in
+        slack = system.Slack.cache.df_in
+
+        gen = pd.concat([pv, slack.drop(columns=['a0'])], axis=0)
+        gen["subidx"] = gen.groupby('bus').cumcount() + 1
+
+        column_widths = [6, 8, 2, 3, 3, 3, 3, 8, 8, 8, 8, 8, 8]
+        # 0,  1,  2,  3,  4,  5,  6,    7,     8,  9, 10, 11, 12,   13,   14,
+        # I, ID, PG, QG, QT, QB, VS, IREG, MBASE, ZR, ZX, RT, XT, GTAP, STAT,
+        #    15, 16, 17, 18, 19, ...,           26,  27
+        # RMPCT, PT, PB, O1, F1, ..., O4, F4, WMOD, WPF
+        # The columns above for v33 is different from the manual of v34.5, which includes two new columns:
+        # `NREG`` at 8 and `BSLOD` before `O1`
+        for row in gen.itertuples():
+            # Prepare the data for each column
+            data = [
+                int(row.bus),                  # I: Bus number
+                int(row.subidx),               # ID: Generator ID (subindex)
+                float(row.p0 * mva),           # PG: Generated MW
+                float(row.q0 * mva),           # QG: Generated MVar
+                float(row.qmax * mva),         # QT: Max Q (MVar)
+                float(row.qmin * mva),         # QB: Min Q (MVar)
+                float(row.v0),                 # VS: Setpoint voltage (p.u.)
+                int(0),                        # IREG: Regulated bus (not tracked)
+                float(row.Sn if hasattr(row, 'Sn') else mva),  # MBASE: Machine base MVA
+                float(row.ra),                 # ZR: Armature resistance (p.u.)
+                float(row.xs),                 # ZX: Synchronous reactance (p.u.)
+                float(0),                      # RT: Step-up transformer resistance (not tracked)
+                float(0),                      # XT: Step-up transformer reactance (not tracked)
+                int(0),                        # GTAP: Step-up transformer off-nominal turns ratio (not tracked)
+                int(row.u)                     # STAT: Status
+            ]
+            # Format each column with ',' as the delimiter
+            formatted_row = ",".join(
+                f"{value:>{width}}" if isinstance(value, (int, float)) else f"'{value:>{width - 2}}'"
+                for value, width in zip(data, column_widths)
+            ) + "\n"
+            # Write the formatted row to the file
+            f.write(formatted_row)
+        # --- End of generator data ---
+        f.write("0 / END OF GENERATOR DATA, BEGIN BRANCH DATA\n")
 
         # End of file
         f.write("Q\n")
