@@ -82,7 +82,8 @@ def sync_adsys(amsys, adsys):
             try:
                 ad_mdl.set(src=param, attr='v', idx=idx,
                            value=am_mdl.get(src=param, attr='v', idx=idx))
-            except Exception:
+            except Exception as e:
+                logger.warning(f"Failed to sync parameter '{param}' for model '{mname}': {e}")
                 continue
     return True
 
