@@ -220,7 +220,8 @@ class StaticShunt(GroupBase):
     """
     Static shunt compensator group.
     """
-    pass
+    def __init__(self):
+        super().__init__()
 
 
 class Information(GroupBase):
