@@ -103,13 +103,13 @@ class DCPF1(RoutineBase):
                                     model=None, src=None,
                                     e_str=tcost)
 
-    def solve(self, OUT_ALL=0, VERBOSE=1, **kwargs):
+    def solve(self, **kwargs):
         """
         Solve by PYPOWER.
         """
         ppc = system2ppc(self.system)
         # Enforece DC power flow
-        ppopt = ppoption(PF_DC=True, OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, **kwargs)
+        ppopt = ppoption(PF_DC=True, **kwargs)
         res, success = runpf(casedata=ppc, ppopt=ppopt)
         return res
 
@@ -167,15 +167,15 @@ class DCPF1(RoutineBase):
         self.system.recent = self.system.routines[self.class_name]
         return True
 
-    def run(self, OUT_ALL=0, VERBOSE=1, **kwargs):
+    def run(self, **kwargs):
         """
         Run the DC power flow using PYPOWER.
 
         This method invokes `self.solve(**kwargs)`, which internally utilizes
         `pypower.ppoption` and `pypower.runpf` to solve the DC power flow problem.
 
-        Parameters
-        ----------
+        Keyword arguments
+        -------------------
         OUT_ALL : int, optional
             Controls the amount of output printed (default: 0; 0: none, 1: little,
             2: lots, 3: all). This is passed to `self.solve()`.
@@ -316,43 +316,41 @@ class PFlow1(DCPF1):
         self.map1 = OrderedDict()   # PFlow does not receive
         self.map2 = OrderedDict()   # PFlow does not send
 
-    def solve(self, OUT_ALL=0, VERBOSE=1, **kwargs):
+    def solve(self, **kwargs):
         ppc = system2ppc(self.system)
         # Enforece AC power flow
-        ppopt = ppoption(PF_DC=False, OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, **kwargs)
+        ppopt = ppoption(PF_DC=False, **kwargs)
         res, success = runpf(casedata=ppc, ppopt=ppopt)
         return res
 
-    def run(self, OUT_ALL=0, VERBOSE=1, **kwargs):
+    def run(self, **kwargs):
         """
         Run the power flow using PYPOWER.
 
         This method invokes `self.solve(**kwargs)`, which internally utilizes
         `pypower.ppoption` and `pypower.runpf` to solve the power flow problem.
 
-        Parameters
-        ----------
+        Keyword Arguments
+        -------------------
         OUT_ALL : int, optional
             Controls the amount of output printed (default: 0; 0: none, 1: little,
-            2: lots, 3: all). This is passed to `self.solve()`.
+            2: lots, 3: all). This is passed to `self.solve()` and finally to
+            `pypower.ppoption()`.
         VERBOSE : int, optional
             Controls the verbosity of the output (default: 1; 0: none, 1: little,
             2: lots, 3: all). This is passed to `self.solve()`.
-
-        Keyword Arguments
-        -------------------
-        - ``PF_ALG``
+        PF_ALG : int, optional
             Power flow algorithm (default: 1; 1: Newton's method, 2: Fast-Decoupled (XB version),
             3: Fast-Decoupled (BX version), 4: Gauss-Seidel).
-        - ``PF_TOL``
+        PF_TOL : float, optional
             Termination tolerance on per unit P & Q mismatch (default: 1e-8).
-        - ``PF_MAX_IT``
+        PF_MAX_IT : int, optional
             Maximum number of iterations for Newton's method (default: 10).
-        - ``PF_MAX_IT_FD``
+        PF_MAX_IT_FD : int, optional
             Maximum number of iterations for fast decoupled method (default: 30).
-        - ``PF_MAX_IT_GS``
+        PF_MAX_IT_GS : int, optional
             Maximum number of iterations for Gauss-Seidel method (default: 1000).
-        - ``ENFORCE_Q_LIMS``
+        ENFORCE_Q_LIMS : bool, optional
             Enforce generator reactive power limits at the expense of voltage magnitude
             (default: False).
 
@@ -361,7 +359,7 @@ class PFlow1(DCPF1):
         bool
             True if the optimization converged successfully, False otherwise.
         """
-        return super().run(OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, **kwargs)
+        return super().run(**kwargs)
 
 
 class DCOPF1(DCPF1):
@@ -415,10 +413,9 @@ class DCOPF1(DCPF1):
                        name='mu2', unit='$/p.u.',
                        model='Line', src=None,)
 
-    def solve(self, OUT_ALL=0, VERBOSE=1, OPF_ALG_DC=200, **kwargs):
+    def solve(self, **kwargs):
         ppc = system2ppc(self.system)
-        ppopt = ppoption(PF_DC=True, OUT_ALL=OUT_ALL, VERBOSE=VERBOSE,
-                         OPF_ALG_DC=OPF_ALG_DC, **kwargs)
+        ppopt = ppoption(PF_DC=True, **kwargs)
         res = runopf(casedata=ppc, ppopt=ppopt)
         return res
 
@@ -430,25 +427,25 @@ class DCOPF1(DCPF1):
         self.mu2.optz.value = res['branch'][:, 18] / mva
         return super().unpack(res)
 
-    def run(self, OUT_ALL=0, VERBOSE=1, OPF_ALG_DC=200, **kwargs):
+    def run(self, **kwargs):
         """
         Run the DCOPF routine using PYPOWER.
 
         This method invokes `self.solve(**kwargs)`, which internally utilizes
-        `pypower.ppoption` and `pypower.runopf` to solve the DCOPF problem.
+        `pypower.runopf` to solve the DCOPF problem.
 
-        Parameters
-        ----------
+        ``OPF_ALG_DC=200`` is recommended here as other algorithms may not
+        been fully tested.
+
+        Keyword Arguments
+        -------------------
         OUT_ALL : int, optional
             Controls the amount of output printed (default: 0; 0: none, 1: little,
             2: lots, 3: all). This is passed to `self.solve()`.
         VERBOSE : int, optional
             Controls the verbosity of the output (default: 1; 0: none, 1: little,
             2: lots, 3: all). This is passed to `self.solve()`.
-
-        Keyword Arguments
-        -------------------
-        - ``OPF_ALG_DC``
+        OPF_ALG_DC : int, optional
             DC OPF algorithm (default: 200; 0: choose default solver based on availability,
             200: PIPS, 250: PIPS-sc, 400: IPOPT, 500: CPLEX, 600: MOSEK,
             700: GUROBI).
@@ -458,7 +455,7 @@ class DCOPF1(DCPF1):
         bool
             True if the optimization converged successfully, False otherwise.
         """
-        return super().run(OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, OPF_ALG_DC=OPF_ALG_DC, **kwargs)
+        return super().run(**kwargs)
 
 
 class ACOPF1(DCOPF1):
@@ -489,13 +486,13 @@ class ACOPF1(DCOPF1):
             'pg': ('StaticGen', 'p0'),
         })
 
-    def solve(self, OUT_ALL=0, VERBOSE=1, **kwargs):
+    def solve(self, **kwargs):
         ppc = system2ppc(self.system)
-        ppopt = ppoption(OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, **kwargs)
+        ppopt = ppoption(**kwargs)
         res = runopf(casedata=ppc, ppopt=ppopt)
         return res
 
-    def run(self, OUT_ALL=0, VERBOSE=1, **kwargs):
+    def run(self, **kwargs):
         """
         Run the ACOPF routine using PYPOWER.
 
@@ -506,6 +503,14 @@ class ACOPF1(DCOPF1):
         function) is always included in the objective, regardless of the generator's
         commitment status. See `pypower/opf_costfcn.py` for implementation details.
 
+        Additional keyword arguments passed to `self.solve()`. These are
+        forwarded to PYPOWER's `ppoption` and `runopf` functions to customize
+        solver options, tolerances, output verbosity, and other solver-specific
+        settings.
+
+        For a full list of options, refer to the PYPOWER documentation:
+        https://github.com/rwl/PYPOWER/blob/master/pypower/ppoption.py
+
         Parameters
         ----------
         OUT_ALL : int, optional
@@ -514,17 +519,6 @@ class ACOPF1(DCOPF1):
         VERBOSE : int, optional
             Controls the verbosity of the output (default: 1; 0: none, 1: little,
             2: lots, 3: all). This is passed to `self.solve()`.
-        **kwargs : dict, optional
-            Additional keyword arguments passed to `self.solve()`. These are
-            forwarded to PYPOWER's `ppoption` and `runopf` functions to customize
-            solver options, tolerances, output verbosity, and other solver-specific
-            settings.
-
-            For a full list of options, refer to the PYPOWER documentation:
-            https://github.com/rwl/PYPOWER/blob/master/pypower/ppoption.py
-
-        Keyword Arguments
-        -------------------
         - ``OPF_VIOLATION`` : float
             Constraint violation tolerance (default: 5e-6).
         - ``OPF_FLOW_LIM`` : int
@@ -614,4 +608,4 @@ class ACOPF1(DCOPF1):
         bool
             True if the optimization converged successfully, False otherwise.
         """
-        super().run(OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, **kwargs)
+        super().run(**kwargs)
