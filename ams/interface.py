@@ -273,8 +273,7 @@ def parse_addfile(adsys, amsys, addfile):
         for keys, dct in json_in.items():
             reads[keys] = pd.DataFrame(dct)
     else:
-        logger.error('Addfile format "%s" is not supported yet.', add_format,
-                     'only xlsx and json are supported.')
+        logger.error("Unsupported addfile format, only 'xlsx' and 'json' formats are supported.")
         return adsys
 
     pflow_mdl = list(pflow_dict.keys())
