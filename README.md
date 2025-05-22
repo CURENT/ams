@@ -82,6 +82,13 @@ The results for AMS, pandapower, and matpower are the average time consumed over
 unit commitment using a 31,777-bus case.</p>
 </div>
 
+To further demonstrate AMS's scalability, we validated multi-period economic dispatch and unit commitment
+on an ultra-large power system case with 31,777 buses, 4,664 generators, 41,573 transmission lines,
+and 5 time intervals.
+The computation time distribution for this case is shown in the figure below. Notably, the time spent
+on symbolic processing remains negligible even at this scale, highlighting AMS's efficiency for
+large-scale studies.
+
 AMS is currently under active development.
 Use the following resources to get involved.
 
