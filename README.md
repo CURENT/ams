@@ -61,7 +61,7 @@ The following results show the comparison of DCOPF between AMS and other tools.
 
 <div style="text-align: left;">
   <img src="docs/source/images/dcopf_time.png" alt="DCOPF Time" width="480" height="auto">
-  <p><strong>Figure:</strong> Computation time of OPF on small-scale cases.</p>
+  <p><strong>Figure:</strong> Computation time of OPF on medium to large cases.</p>
 </div>
 
 In the bar chart, the gray bar labeled "AMS Symbolic Processing" represents the time spent
@@ -73,6 +73,12 @@ time used by the solvers MOSEK and PIQP, respectively.
 Regarding the baselines, the blue and green bars represent the running time of MATPOWER using
 solver MIPS and pandapower using solver PIPS, respectively.
 The results for AMS, pandapower, and matpower are the average time consumed over ten repeat tests.
+
+<div style="text-align: left;">
+  <img src="docs/source/images/educ_pie.png" alt="DCOPF Time" width="480" height="auto">
+  <p><strong>Figure:</strong> Computation time distribution for multi-period economic dispatch and
+unit commitment using a 31,777-bus case.</p>
+</div>
 
 AMS is currently under active development.
 Use the following resources to get involved.
