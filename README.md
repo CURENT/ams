@@ -7,16 +7,13 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 
 <img src="docs/source/images/sponsors/CURENT_Logo_NameOnTrans.png" alt="CURENT ERC Logo" width="300" height="auto">
 
-|  | Stable | Develop |
-|---|---|---|
-| Documentation | [![Documentation Status](https://readthedocs.org/projects/ams/badge/?version=stable)](https://ams.readthedocs.io/en/stable/?badge=stable) | [![Develop Documentation](https://readthedocs.org/projects/ams/badge/?version=develop)](https://ams.readthedocs.io/en/develop/?badge=develop) |
-
 | Badges |  |  |
 |---|---|---|
 | Repo | ![Project Status: Active](https://www.repostatus.org/badges/latest/active.svg) | ![Repo Size](https://img.shields.io/github/repo-size/CURENT/ams) |
 | Version | [![PyPI Version](https://img.shields.io/pypi/v/ltbams.svg)](https://pypi.org/project/ltbams/) | [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ltbams/badges/version.svg)](https://anaconda.org/conda-forge/ltbams) |
 | Tag | [![GitHub Tag](https://img.shields.io/github/v/tag/CURENT/ams)](https://github.com/CURENT/ams/tags) | ![GitHub commits since latest release (branch)](https://img.shields.io/github/commits-since/curent/ams/latest/develop) |
-| Download | ![PyPI - Downloads](https://img.shields.io/pypi/dm/ltbams) | ![Anaconda-Server Badge](https://anaconda.org/conda-forge/ltbams/badges/downloads.svg) |
+| Documentaion | [![Read the Docs](https://img.shields.io/readthedocs/ams?label=stable)](https://ltb.readthedocs.io/projects/ams/en/stable/?badge=stable) | [![Read the Docs](https://img.shields.io/readthedocs/ams?label=develop)](https://ltb.readthedocs.io/projects/ams/en/develop/?badge=develop) |
+| Download | [![PyPI - Downloads](https://img.shields.io/pypi/dm/ltbams)](https://pypi.org/project/ltbams/) | [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ltbams/badges/downloads.svg)](https://anaconda.org/conda-forge/ltbams) |
 | Code Quality | ![Codacy Badge](https://app.codacy.com/project/badge/Grade/69456da1b8634f2f984bd769e35f0050) | ![Codacy Badge](https://app.codacy.com/project/badge/Coverage/69456da1b8634f2f984bd769e35f0050) |
 | Code Cov | ![codecov](https://codecov.io/gh/CURENT/ams/graph/badge.svg?token=RZI5GLLBQH) |  |
 | Last Commit | ![GitHub last commit (master)](https://img.shields.io/github/last-commit/CURENT/ams/master?label=last%20commit%20to%20master) | ![GitHub last commit (develop)](https://img.shields.io/github/last-commit/CURENT/ams/develop?label=last%20commit%20to%20develop) |
