@@ -66,7 +66,7 @@ def write_raw(system, outfile: str, overwrite: bool = None):
         # PSS/E version and date
         f.write(f"0, {mva:.2f}, 33, 0, 1, {freq:.2f}     ")
 
-        f.write(f"/ PSS/E 33 RAW, {report_time}\n")
+        f.write(f"/ PSS/E 33 RAW, {report_time()}\n")
         f.write(f"Created by AMS {version}\n")
         f.write(f"{copyright_msg}\n")
         f.write(f"{nowarranty_msg}\n")
