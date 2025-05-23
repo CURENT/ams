@@ -43,25 +43,27 @@ and solved with third-party solvers.
 
 AMS produces credible scheduling results and competitive performance.
 The following results show the comparison of DCOPF between AMS and other tools.
+In the table, **AMS Gap** is the difference between the AMS and MATPOWER results,
+and **pandapower Gap** is the difference between the pandapower and MATPOWER results.
 
-| Cost [\$]             | AMS          | pandapower   | MATPOWER     |
-|-----------------------|--------------|--------------|--------------|
-| IEEE 14-Bus           | 7,642.59     | 7,642.59     | 7,642.59     |
-| IEEE 39-Bus           | 41,263.94    | 41,263.94    | 41,263.94    |
-| PEGASE 89-Bus         | 5,733.37     | 5,733.37     | 5,733.37     |
-| IEEE 118-Bus          | 125,947.88   | 125,947.88   | 125,947.88   |
-| NPCC 140-Bus          | 810,033.37   | 810,016.06   | 810,033.37   |
-| WECC 179-Bus          | 411,706.13   | 411,706.13   | 411,706.13   |
-| IEEE 300-Bus          | 706,292.32   | 706,292.32   | 706,292.32   |
-| PEGASE 1354-Bus       | 1,218,096.86 | 1,218,096.86 | 1,218,096.86 |
-| PEGASE 2869-Bus       | 2,386,235.33 | 2,386,235.33 | 2,386,235.33 |
-| GOC 4020-Bus          | 793,634.11   | 793,634.11   | 793,634.11   |
-| EPIGRIDS 5658-Bus     | 1,195,466.12 | 1,195,466.12 | 1,195,466.12 |
-| EPIGRIDS 7336-Bus     | 1,855,870.94 | 1,855,870.94 | 1,855,870.94 |
+| Case             | MATPOWER [\$] | AMS Gap [\$] | pandapower Gap [\$] |
+|------------------|--------------|--------------|---------------------|
+| IEEE 14-Bus      | 7,642.59     | 0.00         | 0.00                |
+| IEEE 39-Bus      | 41,263.94    | 0.00         | 0.00                |
+| PEGASE 89-Bus    | 5,733.37     | 0.00         | 0.00                |
+| IEEE 118-Bus     | 125,947.88   | 0.00         | 0.00                |
+| NPCC 140-Bus     | 810,033.37   | 0.00         | **-17.31**          |
+| WECC 179-Bus     | 411,706.13   | 0.00         | 0.00                |
+| IEEE 300-Bus     | 706,292.32   | 0.00         | 0.00                |
+| PEGASE 1354-Bus  | 1,218,096.86 | 0.00         | 0.00                |
+| PEGASE 2869-Bus  | 2,386,235.33 | 0.00         | 0.00                |
+| GOC 4020-Bus     | 793,634.11   | 0.00         | 0.00                |
+| EPIGRIDS 5658-Bus| 1,195,466.12 | 0.00         | 0.00                |
+| EPIGRIDS 7336-Bus| 1,855,870.94 | 0.00         | 0.00                |
 
 <div style="text-align: left;">
   <img src="docs/source/images/dcopf_time.png" alt="DCOPF Time" width="480" height="auto">
-  <p><strong>Figure:</strong> Computation time of OPF on small-scale cases.</p>
+  <p><strong>Figure:</strong> Computation time of OPF on medium to large cases.</p>
 </div>
 
 In the bar chart, the gray bar labeled "AMS Symbolic Processing" represents the time spent
@@ -73,6 +75,19 @@ time used by the solvers MOSEK and PIQP, respectively.
 Regarding the baselines, the blue and green bars represent the running time of MATPOWER using
 solver MIPS and pandapower using solver PIPS, respectively.
 The results for AMS, pandapower, and matpower are the average time consumed over ten repeat tests.
+
+<div style="text-align: left;">
+  <img src="docs/source/images/educ_pie.png" alt="DCOPF Time" width="480" height="auto">
+  <p><strong>Figure:</strong> Computation time distribution for multi-period economic dispatch and
+unit commitment using a 31,777-bus case.</p>
+</div>
+
+To further demonstrate AMS's scalability, we validated multi-period economic dispatch and unit commitment
+on an ultra-large power system case with 31,777 buses, 4,664 generators, 41,573 transmission lines,
+and 5 time intervals.
+The computation time distribution for this case is shown in the figure below. Notably, the time spent
+on symbolic processing remains negligible even at this scale, highlighting AMS's efficiency for
+large-scale studies.
 
 AMS is currently under active development.
 Use the following resources to get involved.

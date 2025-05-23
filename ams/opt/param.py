@@ -9,10 +9,9 @@ import re
 
 import numpy as np
 
-from andes.core.common import Config
-
 import cvxpy as cp
 
+from ams.core import Config
 from ams.shared import sps
 
 from ams.opt import OptzBase, ensure_symbols, ensure_mats_and_parsed

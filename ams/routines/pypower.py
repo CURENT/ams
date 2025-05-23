@@ -46,6 +46,62 @@ class DCPF1(RoutineBase):
             'pg': ('StaticGen', 'p0'),
         })
 
+        self.config.add(OrderedDict((('verbose', 1),
+                                     ('out_all', 0),
+                                     ('out_sys_sum', 1),
+                                     ('out_area_sum', 0),
+                                     ('out_bus', 1),
+                                     ('out_branch', 1),
+                                     ('out_gen', 0),
+                                     ('out_all_lim', -1),
+                                     ('out_v_lim', 1),
+                                     ('out_line_lim', 1),
+                                     ('out_pg_lim', 1),
+                                     ('out_qg_lim', 1),
+                                     )))
+        self.config.add_extra("_help",
+                              verbose="0: no progress info, 1: little, 2: lots, 3: all",
+                              out_all="-1: individual flags control what prints, 0: none, 1: all",
+                              out_sys_sum="print system summary",
+                              out_area_sum="print area summaries",
+                              out_bus="print bus detail",
+                              out_branch="print branch detail",
+                              out_gen="print generator detail (OUT_BUS also includes gen info)",
+                              out_all_lim="-1: individual flags, 0: none, 1: binding, 2: all",
+                              out_v_lim="0: don't print, 1: binding constraints only, 2: all constraints",
+                              out_line_lim="0: don't print, 1: binding constraints only, 2: all constraints",
+                              out_pg_lim="0: don't print, 1: binding constraints only, 2: all constraints",
+                              out_qg_lim="0: don't print, 1: binding constraints only, 2: all constraints",
+                              )
+        self.config.add_extra("_alt",
+                              verbose=(0, 1, 2, 3),
+                              out_all=(-1, 0, 1),
+                              out_sys_sum=(0, 1),
+                              out_area_sum=(0, 1),
+                              out_bus=(0, 1),
+                              out_branch=(0, 1),
+                              out_gen=(0, 1),
+                              out_all_lim=(-1, 0, 1, 2),
+                              out_v_lim=(0, 1, 2),
+                              out_line_lim=(0, 1, 2),
+                              out_pg_lim=(0, 1, 2),
+                              out_qg_lim=(0, 1, 2),
+                              )
+        self.config.add_extra("_tex",
+                              verbose=r'v_{erbose}',
+                              out_all=r'o_{ut\_all}',
+                              out_sys_sum=r'o_{ut\_sys\_sum}',
+                              out_area_sum=r'o_{ut\_area\_sum}',
+                              out_bus=r'o_{ut\_bus}',
+                              out_branch=r'o_{ut\_branch}',
+                              out_gen=r'o_{ut\_gen}',
+                              out_all_lim=r'o_{ut\_all\_lim}',
+                              out_v_lim=r'o_{ut\_v\_lim}',
+                              out_line_lim=r'o_{ut\_line\_lim}',
+                              out_pg_lim=r'o_{ut\_pg\_lim}',
+                              out_qg_lim=r'o_{ut\_qg\_lim}',
+                              )
+
         self.ug = RParam(info='Gen connection status',
                          name='ug', tex_name=r'u_{g}',
                          model='StaticGen', src='u',
@@ -103,17 +159,18 @@ class DCPF1(RoutineBase):
                                     model=None, src=None,
                                     e_str=tcost)
 
-    def solve(self, OUT_ALL=0, VERBOSE=1, **kwargs):
+    def solve(self, **kwargs):
         """
         Solve by PYPOWER.
         """
         ppc = system2ppc(self.system)
+        config = {key.upper(): value for key, value in self.config._dict.items()}
         # Enforece DC power flow
-        ppopt = ppoption(PF_DC=True, OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, **kwargs)
-        res, success = runpf(casedata=ppc, ppopt=ppopt)
+        ppopt = ppoption(PF_DC=True, **config)
+        res, _ = runpf(casedata=ppc, ppopt=ppopt)
         return res
 
-    def unpack(self, res):
+    def unpack(self, res, **kwargs):
         """
         Unpack results from PYPOWER.
         """
@@ -167,21 +224,9 @@ class DCPF1(RoutineBase):
         self.system.recent = self.system.routines[self.class_name]
         return True
 
-    def run(self, OUT_ALL=0, VERBOSE=1, **kwargs):
+    def run(self, **kwargs):
         """
         Run the DC power flow using PYPOWER.
-
-        This method invokes `self.solve(**kwargs)`, which internally utilizes
-        `pypower.ppoption` and `pypower.runpf` to solve the DC power flow problem.
-
-        Parameters
-        ----------
-        OUT_ALL : int, optional
-            Controls the amount of output printed (default: 0; 0: none, 1: little,
-            2: lots, 3: all). This is passed to `self.solve()`.
-        VERBOSE : int, optional
-            Controls the verbosity of the output (default: 1; 0: none, 1: little,
-            2: lots, 3: all). This is passed to `self.solve()`.
 
         Returns
         -------
@@ -301,6 +346,11 @@ class PFlow1(DCPF1):
     It leverages PYPOWER's internal power flow solver and maps results back to the
     AMS system.
 
+    Known Issues
+    ------------
+    - Fast-Decoupled (XB version) and Fast-Decoupled (BX version) algorithms are
+      not fully supported yet.
+
     Notes
     -----
     - This class does not implement the AMS-style power flow formulation.
@@ -313,55 +363,52 @@ class PFlow1(DCPF1):
         self.info = 'Power Flow'
         self.type = 'PF'
 
-        self.map1 = OrderedDict()   # PFlow does not receive
-        self.map2 = OrderedDict()   # PFlow does not send
+        # PFlow does not receive nor send
+        self.map1 = OrderedDict()
+        self.map2 = OrderedDict()
 
-    def solve(self, OUT_ALL=0, VERBOSE=1, **kwargs):
+        self.config.add(OrderedDict((('pf_alg', 1),
+                                     ('pf_tol', 1e-8),
+                                     ('pf_max_it', 10),
+                                     ('pf_max_it_fd', 30),
+                                     ('pf_max_it_gs', 1000),
+                                     ('enforce_q_lims', 0),
+                                     )))
+        self.config.add_extra("_help",
+                              pf_alg="1: Newton, 2: Fast-Decoupled XB, 3: Fast-Decoupled BX, 4: Gauss Seidel",
+                              pf_tol="termination tolerance on per unit P & Q mismatch",
+                              pf_max_it="maximum number of iterations for Newton's method",
+                              pf_max_it_fd="maximum number of iterations for fast decoupled method",
+                              pf_max_it_gs="maximum number of iterations for Gauss-Seidel method",
+                              enforce_q_lims="enforce gen reactive power limits, at expense of |V|",
+                              )
+        self.config.add_extra("_alt",
+                              pf_alg=(1, 2, 3, 4),
+                              pf_tol=(0.0, 1e-8),
+                              pf_max_it=">1",
+                              pf_max_it_fd=">1",
+                              pf_max_it_gs=">1",
+                              enforce_q_lims=(0, 1),
+                              )
+
+    def solve(self, **kwargs):
         ppc = system2ppc(self.system)
+        config = {key.upper(): value for key, value in self.config._dict.items()}
         # Enforece AC power flow
-        ppopt = ppoption(PF_DC=False, OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, **kwargs)
-        res, success = runpf(casedata=ppc, ppopt=ppopt)
+        ppopt = ppoption(PF_DC=False, **config)
+        res, _ = runpf(casedata=ppc, ppopt=ppopt)
         return res
 
-    def run(self, OUT_ALL=0, VERBOSE=1, **kwargs):
+    def run(self, **kwargs):
         """
         Run the power flow using PYPOWER.
-
-        This method invokes `self.solve(**kwargs)`, which internally utilizes
-        `pypower.ppoption` and `pypower.runpf` to solve the power flow problem.
-
-        Parameters
-        ----------
-        OUT_ALL : int, optional
-            Controls the amount of output printed (default: 0; 0: none, 1: little,
-            2: lots, 3: all). This is passed to `self.solve()`.
-        VERBOSE : int, optional
-            Controls the verbosity of the output (default: 1; 0: none, 1: little,
-            2: lots, 3: all). This is passed to `self.solve()`.
-
-        Keyword Arguments
-        -------------------
-        - ``PF_ALG``
-            Power flow algorithm (default: 1; 1: Newton's method, 2: Fast-Decoupled (XB version),
-            3: Fast-Decoupled (BX version), 4: Gauss-Seidel).
-        - ``PF_TOL``
-            Termination tolerance on per unit P & Q mismatch (default: 1e-8).
-        - ``PF_MAX_IT``
-            Maximum number of iterations for Newton's method (default: 10).
-        - ``PF_MAX_IT_FD``
-            Maximum number of iterations for fast decoupled method (default: 30).
-        - ``PF_MAX_IT_GS``
-            Maximum number of iterations for Gauss-Seidel method (default: 1000).
-        - ``ENFORCE_Q_LIMS``
-            Enforce generator reactive power limits at the expense of voltage magnitude
-            (default: False).
 
         Returns
         -------
         bool
             True if the optimization converged successfully, False otherwise.
         """
-        return super().run(OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, **kwargs)
+        return super().run(**kwargs)
 
 
 class DCOPF1(DCPF1):
@@ -376,6 +423,10 @@ class DCOPF1(DCPF1):
     In PYPOWER, the ``c0`` term (the constant coefficient in the generator cost
     function) is always included in the objective, regardless of the generator's
     commitment status. See `pypower/opf_costfcn.py` for implementation details.
+
+    Known Issues
+    ------------
+    - Algorithms 400, 500, 600, and 700 are not fully supported yet.
 
     Notes
     -----
@@ -395,6 +446,81 @@ class DCOPF1(DCPF1):
             'ug': ('StaticGen', 'u'),
             'pg': ('StaticGen', 'p0'),
         })
+        self.config.add(OrderedDict((('opf_alg_dc', 200),
+                                     ('opf_violation', 5e-6),
+                                     ('opf_flow_lim', 0),
+                                     ('opf_ignore_ang_lim', 0),
+                                     ('grb_method', 1),
+                                     ('grb_timelimit', float('inf')),
+                                     ('grb_threads', 0),
+                                     ('grb_opt', 0),
+                                     ('pdipm_feastol', 0),
+                                     ('pdipm_gradtol', 1e-6),
+                                     ('pdipm_comptol', 1e-6),
+                                     ('pdipm_costtol', 1e-6),
+                                     ('pdipm_max_it', 150),
+                                     ('scpdipm_red_it', 20),
+                                     )))
+        opf_alg_dc = "0: choose default solver based on availability, 200: PIPS, 250: PIPS-sc, "
+        opf_alg_dc += "400: IPOPT, 500: CPLEX, 600: MOSEK, 700: GUROBI"
+        opf_flow_lim = "qty to limit for branch flow constraints: 0 - apparent power flow (limit in MVA), "
+        opf_flow_lim += "1 - active power flow (limit in MW), "
+        opf_flow_lim += "2 - current magnitude (limit in MVA at 1 p.u. voltage)"
+        grb_method = "0 - primal simplex, 1 - dual simplex, 2 - barrier, 3 - concurrent (LP only), "
+        grb_method += "4 - deterministic concurrent (LP only)"
+        pdipm_feastol = "feasibility (equality) tolerance for Primal-Dual Interior Points Methods, "
+        pdipm_feastol += "set to value of OPF_VIOLATION by default"
+        pdipm_gradtol = "gradient tolerance for Primal-Dual Interior Points Methods"
+        pdipm_comptol = "complementary condition (inequality) tolerance for Primal-Dual Interior Points Methods"
+        scpdipm_red_it = "maximum reductions per iteration for Step-Control Primal-Dual Interior Points Methods"
+        self.config.add_extra("_help",
+                              opf_alg_dc=opf_alg_dc,
+                              opf_violation="constraint violation tolerance",
+                              opf_flow_lim=opf_flow_lim,
+                              opf_ignore_ang_lim="ignore angle difference limits for branches even if specified",
+                              grb_method=grb_method,
+                              grb_timelimit="maximum time allowed for solver (TimeLimit)",
+                              grb_threads="(auto) maximum number of threads to use (Threads)",
+                              grb_opt="See gurobi_options() for details",
+                              pdipm_feastol=pdipm_feastol,
+                              pdipm_gradtol=pdipm_gradtol,
+                              pdipm_comptol=pdipm_comptol,
+                              pdipm_costtol="optimality tolerance for Primal-Dual Interior Points Methods",
+                              pdipm_max_it="maximum iterations for Primal-Dual Interior Points Methods",
+                              scpdipm_red_it=scpdipm_red_it,
+                              )
+        self.config.add_extra("_alt",
+                              opf_alg_dc=(0, 200, 250, 400, 500, 600, 700),
+                              opf_violation=">=0",
+                              opf_flow_lim=(0, 1, 2),
+                              opf_ignore_ang_lim=(0, 1),
+                              grb_method=(0, 1, 2, 3, 4),
+                              grb_timelimit=(0, float('inf')),
+                              grb_threads=(0, 1),
+                              grb_opt=(0, 1),
+                              pdipm_feastol=">=0",
+                              pdipm_gradtol=">=0",
+                              pdipm_comptol=">=0",
+                              pdipm_costtol=">=0",
+                              pdipm_max_it=">=0",
+                              scpdipm_red_it=">=0",
+                              )
+        self.config.add_extra("_tex",
+                              opf_alg_dc=r'o_{pf\_alg\_dc}',
+                              opf_violation=r'o_{pf\_violation}',
+                              opf_flow_lim=r'o_{pf\_flow\_lim}',
+                              opf_ignore_ang_lim=r'o_{pf\_ignore\_ang\_lim}',
+                              grb_method=r'o_{grb\_method}',
+                              grb_timelimit=r'o_{grb\_timelimit}',
+                              grb_threads=r'o_{grb\_threads}',
+                              grb_opt=r'o_{grb\_opt}',
+                              pdipm_feastol=r'o_{pdipm\_feastol}',
+                              pdipm_gradtol=r'o_{pdipm\_gradtol}',
+                              pdipm_comptol=r'o_{pdipm\_comptol}',
+                              pdipm_costtol=r'o_{pdipm\_costtol}',
+                              pdipm_max_it=r'o_{pdipm\_max\_it}',
+                              scpdipm_red_it=r'o_{scpdipm\_red\_it}',
+                              )
 
         self.obj = Objective(name='obj',
                              info='total cost, placeholder',
@@ -415,14 +541,14 @@ class DCOPF1(DCPF1):
                        name='mu2', unit='$/p.u.',
                        model='Line', src=None,)
 
-    def solve(self, OUT_ALL=0, VERBOSE=1, OPF_ALG_DC=200, **kwargs):
+    def solve(self, **kwargs):
         ppc = system2ppc(self.system)
-        ppopt = ppoption(PF_DC=True, OUT_ALL=OUT_ALL, VERBOSE=VERBOSE,
-                         OPF_ALG_DC=OPF_ALG_DC, **kwargs)
+        config = {key.upper(): value for key, value in self.config._dict.items()}
+        ppopt = ppoption(PF_DC=True, **config)  # Enforce DCOPF
         res = runopf(casedata=ppc, ppopt=ppopt)
         return res
 
-    def unpack(self, res):
+    def unpack(self, res, **kwargs):
         mva = res['baseMVA']
         self.pi.optz.value = res['bus'][:, 13] / mva
         self.piq.optz.value = res['bus'][:, 14] / mva
@@ -430,35 +556,16 @@ class DCOPF1(DCPF1):
         self.mu2.optz.value = res['branch'][:, 18] / mva
         return super().unpack(res)
 
-    def run(self, OUT_ALL=0, VERBOSE=1, OPF_ALG_DC=200, **kwargs):
+    def run(self, **kwargs):
         """
         Run the DCOPF routine using PYPOWER.
-
-        This method invokes `self.solve(**kwargs)`, which internally utilizes
-        `pypower.ppoption` and `pypower.runopf` to solve the DCOPF problem.
-
-        Parameters
-        ----------
-        OUT_ALL : int, optional
-            Controls the amount of output printed (default: 0; 0: none, 1: little,
-            2: lots, 3: all). This is passed to `self.solve()`.
-        VERBOSE : int, optional
-            Controls the verbosity of the output (default: 1; 0: none, 1: little,
-            2: lots, 3: all). This is passed to `self.solve()`.
-
-        Keyword Arguments
-        -------------------
-        - ``OPF_ALG_DC``
-            DC OPF algorithm (default: 200; 0: choose default solver based on availability,
-            200: PIPS, 250: PIPS-sc, 400: IPOPT, 500: CPLEX, 600: MOSEK,
-            700: GUROBI).
 
         Returns
         -------
         bool
             True if the optimization converged successfully, False otherwise.
         """
-        return super().run(OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, OPF_ALG_DC=OPF_ALG_DC, **kwargs)
+        return super().run(**kwargs)
 
 
 class ACOPF1(DCOPF1):
@@ -469,6 +576,10 @@ class ACOPF1(DCOPF1):
     the PYPOWER.
     It leverages PYPOWER's internal AC optimal power flow solver and maps results
     back to the AMS system.
+
+    In PYPOWER, the ``c0`` term (the constant coefficient in the generator cost
+    function) is always included in the objective, regardless of the generator's
+    commitment status. See `pypower/opf_costfcn.py` for implementation details.
 
     Notes
     -----
@@ -489,129 +600,32 @@ class ACOPF1(DCOPF1):
             'pg': ('StaticGen', 'p0'),
         })
 
-    def solve(self, OUT_ALL=0, VERBOSE=1, **kwargs):
+        self.config.add(OrderedDict((('opf_alg', 0),
+                                     )))
+        self.config.add_extra("_help",
+                              opf_alg="algorithm to use for OPF: 0 - default, 580 - PIPS"
+                              )
+        self.config.add_extra("_alt",
+                              opf_alg=(0, 580),
+                              )
+        self.config.add_extra("_tex",
+                              opf_alg=r'o_{pf\_alg}',
+                              )
+
+    def solve(self, **kwargs):
         ppc = system2ppc(self.system)
-        ppopt = ppoption(OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, **kwargs)
+        config = {key.upper(): value for key, value in self.config._dict.items()}
+        ppopt = ppoption(PF_DC=False, **config)
         res = runopf(casedata=ppc, ppopt=ppopt)
         return res
 
-    def run(self, OUT_ALL=0, VERBOSE=1, **kwargs):
+    def run(self, **kwargs):
         """
         Run the ACOPF routine using PYPOWER.
-
-        This method invokes `self.solve(**kwargs)`, which internally utilizes
-        `pypower.ppoption` and `pypower.runopf` to solve the ACOPF problem.
-
-        In PYPOWER, the ``c0`` term (the constant coefficient in the generator cost
-        function) is always included in the objective, regardless of the generator's
-        commitment status. See `pypower/opf_costfcn.py` for implementation details.
-
-        Parameters
-        ----------
-        OUT_ALL : int, optional
-            Controls the amount of output printed (default: 0; 0: none, 1: little,
-            2: lots, 3: all). This is passed to `self.solve()`.
-        VERBOSE : int, optional
-            Controls the verbosity of the output (default: 1; 0: none, 1: little,
-            2: lots, 3: all). This is passed to `self.solve()`.
-        **kwargs : dict, optional
-            Additional keyword arguments passed to `self.solve()`. These are
-            forwarded to PYPOWER's `ppoption` and `runopf` functions to customize
-            solver options, tolerances, output verbosity, and other solver-specific
-            settings.
-
-            For a full list of options, refer to the PYPOWER documentation:
-            https://github.com/rwl/PYPOWER/blob/master/pypower/ppoption.py
-
-        Keyword Arguments
-        -------------------
-        - ``OPF_VIOLATION`` : float
-            Constraint violation tolerance (default: 5e-6).
-        - ``OPF_FLOW_LIM`` : int
-            Quantity to limit for branch flow constraints (default: 0; 0: MVA, 1: MW, 2: current).
-        - ``OPF_IGNORE_ANG_LIM``: bool
-            Ignore angle difference limits for branches even if specified (default: False).
-        - ``VERBOSE`` : int
-            Amount of progress info printed (default: 1; 0: none, 1: little, 2: lots, 3: all).
-        - ``OUT_ALL`` : int
-            Controls printing of results (default: -1; -1: individual flags control what prints,
-            0: don't print anything (overrides individual flags),
-            1: print everything (overrides individual flags)).
-        - ``OUT_SYS_SUM`` : bool
-            Print system summary (default: True).
-        - ``OUT_AREA_SUM`` : bool
-            Print area summaries (default: False).
-        - ``OUT_BUS`` : bool
-            Print bus detail (default: True).
-        - ``OUT_BRANCH`` : bool
-            Print branch detail (default: True).
-        - ``OUT_GEN`` : bool
-            Print generator detail (default: False; OUT_BUS also includes gen info).
-        - ``OUT_ALL_LIM`` : int
-            Control constraint info output (default: -1; -1: individual flags control what constraint info prints,
-            0: no constraint info (overrides individual flags),
-            1: binding constraint info (overrides individual flags),
-            2: all constraint info (overrides individual flags)).
-        - ``OUT_V_LIM`` : int
-            Control output of voltage limit info (default: 1; 0: don't print,
-            1: print binding constraints only, 2: print all constraints).
-        - ``OUT_LINE_LIM`` : int
-            Control output of line limit info (default: 1; 0: don't print,
-            1: print binding constraints only, 2: print all constraints).
-        - ``OUT_PG_LIM`` : int
-            Control output of generator P limit info (default: 1; 0: don't print,
-            1: print binding constraints only, 2: print all constraints).
-        - ``OUT_QG_LIM`` : int
-            Control output of generator Q limit info (default: 1; 0: don't print,
-            1: print binding constraints only, 2: print all constraints).
-        - ``OUT_RAW`` : bool
-            Print raw data (default: False).
-        - ``OPF_VIOLATION`` : float
-            Constraint violation tolerance (default: 5e-6).
-        - ``OPF_FLOW_LIM`` : int
-            Quantity to limit for branch flow constraints (default: 0; 0: MVA, 1: MW, 2: current).
-        - ``OPF_IGNORE_ANG_LIM``: bool
-            Ignore angle difference limits for branches even if specified (default: False).
-        - ``VERBOSE`` : int
-            Amount of progress info printed (default: 1; 0: none, 1: little, 2: lots, 3: all).
-        - ``OUT_ALL`` : int
-            Controls printing of results (default: -1; -1: individual flags control what prints,
-            0: don't print anything (overrides individual flags),
-            1: print everything (overrides individual flags)).
-        - ``OUT_SYS_SUM`` : bool
-            Print system summary (default: True).
-        - ``OUT_AREA_SUM`` : bool
-            Print area summaries (default: False).
-        - ``OUT_BUS`` : bool
-            Print bus detail (default: True).
-        - ``OUT_BRANCH`` : bool
-            Print branch detail (default: True).
-        - ``OUT_GEN`` : bool
-            Print generator detail (default: False; OUT_BUS also includes gen info).
-        - ``OUT_ALL_LIM`` : int
-            Control constraint info output (default: -1;
-            -1: individual flags control what constraint info prints,
-             0: no constraint info (overrides individual flags),
-             1: binding constraint info (overrides individual flags),
-             2: all constraint info (overrides individual flags)).
-        - ``OUT_V_LIM`` : int
-            Control output of voltage limit info (default: 1; 0: don't print,
-            1: print binding constraints only, 2: print all constraints).
-        - ``OUT_LINE_LIM`` : int
-            Control output of line limit info (default: 1; 0: don't print,
-            1: print binding constraints only, 2: print all constraints).
-        - ``OUT_PG_LIM`` : int
-            Control output of generator P limit info (default: 1; 0: don't print,
-            1: print binding constraints only, 2: print all constraints).
-        - ``OUT_QG_LIM`` : int
-            Control output of generator Q limit info (default: 1; 0: don't print,
-            1: print binding constraints only, 2: print all constraints).
-        - ``OUT_RAW`` : bool
-            Print raw data (default: False).
 
         Returns
         -------
         bool
             True if the optimization converged successfully, False otherwise.
         """
-        super().run(OUT_ALL=OUT_ALL, VERBOSE=VERBOSE, **kwargs)
+        super().run(**kwargs)

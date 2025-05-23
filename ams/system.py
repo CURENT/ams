@@ -9,7 +9,6 @@ from typing import Dict, Optional
 
 import numpy as np
 
-from andes.core import Config
 from andes.system import System as andes_System
 from andes.system import (_config_numpy, load_config_rc)
 from andes.variables import FileMan
@@ -23,6 +22,7 @@ from ams.routines.type import TypeBase
 from ams.models import file_classes
 from ams.routines import all_routines
 from ams.utils.paths import get_config_path
+from ams.core import Config
 from ams.core.matprocessor import MatProcessor
 from ams.interface import to_andes
 from ams.report import Report

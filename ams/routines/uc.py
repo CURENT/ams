@@ -315,14 +315,14 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         self._initial_guess()
         return super().init(**kwargs)
 
-    def dc2ac(self, **kwargs):
+    def dc2ac(self, kloss=1.0, **kwargs):
         """
         AC conversion ``dc2ac`` is not implemented yet for
         multi-period scheduling.
         """
         return NotImplementedError
 
-    def unpack(self, **kwargs):
+    def unpack(self, res, **kwargs):
         """
         Multi-period scheduling will not unpack results from
         solver into devices.

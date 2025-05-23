@@ -17,7 +17,6 @@ from collections import OrderedDict
 
 import scipy.stats as stats
 
-from andes.core import Config
 from andes.core.param import NumParam
 from andes.core.model import ModelData
 from andes.shared import np, pd
@@ -25,6 +24,7 @@ from andes.utils.misc import elapsed
 
 from ams.core.model import Model
 from ams.utils.paths import ams_root
+from ams.core import Config
 
 logger = logging.getLogger(__name__)
 

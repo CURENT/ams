@@ -7,7 +7,6 @@ exclude_paths:
   - "setup.py"
   - "versioneer.py"
   - "genconf.py"
-  - "ams/pypower/**"
   - "ams/_version.py"
   - ".github/**"
   - "README.md"

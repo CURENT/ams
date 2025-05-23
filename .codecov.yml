@@ -19,7 +19,6 @@ ignore:
   - "setup.py"
   - "genconf.py"
   - "versioneer.py"
-  - "ams/pypower/**"
   - "ams/_version.py"
   - ".github/**"
   - "README.md"
