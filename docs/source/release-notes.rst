@@ -25,6 +25,8 @@ v1.0.10 (2024-xx-xx)
 - Add wrapper routine ``OPF`` for gurobi_optimods
 - Add a demo to show newly added wrapper routines, see
   ``examples/demonstration/demo_wrapper_routines.ipynb``
+- Revise ``andes.common.config.Config.update`` to ensure configuration parameters
+  are consistently updated in both the object and its internal ``_dict``
 
 v1.0.9 (2024-04-23)
 --------------------
