@@ -9,9 +9,9 @@ from collections import OrderedDict
 
 import numpy as np
 
-from andes.core import Config
 from andes.utils.misc import elapsed
 
+from ams.core import Config
 from ams.core.param import RParam
 from ams.core.symprocessor import SymProcessor
 from ams.core.documenter import RDocumenter
