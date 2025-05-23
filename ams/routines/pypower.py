@@ -396,7 +396,7 @@ class PFlow1(DCPF1):
         config = {key.upper(): value for key, value in self.config._dict.items()}
         # Enforece AC power flow
         ppopt = ppoption(PF_DC=False, **config)
-        res, success = runpf(casedata=ppc, ppopt=ppopt)
+        res, _ = runpf(casedata=ppc, ppopt=ppopt)
         return res
 
     def run(self, **kwargs):

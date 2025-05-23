@@ -110,19 +110,19 @@ class Test5Bus(unittest.TestCase):
         self.ss.ACOPF.run()
         np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1, 0.01])
 
-    def test_multiple_disconnected_line(self):
-        """
-        Test connectivity check for systems with disconnected lines.
+    # def test_multiple_disconnected_line(self):
+    #     """
+    #     Test connectivity check for systems with disconnected lines.
 
-        These disconnected lines (zeros) was not excluded when counting
-        connected buses, causing an out-of-bound error.
-        """
-        # TODO: need to add `connectivity` in `system`
-        pass
-        # self.ss.Line.u.v[[0, 6]] = 0
-        # self.ss.PFlow.run()
-        # self.assertEqual(len(self.ss.Bus.islands), 1)
-        # self.assertEqual(self.ss.Bus.n_islanded_buses, 0)
+    #     These disconnected lines (zeros) was not excluded when counting
+    #     connected buses, causing an out-of-bound error.
+    #     """
+    #     # TODO: need to add `connectivity` in `system`
+    #     pass
+    #     # self.ss.Line.u.v[[0, 6]] = 0
+    #     # self.ss.PFlow.run()
+    #     # self.assertEqual(len(self.ss.Bus.islands), 1)
+    #     # self.assertEqual(self.ss.Bus.n_islanded_buses, 0)
 
 
 class TestIEEE14RAW(unittest.TestCase):
