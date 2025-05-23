@@ -9,7 +9,7 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
-v1.0.10 (2024-xx-xx)
+v1.0.10 (2024-05-22)
 --------------------
 
 - Add bus type correction in ``system.System.setup()``
