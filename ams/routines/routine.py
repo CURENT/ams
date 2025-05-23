@@ -484,7 +484,7 @@ class RoutineBase:
     def __repr__(self):
         return f"{self.class_name} at {hex(id(self))}"
 
-    def dc2ac(self, **kwargs):
+    def dc2ac(self, kloss=1.0, **kwargs):
         """
         Convert the DC-based results with ACOPF.
         """

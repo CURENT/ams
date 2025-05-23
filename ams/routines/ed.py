@@ -216,7 +216,7 @@ class ED(RTED, MPBase, SRBase):
         cost += '+ sum(mul(ugt, mul(c0, tlv)))'
         self.obj.e_str = cost
 
-    def dc2ac(self, **kwargs):
+    def dc2ac(self, kloss=1.0, **kwargs):
         """
         AC conversion ``dc2ac`` is not implemented yet for
         multi-period scheduling.
