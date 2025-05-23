@@ -184,7 +184,7 @@ See [GitHub contributors][GitHub contributors] for the contributor list.
 AMS is licensed under the [GPL v3 License](./LICENSE).
 
 # Related Projects
-- [Popular Open Source Libraries for Power System Analysis](https://github.com/jinningwang/best-of-ps)
+- [Popular Open Source Libraries for Power System Analysis](https://github.com/ps-wiki/best-of-ps)
 - [G-PST Tools Portal](https://g-pst.github.io/tools/): An open tools portal with a classification approach
 - [Open Source Software (OSS) for Electricity Market Research, Teaching, and Training](https://www2.econ.iastate.edu/tesfatsi/ElectricOSS.htm)
 
