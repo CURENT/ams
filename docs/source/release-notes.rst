@@ -9,8 +9,8 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
-v1.0.10 (2024-05-22)
---------------------
+v1.0.10 (2024-05-23)
+----------------------
 
 - Add bus type correction in ``system.System.setup()``
 - Revise ``ams.io.psse.read`` to complete model Zone when necessary
