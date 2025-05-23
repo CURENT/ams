@@ -6,7 +6,7 @@ import re
 
 import logging
 from collections import OrderedDict
-from andes.core.documenter import Documenter as andes_Documenter
+from andes.core.documenter import Documenter as adDocumenter
 from andes.utils.tab import make_doc_table, math_wrap
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ def disable_methods(methods):
         setattr(Documenter, method, disable_method(getattr(Documenter, method)))
 
 
-class Documenter(andes_Documenter):
+class Documenter(adDocumenter):
     """
     Helper class for documenting models.
 
@@ -172,8 +172,8 @@ class RDocumenter:
 
     Parameters
     ----------
-    parent : Model
-        The `Model` instance to document
+    parent : ams.core.routine.RoutineBase
+        The `RoutineBase` instance to document
     """
 
     def __init__(self, parent):
