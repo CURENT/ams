@@ -346,16 +346,13 @@ class PFlow1(DCPF1):
     It leverages PYPOWER's internal power flow solver and maps results back to the
     AMS system.
 
-    Known Issues
-    ------------
-    - Fast-Decoupled (XB version) and Fast-Decoupled (BX version) algorithms are
-      not fully supported yet.
-
     Notes
     -----
     - This class does not implement the AMS-style power flow formulation.
     - For detailed mathematical formulations and algorithmic details, refer to the
       MATPOWER User's Manual, section on Power Flow.
+    - Fast-Decoupled (XB version) and Fast-Decoupled (BX version) algorithms are
+      not fully supported yet.
     """
 
     def __init__(self, system, config):
@@ -424,15 +421,12 @@ class DCOPF1(DCPF1):
     function) is always included in the objective, regardless of the generator's
     commitment status. See `pypower/opf_costfcn.py` for implementation details.
 
-    Known Issues
-    ------------
-    - Algorithms 400, 500, 600, and 700 are not fully supported yet.
-
     Notes
     -----
     - This class does not implement the AMS-style DC optimal power flow formulation.
     - For detailed mathematical formulations and algorithmic details, refer to the
       MATPOWER User's Manual, section on Optimal Power Flow.
+    - Algorithms 400, 500, 600, and 700 are not fully supported yet.
     """
 
     def __init__(self, system, config):
