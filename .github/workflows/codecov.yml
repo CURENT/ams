@@ -68,3 +68,8 @@ jobs:
         coverage-reports: coverage.xml
       env:
         CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+
+    - shell: bash -el {0}
+      name: Test notebooks.
+      run: |
+        pytest --nbmake examples --ignore=examples/verification
