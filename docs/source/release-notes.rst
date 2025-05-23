@@ -28,6 +28,7 @@ v1.0.10 (2024-xx-xx)
 - Revise ``andes.common.config.Config.update`` to ensure configuration parameters
   are consistently updated in both the object and its internal ``_dict``
 - Remove legacy revised PYPOWER module
+- Remove function ``ams.shared.ppc2df``
 
 v1.0.9 (2024-04-23)
 --------------------
