@@ -12,6 +12,7 @@ v1.0
 v1.0.11 (2025-xx-xx)
 ----------------------
 
+- Refactor Documenter
 - Fix bug in documentation building
 
 v1.0.10 (2025-05-23)
