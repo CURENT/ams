@@ -47,6 +47,7 @@ class OPF(DCPF1):
         self.obj = Objective(name='obj',
                              info='total cost, placeholder',
                              e_str='sum(c2 * pg**2 + c1 * pg + c0)',
+                             unit='$',
                              sense='min',)
 
         self.pi = Var(info='Lagrange multiplier on real power mismatch',
