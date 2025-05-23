@@ -9,7 +9,10 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
-v1.0.10 (2024-05-23)
+v1.0.11 (2025-xx-xx)
+----------------------
+
+v1.0.10 (2025-05-23)
 ----------------------
 
 - Add bus type correction in ``system.System.setup()``
@@ -30,7 +33,7 @@ v1.0.10 (2024-05-23)
 - Remove legacy revised PYPOWER module
 - Remove function ``ams.shared.ppc2df``
 
-v1.0.9 (2024-04-23)
+v1.0.9 (2025-04-23)
 --------------------
 
 Improve MATPOWER file converter:
@@ -38,7 +41,7 @@ Improve MATPOWER file converter:
 - Add a M file case writer
 - Include Area and Zone in both MATPOWER read and write
 
-v1.0.8 (2024-04-20)
+v1.0.8 (2025-04-20)
 --------------------
 
 - Run workflow "Publish" only on push tag event
@@ -48,7 +51,7 @@ v1.0.8 (2024-04-20)
 - Include ``gentype`` and ``genfuel`` when parsing MATPOWER cases
 - Fix logging level in ``ACOPF.run``
 
-v1.0.7 (2024-04-14)
+v1.0.7 (2025-04-14)
 --------------------
 
 - Address several wording issues in the documentation
@@ -62,44 +65,44 @@ v1.0.7 (2024-04-14)
   parameters conversion
 - Update case files
 
-v1.0.6 (2024-04-10)
+v1.0.6 (2025-04-10)
 --------------------
 
 - Enhance handling of Type 1 gencost: Automatically fallback to Type 2 gencost
 - Add parameter correction for zero line angle difference
 
-v1.0.5 (2024-04-09)
+v1.0.5 (2025-04-09)
 --------------------
 
 - Include sensitivity matrices calculation demo in documentation
 - Add ``DCOPF2``, a PTDF-based DCOPF routine
 - Fix bug when update routine parameters before it is initialized
 
-v1.0.4 (2024-04-05)
+v1.0.4 (2025-04-05)
 --------------------
 
 - Fix format in release notes
 - Add badges of GitHub relesase and commits in README
 - Add a demo to show sensitivity matrices calculation
 
-v1.0.3 (2024-03-17)
+v1.0.3 (2025-03-17)
 --------------------
 
 - Bug fix in function ``ams.interface.parse_addfile``, released in v1.0.3a1
 
-v1.0.2 (2024-02-01)
+v1.0.2 (2025-02-01)
 --------------------
 
 - Enhance the GitHub Actions workflow file
 - Deprecate andes logger configuration in ``config_logger``
 - Deprecate solver specification in ``demo_ESD1``
 
-v1.0.1 (2024-01-26)
+v1.0.1 (2025-01-26)
 --------------------
 
 Hotfix: removed dependencies on `SCIP` and `pyscipopt` to resolve installation issues
 
-v1.0.0 (2024-01-24)
+v1.0.0 (2025-01-24)
 --------------------
 
 - **Breaking Change**: rename model ``Region`` to ``Zone`` for clarity. Prior case
