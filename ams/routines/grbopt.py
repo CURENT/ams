@@ -104,8 +104,8 @@ class OPF(DCPF1):
 
         This method invokes `gurobi-optimods.opf.solve_opf` to solve the OPF problem.
 
-        Keyword arguments
-        -------------------
+        Parameters
+        ----------
         - opftype : str
             Type of OPF to solve (default: 'AC').
         - branch_switching : bool
@@ -114,7 +114,7 @@ class OPF(DCPF1):
             Defines the minimum number of branches that must be turned on when
             branch switching is active, i.e. the minimum number of turned on
             branches is equal to ``numbranches * min_active_branches``. Has no
-            effect if ``branch_switching is set to False.
+            effect if ``branch_switching`` is set to False.
         - use_mip_start : bool
             Use MIP start (default: False).
         - time_limit : float
