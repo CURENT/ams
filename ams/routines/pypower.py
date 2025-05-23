@@ -380,7 +380,7 @@ class PFlow1(DCPF1):
                               pf_max_it="maximum number of iterations for Newton's method",
                               pf_max_it_fd="maximum number of iterations for fast decoupled method",
                               pf_max_it_gs="maximum number of iterations for Gauss-Seidel method",
-                              enforce_q_lims="enforce gen reactive power limits, at expense of |V|",
+                              enforce_q_lims="enforce gen reactive power limits, at expense of V magnitude",
                               )
         self.config.add_extra("_alt",
                               pf_alg=(1, 2, 3, 4),
