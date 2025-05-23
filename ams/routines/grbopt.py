@@ -10,6 +10,8 @@ import scipy.io
 from andes.shared import np, pd
 from andes.utils.misc import elapsed
 
+from ams.core import Config
+
 from ams.io.pypower import system2ppc
 
 from ams.opt import Var, Objective
@@ -38,6 +40,9 @@ class OPF(DCPF1):
         DCPF1.__init__(self, system, config)
         self.info = 'Optimal Power Flow'
         self.type = 'ACED'
+
+        # Overwrite the config to be empty, as it is not used in this routine
+        self.config = Config(self.class_name)
 
         self.obj = Objective(name='obj',
                              info='total cost, placeholder',
@@ -97,23 +102,22 @@ class OPF(DCPF1):
         """
         Run the OPF routine using gurobi-optimods.
 
-        This method invokes `self.solve(**kwargs)`, which internally utilizes
-        `gurobi-optimods` to solve the OPF problem.
+        This method invokes `gurobi-optimods.opf.solve_opf` to solve the OPF problem.
 
         Keyword arguments
         -------------------
-        - ``opftype`` : str
+        - opftype : str
             Type of OPF to solve (default: 'AC').
-        - ``branch_switching`` : bool
+        - branch_switching : bool
             Enable branch switching (default: False).
-        - ``min_active_branches`` : float
+        - min_active_branches : float
             Defines the minimum number of branches that must be turned on when
             branch switching is active, i.e. the minimum number of turned on
             branches is equal to ``numbranches * min_active_branches``. Has no
-            effect if ``branch_switching`` is set to False.
-        - ``use_mip_start`` : bool
+            effect if ``branch_switching is set to False.
+        - use_mip_start : bool
             Use MIP start (default: False).
-        - ``time_limit`` : float
+        - time_limit : float
             Time limit for the solver (default: 0.0, no limit).
         """
         if not self.initialized:
