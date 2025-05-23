@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 class Config(AndesConfig):
     """
-    A class for stroring configuration, can be used in system,
+    A class for storing configuration, can be used in system,
     model, routine, and other modules.
 
     Revised from `andes.core.common.Config`.
