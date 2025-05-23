@@ -184,7 +184,7 @@ def get_pycode_path(pycode_path=None, mkdir=False):
     """
 
     if pycode_path is None:
-        pycode_path = os.path.join(get_dot_andes_path(), 'pycode')
+        pycode_path = os.path.join(get_dot_ams_path(), 'pycode')
 
     if mkdir is True:
         os.makedirs(pycode_path, exist_ok=True)
@@ -203,7 +203,7 @@ def get_pkl_path():
 
     """
     pkl_name = 'calls.pkl'
-    ams_path = get_dot_andes_path()
+    ams_path = get_dot_ams_path()
 
     if not os.path.exists(ams_path):
         os.makedirs(ams_path)
@@ -213,7 +213,7 @@ def get_pkl_path():
     return pkl_path
 
 
-def get_dot_andes_path():
+def get_dot_ams_path():
     """
     Return the path to ``$HOME/.ams``
     """

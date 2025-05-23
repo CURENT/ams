@@ -30,7 +30,7 @@ class TestCodegen(unittest.TestCase):
             docum._var_doc(max_width=78, export=export)
             docum._service_doc(max_width=78, export=export)
             docum._param_doc(max_width=78, export=export)
-            docum.config.doc(max_width=78, export=export)
+            docum.parent.config.doc(max_width=78, export=export)
 
 
 class TestParamCorrection(unittest.TestCase):

@@ -8,7 +8,7 @@ import logging
 from collections import OrderedDict, Counter
 
 from andes.utils.misc import elapsed
-from andes.system import System as andes_System
+from andes.system import System as adSystem
 
 from ams.utils import create_entry
 from ams.io import input_formats
@@ -107,7 +107,7 @@ def to_andes_pflow(system, no_output=False, default_config=True, **kwargs):
         Additional arguments to be passed to ``andes.system.System()``.
     """
 
-    adsys = andes_System(no_outpu=no_output, default_config=default_config, **kwargs)
+    adsys = adSystem(no_outpu=no_output, default_config=default_config, **kwargs)
     # FIXME: is there a systematic way to do this? Other config might be needed
     adsys.config.freq = system.config.freq
     adsys.config.mva = system.config.mva
