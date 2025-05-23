@@ -346,16 +346,13 @@ class PFlow1(DCPF1):
     It leverages PYPOWER's internal power flow solver and maps results back to the
     AMS system.
 
-    Known Issues
-    ------------
-    - Fast-Decoupled (XB version) and Fast-Decoupled (BX version) algorithms are
-      not fully supported yet.
-
     Notes
     -----
     - This class does not implement the AMS-style power flow formulation.
     - For detailed mathematical formulations and algorithmic details, refer to the
       MATPOWER User's Manual, section on Power Flow.
+    - Fast-Decoupled (XB version) and Fast-Decoupled (BX version) algorithms are
+      not fully supported yet.
     """
 
     def __init__(self, system, config):
@@ -380,7 +377,7 @@ class PFlow1(DCPF1):
                               pf_max_it="maximum number of iterations for Newton's method",
                               pf_max_it_fd="maximum number of iterations for fast decoupled method",
                               pf_max_it_gs="maximum number of iterations for Gauss-Seidel method",
-                              enforce_q_lims="enforce gen reactive power limits, at expense of |V|",
+                              enforce_q_lims="enforce gen reactive power limits, at expense of V magnitude",
                               )
         self.config.add_extra("_alt",
                               pf_alg=(1, 2, 3, 4),
@@ -424,15 +421,12 @@ class DCOPF1(DCPF1):
     function) is always included in the objective, regardless of the generator's
     commitment status. See `pypower/opf_costfcn.py` for implementation details.
 
-    Known Issues
-    ------------
-    - Algorithms 400, 500, 600, and 700 are not fully supported yet.
-
     Notes
     -----
     - This class does not implement the AMS-style DC optimal power flow formulation.
     - For detailed mathematical formulations and algorithmic details, refer to the
       MATPOWER User's Manual, section on Optimal Power Flow.
+    - Algorithms 400, 500, 600, and 700 are not fully supported yet.
     """
 
     def __init__(self, system, config):
