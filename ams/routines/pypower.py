@@ -147,8 +147,8 @@ class DCPF1(RoutineBase):
                        model='Line',)
         # --- objective ---
         self.obj = Objective(name='obj',
-                             info='total cost',
-                             e_str='0',
+                             info='total cost, placeholder',
+                             e_str='0', unit='$',
                              sense='min',)
 
         # --- total cost ---
@@ -522,10 +522,7 @@ class DCOPF1(DCPF1):
                               scpdipm_red_it=r'o_{scpdipm\_red\_it}',
                               )
 
-        self.obj = Objective(name='obj',
-                             info='total cost, placeholder',
-                             e_str='sum(c2 * pg**2 + c1 * pg + c0)',
-                             sense='min',)
+        self.obj.e_str = 'sum(c2 * pg**2 + c1 * pg + c0)'
 
         self.pi = Var(info='Lagrange multiplier on real power mismatch',
                       name='pi', unit='$/p.u.',
