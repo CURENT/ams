@@ -7,7 +7,7 @@ import ams
 
 if not (os.path.isfile('routineref.rst') and os.path.isfile('configref.rst')):
 
-    ss = ams.load(ams.get_case('ieee14/ieee14_uced.xlsx'))
+    ss = ams.load(ams.get_case('5bus/pjm5bus_demo.json'))
 
     # write the top-level index file
 

@@ -29,3 +29,4 @@ folder of the repository
    ../_examples/demo/demo_AGC.ipynb
    ../_examples/demo/demo_debug.ipynb
    ../_examples/demo/demo_mat.ipynb
+   ../_examples/demo/demo_wrapper_routines.ipynb

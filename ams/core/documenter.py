@@ -6,26 +6,12 @@ import re
 
 import logging
 from collections import OrderedDict
-from andes.core.documenter import Documenter as andes_Documenter
 from andes.utils.tab import make_doc_table, math_wrap
 
 logger = logging.getLogger(__name__)
 
 
-def disable_method(func):
-    def wrapper(*args, **kwargs):
-        msg = f"Method `{func.__name__}` is included in ANDES Documenter but not supported in AMS Documenter."
-        logger.warning(msg)
-        return None
-    return wrapper
-
-
-def disable_methods(methods):
-    for method in methods:
-        setattr(Documenter, method, disable_method(getattr(Documenter, method)))
-
-
-class Documenter(andes_Documenter):
+class Documenter:
     """
     Helper class for documenting models.
 
@@ -37,16 +23,6 @@ class Documenter(andes_Documenter):
 
     def __init__(self, parent):
         self.parent = parent
-        self.system = parent.system
-        self.class_name = parent.class_name
-        self.config = parent.config
-        self.params = parent.params
-        self.algebs = parent.algebs
-        self.services = parent.services
-
-        func_to_disable = ['_init_doc', '_eq_doc',
-                           '_discrete_doc', '_block_doc']
-        disable_methods(func_to_disable)
 
     def get(self, max_width=78, export='plain'):
         """
@@ -68,14 +44,15 @@ class Documenter(andes_Documenter):
         if export == 'rest':
             max_width = 0
             model_header = '-' * 80 + '\n'
-            out += f'.. _{self.class_name}:\n\n'
+            out += f'.. _{self.parent.class_name}:\n\n'
         else:
             model_header = ''
 
         if export == 'rest':
-            out += model_header + f'{self.class_name}\n' + model_header
+            out += model_header + f'{self.parent.class_name}\n' + model_header
         else:
-            out += model_header + f'Model <{self.class_name}> in Group <{self.parent.group}>\n' + model_header
+            out += model_header + \
+                f'Model <{self.parent.class_name}> in Group <{self.parent.group}>\n' + model_header
 
         if self.parent.__doc__ is not None:
             out += inspect.cleandoc(self.parent.__doc__)
@@ -86,20 +63,35 @@ class Documenter(andes_Documenter):
         out += self._var_doc(max_width=max_width, export=export)
         out += self._service_doc(max_width=max_width, export=export)
         # TODO: fix and add the config doc later on
-        # out += self.config.doc(max_width=max_width, export=export)
+        # out += self.parent.config.doc(max_width=max_width, export=export)
 
         return out
 
     def _var_doc(self, max_width=78, export='plain'):
+        """
+        Export formatted model variable documentation as a string.
+
+        Parameters
+        ----------
+        max_width : int, optional = 80
+            Maximum table width. If export format is ``rest`` it will be unlimited.
+        export : str, optional = 'plain'
+            Export format, 'plain' for plain text, 'rest' for restructuredText.
+
+        Returns
+        -------
+        str
+            Tabulated output in a string
+        """
         # variable documentation
-        if len(self.algebs) == 0:
+        if len(self.parent.algebs) == 0:
             return ''
 
         names, symbols, units = list(), list(), list()
         info = list()
         units_rest, ty = list(), list()
 
-        for p in self.algebs.values():
+        for p in self.parent.algebs.values():
             names.append(p.name)
             ty.append(p.class_name)
             info.append(p.info if p.info else '')
@@ -110,7 +102,7 @@ class Documenter(andes_Documenter):
 
         # replace with latex math expressions if export is ``rest``
         if export == 'rest':
-            symbols = [item.tex_name for item in self.algebs.values()]
+            symbols = [item.tex_name for item in self.parent.algebs.values()]
             symbols = math_wrap(symbols, export=export)
             title = 'Variables\n---------'
 
@@ -132,14 +124,29 @@ class Documenter(andes_Documenter):
                               rest_dict=rest_dict)
 
     def _service_doc(self, max_width=78, export='plain'):
-        if len(self.services) == 0:
+        """
+        Export formatted model service documentation as a string.
+
+        Parameters
+        ----------
+        max_width : int, optional = 80
+            Maximum table width. If export format is ``rest`` it will be unlimited.
+        export : str, optional = 'plain'
+            Export format, 'plain' for plain text, 'rest' for restructuredText.
+
+        Returns
+        -------
+        str
+            Tabulated output in a string
+        """
+        if len(self.parent.services) == 0:
             return ''
 
         names, symbols = list(), list()
         info = list()
         class_names = list()
 
-        for p in self.services.values():
+        for p in self.parent.services.values():
             names.append(p.name)
             class_names.append(p.class_name)
             info.append(p.info if p.info else '')
@@ -165,6 +172,74 @@ class Documenter(andes_Documenter):
                               plain_dict=plain_dict,
                               rest_dict=rest_dict)
 
+    def _param_doc(self, max_width=78, export='plain'):
+        """
+        Export formatted model parameter documentation as a string.
+
+        Parameters
+        ----------
+        max_width : int, optional = 80
+            Maximum table width. If export format is ``rest`` it will be unlimited.
+
+        export : str, optional = 'plain'
+            Export format, 'plain' for plain text, 'rest' for restructuredText.
+
+        Returns
+        -------
+        str
+            Tabulated output in a string
+        """
+        if len(self.parent.params) == 0:
+            return ''
+
+        # prepare temporary lists
+        names, units, class_names = list(), list(), list()
+        info, defaults, properties = list(), list(), list()
+        units_rest = list()
+
+        for p in self.parent.params.values():
+            names.append(p.name)
+            class_names.append(p.class_name)
+            info.append(p.info if p.info else '')
+            defaults.append(p.default if p.default is not None else '')
+            units.append(f'{p.unit}' if p.unit else '')
+            units_rest.append(f'*{p.unit}*' if p.unit else '')
+
+            plist = []
+            for key, val in p.property.items():
+                if val is True:
+                    plist.append(key)
+            properties.append(','.join(plist))
+
+        # symbols based on output format
+        if export == 'rest':
+            symbols = [item.tex_name for item in self.parent.params.values()]
+            symbols = math_wrap(symbols, export=export)
+            title = 'Parameters\n----------'
+        else:
+            symbols = [item.name for item in self.parent.params.values()]
+            title = 'Parameters'
+
+        plain_dict = OrderedDict([('Name', names),
+                                  ('Description', info),
+                                  ('Default', defaults),
+                                  ('Unit', units),
+                                  ('Properties', properties)])
+
+        rest_dict = OrderedDict([('Name', names),
+                                 ('Symbol', symbols),
+                                 ('Description', info),
+                                 ('Default', defaults),
+                                 ('Unit', units_rest),
+                                 ('Properties', properties)])
+
+        # convert to rows and export as table
+        return make_doc_table(title=title,
+                              max_width=max_width,
+                              export=export,
+                              plain_dict=plain_dict,
+                              rest_dict=rest_dict)
+
 
 class RDocumenter:
     """
@@ -172,20 +247,12 @@ class RDocumenter:
 
     Parameters
     ----------
-    parent : Model
-        The `Model` instance to document
+    parent : ams.core.routine.RoutineBase
+        The `RoutineBase` instance to document
     """
 
     def __init__(self, parent):
         self.parent = parent
-        self.system = parent.system
-        self.class_name = parent.class_name
-        self.config = parent.config
-        self.services = parent.services
-        self.rparams = parent.rparams
-        self.vars = parent.vars
-        self.constrs = parent.constrs
-        self.obj = parent.obj
 
     def get(self, max_width=78, export='plain'):
         """
@@ -207,14 +274,15 @@ class RDocumenter:
         if export == 'rest':
             max_width = 0
             model_header = '-' * 80 + '\n'
-            out += f'.. _{self.class_name}:\n\n'
+            out += f'.. _{self.parent.class_name}:\n\n'
         else:
             model_header = ''
 
         if export == 'rest':
-            out += model_header + f'{self.class_name}\n' + model_header
+            out += model_header + f'{self.parent.class_name}\n' + model_header
         else:
-            out += model_header + f'Routine <{self.class_name}> in Type <{self.parent.type}>\n' + model_header
+            out += model_header + \
+                f'Routine <{self.parent.class_name}> in Type <{self.parent.type}>\n' + model_header
 
         if self.parent.__doc__ is not None:
             out += inspect.cleandoc(self.parent.__doc__)
@@ -229,20 +297,20 @@ class RDocumenter:
         out += self._exprc_doc(max_width=max_width, export=export)
         out += self._service_doc(max_width=max_width, export=export)
         out += self._param_doc(max_width=max_width, export=export)
-        out += self.config.doc(max_width=max_width, export=export)
+        out += self.parent.config.doc(max_width=max_width, export=export)
 
         return out
 
     def _service_doc(self, max_width=78, export='plain'):
         # routine service documentation
-        if len(self.services) == 0:
+        if len(self.parent.services) == 0:
             return ''
 
         names, symbols = list(), list()
         info = list()
         class_names = list()
 
-        for p in self.services.values():
+        for p in self.parent.services.values():
             names.append(p.name)
             info.append(p.info if p.info else '')
             class_names.append(p.class_name)
@@ -251,7 +319,7 @@ class RDocumenter:
 
         # replace with latex math expressions if export is ``rest``
         if export == 'rest':
-            symbols = [item.tex_name for item in self.services.values()]
+            symbols = [item.tex_name for item in self.parent.services.values()]
             symbols = math_wrap(symbols, export=export)
             title = 'Services\n---------'
 
@@ -272,13 +340,13 @@ class RDocumenter:
 
     def _constr_doc(self, max_width=78, export='plain'):
         # constraint documentation
-        if len(self.constrs) == 0:
+        if len(self.parent.constrs) == 0:
             return ''
 
         # prepare temporary lists
         names, class_names, info = list(), list(), list()
 
-        for p in self.constrs.values():
+        for p in self.parent.constrs.values():
             names.append(p.name)
             class_names.append(p.class_name)
             info.append(p.info if p.info else '')
@@ -286,7 +354,7 @@ class RDocumenter:
         # expressions based on output format
         expressions = []
         if export == 'rest':
-            for p in self.constrs.values():
+            for p in self.parent.constrs.values():
                 expr = _tex_pre(self, p, self.parent.syms.tex_map)
                 if p.is_eq:
                     expr = f'{expr} = 0'
@@ -460,7 +528,7 @@ class RDocumenter:
         # NOTE: this is for the optimization variables
         # not the _var_doc for ANDES parameters
         # variable documentation
-        if len(self.vars) == 0:
+        if len(self.parent.vars) == 0:
             return ''
 
         # prepare temporary lists
@@ -469,7 +537,7 @@ class RDocumenter:
         sources = list()
         units_rest = list()
 
-        for p in self.vars.values():
+        for p in self.parent.vars.values():
             names.append(p.name)
             class_names.append(p.class_name)
             info.append(p.info if p.info else '')
@@ -493,11 +561,11 @@ class RDocumenter:
 
         # symbols based on output format
         if export == 'rest':
-            symbols = [item.tex_name for item in self.vars.values()]
+            symbols = [item.tex_name for item in self.parent.vars.values()]
             symbols = math_wrap(symbols, export=export)
             title = 'Vars\n----------------------------------'
         else:
-            symbols = [item.name for item in self.vars.values()]
+            symbols = [item.name for item in self.parent.vars.values()]
             title = 'Vars'
 
         plain_dict = OrderedDict([('Name', names),
@@ -536,7 +604,7 @@ class RDocumenter:
         str
             Tabulated output in a string
         """
-        if len(self.rparams) == 0:
+        if len(self.parent.rparams) == 0:
             return ''
 
         # prepare temporary lists
@@ -545,7 +613,7 @@ class RDocumenter:
         sources = list()
         units_rest = list()
 
-        for p in self.rparams.values():
+        for p in self.parent.rparams.values():
             names.append(p.name)
             class_names.append(p.class_name)
             info.append(p.info if p.info else '')
@@ -562,11 +630,11 @@ class RDocumenter:
 
         # symbols based on output format
         if export == 'rest':
-            symbols = [item.tex_name for item in self.rparams.values()]
+            symbols = [item.tex_name for item in self.parent.rparams.values()]
             symbols = math_wrap(symbols, export=export)
             title = 'Parameters\n----------------------------------'
         else:
-            symbols = [item.name for item in self.rparams.values()]
+            symbols = [item.name for item in self.parent.rparams.values()]
             title = 'Parameters'
 
         plain_dict = OrderedDict([('Name', names),

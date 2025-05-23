@@ -9,7 +9,7 @@ from typing import Dict, Optional
 
 import numpy as np
 
-from andes.system import System as andes_System
+from andes.system import System as adSystem
 from andes.system import (_config_numpy, load_config_rc)
 from andes.variables import FileMan
 
@@ -49,7 +49,7 @@ def disable_methods(methods):
         setattr(System, method, disable_method(getattr(System, method)))
 
 
-class System(andes_System):
+class System(adSystem):
     """
     A subclass of ``andes.system.System``, this class encapsulates data, models,
     and routines for scheduling modeling and analysis in power systems.
