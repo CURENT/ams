@@ -322,7 +322,7 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         """
         return NotImplementedError
 
-    def unpack(self, **kwargs):
+    def unpack(self, res, **kwargs):
         """
         Multi-period scheduling will not unpack results from
         solver into devices.

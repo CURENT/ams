@@ -60,7 +60,7 @@ class OPF(DCPF1):
         res = opf.solve_opf(opf.read_case_matpower(mat), **kwargs)
         return res
 
-    def unpack(self, res):
+    def unpack(self, res, **kwargs):
         """
         Unpack the results from the gurobi-optimods.
         """

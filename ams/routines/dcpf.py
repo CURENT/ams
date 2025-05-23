@@ -125,7 +125,7 @@ class DCPFBase(RoutineBase):
         """
         return self.om.prob.solve(**kwargs)
 
-    def unpack(self, **kwargs):
+    def unpack(self, res, **kwargs):
         """
         Unpack the results from CVXPY model.
         """

@@ -130,7 +130,7 @@ class PFlow(RoutineBase):
         _, s = elapsed(t0)
         self.exec_time = float(s.split(" ")[0])
 
-        self.unpack()
+        self.unpack(res=None)
         return self.converged
 
     def _post_solve(self):
@@ -139,7 +139,7 @@ class PFlow(RoutineBase):
         """
         return True
 
-    def unpack(self, **kwargs):
+    def unpack(self, res, **kwargs):
         """
         Unpack the results from ANDES PFlow routine.
         """

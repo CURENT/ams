@@ -170,7 +170,7 @@ class DCPF1(RoutineBase):
         res, _ = runpf(casedata=ppc, ppopt=ppopt)
         return res
 
-    def unpack(self, res):
+    def unpack(self, res, **kwargs):
         """
         Unpack results from PYPOWER.
         """
@@ -548,7 +548,7 @@ class DCOPF1(DCPF1):
         res = runopf(casedata=ppc, ppopt=ppopt)
         return res
 
-    def unpack(self, res):
+    def unpack(self, res, **kwargs):
         mva = res['baseMVA']
         self.pi.optz.value = res['bus'][:, 13] / mva
         self.piq.optz.value = res['bus'][:, 14] / mva

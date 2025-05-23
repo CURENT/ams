@@ -223,7 +223,7 @@ class ED(RTED, MPBase, SRBase):
         """
         return NotImplementedError
 
-    def unpack(self, **kwargs):
+    def unpack(self, res, **kwargs):
         """
         Multi-period scheduling will not unpack results from
         solver into devices.

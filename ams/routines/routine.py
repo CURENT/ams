@@ -361,7 +361,7 @@ class RoutineBase:
         """
         raise NotImplementedError
 
-    def unpack(self, **kwargs):
+    def unpack(self, res, **kwargs):
         """
         Unpack the results.
         """
@@ -420,7 +420,7 @@ class RoutineBase:
             msg = f"<{self.class_name}> solved as {status} in {s}, converged in "
             msg += n_iter_str + f"with {sstats.solver_name}."
             logger.warning(msg)
-            self.unpack(**kwargs)
+            self.unpack(res=None, **kwargs)
             self._post_solve()
             self.system.report()
             return True
