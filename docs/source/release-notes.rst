@@ -9,6 +9,27 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
+v1.0.10 (2024-xx-xx)
+--------------------
+
+- Add bus type correction in ``system.System.setup()``
+- Revise ``ams.io.psse.read`` to complete model Zone when necessary
+- Use numerical Area and Zone idx in MATPOWER and PSSE RAW file conversion
+- Support JSON format addfile when converting to ANDES case
+- Add PSS/E v33 RAW file writer
+- In class ``System``, add wrapper methods ``to_mpc``, ``to_m``, ``to_xlsx``,
+  ``to_json``, and ``to_raw`` for easier case file export
+- Add wrapper routines for PYPOWER: ``DCPF1``, ``PFlow1``, ``DCOPF1``, and ``ACOPF1``
+- In routine ``DCOPF`` and its derivatives, add ExpressionCalc ``mu1`` ``mu2`` to
+  calculate Lagrange multipliers of line flow limits constraints
+- Add wrapper routine ``OPF`` for gurobi_optimods
+- Add a demo to show newly added wrapper routines, see
+  ``examples/demonstration/demo_wrapper_routines.ipynb``
+- Revise ``andes.common.config.Config.update`` to ensure configuration parameters
+  are consistently updated in both the object and its internal ``_dict``
+- Remove legacy revised PYPOWER module
+- Remove function ``ams.shared.ppc2df``
+
 v1.0.9 (2024-04-23)
 --------------------
 
@@ -408,50 +429,3 @@ v0.4 (2023-01)
 -------------------
 
 This release outlines the package.
-
-Known Limitations
-=================
-
-- For builit-in PYPOWER-based ACOPF, the known largest solvable case is "pglib_opf_case1354_pegase.m"
-- Batch processing is not supported yet
-- Routine ``DCOPF`` has been extensively benchmarked with pandapower and MATPOWER.
-- Routines besides above mentioned are not fully benchmarked yet.
-
-Roadmap
-=======
-
-This section lists out some potential features that may be added in the future.
-Note that the proposed features are not guaranteed to be implemented and subject to change.
-
-Electric Vehicle for Grid Service
-------------------------------------------
-
-A charging-time-constrained EV aggregation based on the state-space model
-
-References:
-
-[1] J. Wang et al., "Electric Vehicles Charging Time Constrained Deliverable Provision of Secondary
-Frequency Regulation," in IEEE Transactions on Smart Grid, doi: 10.1109/TSG.2024.3356948.
-
-[2] M. Wang et al., "State Space Model of Aggregated Electric Vehicles for Frequency Regulation," in
-IEEE Transactions on Smart Grid, vol. 11, no. 2, pp. 981-994, March 2020, doi: 10.1109/TSG.2019.2929052.
-
-Distribution OPF
---------------------------
-
-- Distribution networks OPF and its LMP
-- DG siting and sizing considering energy equity
-
-References:
-
-[1] H. Yuan, F. Li, Y. Wei and J. Zhu, "Novel Linearized Power Flow and Linearized OPF Models for
-Active Distribution Networks With Application in Distribution LMP," in IEEE Transactions on Smart Grid,
-vol. 9, no. 1, pp. 438-448, Jan. 2018, doi: 10.1109/TSG.2016.2594814.
-
-[2] C. Li, F. Li, S. Jiang, X. Wang and J. Wang, "Siting and Sizing of DG Units Considering Energy
-Equity: Model, Solution, and Guidelines," in IEEE Transactions on Smart Grid, doi: 10.1109/TSG.2024.3350914.
-
-Planning
---------------------------
-
-- Transmission expansion planning

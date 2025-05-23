@@ -26,6 +26,15 @@ def write_req():
         for dep in dependencies:
             f.write(dep + '\n')
 
+    optional_dependencies = pyproject['project']['optional-dependencies']
+
+    for group in optional_dependencies:
+        filename = f"requirements-{group}.txt"
+        with open(filename, 'w') as f:
+            f.write(comment)
+            for dep in optional_dependencies[group]:
+                f.write(dep + '\n')
+
     print("Requirements files generated successfully.")
 
 

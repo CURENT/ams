@@ -104,6 +104,8 @@ class MPBase:
         self.vBus.horizon = self.timeslot
         self.vBus.info = '2D Bus voltage'
         self.pi.horizon = self.timeslot
+        self.mu1.horizon = self.timeslot
+        self.mu2.horizon = self.timeslot
 
 
 class ED(RTED, MPBase, SRBase):
@@ -214,14 +216,14 @@ class ED(RTED, MPBase, SRBase):
         cost += '+ sum(mul(ugt, mul(c0, tlv)))'
         self.obj.e_str = cost
 
-    def dc2ac(self, **kwargs):
+    def dc2ac(self, kloss=1.0, **kwargs):
         """
         AC conversion ``dc2ac`` is not implemented yet for
         multi-period scheduling.
         """
         return NotImplementedError
 
-    def unpack(self, **kwargs):
+    def unpack(self, res, **kwargs):
         """
         Multi-period scheduling will not unpack results from
         solver into devices.

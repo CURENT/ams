@@ -9,9 +9,9 @@ from collections import OrderedDict
 
 import numpy as np
 
-from andes.core import Config
 from andes.utils.misc import elapsed
 
+from ams.core import Config
 from ams.core.param import RParam
 from ams.core.symprocessor import SymProcessor
 from ams.core.documenter import RDocumenter
@@ -361,7 +361,7 @@ class RoutineBase:
         """
         raise NotImplementedError
 
-    def unpack(self, **kwargs):
+    def unpack(self, res, **kwargs):
         """
         Unpack the results.
         """
@@ -420,7 +420,7 @@ class RoutineBase:
             msg = f"<{self.class_name}> solved as {status} in {s}, converged in "
             msg += n_iter_str + f"with {sstats.solver_name}."
             logger.warning(msg)
-            self.unpack(**kwargs)
+            self.unpack(res=None, **kwargs)
             self._post_solve()
             self.system.report()
             return True
@@ -484,13 +484,7 @@ class RoutineBase:
     def __repr__(self):
         return f"{self.class_name} at {hex(id(self))}"
 
-    def _ppc2ams(self):
-        """
-        Convert PYPOWER results to AMS.
-        """
-        raise NotImplementedError
-
-    def dc2ac(self, **kwargs):
+    def dc2ac(self, kloss=1.0, **kwargs):
         """
         Convert the DC-based results with ACOPF.
         """

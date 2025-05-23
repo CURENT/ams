@@ -104,7 +104,7 @@ class TestSetOptzValueACOPF(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.xlsx"),
+        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.json"),
                            setup=True,
                            default_config=True,
                            no_output=True,
@@ -144,7 +144,7 @@ class TestSetOptzValueDCOPF(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.xlsx"),
+        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.json"),
                            setup=True,
                            default_config=True,
                            no_output=True,

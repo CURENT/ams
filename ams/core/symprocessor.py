@@ -174,7 +174,7 @@ class SymProcessor:
         # Constraints
         # NOTE: constraints are included in sub_map for ExpressionCalc
         # thus, they don't have the suffix `.v`
-        for cname, constraint in self.parent.constrs.items():
+        for cname, _ in self.parent.constrs.items():
             self.sub_map[rf"\b{cname}\b"] = f'self.rtn.{cname}.optz'
 
         # store tex names defined in `self.config`

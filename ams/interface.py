@@ -3,6 +3,7 @@ Module for interfacing ANDES
 """
 
 import os
+import json
 import logging
 from collections import OrderedDict, Counter
 
@@ -81,7 +82,8 @@ def sync_adsys(amsys, adsys):
             try:
                 ad_mdl.set(src=param, attr='v', idx=idx,
                            value=am_mdl.get(src=param, attr='v', idx=idx))
-            except Exception:
+            except Exception as e:
+                logger.warning(f"Failed to sync parameter '{param}' for model '{mname}': {e}")
                 continue
     return True
 
@@ -242,24 +244,43 @@ def parse_addfile(adsys, amsys, addfile):
             logger.debug('Addfile format guessed as %s.', key)
             break
 
-    if key != 'xlsx':
-        logger.error('Addfile format "%s" is not supported yet.', add_format)
-        # FIXME: xlsx input file with dyr addfile result into KeyError: 'Toggle'
-        # add_parser = importlib.import_module('andes.io.' + add_format)
-        # if not add_parser.read_add(system, addfile):
-        #     logger.error('Error parsing addfile "%s" with %s parser.', addfile, add_format)
-        return adsys
+    # FIXME: xlsx input file with dyr addfile result into KeyError: 'Toggle'
+    # add_parser = importlib.import_module('andes.io.' + add_format)
+    # if not add_parser.read_add(system, addfile):
+    #     logger.error('Error parsing addfile "%s" with %s parser.', addfile, add_format)
 
     # Try parsing the addfile
     logger.info('Parsing additional file "%s"...', addfile)
 
-    reader = pd.ExcelFile(addfile)
+    if add_format == 'xlsx':
+        reads = pd.read_excel(addfile,
+                              sheet_name=None,
+                              index_col=0,
+                              engine='openpyxl',
+                              )
+    elif add_format == 'json':
+        if isinstance(addfile, str):
+            f = open(addfile, 'r')
+        else:
+            f = addfile
+
+        json_in = json.load(f)
+
+        if f is not addfile:
+            f.close()
+
+        reads = dict()
+        for keys, dct in json_in.items():
+            reads[keys] = pd.DataFrame(dct)
+    else:
+        logger.error("Unsupported addfile format, only 'xlsx' and 'json' formats are supported.")
+        return adsys
 
     pflow_mdl = list(pflow_dict.keys())
 
     pflow_mdls_overlap = []
     for mdl_name in pflow_dict.keys():
-        if mdl_name in reader.sheet_names:
+        if mdl_name in reads.keys():
             pflow_mdls_overlap.append(mdl_name)
 
     if len(pflow_mdls_overlap) > 0:
@@ -269,14 +290,10 @@ def parse_addfile(adsys, amsys, addfile):
 
     pflow_mdl_nonempty = [mdl for mdl in pflow_mdl if amsys.models[mdl].n > 0]
     logger.debug(f"Non-empty PFlow models: {pflow_mdl}")
-    pflow_df_models = pd.read_excel(addfile,
-                                    sheet_name=pflow_mdl_nonempty,
-                                    index_col=0,
-                                    engine='openpyxl',
-                                    )
-    # drop rows that all nan
-    for name, df in pflow_df_models.items():
-        df.dropna(axis=0, how='all', inplace=True)
+    pflow_df_models = {}
+    for key, df in reads.items():
+        if key in pflow_mdl_nonempty:
+            pflow_df_models[key] = df.dropna(axis=0, how='all', inplace=False)
 
     # collect idx_map if difference exists
     idx_map = OrderedDict([])
@@ -290,13 +307,12 @@ def parse_addfile(adsys, amsys, addfile):
             idx_map[name] = dict(zip(ad_idx, am_idx))
 
     # --- dynamic models to be added ---
-    mdl_to_keep = list(set(reader.sheet_names) - set(pflow_mdl))
+    mdl_to_keep = list(set(reads.keys()) - set(pflow_mdl))
     mdl_to_keep.sort(key=str.lower)
-    df_models = pd.read_excel(addfile,
-                              sheet_name=mdl_to_keep,
-                              index_col=0,
-                              engine='openpyxl',
-                              )
+    df_models = {}
+    for key, df in reads.items():
+        if key in mdl_to_keep:
+            df_models[key] = df.dropna(axis=0, how='all', inplace=False)
 
     # adjust models index
     for name, df in df_models.items():

@@ -2,40 +2,29 @@
 
 Python Software for Power System Scheduling Modeling and Co-Simulation with Dynamics, serving as the market simulator for the [CURENT Largescale Testbed][LTB Repository].
 
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](https://github.com/CURENT/ams/blob/master/LICENSE)
-![platforms](https://anaconda.org/conda-forge/ltbams/badges/platforms.svg)
-[![Python Versions](https://img.shields.io/badge/Python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/)
+![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
 [![DOI:10.1109/TSTE.2025.3528027](https://zenodo.org/badge/DOI/10.1109/TSTE.2025.3528027.svg)](https://ieeexplore.ieee.org/document/10836855)
-[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
-[![codecov](https://codecov.io/gh/CURENT/ams/graph/badge.svg?token=RZI5GLLBQH)](https://codecov.io/gh/CURENT/ams)
-
-[![GitHub Tag](https://img.shields.io/github/v/tag/CURENT/ams)](https://github.com/CURENT/ams/tags)
-![GitHub commits since latest release (branch)](https://img.shields.io/github/commits-since/curent/ams/latest/develop)
-[![GitHub last commit (master)](https://img.shields.io/github/last-commit/CURENT/ams/master?label=last%20commit%20to%20master)](https://github.com/CURENT/ams/commits/master/)
-[![GitHub last commit (develop)](https://img.shields.io/github/last-commit/CURENT/ams/develop?label=last%20commit%20to%20develop)](https://github.com/CURENT/ams/commits/develop/)
-
-[![libraries](https://img.shields.io/librariesio/release/pypi/ltbams)](https://libraries.io/pypi/ltbams)
-![Repo Size](https://img.shields.io/github/repo-size/CURENT/ams)
-[![Structure](https://img.shields.io/badge/code_base-visualize-blue)](https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=CURENT%2Fams)
-
-[![Compatibility Tests](https://github.com/CURENT/ams/actions/workflows/compatibility.yml/badge.svg)](https://github.com/CURENT/ams/actions/workflows/compatibility.yml)
-[![Publish to TestPyPI and PyPI](https://github.com/CURENT/ams/actions/workflows/publish-pypi.yml/badge.svg?branch=master)](https://github.com/CURENT/ams/actions/workflows/publish-pypi.yml)
-[![Azure Pipline](https://dev.azure.com/curentltb/ams/_apis/build/status%2FCURENT.ams?branchName=master)](https://dev.azure.com/curentltb/ams/_build/latest?definitionId=2&branchName=master)
 
 <img src="docs/source/images/sponsors/CURENT_Logo_NameOnTrans.png" alt="CURENT ERC Logo" width="300" height="auto">
 
-|               | Stable                                                                                                                                        | Develop                                                                                                                                       |
-|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| Documentation | [![Documentation Status](https://readthedocs.org/projects/ams/badge/?version=stable)](https://ams.readthedocs.io/en/stable/?badge=stable) | [![Develop Documentation](https://readthedocs.org/projects/ams/badge/?version=develop)](https://ams.readthedocs.io/en/develop/?badge=develop) | 
+|  | Stable | Develop |
+|---|---|---|
+| Documentation | [![Documentation Status](https://readthedocs.org/projects/ams/badge/?version=stable)](https://ams.readthedocs.io/en/stable/?badge=stable) | [![Develop Documentation](https://readthedocs.org/projects/ams/badge/?version=develop)](https://ams.readthedocs.io/en/develop/?badge=develop) |
 
-
-| Badges        |                                                                                                                                                                                                                                                     |                                                                                                                                                                                                            |
-|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Downloads     | [![PyPI Version](https://img.shields.io/pypi/v/ltbams.svg)](https://pypi.python.org/pypi/ltbams)         | [![Conda Version](https://anaconda.org/conda-forge/ltbams/badges/version.svg)](https://anaconda.org/conda-forge/ltbams) |
-| Try on Binder | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/curent/ams/master)                                                                                                                                                 |                                                                                                                                                                                                            |
-| Code Quality  |[![Codacy Badge](https://app.codacy.com/project/badge/Grade/69456da1b8634f2f984bd769e35f0050)](https://app.codacy.com/gh/CURENT/ams/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)| [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/69456da1b8634f2f984bd769e35f0050)](https://app.codacy.com/gh/CURENT/ams/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage) |
-
-
+| Badges |  |  |
+|---|---|---|
+| Repo | ![Project Status: Active](https://www.repostatus.org/badges/latest/active.svg) | ![Repo Size](https://img.shields.io/github/repo-size/CURENT/ams) |
+| Version | ![PyPI Version](https://img.shields.io/pypi/v/ltbams.svg) | ![Conda Version](https://anaconda.org/conda-forge/ltbams/badges/version.svg) |
+| Tag | [![GitHub Tag](https://img.shields.io/github/v/tag/CURENT/ams)](https://github.com/CURENT/ams/tags) | ![GitHub commits since latest release (branch)](https://img.shields.io/github/commits-since/curent/ams/latest/develop) |
+| Download | ![PyPI - Downloads](https://img.shields.io/pypi/dm/ltbams) | ![Anaconda-Server Badge](https://anaconda.org/conda-forge/ltbams/badges/downloads.svg) |
+| Code Quality | ![Codacy Badge](https://app.codacy.com/project/badge/Grade/69456da1b8634f2f984bd769e35f0050) | ![Codacy Badge](https://app.codacy.com/project/badge/Coverage/69456da1b8634f2f984bd769e35f0050) |
+| Code Cov | ![codecov](https://codecov.io/gh/CURENT/ams/graph/badge.svg?token=RZI5GLLBQH) |  |
+| Last Commit | ![GitHub last commit (master)](https://img.shields.io/github/last-commit/CURENT/ams/master?label=last%20commit%20to%20master) | ![GitHub last commit (develop)](https://img.shields.io/github/last-commit/CURENT/ams/develop?label=last%20commit%20to%20develop) |
+| CI | ![Compatibility Tests](https://github.com/CURENT/ams/actions/workflows/compatibility.yml/badge.svg) | ![Azure Pipline](https://dev.azure.com/curentltb/ams/_apis/build/status%2FCURENT.ams?branchName=master) |
+| CD | ![Publish to TestPyPI and PyPI](https://github.com/CURENT/ams/actions/workflows/publish-pypi.yml/badge.svg?branch=master) |  |
+| Structure | [![Structure](https://img.shields.io/badge/code_base-visualize-blue)](https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=CURENT%2Fams) | [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/CURENT/ams) |
+| Dependency | [![libraries](https://img.shields.io/librariesio/release/pypi/ltbams)](https://libraries.io/pypi/ltbams) |  |
+| Try on Binder | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/curent/ams/master) |  |
 
 # Why AMS
 
@@ -54,25 +43,27 @@ and solved with third-party solvers.
 
 AMS produces credible scheduling results and competitive performance.
 The following results show the comparison of DCOPF between AMS and other tools.
+In the table, **AMS Gap** is the difference between the AMS and MATPOWER results,
+and **pandapower Gap** is the difference between the pandapower and MATPOWER results.
 
-| Cost [\$]             | AMS          | pandapower   | MATPOWER     |
-|-----------------------|--------------|--------------|--------------|
-| IEEE 14-Bus           | 7,642.59     | 7,642.59     | 7,642.59     |
-| IEEE 39-Bus           | 41,263.94    | 41,263.94    | 41,263.94    |
-| PEGASE 89-Bus         | 5,733.37     | 5,733.37     | 5,733.37     |
-| IEEE 118-Bus          | 125,947.88   | 125,947.88   | 125,947.88   |
-| NPCC 140-Bus          | 810,033.37   | 810,016.06   | 810,033.37   |
-| WECC 179-Bus          | 411,706.13   | 411,706.13   | 411,706.13   |
-| IEEE 300-Bus          | 706,292.32   | 706,292.32   | 706,292.32   |
-| PEGASE 1354-Bus       | 1,218,096.86 | 1,218,096.86 | 1,218,096.86 |
-| PEGASE 2869-Bus       | 2,386,235.33 | 2,386,235.33 | 2,386,235.33 |
-| GOC 4020-Bus          | 793,634.11   | 793,634.11   | 793,634.11   |
-| EPIGRIDS 5658-Bus     | 1,195,466.12 | 1,195,466.12 | 1,195,466.12 |
-| EPIGRIDS 7336-Bus     | 1,855,870.94 | 1,855,870.94 | 1,855,870.94 |
+| Case             | MATPOWER [\$] | AMS Gap [\$] | pandapower Gap [\$] |
+|------------------|--------------|--------------|---------------------|
+| IEEE 14-Bus      | 7,642.59     | 0.00         | 0.00                |
+| IEEE 39-Bus      | 41,263.94    | 0.00         | 0.00                |
+| PEGASE 89-Bus    | 5,733.37     | 0.00         | 0.00                |
+| IEEE 118-Bus     | 125,947.88   | 0.00         | 0.00                |
+| NPCC 140-Bus     | 810,033.37   | 0.00         | **-17.31**          |
+| WECC 179-Bus     | 411,706.13   | 0.00         | 0.00                |
+| IEEE 300-Bus     | 706,292.32   | 0.00         | 0.00                |
+| PEGASE 1354-Bus  | 1,218,096.86 | 0.00         | 0.00                |
+| PEGASE 2869-Bus  | 2,386,235.33 | 0.00         | 0.00                |
+| GOC 4020-Bus     | 793,634.11   | 0.00         | 0.00                |
+| EPIGRIDS 5658-Bus| 1,195,466.12 | 0.00         | 0.00                |
+| EPIGRIDS 7336-Bus| 1,855,870.94 | 0.00         | 0.00                |
 
 <div style="text-align: left;">
   <img src="docs/source/images/dcopf_time.png" alt="DCOPF Time" width="480" height="auto">
-  <p><strong>Figure:</strong> Computation time of OPF on small-scale cases.</p>
+  <p><strong>Figure:</strong> Computation time of OPF on medium to large cases.</p>
 </div>
 
 In the bar chart, the gray bar labeled "AMS Symbolic Processing" represents the time spent
@@ -84,6 +75,19 @@ time used by the solvers MOSEK and PIQP, respectively.
 Regarding the baselines, the blue and green bars represent the running time of MATPOWER using
 solver MIPS and pandapower using solver PIPS, respectively.
 The results for AMS, pandapower, and matpower are the average time consumed over ten repeat tests.
+
+<div style="text-align: left;">
+  <img src="docs/source/images/educ_pie.png" alt="DCOPF Time" width="480" height="auto">
+  <p><strong>Figure:</strong> Computation time distribution for multi-period economic dispatch and
+unit commitment using a 31,777-bus case.</p>
+</div>
+
+To further demonstrate AMS's scalability, we validated multi-period economic dispatch and unit commitment
+on an ultra-large power system case with 31,777 buses, 4,664 generators, 41,573 transmission lines,
+and 5 time intervals.
+The computation time distribution for this case is shown in the figure below. Notably, the time spent
+on symbolic processing remains negligible even at this scale, highlighting AMS's efficiency for
+large-scale studies.
 
 AMS is currently under active development.
 Use the following resources to get involved.
@@ -106,6 +110,20 @@ Install from PyPI using pip:
 
 ```bash
 pip install ltbams
+```
+
+You can also install with optional dependencies, such as ``dev``, ``docs``, and ``nlp``:
+
+```bash
+pip install ltbams[dev]
+pip install ltbams[docs]
+pip install ltbams[nlp]
+```
+
+Or install with all optional dependencies:
+
+```bash
+pip install ltbams[all]
 ```
 
 Install from conda-forge using conda:

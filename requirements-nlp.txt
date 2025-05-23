@@ -1,0 +1,5 @@
+# Generated on 2025-05-19.
+PYPOWER
+pyoptinterface
+gurobipy
+gurobi-optimods

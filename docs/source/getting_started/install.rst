@@ -43,7 +43,7 @@ Create an environment for AMS (recommended)
 
 .. code:: bash
 
-     mamba create --name ams python=3.8
+     mamba create --name ams python=3.10
 
 Activate the new environment with
 
@@ -83,10 +83,7 @@ To install packages in the ``dev`` when installing AMS, do:
 
 .. code:: bash
 
-    pip install -r requirements-dev.txt
-
-One can also inspect the ``requirements-dev.txt`` to identify the packages
-for manual installation.
+    pip install .[dev]
 
 .. _Develop Install:
 
@@ -131,6 +128,7 @@ Install dependencies with
     mamba install --file requirements.txt
     mamba install --file requirements-dev.txt
     mamba install --file requirements-doc.txt
+    mamba install --file requirements-nlp.txt
 
 Alternatively, you can install them with ``pip``:
 
@@ -139,12 +137,17 @@ Alternatively, you can install them with ``pip``:
     pip install -r requirements.txt
     pip install -r requirements-dev.txt
     pip install -r requirements-doc.txt
+    pip install -r requirements-nlp.txt
+
+Alternatively, if you have a modern version of pip (>=23.1), you can install all dependencies specified in ``pyproject.toml`` with:
+
+    pip install .[dev,doc,nlp]
 
 Step 3: Install AMS in the development mode using
 
 .. code:: bash
 
-      python3 -m pip install -e .
+    python3 -m pip install -e .
 
 Note the dot at the end. Pip will take care of the rest.
 

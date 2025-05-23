@@ -141,6 +141,14 @@ class DCOPF(DCPFBase):
                                  name='pi', unit='$/p.u.',
                                  model='Bus', src=None,
                                  e_str='pb.dual_variables[0]')
+        self.mu1 = ExpressionCalc(info='Lagrange multipliers, dual of <plflb>',
+                                  name='mu1', unit='$/p.u.',
+                                  model='Line', src=None,
+                                  e_str='plflb.dual_variables[0]')
+        self.mu2 = ExpressionCalc(info='Lagrange multipliers, dual of <plfub>',
+                                  name='mu2', unit='$/p.u.',
+                                  model='Line', src=None,
+                                  e_str='plfub.dual_variables[0]')
 
         # --- objective ---
         obj = 'sum(mul(c2, pg**2))'

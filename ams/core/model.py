@@ -7,13 +7,13 @@ from collections import OrderedDict
 from typing import Iterable
 
 import numpy as np
-from andes.core.common import Config
 from andes.core.param import ExtParam
 from andes.core.service import BaseService, BackRef
 from andes.utils.func import list_flatten
 
 from ams.core.documenter import Documenter
 from ams.core.var import Algeb
+from ams.core.common import Config
 
 from ams.utils.misc import deprec_get_idx
 

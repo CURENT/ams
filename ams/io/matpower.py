@@ -188,6 +188,9 @@ def mpc2system(mpc: dict, system) -> bool:
     Note that `mbase` in mpc is converted to `Sn`, but it is not actually used in
     MATPOWER nor AMS.
 
+    In converted AMS system, StaticGen idxes are 1-based, while the sequence follow
+    the order of the original MATPOWER data.
+
     Parameters
     ----------
     system : ams.system.System
@@ -401,22 +404,27 @@ def mpc2system(mpc: dict, system) -> bool:
                        )
 
     # --- Area ---
-    area_id = np.unique(system.Bus.area.v).astype(int)
-    for area in area_id:
-        area_idx = f'AREA_{area}'
-        system.add('Area', idx=area_idx, name=area)
-    bus_area = system.Bus.area.v
-    bus_area = [f'AREA_{int(area)}' for area in bus_area]
-    system.Bus.area.v = bus_area
+    area = system.Bus.area.v
+    area_map = {}
+    if area:
+        for a in set(area):
+            a_new = system.add('Area',
+                               param_dict=dict(idx=a, name=a))
+            area_map[a] = a_new
+        system.Bus.area.v = [area_map[a] for a in area]
 
     # --- Zone ---
-    zone_id = np.unique(system.Bus.zone.v).astype(int)
-    for zone in zone_id:
-        zone_idx = f'ZONE_{zone}'
-        system.add('Zone', idx=zone_idx, name=zone)
-    bus_zone = system.Bus.zone.v
-    bus_zone = [f'ZONE_{int(zone)}' for zone in bus_zone]
-    system.Bus.zone.v = bus_zone
+    zone = system.Bus.zone.v
+    zone_map = {}
+    if zone:
+        n_zone = system.Area.n
+        for z in set(zone):
+            z_new = system.add('Zone',
+                               param_dict=dict(idx=int(n_zone + 1),
+                                               name=f'{n_zone + 1}'))
+            zone_map[z] = z_new
+            n_zone += 1
+        system.Bus.zone.v = [zone_map[z] for z in zone]
 
     return True
 
@@ -506,8 +514,9 @@ def system2mpc(system) -> dict:
     # --- PQ ---
     if system.PQ.n > 0:
         pq_pos = system.Bus.idx2uid(system.PQ.bus.v)
-        bus[pq_pos, 2] = system.PQ.p0.v * base_mva
-        bus[pq_pos, 3] = system.PQ.q0.v * base_mva
+        u = system.PQ.u.v
+        bus[pq_pos, 2] = u * system.PQ.p0.v * base_mva
+        bus[pq_pos, 3] = u * system.PQ.q0.v * base_mva
 
     # --- Shunt ---
     if system.Shunt.n > 0:
@@ -695,10 +704,15 @@ def mpc2m(mpc: dict, outfile: str) -> str:
 
 def write(system, outfile: str, overwrite: bool = None) -> bool:
     """
-    Export an AMS system to a MATPOWER mpc file.
+    Export an AMS system to a MATPOWER M-file.
 
     This function converts an AMS system object into a MATPOWER-compatible
     mpc dictionary and writes it to a specified output file in MATPOWER format.
+
+    In the converted MPC, the indices of area (bus[:, 6]) and zone (bus[:, 10])
+    may differ from the original MPC. However, the mapping relationship is preserved.
+    For example, if the original MPC numbers areas starting from 1, the converted
+    MPC may number them starting from 0.
 
     Parameters
     ----------
