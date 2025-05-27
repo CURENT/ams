@@ -602,6 +602,7 @@ class System(adSystem):
                  **kwargs):
         """
         Convert the AMS system to an ANDES system.
+        Wrapper method for `ams.interface.to_andes`.
 
         A preferred dynamic system file to be added has following features:
         1. The file contains both power flow and dynamic models.
