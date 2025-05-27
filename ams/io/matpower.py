@@ -455,16 +455,6 @@ def system2mpc(system) -> dict:
 
     This function is revised from ``andes.io.matpower.system2mpc``.
 
-    In the ``gen`` section, slack generators are listed before PV generators.
-
-    In the converted MPC, the indices of area (bus[:, 6]) and zone (bus[:, 10])
-    may differ from the original MPC. However, the mapping relationship is preserved.
-    For example, if the original MPC numbers areas starting from 1, the converted
-    MPC may number them starting from 0.
-
-    The coefficients ``c2`` and ``c1`` in the generator cost data are scaled by
-    ``base_mva`` to match MATPOWER's unit convention (MW).
-
     Parameters
     ----------
     system : ams.core.system.System
@@ -474,6 +464,21 @@ def system2mpc(system) -> dict:
     -------
     mpc : dict
         A dictionary in MATPOWER format representing the converted AMS system.
+
+    Notes
+    -----
+    - In the `gen` section, slack generators are listed before PV generators.
+    - For uncontrolled generators (`ctrl.v == 0`), their max and min power 
+      limits are set to their initial power (`p0.v`) in the converted MPC.
+    - In the converted MPC, the indices of area (`bus[:, 6]`) and zone (`bus[:, 10]`) 
+      may differ from the original MPC. However, the mapping relationship is preserved.
+      For example, if the original MPC numbers areas starting from 1, the converted 
+      MPC may number them starting from 0.
+    - The coefficients `c2` and `c1` in the generator cost data are scaled by 
+      `baseMVA`.
+    - Unlike the XLSX and JSON converters, this implementation uses value providers
+      (`v`) instead of vin. As a result, any changes made through `model.set` will be
+      reflected in the generated MPC.
     """
 
     mpc = dict(version='2',
@@ -709,11 +714,6 @@ def write(system, outfile: str, overwrite: bool = None) -> bool:
     This function converts an AMS system object into a MATPOWER-compatible
     mpc dictionary and writes it to a specified output file in MATPOWER format.
 
-    In the converted MPC, the indices of area (bus[:, 6]) and zone (bus[:, 10])
-    may differ from the original MPC. However, the mapping relationship is preserved.
-    For example, if the original MPC numbers areas starting from 1, the converted
-    MPC may number them starting from 0.
-
     Parameters
     ----------
     system : ams.system.System
@@ -727,6 +727,21 @@ def write(system, outfile: str, overwrite: bool = None) -> bool:
     -------
     bool
         True if the file was successfully written, False otherwise.
+
+    Notes
+    -----
+    - In the `gen` section, slack generators are listed before PV generators.
+    - For uncontrolled generators (`ctrl.v == 0`), their max and min power 
+      limits are set to their initial power (`p0.v`) in the converted MPC.
+    - In the converted MPC, the indices of area (`bus[:, 6]`) and zone (`bus[:, 10]`) 
+      may differ from the original MPC. However, the mapping relationship is preserved.
+      For example, if the original MPC numbers areas starting from 1, the converted 
+      MPC may number them starting from 0.
+    - The coefficients `c2` and `c1` in the generator cost data are scaled by 
+      `baseMVA`.
+    - Unlike the XLSX and JSON converters, this implementation uses value providers
+      (`v`) instead of vin. As a result, any changes made through `model.set` will be
+      reflected in the generated MPC.
     """
     if not confirm_overwrite(outfile, overwrite=overwrite):
         return False
