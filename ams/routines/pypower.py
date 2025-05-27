@@ -131,6 +131,15 @@ class DCPF1(RoutineBase):
                         unit='p.u.',
                         name='vBus', tex_name=r'v_{Bus}',
                         src='v', model='Bus',)
+        # --- load ---
+        self.pd = RParam(info='active demand',
+                         name='pd', tex_name=r'p_{d}',
+                         model='StaticLoad', src='p0',
+                         unit='p.u.',)
+        self.qd = RParam(info='reactive demand',
+                         name='qd', tex_name=r'q_{d}',
+                         model='StaticLoad', src='q0',
+                         unit='p.u.',)
         # --- gen ---
         self.pg = Var(info='Gen active power',
                       unit='p.u.',
@@ -267,13 +276,13 @@ class DCPF1(RoutineBase):
             return False
 
     def _get_off_constrs(self):
-        pass
+        logger.debug(f"{self.class_name} does not implement _get_off_constrs.")
 
     def _data_check(self, info=True, **kwargs):
-        pass
+        logger.debug(f"{self.class_name} does not implement _data_check.")
 
     def update(self, params=None, build_mats=False, **kwargs):
-        pass
+        logger.debug(f"{self.class_name} does not implement update.")
 
     def enable(self, name):
         raise NotImplementedError
@@ -282,7 +291,7 @@ class DCPF1(RoutineBase):
         raise NotImplementedError
 
     def _post_add_check(self):
-        pass
+        logger.debug(f"{self.class_name} does not implement _post_add_check.")
 
     def addRParam(self,
                   name: str,

@@ -46,6 +46,8 @@ def write_raw(system, outfile: str, overwrite: bool = None):
     """
     Convert AMS system to PSS/E RAW file.
 
+    This method has not been fully benchmarked yet!
+
     Parameters
     ----------
     system : System

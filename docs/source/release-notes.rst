@@ -12,6 +12,8 @@ v1.0
 v1.0.12 (2025-xx-xx)
 ----------------------
 
+- Add RParam pd and qd in ``DCPF1`` for easy access to load
+
 v1.0.11 (2025-05-23)
 ----------------------
 
