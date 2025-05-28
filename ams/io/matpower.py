@@ -468,13 +468,13 @@ def system2mpc(system) -> dict:
     Notes
     -----
     - In the `gen` section, slack generators are listed before PV generators.
-    - For uncontrolled generators (`ctrl.v == 0`), their max and min power 
+    - For uncontrolled generators (`ctrl.v == 0`), their max and min power
       limits are set to their initial power (`p0.v`) in the converted MPC.
-    - In the converted MPC, the indices of area (`bus[:, 6]`) and zone (`bus[:, 10]`) 
+    - In the converted MPC, the indices of area (`bus[:, 6]`) and zone (`bus[:, 10]`)
       may differ from the original MPC. However, the mapping relationship is preserved.
-      For example, if the original MPC numbers areas starting from 1, the converted 
+      For example, if the original MPC numbers areas starting from 1, the converted
       MPC may number them starting from 0.
-    - The coefficients `c2` and `c1` in the generator cost data are scaled by 
+    - The coefficients `c2` and `c1` in the generator cost data are scaled by
       `baseMVA`.
     - Unlike the XLSX and JSON converters, this implementation uses value providers
       (`v`) instead of vin. As a result, any changes made through `model.set` will be
@@ -731,13 +731,13 @@ def write(system, outfile: str, overwrite: bool = None) -> bool:
     Notes
     -----
     - In the `gen` section, slack generators are listed before PV generators.
-    - For uncontrolled generators (`ctrl.v == 0`), their max and min power 
+    - For uncontrolled generators (`ctrl.v == 0`), their max and min power
       limits are set to their initial power (`p0.v`) in the converted MPC.
-    - In the converted MPC, the indices of area (`bus[:, 6]`) and zone (`bus[:, 10]`) 
+    - In the converted MPC, the indices of area (`bus[:, 6]`) and zone (`bus[:, 10]`)
       may differ from the original MPC. However, the mapping relationship is preserved.
-      For example, if the original MPC numbers areas starting from 1, the converted 
+      For example, if the original MPC numbers areas starting from 1, the converted
       MPC may number them starting from 0.
-    - The coefficients `c2` and `c1` in the generator cost data are scaled by 
+    - The coefficients `c2` and `c1` in the generator cost data are scaled by
       `baseMVA`.
     - Unlike the XLSX and JSON converters, this implementation uses value providers
       (`v`) instead of vin. As a result, any changes made through `model.set` will be
