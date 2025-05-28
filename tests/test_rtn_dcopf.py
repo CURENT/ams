@@ -1,3 +1,5 @@
+import os
+
 import unittest
 import numpy as np
 
@@ -99,3 +101,21 @@ class TestDCOPF(unittest.TestCase):
         a_dcopf = self.ss.DCOPF.get(src='aBus', attr='v', idx=bus_idx)
         a_acopf = self.ss.ACOPF.get(src='aBus', attr='v', idx=bus_idx)
         np.testing.assert_almost_equal(a_dcopf, a_acopf, decimal=3)
+
+    def test_export_csv(self):
+        """
+        Test `Routine.export_csv()` method.
+        """
+        self.ss.DCOPF.run(solver='CLARABEL')
+
+        # test when path is none
+        out = self.ss.DCOPF.export_csv()
+        self.assertTrue(os.path.exists(out), "CSV export failed!")
+
+        # test when path is not none
+        out2 = self.ss.DCOPF.export_csv(path='test_dcopf.csv')
+        self.assertTrue(os.path.exists(out2), "CSV export with path failed!")
+
+        # Clean up
+        os.remove(out)
+        os.remove(out2)
