@@ -461,6 +461,10 @@ class RoutineBase:
                 file_name = os.path.splitext(self.system.files.fullname)[0]
                 file_name += f'_{self.class_name}'
             path = os.path.join(os.getcwd(), file_name + '.csv')
+        else:
+            if not os.path.isabs(path):
+                path = os.path.join(os.getcwd(), path)
+            file_name = os.path.splitext(os.path.basename(path))[0]
 
         data_dict = initialize_data_dict(self)
 
