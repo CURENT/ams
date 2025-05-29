@@ -39,7 +39,7 @@ class TestExportPath(unittest.TestCase):
         path, file_name = get_export_path(self.ss,
                                           'DCOPF',
                                           path=None,
-                                          format='csv')
+                                          fmt='csv')
 
         dir_path, only_file_name = os.path.split(path)
         self.assertTrue(os.path.exists(dir_path))
@@ -51,7 +51,7 @@ class TestExportPath(unittest.TestCase):
         path, file_name = get_export_path(self.ss,
                                           'DCOPF',
                                           path=None,
-                                          format='csv')
+                                          fmt='csv')
 
         dir_path, only_file_name = os.path.split(path)
         self.assertTrue(os.path.exists(dir_path))
@@ -63,7 +63,7 @@ class TestExportPath(unittest.TestCase):
         path, file_name = get_export_path(self.ss,
                                           'DCOPF',
                                           path='.',
-                                          format='csv')
+                                          fmt='csv')
 
         dir_path, only_file_name = os.path.split(path)
         self.assertTrue(os.path.exists(dir_path))
