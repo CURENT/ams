@@ -19,6 +19,8 @@ from ams.core.service import RBaseService, ValueService
 from ams.opt import OModel
 from ams.opt import Param, Var, Constraint, Objective, ExpressionCalc, Expression
 
+from ams.utils.paths import get_export_path
+
 from ams.shared import pd
 
 logger = logging.getLogger(__name__)
@@ -441,30 +443,20 @@ class RoutineBase:
 
         Parameters
         ----------
-        path : str
-            path of the csv file to save
+        path : str, optional
+            Path of the csv file to export.
 
         Returns
         -------
-        export_path
-            The path of the exported csv file
+        str
+            The exported csv file name
         """
         if not self.converged:
             logger.warning("Routine did not converge, aborting export.")
             return None
 
-        if not path:
-            if self.system.files.fullname is None:
-                logger.info("Input file name not detacted. Using `Untitled`.")
-                file_name = f'Untitled_{self.class_name}'
-            else:
-                file_name = os.path.splitext(self.system.files.fullname)[0]
-                file_name += f'_{self.class_name}'
-            path = os.path.join(os.getcwd(), file_name + '.csv')
-        else:
-            if not os.path.isabs(path):
-                path = os.path.join(os.getcwd(), path)
-            file_name = os.path.splitext(os.path.basename(path))[0]
+        path, file_name = get_export_path(self.system, self.class_name,
+                                          path=path, format='csv')
 
         data_dict = initialize_data_dict(self)
 
@@ -477,7 +469,7 @@ class RoutineBase:
 
         pd.DataFrame(data_dict).to_csv(path, index=False)
 
-        return file_name + '.csv'
+        return file_name
 
     def summary(self, **kwargs):
         """
