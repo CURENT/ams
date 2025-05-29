@@ -3,7 +3,6 @@ Module for system matrix make.
 """
 
 import logging
-import os
 import sys
 from typing import Optional
 
@@ -14,6 +13,9 @@ from andes.shared import tqdm, tqdm_nb
 from andes.utils.misc import elapsed, is_notebook
 
 from ams.opt import Param
+
+from ams.utils.paths import get_export_path
+
 from ams.shared import pd, sps
 
 logger = logging.getLogger(__name__)
@@ -75,31 +77,28 @@ class MParam(Param):
         """
         Export the matrix to a CSV file.
 
+        In the exported CSV, columns are the bus idxes, and Line idxes are
+        used as row indexes.
+
         Parameters
         ----------
         path : str, optional
-            Path to the output CSV file.
+            Path of the csv file to export.
 
         Returns
         -------
         str
-            The path of the exported csv file
+            The exported csv file name
         """
 
-        if path is None:
-            if self.owner.system.files.fullname is None:
-                logger.info("Input file name not detacted. Using `Untitled`.")
-                file_name = f'Untitled_{self.name}'
-            else:
-                file_name = os.path.splitext(self.owner.system.files.fullname)[0]
-                file_name += f'_{self.name}'
-            path = os.path.join(os.getcwd(), file_name + '.csv')
-        else:
-            file_name = os.path.splitext(os.path.basename(path))[0]
+        path, file_name = get_export_path(self.owner.system,
+                                          self.name,
+                                          path=path,
+                                          format='csv')
 
         pd.DataFrame(data=self.v, columns=self.col_names, index=self.row_names).to_csv(path)
 
-        return file_name + '.csv'
+        return file_name
 
     @property
     def v(self):

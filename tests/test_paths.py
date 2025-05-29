@@ -1,7 +1,9 @@
 import unittest
 
+import os
+
 import ams
-from ams.utils.paths import list_cases
+from ams.utils.paths import list_cases, get_export_path
 
 
 class TestPaths(unittest.TestCase):
@@ -20,3 +22,48 @@ class TestPaths(unittest.TestCase):
                      no_output=True, default_config=True,
                      )
         self.assertNotEqual(ss, None)
+
+
+class TestExportPath(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.ss = ams.load(ams.get_case('5bus/pjm5bus_demo.json'),
+                           setup=True, no_output=True)
+
+    def test_no_fullname(self):
+        """
+        Test export path with no full name specified.
+        """
+        self.ss.files.full_name = None
+
+        path, file_name = get_export_path(self.ss,
+                                          'DCOPF',
+                                          path=None,
+                                          format='csv')
+
+        dir_path, only_file_name = os.path.split(path)
+        self.assertTrue(os.path.exists(dir_path))
+
+    def test_no_path(self):
+        """
+        Test export path with no path specified.
+        """
+        path, file_name = get_export_path(self.ss,
+                                          'DCOPF',
+                                          path=None,
+                                          format='csv')
+
+        dir_path, only_file_name = os.path.split(path)
+        self.assertTrue(os.path.exists(dir_path))
+
+    def test_current_path(self):
+        """
+        Test export path with current path specified.
+        """
+        path, file_name = get_export_path(self.ss,
+                                          'DCOPF',
+                                          path='.',
+                                          format='csv')
+
+        dir_path, only_file_name = os.path.split(path)
+        self.assertTrue(os.path.exists(dir_path))
