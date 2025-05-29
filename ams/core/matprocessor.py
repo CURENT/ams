@@ -3,7 +3,6 @@ Module for system matrix make.
 """
 
 import logging
-import os
 import sys
 from typing import Optional
 

@@ -3,7 +3,6 @@ Module for routine data.
 """
 
 import logging
-import os
 from typing import Optional, Union, Type, Iterable, Dict
 from collections import OrderedDict
 
