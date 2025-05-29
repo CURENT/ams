@@ -43,14 +43,20 @@ jobs:
         fi
 
     - shell: bash -el {0}
-      name: Test with pytest and collect coverage
+      name: Test with pytest and Output a JUnit XML
       run: |
-        pytest --cov=./ --cov-report=xml
+        pytest --cov=./ --junitxml=junit.xml -o junit_family=legacy
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: Upload test results to Codecov
+      if: ${{ !cancelled() }}
+      uses: codecov/test-results-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Check secret presence
       id: check_secret
@@ -60,6 +66,11 @@ jobs:
           echo "is_set=true" >> $GITHUB_OUTPUT
         fi
 
+    - shell: bash -el {0}
+      name: Test with pytest and collect coverage
+      run: |
+        pytest --cov=./ --cov-report=xml
+  
     - name: Upload coverage to Codacy
       if: steps.check_secret.outputs.is_set == 'true'
       uses: codacy/codacy-coverage-reporter-action@v1.3.0
