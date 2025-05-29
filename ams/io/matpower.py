@@ -519,15 +519,31 @@ def system2mpc(system) -> dict:
     # --- PQ ---
     if system.PQ.n > 0:
         pq_pos = system.Bus.idx2uid(system.PQ.bus.v)
-        u = system.PQ.u.v
-        bus[pq_pos, 2] = u * system.PQ.p0.v * base_mva
-        bus[pq_pos, 3] = u * system.PQ.q0.v * base_mva
+
+        p0e = system.PQ.u.v * system.PQ.p0.v
+        q0e = system.PQ.u.v * system.PQ.q0.v
+
+        # NOTE: ensure multiple PQ on the same bus are summed
+        # rather than overwritten. Same for Shunt.
+        p = np.zeros(system.Bus.n)
+        q = np.zeros(system.Bus.n)
+        np.add.at(p, pq_pos, p0e)
+        np.add.at(q, pq_pos, q0e)
+        bus[:, 2] = p * base_mva
+        bus[:, 3] = q * base_mva
 
     # --- Shunt ---
     if system.Shunt.n > 0:
         shunt_pos = system.Bus.idx2uid(system.Shunt.bus.v)
-        bus[shunt_pos, 4] = system.Shunt.g.v * base_mva
-        bus[shunt_pos, 5] = system.Shunt.b.v * base_mva
+
+        ge = system.Shunt.u.v * system.Shunt.g.v
+        be = system.Shunt.u.v * system.Shunt.b.v
+        g = np.zeros(system.Bus.n)
+        b = np.zeros(system.Bus.n)
+        np.add.at(g, shunt_pos, ge)
+        np.add.at(b, shunt_pos, be)
+        bus[:, 4] = g * base_mva
+        bus[:, 5] = b * base_mva
 
     # --- PV ---
     if system.PV.n > 0:

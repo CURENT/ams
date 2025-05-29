@@ -85,6 +85,16 @@ class TestMATPOWER(unittest.TestCase):
         self.assertEqual(np.unique(mpc5['bus'][:, 10]).shape[0],
                          np.unique(self.mpc5['bus'][:, 10]).shape[0])
 
+    def test_system2mpc_pq(self):
+        """Test AMS System to MPC conversion with multiple PQ at one bus."""
+        system = ams.load(ams.get_case('5bus/pjm5bus_demo.json'),
+                          setup=False, no_output=True)
+        system.add('PQ', dict(bus=1, p0=0.2))
+
+        mpc = system.to_mpc()
+        np.testing.assert_almost_equal(mpc['bus'][:, 2].sum(),
+                                       system.config.mva * system.PQ.p0.v.sum())
+
     def test_gencost1(self):
         """Test when gencost is type 1."""
         mpcgc1 = self.mpc14.copy()
