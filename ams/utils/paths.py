@@ -257,7 +257,7 @@ def confirm_overwrite(outfile, overwrite=None):
     return True
 
 
-def get_export_path(system, fname, path=None, format='csv'):
+def get_export_path(system, fname, path=None, fmt='csv'):
     """
     Get the absolute export path and the derived file name for
     an AMS system export.
@@ -274,10 +274,10 @@ def get_export_path(system, fname, path=None, format='csv'):
         The desired output path.
         - If it's a directory, the file name will be generated.
         - If it's a full file path (with extension), the filename part will be used
-          as the base, and the `format` argument will determine the final extension.
+          as the base, and the `fmt` argument will determine the final extension.
         - If None, the current working directory will be used, and the filename will
           be generated.
-    format : str, optional
+    fmt : str, optional
         The file format to export, e.g., 'csv', 'json'. Default is 'csv'.
 
     Returns
@@ -295,7 +295,7 @@ def get_export_path(system, fname, path=None, format='csv'):
         base_name_prefix = os.path.splitext(os.path.basename(system.files.fullname))[0]
         base_name_prefix += f'_{fname}'
 
-    target_extension = format.lower()  # Ensure consistent extension casing
+    target_extension = fmt.lower()  # Ensure consistent extension casing
 
     if path:
         abs_path = os.path.abspath(path)  # Resolve to absolute path early

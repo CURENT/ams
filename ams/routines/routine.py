@@ -455,7 +455,7 @@ class RoutineBase:
             return None
 
         path, file_name = get_export_path(self.system, self.class_name,
-                                          path=path, format='csv')
+                                          path=path, fmt='csv')
 
         data_dict = initialize_data_dict(self)
 

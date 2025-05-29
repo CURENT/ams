@@ -94,7 +94,7 @@ class MParam(Param):
         path, file_name = get_export_path(self.owner.system,
                                           self.name,
                                           path=path,
-                                          format='csv')
+                                          fmt='csv')
 
         pd.DataFrame(data=self.v, columns=self.col_names, index=self.row_names).to_csv(path)
 

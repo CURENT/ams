@@ -39,10 +39,11 @@ class TestExportPath(unittest.TestCase):
         path, file_name = get_export_path(self.ss,
                                           'DCOPF',
                                           path=None,
-                                          format='csv')
+                                          fmt='csv')
 
         dir_path, only_file_name = os.path.split(path)
         self.assertTrue(os.path.exists(dir_path))
+        self.assertIsNotNone(only_file_name)
 
     def test_no_path(self):
         """
@@ -51,10 +52,11 @@ class TestExportPath(unittest.TestCase):
         path, file_name = get_export_path(self.ss,
                                           'DCOPF',
                                           path=None,
-                                          format='csv')
+                                          fmt='csv')
 
         dir_path, only_file_name = os.path.split(path)
         self.assertTrue(os.path.exists(dir_path))
+        self.assertIsNotNone(only_file_name)
 
     def test_current_path(self):
         """
@@ -63,7 +65,21 @@ class TestExportPath(unittest.TestCase):
         path, file_name = get_export_path(self.ss,
                                           'DCOPF',
                                           path='.',
-                                          format='csv')
+                                          fmt='csv')
 
         dir_path, only_file_name = os.path.split(path)
         self.assertTrue(os.path.exists(dir_path))
+        self.assertIsNotNone(only_file_name)
+
+    def test_path_with_file_name(self):
+        """
+        Test export path with path and file name specified.
+        """
+        path, file_name = get_export_path(self.ss,
+                                          'DCOPF',
+                                          path='./test_export.csv',
+                                          fmt='csv',)
+
+        dir_path, only_file_name = os.path.split(path)
+        self.assertTrue(os.path.exists(dir_path))
+        self.assertEqual(only_file_name, 'test_export.csv')
