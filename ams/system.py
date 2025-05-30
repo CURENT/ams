@@ -29,7 +29,7 @@ from ams.report import Report
 from ams.shared import ad_dyn_models
 
 from ams.io.matpower import system2mpc
-from ams.io.matpower import write as wrtite_m
+from ams.io.matpower import write as write_m
 from ams.io.xlsx import write as write_xlsx
 from ams.io.json import write as write_json
 from ams.io.psse import write_raw
@@ -770,7 +770,7 @@ class System(adSystem):
           (`v`) instead of vin. As a result, any changes made through `model.set` will be
           reflected in the generated MPC.
         """
-        return wrtite_m(self, outfile=outfile, overwrite=overwrite)
+        return write_m(self, outfile=outfile, overwrite=overwrite)
 
     def to_xlsx(self, outfile: str, overwrite: bool = None):
         """
