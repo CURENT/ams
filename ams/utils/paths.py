@@ -255,3 +255,67 @@ def confirm_overwrite(outfile, overwrite=None):
         pass
 
     return True
+
+
+def get_export_path(system, fname, path=None, fmt='csv'):
+    """
+    Get the absolute export path and the derived file name for
+    an AMS system export.
+
+    This function is not intended to be used directly by users.
+
+    Parameters
+    ----------
+    system : ams.system.System
+        The AMS system to export. (Mocked in example)
+    fname : str
+        The descriptive file name, e.g., 'PTDF', or 'DCOPF'.
+    path : str, optional
+        The desired output path.
+        - If it's a directory, the file name will be generated.
+        - If it's a full file path (with extension), the filename part will be used
+          as the base, and the `fmt` argument will determine the final extension.
+        - If None, the current working directory will be used, and the filename will
+          be generated.
+    fmt : str, optional
+        The file format to export, e.g., 'csv', 'json'. Default is 'csv'.
+
+    Returns
+    -------
+    tuple
+        (str, str): A tuple containing:
+            - The **absolute export path** (e.g., '/home/user/project/data_Routine.csv').
+            - The **export file name** (e.g., 'data_Routine.csv'), including the format extension.
+    """
+    # Determine the base name from system.files.fullname or default to "Untitled"
+    if system.files.fullname is None:
+        logger.info("Input file name not detected. Using `Untitled`.")
+        base_name_prefix = f'Untitled_{fname}'
+    else:
+        base_name_prefix = os.path.splitext(os.path.basename(system.files.fullname))[0]
+        base_name_prefix += f'_{fname}'
+
+    target_extension = fmt.lower()  # Ensure consistent extension casing
+
+    if path:
+        abs_path = os.path.abspath(path)  # Resolve to absolute path early
+
+        # Check if the provided path is likely intended as a directory
+        if not os.path.splitext(abs_path)[1]:  # No extension implies it's a directory
+            dir_path = abs_path
+            final_file_name = f"{base_name_prefix}.{target_extension}"
+            full_export_path = os.path.join(dir_path, final_file_name)
+        else:
+            # Path includes a filename. Use its directory, and its base name.
+            dir_path = os.path.dirname(abs_path)
+            # Use the provided filename's base, but enforce the target_extension
+            provided_base_filename = os.path.splitext(os.path.basename(abs_path))[0]
+            final_file_name = f"{provided_base_filename}.{target_extension}"
+            full_export_path = os.path.join(dir_path, final_file_name)
+    else:
+        # No path provided, use current working directory
+        dir_path = os.getcwd()
+        final_file_name = f"{base_name_prefix}.{target_extension}"
+        full_export_path = os.path.join(dir_path, final_file_name)
+
+    return full_export_path, final_file_name

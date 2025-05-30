@@ -9,6 +9,13 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
+v1.0.12 (2025-05-29)
+----------------------
+
+- Add RParam pd and qd in ``DCPF1`` for easy access to load
+- Bug fix in ``RoutineBase.export_csv`` when path is specified
+- Fix bug in ``io.matpower.system2mpc`` with multiple PQ at one bus
+
 v1.0.11 (2025-05-23)
 ----------------------
 
@@ -18,8 +25,8 @@ v1.0.11 (2025-05-23)
 v1.0.10 (2025-05-23)
 ----------------------
 
-- Add bus type correction in ``system.System.setup()``
-- Revise ``ams.io.psse.read`` to complete model Zone when necessary
+- Add bus type correction in ``system.System.setup``
+- Revise ``io.psse.read`` to complete model Zone when necessary
 - Use numerical Area and Zone idx in MATPOWER and PSSE RAW file conversion
 - Support JSON format addfile when converting to ANDES case
 - Add PSS/E v33 RAW file writer
@@ -34,7 +41,7 @@ v1.0.10 (2025-05-23)
 - Revise ``andes.common.config.Config.update`` to ensure configuration parameters
   are consistently updated in both the object and its internal ``_dict``
 - Remove legacy revised PYPOWER module
-- Remove function ``ams.shared.ppc2df``
+- Remove function ``shared.ppc2df``
 
 v1.0.9 (2025-04-23)
 --------------------
@@ -62,7 +69,7 @@ v1.0.7 (2025-04-14)
 - Extend common parameters in groups ``StaticGen`` and ``StaticLoad`` with ``area``
 - Set case ``pjm5bus_demo.xlsx`` as a all-inclusive case
 - Include module ``MatProcessor`` in the API documentation
-- Improve Line parameters correction in ``System.setup()``
+- Improve Line parameters correction in ``System.setup``
 - Make func ``interface._to_andes_pflow`` public
 - Discard ``sync_adsys`` step in func ``to_andes_pflow`` to fix mistake in
   parameters conversion
@@ -91,7 +98,7 @@ v1.0.4 (2025-04-05)
 v1.0.3 (2025-03-17)
 --------------------
 
-- Bug fix in function ``ams.interface.parse_addfile``, released in v1.0.3a1
+- Bug fix in function ``interface.parse_addfile``, released in v1.0.3a1
 
 v1.0.2 (2025-02-01)
 --------------------
@@ -136,10 +143,10 @@ v0.9.12 (2024-11-23)
 
 - Refactor ``OModel.initialized`` as a property method
 - Add a demo to show using ``Constraint.e`` for debugging
-- Fix ``ams.opt.omodel.Param.evaluate`` when its value is a number
-- Improve ``ams.opt.omodel.ExpressionCalc`` for better performance
-- Refactor module ``ams.opt``
-- Add class ``ams.opt.Expression``
+- Fix ``opt.omodel.Param.evaluate`` when its value is a number
+- Improve ``opt.omodel.ExpressionCalc`` for better performance
+- Refactor module ``opt``
+- Add class ``opt.Expression``
 - Switch from PYPOWER to ANDES in routine ``PFlow``
 - Switch from PYPOWER to regular formulation in routine ``DCPF``
 - Refactor routines ``DCPF`` and ``DCOPF``
@@ -382,7 +389,7 @@ v0.6.5 (2023-06-27)
 -------------------
 
 - Update documentation with auto-generated model and routine reference
-- Add interface with ANDES ``ams.interop.andes``
+- Add interface with ANDES ``interop.andes``
 - Add routine RTED and example of RTED-TDS co-simulation
 - Draft development documentation
 

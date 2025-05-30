@@ -29,7 +29,7 @@ from ams.report import Report
 from ams.shared import ad_dyn_models
 
 from ams.io.matpower import system2mpc
-from ams.io.matpower import write as wrtite_m
+from ams.io.matpower import write as write_m
 from ams.io.xlsx import write as write_xlsx
 from ams.io.json import write as write_json
 from ams.io.psse import write_raw
@@ -602,6 +602,7 @@ class System(adSystem):
                  **kwargs):
         """
         Convert the AMS system to an ANDES system.
+        Wrapper method for `ams.interface.to_andes`.
 
         A preferred dynamic system file to be added has following features:
         1. The file contains both power flow and dynamic models.
@@ -718,17 +719,34 @@ class System(adSystem):
     def to_mpc(self):
         """
         Export an AMS system to a MATPOWER dict.
+        Wrapper method for `ams.io.matpower.system2mpc`.
 
         Returns
         -------
         dict
             A dictionary representing the MATPOWER case.
+
+        Notes
+        -----
+        - In the `gen` section, slack generators are listed before PV generators.
+        - For uncontrolled generators (`ctrl.v == 0`), their max and min power
+          limits are set to their initial power (`p0.v`) in the converted MPC.
+        - In the converted MPC, the indices of area (`bus[:, 6]`) and zone (`bus[:, 10]`)
+          may differ from the original MPC. However, the mapping relationship is preserved.
+          For example, if the original MPC numbers areas starting from 1, the converted
+          MPC may number them starting from 0.
+        - The coefficients `c2` and `c1` in the generator cost data are scaled by
+          `baseMVA`.
+        - Unlike the XLSX and JSON converters, this implementation uses value providers
+          (`v`) instead of vin. As a result, any changes made through `model.set` will be
+          reflected in the generated MPC.
         """
         return system2mpc(self)
 
     def to_m(self, outfile: str, overwrite: bool = None):
         """
         Export an AMS system to a MATPOWER M-file.
+        Wrapper method for `ams.io.matpower.write`.
 
         Parameters
         ----------
@@ -736,12 +754,28 @@ class System(adSystem):
             The output file name.
         overwrite : bool, optional
             If True, overwrite the existing file. Default is None.
+
+        Notes
+        -----
+        - In the `gen` section, slack generators are listed before PV generators.
+        - For uncontrolled generators (`ctrl.v == 0`), their max and min power
+          limits are set to their initial power (`p0.v`) in the converted MPC.
+        - In the converted MPC, the indices of area (`bus[:, 6]`) and zone (`bus[:, 10]`)
+          may differ from the original MPC. However, the mapping relationship is preserved.
+          For example, if the original MPC numbers areas starting from 1, the converted
+          MPC may number them starting from 0.
+        - The coefficients `c2` and `c1` in the generator cost data are scaled by
+          `baseMVA`.
+        - Unlike the XLSX and JSON converters, this implementation uses value providers
+          (`v`) instead of vin. As a result, any changes made through `model.set` will be
+          reflected in the generated MPC.
         """
-        return wrtite_m(self, outfile=outfile, overwrite=overwrite)
+        return write_m(self, outfile=outfile, overwrite=overwrite)
 
     def to_xlsx(self, outfile: str, overwrite: bool = None):
         """
         Export an AMS system to an Excel file.
+        Wrapper method for `ams.io.xlsx.write`.
 
         Parameters
         ----------
@@ -755,6 +789,7 @@ class System(adSystem):
     def to_json(self, outfile: str, overwrite: bool = None):
         """
         Export an AMS system to a JSON file.
+        Wrapper method for `ams.io.json.write`.
 
         Parameters
         ----------
@@ -768,6 +803,9 @@ class System(adSystem):
     def to_raw(self, outfile: str, overwrite: bool = None):
         """
         Export an AMS system to a v33 PSS/E RAW file.
+        Wrapper method for `ams.io.psse.write_raw`.
+
+        This method has not been fully benchmarked yet!
 
         Parameters
         ----------

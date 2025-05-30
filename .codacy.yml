@@ -2,6 +2,10 @@
 engines:
   flake8:
     enabled: true
+  duplication:
+    enabled: true
+    exclude_paths:
+      - 'test/**'
 exclude_paths:
   - "pyproject.toml"
   - "setup.py"
@@ -11,7 +15,7 @@ exclude_paths:
   - ".github/**"
   - "README.md"
   - "cases/README.md"
-  - "CODE_OF_CONDUCT.md"`
+  - "CODE_OF_CONDUCT.md"
   - "tests/**"
   - "docs/**"
   - "examples/**"
