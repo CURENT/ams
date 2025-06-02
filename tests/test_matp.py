@@ -48,7 +48,7 @@ class TestMatProcessorBasic(unittest.TestCase):
 
     def test_MParam_export_csv(self):
         """
-        Test MParams export.
+        Test MParams export CSV.
         """
         # --- path is not given ---
         exported_csv = self.mats.Cft.export_csv()
@@ -58,6 +58,21 @@ class TestMatProcessorBasic(unittest.TestCase):
         # --- path is given ---
         path = 'CASE300_Cft.csv'
         exported_csv = self.mats.Cft.export_csv(path)
+        self.assertTrue(os.path.exists(path))
+        os.remove(path)
+
+    def test_MParam_export_npz(self):
+        """
+        Test MParams export NPZ.
+        """
+        # --- path is not given ---
+        exported_npz = self.mats.Cft.export_npz()
+        self.assertTrue(os.path.exists(exported_npz))
+        os.remove(exported_npz)
+
+        # --- path is given ---
+        path = 'CASE300_Cft.npz'
+        exported_npz = self.mats.Cft.export_npz(path)
         self.assertTrue(os.path.exists(path))
         os.remove(path)
 
