@@ -73,6 +73,46 @@ class MParam(Param):
         self.col_names = col_names
         self.row_names = row_names
 
+    def export_npz(self, path=None):
+        """
+        Export the matrix to a npz file.
+
+        In the exported npz, columns are the bus idxes, and Line idxes are
+        used as row indexes.
+
+        Parameters
+        ----------
+        path : str, optional
+            Path of the npz file to export.
+
+        Returns
+        -------
+        str
+            The exported npz file name
+        """
+
+        path, file_name = get_export_path(self.owner.system,
+                                          self.name,
+                                          path=path,
+                                          fmt='npz')
+
+        if isinstance(self._v,
+                      (sps.csc_matrix, sps.csr_matrix, sps.bsr_matrix,
+                       sps.dia_matrix, sps.coo_matrix)):
+            # save sparse matrix in npz format
+            logger.debug(f"Saving sparse matrix {self.name} to npz format.")
+            sps.save_npz(path, self._v)
+        elif isinstance(self._v, sps.sparray):
+            # save sparse matrix in npz format
+            logger.debug(f"Saving sparse array {self.name} to npz format.")
+            sps.save_npz(path, self._v.tocsr())
+        else:
+            # save dense matrix in npz format
+            logger.warning(f"Saving dense matrix {self.name} to npz format.")
+            np.savez(path, v=self._v)
+
+        return file_name
+
     def export_csv(self, path=None):
         """
         Export the matrix to a CSV file.
@@ -270,6 +310,8 @@ class MatProcessor:
         row = np.array([system.Bus.idx2uid(x) for x in on_gen_bus])
         col = np.array([idx_gen.index(x) for x in on_gen_idx])
         self.Cg._v = sps.csr_matrix((np.ones(len(on_gen_idx)), (row, col)), (nb, ng))
+        self.Cg.col_names = idx_gen
+        self.Cg.row_names = system.Bus.idx.v
         return self.Cg._v
 
     def build_cl(self):
@@ -297,6 +339,8 @@ class MatProcessor:
         row = np.array([system.Bus.idx2uid(x) for x in on_load_bus])
         col = np.array([system.PQ.idx2uid(x) for x in on_load_idx])
         self.Cl._v = sps.csr_matrix((np.ones(len(on_load_idx)), (row, col)), (nb, npq))
+        self.Cl.col_names = idx_load
+        self.Cl.row_names = system.Bus.idx.v
         return self.Cl._v
 
     def build_csh(self):
@@ -324,6 +368,8 @@ class MatProcessor:
         row = np.array([system.Bus.idx2uid(x) for x in on_shunt_bus])
         col = np.array([system.Shunt.idx2uid(x) for x in on_shunt_idx])
         self.Csh._v = sps.csr_matrix((np.ones(len(on_shunt_idx)), (row, col)), (nb, nsh))
+        self.Csh.col_names = idx_shunt
+        self.Csh.row_names = system.Bus.idx.v
         return self.Csh._v
 
     def build_cft(self):
@@ -356,6 +402,10 @@ class MatProcessor:
         col_line = np.array([system.Line.idx2uid(x) for x in on_line_idx + on_line_idx])
         self.Cft._v = sps.csr_matrix((data_line, (row_line, col_line)), (nb, nl))
         self.CftT._v = self.Cft._v.T
+        self.Cft.col_names = idx_line
+        self.Cft.row_names = system.Bus.idx.v
+        self.CftT.col_names = system.Bus.idx.v
+        self.CftT.row_names = idx_line
         return self.Cft._v
 
     def build_bf(self):
@@ -383,6 +433,8 @@ class MatProcessor:
         t = system.Bus.idx2uid(system.Line.get(src='bus2', attr='v', idx=idx_line))
         ir = np.r_[range(nl), range(nl)]  # double set of row indices
         self.Bf._v = sps.csr_matrix((np.r_[b, -b], (ir, np.r_[f, t])), (nl, nb))
+        self.Bf.col_names = system.Bus.idx.v
+        self.Bf.row_names = system.Line.idx.v
         return self.Bf._v
 
     def build_bbus(self):
@@ -395,6 +447,8 @@ class MatProcessor:
             DC bus admittance matrix.
         """
         self.Bbus._v = self.Cft._v * self.Bf._v
+        self.Bbus.col_names = self.system.Bus.idx.v
+        self.Bbus.row_names = self.system.Bus.idx.v
         return self.Bbus._v
 
     def build_pfinj(self):
@@ -410,6 +464,8 @@ class MatProcessor:
         b = self._calc_b()
         phi = self.system.Line.get(src='phi', attr='v', idx=idx_line)
         self.Pfinj._v = b * (-phi)
+        # NOTE: leave the row_names empty for the vector
+        self.Pfinj.col_names = self.system.Line.idx.v
         return self.Pfinj._v
 
     def build_pbusinj(self):
@@ -422,6 +478,8 @@ class MatProcessor:
             Bus power injection vector.
         """
         self.Pbusinj._v = self.Cft._v * self.Pfinj._v
+        # NOTE: leave the row_names empty for the vector
+        self.Pbusinj.col_names = self.system.Bus.idx.v
         return self.Pbusinj._v
 
     def _calc_b(self):
@@ -503,13 +561,18 @@ class MatProcessor:
 
         if line is None:
             luid = system.Line.idx2uid(system.Line.idx.v)
+            self.PTDF.row_names = system.Line.idx.v
         elif isinstance(line, (int, str)):
             try:
                 luid = [system.Line.idx2uid(line)]
+                self.PTDF.row_names = [line]
             except ValueError:
                 raise ValueError(f"Line {line} not found.")
         elif isinstance(line, list):
             luid = system.Line.idx2uid(line)
+            self.PTDF.row_names = line
+
+        self.PTDF.col_names = system.Bus.idx.v
 
         # build other matrices if not built
         if not self.initialized:
