@@ -86,6 +86,8 @@ class MParam(Param):
         -------
         MParam
             The loaded MParam instance.
+
+        .. versionadded:: 1.0.13
         """
 
         if path is None:
@@ -115,6 +117,8 @@ class MParam(Param):
         -------
         MParam
             The loaded MParam instance.
+
+        .. versionadded:: 1.0.13
         """
 
         if path is None:
@@ -145,6 +149,8 @@ class MParam(Param):
         -------
         str
             The exported npz file name
+
+        .. versionadded:: 1.0.13
         """
 
         path, file_name = get_export_path(self.owner.system,
