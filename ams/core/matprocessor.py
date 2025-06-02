@@ -460,11 +460,8 @@ class MatProcessor:
         PTDF[m, n] represents the increased line flow on line `m` for a 1 p.u. power injection at bus `n`.
         It is similar to the Generation Shift Factor (GSF).
 
-        Note: There may be minor discrepancies between PTDF-based line flow and DCOPF-calculated line flow.
-
-        For large cases, use `incremental=True` to calculate the sparse PTDF in chunks, which will be stored
-        as a `scipy.sparse.lil_matrix`. In this mode, the PTDF is calculated in chunks, and a progress bar
-        will be shown unless `no_tqdm=True`.
+        For large cases, use `incremental=True` to calculate the sparse PTDF in chunks. In this mode, the
+        PTDF is calculated in chunks, and thus more memory friendly.
 
         Parameters
         ----------
@@ -486,7 +483,7 @@ class MatProcessor:
 
         Returns
         -------
-        PTDF : np.ndarray or scipy.sparse.lil_matrix
+        PTDF : scipy.sparse.lil_matrix
             Power transfer distribution factor.
 
         References
@@ -562,9 +559,10 @@ class MatProcessor:
             self.pbar.close()
             self.pbar = None
         else:
-            H = np.zeros((nline, nbus))
-            H[:, noslack] = np.linalg.solve(Bbus.todense()[np.ix_(noslack, noref)].T,
-                                            Bf.todense()[np.ix_(luid, noref)].T).T
+            H = sps.lil_matrix((nline, nbus))
+            sol = np.linalg.solve(Bbus.todense()[np.ix_(noslack, noref)].T,
+                                  Bf.todense()[np.ix_(luid, noref)].T).T
+            H[:, noslack] = sol
 
         # reshape results into 1D array if only one line
         if isinstance(line, (int, str)):
@@ -607,7 +605,7 @@ class MatProcessor:
 
         Returns
         -------
-        LODF : np.ndarray, scipy.sparse.lil_matrix
+        LODF : scipy.sparse.lil_matrix
             Line outage distribution factor.
 
         References
@@ -635,68 +633,52 @@ class MatProcessor:
         # build PTDF if not built
         if self.PTDF._v is None:
             ptdf = self.build_ptdf(no_store=True, incremental=incremental, step=step)
-        if incremental and isinstance(self.PTDF._v, np.ndarray):
-            ptdf = sps.lil_matrix(self.PTDF._v)
 
-        if incremental | (isinstance(ptdf, sps.spmatrix)):
-            # initialize progress bar
-            if is_notebook():
-                self.pbar = tqdm_nb(total=100, unit='%', file=sys.stdout,
-                                    disable=no_tqdm)
-            else:
-                self.pbar = tqdm(total=100, unit='%', ncols=80, ascii=True,
-                                 file=sys.stdout, disable=no_tqdm)
-
-            self.pbar.update(0)
-            last_pc = 0
-
-            LODF = sps.lil_matrix((nbranch, nline))
-
-            # NOTE: for LODF, we are doing it columns by columns
-            # reshape luid to list of list by step
-            luidp = [luid[i:i + step] for i in range(0, len(luid), step)]
-            for luidi in luidp:
-                H_chunk = ptdf @ self.Cft._v[:, luidi]
-                h_chunk = H_chunk.diagonal(-luidi[0])
-                rden = safe_div(np.ones(H_chunk.shape),
-                                np.tile(np.ones_like(h_chunk) - h_chunk, (nbranch, 1)))
-                H_chunk = H_chunk.multiply(rden).tolil()
-                # NOTE: use lil_matrix to set diagonal values as -1
-                rsid = sps.diags(H_chunk.diagonal(-luidi[0])) + sps.eye(H_chunk.shape[1])
-                if H_chunk.shape[0] > rsid.shape[0]:
-                    Rsid = sps.lil_matrix(H_chunk.shape)
-                    Rsid[luidi, :] = rsid
-                else:
-                    Rsid = rsid
-                H_chunk = H_chunk - Rsid
-                LODF[:, [luid.index(i) for i in luidi]] = H_chunk
-
-                # show progress in percentage
-                perc = np.round(min((luid.index(luidi[-1]) / nline) * 100, 100), 2)
-
-                perc_diff = perc - last_pc
-                if perc_diff >= 1:
-                    self.pbar.update(perc_diff)
-                    last_pc = perc
-
-            # finish progress bar
-            self.pbar.update(100 - last_pc)
-            # removed `pbar` so that System object can be serialized
-            self.pbar.close()
-            self.pbar = None
+        # initialize progress bar
+        if is_notebook():
+            self.pbar = tqdm_nb(total=100, unit='%', file=sys.stdout,
+                                disable=no_tqdm)
         else:
-            H = ptdf @ self.Cft._v[:, luid]
-            h = np.diag(H, -luid[0])
-            LODF = safe_div(H,
-                            np.tile(np.ones_like(h) - h, (nbranch, 1)))
-            # # NOTE: reset the diagonal elements to -1
-            rsid = np.diag(np.diag(LODF, -luid[0])) + np.eye(nline, nline)
-            if LODF.shape[0] > rsid.shape[0]:
-                Rsid = np.zeros_like(LODF)
-                Rsid[luid, :] = rsid
+            self.pbar = tqdm(total=100, unit='%', ncols=80, ascii=True,
+                             file=sys.stdout, disable=no_tqdm)
+
+        self.pbar.update(0)
+        last_pc = 0
+
+        LODF = sps.lil_matrix((nbranch, nline))
+
+        # NOTE: for LODF, we are doing it columns by columns
+        # reshape luid to list of list by step
+        luidp = [luid[i:i + step] for i in range(0, len(luid), step)]
+        for luidi in luidp:
+            H_chunk = ptdf @ self.Cft._v[:, luidi]
+            h_chunk = H_chunk.diagonal(-luidi[0])
+            rden = safe_div(np.ones(H_chunk.shape),
+                            np.tile(np.ones_like(h_chunk) - h_chunk, (nbranch, 1)))
+            H_chunk = H_chunk.multiply(rden).tolil()
+            # NOTE: use lil_matrix to set diagonal values as -1
+            rsid = sps.diags(H_chunk.diagonal(-luidi[0])) + sps.eye(H_chunk.shape[1])
+            if H_chunk.shape[0] > rsid.shape[0]:
+                Rsid = sps.lil_matrix(H_chunk.shape)
+                Rsid[luidi, :] = rsid
             else:
                 Rsid = rsid
-            LODF = LODF - Rsid
+            H_chunk = H_chunk - Rsid
+            LODF[:, [luid.index(i) for i in luidi]] = H_chunk
+
+            # show progress in percentage
+            perc = np.round(min((luid.index(luidi[-1]) / nline) * 100, 100), 2)
+
+            perc_diff = perc - last_pc
+            if perc_diff >= 1:
+                self.pbar.update(perc_diff)
+                last_pc = perc
+
+        # finish progress bar
+        self.pbar.update(100 - last_pc)
+        # removed `pbar` so that System object can be serialized
+        self.pbar.close()
+        self.pbar = None
 
         # reshape results into 1D array if only one line
         if isinstance(line, (int, str)):
@@ -725,7 +707,7 @@ class MatProcessor:
 
         Returns
         -------
-        OTDF : np.ndarray, scipy.sparse.csr_matrix
+        OTDF : scipy.sparse.csr_matrix
             Line outage distribution factor.
 
         References
