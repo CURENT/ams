@@ -77,9 +77,6 @@ class MParam(Param):
         """
         Export the matrix to a npz file.
 
-        In the exported npz, columns are the bus idxes, and Line idxes are
-        used as row indexes.
-
         Parameters
         ----------
         path : str, optional
@@ -96,20 +93,14 @@ class MParam(Param):
                                           path=path,
                                           fmt='npz')
 
-        if isinstance(self._v,
-                      (sps.csc_matrix, sps.csr_matrix, sps.bsr_matrix,
-                       sps.dia_matrix, sps.coo_matrix)):
-            # save sparse matrix in npz format
-            logger.debug(f"Saving sparse matrix {self.name} to npz format.")
-            sps.save_npz(path, self._v)
-        elif isinstance(self._v, sps.sparray):
-            # save sparse matrix in npz format
-            logger.debug(f"Saving sparse array {self.name} to npz format.")
+        if sps.issparse(self._v):
             sps.save_npz(path, self._v.tocsr())
+            logging.debug(f"Saving sparse matrix {self.name} to npz format.")
+        elif isinstance(self._v, np.ndarray):
+            np.savez(path, v=self._v)  # Save with a key 'v' inside the NPZ archive
+            logging.warning(f"Saving dense matrix {self.name} to npz format.")
         else:
-            # save dense matrix in npz format
-            logger.warning(f"Saving dense matrix {self.name} to npz format.")
-            np.savez(path, v=self._v)
+            raise TypeError(f"Unsupported matrix type: {type(self._v)}")
 
         return file_name
 
