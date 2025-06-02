@@ -73,6 +73,65 @@ class MParam(Param):
         self.col_names = col_names
         self.row_names = row_names
 
+    def load_npz(self, path=None):
+        """
+        Load the FULL matrix from a npz file.
+
+        Parameters
+        ----------
+        path : str, optional
+            Path of the npz file to load.
+
+        Returns
+        -------
+        MParam
+            The loaded MParam instance.
+        """
+
+        if path is None:
+            raise ValueError("Path to the npz file is required.")
+
+        data = sps.load_npz(path) if self.sparse else np.load(path)
+
+        if self.sparse:
+            self._v = data.tocsr()
+            logging.debug(f"Loading sparse matrix {self.name} from npz format.")
+        else:
+            self._v = data['v']
+            logging.warning(f"Loading dense matrix {self.name} from npz format.")
+
+        return self
+
+    def load_csv(self, path=None):
+        """
+        Load the matrix from an EXPORTED CSV file.
+
+        Parameters
+        ----------
+        path : str, optional
+            Path of the csv file to load.
+
+        Returns
+        -------
+        MParam
+            The loaded MParam instance.
+        """
+
+        if path is None:
+            raise ValueError("Path to the csv file is required.")
+
+        df = pd.read_csv(path, index_col=0)
+        if self.sparse:
+            self._v = sps.csr_matrix(df.values)
+            logging.debug(f"Loading sparse matrix {self.name} from csv format.")
+        else:
+            self._v = df.values
+        self.col_names = df.columns.tolist()
+        self.row_names = df.index.tolist()
+
+        logging.debug(f"Loading matrix {self.name} from csv format.")
+        return self
+
     def export_npz(self, path=None):
         """
         Export the matrix to a npz file.
@@ -213,10 +272,10 @@ class MatProcessor:
 
         self.PTDF = MParam(name='PTDF', tex_name=r'P_{TDF}',
                            info='Power transfer distribution factor',
-                           v=None, sparse=False, owner=self)
+                           v=None, sparse=True, owner=self)
         self.LODF = MParam(name='LODF', tex_name=r'O_{TDF}',
                            info='Line outage distribution factor',
-                           v=None, sparse=False, owner=self)
+                           v=None, sparse=True, owner=self)
 
     def build(self, force=False):
         """

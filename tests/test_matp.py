@@ -59,6 +59,10 @@ class TestMatProcessorBasic(unittest.TestCase):
         path = 'CASE300_Cft.csv'
         exported_csv = self.mats.Cft.export_csv(path)
         self.assertTrue(os.path.exists(path))
+
+        self.mats.Cft.load_csv(exported_csv)
+        self.assertIsInstance(self.mats.Cft._v, sps.csr_matrix)
+        self.assertEqual(self.mats.Cft._v.shape, (self.nb, self.nl))
         os.remove(path)
 
     def test_MParam_export_npz(self):
@@ -74,6 +78,10 @@ class TestMatProcessorBasic(unittest.TestCase):
         path = 'CASE300_Cft.npz'
         exported_npz = self.mats.Cft.export_npz(path)
         self.assertTrue(os.path.exists(path))
+
+        self.mats.Cft.load_npz(exported_npz)
+        self.assertIsInstance(self.mats.Cft._v, sps.csr_matrix)
+        self.assertEqual(self.mats.Cft._v.shape, (self.nb, self.nl))
         os.remove(path)
 
     def test_MParams_export(self) -> None:
