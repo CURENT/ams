@@ -118,7 +118,7 @@ def skip_unittest_without_PYPOWER(f):
         try:
             import pypower  # NOQA
         except ImportError:
-            raise unittest.SkipTest("PYPOWER is not installed.")
+            raise unittest.SkipTest("PYPOWER is not available.")
         return f(*args, **kwargs)
     return wrapper
 
@@ -131,6 +131,6 @@ def skip_unittest_without_gurobi_optimods(f):
         try:
             import gurobi_optimods  # NOQA
         except ImportError:
-            raise unittest.SkipTest("Gurobi is not installed.")
+            raise unittest.SkipTest("gurobi_optimods is not available.")
         return f(*args, **kwargs)
     return wrapper
