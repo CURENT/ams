@@ -9,13 +9,14 @@ from typing import Optional
 import numpy as np
 
 from andes.thirdparty.npfunc import safe_div
-from andes.utils.misc import elapsed
+from andes.shared import tqdm, tqdm_nb
+from andes.utils.misc import elapsed, is_notebook
 
 from ams.opt import Param
 
 from ams.utils.paths import get_export_path
 
-from ams.shared import pd, sps, tqdm
+from ams.shared import pd, sps
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +104,7 @@ class MParam(Param):
 
         return self
 
-    def load_csv(self, path=None, chunksize=None):
+    def load_csv(self, path=None):
         """
         Load the matrix from an EXPORTED CSV file.
 
@@ -111,8 +112,6 @@ class MParam(Param):
         ----------
         path : str, optional
             Path of the csv file to load.
-        chunksize : int, optional
-            Number of rows per chunk to read. Useful for large files.
 
         Returns
         -------
@@ -125,12 +124,7 @@ class MParam(Param):
         if path is None:
             raise ValueError("Path to the csv file is required.")
 
-        if chunksize:
-            chunks = pd.read_csv(path, index_col=0, chunksize=chunksize)
-            df = pd.concat(chunks)
-        else:
-            df = pd.read_csv(path, index_col=0)
-
+        df = pd.read_csv(path, index_col=0)
         if self.sparse:
             self._v = sps.csr_matrix(df.values)
             logging.debug(f"Loading sparse matrix {self.name} from csv format.")
@@ -571,64 +565,8 @@ class MatProcessor:
 
         return b
 
-    def _init_progress_bar(self, total, unit, no_tqdm):
-        """Initializes and returns a tqdm progress bar."""
-        pbar = tqdm(total=total, unit=unit, ncols=80, ascii=True,
-                    file=sys.stdout, disable=no_tqdm)
-        pbar.update(0)
-        return pbar
-
-    def _update_and_close_progress_bar(self, pbar, current_progress, total_progress):
-        """Updates and closes the progress bar."""
-        perc = np.round(min((current_progress / total_progress) * 100, 100), 2)
-        if self.pbar.total is not None:  # Check if pbar is still valid
-            last_pc = self.pbar.n / self.pbar.total * 100  # Get current percentage based on updated value
-        else:
-            last_pc = 0
-
-        perc_diff = perc - last_pc
-        if perc_diff >= 1:
-            pbar.update(perc_diff)
-
-        # Ensure pbar finishes at 100% and closes
-        if pbar.n < pbar.total:  # Check if it's not already at total
-            pbar.update(pbar.total - pbar.n)  # Update remaining
-        pbar.close()
-        self.pbar = None  # Clear pbar so System object can be serialized
-
-    def _process_line_input(self, line, matrix_param):
-        """
-        Helper to process the 'line' input and set matrix row/col names.
-        Returns a list of UIDs for the lines.
-        """
-        system = self.system
-        luid = None
-        if line is None:
-            luid = system.Line.idx2uid(system.Line.idx.v)
-            if hasattr(matrix_param, 'row_names'):  # Only set for PTDF, not LODF
-                matrix_param.row_names = system.Line.idx.v
-        elif isinstance(line, (int, str)):
-            try:
-                luid = [system.Line.idx2uid(line)]
-                if hasattr(matrix_param, 'row_names'):
-                    matrix_param.row_names = [line]
-            except ValueError:
-                raise ValueError(f"Line {line} not found.")
-        elif isinstance(line, list):
-            luid = system.Line.idx2uid(line)
-            if hasattr(matrix_param, 'row_names'):
-                matrix_param.row_names = line
-        else:
-            raise TypeError("`line` parameter must be int, str, list, or None.")
-
-        # Ensure col_names is set for PTDF if applicable
-        if hasattr(matrix_param, 'col_names') and matrix_param is self.PTDF:
-            matrix_param.col_names = system.Bus.idx.v
-
-        return luid
-
     def build_ptdf(self, line=None, no_store=False,
-                   incremental=False, step=1000, no_tqdm=True,
+                   incremental=False, step=1000, no_tqdm=False,
                    permc_spec=None, use_umfpack=True):
         """
         Build the Power Transfer Distribution Factor (PTDF) matrix and optionally store it in `MParam.PTDF`.
@@ -677,8 +615,20 @@ class MatProcessor:
         noref_idx = system.Bus.idx.v[1:]
         noref = system.Bus.idx2uid(noref_idx)
 
-        # --- Consistent Line Handling ---
-        luid = self._process_line_input(line, self.PTDF)
+        if line is None:
+            luid = system.Line.idx2uid(system.Line.idx.v)
+            self.PTDF.row_names = system.Line.idx.v
+        elif isinstance(line, (int, str)):
+            try:
+                luid = [system.Line.idx2uid(line)]
+                self.PTDF.row_names = [line]
+            except ValueError:
+                raise ValueError(f"Line {line} not found.")
+        elif isinstance(line, list):
+            luid = system.Line.idx2uid(line)
+            self.PTDF.row_names = line
+
+        self.PTDF.col_names = system.Bus.idx.v
 
         # build other matrices if not built
         if not self.initialized:
@@ -692,7 +642,16 @@ class MatProcessor:
         Bf = self.Bf._v
 
         if incremental:
-            self.pbar = self._init_progress_bar(total=100, unit='%', no_tqdm=no_tqdm)
+            # initialize progress bar
+            if is_notebook():
+                self.pbar = tqdm_nb(total=100, unit='%', file=sys.stdout,
+                                    disable=no_tqdm)
+            else:
+                self.pbar = tqdm(total=100, unit='%', ncols=80, ascii=True,
+                                 file=sys.stdout, disable=no_tqdm)
+
+            self.pbar.update(0)
+            last_pc = 0
 
             H = sps.lil_matrix((nline, system.Bus.n))
 
@@ -705,7 +664,19 @@ class MatProcessor:
                                          use_umfpack=use_umfpack).T
                 H[start:end, noslack] = sol
 
-                self._update_and_close_progress_bar(self.pbar, end, nline)
+                # show progress in percentage
+                perc = np.round(min((end / nline) * 100, 100), 2)
+
+                perc_diff = perc - last_pc
+                if perc_diff >= 1:
+                    self.pbar.update(perc_diff)
+                    last_pc = perc
+
+            # finish progress bar
+            self.pbar.update(100 - last_pc)
+            # removed `pbar` so that System object can be serialized
+            self.pbar.close()
+            self.pbar = None
         else:
             H = sps.lil_matrix((nline, nbus))
             sol = np.linalg.solve(Bbus.todense()[np.ix_(noslack, noref)].T,
@@ -716,13 +687,13 @@ class MatProcessor:
         if isinstance(line, (int, str)):
             H = H[0, :]
 
-        if (not no_store) and (line is None):
+        if (not no_store) & (line is None):
             self.PTDF._v = H
 
         return H
 
     def build_lodf(self, line=None, no_store=False,
-                   incremental=False, step=1000, no_tqdm=True):
+                   incremental=False, step=1000, no_tqdm=False):
         """
         Build the Line Outage Distribution Factor matrix and store it in the
         MParam `LODF`.
@@ -763,47 +734,70 @@ class MatProcessor:
         """
         system = self.system
 
-        luid = self._process_line_input(line, self.LODF)
+        if line is None:
+            luid = system.Line.idx2uid(system.Line.idx.v)
+        elif isinstance(line, (int, str)):
+            try:
+                luid = [system.Line.idx2uid(line)]
+            except ValueError:
+                raise ValueError(f"Line {line} not found.")
+        elif isinstance(line, list):
+            luid = system.Line.idx2uid(line)
 
         # NOTE: here we use nbranch to differentiate it with nline
         nbranch = system.Line.n
-        nline_for_luid = len(luid)
+        nline = len(luid)
 
         ptdf = self.PTDF._v
         # build PTDF if not built
         if self.PTDF._v is None:
-            logging.info("PTDF matrix not built. Building now.")
             ptdf = self.build_ptdf(no_store=True, incremental=incremental, step=step)
 
-        self.pbar = self._init_progress_bar(total=100, unit='%', no_tqdm=no_tqdm)
+        # initialize progress bar
+        if is_notebook():
+            self.pbar = tqdm_nb(total=100, unit='%', file=sys.stdout,
+                                disable=no_tqdm)
+        else:
+            self.pbar = tqdm(total=100, unit='%', ncols=80, ascii=True,
+                             file=sys.stdout, disable=no_tqdm)
 
-        LODF = sps.lil_matrix((nbranch, nline_for_luid))
+        self.pbar.update(0)
+        last_pc = 0
+
+        LODF = sps.lil_matrix((nbranch, nline))
 
         # NOTE: for LODF, we are doing it columns by columns
         # reshape luid to list of list by step
-        # This part of the logic is specific to LODF's incremental calculation
-        # and should be kept local unless another method needs it.
-        luid_chunks = [luid[i:i + step] for i in range(0, nline_for_luid, step)]
-
-        for luid_chunk in luid_chunks:
-            H_chunk = ptdf @ self.Cft._v[:, luid_chunk]
-            h_chunk = H_chunk.diagonal(-luid_chunk[0])
+        luidp = [luid[i:i + step] for i in range(0, len(luid), step)]
+        for luidi in luidp:
+            H_chunk = ptdf @ self.Cft._v[:, luidi]
+            h_chunk = H_chunk.diagonal(-luidi[0])
             rden = safe_div(np.ones(H_chunk.shape),
                             np.tile(np.ones_like(h_chunk) - h_chunk, (nbranch, 1)))
             H_chunk = H_chunk.multiply(rden).tolil()
             # NOTE: use lil_matrix to set diagonal values as -1
-            rsid = sps.diags(H_chunk.diagonal(-luid_chunk[0])) + sps.eye(H_chunk.shape[1])
+            rsid = sps.diags(H_chunk.diagonal(-luidi[0])) + sps.eye(H_chunk.shape[1])
             if H_chunk.shape[0] > rsid.shape[0]:
                 Rsid = sps.lil_matrix(H_chunk.shape)
-                Rsid[[luid.index(i) for i in luid_chunk], :] = rsid  # Corrected indexing for Rsid
+                Rsid[luidi, :] = rsid
             else:
                 Rsid = rsid
             H_chunk = H_chunk - Rsid
-            global_indices = [luid.index(uid) for uid in luid_chunk]
-            LODF[:, global_indices] = H_chunk
+            LODF[:, [luid.index(i) for i in luidi]] = H_chunk
 
             # show progress in percentage
-            self._update_and_close_progress_bar(self.pbar, global_indices[-1] + 1, nline_for_luid)
+            perc = np.round(min((luid.index(luidi[-1]) / nline) * 100, 100), 2)
+
+            perc_diff = perc - last_pc
+            if perc_diff >= 1:
+                self.pbar.update(perc_diff)
+                last_pc = perc
+
+        # finish progress bar
+        self.pbar.update(100 - last_pc)
+        # removed `pbar` so that System object can be serialized
+        self.pbar.close()
+        self.pbar = None
 
         # reshape results into 1D array if only one line
         if isinstance(line, (int, str)):
