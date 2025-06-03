@@ -10,6 +10,8 @@ from ams.core.model import Model
 def str_list_oconv(x):
     """
     Convert list into a list literal.
+
+    Revised from andes.models.timeseries.str_list_oconv.
     """
     # NOTE: convert elements to string from number first, then join them
     str_x = [str(i) for i in x]
