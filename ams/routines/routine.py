@@ -3,9 +3,9 @@ Module for routine data.
 """
 
 import logging
-from typing import Optional, Union, Type, Iterable, Dict
-from collections import OrderedDict
 import json
+from collections import OrderedDict
+from typing import Optional, Union, Type, Iterable, Dict
 
 import numpy as np
 

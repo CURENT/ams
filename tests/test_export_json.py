@@ -35,7 +35,8 @@ class TestExportJSON(unittest.TestCase):
         Test export DCOPF to JSON.
         """
         self.ss.DCOPF.run(solver='CLARABEL')
-        self.ss.DCOPF.export_json()
+        exported_filename = self.ss.DCOPF.export_json()
+        self.assertEqual(exported_filename, self.expected_json_DCOPF)
         self.assertTrue(os.path.exists(self.expected_json_DCOPF))
 
         with open(self.expected_json_DCOPF, 'r') as json_file:
