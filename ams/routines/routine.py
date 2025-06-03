@@ -1117,7 +1117,7 @@ def group_data(rtn: RoutineBase, data_dict: Dict, items: Dict, attr: str):
     ----------
     rtn : ams.routines.routine.RoutineBase
         The routine to collect data from.
-    data_dict : OrderedDict
+    data_dict : Dict
         The data dictionary to populate.
     items : dict
         Dictionary of items to collect data from.
