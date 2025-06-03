@@ -445,6 +445,8 @@ class RoutineBase:
         -------
         bool
             True if the loading is successful, False otherwise.
+
+        .. versionadded:: 1.0.13
         """
         try:
             with open(path, 'r') as f:
@@ -496,6 +498,8 @@ class RoutineBase:
         -------
         str
             The exported json file name
+
+        .. versionadded:: 1.0.13
         """
         if not self.converged:
             logger.warning("Routine did not converge, aborting export.")
@@ -1123,6 +1127,8 @@ def group_data(rtn: RoutineBase, data_dict: Dict, items: Dict, attr: str):
         Dictionary of items to collect data from.
     attr : str
         Attribute to collect data for.
+
+    .. versionadded:: 1.0.13
     """
     for key, item in items.items():
         if item.owner is None:
