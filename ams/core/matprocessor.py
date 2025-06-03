@@ -102,7 +102,7 @@ class MParam(Param):
 
         return self
 
-    def load_csv(self, path=None, chunksize=None):
+    def load_csv(self, path=None, chunksize=None, dtype=float):
         """
         Load the matrix from an EXPORTED CSV file.
 
@@ -125,10 +125,10 @@ class MParam(Param):
             raise ValueError("Path to the csv file is required.")
 
         if chunksize:
-            chunks = pd.read_csv(path, index_col=0, chunksize=chunksize)
+            chunks = pd.read_csv(path, index_col=0, chunksize=chunksize, dtype=dtype)
             df = pd.concat(chunks)
         else:
-            df = pd.read_csv(path, index_col=0)
+            df = pd.read_csv(path, index_col=0, dtype=dtype)
 
         if self.sparse:
             self._v = sps.csr_matrix(df.values)
