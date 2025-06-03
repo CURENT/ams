@@ -505,7 +505,8 @@ class RoutineBase:
             logger.warning("Routine did not converge, aborting export.")
             return None
 
-        path, file_name = get_export_path(self.system, self.class_name,
+        path, file_name = get_export_path(self.system,
+                                          self.class_name + '_out',
                                           path=path, fmt='json')
 
         data_dict = dict()
