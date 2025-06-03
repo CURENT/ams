@@ -470,7 +470,6 @@ class RoutineBase:
                     try:
                         var.v = np.array(values)
                     except Exception as e:
-                        print(f"values.shape: {np.array(values).shape}")
                         logger.warning(f"Failed to assign values to var '{key}': {e}")
                 elif key in self.exprs:
                     continue
@@ -480,7 +479,6 @@ class RoutineBase:
                     try:
                         exprc.v = np.array(values)
                     except Exception as e:
-                        print(f"values.shape: {np.array(values).shape}")
                         logger.warning(f"Failed to assign values to exprc '{key}': {e}")
         logger.info(f"Loaded results from {path}")
         return True
