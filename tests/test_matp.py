@@ -60,7 +60,10 @@ class TestMatProcessorBasic(unittest.TestCase):
         exported_csv = self.mats.Cft.export_csv(path)
         self.assertTrue(os.path.exists(path))
 
+        # load without chunks
         self.mats.Cft.load_csv(exported_csv)
+        # load with chunks
+        self.mats.Cft.load_csv(exported_csv, chunksize=10)
         self.assertIsInstance(self.mats.Cft._v, sps.csr_matrix)
         self.assertEqual(self.mats.Cft._v.shape, (self.nb, self.nl))
         os.remove(path)
