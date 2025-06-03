@@ -3,20 +3,18 @@ Module for system matrix make.
 """
 
 import logging
-import sys
 from typing import Optional
 
 import numpy as np
 
 from andes.thirdparty.npfunc import safe_div
-from andes.shared import tqdm, tqdm_nb
-from andes.utils.misc import elapsed, is_notebook
+from andes.utils.misc import elapsed
 
 from ams.opt import Param
 
 from ams.utils.paths import get_export_path
 
-from ams.shared import pd, sps
+from ams.shared import pd, sps, _init_pbar, _update_pbar
 
 logger = logging.getLogger(__name__)
 
@@ -252,7 +250,6 @@ class MatProcessor:
     def __init__(self, system):
         self.system = system
         self.initialized = False
-        self.pbar = None
 
         self.Cft = MParam(name='Cft', tex_name=r'C_{ft}',
                           info='Line connectivity matrix',
@@ -573,7 +570,7 @@ class MatProcessor:
         return b
 
     def build_ptdf(self, line=None, no_store=False,
-                   incremental=False, step=1000, no_tqdm=False,
+                   incremental=False, step=1000, no_tqdm=True,
                    permc_spec=None, use_umfpack=True):
         """
         Build the Power Transfer Distribution Factor (PTDF) matrix and optionally store it in `MParam.PTDF`.
@@ -650,15 +647,7 @@ class MatProcessor:
 
         if incremental:
             # initialize progress bar
-            if is_notebook():
-                self.pbar = tqdm_nb(total=100, unit='%', file=sys.stdout,
-                                    disable=no_tqdm)
-            else:
-                self.pbar = tqdm(total=100, unit='%', ncols=80, ascii=True,
-                                 file=sys.stdout, disable=no_tqdm)
-
-            self.pbar.update(0)
-            last_pc = 0
+            pbar = _init_pbar(total=100, unit='%', no_tqdm=no_tqdm)
 
             H = sps.lil_matrix((nline, system.Bus.n))
 
@@ -671,19 +660,8 @@ class MatProcessor:
                                          use_umfpack=use_umfpack).T
                 H[start:end, noslack] = sol
 
-                # show progress in percentage
-                perc = np.round(min((end / nline) * 100, 100), 2)
+                _update_pbar(pbar, end, nline)
 
-                perc_diff = perc - last_pc
-                if perc_diff >= 1:
-                    self.pbar.update(perc_diff)
-                    last_pc = perc
-
-            # finish progress bar
-            self.pbar.update(100 - last_pc)
-            # removed `pbar` so that System object can be serialized
-            self.pbar.close()
-            self.pbar = None
         else:
             H = sps.lil_matrix((nline, nbus))
             sol = np.linalg.solve(Bbus.todense()[np.ix_(noslack, noref)].T,
@@ -700,7 +678,7 @@ class MatProcessor:
         return H
 
     def build_lodf(self, line=None, no_store=False,
-                   incremental=False, step=1000, no_tqdm=False):
+                   incremental=False, step=1000, no_tqdm=True):
         """
         Build the Line Outage Distribution Factor matrix and store it in the
         MParam `LODF`.
@@ -761,15 +739,7 @@ class MatProcessor:
             ptdf = self.build_ptdf(no_store=True, incremental=incremental, step=step)
 
         # initialize progress bar
-        if is_notebook():
-            self.pbar = tqdm_nb(total=100, unit='%', file=sys.stdout,
-                                disable=no_tqdm)
-        else:
-            self.pbar = tqdm(total=100, unit='%', ncols=80, ascii=True,
-                             file=sys.stdout, disable=no_tqdm)
-
-        self.pbar.update(0)
-        last_pc = 0
+        pbar = _init_pbar(total=100, unit='%', no_tqdm=no_tqdm)
 
         LODF = sps.lil_matrix((nbranch, nline))
 
@@ -792,19 +762,7 @@ class MatProcessor:
             H_chunk = H_chunk - Rsid
             LODF[:, [luid.index(i) for i in luidi]] = H_chunk
 
-            # show progress in percentage
-            perc = np.round(min((luid.index(luidi[-1]) / nline) * 100, 100), 2)
-
-            perc_diff = perc - last_pc
-            if perc_diff >= 1:
-                self.pbar.update(perc_diff)
-                last_pc = perc
-
-        # finish progress bar
-        self.pbar.update(100 - last_pc)
-        # removed `pbar` so that System object can be serialized
-        self.pbar.close()
-        self.pbar = None
+            _update_pbar(pbar, luid.index(luidi[-1]), nline)
 
         # reshape results into 1D array if only one line
         if isinstance(line, (int, str)):
