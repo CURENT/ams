@@ -51,9 +51,9 @@ def disable_methods(methods):
 
 class System(adSystem):
     """
-    A subclass of ``andes.system.System``, this class encapsulates data, models,
-    and routines for scheduling modeling and analysis in power systems.
-    Some methods  inherited from the parent class are intentionally disabled.
+    Base system class, revised from `andes.system.System`.
+    This class encapsulates data, models, and routines for scheduling
+    modeling and analysis in power systems.
 
     Parameters
     ----------

@@ -8,11 +8,10 @@ logger = logging.getLogger(__name__)
 
 class GroupBase(adGroupBase):
     """
-    Base class for groups.
+    Base class for groups, revised from
+    `andes.models.group.GroupBase`.
 
     Add common_vars and common_params to the group class.
-
-    This class is revised from ``andes.models.group.GroupBase``.
     """
 
     def __init__(self):

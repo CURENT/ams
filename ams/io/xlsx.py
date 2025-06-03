@@ -20,7 +20,8 @@ def write(system, outfile,
     """
     Write loaded AMS system data into an xlsx file
 
-    Revised function ``andes.io.xlsx.write`` to skip non-andes models.
+    Revised from `andes.io.xlsx.write`, where non-ANDES models
+    are skipped if `to_andes` is True.
 
     Parameters
     ----------
@@ -59,7 +60,8 @@ def _write_system(system, writer, skip_empty, to_andes=False):
     """
     Write the system to pandas ExcelWriter
 
-    Rewrite function ``andes.io.xlsx._write_system`` to skip non-andes sheets.
+    Revised from `andes.io.xlsx._write_system`, where non-ANDES models
+    are skipped if `to_andes` is True.
     """
     for name, instance in system.models.items():
         if skip_empty and instance.n == 0:

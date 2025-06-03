@@ -244,7 +244,7 @@ class MatProcessor:
     The connectivity matrices `Cft`, `Cg`, `Cl`, and `Csh` ***have taken*** the
     devices connectivity into account.
 
-    The MParams' row names and col names are assigned in `System.setup()`.
+    The MParams row names and col names are assigned in `System.setup()`.
     """
 
     def __init__(self, system):

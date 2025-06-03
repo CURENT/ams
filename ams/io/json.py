@@ -24,7 +24,8 @@ def write(system, outfile, skip_empty=True, overwrite=None,
     If to_andes is True, only write models that are in ANDES,
     but the outfile might not be able to be read back into AMS.
 
-    Revise function ``andes.io.json.write`` to skip non-andes models.
+    Revised from `andes.io.json.write`, where non-andes models
+    are skipped if `to_andes` is True.
 
     Parameters
     ----------

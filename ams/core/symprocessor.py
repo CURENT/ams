@@ -1,7 +1,7 @@
 """
 Symbolic processor class for AMS routines.
 
-This module is revised from ``andes.core.symprocessor``.
+This module is revised from `andes.core.symprocessor`.
 """
 
 import logging
