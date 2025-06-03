@@ -102,6 +102,17 @@ class ExpressionCalc(OptzBase):
         else:
             return self.optz.value
 
+    @v.setter
+    def v(self, value):
+        """
+        Set the ExpressionCalc value.
+        """
+        if self.optz is None:
+            raise ValueError("ExpressionCalc is not evaluated yet.")
+        if not isinstance(value, (int, float, np.ndarray)):
+            raise TypeError(f"Value must be a number or numpy array, got {type(value)}.")
+        self.optz.value = value
+
     @property
     def e(self):
         """
