@@ -65,8 +65,8 @@ class TestKnownResults(unittest.TestCase):
         """
         Test matrices for case14.
         """
-        ptdf = self.sp.mats.build_ptdf()
-        lodf = self.sp.mats.build_lodf()
+        ptdf = self.sp.mats.build_ptdf().todense()
+        lodf = self.sp.mats.build_lodf().todense()
 
         ptdf_mp = load_ptdf(self.mpres, 'case14')
         lodf_mp = load_lodf(self.mpres, 'case14')
@@ -134,8 +134,8 @@ class TestKnownResultsIEEE39(unittest.TestCase):
         """
         Test matrices for case39.
         """
-        ptdf = self.sp.mats.build_ptdf()
-        lodf = self.sp.mats.build_lodf()
+        ptdf = self.sp.mats.build_ptdf().todense()
+        lodf = self.sp.mats.build_lodf().todense()
 
         ptdf_mp = load_ptdf(self.mpres, 'case39')
         lodf_mp = load_lodf(self.mpres, 'case39')
@@ -205,8 +205,8 @@ class TestKnownResultsIEEE118(unittest.TestCase):
         """
         Test matrices for case118.
         """
-        ptdf = self.sp.mats.build_ptdf()
-        lodf = self.sp.mats.build_lodf()
+        ptdf = self.sp.mats.build_ptdf().todense()
+        lodf = self.sp.mats.build_lodf().todense()
 
         ptdf_mp = load_ptdf(self.mpres, 'case118')
         lodf_mp = load_lodf(self.mpres, 'case118')

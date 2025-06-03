@@ -646,6 +646,8 @@ def mpc2m(mpc: dict, outfile: str) -> str:
         MATPOWER mpc dictionary.
     outfile : str
         Path to the output M-file.
+
+    .. versionadded:: 1.0.10
     """
     with open(outfile, 'w') as f:
         # Add version info
@@ -758,6 +760,8 @@ def write(system, outfile: str, overwrite: bool = None) -> bool:
     - Unlike the XLSX and JSON converters, this implementation uses value providers
       (`v`) instead of vin. As a result, any changes made through `model.set` will be
       reflected in the generated MPC.
+
+    .. versionadded:: 1.0.10
     """
     if not confirm_overwrite(outfile, overwrite=overwrite):
         return False

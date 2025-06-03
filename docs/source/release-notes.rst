@@ -9,6 +9,11 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
+v1.0.13 (2025-xx-xx)
+----------------------
+
+- Add functionality to save and load matrices from files
+
 v1.0.12 (2025-05-29)
 ----------------------
 
