@@ -453,6 +453,9 @@ class RoutineBase:
             logger.error(f"Failed to load JSON file: {e}")
             return False
 
+        if not self.initialized:
+            self.init()
+
         # Unpack variables and expressions from JSON
         for group, group_data in data.items():
             if not isinstance(group_data, dict):
