@@ -776,7 +776,9 @@ class System(adSystem):
         """
         return write_m(self, outfile=outfile, overwrite=overwrite)
 
-    def to_xlsx(self, outfile: str, overwrite: bool = None):
+    def to_xlsx(self, outfile: str, overwrite: bool = None,
+                skip_empty: bool = True, add_book: bool = None,
+                to_andes: bool = False):
         """
         Export an AMS system to an Excel file.
         Wrapper method for `ams.io.xlsx.write`.
@@ -787,12 +789,23 @@ class System(adSystem):
             The output file name.
         overwrite : bool, optional
             If True, overwrite the existing file. Default is None.
+        skip_empty : bool, optional
+            If True, skip output of empty models (n = 0). Default is True.
+        add_book : str, optional
+            An optional model to be added to the output spreadsheet.
+            If None, no additional book is added. Default is None.
+        to_andes : bool, optional
+            If True, write to an ANDES system, where non-ANDES models are skipped.
 
         .. versionadded:: 1.0.10
         """
-        return write_xlsx(self, outfile=outfile, overwrite=overwrite)
+        return write_xlsx(self, outfile=outfile,
+                          skip_empty=skip_empty, overwrite=overwrite,
+                          add_book=add_book, to_andes=to_andes)
 
-    def to_json(self, outfile: str, overwrite: bool = None):
+    def to_json(self, outfile: str, skip_empty: bool = True,
+                overwrite: bool = None,
+                to_andes: bool = False) -> bool:
         """
         Export an AMS system to a JSON file.
         Wrapper method for `ams.io.json.write`.
@@ -803,10 +816,16 @@ class System(adSystem):
             The output file name.
         overwrite : bool, optional
             If True, overwrite the existing file. Default is None.
+        skip_empty : bool, optional
+            If True, skip output of empty models (n = 0). Default is True.
+        to_andes : bool, optional
+            If True, write to an ANDES system, where non-ANDES models are skipped.
 
         .. versionadded:: 1.0.10
         """
-        return write_json(self, outfile=outfile, overwrite=overwrite)
+        return write_json(self, outfile=outfile,
+                          skip_empty=skip_empty, overwrite=overwrite,
+                          to_andes=to_andes)
 
     def to_raw(self, outfile: str, overwrite: bool = None):
         """
