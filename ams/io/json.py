@@ -11,7 +11,8 @@ from collections import OrderedDict
 from andes.io.json import (testlines, read)  # NOQA
 from andes.utils.paths import confirm_overwrite
 
-from ams.shared import empty_adsys, ad_models
+from ams.shared import pd, ad_models
+from ams.shared import summary_row, summary_name, ams_params_not_in_andes
 
 logger = logging.getLogger(__name__)
 
@@ -67,17 +68,25 @@ def _dump_system(system, skip_empty, orient='records', to_andes=False):
     for name, instance in system.models.items():
         if skip_empty and instance.n == 0:
             continue
+
+        if name not in ad_models and to_andes:
+            continue
+
+        instance.cache.refresh("df_in")
         if to_andes:
-            if name not in ad_models:
-                continue
-            # NOTE: ommit parameters that are not in ANDES
-            skip_params = []
-            ams_params = list(instance.params.keys())
-            andes_params = list(empty_adsys.models[name].params.keys())
-            skip_params = list(set(ams_params) - set(andes_params))
-            df = instance.cache.df_in.drop(skip_params, axis=1, errors='ignore')
-            out[name] = df.to_dict(orient=orient)
+            skipped_params = ams_params_not_in_andes(name, instance.cache.df_in.columns.tolist())
+            df = instance.cache.df_in.drop(skipped_params, axis=1, errors='ignore')
         else:
             df = instance.cache.df_in
-            out[name] = df.to_dict(orient=orient)
+
+        if name == summary_name:
+            df = pd.concat([pd.DataFrame([summary_row]), df], ignore_index=True)
+            summary_found = True
+
+        out[name] = df.to_dict(orient=orient)
+
+    if not summary_found:
+        df = pd.DataFrame([summary_row])
+        out[summary_name] = df.to_dict(orient=orient)
+
     return json.dumps(out, indent=2)
