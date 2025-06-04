@@ -170,3 +170,26 @@ def _update_pbar(pbar, current, total):
     if pbar.n < pbar.total:  # Check if it's not already at total
         pbar.update(pbar.total - pbar.n)  # Update remaining
     pbar.close()
+
+
+def ams_params_not_in_andes(mdl_name, am_params):
+    """
+    Helper function to return parameters not in the ANDES model.
+    If the model is not in the ANDES system, it returns an empty list.
+
+    Parameters
+    ----------
+    mdl_name : str
+        The name of the model.
+    am_params : list
+        A list of parameters from the AMS model.
+
+    Returns
+    -------
+    list
+        A list of parameters that are not in the ANDES model.
+    """
+    if mdl_name not in ad_models:
+        return []
+    ad_params = list(empty_adsys.models[mdl_name].params.keys())
+    return list(set(am_params) - set(ad_params))
