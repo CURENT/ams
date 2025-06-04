@@ -7,8 +7,8 @@ import logging
 
 from andes.io.xlsx import (read, testlines, confirm_overwrite, _add_book)  # NOQA
 
-from ams.shared import pd, ad_models
-from ams.shared import summary_row, summary_name, ams_params_not_in_andes
+from ams.shared import pd
+from ams.shared import summary_row, summary_name, model2df
 
 
 logger = logging.getLogger(__name__)
@@ -66,18 +66,9 @@ def _write_system(system, writer, skip_empty, to_andes=False):
     """
     summary_found = False
     for name, instance in system.models.items():
-        if skip_empty and instance.n == 0:
+        df = model2df(instance, skip_empty, to_andes=to_andes)
+        if df is None:
             continue
-
-        if name not in ad_models and to_andes:
-            continue
-
-        instance.cache.refresh("df_in")
-        if to_andes:
-            skipped_params = ams_params_not_in_andes(name, instance.cache.df_in.columns.tolist())
-            df = instance.cache.df_in.drop(skipped_params, axis=1, errors='ignore')
-        else:
-            df = instance.cache.df_in
 
         if name == summary_name:
             df = pd.concat([pd.DataFrame([summary_row]), df], ignore_index=True)

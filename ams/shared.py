@@ -195,3 +195,39 @@ def ams_params_not_in_andes(mdl_name, am_params):
         return []
     ad_params = list(empty_adsys.models[mdl_name].params.keys())
     return list(set(am_params) - set(ad_params))
+
+
+def model2df(instance, skip_empty, to_andes):
+    """
+    Prepare a DataFrame from the model instance for output.
+
+    Parameters
+    ----------
+    instance : ams.model.Model
+        The model instance to prepare.
+    skip_empty : bool
+        Whether to skip empty models.
+    to_andes : bool
+        Whether to prepare the DataFrame for ANDES.
+
+    Returns
+    -------
+    pd.DataFrame
+        The prepared DataFrame.
+    """
+    name = instance.class_name
+
+    if skip_empty and instance.n == 0:
+        return None
+
+    if name not in ad_models and to_andes:
+        return None
+
+    instance.cache.refresh("df_in")
+    df = instance.cache.df_in
+
+    if to_andes:
+        skipped_params = ams_params_not_in_andes(name, df.columns.tolist())
+        df = df.drop(skipped_params, axis=1, errors='ignore')
+
+    return df
