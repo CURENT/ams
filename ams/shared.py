@@ -55,6 +55,8 @@ summary_row = {'field': 'Info',
                'comment3': nowarranty_msg,
                'comment4': None}
 
+summary_name = "Summary"  # ensure model Summary's name is consistent
+
 # NOTE: copied from CVXPY documentation, last checked on 2024/10/30, v1.5
 mip_solvers = ['CBC', 'COPT', 'GLPK_MI', 'CPLEX', 'GUROBI',
                'MOSEK', 'SCIP', 'XPRESS', 'SCIPY']

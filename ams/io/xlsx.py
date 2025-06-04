@@ -7,7 +7,8 @@ import logging
 
 from andes.io.xlsx import (read, testlines, confirm_overwrite, _add_book)  # NOQA
 
-from ams.shared import pd, empty_adsys, ad_models
+from ams.shared import pd, ad_models
+from ams.shared import summary_row, summary_name, ams_params_not_in_andes
 
 
 logger = logging.getLogger(__name__)
@@ -63,20 +64,29 @@ def _write_system(system, writer, skip_empty, to_andes=False):
     Revised from `andes.io.xlsx._write_system`, where non-ANDES models
     are skipped if `to_andes` is True.
     """
+    summary_found = False
     for name, instance in system.models.items():
         if skip_empty and instance.n == 0:
             continue
+
+        if name not in ad_models and to_andes:
+            continue
+
         instance.cache.refresh("df_in")
         if to_andes:
-            if name not in ad_models:
-                continue
-            # NOTE: ommit parameters that are not in ANDES
-            skip_params = []
-            ams_params = list(instance.params.keys())
-            andes_params = list(empty_adsys.models[name].params.keys())
-            skip_params = list(set(ams_params) - set(andes_params))
-            df = instance.cache.df_in.drop(skip_params, axis=1, errors='ignore')
+            skipped_params = ams_params_not_in_andes(name, instance.cache.df_in.columns.tolist())
+            df = instance.cache.df_in.drop(skipped_params, axis=1, errors='ignore')
         else:
             df = instance.cache.df_in
+
+        if name == summary_name:
+            df = pd.concat([pd.DataFrame([summary_row]), df], ignore_index=True)
+            summary_found = True
+
         df.to_excel(writer, sheet_name=name, freeze_panes=(1, 0))
+
+    if not summary_found:
+        df = pd.DataFrame([summary_row])
+        df.to_excel(writer, sheet_name=summary_name, freeze_panes=(1, 0))
+
     return writer
