@@ -15,6 +15,7 @@ from andes.utils.lazyimport import LazyImport
 
 from andes.system import System as adSystem
 
+from ._version import get_versions
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,13 @@ _max_length = 80                    # NOQA
 copyright_msg = "Copyright (C) 2023-2025 Jinning Wang"
 nowarranty_msg = "AMS comes with ABSOLUTELY NO WARRANTY"
 report_time = strftime("%m/%d/%Y %I:%M:%S %p")
+version_msg = f"AMS {get_versions()['version']}"
+
+summary_row = {'field': 'Info',
+               'comment': version_msg,
+               'comment2': report_time,
+               'comment3': nowarranty_msg,
+               'comment4': None}
 
 # NOTE: copied from CVXPY documentation, last checked on 2024/10/30, v1.5
 mip_solvers = ['CBC', 'COPT', 'GLPK_MI', 'CPLEX', 'GUROBI',
