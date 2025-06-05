@@ -69,15 +69,16 @@ def _write_system(system, writer, skip_empty, to_andes=False):
         df = model2df(instance, skip_empty, to_andes=to_andes)
         if df is None:
             continue
-
-        if name == summary_name:
-            df = pd.concat([pd.DataFrame([summary_row]), df], ignore_index=True)
-            summary_found = True
+            if name == summary_name:
+                df = pd.concat([pd.DataFrame([summary_row]), df], ignore_index=True)
+                df.index.name = "uid"
+                summary_found = True
 
         df.to_excel(writer, sheet_name=name, freeze_panes=(1, 0))
 
     if not summary_found:
         df = pd.DataFrame([summary_row])
+        df.index.name = "uid"
         df.to_excel(writer, sheet_name=summary_name, freeze_panes=(1, 0))
 
     return writer

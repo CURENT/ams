@@ -74,11 +74,13 @@ def _dump_system(system, skip_empty, orient='records', to_andes=False):
 
         if name == summary_name:
             df = pd.concat([pd.DataFrame([summary_row]), df], ignore_index=True)
+            df.index.name = "uid"
             summary_found = True
         out[name] = df.to_dict(orient=orient)
 
     if not summary_found:
         df = pd.DataFrame([summary_row])
+        df.index.name = "uid"
         out[summary_name] = df.to_dict(orient=orient)
 
     return json.dumps(out, indent=2)
