@@ -53,7 +53,7 @@ summary_row = {'field': 'Info',
                'comment': version_msg,
                'comment2': report_time,
                'comment3': nowarranty_msg,
-               'comment4': None}
+               'comment4': copyright_msg}
 
 summary_name = "Summary"  # ensure model Summary's name is consistent
 
