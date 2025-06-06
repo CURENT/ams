@@ -1,11 +1,11 @@
 # LTB AMS
 
+<img src="docs/source/images/sponsors/CURENT_Logo_NameOnTrans.png" alt="CURENT ERC Logo" width="300" height="auto">
+
 Python Software for Power System Scheduling Modeling and Co-Simulation with Dynamics, serving as the market simulator for the [CURENT Largescale Testbed][LTB Repository].
 
 ![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
 [![DOI:10.1109/TSTE.2025.3528027](https://zenodo.org/badge/DOI/10.1109/TSTE.2025.3528027.svg)](https://ieeexplore.ieee.org/document/10836855)
-
-<img src="docs/source/images/sponsors/CURENT_Logo_NameOnTrans.png" alt="CURENT ERC Logo" width="300" height="auto">
 
 | Badges |  |  |
 |---|---|---|
@@ -23,7 +23,7 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 | Dependency | [![libraries](https://img.shields.io/librariesio/release/pypi/ltbams)](https://libraries.io/pypi/ltbams) |  |
 | Try on Binder | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/curent/ams/master) |  |
 
-# Why AMS
+## Why AMS
 
 AMS facilitates **Dynamics Incorporated Scheduling** and **Scheduling-Dynamics Co-Simulation**
 through an integrated interface with ANDES.
@@ -100,7 +100,7 @@ Use the following resources to get involved.
 -  Check out the source code used for [benchmark][benchmark]
 -  Check out and and cite our [paper][paper]
 
-# Installation
+## Installation
 
 AMS is released as ``ltbams`` on PyPI and conda-forge.
 Install from PyPI using pip:
@@ -143,7 +143,7 @@ pip install git+https://github.com/CURENT/ams.git
 - Versions **1.0.0** and **1.0.1** are only available on PyPI
 - Version **0.9.9** has known issues and has been yanked from PyPI
 
-# Example Usage
+## Example Usage
 
 ```python
 import ams
@@ -164,12 +164,12 @@ sa
 >>> <andes.system.System at 0x14bd98190>
 ```
 
-# Citing AMS
+## Citing AMS
 If you use AMS for research or consulting, please cite the following paper in your publication that uses AMS:
 
 > J. Wang et al., "Dynamics-incorporated Modeling Framework for Stability Constrained Scheduling Under High-penetration of Renewable Energy," in IEEE Transactions on Sustainable Energy, doi: 10.1109/TSTE.2025.3528027.
 
-# Sponsors and Contributors
+## Sponsors and Contributors
 AMS is the scheduling simulation engine for the CURENT Largescale Testbed (LTB).
 More information about CURENT LTB can be found at the [LTB Repository][LTB Repository].
 
@@ -180,15 +180,8 @@ This work was supported in part by the Advanced Grid Research and Development Pr
 
 See [GitHub contributors][GitHub contributors] for the contributor list.
 
-# License
+## License
 AMS is licensed under the [GPL v3 License](./LICENSE).
-
-# Related Projects
-- [Popular Open Source Libraries for Power System Analysis](https://github.com/ps-wiki/best-of-ps)
-- [G-PST Tools Portal](https://g-pst.github.io/tools/): An open tools portal with a classification approach
-- [Open Source Software (OSS) for Electricity Market Research, Teaching, and Training](https://www2.econ.iastate.edu/tesfatsi/ElectricOSS.htm)
-
-Some commercial solvers provide academic licenses, such as COPT, GUROBI, CPLEX, and MOSEK.
 
 * * *
 
