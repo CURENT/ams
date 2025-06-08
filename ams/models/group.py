@@ -3,6 +3,8 @@ import logging
 from andes.models.group import GroupBase as adGroupBase
 from andes.core.service import BackRef
 
+from ams.utils.misc import deprec_get_idx
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,6 +20,7 @@ class GroupBase(adGroupBase):
         super().__init__()
         self.common_params.extend(('idx',))
 
+    @deprec_get_idx
     def get_idx(self):
         """
         Return the value of group idx sorted in a human-readable style.
