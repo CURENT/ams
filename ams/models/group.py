@@ -99,13 +99,10 @@ class RenGen(GroupBase):
     See ANDES Documentation SynGen here for the notes on replacing StaticGen and setting the power
     ratio parameters.
 
-    Reference:
-
-    [1] ANDES Documentation, RenGen, [Online]
-
-    Available:
-
-    https://docs.andes.app/en/latest/groupdoc/RenGen.html#rengen
+    References
+    ----------
+    1. ANDES Documentation, RenGen,
+       https://docs.andes.app/en/latest/groupdoc/RenGen.html#rengen
     """
 
     def __init__(self):
@@ -134,13 +131,10 @@ class DG(GroupBase):
     See ANDES Documentation SynGen here for the notes on replacing StaticGen and setting the power
     ratio parameters.
 
-    Reference:
-
-    [1] ANDES Documentation, SynGen, [Online]
-
-    Available:
-
-    https://docs.andes.app/en/latest/groupdoc/SynGen.html#syngen
+    References
+    ----------
+    1. ANDES Documentation, SynGen,
+       https://docs.andes.app/en/latest/groupdoc/SynGen.html#syngen
     """
 
     def __init__(self):

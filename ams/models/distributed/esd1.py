@@ -56,13 +56,10 @@ class ESD1(ESD1Data, Model):
     ``vt3``, ``vrflag``, ``ft0``, ``ft1``, ``ft2``, ``ft3``, ``frflag``,
     ``tip``, ``tiq``, ``recflag``.
 
-    Reference:
-
-    [1] ANDES Documentation, ESD1
-
-    Available:
-
-    https://docs.andes.app/en/latest/groupdoc/DG.html#esd1
+    References
+    ----------
+    1. ANDES Documentation, ESD1,
+       https://docs.andes.app/en/latest/groupdoc/DG.html#esd1
     """
 
     def __init__(self, system, config):

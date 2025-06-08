@@ -39,12 +39,10 @@ class REGCA1(REGCData, Model):
     """
     Renewable generator scheduling model.
 
-    Reference:
-
-    [1] ANDES Documentation, REGCA1
-
-    Available:
-    https://docs.andes.app/en/latest/groupdoc/RenGen.html#regca1
+    References
+    ----------
+    1. ANDES Documentation, REGCA1,
+       https://docs.andes.app/en/latest/groupdoc/RenGen.html#regca1
     """
 
     def __init__(self, system=None, config=None) -> None:
@@ -99,13 +97,10 @@ class REGCV2(REGCV1):
     """
     Alias for REGCV1, for scheduling purposes.
 
-    Reference:
-
-    [1] ANDES Documentation, REGCV2
-
-    Available:
-
-    https://docs.andes.app/en/latest/groupdoc/RenGen.html#regcv2
+    References
+    ----------
+    1. ANDES Documentation, REGCV2,
+       https://docs.andes.app/en/latest/groupdoc/RenGen.html#regcv2
     """
 
     def __init__(self, system=None, config=None) -> None:
