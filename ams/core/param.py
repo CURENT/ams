@@ -283,9 +283,6 @@ class RParam(Param):
         """
         Get all the indexes of the parameter.
 
-        .. note::
-            New in version 1.0.0.
-
         Returns
         -------
         idx : list
@@ -294,6 +291,8 @@ class RParam(Param):
         Notes
         -----
         - The value will sort by the indexer if indexed.
+
+        .. versionadded:: 1.0.0
         """
         if self.indexer is None:
             if self.is_group:

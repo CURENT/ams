@@ -21,9 +21,9 @@ class DCOPF(DCPFBase):
 
     Notes
     -----
-    1. The nodal price is calculated as ``pi`` in ``pic``.
-    2. Devices online status of ``StaticGen``, ``StaticLoad``, and ``Shunt`` are considered in the connectivity
-       matrices ``Cft``, ``Cg``, ``Cl``, and ``Csh``.
+    - The nodal price is calculated as ``pi`` in ``pic``.
+    - Devices online status of ``StaticGen``, ``StaticLoad``, and ``Shunt`` are considered in the connectivity
+      matrices ``Cft``, ``Cg``, ``Cl``, and ``Csh``.
 
     References
     ----------

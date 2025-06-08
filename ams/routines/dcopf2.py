@@ -25,9 +25,9 @@ class DCOPF2(DCOPF):
 
     Notes
     -----
-    1. This routine requires PTDF matrix.
-    2. Nodal price ``pi`` is calculated with three parts.
-    3. Bus angle ``aBus`` is calculated after solving the problem.
+    - This routine requires PTDF matrix.
+    - Nodal price ``pi`` is calculated with three parts.
+    - Bus angle ``aBus`` is calculated after solving the problem.
 
     References
     ----------

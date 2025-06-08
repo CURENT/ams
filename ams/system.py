@@ -652,9 +652,10 @@ class System(adSystem):
 
         Notes
         -----
-        1. Power flow models in the addfile will be skipped and only dynamic models will be used.
-        2. The addfile format is guessed based on the file extension. Currently only ``xlsx`` is supported.
-        3. Index in the addfile is automatically adjusted when necessary.
+        - Power flow models in the addfile will be skipped and only dynamic models
+          will be used.
+        - The addfile format is guessed based on the file extension.
+        - Index in the addfile is automatically adjusted when necessary.
         """
         return to_andes(system=self, addfile=addfile,
                         setup=setup, no_output=no_output,
