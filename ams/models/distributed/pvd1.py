@@ -55,7 +55,7 @@ class PVD1(PVD1Data, Model):
     References
     ----------
     1. ANDES Documentation, PVD1,
-       https://docs.andes.app/en/latest/groupdoc/DG.html#pvd1
+       https://andes.readthedocs.io/en/stable/groupdoc/DG.html#pvd1
     """
 
     def __init__(self, system, config):

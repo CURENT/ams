@@ -102,7 +102,7 @@ class RenGen(GroupBase):
     References
     ----------
     1. ANDES Documentation, RenGen,
-       https://docs.andes.app/en/latest/groupdoc/RenGen.html#rengen
+       https://andes.readthedocs.io/en/stable/groupdoc/RenGen.html#rengen
     """
 
     def __init__(self):
@@ -134,7 +134,7 @@ class DG(GroupBase):
     References
     ----------
     1. ANDES Documentation, SynGen,
-       https://docs.andes.app/en/latest/groupdoc/SynGen.html#syngen
+       https://andes.readthedocs.io/en/stable/groupdoc/SynGen.html#syngen
     """
 
     def __init__(self):
@@ -181,7 +181,7 @@ class StaticGen(GroupBase):
     Notes
     -----
     For co-simulation with ANDES, refer to the `ANDES StaticGen Documentation
-    <https://docs.andes.app/en/latest/groupdoc/StaticGen.html#staticgen>`_ for
+    <https://andes.readthedocs.io/en/stable/groupdoc/StaticGen.html#staticgen>`_ for
     replacing static generators with dynamic generators.
     """
 

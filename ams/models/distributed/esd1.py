@@ -59,7 +59,7 @@ class ESD1(ESD1Data, Model):
     References
     ----------
     1. ANDES Documentation, ESD1,
-       https://docs.andes.app/en/latest/groupdoc/DG.html#esd1
+       https://andes.readthedocs.io/en/stable/groupdoc/DG.html#esd1
     """
 
     def __init__(self, system, config):

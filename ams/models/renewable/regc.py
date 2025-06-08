@@ -42,7 +42,7 @@ class REGCA1(REGCData, Model):
     References
     ----------
     1. ANDES Documentation, REGCA1,
-       https://docs.andes.app/en/latest/groupdoc/RenGen.html#regca1
+       https://andes.readthedocs.io/en/stable/groupdoc/RenGen.html#regca1
     """
 
     def __init__(self, system=None, config=None) -> None:
@@ -68,7 +68,7 @@ class REGCV1(REGCData, Model):
     References
     ----------
     1. ANDES Documentation, REGCV1,
-       https://docs.andes.app/en/latest/groupdoc/RenGen.html#regcv1
+       https://andes.readthedocs.io/en/stable/groupdoc/RenGen.html#regcv1
     """
 
     def __init__(self, system=None, config=None) -> None:
@@ -100,7 +100,7 @@ class REGCV2(REGCV1):
     References
     ----------
     1. ANDES Documentation, REGCV2,
-       https://docs.andes.app/en/latest/groupdoc/RenGen.html#regcv2
+       https://andes.readthedocs.io/en/stable/groupdoc/RenGen.html#regcv2
     """
 
     def __init__(self, system=None, config=None) -> None:
