@@ -309,6 +309,11 @@ class Model:
         Return the index of the model instance.
         Equivalent to ``self.idx.v``, develoepd for consistency with group method
         ``get_idx``.
+
+        Notes
+        -----
+        .. deprecated:: 1.0.0
+           Use ``get_all_idxes`` instead.
         """
         return self.idx.v
 

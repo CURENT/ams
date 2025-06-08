@@ -252,6 +252,9 @@ class RParam(Param):
         Notes
         -----
         - The value will sort by the indexer if indexed.
+
+        .. deprecated:: 1.0.0
+           Use ``get_all_idxes`` instead.
         """
         if self.indexer is None:
             if self.is_group:

@@ -29,6 +29,9 @@ class GroupBase(adGroupBase):
         -----
         This function sorts the idx values using a custom sorting key,
         which handles varying length strings with letters and numbers.
+
+        .. deprecated:: 1.0.0
+           Use ``get_all_idxes`` instead.
         """
         all_idx = [mdl.idx.v for mdl in self.models.values()]
         flat_list = [item for sublist in all_idx for item in sublist]
