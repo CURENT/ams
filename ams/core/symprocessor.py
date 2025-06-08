@@ -1,7 +1,13 @@
 """
-Symbolic processor class for AMS routines.
+Symbolic processor class for AMS routines,
+revised from `andes.core.symprocessor`.
 
-This module is revised from `andes.core.symprocessor`.
+Revised from the ANDES project:
+https://github.com/CURENT/andes
+
+Original author: Hantao Cui
+
+License: GNU General Public License v3.0 (GPL-3.0)
 """
 
 import logging

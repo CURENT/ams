@@ -36,11 +36,11 @@ def read(system, file):
 
 def m2mpc(infile: str) -> dict:
     """
-    Parse a MATPOWER file and return a dictionary containing the parsed data.
+    Parse a MATPOWER file and return a dictionary containing the parsed data,
     revised from `andes.io.matpower.m2mpc`.
 
     This function processes MATPOWER case files and extracts relevant fields
-    into a structured dictionary. It is revised from ``andes.io.matpower.m2mpc``.
+    into a structured dictionary.
 
     Supported fields include:
     - `baseMVA`: The system base power in MVA.
@@ -182,9 +182,8 @@ def m2mpc(infile: str) -> dict:
 
 def mpc2system(mpc: dict, system) -> bool:
     """
-    Load an mpc dict into an empty AMS system.
-
-    Revised from `andes.io.matpower.mpc2system`.
+    Load an mpc dict into an empty AMS system, revised from
+    `andes.io.matpower.mpc2system`.
 
     Note that `mbase` in mpc is converted to `Sn`, but it is not actually used in
     MATPOWER nor AMS.

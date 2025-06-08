@@ -400,7 +400,7 @@ class System(adSystem):
         """
         Add a device instance for an existing model.
 
-        Revised from ``andes.system.System.add()``.
+        Revised from ``andes.system.System.add``.
         """
         if model not in self.models and (model not in self.model_aliases):
             if model in ad_dyn_models:
