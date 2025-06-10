@@ -22,6 +22,12 @@ jobs:
         activate-environment: anaconda-client-env
 
     - shell: bash -el {0}
+      name: Lint with flake8
+      if: github.event_name == 'pull_request'
+      run: |
+        flake8 .
+
+    - shell: bash -el {0}
       name: Install dependencies
       run: |
         mamba install -y nbmake pytest-xdist line_profiler  # add'l packages for notebook tests.
