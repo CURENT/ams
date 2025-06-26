@@ -3,8 +3,9 @@ Module for routine data.
 """
 
 import logging
-from typing import Optional, Union, Type, Iterable, Dict
+import json
 from collections import OrderedDict
+from typing import Optional, Union, Type, Iterable, Dict
 
 import numpy as np
 
@@ -430,6 +431,90 @@ class RoutineBase:
             msg += n_iter_str + f"with {sstats.solver_name}!"
             logger.warning(msg)
             return False
+
+    def load_json(self, path):
+        """
+        Load scheduling results from a json file.
+
+        Parameters
+        ----------
+        path : str
+            Path of the json file to load.
+
+        Returns
+        -------
+        bool
+            True if the loading is successful, False otherwise.
+        """
+        try:
+            with open(path, 'r') as f:
+                data = json.load(f)
+        except Exception as e:
+            logger.error(f"Failed to load JSON file: {e}")
+            return False
+
+        if not self.initialized:
+            self.init()
+
+        # Unpack variables and expressions from JSON
+        for group, group_data in data.items():
+            if not isinstance(group_data, dict):
+                continue
+            for key, values in group_data.items():
+                if key == 'idx':
+                    continue
+                # Find the corresponding variable or expression
+                if key in self.vars:
+                    var = self.vars[key]
+                    # Assign values to the variable
+                    try:
+                        var.v = np.array(values)
+                    except Exception as e:
+                        logger.warning(f"Failed to assign values to var '{key}': {e}")
+                elif key in self.exprs:
+                    continue
+                elif key in self.exprcs:
+                    exprc = self.exprcs[key]
+                    # Assign values to the expression calculation
+                    try:
+                        exprc.v = np.array(values)
+                    except Exception as e:
+                        logger.warning(f"Failed to assign values to exprc '{key}': {e}")
+        logger.info(f"Loaded results from {path}")
+        return True
+
+    def export_json(self, path=None):
+        """
+        Export scheduling results to a json file.
+
+        Parameters
+        ----------
+        path : str, optional
+            Path of the json file to export.
+
+        Returns
+        -------
+        str
+            The exported json file name
+        """
+        if not self.converged:
+            logger.warning("Routine did not converge, aborting export.")
+            return None
+
+        path, file_name = get_export_path(self.system, self.class_name,
+                                          path=path, fmt='json')
+
+        data_dict = dict()
+
+        group_data(self, data_dict, self.vars, 'v')
+        group_data(self, data_dict, self.exprs, 'v')
+        group_data(self, data_dict, self.exprcs, 'v')
+
+        with open(path, 'w') as f:
+            json.dump(data_dict, f, indent=4,
+                      default=lambda x: x.tolist() if isinstance(x, np.ndarray) else x)
+
+        return file_name
 
     def export_csv(self, path=None):
         """
@@ -1022,3 +1107,35 @@ def collect_data(rtn: RoutineBase, data_dict: Dict, items: Dict, attr: str):
             logger.debug(f"Error with collecting data for '{key}': {e}")
             data_v = [np.nan] * len(idx_v)
         data_dict.update(OrderedDict(zip([f'{key} {dev}' for dev in idx_v], data_v)))
+
+
+def group_data(rtn: RoutineBase, data_dict: Dict, items: Dict, attr: str):
+    """
+    Collect data for export from grouped items.
+
+    Parameters
+    ----------
+    rtn : ams.routines.routine.RoutineBase
+        The routine to collect data from.
+    data_dict : Dict
+        The data dictionary to populate.
+    items : dict
+        Dictionary of items to collect data from.
+    attr : str
+        Attribute to collect data for.
+    """
+    for key, item in items.items():
+        if item.owner is None:
+            continue
+        if item.owner.class_name not in data_dict.keys():
+            idx_v = item.get_all_idxes()
+            data_dict[item.owner.class_name] = dict(idx=idx_v)
+        else:
+            idx_v = data_dict[item.owner.class_name]['idx']
+        try:
+            data_v = rtn.get(src=key, attr=attr, idx=idx_v,
+                             horizon=rtn.timeslot.v if hasattr(rtn, 'timeslot') else None)
+        except Exception as e:
+            logger.warning(f"Error with collecting data for '{key}': {e}")
+            data_v = [np.nan] * item.owner.n
+        data_dict[item.owner.class_name][key] = data_v

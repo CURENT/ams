@@ -32,7 +32,8 @@ dependencies = [
     "openpyxl",
     "andes>=1.9.3",
     "pybind11",
-    "cvxpy"
+    "cvxpy",
+    "cffi",
 ]
 
 [project.optional-dependencies]
@@ -62,6 +63,7 @@ tag_prefix = "v"
 
 [tool.setuptools.packages.find]
 where = ["."]
+exclude = ["tests", "tests.*"]
 
 [tool.setuptools]
 license-files = []

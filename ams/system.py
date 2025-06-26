@@ -740,6 +740,8 @@ class System(adSystem):
         - Unlike the XLSX and JSON converters, this implementation uses value providers
           (`v`) instead of vin. As a result, any changes made through `model.set` will be
           reflected in the generated MPC.
+
+        .. versionadded:: 1.0.10
         """
         return system2mpc(self)
 
@@ -769,6 +771,8 @@ class System(adSystem):
         - Unlike the XLSX and JSON converters, this implementation uses value providers
           (`v`) instead of vin. As a result, any changes made through `model.set` will be
           reflected in the generated MPC.
+
+        .. versionadded:: 1.0.10
         """
         return write_m(self, outfile=outfile, overwrite=overwrite)
 
@@ -783,6 +787,8 @@ class System(adSystem):
             The output file name.
         overwrite : bool, optional
             If True, overwrite the existing file. Default is None.
+
+        .. versionadded:: 1.0.10
         """
         return write_xlsx(self, outfile=outfile, overwrite=overwrite)
 
@@ -797,6 +803,8 @@ class System(adSystem):
             The output file name.
         overwrite : bool, optional
             If True, overwrite the existing file. Default is None.
+
+        .. versionadded:: 1.0.10
         """
         return write_json(self, outfile=outfile, overwrite=overwrite)
 
@@ -813,6 +821,8 @@ class System(adSystem):
             The output file name.
         overwrite : bool, optional
             If True, overwrite the existing file. Default is None.
+
+        .. versionadded:: 1.0.10
         """
         return write_raw(self, outfile=outfile, overwrite=overwrite)
 

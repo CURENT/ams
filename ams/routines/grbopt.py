@@ -34,6 +34,8 @@ class OPF(DCPF1):
     Refer to the gurobi-optimods documentation for further details:
 
     https://gurobi-optimods.readthedocs.io/en/stable/mods/opf/opf.html
+
+    .. versionadded:: 1.0.10
     """
 
     def __init__(self, system, config):

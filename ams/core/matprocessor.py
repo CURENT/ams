@@ -3,20 +3,18 @@ Module for system matrix make.
 """
 
 import logging
-import sys
 from typing import Optional
 
 import numpy as np
 
 from andes.thirdparty.npfunc import safe_div
-from andes.shared import tqdm, tqdm_nb
-from andes.utils.misc import elapsed, is_notebook
+from andes.utils.misc import elapsed
 
 from ams.opt import Param
 
 from ams.utils.paths import get_export_path
 
-from ams.shared import pd, sps
+from ams.shared import pd, sps, _init_pbar, _update_pbar
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +70,109 @@ class MParam(Param):
         self.owner = owner
         self.col_names = col_names
         self.row_names = row_names
+
+    def load_npz(self, path=None):
+        """
+        Load the FULL matrix from a npz file.
+
+        Parameters
+        ----------
+        path : str, optional
+            Path of the npz file to load.
+
+        Returns
+        -------
+        MParam
+            The loaded MParam instance.
+
+        .. versionadded:: 1.0.13
+        """
+
+        if path is None:
+            raise ValueError("Path to the npz file is required.")
+
+        data = sps.load_npz(path) if self.sparse else np.load(path)
+
+        if self.sparse:
+            self._v = data.tocsr()
+            logging.debug(f"Loading sparse matrix {self.name} from npz format.")
+        else:
+            self._v = data['v']
+            logging.warning(f"Loading dense matrix {self.name} from npz format.")
+
+        return self
+
+    def load_csv(self, path=None, chunksize=None, dtype=float):
+        """
+        Load the matrix from an EXPORTED CSV file.
+
+        Parameters
+        ----------
+        path : str, optional
+            Path of the csv file to load.
+        chunksize : int, optional
+            If specified, read the csv file in chunks of this size.
+
+        Returns
+        -------
+        MParam
+            The loaded MParam instance.
+
+        .. versionadded:: 1.0.13
+        """
+
+        if path is None:
+            raise ValueError("Path to the csv file is required.")
+
+        if chunksize:
+            chunks = pd.read_csv(path, index_col=0, chunksize=chunksize, dtype=dtype)
+            df = pd.concat(chunks)
+        else:
+            df = pd.read_csv(path, index_col=0, dtype=dtype)
+
+        if self.sparse:
+            self._v = sps.csr_matrix(df.values)
+            logging.debug(f"Loading sparse matrix {self.name} from csv format.")
+        else:
+            self._v = df.values
+        self.col_names = df.columns.tolist()
+        self.row_names = df.index.tolist()
+
+        logging.debug(f"Loading matrix {self.name} from csv format.")
+        return self
+
+    def export_npz(self, path=None):
+        """
+        Export the matrix to a npz file.
+
+        Parameters
+        ----------
+        path : str, optional
+            Path of the npz file to export.
+
+        Returns
+        -------
+        str
+            The exported npz file name
+
+        .. versionadded:: 1.0.13
+        """
+
+        path, file_name = get_export_path(self.owner.system,
+                                          self.name,
+                                          path=path,
+                                          fmt='npz')
+
+        if sps.issparse(self._v):
+            sps.save_npz(path, self._v.tocsr())
+            logging.debug(f"Saving sparse matrix {self.name} to npz format.")
+        elif isinstance(self._v, np.ndarray):
+            np.savez(path, v=self._v)  # Save with a key 'v' inside the NPZ archive
+            logging.warning(f"Saving dense matrix {self.name} to npz format.")
+        else:
+            raise TypeError(f"Unsupported matrix type: {type(self._v)}")
+
+        return file_name
 
     def export_csv(self, path=None):
         """
@@ -149,7 +250,6 @@ class MatProcessor:
     def __init__(self, system):
         self.system = system
         self.initialized = False
-        self.pbar = None
 
         self.Cft = MParam(name='Cft', tex_name=r'C_{ft}',
                           info='Line connectivity matrix',
@@ -182,10 +282,10 @@ class MatProcessor:
 
         self.PTDF = MParam(name='PTDF', tex_name=r'P_{TDF}',
                            info='Power transfer distribution factor',
-                           v=None, sparse=False, owner=self)
+                           v=None, sparse=True, owner=self)
         self.LODF = MParam(name='LODF', tex_name=r'O_{TDF}',
                            info='Line outage distribution factor',
-                           v=None, sparse=False, owner=self)
+                           v=None, sparse=True, owner=self)
 
     def build(self, force=False):
         """
@@ -270,6 +370,8 @@ class MatProcessor:
         row = np.array([system.Bus.idx2uid(x) for x in on_gen_bus])
         col = np.array([idx_gen.index(x) for x in on_gen_idx])
         self.Cg._v = sps.csr_matrix((np.ones(len(on_gen_idx)), (row, col)), (nb, ng))
+        self.Cg.col_names = idx_gen
+        self.Cg.row_names = system.Bus.idx.v
         return self.Cg._v
 
     def build_cl(self):
@@ -297,6 +399,8 @@ class MatProcessor:
         row = np.array([system.Bus.idx2uid(x) for x in on_load_bus])
         col = np.array([system.PQ.idx2uid(x) for x in on_load_idx])
         self.Cl._v = sps.csr_matrix((np.ones(len(on_load_idx)), (row, col)), (nb, npq))
+        self.Cl.col_names = idx_load
+        self.Cl.row_names = system.Bus.idx.v
         return self.Cl._v
 
     def build_csh(self):
@@ -324,6 +428,8 @@ class MatProcessor:
         row = np.array([system.Bus.idx2uid(x) for x in on_shunt_bus])
         col = np.array([system.Shunt.idx2uid(x) for x in on_shunt_idx])
         self.Csh._v = sps.csr_matrix((np.ones(len(on_shunt_idx)), (row, col)), (nb, nsh))
+        self.Csh.col_names = idx_shunt
+        self.Csh.row_names = system.Bus.idx.v
         return self.Csh._v
 
     def build_cft(self):
@@ -356,6 +462,10 @@ class MatProcessor:
         col_line = np.array([system.Line.idx2uid(x) for x in on_line_idx + on_line_idx])
         self.Cft._v = sps.csr_matrix((data_line, (row_line, col_line)), (nb, nl))
         self.CftT._v = self.Cft._v.T
+        self.Cft.col_names = idx_line
+        self.Cft.row_names = system.Bus.idx.v
+        self.CftT.col_names = system.Bus.idx.v
+        self.CftT.row_names = idx_line
         return self.Cft._v
 
     def build_bf(self):
@@ -383,6 +493,8 @@ class MatProcessor:
         t = system.Bus.idx2uid(system.Line.get(src='bus2', attr='v', idx=idx_line))
         ir = np.r_[range(nl), range(nl)]  # double set of row indices
         self.Bf._v = sps.csr_matrix((np.r_[b, -b], (ir, np.r_[f, t])), (nl, nb))
+        self.Bf.col_names = system.Bus.idx.v
+        self.Bf.row_names = system.Line.idx.v
         return self.Bf._v
 
     def build_bbus(self):
@@ -395,6 +507,8 @@ class MatProcessor:
             DC bus admittance matrix.
         """
         self.Bbus._v = self.Cft._v * self.Bf._v
+        self.Bbus.col_names = self.system.Bus.idx.v
+        self.Bbus.row_names = self.system.Bus.idx.v
         return self.Bbus._v
 
     def build_pfinj(self):
@@ -410,6 +524,8 @@ class MatProcessor:
         b = self._calc_b()
         phi = self.system.Line.get(src='phi', attr='v', idx=idx_line)
         self.Pfinj._v = b * (-phi)
+        # NOTE: leave the row_names empty for the vector
+        self.Pfinj.col_names = self.system.Line.idx.v
         return self.Pfinj._v
 
     def build_pbusinj(self):
@@ -422,6 +538,8 @@ class MatProcessor:
             Bus power injection vector.
         """
         self.Pbusinj._v = self.Cft._v * self.Pfinj._v
+        # NOTE: leave the row_names empty for the vector
+        self.Pbusinj.col_names = self.system.Bus.idx.v
         return self.Pbusinj._v
 
     def _calc_b(self):
@@ -452,7 +570,7 @@ class MatProcessor:
         return b
 
     def build_ptdf(self, line=None, no_store=False,
-                   incremental=False, step=1000, no_tqdm=False,
+                   incremental=False, step=1000, no_tqdm=True,
                    permc_spec=None, use_umfpack=True):
         """
         Build the Power Transfer Distribution Factor (PTDF) matrix and optionally store it in `MParam.PTDF`.
@@ -460,11 +578,8 @@ class MatProcessor:
         PTDF[m, n] represents the increased line flow on line `m` for a 1 p.u. power injection at bus `n`.
         It is similar to the Generation Shift Factor (GSF).
 
-        Note: There may be minor discrepancies between PTDF-based line flow and DCOPF-calculated line flow.
-
-        For large cases, use `incremental=True` to calculate the sparse PTDF in chunks, which will be stored
-        as a `scipy.sparse.lil_matrix`. In this mode, the PTDF is calculated in chunks, and a progress bar
-        will be shown unless `no_tqdm=True`.
+        For large cases, use `incremental=True` to calculate the sparse PTDF in chunks. In this mode, the
+        PTDF is calculated in chunks, and thus more memory friendly.
 
         Parameters
         ----------
@@ -486,7 +601,7 @@ class MatProcessor:
 
         Returns
         -------
-        PTDF : np.ndarray or scipy.sparse.lil_matrix
+        PTDF : scipy.sparse.lil_matrix
             Power transfer distribution factor.
 
         References
@@ -506,13 +621,18 @@ class MatProcessor:
 
         if line is None:
             luid = system.Line.idx2uid(system.Line.idx.v)
+            self.PTDF.row_names = system.Line.idx.v
         elif isinstance(line, (int, str)):
             try:
                 luid = [system.Line.idx2uid(line)]
+                self.PTDF.row_names = [line]
             except ValueError:
                 raise ValueError(f"Line {line} not found.")
         elif isinstance(line, list):
             luid = system.Line.idx2uid(line)
+            self.PTDF.row_names = line
+
+        self.PTDF.col_names = system.Bus.idx.v
 
         # build other matrices if not built
         if not self.initialized:
@@ -527,15 +647,7 @@ class MatProcessor:
 
         if incremental:
             # initialize progress bar
-            if is_notebook():
-                self.pbar = tqdm_nb(total=100, unit='%', file=sys.stdout,
-                                    disable=no_tqdm)
-            else:
-                self.pbar = tqdm(total=100, unit='%', ncols=80, ascii=True,
-                                 file=sys.stdout, disable=no_tqdm)
-
-            self.pbar.update(0)
-            last_pc = 0
+            pbar = _init_pbar(total=100, unit='%', no_tqdm=no_tqdm)
 
             H = sps.lil_matrix((nline, system.Bus.n))
 
@@ -548,23 +660,13 @@ class MatProcessor:
                                          use_umfpack=use_umfpack).T
                 H[start:end, noslack] = sol
 
-                # show progress in percentage
-                perc = np.round(min((end / nline) * 100, 100), 2)
+                _update_pbar(pbar, end, nline)
 
-                perc_diff = perc - last_pc
-                if perc_diff >= 1:
-                    self.pbar.update(perc_diff)
-                    last_pc = perc
-
-            # finish progress bar
-            self.pbar.update(100 - last_pc)
-            # removed `pbar` so that System object can be serialized
-            self.pbar.close()
-            self.pbar = None
         else:
-            H = np.zeros((nline, nbus))
-            H[:, noslack] = np.linalg.solve(Bbus.todense()[np.ix_(noslack, noref)].T,
-                                            Bf.todense()[np.ix_(luid, noref)].T).T
+            H = sps.lil_matrix((nline, nbus))
+            sol = np.linalg.solve(Bbus.todense()[np.ix_(noslack, noref)].T,
+                                  Bf.todense()[np.ix_(luid, noref)].T).T
+            H[:, noslack] = sol
 
         # reshape results into 1D array if only one line
         if isinstance(line, (int, str)):
@@ -576,7 +678,7 @@ class MatProcessor:
         return H
 
     def build_lodf(self, line=None, no_store=False,
-                   incremental=False, step=1000, no_tqdm=False):
+                   incremental=False, step=1000, no_tqdm=True):
         """
         Build the Line Outage Distribution Factor matrix and store it in the
         MParam `LODF`.
@@ -607,7 +709,7 @@ class MatProcessor:
 
         Returns
         -------
-        LODF : np.ndarray, scipy.sparse.lil_matrix
+        LODF : scipy.sparse.lil_matrix
             Line outage distribution factor.
 
         References
@@ -635,81 +737,45 @@ class MatProcessor:
         # build PTDF if not built
         if self.PTDF._v is None:
             ptdf = self.build_ptdf(no_store=True, incremental=incremental, step=step)
-        if incremental and isinstance(self.PTDF._v, np.ndarray):
-            ptdf = sps.lil_matrix(self.PTDF._v)
 
-        if incremental | (isinstance(ptdf, sps.spmatrix)):
-            # initialize progress bar
-            if is_notebook():
-                self.pbar = tqdm_nb(total=100, unit='%', file=sys.stdout,
-                                    disable=no_tqdm)
-            else:
-                self.pbar = tqdm(total=100, unit='%', ncols=80, ascii=True,
-                                 file=sys.stdout, disable=no_tqdm)
+        # initialize progress bar
+        pbar = _init_pbar(total=100, unit='%', no_tqdm=no_tqdm)
 
-            self.pbar.update(0)
-            last_pc = 0
+        LODF = sps.lil_matrix((nbranch, nline))
 
-            LODF = sps.lil_matrix((nbranch, nline))
-
-            # NOTE: for LODF, we are doing it columns by columns
-            # reshape luid to list of list by step
-            luidp = [luid[i:i + step] for i in range(0, len(luid), step)]
-            for luidi in luidp:
-                H_chunk = ptdf @ self.Cft._v[:, luidi]
-                h_chunk = H_chunk.diagonal(-luidi[0])
-                rden = safe_div(np.ones(H_chunk.shape),
-                                np.tile(np.ones_like(h_chunk) - h_chunk, (nbranch, 1)))
-                H_chunk = H_chunk.multiply(rden).tolil()
-                # NOTE: use lil_matrix to set diagonal values as -1
-                rsid = sps.diags(H_chunk.diagonal(-luidi[0])) + sps.eye(H_chunk.shape[1])
-                if H_chunk.shape[0] > rsid.shape[0]:
-                    Rsid = sps.lil_matrix(H_chunk.shape)
-                    Rsid[luidi, :] = rsid
-                else:
-                    Rsid = rsid
-                H_chunk = H_chunk - Rsid
-                LODF[:, [luid.index(i) for i in luidi]] = H_chunk
-
-                # show progress in percentage
-                perc = np.round(min((luid.index(luidi[-1]) / nline) * 100, 100), 2)
-
-                perc_diff = perc - last_pc
-                if perc_diff >= 1:
-                    self.pbar.update(perc_diff)
-                    last_pc = perc
-
-            # finish progress bar
-            self.pbar.update(100 - last_pc)
-            # removed `pbar` so that System object can be serialized
-            self.pbar.close()
-            self.pbar = None
-        else:
-            H = ptdf @ self.Cft._v[:, luid]
-            h = np.diag(H, -luid[0])
-            LODF = safe_div(H,
-                            np.tile(np.ones_like(h) - h, (nbranch, 1)))
-            # # NOTE: reset the diagonal elements to -1
-            rsid = np.diag(np.diag(LODF, -luid[0])) + np.eye(nline, nline)
-            if LODF.shape[0] > rsid.shape[0]:
-                Rsid = np.zeros_like(LODF)
-                Rsid[luid, :] = rsid
+        # NOTE: for LODF, we are doing it columns by columns
+        # reshape luid to list of list by step
+        luidp = [luid[i:i + step] for i in range(0, len(luid), step)]
+        for luidi in luidp:
+            H_chunk = ptdf @ self.Cft._v[:, luidi]
+            h_chunk = H_chunk.diagonal(-luidi[0])
+            rden = safe_div(np.ones(H_chunk.shape),
+                            np.tile(np.ones_like(h_chunk) - h_chunk, (nbranch, 1)))
+            H_chunk = H_chunk.multiply(rden).tolil()
+            # NOTE: use lil_matrix to set diagonal values as -1
+            rsid = sps.diags(H_chunk.diagonal(-luidi[0])) + sps.eye(H_chunk.shape[1])
+            if H_chunk.shape[0] > rsid.shape[0]:
+                Rsid = sps.lil_matrix(H_chunk.shape)
+                Rsid[luidi, :] = rsid
             else:
                 Rsid = rsid
-            LODF = LODF - Rsid
+            H_chunk = H_chunk - Rsid
+            LODF[:, [luid.index(i) for i in luidi]] = H_chunk
+
+            _update_pbar(pbar, luid.index(luidi[-1]), nline)
 
         # reshape results into 1D array if only one line
         if isinstance(line, (int, str)):
             LODF = LODF[:, 0]
 
-        if (not no_store) & (line is None):
+        if (not no_store) and (line is None):
             self.LODF._v = LODF
         return LODF
 
     def build_otdf(self, line=None):
         """
-        Build the Outrage Transfer Distribution Factor (OTDF) matrix for line
-        k outage: $OTDF_k = PTDF + LODF[:, k] @ PTDF[k, ]$.
+        Build the Outrage Transfer Distribution Factor (OTDF) matrix for
+        **line k** outage: $OTDF_k = PTDF + LODF[:, k] @ PTDF[k, ]$.
 
         OTDF_k[m, n] means the increased line flow on line `m` when there is
         1 p.u. power injection at bus `n` when line `k` is outage.
@@ -725,7 +791,7 @@ class MatProcessor:
 
         Returns
         -------
-        OTDF : np.ndarray, scipy.sparse.csr_matrix
+        OTDF : scipy.sparse.csr_matrix
             Line outage distribution factor.
 
         References
@@ -750,4 +816,4 @@ class MatProcessor:
             luid = self.system.Line.idx2uid(line)
 
         otdf = ptdf + lodf[:, luid] @ ptdf[luid, :]
-        return otdf
+        return otdf.tocsr()

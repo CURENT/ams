@@ -9,6 +9,14 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
+v1.0.13 (2025-xx-xx)
+----------------------
+
+- Add methods ``export_npz``, ``load_npz``, ``load_csv`` in ``MatProcessor``
+  to save and load matrices from files
+- Add methods ``export_json``, ``load_json`` in ``RoutineBase``
+  to save and load routine results from JSON files
+
 v1.0.12 (2025-05-29)
 ----------------------
 

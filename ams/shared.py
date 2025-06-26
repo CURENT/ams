@@ -4,6 +4,7 @@ Shared constants and delayed imports.
 This module is supplementary to the ``andes.shared`` module.
 """
 import logging
+import sys
 import unittest
 from functools import wraps
 from time import strftime
@@ -24,6 +25,7 @@ ppoption = LazyImport('from pypower.ppoption import ppoption')
 runpf = LazyImport('from pypower.runpf import runpf')
 runopf = LazyImport('from pypower.runopf import runopf')
 opf = LazyImport('from gurobi_optimods import opf')
+tqdm = LazyImport('from tqdm.auto import tqdm')
 
 # --- an empty ANDES system ---
 empty_adsys = adSystem(autogen_stale=False)
@@ -118,7 +120,7 @@ def skip_unittest_without_PYPOWER(f):
         try:
             import pypower  # NOQA
         except ImportError:
-            raise unittest.SkipTest("PYPOWER is not installed.")
+            raise unittest.SkipTest("PYPOWER is not available.")
         return f(*args, **kwargs)
     return wrapper
 
@@ -131,6 +133,32 @@ def skip_unittest_without_gurobi_optimods(f):
         try:
             import gurobi_optimods  # NOQA
         except ImportError:
-            raise unittest.SkipTest("Gurobi is not installed.")
+            raise unittest.SkipTest("gurobi_optimods is not available.")
         return f(*args, **kwargs)
     return wrapper
+
+
+def _init_pbar(total, unit, no_tqdm):
+    """Initializes and returns a tqdm progress bar."""
+    pbar = tqdm(total=total, unit=unit, ncols=80, ascii=True,
+                file=sys.stdout, disable=no_tqdm)
+    pbar.update(0)
+    return pbar
+
+
+def _update_pbar(pbar, current, total):
+    """Updates and closes the progress bar."""
+    perc = np.round(min((current / total) * 100, 100), 2)
+    if pbar.total is not None:  # Check if pbar is still valid
+        last_pc = pbar.n / pbar.total * 100  # Get current percentage based on updated value
+    else:
+        last_pc = 0
+
+    perc_diff = perc - last_pc
+    if perc_diff >= 1:
+        pbar.update(perc_diff)
+
+    # Ensure pbar finishes at 100% and closes
+    if pbar.n < pbar.total:  # Check if it's not already at total
+        pbar.update(pbar.total - pbar.n)  # Update remaining
+    pbar.close()

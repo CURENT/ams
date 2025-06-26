@@ -56,6 +56,8 @@ def write_raw(system, outfile: str, overwrite: bool = None):
         The output file path.
     overwrite : bool, optional
         If True, overwrite the file if it exists. If False, do not overwrite.
+
+    .. versionadded:: 1.0.10
     """
     if not confirm_overwrite(outfile, overwrite=overwrite):
         return False

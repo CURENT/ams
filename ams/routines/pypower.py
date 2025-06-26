@@ -32,6 +32,8 @@ class DCPF1(RoutineBase):
     - This class does not implement the AMS-style DC power flow formulation.
     - For detailed mathematical formulations and algorithmic details, refer to the
       MATPOWER User's Manual, section on Power Flow.
+
+    .. versionadded:: 1.0.10
     """
 
     def __init__(self, system, config):
@@ -362,6 +364,8 @@ class PFlow1(DCPF1):
       MATPOWER User's Manual, section on Power Flow.
     - Fast-Decoupled (XB version) and Fast-Decoupled (BX version) algorithms are
       not fully supported yet.
+
+    .. versionadded:: 1.0.10
     """
 
     def __init__(self, system, config):
@@ -436,6 +440,8 @@ class DCOPF1(DCPF1):
     - For detailed mathematical formulations and algorithmic details, refer to the
       MATPOWER User's Manual, section on Optimal Power Flow.
     - Algorithms 400, 500, 600, and 700 are not fully supported yet.
+
+    .. versionadded:: 1.0.10
     """
 
     def __init__(self, system, config):
@@ -586,6 +592,8 @@ class ACOPF1(DCOPF1):
     - This class does not implement the AMS-style AC optimal power flow formulation.
     - For detailed mathematical formulations and algorithmic details, refer to the
       MATPOWER User's Manual, section on Optimal Power Flow.
+
+    .. versionadded:: 1.0.10
     """
 
     def __init__(self, system, config):

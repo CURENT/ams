@@ -80,7 +80,7 @@ setup(
     author="Jinning Wang",
     author_email='jinninggm@gmail.com',
     url='https://github.com/CURENT/ams',
-    packages=find_packages(exclude=[]),
+    packages=find_packages(exclude=["tests", "tests.*"]),
     entry_points={
         'console_scripts': [
             'ams = ams.cli:main',
