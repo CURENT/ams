@@ -627,7 +627,7 @@ class MatProcessor:
                 luid = [system.Line.idx2uid(line)]
                 self.PTDF.row_names = [line]
             except ValueError:
-                raise ValueError(f"Line {line} not found.")
+                raise ValueError(f"Line {line} not found.") from None
         elif isinstance(line, list):
             luid = system.Line.idx2uid(line)
             self.PTDF.row_names = line
@@ -725,7 +725,7 @@ class MatProcessor:
             try:
                 luid = [system.Line.idx2uid(line)]
             except ValueError:
-                raise ValueError(f"Line {line} not found.")
+                raise ValueError(f"Line {line} not found.") from None
         elif isinstance(line, list):
             luid = system.Line.idx2uid(line)
 
@@ -811,7 +811,7 @@ class MatProcessor:
             try:
                 luid = [self.system.Line.idx2uid(line)]
             except ValueError:
-                raise ValueError(f"Line {line} not found.")
+                raise ValueError(f"Line {line} not found.") from None
         elif isinstance(line, list):
             luid = self.system.Line.idx2uid(line)
 
