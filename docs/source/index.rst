@@ -89,9 +89,10 @@ dynamic simulator ANDES.
     publication.
 
 
-.. [Wang2025] J. Wang et al., "Dynamics-incorporated Modeling Framework for Stability
-       Constrained Scheduling Under High-penetration of Renewable Energy," in IEEE
-       Transactions on Sustainable Energy, doi: 10.1109/TSTE.2025.3528027.
+.. [Wang2025] J. Wang et al., "Dynamics-Incorporated Modeling Framework for Stability
+       Constrained Scheduling Under High-Penetration of Renewable Energy," in IEEE
+       Transactions on Sustainable Energy,  vol. 16, no. 3, pp. 1673-1685, July 2025,
+       doi: 10.1109/TSTE.2025.3528027.
 
 
 .. toctree::
