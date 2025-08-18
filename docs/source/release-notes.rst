@@ -9,7 +9,7 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
-v1.0.13 (2025-xx-xx)
+v1.0.13 (2025-08-18)
 ----------------------
 
 - Add methods ``export_npz``, ``load_npz``, ``load_csv`` in ``MatProcessor``
