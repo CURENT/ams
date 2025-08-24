@@ -177,9 +177,9 @@ def to_andes(system, addfile=None,
 
     Notes
     -----
-    1. Power flow models in the addfile will be skipped and only dynamic models will be used.
-    2. The addfile format is guessed based on the file extension. Currently only ``xlsx`` is supported.
-    3. Index in the addfile is automatically adjusted when necessary.
+    - Power flow models in the addfile will be skipped and only dynamic models will be used.
+    - The addfile format is guessed based on the file extension. Currently only ``xlsx`` is supported.
+    - Index in the addfile is automatically adjusted when necessary.
     """
     t0, _ = elapsed()
 
@@ -446,9 +446,9 @@ class Dynamic:
 
     Notes
     -----
-    1. Using the file conversion ``to_andes()`` will automatically
-       link the AMS system to the converted ANDES system in the
-       attribute ``dyn``.
+    - Using the file conversion ``to_andes()`` will automatically
+      link the AMS system to the converted ANDES system in the
+      attribute ``dyn``.
 
     Examples
     --------
@@ -503,7 +503,7 @@ class Dynamic:
 
         Notes
         -----
-        1. AGC power reference ``paux`` is not included in this function.
+        - AGC power reference ``paux`` is not included in this function.
         """
         # 1) TurbineGov
         syg_idx = sp.dyn.link['syg_idx'].dropna().tolist()  # SynGen idx

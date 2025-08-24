@@ -15,6 +15,7 @@ from andes.utils.lazyimport import LazyImport
 
 from andes.system import System as adSystem
 
+from ._version import get_versions
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,15 @@ _max_length = 80                    # NOQA
 copyright_msg = "Copyright (C) 2023-2025 Jinning Wang"
 nowarranty_msg = "AMS comes with ABSOLUTELY NO WARRANTY"
 report_time = strftime("%m/%d/%Y %I:%M:%S %p")
+version_msg = f"AMS {get_versions()['version']}"
+
+summary_row = {'field': 'Info',
+               'comment': version_msg,
+               'comment2': report_time,
+               'comment3': nowarranty_msg,
+               'comment4': copyright_msg}
+
+summary_name = "Summary"  # ensure model Summary's name is consistent
 
 # NOTE: copied from CVXPY documentation, last checked on 2024/10/30, v1.5
 mip_solvers = ['CBC', 'COPT', 'GLPK_MI', 'CPLEX', 'GUROBI',
@@ -162,3 +172,62 @@ def _update_pbar(pbar, current, total):
     if pbar.n < pbar.total:  # Check if it's not already at total
         pbar.update(pbar.total - pbar.n)  # Update remaining
     pbar.close()
+
+
+def ams_params_not_in_andes(mdl_name, am_params):
+    """
+    Helper function to return parameters not in the ANDES model.
+    If the model is not in the ANDES system, it returns an empty list.
+
+    Parameters
+    ----------
+    mdl_name : str
+        The name of the model.
+    am_params : list
+        A list of parameters from the AMS model.
+
+    Returns
+    -------
+    list
+        A list of parameters that are not in the ANDES model.
+    """
+    if mdl_name not in ad_models:
+        return []
+    ad_params = list(empty_adsys.models[mdl_name].params.keys())
+    return list(set(am_params) - set(ad_params))
+
+
+def model2df(instance, skip_empty, to_andes):
+    """
+    Prepare a DataFrame from the model instance for output.
+
+    Parameters
+    ----------
+    instance : ams.model.Model
+        The model instance to prepare.
+    skip_empty : bool
+        Whether to skip empty models.
+    to_andes : bool
+        Whether to prepare the DataFrame for ANDES.
+
+    Returns
+    -------
+    pd.DataFrame
+        The prepared DataFrame.
+    """
+    name = instance.class_name
+
+    if skip_empty and instance.n == 0:
+        return None
+
+    if name not in ad_models and to_andes:
+        return None
+
+    instance.cache.refresh("df_in")
+    df = instance.cache.df_in
+
+    if to_andes:
+        skipped_params = ams_params_not_in_andes(name, df.columns.tolist())
+        df = df.drop(skipped_params, axis=1, errors='ignore')
+
+    return df

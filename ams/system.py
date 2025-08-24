@@ -51,9 +51,9 @@ def disable_methods(methods):
 
 class System(adSystem):
     """
-    A subclass of ``andes.system.System``, this class encapsulates data, models,
-    and routines for scheduling modeling and analysis in power systems.
-    Some methods  inherited from the parent class are intentionally disabled.
+    Base system class, revised from `andes.system.System`.
+    This class encapsulates data, models, and routines for scheduling
+    modeling and analysis in power systems.
 
     Parameters
     ----------
@@ -400,7 +400,7 @@ class System(adSystem):
         """
         Add a device instance for an existing model.
 
-        Revised from ``andes.system.System.add()``.
+        Revised from ``andes.system.System.add``.
         """
         if model not in self.models and (model not in self.model_aliases):
             if model in ad_dyn_models:
@@ -652,9 +652,10 @@ class System(adSystem):
 
         Notes
         -----
-        1. Power flow models in the addfile will be skipped and only dynamic models will be used.
-        2. The addfile format is guessed based on the file extension. Currently only ``xlsx`` is supported.
-        3. Index in the addfile is automatically adjusted when necessary.
+        - Power flow models in the addfile will be skipped and only dynamic models
+          will be used.
+        - The addfile format is guessed based on the file extension.
+        - Index in the addfile is automatically adjusted when necessary.
         """
         return to_andes(system=self, addfile=addfile,
                         setup=setup, no_output=no_output,
@@ -776,7 +777,9 @@ class System(adSystem):
         """
         return write_m(self, outfile=outfile, overwrite=overwrite)
 
-    def to_xlsx(self, outfile: str, overwrite: bool = None):
+    def to_xlsx(self, outfile: str, overwrite: bool = None,
+                skip_empty: bool = True, add_book: bool = None,
+                to_andes: bool = False):
         """
         Export an AMS system to an Excel file.
         Wrapper method for `ams.io.xlsx.write`.
@@ -787,12 +790,23 @@ class System(adSystem):
             The output file name.
         overwrite : bool, optional
             If True, overwrite the existing file. Default is None.
+        skip_empty : bool, optional
+            If True, skip output of empty models (n = 0). Default is True.
+        add_book : str, optional
+            An optional model to be added to the output spreadsheet.
+            If None, no additional book is added. Default is None.
+        to_andes : bool, optional
+            If True, write to an ANDES system, where non-ANDES models are skipped.
 
         .. versionadded:: 1.0.10
         """
-        return write_xlsx(self, outfile=outfile, overwrite=overwrite)
+        return write_xlsx(self, outfile=outfile,
+                          skip_empty=skip_empty, overwrite=overwrite,
+                          add_book=add_book, to_andes=to_andes)
 
-    def to_json(self, outfile: str, overwrite: bool = None):
+    def to_json(self, outfile: str, skip_empty: bool = True,
+                overwrite: bool = None,
+                to_andes: bool = False) -> bool:
         """
         Export an AMS system to a JSON file.
         Wrapper method for `ams.io.json.write`.
@@ -803,10 +817,16 @@ class System(adSystem):
             The output file name.
         overwrite : bool, optional
             If True, overwrite the existing file. Default is None.
+        skip_empty : bool, optional
+            If True, skip output of empty models (n = 0). Default is True.
+        to_andes : bool, optional
+            If True, write to an ANDES system, where non-ANDES models are skipped.
 
         .. versionadded:: 1.0.10
         """
-        return write_json(self, outfile=outfile, overwrite=overwrite)
+        return write_json(self, outfile=outfile,
+                          skip_empty=skip_empty, overwrite=overwrite,
+                          to_andes=to_andes)
 
     def to_raw(self, outfile: str, overwrite: bool = None):
         """

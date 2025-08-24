@@ -17,9 +17,8 @@ class Zone(ModelData, Model):
 
     Notes
     -----
-    1. Zone is a collection of buses.
-    2. Model ``Zone`` is not actually defined in ANDES.
-
+    - A zone is a collection of buses.
+    - The ``Zone`` model is not defined in ANDES up to version 1.9.3.
     """
 
     def __init__(self, system, config):
@@ -39,7 +38,6 @@ class Zone(ModelData, Model):
         -------
         str
             Formatted table
-
         """
         if self.n:
             header = ['Zone ID', 'Bus ID']

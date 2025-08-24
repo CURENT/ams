@@ -125,10 +125,10 @@ class RTED(DCOPF, RTEDBase, SFRBase):
 
     Notes
     -----
-    1. Formulations has been adjusted with interval ``config.t``, 5/60 [Hour] by default.
-    2. The tie-line flow related constraints are ommited in this formulation.
-    3. The power balance is solved for the entire system.
-    4. The SFR is solved for each area.
+    - Formulations has been adjusted with interval ``config.t``, 5/60 [Hour] by default.
+    - The tie-line flow related constraints are ommited in this formulation.
+    - Power generation is balanced for the entire system.
+    - SFR is balanced for each area.
     """
 
     def __init__(self, system, config):
@@ -487,7 +487,7 @@ class RTEDVIS(RTED, VISBase):
     Please ensure that the parameters `dvm` and `dvd` are set according to the system base.
 
     References
-    -----------------
+    ----------
     1. B. She, F. Li, H. Cui, J. Wang, Q. Zhang and R. Bo, "Virtual Inertia Scheduling (VIS) for
        Real-Time Economic Dispatch of IBR-Penetrated Power Systems," in IEEE Transactions on
        Sustainable Energy, vol. 15, no. 2, pp. 938-951, April 2024, doi: 10.1109/TSTE.2023.3319307.

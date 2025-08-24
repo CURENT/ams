@@ -3,22 +3,24 @@ import logging
 from andes.models.group import GroupBase as adGroupBase
 from andes.core.service import BackRef
 
+from ams.utils.misc import deprec_get_idx
+
 logger = logging.getLogger(__name__)
 
 
 class GroupBase(adGroupBase):
     """
-    Base class for groups.
+    Base class for groups, revised from
+    `andes.models.group.GroupBase`.
 
     Add common_vars and common_params to the group class.
-
-    This class is revised from ``andes.models.group.GroupBase``.
     """
 
     def __init__(self):
         super().__init__()
         self.common_params.extend(('idx',))
 
+    @deprec_get_idx
     def get_idx(self):
         """
         Return the value of group idx sorted in a human-readable style.
@@ -27,6 +29,9 @@ class GroupBase(adGroupBase):
         -----
         This function sorts the idx values using a custom sorting key,
         which handles varying length strings with letters and numbers.
+
+        .. deprecated:: 1.0.0
+           Use ``get_all_idxes`` instead.
         """
         all_idx = [mdl.idx.v for mdl in self.models.values()]
         flat_list = [item for sublist in all_idx for item in sublist]
@@ -94,13 +99,10 @@ class RenGen(GroupBase):
     See ANDES Documentation SynGen here for the notes on replacing StaticGen and setting the power
     ratio parameters.
 
-    Reference:
-
-    [1] ANDES Documentation, RenGen, [Online]
-
-    Available:
-
-    https://docs.andes.app/en/latest/groupdoc/RenGen.html#rengen
+    References
+    ----------
+    1. ANDES Documentation, RenGen,
+       https://andes.readthedocs.io/en/stable/groupdoc/RenGen.html#rengen
     """
 
     def __init__(self):
@@ -129,13 +131,10 @@ class DG(GroupBase):
     See ANDES Documentation SynGen here for the notes on replacing StaticGen and setting the power
     ratio parameters.
 
-    Reference:
-
-    [1] ANDES Documentation, SynGen, [Online]
-
-    Available:
-
-    https://docs.andes.app/en/latest/groupdoc/SynGen.html#syngen
+    References
+    ----------
+    1. ANDES Documentation, SynGen,
+       https://andes.readthedocs.io/en/stable/groupdoc/SynGen.html#syngen
     """
 
     def __init__(self):
@@ -182,7 +181,7 @@ class StaticGen(GroupBase):
     Notes
     -----
     For co-simulation with ANDES, refer to the `ANDES StaticGen Documentation
-    <https://docs.andes.app/en/latest/groupdoc/StaticGen.html#staticgen>`_ for
+    <https://andes.readthedocs.io/en/stable/groupdoc/StaticGen.html#staticgen>`_ for
     replacing static generators with dynamic generators.
     """
 

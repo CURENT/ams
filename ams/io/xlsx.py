@@ -7,7 +7,8 @@ import logging
 
 from andes.io.xlsx import (read, testlines, confirm_overwrite, _add_book)  # NOQA
 
-from ams.shared import pd, empty_adsys, ad_models
+from ams.shared import pd
+from ams.shared import summary_row, summary_name, model2df
 
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,8 @@ def write(system, outfile,
     """
     Write loaded AMS system data into an xlsx file
 
-    Revised function ``andes.io.xlsx.write`` to skip non-andes models.
+    Revised from `andes.io.xlsx.write`, where non-ANDES models
+    are skipped if `to_andes` is True.
 
     Parameters
     ----------
@@ -59,22 +61,24 @@ def _write_system(system, writer, skip_empty, to_andes=False):
     """
     Write the system to pandas ExcelWriter
 
-    Rewrite function ``andes.io.xlsx._write_system`` to skip non-andes sheets.
+    Revised from `andes.io.xlsx._write_system`, where non-ANDES models
+    are skipped if `to_andes` is True.
     """
+    summary_found = False
     for name, instance in system.models.items():
-        if skip_empty and instance.n == 0:
+        df = model2df(instance, skip_empty, to_andes=to_andes)
+        if df is None:
             continue
-        instance.cache.refresh("df_in")
-        if to_andes:
-            if name not in ad_models:
-                continue
-            # NOTE: ommit parameters that are not in ANDES
-            skip_params = []
-            ams_params = list(instance.params.keys())
-            andes_params = list(empty_adsys.models[name].params.keys())
-            skip_params = list(set(ams_params) - set(andes_params))
-            df = instance.cache.df_in.drop(skip_params, axis=1, errors='ignore')
-        else:
-            df = instance.cache.df_in
+            if name == summary_name:
+                df = pd.concat([pd.DataFrame([summary_row]), df], ignore_index=True)
+                df.index.name = "uid"
+                summary_found = True
+
         df.to_excel(writer, sheet_name=name, freeze_panes=(1, 0))
+
+    if not summary_found:
+        df = pd.DataFrame([summary_row])
+        df.index.name = "uid"
+        df.to_excel(writer, sheet_name=summary_name, freeze_panes=(1, 0))
+
     return writer

@@ -20,6 +20,18 @@ Routine reference
 Use the left navigation pane to locate the group and model
 and view details.
 
+Typical acronyms used in AMS include:
+
++------------+--------------------+
+| Acronym    | Meaning            |
++============+====================+
+| OPF        | Optimal Power Flow |
++------------+--------------------+
+| ED         | Economic Dispatch  |
++------------+--------------------+
+| UC         | Unit Commitment    |
++------------+--------------------+
+
 """
 
     out += ss.supported_routines(export='rest')

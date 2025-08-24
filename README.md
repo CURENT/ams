@@ -1,11 +1,11 @@
 # LTB AMS
 
+<img src="docs/source/images/sponsors/CURENT_Logo_NameOnTrans.png" alt="CURENT ERC Logo" width="300" height="auto">
+
 Python Software for Power System Scheduling Modeling and Co-Simulation with Dynamics, serving as the market simulator for the [CURENT Largescale Testbed][LTB Repository].
 
 ![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
 [![DOI:10.1109/TSTE.2025.3528027](https://zenodo.org/badge/DOI/10.1109/TSTE.2025.3528027.svg)](https://ieeexplore.ieee.org/document/10836855)
-
-<img src="docs/source/images/sponsors/CURENT_Logo_NameOnTrans.png" alt="CURENT ERC Logo" width="300" height="auto">
 
 | Badges |  |  |
 |---|---|---|
@@ -15,16 +15,16 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 | Tag | [![GitHub Tag](https://img.shields.io/github/v/tag/CURENT/ams)](https://github.com/CURENT/ams/tags) | ![GitHub commits since latest release (branch)](https://img.shields.io/github/commits-since/curent/ams/latest/develop) |
 | Documentation | [![Read the Docs](https://img.shields.io/readthedocs/ams?label=stable)](https://ltb.readthedocs.io/projects/ams/en/stable/?badge=stable) | [![Read the Docs](https://img.shields.io/readthedocs/ams?label=develop)](https://ltb.readthedocs.io/projects/ams/en/develop/?badge=develop) |
 | Download | [![PyPI - Downloads](https://img.shields.io/pypi/dm/ltbams)](https://pypi.org/project/ltbams/) | [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ltbams/badges/downloads.svg)](https://anaconda.org/conda-forge/ltbams) |
-| Code Quality | ![Codacy Badge](https://app.codacy.com/project/badge/Grade/69456da1b8634f2f984bd769e35f0050) | ![Codacy Badge](https://app.codacy.com/project/badge/Coverage/69456da1b8634f2f984bd769e35f0050) |
-| Code Cov | ![codecov](https://codecov.io/gh/CURENT/ams/graph/badge.svg?token=RZI5GLLBQH) |  |
+| Quality | ![Codacy Badge](https://app.codacy.com/project/badge/Grade/69456da1b8634f2f984bd769e35f0050) | [![codebeat badge](https://codebeat.co/badges/6c8a53d2-cffd-4787-8c49-d59742a95205)](https://codebeat.co/projects/github-com-curent-ams-master) |
+| Coverage | ![Codacy Badge](https://app.codacy.com/project/badge/Coverage/69456da1b8634f2f984bd769e35f0050) | ![codecov](https://codecov.io/gh/CURENT/ams/graph/badge.svg?token=RZI5GLLBQH) |
 | Last Commit | ![GitHub last commit (master)](https://img.shields.io/github/last-commit/CURENT/ams/master?label=last%20commit%20to%20master) | ![GitHub last commit (develop)](https://img.shields.io/github/last-commit/CURENT/ams/develop?label=last%20commit%20to%20develop) |
-| CI | [![Compatibility](https://github.com/CURENT/ams/actions/workflows/compatibility.yml/badge.svg)](https://github.com/CURENT/ams/actions/workflows/compatibility.yml) | [![Build Status](https://dev.azure.com/curentltb/ams/_apis/build/status%2FCURENT.ams?branchName=scuc)](https://dev.azure.com/curentltb/ams/_build/latest?definitionId=2&branchName=scuc) |
-| CD | [![Publish](https://github.com/CURENT/ams/actions/workflows/publish-pypi.yml/badge.svg)](https://github.com/CURENT/ams/actions/workflows/publish-pypi.yml) |  |
+| CI | [![Compatibility](https://github.com/CURENT/ams/actions/workflows/compatibility.yml/badge.svg)](https://github.com/CURENT/ams/actions/workflows/compatibility.yml) | [![Build Status](https://dev.azure.com/curentltb/ams/_apis/build/status%2FCURENT.ams?branchName=master)](https://dev.azure.com/curentltb/ams/_build/latest?definitionId=2&branchName=master) |
+| CD | [![Publish](https://github.com/CURENT/ams/actions/workflows/publish-pypi.yml/badge.svg)](https://github.com/CURENT/ams/actions/workflows/publish-pypi.yml) | [![Build Status](https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/ltbams-feedstock?branchName=main)](https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=21708&branchName=main) |
 | Structure | [![Structure](https://img.shields.io/badge/code_base-visualize-blue)](https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=CURENT%2Fams) | [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/CURENT/ams) |
 | Dependency | [![libraries](https://img.shields.io/librariesio/release/pypi/ltbams)](https://libraries.io/pypi/ltbams) |  |
 | Try on Binder | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/curent/ams/master) |  |
 
-# Why AMS
+## Why AMS
 
 AMS facilitates **Dynamics Incorporated Scheduling** and **Scheduling-Dynamics Co-Simulation**
 through an integrated interface with ANDES.
@@ -101,7 +101,7 @@ Use the following resources to get involved.
 -  Check out the source code used for [benchmark][benchmark]
 -  Check out and and cite our [paper][paper]
 
-# Installation
+## Installation
 
 AMS is released as ``ltbams`` on PyPI and conda-forge.
 Install from PyPI using pip:
@@ -140,11 +140,11 @@ pip install git+https://github.com/CURENT/ams.git
 - `cvxpy` is distributed with the open source solvers CLARABEL, OSQP, and SCS, but MIP-capable solvers need separate installation
 - `cvxpy` versions **below 1.5** are incompatible with `numpy` versions **2.0 and above**
 - If the solver `SCIP` encounters an import error caused by a missing `libscip.9.1.dylib`, try reinstalling its Python interface by running `pip install pyscipopt --no-binary scip --force`
-- `kvxopt` is recommended to install via `conda` as sometimes ``pip`` struggles to set the correct path for compiled libraries, more detailes can be found in this closed issue [Bug with dependency kvxopt 1.3.2.0](https://github.com/CURENT/andes/issues/508)
+- For the ImportError related to `kvxopt`, it is recommended to reinstall it via `conda` as sometimes ``pip`` struggles to set the correct path for compiled libraries. More details can be found in this closed issue [Bug with dependency kvxopt 1.3.2.0](https://github.com/CURENT/andes/issues/508)
 - Versions **1.0.0** and **1.0.1** are only available on PyPI
 - Version **0.9.9** has known issues and has been yanked from PyPI
 
-# Example Usage
+## Example Usage
 
 ```python
 import ams
@@ -165,12 +165,15 @@ sa
 >>> <andes.system.System at 0x14bd98190>
 ```
 
-# Citing AMS
+Here, RTED stands for Real-Time Economic Dispatch.
+For a full list of acronyms used in the library, please consult the [Documentation - Routine Reference](https://ltb.readthedocs.io/projects/ams/en/stable/routineref.html#routine-reference).
+
+## Citing AMS
 If you use AMS for research or consulting, please cite the following paper in your publication that uses AMS:
 
 > J. Wang et al., "Dynamics-Incorporated Modeling Framework for Stability Constrained Scheduling Under High-Penetration of Renewable Energy," in IEEE Transactions on Sustainable Energy, vol. 16, no. 3, pp. 1673-1685, July 2025, doi: 10.1109/TSTE.2025.3528027.
 
-# Sponsors and Contributors
+## Sponsors and Contributors
 AMS is the scheduling simulation engine for the CURENT Largescale Testbed (LTB).
 More information about CURENT LTB can be found at the [LTB Repository][LTB Repository].
 
@@ -181,15 +184,8 @@ This work was supported in part by the Advanced Grid Research and Development Pr
 
 See [GitHub contributors][GitHub contributors] for the contributor list.
 
-# License
+## License
 AMS is licensed under the [GPL v3 License](./LICENSE).
-
-# Related Projects
-- [Popular Open Source Libraries for Power System Analysis](https://github.com/ps-wiki/best-of-ps)
-- [G-PST Tools Portal](https://g-pst.github.io/tools/): An open tools portal with a classification approach
-- [Open Source Software (OSS) for Electricity Market Research, Teaching, and Training](https://www2.econ.iastate.edu/tesfatsi/ElectricOSS.htm)
-
-Some commercial solvers provide academic licenses, such as COPT, GUROBI, CPLEX, and MOSEK.
 
 * * *
 
