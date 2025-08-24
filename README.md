@@ -140,7 +140,7 @@ pip install git+https://github.com/CURENT/ams.git
 - `cvxpy` is distributed with the open source solvers CLARABEL, OSQP, and SCS, but MIP-capable solvers need separate installation
 - `cvxpy` versions **below 1.5** are incompatible with `numpy` versions **2.0 and above**
 - If the solver `SCIP` encounters an import error caused by a missing `libscip.9.1.dylib`, try reinstalling its Python interface by running `pip install pyscipopt --no-binary scip --force`
-- `kvxopt` is recommended to install via `conda` as sometimes ``pip`` struggles to set the correct path for compiled libraries, more detailes can be found in this closed issue [Bug with dependency kvxopt 1.3.2.0](https://github.com/CURENT/andes/issues/508)
+- For the ImportError related to `kvxopt`, it is recommended to reinstall it via `conda` as sometimes ``pip`` struggles to set the correct path for compiled libraries. More details can be found in this closed issue [Bug with dependency kvxopt 1.3.2.0](https://github.com/CURENT/andes/issues/508)
 - Versions **1.0.0** and **1.0.1** are only available on PyPI
 - Version **0.9.9** has known issues and has been yanked from PyPI
 
