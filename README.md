@@ -165,6 +165,9 @@ sa
 >>> <andes.system.System at 0x14bd98190>
 ```
 
+Here, RTED stands for Real-Time Economic Dispatch.
+For a full list of acronyms used in the library, please consult the [Documentation - Routine Reference](https://ltb.readthedocs.io/projects/ams/en/stable/routineref.html#routine-reference).
+
 ## Citing AMS
 If you use AMS for research or consulting, please cite the following paper in your publication that uses AMS:
 
