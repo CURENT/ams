@@ -777,8 +777,8 @@ class System(adSystem):
         """
         return write_m(self, outfile=outfile, overwrite=overwrite)
 
-    def to_xlsx(self, outfile: str, overwrite: bool = None,
-                skip_empty: bool = True, add_book: bool = None,
+    def to_xlsx(self, outfile: str, overwrite: Optional[bool] = None,
+                skip_empty: bool = True, add_book: Optional[str] = None,
                 to_andes: bool = False):
         """
         Export an AMS system to an Excel file.
