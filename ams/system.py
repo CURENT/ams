@@ -746,7 +746,7 @@ class System(adSystem):
         """
         return system2mpc(self)
 
-    def to_m(self, outfile: str, overwrite: bool = None):
+    def to_m(self, outfile: str, overwrite: Optional[bool] = None):
         """
         Export an AMS system to a MATPOWER M-file.
         Wrapper method for `ams.io.matpower.write`.
@@ -804,9 +804,9 @@ class System(adSystem):
                           skip_empty=skip_empty, overwrite=overwrite,
                           add_book=add_book, to_andes=to_andes)
 
-    def to_json(self, outfile: str, skip_empty: bool = True,
-                overwrite: bool = None,
-                to_andes: bool = False) -> bool:
+    def to_json(self, outfile: str, skip_empty: Optional[bool] = True,
+                overwrite: Optional[bool] = None,
+                to_andes: Optional[bool] = False) -> bool:
         """
         Export an AMS system to a JSON file.
         Wrapper method for `ams.io.json.write`.
