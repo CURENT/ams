@@ -2,13 +2,6 @@
 EV Aggregator module.
 
 EVD is the generated datasets, and EVA is the aggregator model.
-
-Reference:
-[1] J. Wang et al., "Electric Vehicles Charging Time Constrained Deliverable Provision of Secondary
-Frequency Regulation," in IEEE Transactions on Smart Grid, doi: 10.1109/TSG.2024.3356948.
-[2] M. Wang, Y. Mu, Q. Shi, H. Jia and F. Li, "Electric Vehicle Aggregator Modeling and Control for
-Frequency Regulation Considering Progressive State Recovery," in IEEE Transactions on Smart Grid,
-vol. 11, no. 5, pp. 4176-4189, Sept. 2020, doi: 10.1109/TSG.2020.2981843.
 """
 
 import logging
@@ -50,6 +43,17 @@ class EVD(ModelData, Model):
     """
     In the EVD, each single EV is recorded as a device with its own parameters.
     The parameters are generated from given statistical distributions.
+
+    References
+    ----------
+    1. J. Wang et al., "Electric Vehicles Charging Time Constrained
+       Deliverable Provision of Secondary Frequency Regulation," in IEEE
+       Transactions on Smart Grid, vol. 15, no. 4, pp. 3892-3903, July
+       2024, doi: 10.1109/TSG.2024.3356948.
+    2. M. Wang, Y. Mu, Q. Shi, H. Jia and F. Li, "Electric Vehicle Aggregator
+       Modeling and Control for Frequency Regulation Considering Progressive
+       State Recovery," in IEEE Transactions on Smart Grid, vol. 11, no. 5,
+       pp. 4176-4189, Sept. 2020, doi: 10.1109/TSG.2020.2981843.
     """
 
     def __init__(self, N=10000, Ns=20, Tagc=4, SOCf=0.2, r=0.5,

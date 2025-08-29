@@ -11,7 +11,9 @@ from collections import OrderedDict
 from andes.io.json import (testlines, read)  # NOQA
 from andes.utils.paths import confirm_overwrite
 
-from ams.shared import empty_adsys, ad_models
+from ams.shared import pd
+from ams.shared import summary_row, summary_name, model2df
+
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +26,8 @@ def write(system, outfile, skip_empty=True, overwrite=None,
     If to_andes is True, only write models that are in ANDES,
     but the outfile might not be able to be read back into AMS.
 
-    Revise function ``andes.io.json.write`` to skip non-andes models.
+    Revised from `andes.io.json.write`, where non-andes models
+    are skipped if `to_andes` is True.
 
     Parameters
     ----------
@@ -63,20 +66,21 @@ def _dump_system(system, skip_empty, orient='records', to_andes=False):
     them all in an OrderedDict.
     """
     out = OrderedDict()
+    summary_found = False
     for name, instance in system.models.items():
-        if skip_empty and instance.n == 0:
+        df = model2df(instance, skip_empty, to_andes=to_andes)
+        if df is None:
             continue
-        if to_andes:
-            if name not in ad_models:
-                continue
-            # NOTE: ommit parameters that are not in ANDES
-            skip_params = []
-            ams_params = list(instance.params.keys())
-            andes_params = list(empty_adsys.models[name].params.keys())
-            skip_params = list(set(ams_params) - set(andes_params))
-            df = instance.cache.df_in.drop(skip_params, axis=1, errors='ignore')
-            out[name] = df.to_dict(orient=orient)
-        else:
-            df = instance.cache.df_in
-            out[name] = df.to_dict(orient=orient)
+
+        if name == summary_name:
+            df = pd.concat([pd.DataFrame([summary_row]), df], ignore_index=True)
+            df.index.name = "uid"
+            summary_found = True
+        out[name] = df.to_dict(orient=orient)
+
+    if not summary_found:
+        df = pd.DataFrame([summary_row])
+        df.index.name = "uid"
+        out[summary_name] = df.to_dict(orient=orient)
+
     return json.dumps(out, indent=2)

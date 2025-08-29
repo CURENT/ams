@@ -174,13 +174,14 @@ class OptzBase:
         """
         Return all the indexes of this item.
 
-        .. note::
-            New in version 1.0.0.
-
         Returns
         -------
         list
             A list of indexes.
+
+        Notes
+        -----
+        .. versionadded:: 1.0.0
         """
 
         if self.is_group:

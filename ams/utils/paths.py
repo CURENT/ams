@@ -271,21 +271,17 @@ def get_export_path(system, fname, path=None, fmt='csv'):
     fname : str
         The descriptive file name, e.g., 'PTDF', or 'DCOPF'.
     path : str, optional
-        The desired output path.
-        - If it's a directory, the file name will be generated.
-        - If it's a full file path (with extension), the filename part will be used
-          as the base, and the `fmt` argument will determine the final extension.
-        - If None, the current working directory will be used, and the filename will
-          be generated.
+        The desired output path. For a directory, the file name will be generated;
+        For a full file path, the base name will be used with the specified format;
+        For None, the current working directory will be used.
     fmt : str, optional
         The file format to export, e.g., 'csv', 'json'. Default is 'csv'.
 
     Returns
     -------
-    tuple
-        (str, str): A tuple containing:
-            - The **absolute export path** (e.g., '/home/user/project/data_Routine.csv').
-            - The **export file name** (e.g., 'data_Routine.csv'), including the format extension.
+    tuple : (str, str)
+        - The absolute export path (e.g., '/home/user/project/data_Routine.csv').
+        - The export file name (e.g., 'data_Routine.csv'), including the format extension.
     """
     # Determine the base name from system.files.fullname or default to "Untitled"
     if system.files.fullname is None:

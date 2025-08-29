@@ -235,9 +235,11 @@ class Model:
 
         Notes
         -----
-        New in version 0.9.14: Added the signature `attr` to alter specific attributes.
-        This feature is useful when you need to manipulate parameter values in the system
-        base and ensure that these changes are reflected in the dumped case file.
+        .. versionchanged:: 0.9.14
+
+        The ``attr`` argument was added to allow altering specific attributes.
+        This is useful when manipulating parameter values in the system base
+        and ensuring that changes are reflected in the dumped case file.
         """
 
         instance = self.__dict__[src]
@@ -307,6 +309,11 @@ class Model:
         Return the index of the model instance.
         Equivalent to ``self.idx.v``, develoepd for consistency with group method
         ``get_idx``.
+
+        Notes
+        -----
+        .. deprecated:: 1.0.0
+           Use ``get_all_idxes`` instead.
         """
         return self.idx.v
 
@@ -314,13 +321,14 @@ class Model:
         """
         Return all the indexes of this model.
 
-        .. note::
-            New in version 1.0.0. Add to follow the group method ``get_all_idxes``.
-
         Returns
         -------
         list
             A list of indexes.
+
+        Notes
+        -----
+        .. versionadded:: 1.0.0
         """
         return self.idx.v
 

@@ -17,7 +17,7 @@ class DOPF(DCOPF):
     UNDER DEVELOPMENT!
 
     References
-    -----------------
+    ----------
     1. L. Bai, J. Wang, C. Wang, C. Chen, and F. Li, “Distribution Locational Marginal Pricing (DLMP)
        for Congestion Management and Voltage Support,” IEEE Trans. Power Syst., vol. 33, no. 4,
        pp. 4061-4073, Jul. 2018, doi: 10.1109/TPWRS.2017.2767632.
@@ -116,7 +116,7 @@ class DOPFVIS(DOPF):
     UNDER DEVELOPMENT!
 
     References
-    -----------------
+    ----------
     1. L. Bai, J. Wang, C. Wang, C. Chen, and F. Li, “Distribution Locational Marginal Pricing (DLMP)
        for Congestion Management and Voltage Support,” IEEE Trans. Power Syst., vol. 33, no. 4,
        pp. 4061-4073, Jul. 2018, doi: 10.1109/TPWRS.2017.2767632.

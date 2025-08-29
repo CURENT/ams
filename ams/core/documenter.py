@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 class Documenter:
     """
-    Helper class for documenting models.
+    Helper class for documenting models, inspired by
+    `andes.core.documenter.Documenter`.
 
     Parameters
     ----------

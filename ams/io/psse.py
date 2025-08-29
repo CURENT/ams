@@ -16,7 +16,8 @@ def read(system, file):
     """
     Read PSS/E RAW file v32/v33 formats.
 
-    Revised from ``andes.io.psse.read`` to complete model ``Zone`` when necessary.
+    Revised from `andes.io.psse.read`, where model ``Zone`` is completed
+    when necessary.
     """
     ret = ad_read(system, file)
     # Extract zone data

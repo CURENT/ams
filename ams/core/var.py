@@ -14,7 +14,7 @@ class Algeb:
     """
     Algebraic variable class.
 
-    This class is simplified from ``andes.core.var.Algeb``.
+    Simplified from `andes.core.var.Algeb`.
     """
 
     def __init__(self,

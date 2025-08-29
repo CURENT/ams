@@ -21,8 +21,8 @@ class TestExportJSON(unittest.TestCase):
             default_config=True,
             no_output=True,
         )
-        self.expected_json_DCOPF = 'pjm5bus_demo_DCOPF.json'
-        self.expected_json_ED = 'pjm5bus_demo_ED.json'
+        self.expected_json_DCOPF = 'pjm5bus_demo_DCOPF_out.json'
+        self.expected_json_ED = 'pjm5bus_demo_ED_out.json'
 
     def test_no_export(self):
         """

@@ -89,7 +89,7 @@ class TestMatProcessorBasic(unittest.TestCase):
 
     def test_MParams_export(self) -> None:
         """
-        Test MParams export.
+        Test MParams export CSV.
         """
         cft = self.mats.Cft.export_csv()
         self.assertTrue(os.path.exists(cft))

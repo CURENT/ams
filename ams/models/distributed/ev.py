@@ -12,13 +12,17 @@ class EV1(ModelData, Model):
     """
     Aggregated EV model for scheduling at transmission level.
 
-    For co-simulation with ADNES, it is expected to be used in
+    For co-simulation with ANDES, it is expected to be used in
     conjunction with the dynamic models `EV1` or `EV2`.
 
-    Reference:
-
-    [1] J. Wang et al., "Electric Vehicles Charging Time Constrained Deliverable Provision of Secondary
-    Frequency Regulation," in IEEE Transactions on Smart Grid, doi: 10.1109/TSG.2024.3356948.
+    References
+    ----------
+    1. J. Wang et al., "Electric Vehicles Charging Time Constrained
+       Deliverable Provision of Secondary Frequency Regulation," in IEEE
+       Transactions on Smart Grid, vol. 15, no. 4, pp. 3892-3903, July
+       2024, doi: 10.1109/TSG.2024.3356948.
+    2. ANDES Documentation, EV1,
+       https://andes.readthedocs.io/en/stable/groupdoc/DG.html#ev1
     """
 
     def __init__(self, system, config):
@@ -53,7 +57,7 @@ class EV1(ModelData, Model):
 
 class EV2(EV1):
     """
-    EV aggregation model at transmission level, identical to :ref:`EV1`.
+    Alias for EV1.
     """
 
     def __init__(self, system=None, config=None) -> None:

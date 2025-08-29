@@ -23,18 +23,13 @@ command_aliases = {
 
 def create_parser():
     """
-    Create a parser for the command-line interface.
+    Create a parser for the command-line interface,
+    revised from `andes.cli.create_parser`.
 
     Returns
     -------
     argparse.ArgumentParser
         Parser with all AMS options
-
-    Notes
-    -----
-    Revised from the ANDES project (https://github.com/CURENT/andes).
-    Original author: Hantao Cui
-    License: GPL3
     """
 
     parser = argparse.ArgumentParser()
