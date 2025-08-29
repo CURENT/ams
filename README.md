@@ -99,7 +99,7 @@ Use the following resources to get involved.
 -  Read release notes highlighted [here][release notes]
 -  Try in Jupyter Notebook on [Binder][Binder]
 -  Check out the source code used for [benchmark][benchmark]
--  Check out and and cite our [paper][paper]
+-  Check out and cite our [paper][paper]
 
 ## Installation
 
