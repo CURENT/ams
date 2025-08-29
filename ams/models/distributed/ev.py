@@ -12,7 +12,7 @@ class EV1(ModelData, Model):
     """
     Aggregated EV model for scheduling at transmission level.
 
-    For co-simulation with ADNES, it is expected to be used in
+    For co-simulation with ANDES, it is expected to be used in
     conjunction with the dynamic models `EV1` or `EV2`.
 
     References
