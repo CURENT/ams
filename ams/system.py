@@ -746,7 +746,13 @@ class System(adSystem):
         """
         return system2mpc(self)
 
-    def to_m(self, outfile: str, overwrite: Optional[bool] = None):
+    def to_m(
+        self,
+        outfile: str,
+        overwrite: Optional[bool] = None,
+        skip_empty: bool = True,
+        to_andes: bool = False
+    ) -> bool:
         """
         Export an AMS system to a MATPOWER M-file.
         Wrapper method for `ams.io.matpower.write`.
@@ -777,11 +783,16 @@ class System(adSystem):
         """
         return write_m(self, outfile=outfile, overwrite=overwrite)
 
-    def to_xlsx(self, outfile: str, overwrite: Optional[bool] = None,
-                skip_empty: bool = True, add_book: Optional[str] = None,
-                to_andes: bool = False):
+    def to_xlsx(
+        self,
+        outfile: str,
+        overwrite: Optional[bool] = None,
+        skip_empty: bool = True,
+        add_book: Optional[str] = None,
+        to_andes: bool = False
+    ) -> bool:
         """
-        Export an AMS system to an Excel file.
+        Export the AMS system to an Excel (XLSX) file.
         Wrapper method for `ams.io.xlsx.write`.
 
         Parameters
@@ -793,10 +804,21 @@ class System(adSystem):
         skip_empty : bool, optional
             If True, skip output of empty models (n = 0). Default is True.
         add_book : str, optional
-            An optional model to be added to the output spreadsheet.
-            If None, no additional book is added. Default is None.
+            An optional workbook to be added to the output spreadsheet.
+            If None, no additional workbook is added. Default is None.
         to_andes : bool, optional
             If True, write to an ANDES system, where non-ANDES models are skipped.
+
+        Returns
+        -------
+        bool
+            True if the file is written successfully, False otherwise.
+
+        Notes
+        -----
+        - Only models with n > 0 are exported if `skip_empty` is True.
+        - If `to_andes` is True, only ANDES-compatible models are exported.
+        - The `add_book` parameter allows merging another workbook into the output.
 
         .. versionadded:: 1.0.10
         """
@@ -804,11 +826,15 @@ class System(adSystem):
                           skip_empty=skip_empty, overwrite=overwrite,
                           add_book=add_book, to_andes=to_andes)
 
-    def to_json(self, outfile: str, skip_empty: Optional[bool] = True,
-                overwrite: Optional[bool] = None,
-                to_andes: Optional[bool] = False) -> bool:
+    def to_json(
+        self,
+        outfile: str,
+        overwrite: Optional[bool] = None,
+        skip_empty: bool = True,
+        to_andes: bool = False
+    ) -> bool:
         """
-        Export an AMS system to a JSON file.
+        Export the AMS system to a JSON file.
         Wrapper method for `ams.io.json.write`.
 
         Parameters
@@ -822,18 +848,32 @@ class System(adSystem):
         to_andes : bool, optional
             If True, write to an ANDES system, where non-ANDES models are skipped.
 
+        Returns
+        -------
+        bool
+            True if the file is written successfully, False otherwise.
+
+        Notes
+        -----
+        - Only models with n > 0 are exported if `skip_empty` is True.
+        - If `to_andes` is True, only ANDES-compatible models are exported.
+
         .. versionadded:: 1.0.10
         """
         return write_json(self, outfile=outfile,
                           skip_empty=skip_empty, overwrite=overwrite,
                           to_andes=to_andes)
 
-    def to_raw(self, outfile: str, overwrite: bool = None):
+    def to_raw(
+        self,
+        outfile: str,
+        overwrite: Optional[bool] = None,
+        skip_empty: bool = True,
+        to_andes: bool = False
+    ) -> bool:
         """
-        Export an AMS system to a v33 PSS/E RAW file.
+        Export the AMS system to a PSS/E RAW v33 file.
         Wrapper method for `ams.io.psse.write_raw`.
-
-        This method has not been fully benchmarked yet!
 
         Parameters
         ----------
@@ -841,6 +881,21 @@ class System(adSystem):
             The output file name.
         overwrite : bool, optional
             If True, overwrite the existing file. Default is None.
+        skip_empty : bool, optional
+            If True, skip output of empty models (n = 0). Default is True.
+        to_andes : bool, optional
+            If True, write only ANDES-compatible models.
+
+        Returns
+        -------
+        bool
+            True if the file is written successfully, False otherwise.
+
+        Notes
+        -----
+        - Only models with n > 0 are exported if `skip_empty` is True.
+        - If `to_andes` is True, only ANDES-compatible models are exported.
+        - This method has not been fully benchmarked yet.
 
         .. versionadded:: 1.0.10
         """
