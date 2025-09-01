@@ -69,8 +69,8 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
 
     Notes
     -----
-    1. Formulations has been adjusted with interval ``config.t``
-    2. The tie-line flow has not been implemented in formulations.
+    - The formulations has been adjusted with interval ``config.t``
+    - The tie-line flow has not been implemented in formulations.
 
     References
     ----------

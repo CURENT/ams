@@ -39,12 +39,10 @@ class REGCA1(REGCData, Model):
     """
     Renewable generator scheduling model.
 
-    Reference:
-
-    [1] ANDES Documentation, REGCA1
-
-    Available:
-    https://docs.andes.app/en/latest/groupdoc/RenGen.html#regca1
+    References
+    ----------
+    1. ANDES Documentation, REGCA1,
+       https://andes.readthedocs.io/en/stable/groupdoc/RenGen.html#regca1
     """
 
     def __init__(self, system=None, config=None) -> None:
@@ -56,7 +54,7 @@ class REGCA1(REGCData, Model):
 class REGCV1(REGCData, Model):
     """
     Voltage-controlled converter model (virtual synchronous generator) with
-    inertia emulation.
+    inertia emulation, for scheduling purposes.
 
     Here Mmax and Dmax are assumed to be constant, but they might subject to
     the operating condition of the converter.
@@ -67,13 +65,10 @@ class REGCV1(REGCData, Model):
     - Generation cost is defined by model :ref:`GCost`
     - Inertia emulation cost is defined by model :ref:`VSGCost`
 
-    Reference:
-
-    [1] ANDES Documentation, REGCV1
-
-    Available:
-
-    https://docs.andes.app/en/latest/groupdoc/RenGen.html#regcv1
+    References
+    ----------
+    1. ANDES Documentation, REGCV1,
+       https://andes.readthedocs.io/en/stable/groupdoc/RenGen.html#regcv1
     """
 
     def __init__(self, system=None, config=None) -> None:
@@ -100,15 +95,12 @@ class REGCV1(REGCData, Model):
 
 class REGCV2(REGCV1):
     """
-    Voltage-controlled VSC, identical to :ref:`REGCV1`.
+    Alias for REGCV1, for scheduling purposes.
 
-    Reference:
-
-    [1] ANDES Documentation, REGCV2
-
-    Available:
-
-    https://docs.andes.app/en/latest/groupdoc/RenGen.html#regcv2
+    References
+    ----------
+    1. ANDES Documentation, REGCV2,
+       https://andes.readthedocs.io/en/stable/groupdoc/RenGen.html#regcv2
     """
 
     def __init__(self, system=None, config=None) -> None:

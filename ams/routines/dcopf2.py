@@ -18,15 +18,25 @@ logger = logging.getLogger(__name__)
 
 class DCOPF2(DCOPF):
     """
-    DC optimal power flow (DCOPF) using PTDF.
+    DC optimal power flow (DCOPF) using PTDF formulation.
+
     For large cases, it is recommended to build the PTDF first, especially when incremental
     build is necessary.
 
     Notes
     -----
-    1. This routine requires PTDF matrix.
-    2. Nodal price ``pi`` is calculated with three parts.
-    3. Bus angle ``aBus`` is calculated after solving the problem.
+    - This routine requires PTDF matrix.
+    - Nodal price ``pi`` is calculated with three parts.
+    - Bus angle ``aBus`` is calculated after solving the problem.
+
+    References
+    ----------
+    1. R. D. Zimmerman, C. E. Murillo-Sanchez, and R. J. Thomas, “MATPOWER: Steady-State
+       Operations, Planning, and Analysis Tools for Power Systems Research and Education,” IEEE
+       Trans. Power Syst., vol. 26, no. 1, pp. 12-19, Feb. 2011
+    2. Y. Chen et al., "Security-Constrained Unit Commitment for Electricity Market: Modeling,
+       Solution Methods, and Future Challenges," in IEEE Transactions on Power Systems, vol. 38, no. 5,
+       pp. 4668-4681, Sept. 2023
     """
 
     def __init__(self, system, config):

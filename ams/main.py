@@ -48,7 +48,7 @@ def config_logger(stream_level=logging.INFO, *,
     stream : bool, optional
         Create a `StreamHandler` for `stdout` if ``True``.
         If ``False``, the handler will not be created.
-    file : bool, optionsl
+    file : bool, optional
         True if logging to ``log_file``.
     log_file : str, optional
         Logg file name for `FileHandler`, ``'ams.log'`` by default.
@@ -67,9 +67,12 @@ def config_logger(stream_level=logging.INFO, *,
 
     Notes
     -----
-    Copied from the ANDES project (https://github.com/CURENT/andes).
+    Copied from the ANDES project:
+    https://github.com/CURENT/andes
+
     Original author: Hantao Cui
-    License: GPL3
+
+    License: GNU General Public License v3.0 (GPL-3.0)
     """
     lg = logging.getLogger('ams')
     lg.setLevel(logging.DEBUG)
@@ -118,6 +121,7 @@ def load(case, setup=True,
     """
     Load a case and set up a system without running routine.
     Return a system.
+    Revised from `andes.main.load`.
 
     Takes other kwargs recognizable by ``System``,
     such as ``addfile``, ``input_path``, and ``no_putput``.
@@ -137,12 +141,6 @@ def load(case, setup=True,
     If one need to add devices in addition to these from the case
     file, do ``setup=False`` and call ``System.add()`` to add devices.
     When done, manually invoke ``setup()`` to set up the system.
-
-    Notes
-    -----
-    Revised from the ANDES project (https://github.com/CURENT/andes).
-    Original author: Hantao Cui
-    License: GPL3
     """
     if use_input_path:
         input_path = kwargs.get('input_path', '')
@@ -172,6 +170,8 @@ def run_case(case, *, routine='pflow', profile=False,
     Run single simulation case for the given full path.
     Use ``run`` instead of ``run_case`` whenever possible.
 
+    Revised from `andes.main.run_case`.
+
     Argument ``input_path`` will not be prepended to ``case``.
 
     Arguments recognizable by ``load`` can be passed to ``run_case``.
@@ -192,12 +192,6 @@ def run_case(case, *, routine='pflow', profile=False,
     add_book : str, optional
         Name of the device to be added to an excel case
         as a new sheet.
-
-    Notes
-    -----
-    Revised from the ANDES project (https://github.com/CURENT/andes).
-    Original author: Hantao Cui
-    License: GPL3
     """
 
     pr = cProfile.Profile()
@@ -270,9 +264,12 @@ def _run_mp_proc(cases, ncpu=NCPUS_PHYSICAL, **kwargs):
 
     Notes
     -----
-    Copied from the ANDES project (https://github.com/CURENT/andes).
+    Copied from the ANDES project:
+    https://github.com/CURENT/andes
+
     Original author: Hantao Cui
-    License: GPL3
+
+    License: GNU General Public License v3.0 (GPL-3.0)
     """
 
     # start processes
@@ -310,9 +307,12 @@ def _run_mp_pool(cases, ncpu=NCPUS_PHYSICAL, verbose=logging.INFO, **kwargs):
 
     Notes
     -----
-    Copied from the ANDES project (https://github.com/CURENT/andes).
+    Copied from the ANDES project:
+    https://github.com/CURENT/andes
+
     Original author: Hantao Cui
-    License: GPL3
+
+    License: GNU General Public License v3.0 (GPL-3.0)
     """
 
     pool = Pool(ncpu)
@@ -369,9 +369,12 @@ def run(filename, input_path='', verbose=20, mp_verbose=30,
 
     Notes
     -----
-    Copied from the ANDES project (https://github.com/CURENT/andes).
+    Copied from the ANDES project:
+    https://github.com/CURENT/andes
+
     Original author: Hantao Cui
-    License: GPL3
+
+    License: GNU General Public License v3.0 (GPL-3.0)
     """
 
     if is_interactive() and len(logger.handlers) == 0:
@@ -497,9 +500,12 @@ def misc(edit_config='', save_config='', show_license=False, clean=True, recursi
 
     Notes
     -----
-    Copied from the ANDES project (https://github.com/CURENT/andes).
+    Copied from the ANDES project:
+    https://github.com/CURENT/andes
+
     Original author: Hantao Cui
-    License: GPL3
+
+    License: GNU General Public License v3.0 (GPL-3.0)
     """
 
     if edit_conf(edit_config):
@@ -527,13 +533,8 @@ def misc(edit_config='', save_config='', show_license=False, clean=True, recursi
 
 def doc(attribute=None, list_supported=False, config=False, **kwargs):
     """
-    Quick documentation from command-line.
-
-    Notes
-    -----
-    Revised from the ANDES project (https://github.com/CURENT/andes).
-    Original author: Hantao Cui
-    License: GPL3
+    Quick documentation from command-line,
+    revised from `andes.main.doc`.
     """
     system = System()
     if attribute is not None:
@@ -558,13 +559,8 @@ def demo(**kwargs):
 
 def versioninfo():
     """
-    Print version info for AMS and dependencies.
-
-    Notes
-    -----
-    Revised from the ANDES project (https://github.com/CURENT/andes).
-    Original author: Hantao Cui
-    License: GPL3
+    Print version info for AMS and dependencies,
+    revised from `andes.main.versioninfo`.
     """
 
     import numpy as np
@@ -630,9 +626,12 @@ def edit_conf(edit_config: Optional[Union[str, bool]] = ''):
 
     Notes
     -----
-    Copied from the ANDES project (https://github.com/CURENT/andes).
+    Copied from the ANDES project:
+    https://github.com/CURENT/andes
+
     Original author: Hantao Cui
-    License: GPL3
+
+    License: GNU General Public License v3.0 (GPL-3.0)
     """
     ret = False
 
@@ -689,9 +688,12 @@ def save_conf(config_path=None, overwrite=None, **kwargs):
 
     Notes
     -----
-    Copied from the ANDES project (https://github.com/CURENT/andes).
+    Copied from the ANDES project:
+    https://github.com/CURENT/andes
+
     Original author: Hantao Cui
-    License: GPL3
+
+    License: GNU General Public License v3.0 (GPL-3.0)
     """
     ret = False
 
@@ -729,9 +731,12 @@ def remove_output(recursive=False):
 
     Notes
     -----
-    Copied from the ANDES project (https://github.com/CURENT/andes).
+    Copied from the ANDES project:
+    https://github.com/CURENT/andes
+
     Original author: Hantao Cui
-    License: GPL3
+
+    License: GNU General Public License v3.0 (GPL-3.0)
     """
     found = False
     cwd = os.getcwd()
@@ -764,9 +769,12 @@ def selftest(quick=False, extra=False, **kwargs):
 
     Notes
     -----
-    Copied from the ANDES project (https://github.com/CURENT/andes).
+    Copied from the ANDES project:
+    https://github.com/CURENT/andes
+
     Original author: Hantao Cui
-    License: GPL3
+
+    License: GNU General Public License v3.0 (GPL-3.0)
     """
 
     # map verbosity level from logging to unittest

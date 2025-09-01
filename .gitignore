@@ -17,6 +17,9 @@ __pycache__/
 # vscode
 .vscode/*
 
+# intellij
+.idea/*
+
 # Sphinx documentation
 docs/source/modelref.rst
 docs/source/configref.rst

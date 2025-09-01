@@ -17,19 +17,22 @@ logger = logging.getLogger(__name__)
 
 class DCOPF(DCPFBase):
     """
-    DC optimal power flow (DCOPF).
+    DC optimal power flow (DCOPF) using B-theta formulation.
 
     Notes
     -----
-    1. The nodal price is calculated as ``pi`` in ``pic``.
-    2. Devices online status of ``StaticGen``, ``StaticLoad``, and ``Shunt`` are considered in the connectivity
-       matrices ``Cft``, ``Cg``, ``Cl``, and ``Csh``.
+    - The nodal price is calculated as ``pi`` in ``pic``.
+    - Devices online status of ``StaticGen``, ``StaticLoad``, and ``Shunt`` are considered in the connectivity
+      matrices ``Cft``, ``Cg``, ``Cl``, and ``Csh``.
 
     References
     ----------
     1. R. D. Zimmerman, C. E. Murillo-Sanchez, and R. J. Thomas, “MATPOWER: Steady-State
        Operations, Planning, and Analysis Tools for Power Systems Research and Education,” IEEE
        Trans. Power Syst., vol. 26, no. 1, pp. 12-19, Feb. 2011
+    2. Y. Chen et al., "Security-Constrained Unit Commitment for Electricity Market: Modeling,
+       Solution Methods, and Future Challenges," in IEEE Transactions on Power Systems, vol. 38, no. 5,
+       pp. 4668-4681, Sept. 2023
     """
 
     def __init__(self, system, config):
