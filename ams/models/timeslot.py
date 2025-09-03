@@ -21,6 +21,7 @@ def str_list_oconv(x):
 
 class GCommit(ModelData, Model):
     """
+    UNDER DEVELOPMENT!
     Time slot model for generator commitment decisions.
 
     This class holds commitment decisions for generators,
@@ -31,14 +32,14 @@ class GCommit(ModelData, Model):
     `ugd` representing the unit commitment decisions for each generator.
     After solving the UC problem, the `ugd` values can be used for
     Economic Dispatch (ED) as a parameter.
-
-    .. versionadded:: 1.0.13
     """
 
+    # TODO: .. versionadded:: 1.0.13
     def __init__(self, system=None, config=None):
         ModelData.__init__(self)
         Model.__init__(self, system, config)
 
+        # TODO: add IdxParam of generator
         self.ug = NumParam(info='unit commitment decisions',
                            tex_name=r'u_{g}',
                            iconvert=str_list_iconv,
@@ -74,6 +75,13 @@ class EDTSlot(TimeSlot):
     `ug` is the unit commitment decisions.
     Cells in `ug` should have `ng` values seperated by comma,
     where `ng` is the number of `StaticGen` in the system.
+
+    Warnings
+    --------
+    The order of generators in `ug` is determined by the input
+    file, not by explicit mapping. This may cause misinterpretation
+    if the loaded data order changes.
+    Involved routines include: `ED` `UC` and their derivatives.
     """
 
     def __init__(self, system=None, config=None):
@@ -93,6 +101,13 @@ class UCTSlot(TimeSlot):
     `sd` is the zonal load scaling factor.
     Cells in `sd` should have `nz` values seperated by comma,
     where `nz` is the number of `Zone` in the system.
+
+    Warnings
+    --------
+    The order of generators in `ug` is determined by the input
+    file, not by explicit mapping. This may cause misinterpretation
+    if the loaded data order changes.
+    Involved routines include: `ED` `UC` and their derivatives.
     """
 
     def __init__(self, system=None, config=None):

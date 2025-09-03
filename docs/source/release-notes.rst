@@ -22,7 +22,6 @@ v1.0.13 (2025-08-18)
   to save and load matrices from files
 - Add methods ``export_json``, ``load_json`` in ``RoutineBase``
   to save and load routine results from JSON files
-- Draft model ``GCommit`` for generator commitment decisions data
 
 v1.0.12 (2025-05-29)
 ----------------------
