@@ -1,5 +1,5 @@
 """
-Model for rolling horizon used in scheduling.
+Models for multi-period scheduling.
 """
 
 from andes.core import ModelData, NumParam
