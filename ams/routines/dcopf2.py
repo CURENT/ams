@@ -87,7 +87,8 @@ class DCOPF2(DCOPF):
         pic = '-PTDFt@(plfub.dual_variables[0] - plflb.dual_variables[0])'
         self.pic = ExpressionCalc(info='Congestion price',
                                   name='pic', unit='$/p.u.',
-                                  e_str=pic)
+                                  e_str=pic,
+                                  model='Bus', src=None)
 
         # NOTE: another implementation of self.pi.e_str can be:
         # self.pi.e_str = self.pie.e_str + self.pic.e_str
