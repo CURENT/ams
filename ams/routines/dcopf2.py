@@ -29,7 +29,7 @@ class DCOPF2(DCOPF):
     - LMP ``pi`` is calculated with two parts, energy price and congestion price.
     - Bus angle ``aBus`` is calculated after solving the problem.
     - In export results, ``pi`` and ``pic`` are kept for each bus, while ``pie``
-        can be restored manually by ``pie = pi - pic`` if needed.
+      can be restored manually by ``pie = pi - pic`` if needed.
 
     Warning
     -------
