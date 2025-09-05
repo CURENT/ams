@@ -13,6 +13,8 @@ v1.0.15 (2025-xx-xx)
 ----------------------
 
 - Fix ``DCOPF2.pb`` to use PTDF-based formulation
+- Add a demo to compare ``DCOPF2`` and ``DCOPF``, see
+  ``examples/demonstration/demo_dcopf.ipynb``
 
 v1.0.14 (2025-08-29)
 ----------------------
