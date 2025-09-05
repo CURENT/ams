@@ -82,11 +82,12 @@ class DCOPF2(DCOPF):
 
         # --- rewrite nodal price ---
         self.pie = ExpressionCalc(info='Energy price',
-                                  name='pie',
+                                  name='pie', unit='$/p.u.',
                                   e_str='-pb.dual_variables[0]')
         pic = '-PTDFt@(plfub.dual_variables[0] - plflb.dual_variables[0])'
         self.pic = ExpressionCalc(info='Congestion price',
-                                  name='pic', e_str=pic)
+                                  name='pic', unit='$/p.u.',
+                                  e_str=pic)
 
         # NOTE: another implementation of self.pi.e_str can be:
         # self.pi.e_str = self.pie.e_str + self.pic.e_str
