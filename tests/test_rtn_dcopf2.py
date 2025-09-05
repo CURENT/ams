@@ -101,3 +101,36 @@ class TestDCOPF2(unittest.TestCase):
         a_dcopf = self.ss.DCOPF2.get(src='aBus', attr='v', idx=bus_idx)
         a_acopf = self.ss.ACOPF.get(src='aBus', attr='v', idx=bus_idx)
         np.testing.assert_almost_equal(a_dcopf, a_acopf, decimal=3)
+
+    def test_align_dcopf(self):
+        """
+        Test if results from `DCOPF2` are aligned with those from `DCOPF`.
+        """
+        self.ss.DCOPF.run(solver='CLARABEL')
+        self.ss.mats.build_ptdf()
+        self.ss.DCOPF2.run(solver='CLARABEL')
+
+        pg_idx = self.ss.StaticGen.get_all_idxes()
+        bus_idx = self.ss.Bus.idx.v
+        line_idx = self.ss.Line.idx.v
+
+        DECIMALS = 4
+        pg = self.ss.DCOPF.get(src='pg', attr='v', idx=pg_idx)
+        pg2 = self.ss.DCOPF2.get(src='pg', attr='v', idx=pg_idx)
+        np.testing.assert_almost_equal(pg, pg2, decimal=DECIMALS,
+                                       err_msg="pg between DCOPF2 and DCOPF not match!")
+
+        aBus = self.ss.DCOPF.get(src='aBus', attr='v', idx=bus_idx)
+        aBus2 = self.ss.DCOPF2.get(src='aBus', attr='v', idx=bus_idx)
+        np.testing.assert_almost_equal(aBus, aBus2, decimal=DECIMALS,
+                                       err_msg="aBus between DCOPF2 and DCOPF not match!")
+
+        pi = self.ss.DCOPF.get(src='pi', attr='v', idx=bus_idx)
+        pi2 = self.ss.DCOPF2.get(src='pi', attr='v', idx=bus_idx)
+        np.testing.assert_almost_equal(pi, pi2, decimal=DECIMALS,
+                                       err_msg="pi between DCOPF2 and DCOPF not match!")
+
+        plf = self.ss.DCOPF.get(src='plf', attr='v', idx=line_idx)
+        plf2 = self.ss.DCOPF2.get(src='plf', attr='v', idx=line_idx)
+        np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
+                                       err_msg="plf between DCOPF2 and DCOPF not match!")
