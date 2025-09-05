@@ -28,14 +28,16 @@ class DCOPF2(DCOPF):
     - This routine requires PTDF matrix.
     - LMP ``pi`` is calculated with two parts, energy price and congestion price.
     - Bus angle ``aBus`` is calculated after solving the problem.
+    - In export results, ``pi`` and ``pic`` are kept for each bus, while ``pie``
+      can be restored manually by ``pie = pi - pic`` if needed.
 
     Warning
     -------
     In this implementation, the dual variables for constraints have opposite signs compared
-    to the mathematical formulation:
-    - The dual of `pb` returns a negative value, so energy price is computed as `-pb.dual_variables[0]`.
-    - Similarly, a minus sign is applied to the duals of `plfub` and `plflb` when calculating congestion price.
-    The reason for this sign difference is not yet fully understood.
+    to the mathematical formulation: 1. The dual of `pb` returns a negative value, so energy
+    price is computed as `-pb.dual_variables[0]`. 2. Similarly, a minus sign is applied to
+    the duals of `plfub` and `plflb` when calculating congestion price. The reason for this
+    sign difference is not yet fully understood.
 
     References
     ----------
@@ -87,7 +89,8 @@ class DCOPF2(DCOPF):
         pic = '-PTDFt@(plfub.dual_variables[0] - plflb.dual_variables[0])'
         self.pic = ExpressionCalc(info='Congestion price',
                                   name='pic', unit='$/p.u.',
-                                  e_str=pic)
+                                  e_str=pic,
+                                  model='Bus', src=None)
 
         # NOTE: another implementation of self.pi.e_str can be:
         # self.pi.e_str = self.pie.e_str + self.pic.e_str
