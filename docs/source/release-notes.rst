@@ -9,6 +9,11 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
+v1.0.15 (2025-xx-xx)
+----------------------
+
+- Fix ``DCOPF2.pb`` to use PTDF-based formulation
+
 v1.0.14 (2025-08-29)
 ----------------------
 
