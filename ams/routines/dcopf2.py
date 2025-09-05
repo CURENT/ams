@@ -62,6 +62,9 @@ class DCOPF2(DCOPF):
                            model='mats', src='PTDF',
                            no_parse=True, sparse=True)
 
+        # --- rewrite Constraint pb: power balance ---
+        self.pb.e_str = 'sum(pg) - sum(pd)'
+
         # --- rewrite Expression plf: line flow---
         self.plf.e_str = 'PTDF @ (Cg@pg - Cl@pd - Csh@gsh - Pbusinj)'
 
