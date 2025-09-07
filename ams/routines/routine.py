@@ -1116,7 +1116,8 @@ def collect_data(rtn: RoutineBase, data_dict: Dict, items: Dict, attr: str):
 
 def group_data(rtn: RoutineBase, data_dict: Dict, items: Dict, attr: str):
     """
-    Collect data for export from grouped items.
+    Collect data for export by groups, adding device idx in each group.
+    This is useful when exporting to dictionary formats like JSON.
 
     Parameters
     ----------
