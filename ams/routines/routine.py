@@ -511,6 +511,14 @@ class RoutineBase:
 
         data_dict = OrderedDict()
 
+        # insert summary
+        df = pd.DataFrame([summary_row])
+        df.index.name = "uid"
+        data_dict.update({summary_name: df.to_dict(orient='records')})
+
+        # insert objective value
+        data_dict.update(OrderedDict(Objective=self.obj.v))
+
         group_data(self, data_dict, self.vars, 'v')
         group_data(self, data_dict, self.exprs, 'v')
         group_data(self, data_dict, self.exprcs, 'v')
@@ -1132,15 +1140,6 @@ def group_data(rtn: RoutineBase, data_dict: Dict, items: Dict, attr: str):
 
     .. versionadded:: 1.0.13
     """
-    # insert summary at the beginning
-    df = pd.DataFrame([summary_row])
-    df.index.name = "uid"
-    data_dict.update({summary_name: df.to_dict(orient='records')})
-    data_dict.move_to_end(summary_name, last=False)
-
-    # insert objective value
-    data_dict.update(OrderedDict(Objective=rtn.obj.v))
-
     for key, item in items.items():
         if item.owner is None:
             continue
