@@ -21,7 +21,7 @@ from ams.opt import Param, Var, Constraint, Objective, ExpressionCalc, Expressio
 
 from ams.utils.paths import get_export_path
 
-from ams.shared import pd
+from ams.shared import pd, summary_row, summary_name
 
 logger = logging.getLogger(__name__)
 
@@ -509,7 +509,15 @@ class RoutineBase:
                                           self.class_name + '_out',
                                           path=path, fmt='json')
 
-        data_dict = dict()
+        data_dict = OrderedDict()
+
+        # insert summary
+        df = pd.DataFrame([summary_row])
+        df.index.name = "uid"
+        data_dict.update({summary_name: df.to_dict(orient='records')})
+
+        # insert objective value
+        data_dict.update(OrderedDict(Objective=self.obj.v))
 
         group_data(self, data_dict, self.vars, 'v')
         group_data(self, data_dict, self.exprs, 'v')
@@ -1116,7 +1124,8 @@ def collect_data(rtn: RoutineBase, data_dict: Dict, items: Dict, attr: str):
 
 def group_data(rtn: RoutineBase, data_dict: Dict, items: Dict, attr: str):
     """
-    Collect data for export from grouped items.
+    Collect data for export by groups, adding device idx in each group.
+    This is useful when exporting to dictionary formats like JSON.
 
     Parameters
     ----------

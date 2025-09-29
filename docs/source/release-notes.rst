@@ -9,6 +9,15 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
+v1.0.15 (2025-xx-xx)
+----------------------
+
+- Fix ``DCOPF2.pb`` to use PTDF-based formulation
+- Add a demo to compare ``DCOPF2`` and ``DCOPF``, see
+  ``examples/demonstration/demo_dcopf.ipynb``
+- In DC type routines, set `vBus` value as 1 for placeholder
+- Include Summary and Objective value in exported JSON
+
 v1.0.14 (2025-08-29)
 ----------------------
 

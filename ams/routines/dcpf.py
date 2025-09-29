@@ -3,6 +3,8 @@ Power flow routines.
 """
 import logging
 
+import numpy as np
+
 from ams.opt import Var, Constraint, Expression, Objective
 from ams.routines.routine import RoutineBase
 
@@ -173,6 +175,9 @@ class DCPFBase(RoutineBase):
         """
         Post-solve calculations.
         """
+        # NOTE: for DC type routines, set vBus to 1.0 p.u. as placeholder
+        self.vBus.v = np.ones(self.vBus.shape)
+
         # NOTE: unpack Expressions if owner and arc are available
         for expr in self.exprs.values():
             if expr.owner and expr.src:

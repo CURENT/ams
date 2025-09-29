@@ -26,8 +26,18 @@ class DCOPF2(DCOPF):
     Notes
     -----
     - This routine requires PTDF matrix.
-    - Nodal price ``pi`` is calculated with three parts.
+    - LMP ``pi`` is calculated with two parts, energy price and congestion price.
     - Bus angle ``aBus`` is calculated after solving the problem.
+    - In export results, ``pi`` and ``pic`` are kept for each bus, while ``pie``
+      can be restored manually by ``pie = pi - pic`` if needed.
+
+    Warning
+    -------
+    In this implementation, the dual variables for constraints have opposite signs compared
+    to the mathematical formulation: 1. The dual of `pb` returns a negative value, so energy
+    price is computed as `-pb.dual_variables[0]`. 2. Similarly, a minus sign is applied to
+    the duals of `plfub` and `plflb` when calculating congestion price. The reason for this
+    sign difference is not yet fully understood.
 
     References
     ----------
@@ -61,29 +71,34 @@ class DCOPF2(DCOPF):
                            name='PTDF', tex_name=r'P_{TDF}',
                            model='mats', src='PTDF',
                            no_parse=True, sparse=True)
+        self.PTDFt = NumOp(u=self.PTDF,
+                           name='PTDFt', tex_name=r'P_{TDF}^T',
+                           info='PTDF transpose',
+                           fun=np.transpose, no_parse=True)
+
+        # --- rewrite Constraint pb: power balance ---
+        self.pb.e_str = 'sum(pg) - sum(pd)'
 
         # --- rewrite Expression plf: line flow---
         self.plf.e_str = 'PTDF @ (Cg@pg - Cl@pd - Csh@gsh - Pbusinj)'
 
         # --- rewrite nodal price ---
-        self.Cft = RParam(info='Line connection matrix',
-                          name='Cft', tex_name=r'C_{ft}',
-                          model='mats', src='Cft',
-                          no_parse=True, sparse=True,)
-        self.pilb = ExpressionCalc(info='Congestion price, dual of <plflb>',
-                                   name='pilb',
-                                   model='Line', src=None,
-                                   e_str='plflb.dual_variables[0]')
-        self.piub = ExpressionCalc(info='Congestion price, dual of <plfub>',
-                                   name='piub',
-                                   model='Line', src=None,
-                                   e_str='plfub.dual_variables[0]')
-        self.pib = ExpressionCalc(info='Energy price, dual of <pb>',
-                                  name='pib',
-                                  model='Bus', src=None,
-                                  e_str='pb.dual_variables[0]')
-        pi = 'pb.dual_variables[0] + Cft@(plfub.dual_variables[0] - plflb.dual_variables[0])'
+        self.pie = ExpressionCalc(info='Energy price',
+                                  name='pie', unit='$/p.u.',
+                                  e_str='-pb.dual_variables[0]')
+        pic = '-PTDFt@(plfub.dual_variables[0] - plflb.dual_variables[0])'
+        self.pic = ExpressionCalc(info='Congestion price',
+                                  name='pic', unit='$/p.u.',
+                                  e_str=pic,
+                                  model='Bus', src=None)
+
+        # NOTE: another implementation of self.pi.e_str can be:
+        # self.pi.e_str = self.pie.e_str + self.pic.e_str
+        # but it is less intuitive to read, as this implementation is not likely
+        # to be used again in other routines.
+        pi = '-pb.dual_variables[0] - PTDFt@(plfub.dual_variables[0] - plflb.dual_variables[0])'
         self.pi.e_str = pi
+        self.pi.info = 'locational marginal price (LMP)'
 
     def _post_solve(self):
         """Calculate aBus"""

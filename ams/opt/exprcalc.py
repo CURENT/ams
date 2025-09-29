@@ -24,9 +24,11 @@ class ExpressionCalc(OptzBase):
     """
     Class for calculating expressions.
 
-    Note that `ExpressionCalc` is not a CVXPY expression, and it should not be used
-    in the optimization model.
-    It is used to calculate expression values **after** successful optimization.
+    This class is useful for performing post-solve calculations, but it does not
+    participate in the optimization model itself.
+
+    Note: `ExpressionCalc` is not a CVXPY expression and should NOT be referenced
+    in `e_str` by any other components, including other instances of `ExpressionCalc`.
     """
 
     def __init__(self,
