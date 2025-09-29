@@ -1,0 +1,42 @@
+name: Zenodo Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: download archive to runner
+      env:
+        tarball: ${{ github.event.release.tarball_url }}
+        zipball: ${{ github.event.release.zipball_url }}
+      # add the suffix to the name of the file so type is recognized when downloading from Zenodo
+      # .tar.gz for tarball and .zip for zipball
+      # Archiving the zipball will cause Zenodo to show a preview of the contents of the zipball while using tarball will not.
+      run: |
+        name=$(basename ${zipball}).zip  
+        curl -L $zipball > $name
+        echo "archive=${name}" >> $GITHUB_ENV
+
+    - name: Run Zenodo Deploy
+      uses: rseng/zenodo-release@main
+      with:
+        token: ${{ secrets.ZENODO_TOKEN }}
+        version: ${{ github.event.release.tag_name }}
+        zenodo_json: .zenodo.json   # optional
+        html_url: ${{ github.event.release.html_url }} # optional to include link to the GitHub release
+        archive: ${{ env.archive }}
+        title: ${{ github.repository }}:${{ github.event.release.tag_name }}  # optional title to override
+        description: <h1>${{ github.event.release.tag_name }}</h1>  # optional release description (allows HTML)
+
+        # Optional DOI for all versions. Leaving this blank (the default) will create
+        # a new DOI on every release. Use a DOI that represents all versions will
+        # create a new version for this existing DOI.
+        #
+        # Newer versions have their own DOIs, but they're also linked to this DOI
+        # as a different version. When using this, use the DOI for all versions.
+        doi: '10.1109/TSTE.2025.3528027'
