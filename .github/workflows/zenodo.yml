@@ -12,31 +12,42 @@ jobs:
     - uses: actions/checkout@v3
     - name: download archive to runner
       env:
-        tarball: ${{ github.event.release.tarball_url }}
         zipball: ${{ github.event.release.zipball_url }}
-      # add the suffix to the name of the file so type is recognized when downloading from Zenodo
-      # .tar.gz for tarball and .zip for zipball
-      # Archiving the zipball will cause Zenodo to show a preview of the contents of the zipball while using tarball will not.
+        tarball: ${{ github.event.release.tarball_url }}
+        version: ${{ github.event.release.tag_name }}
       run: |
-        name=$(basename ${zipball}).zip  
-        curl -L $zipball > $name
+        name=$(basename ${tarball})        
+        curl -L $tarball > $name
         echo "archive=${name}" >> $GITHUB_ENV
 
     - name: Run Zenodo Deploy
-      uses: rseng/zenodo-release@main
+      uses: ./
+      id: deploy
       with:
-        token: ${{ secrets.ZENODO_TOKEN }}
         version: ${{ github.event.release.tag_name }}
-        zenodo_json: .zenodo.json   # optional
-        html_url: ${{ github.event.release.html_url }} # optional to include link to the GitHub release
+        zenodo_json: .zenodo.json
         archive: ${{ env.archive }}
-        title: ${{ github.repository }}:${{ github.event.release.tag_name }}  # optional title to override
-        description: <h1>${{ github.event.release.tag_name }}</h1>  # optional release description (allows HTML)
+        token: ${{ secrets.ZENODO_TOKEN }}
+        doi: 10.1109/TSTE.2025.3528027
 
-        # Optional DOI for all versions. Leaving this blank (the default) will create
-        # a new DOI on every release. Use a DOI that represents all versions will
-        # create a new version for this existing DOI.
-        #
-        # Newer versions have their own DOIs, but they're also linked to this DOI
-        # as a different version. When using this, use the DOI for all versions.
-        doi: '10.1109/TSTE.2025.3528027'
+    - name: View Outputs
+      env:
+        doi: ${{ steps.deploy.outputs.doi }} 
+        conceptdoi: ${{ steps.deploy.outputs.conceptdoi }} 
+        conceptbadge: ${{ steps.deploy.outputs.conceptbadge }}
+        badge: ${{ steps.deploy.outputs.badge }} 
+        bucket: ${{ steps.deploy.outputs.bucket }} 
+        latest: ${{ steps.deploy.outputs.latest }} 
+        latest_html: ${{ steps.deploy.outputs.latest_html }} 
+        record: ${{ steps.deploy.outputs.record }} 
+        record_html: ${{ steps.deploy.outputs.record_html }} 
+      run: |
+        echo "doi ${doi}"
+        echo "conceptdoi ${conceptdoi}"
+        echo "conceptbadge ${conceptbadge}"
+        echo "badge ${badge}"
+        echo "bucket ${bucket}"
+        echo "latest ${latest}"
+        echo "latest html ${latest_html}"
+        echo "record ${record}"
+        echo "record html ${record_html}"
