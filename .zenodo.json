@@ -1,0 +1,13 @@
+{
+  "upload_type": "software", 
+  "description": "This is a GitHub action for releasing to Zenodo without giving webhook admin access",
+  "title": "Zenodo Release Action",
+  "creators": [
+     {
+       "affiliation": "University of Tennessee Knoxville",
+       "name": "Jinning Wang"
+     }
+  ],
+  "keywords": ["zenodo", "release", "archive"],
+  "license": "GPL-3.0"
+}

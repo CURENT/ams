@@ -9,6 +9,11 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
+v1.0.16 (2025-09-28)
+----------------------
+
+- Add GitHub action to automatically upload release to Zenodo
+
 v1.0.15 (2025-09-28)
 ----------------------
 
