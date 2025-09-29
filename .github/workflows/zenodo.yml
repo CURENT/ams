@@ -4,22 +4,24 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
-    runs-on: ubuntu-20.04
-
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: download archive to runner
+      - name: Download archive to runner
         env:
-          zipball: ${{ github.event.release.zipball_url }}
-          tarball: ${{ github.event.release.tarball_url }}
-          version: ${{ github.event.release.tag_name }}
+          TARBALL_URL: ${{ github.event.release.tarball_url }}
         run: |
-          name=$(basename ${tarball})        
-          curl -L $tarball > $name
-          echo "archive=${name}" >> $GITHUB_ENV
+          set -euo pipefail
+          # If repo is private, uncomment the header line below and remove the line without -H
+          # curl -L -H "Authorization: token ${{ github.token }}" "$TARBALL_URL" -o source.tar.gz
+          curl -L "$TARBALL_URL" -o source.tar.gz
+          echo "archive=source.tar.gz" >> $GITHUB_ENV
 
       - name: Run Zenodo Deploy
         uses: ./
@@ -33,15 +35,15 @@ jobs:
 
       - name: View Outputs
         env:
-          doi: ${{ steps.deploy.outputs.doi }} 
-          conceptdoi: ${{ steps.deploy.outputs.conceptdoi }} 
+          doi: ${{ steps.deploy.outputs.doi }}
+          conceptdoi: ${{ steps.deploy.outputs.conceptdoi }}
           conceptbadge: ${{ steps.deploy.outputs.conceptbadge }}
-          badge: ${{ steps.deploy.outputs.badge }} 
-          bucket: ${{ steps.deploy.outputs.bucket }} 
-          latest: ${{ steps.deploy.outputs.latest }} 
-          latest_html: ${{ steps.deploy.outputs.latest_html }} 
-          record: ${{ steps.deploy.outputs.record }} 
-          record_html: ${{ steps.deploy.outputs.record_html }} 
+          badge: ${{ steps.deploy.outputs.badge }}
+          bucket: ${{ steps.deploy.outputs.bucket }}
+          latest: ${{ steps.deploy.outputs.latest }}
+          latest_html: ${{ steps.deploy.outputs.latest_html }}
+          record: ${{ steps.deploy.outputs.record }}
+          record_html: ${{ steps.deploy.outputs.record_html }}
         run: |
           echo "doi ${doi}"
           echo "conceptdoi ${conceptdoi}"
