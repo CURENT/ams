@@ -469,8 +469,7 @@ class System(adSystem):
         if self.ESD1.n > 0:
             gcost_idx_esd1 = self.GCost.find_idx(keys='gen', values=self.ESD1.gen.v)
             for param in ['c2', 'c1']:
-                self.GCost.set(src=param, attr='vin',
-                               idx=gcost_idx_esd1, value=0)
+                self.GCost.alter(src=param, value=0, idx=gcost_idx_esd1)
             logger.info('Parameters c2, c1 are altered to 0 as they are associated with ESD1 for'
                         f' following GCost: {", ".join(gcost_idx_esd1)}')
         # --- bus type correction ---
