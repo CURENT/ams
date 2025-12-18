@@ -51,7 +51,7 @@ class TestOPF(unittest.TestCase):
         self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
 
         self.ss.OPF.update()
-        self.ss.OPF.run(opftype='AC')
+        self.ss.OPF.run()
         self.assertTrue(self.ss.OPF.converged, "OPF in AC did not converge under generator trip!")
         self.assertAlmostEqual(self.ss.OPF.get(src='pg', attr='v', idx=stg),
                                0, places=6,
@@ -83,7 +83,7 @@ class TestOPF(unittest.TestCase):
         self.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
 
         self.ss.OPF.update()
-        self.ss.OPF.run(opftype='AC')
+        self.ss.OPF.run()
         self.assertTrue(self.ss.OPF.converged, "OPF in AC did not converge under line trip!")
         self.assertAlmostEqual(self.ss.OPF.get(src='plf', attr='v', idx='Line_3'),
                                0, places=6,
@@ -122,14 +122,14 @@ class TestOPF(unittest.TestCase):
         Test setting and tripping load.
         """
         # --- run OPF ---
-        self.ss.OPF.run(opftype='AC')
+        self.ss.OPF.run()
         pgs = self.ss.OPF.pg.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.OPF.update()
 
-        self.ss.OPF.run(opftype='AC')
+        self.ss.OPF.run()
         pgs_pqt = self.ss.OPF.pg.v.sum()
         self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
@@ -137,6 +137,6 @@ class TestOPF(unittest.TestCase):
         self.ss.PQ.set(src='u', attr='v', idx='PQ_2', value=0)
         self.ss.OPF.update()
 
-        self.ss.OPF.run(opftype='AC')
+        self.ss.OPF.run()
         pgs_pqt2 = self.ss.OPF.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
