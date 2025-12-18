@@ -179,10 +179,12 @@ class LoadScale(ROperationService):
     Retrieve zonal load by scaling nodal load using the specified load scale factor.
     The load scale factor is defined for each "Area".
 
+    In this class, load status is considered.
+
     Parameters
     ----------
     u : Callable
-        nodal load.
+        nodal load, should be a `RParam` instance, with model `StaticLoad`.
     sd : Callable
         zonal load factor.
     name : str, optional
