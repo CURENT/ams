@@ -44,6 +44,25 @@ class ESD1Data(PVD1Data):
                              vrange=(0, 1),
                              )
 
+        self.cesdc = NumParam(default=0.1, tex_name=r'c_{c,ESD}',
+                              info='Charging cost',
+                              unit=r'$/p.u.*h',
+                              )
+        self.cesdd = NumParam(default=0.1, tex_name=r'c_{d,ESD}',
+                              info='Discharging cost',
+                              unit=r'$/p.u.*h',
+                              )
+ 
+        self.tdc = NumParam(default=0.0,
+                            info='minimum charging duration',
+                            tex_name=r't_{dc}',
+                            unit='h',
+                            )
+        self.tdd = NumParam(default=0.0,
+                            info='minimum discharging duration',
+                            tex_name=r't_{dd}',
+                            unit='h',
+                            )
 
 class ESD1(ESD1Data, Model):
     """

@@ -312,6 +312,24 @@ class ESD1Base(DGBase):
                            tex_name=r'\eta_d', unit='%',
                            model='ESD1', no_parse=True,)
 
+        self.cesdc = RParam(info='Charging cost',
+                            name='cesdc', src='cesdc',
+                            tex_name=r'c_{c,ESD}', unit=r'$/p.u.*h',
+                            model='ESD1', no_parse=True,)
+        self.cesdd = RParam(info='Discharging cost',
+                            name='cesdd', src='cesdd',
+                            tex_name=r'c_{d,ESD}', unit=r'$/p.u.*h',
+                            model='ESD1', no_parse=True,)
+
+        self.tdc = RParam(info='Charging time',
+                          name='tdc', src='tdc',
+                          tex_name=r't_{dc}', unit='h',
+                          model='ESD1', no_parse=True,)
+        self.tdd = RParam(info='Discharging time',
+                          name='tdd', src='tdd',
+                          tex_name=r't_{dd}', unit='h',
+                          model='ESD1', no_parse=True,)
+
         # --- service ---
         self.REtaD = NumOp(name='REtaD', tex_name=r'\frac{1}{\eta_d}',
                            u=self.EtaD, fun=np.reciprocal,)
@@ -355,22 +373,17 @@ class ESD1Base(DGBase):
         self.zde.info = 'Aux var for discharging, '
         self.zde.info += ':math:`z_{d,ESD}=u_{d,ESD}*p_{d,ESD}`'
 
-        # NOTE: to ensure consistency with DG based routiens,
-        # here we select ESD1 power from DG rather than StaticGen
-        self.genesd = RParam(info='gen of ESD1',
+        self.genesd = RParam(info='gen of ESD',
                              name='genesd', tex_name=r'g_{ESD}',
-                             model='ESD1', src='idx',
+                             model='ESD1', src='gen',
                              no_parse=True,)
-        self.ces = VarSelect(u=self.pgdg, indexer='genesd',
-                             name='ces', tex_name=r'C_{ESD}',
-                             info='Select ESD power from DG',
+        self.ies = VarSelect(u=self.pg, indexer='genesd',
+                             name='ies', tex_name=r'I_{ESD}',
+                             info='Index ESD from StaticGen',
                              no_parse=True)
-        self.cescb = Constraint(name='cescb', is_eq=True,
-                                info='Select pce from DG',
-                                e_str='ces @ pgdg - pce',)
-        self.cesdb = Constraint(name='cesdb', is_eq=True,
-                                info='Select pde from DG',
-                                e_str='ces @ pgdg - pde',)
+        self.cesd = Constraint(name='cesd', is_eq=True,
+                               info='Select pce and pde from pg',
+                               e_str='ies @ pg + pce - pde',)
 
         # --- constraints ---
         self.cdb = Constraint(name='cdb', is_eq=True,
@@ -396,6 +409,8 @@ class ESD1Base(DGBase):
         self.SOCb = Constraint(name='SOCb', is_eq=True,
                                info='ESD1 SOC balance',
                                e_str=SOCb,)
+        
+        self.obj.e_str += '+ t dot sum(cesdc * pce + cesdd * pde)'
 
 
 class RTEDES(RTED, ESD1Base):
