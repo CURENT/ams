@@ -434,7 +434,7 @@ class ESD1Base(DGBase):
                                info='Minimum discharging duration',
                                e_str='tdd - mul(udd, t + tdd0)',)
 
-        self.obj.e_str += '+ t dot sum(cesdc * pce + cesdd * pde)'
+        self.obj.e_str += '+ t dot sum(- cesdc * pce + cesdd * pde)'
 
 
 class RTEDES(RTED, ESD1Base):
