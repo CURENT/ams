@@ -17,19 +17,19 @@ class ESD1Data(PVD1Data):
     def __init__(self):
         PVD1Data.__init__(self)
 
-        self.SOCmin = NumParam(default=0.0, tex_name='SOC_{min}',
+        self.SOCmin = NumParam(default=0.1, tex_name='SOC_{min}',
                                info='Minimum required value for SOC in limiter',
                                )
 
-        self.SOCmax = NumParam(default=1.0, tex_name='SOC_{max}',
+        self.SOCmax = NumParam(default=0.9, tex_name='SOC_{max}',
                                info='Maximum allowed value for SOC in limiter',
                                )
 
-        self.SOCinit = NumParam(default=0.2, tex_name='SOC_{init}',
+        self.SOCinit = NumParam(default=0.8, tex_name='SOC_{init}',
                                 info='Initial state of charge',
                                 )
-        self.SOCend = NumParam(default=0.2, tex_name='SOC_{end}',
-                               info='Final state of charge',
+        self.SOCend = NumParam(default=0.1, tex_name='SOC_{end}',
+                               info='Target state of charge at the end of the period',
                                )
 
         self.En = NumParam(default=100.0, tex_name='E_n',

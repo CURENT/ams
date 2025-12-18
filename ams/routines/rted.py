@@ -303,7 +303,7 @@ class ESD1Base(DGBase):
                               name='SOCinit', src='SOCinit',
                               tex_name=r'SOC_{init}',
                               model='ESD1',)
-        self.SOCend = RParam(info='Final SOC',
+        self.SOCend = RParam(info='Target SOC at the end of the period',
                              name='SOCend', src='SOCend',
                              tex_name=r'SOC_{end}',
                              model='ESD1',)
@@ -353,7 +353,7 @@ class ESD1Base(DGBase):
                         array_out=False,)
 
         # --- vars ---
-        self.SOC = Var(info='ESD1 State of Charge', unit='%',
+        self.SOC = Var(info='ESD1 State of Charge', unit='p.u. (%)',
                        name='SOC', tex_name=r'SOC',
                        model='ESD1', pos=True,
                        v0=self.SOCinit,)
@@ -441,6 +441,11 @@ class RTEDES(RTED, ESD1Base):
     """
     RTED with energy storage :ref:`ESD1`.
     The bilinear term in the formulation is linearized with big-M method.
+
+    While the formulation enforces SOCend, the ESD1 owner is not required to provide
+    an SOC constraint for every 5-minute RTED interval. The optimization treats SOCend
+    as a terminal boundary condition, allowing the dispatcher maximum flexibility to optimize
+    power output within the hour, provided the target is met at the interval's conclusion.
     """
 
     def __init__(self, system, config):
