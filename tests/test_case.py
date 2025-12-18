@@ -94,10 +94,12 @@ class Test5Bus(unittest.TestCase):
         Test altering parameter before running routine.
         """
 
-        self.ss.GCost.alter("c1", ['GCost_1', 'GCost_2'], [1500., 3100.])
-        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1, 0.01])
+        gcost_idx = ['GCost_1', 'GCost_2']
+        gcost_val = [1500., 3100.]
+        self.ss.GCost.alter("c1", gcost_idx, gcost_val)
+        np.testing.assert_array_equal(self.ss.GCost.get(src='c1', attr='v', idx=gcost_idx), gcost_val)
         self.ss.ACOPF.run()
-        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1, 0.01])
+        np.testing.assert_array_equal(self.ss.GCost.get(src='c1', attr='v', idx=gcost_idx), gcost_val)
 
     def test_alter_param_after_routine(self):
         """
@@ -105,10 +107,12 @@ class Test5Bus(unittest.TestCase):
         """
 
         self.ss.ACOPF.run()
-        self.ss.GCost.alter("c1", ['GCost_1', 'GCost_2'], [1500., 3100.])
-        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1, 0.01])
+        gcost_idx = ['GCost_1', 'GCost_2']
+        gcost_val = [1500., 3100.]
+        self.ss.GCost.alter("c1", gcost_idx, gcost_val)
+        np.testing.assert_array_equal(self.ss.GCost.get(src='c1', attr='v', idx=gcost_idx), gcost_val)
         self.ss.ACOPF.run()
-        np.testing.assert_array_equal(self.ss.GCost.c1.v, [1500., 3100., 0.4, 0.1, 0.01])
+        np.testing.assert_array_equal(self.ss.GCost.get(src='c1', attr='v', idx=gcost_idx), gcost_val)
 
     # def test_multiple_disconnected_line(self):
     #     """
