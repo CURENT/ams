@@ -56,17 +56,6 @@ class DCOPF2(DCOPF):
 
         # NOTE: in this way, we still follow the implementation that devices
         # connectivity status is considered in connection matrix
-        self.ued = NumOp(u=self.Cl,
-                         name='ued', tex_name=r'u_{e,d}',
-                         info='Effective load connection status',
-                         fun=np.sum, args=dict(axis=0),
-                         no_parse=True)
-        self.uesh = NumOp(u=self.Csh,
-                          name='uesh', tex_name=r'u_{e,sh}',
-                          info='Effective shunt connection status',
-                          fun=np.sum, args=dict(axis=0),
-                          no_parse=True)
-
         self.PTDF = RParam(info='PTDF',
                            name='PTDF', tex_name=r'P_{TDF}',
                            model='mats', src='PTDF',

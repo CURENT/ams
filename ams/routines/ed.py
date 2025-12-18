@@ -76,7 +76,7 @@ class MPBase:
                          info='time length vector',
                          no_parse=True)
 
-        self.pds = LoadScale(u=self.pd, sd=self.sd,
+        self.pds = LoadScale(u=self.pd0, sd=self.sd,
                              name='pds', tex_name=r'p_{d,s}',
                              info='Scaled load',)
 
