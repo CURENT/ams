@@ -325,11 +325,11 @@ class ESD1Base(DGBase):
                             tex_name=r'c_{d,ESD}', unit=r'$/p.u.*h',
                             model='ESD1', no_parse=True,)
 
-        self.tdc = RParam(info='Charging time',
+        self.tdc = RParam(info='Minimum charging duration',
                           name='tdc', src='tdc',
                           tex_name=r't_{dc}', unit='h',
                           model='ESD1', no_parse=True,)
-        self.tdd = RParam(info='Discharging time',
+        self.tdd = RParam(info='Minimum discharging duration',
                           name='tdd', src='tdd',
                           tex_name=r't_{dd}', unit='h',
                           model='ESD1', no_parse=True,)
