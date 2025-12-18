@@ -25,9 +25,12 @@ class ESD1Data(PVD1Data):
                                info='Maximum allowed value for SOC in limiter',
                                )
 
-        self.SOCinit = NumParam(default=0.5, tex_name='SOC_{init}',
+        self.SOCinit = NumParam(default=0.2, tex_name='SOC_{init}',
                                 info='Initial state of charge',
                                 )
+        self.SOCend = NumParam(default=0.2, tex_name='SOC_{end}',
+                               info='Final state of charge',
+                               )
 
         self.En = NumParam(default=100.0, tex_name='E_n',
                            info='Rated energy capacity',
@@ -52,17 +55,29 @@ class ESD1Data(PVD1Data):
                               info='Discharging cost',
                               unit=r'$/p.u.*h',
                               )
- 
+
         self.tdc = NumParam(default=0.0,
-                            info='minimum charging duration',
+                            info='Minimum charging duration',
                             tex_name=r't_{dc}',
                             unit='h',
                             )
         self.tdd = NumParam(default=0.0,
-                            info='minimum discharging duration',
+                            info='Minimum discharging duration',
                             tex_name=r't_{dd}',
                             unit='h',
                             )
+
+        self.tdc0 = NumParam(default=0.0,
+                             info='Initial charging time',
+                             tex_name=r't_{dc0}',
+                             unit='h',
+                             )
+        self.tdd0 = NumParam(default=0.0,
+                             info='Initial discharging time',
+                             tex_name=r't_{dd0}',
+                             unit='h',
+                             )
+
 
 class ESD1(ESD1Data, Model):
     """

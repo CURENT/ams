@@ -283,9 +283,7 @@ class ESD1MPBase(ESD1Base):
                                 info='ESD1 SOC initial balance',
                                 e_str=SOCb0,)
 
-        self.SOCr = Constraint(name='SOCr', is_eq=True,
-                               info='SOC requirement',
-                               e_str='SOC[:, -1] - SOCinit',)
+        self.SOCr.e_str = 'SOCend - SOC[:, -1]'
 
 
 class EDES(ED, ESD1MPBase):
@@ -306,7 +304,7 @@ class EDES(ED, ESD1MPBase):
         self.SOC.horizon = self.timeslot
         self.pce.horizon = self.timeslot
         self.pde.horizon = self.timeslot
-        self.uce.horizon = self.timeslot
-        self.ude.horizon = self.timeslot
+        self.ucd.horizon = self.timeslot
+        self.udd.horizon = self.timeslot
         self.zce.horizon = self.timeslot
         self.zde.horizon = self.timeslot

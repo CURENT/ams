@@ -293,23 +293,27 @@ class ESD1Base(DGBase):
                          model='ESD1', no_parse=True,)
         self.SOCmax = RParam(info='Maximum allowed value for SOC in limiter',
                              name='SOCmax', src='SOCmax',
-                             tex_name=r'SOC_{max}', unit='%',
+                             tex_name=r'SOC_{max}',
                              model='ESD1',)
         self.SOCmin = RParam(info='Minimum required value for SOC in limiter',
                              name='SOCmin', src='SOCmin',
-                             tex_name=r'SOC_{min}', unit='%',
+                             tex_name=r'SOC_{min}',
                              model='ESD1',)
         self.SOCinit = RParam(info='Initial SOC',
                               name='SOCinit', src='SOCinit',
-                              tex_name=r'SOC_{init}', unit='%',
+                              tex_name=r'SOC_{init}',
                               model='ESD1',)
+        self.SOCend = RParam(info='Final SOC',
+                             name='SOCend', src='SOCend',
+                             tex_name=r'SOC_{end}',
+                             model='ESD1',)
         self.EtaC = RParam(info='Efficiency during charging',
                            name='EtaC', src='EtaC',
-                           tex_name=r'\eta_c', unit='%',
+                           tex_name=r'\eta_c',
                            model='ESD1', no_parse=True,)
         self.EtaD = RParam(info='Efficiency during discharging',
                            name='EtaD', src='EtaD',
-                           tex_name=r'\eta_d', unit='%',
+                           tex_name=r'\eta_d',
                            model='ESD1', no_parse=True,)
 
         self.cesdc = RParam(info='Charging cost',
@@ -329,6 +333,15 @@ class ESD1Base(DGBase):
                           name='tdd', src='tdd',
                           tex_name=r't_{dd}', unit='h',
                           model='ESD1', no_parse=True,)
+
+        self.tdc0 = RParam(info='Initial charging time',
+                           name='tdc0', src='tdc0',
+                           tex_name=r't_{dc0}', unit='h',
+                           model='ESD1', no_parse=True,)
+        self.tdd0 = RParam(info='Initial discharging time',
+                           name='tdd0', src='tdd0',
+                           tex_name=r't_{dd0}', unit='h',
+                           model='ESD1', no_parse=True,)
 
         # --- service ---
         self.REtaD = NumOp(name='REtaD', tex_name=r'\frac{1}{\eta_d}',
@@ -358,11 +371,11 @@ class ESD1Base(DGBase):
                        unit='p.u.', name='pde',
                        tex_name=r'p_{d,ESD}',
                        model='ESD1', nonneg=True,)
-        self.uce = Var(info='ESD1 charging decision',
-                       name='uce', tex_name=r'u_{c,ESD}',
+        self.ucd = Var(info='ESD1 charging decision',
+                       name='ucd', tex_name=r'u_{c,ESD}',
                        model='ESD1', boolean=True,)
-        self.ude = Var(info='ESD1 discharging decision',
-                       name='ude', tex_name=r'u_{d,ESD}',
+        self.udd = Var(info='ESD1 discharging decision',
+                       name='udd', tex_name=r'u_{d,ESD}',
                        model='ESD1', boolean=True,)
         self.zce = Var(name='zce', tex_name=r'z_{c,ESD}',
                        model='ESD1', nonneg=True,)
@@ -388,28 +401,39 @@ class ESD1Base(DGBase):
         # --- constraints ---
         self.cdb = Constraint(name='cdb', is_eq=True,
                               info='Charging decision bound',
-                              e_str='uce + ude - 1',)
+                              e_str='ucd + udd - 1',)
 
         self.zce1 = Constraint(name='zce1', is_eq=False, info='zce bound 1',
                                e_str='-zce + pce',)
         self.zce2 = Constraint(name='zce2', is_eq=False, info='zce bound 2',
-                               e_str='zce - pce - Mb dot (1-uce)',)
+                               e_str='zce - pce - Mb dot (1-ucd)',)
         self.zce3 = Constraint(name='zce3', is_eq=False, info='zce bound 3',
-                               e_str='zce - Mb dot uce',)
+                               e_str='zce - Mb dot ucd',)
 
         self.zde1 = Constraint(name='zde1', is_eq=False, info='zde bound 1',
                                e_str='-zde + pde',)
         self.zde2 = Constraint(name='zde2', is_eq=False, info='zde bound 2',
-                               e_str='zde - pde - Mb dot (1-ude)',)
+                               e_str='zde - pde - Mb dot (1-udd)',)
         self.zde3 = Constraint(name='zde3', is_eq=False, info='zde bound 3',
-                               e_str='zde - Mb dot ude',)
+                               e_str='zde - Mb dot udd',)
 
         SOCb = 'mul(En, (SOC - SOCinit)) - t dot mul(EtaC, zce)'
         SOCb += '+ t dot mul(REtaD, zde)'
         self.SOCb = Constraint(name='SOCb', is_eq=True,
                                info='ESD1 SOC balance',
                                e_str=SOCb,)
-        
+
+        self.SOCr = Constraint(name='SOCr', is_eq=False,
+                               info='ESD1 final SOC requirement',
+                               e_str='SOCend - SOC',)
+
+        self.tcdr = Constraint(name='tcdr', is_eq=False,
+                               info='Minimum charging duration',
+                               e_str='tdc - mul(ucd, t + tdc0)',)
+        self.tddr = Constraint(name='tddr', is_eq=False,
+                               info='Minimum discharging duration',
+                               e_str='tdd - mul(udd, t + tdd0)',)
+
         self.obj.e_str += '+ t dot sum(cesdc * pce + cesdd * pde)'
 
 
