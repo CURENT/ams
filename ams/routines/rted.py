@@ -253,14 +253,14 @@ class DGBase:
                         model='DG',)
 
         # --- constraints ---
-        self.cdg = VarSelect(u=self.pg, indexer='gendg',
-                             name='cd', tex_name=r'C_{DG}',
-                             info='Select DG power from pg',
+        self.idg = VarSelect(u=self.pg, indexer='gendg',
+                             name='idg', tex_name=r'I_{DG}',
+                             info='Index DG power from pg',
                              gamma='gammapdg',
                              no_parse=True, sparse=True,)
         self.cdgb = Constraint(name='cdgb', is_eq=True,
                                info='Select DG power from pg',
-                               e_str='cdg @ pg - pgdg',)
+                               e_str='idg @ pg - pgdg',)
 
 
 class RTEDDG(RTED, DGBase):

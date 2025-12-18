@@ -105,13 +105,13 @@ class DCPFBase(RoutineBase):
                              e_str=pb, is_eq=True,)
 
         # --- bus ---
-        self.csb = VarSelect(info='select slack bus',
-                             name='csb', tex_name=r'c_{sb}',
+        self.isb = VarSelect(info='Index slack bus from all buses',
+                             name='isb', tex_name=r'I_{sb}',
                              u=self.aBus, indexer='buss',
                              no_parse=True,)
         self.sba = Constraint(info='align slack bus angle',
                               name='sbus', is_eq=True,
-                              e_str='csb@aBus',)
+                              e_str='isb@aBus',)
 
         # --- line flow ---
         self.plf = Expression(info='Line flow',
