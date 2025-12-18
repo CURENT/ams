@@ -9,6 +9,13 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
+v1.1.0 (2025-12-18)
+----------------------
+
+- Add parameter check to correct ESD1 associated GCost
+- Add ESD1 params: `SOCend`, `cesdc`, `cesdd`, `tdc`, `tdd`, `tdc0`, `tdd0`
+- Revise ESD1 related routines: `RTEDES`, `EDES`, and `UCES`
+
 v1.0.16 (2025-09-28)
 ----------------------
 
