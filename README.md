@@ -11,7 +11,7 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 | Badges |  |  |
 |---|---|---|
 | Repo | ![Project Status: Active](https://www.repostatus.org/badges/latest/active.svg) | ![Repo Size](https://img.shields.io/github/repo-size/CURENT/ams) |
-| Python | [![Python Versions](https://img.shields.io/badge/Python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/) |
+| Python | [![Python Versions](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/) |
 | Version | [![PyPI Version](https://img.shields.io/pypi/v/ltbams.svg)](https://pypi.org/project/ltbams/) | [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ltbams/badges/version.svg)](https://anaconda.org/conda-forge/ltbams) |
 | Tag | [![GitHub Tag](https://img.shields.io/github/v/tag/CURENT/ams)](https://github.com/CURENT/ams/tags) | ![GitHub commits since latest release (branch)](https://img.shields.io/github/commits-since/curent/ams/latest/develop) |
 | Documentation | [![Read the Docs](https://img.shields.io/readthedocs/ams?label=stable)](https://ltb.readthedocs.io/projects/ams/en/stable/?badge=stable) | [![Read the Docs](https://img.shields.io/readthedocs/ams?label=develop)](https://ltb.readthedocs.io/projects/ams/en/develop/?badge=develop) |
