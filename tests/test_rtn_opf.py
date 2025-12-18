@@ -13,7 +13,7 @@ class TestOPF(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.json"),
+        self.ss = ams.load(ams.get_case("matpower/case39.m"),
                            setup=True, default_config=True, no_output=True)
         # decrease load first
         self.ss.PQ.set(src='p0', attr='v', idx=['PQ_1', 'PQ_2'], value=[0.3, 0.3])
@@ -30,7 +30,7 @@ class TestOPF(unittest.TestCase):
         """
         Test generator tripping.
         """
-        stg = 'PV_1'
+        stg = 8
         self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
 
         self.ss.OPF.update()
@@ -47,7 +47,7 @@ class TestOPF(unittest.TestCase):
         """
         Test generator tripping.
         """
-        stg = 'PV_1'
+        stg = 8
         self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
 
         self.ss.OPF.update()
@@ -64,32 +64,32 @@ class TestOPF(unittest.TestCase):
         """
         Test line tripping.
         """
-        self.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
+        self.ss.Line.set(src='u', attr='v', idx='Line_14', value=0)
 
         self.ss.OPF.update()
         self.ss.OPF.run(opftype='DC')
         self.assertTrue(self.ss.OPF.converged, "OPF in DC did not converge under line trip!")
-        self.assertAlmostEqual(self.ss.OPF.get(src='plf', attr='v', idx='Line_3'),
+        self.assertAlmostEqual(self.ss.OPF.get(src='plf', attr='v', idx='Line_14'),
                                0, places=6,
                                msg="Line trip does not take effect!")
 
-        self.ss.Line.alter(src='u', idx='Line_3', value=1)  # reset
+        self.ss.Line.alter(src='u', idx='Line_14', value=1)  # reset
 
     @skip_unittest_without_gurobi_optimods
     def test_trip_line_ac(self):
         """
         Test line tripping.
         """
-        self.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
+        self.ss.Line.set(src='u', attr='v', idx='Line_14', value=0)
 
         self.ss.OPF.update()
         self.ss.OPF.run()
         self.assertTrue(self.ss.OPF.converged, "OPF in AC did not converge under line trip!")
-        self.assertAlmostEqual(self.ss.OPF.get(src='plf', attr='v', idx='Line_3'),
+        self.assertAlmostEqual(self.ss.OPF.get(src='plf', attr='v', idx='Line_14'),
                                0, places=6,
                                msg="Line trip does not take effect!")
 
-        self.ss.Line.alter(src='u', idx='Line_3', value=1)  # reset
+        self.ss.Line.alter(src='u', idx='Line_14', value=1)  # reset
 
     @skip_unittest_without_gurobi_optimods
     def test_set_load(self):
