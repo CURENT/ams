@@ -30,7 +30,7 @@ class RTED2(PTDFMixin, RTED):
     Notes
     -----
     - Formulations have been adjusted with interval ``config.t``, 5/60 [Hour] by default.
-    - The tie-line flow related constraints are ommited in this formulation.
+    - The tie-line flow related constraints are omitted in this formulation.
     - Power generation is balanced for the entire system.
     - SFR is balanced for each area.
     """
