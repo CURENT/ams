@@ -1,6 +1,7 @@
 """
 DCOPF routines.
 """
+
 import logging
 
 import numpy as np
@@ -16,7 +17,124 @@ from ams.shared import sps
 logger = logging.getLogger(__name__)
 
 
-class DCOPF2(DCOPF):
+class PTDFMixin:
+    """
+    Mixin class for PTDF-based formulations.
+
+    This mixin provides PTDF parameters and methods for routines that need
+    to use PTDF formulation instead of B-theta formulation.
+
+    The PTDF (Power Transfer Distribution Factor) formulation is more efficient
+    for large-scale systems as it eliminates the need to solve for bus angles
+    explicitly in the optimization problem.
+    """
+
+    def _setup_ptdf_params(self):
+        """
+        Setup PTDF parameters.
+
+        Creates the PTDF matrix parameter and its transpose for use in
+        power flow and LMP calculations.
+        """
+        # NOTE: in this way, we still follow the implementation that devices
+        # connectivity status is considered in connection matrix
+        self.PTDF = RParam(
+            info="PTDF",
+            name="PTDF",
+            tex_name=r"P_{TDF}",
+            model="mats",
+            src="PTDF",
+            no_parse=True,
+            sparse=True,
+        )
+        self.PTDFt = NumOp(
+            u=self.PTDF,
+            name="PTDFt",
+            tex_name=r"P_{TDF}^T",
+            info="PTDF transpose",
+            fun=np.transpose,
+            no_parse=True,
+        )
+
+    def _setup_ptdf_expressions(self):
+        """
+        Setup PTDF-based expressions.
+
+        Overwrites the default B-theta formulation with PTDF-based formulation for:
+        - Power balance constraint (system-wide instead of nodal)
+        - Line flow expression (using PTDF instead of Bf@aBus)
+        - Nodal price calculation (energy price + congestion price)
+        """
+        # --- rewrite Constraint pb: power balance ---
+        # PTDF formulation uses system-wide balance instead of nodal balance
+        self.pb.e_str = "sum(pg) - sum(pd)"
+
+        # --- rewrite Expression plf: line flow---
+        # Use PTDF matrix instead of Bf@aBus
+        self.plf.e_str = "PTDF @ (Cg@pg - Cl@pd - Csh@gsh - Pbusinj)"
+
+        # --- rewrite nodal price ---
+        # Energy price component (from power balance dual)
+        self.pie = ExpressionCalc(
+            info="Energy price",
+            name="pie",
+            unit="$/p.u.",
+            e_str="-pb.dual_variables[0]",
+        )
+
+        # Congestion price component (from line flow constraint duals)
+        pic = "-PTDFt@(plfub.dual_variables[0] - plflb.dual_variables[0])"
+        self.pic = ExpressionCalc(
+            info="Congestion price",
+            name="pic",
+            unit="$/p.u.",
+            e_str=pic,
+            model="Bus",
+            src=None,
+        )
+
+        # Total LMP = energy price + congestion price
+        # NOTE: another implementation could be:
+        # self.pi.e_str = self.pie.e_str + self.pic.e_str
+        # but the current implementation is more explicit
+        pi = "-pb.dual_variables[0] - PTDFt@(plfub.dual_variables[0] - plflb.dual_variables[0])"
+        self.pi.e_str = pi
+        self.pi.info = "locational marginal price (LMP)"
+
+    def _ptdf_post_solve(self):
+        """
+        Calculate bus angles after solving using PTDF formulation.
+
+        Since PTDF formulation doesn't include bus angles in the optimization,
+        we need to back-calculate them from the power injections.
+        """
+        sys = self.system
+        # Calculate net power injection at each bus
+        Pbus = sys.mats.Cg._v @ self.pg.v
+        Pbus -= sys.mats.Cl._v @ self.pd.v
+        Pbus -= sys.mats.Csh._v @ self.gsh.v
+        Pbus -= self.Pbusinj.v
+
+        # Solve for bus angles: Bbus @ aBus = -Pbus
+        aBus = sps.linalg.spsolve(sys.mats.Bbus._v, Pbus)
+
+        # Reference to slack bus (set slack bus angle to 0)
+        slack0_uid = sys.Bus.idx2uid(sys.Slack.bus.v[0])
+        self.aBus.v = aBus - aBus[slack0_uid]
+
+    def _check_ptdf(self):
+        """
+        Check if PTDF matrix is available and build if necessary.
+
+        The PTDF matrix should be pre-built for large systems to avoid
+        computational overhead during routine initialization.
+        """
+        if self.system.mats.PTDF._v is None:
+            logger.warning("PTDF is not available, build it now")
+            self.system.mats.build_ptdf()
+
+
+class DCOPF2(PTDFMixin, DCOPF):
     """
     DC optimal power flow (DCOPF) using PTDF formulation.
 
@@ -51,59 +169,20 @@ class DCOPF2(DCOPF):
 
     def __init__(self, system, config):
         DCOPF.__init__(self, system, config)
-        self.info = 'DCOPF using PTDF'
-        self.type = 'DCED'
+        self.info = "DCOPF using PTDF"
+        self.type = "DCED"
 
-        # NOTE: in this way, we still follow the implementation that devices
-        # connectivity status is considered in connection matrix
-        self.PTDF = RParam(info='PTDF',
-                           name='PTDF', tex_name=r'P_{TDF}',
-                           model='mats', src='PTDF',
-                           no_parse=True, sparse=True)
-        self.PTDFt = NumOp(u=self.PTDF,
-                           name='PTDFt', tex_name=r'P_{TDF}^T',
-                           info='PTDF transpose',
-                           fun=np.transpose, no_parse=True)
-
-        # --- rewrite Constraint pb: power balance ---
-        self.pb.e_str = 'sum(pg) - sum(pd)'
-
-        # --- rewrite Expression plf: line flow---
-        self.plf.e_str = 'PTDF @ (Cg@pg - Cl@pd - Csh@gsh - Pbusinj)'
-
-        # --- rewrite nodal price ---
-        self.pie = ExpressionCalc(info='Energy price',
-                                  name='pie', unit='$/p.u.',
-                                  e_str='-pb.dual_variables[0]')
-        pic = '-PTDFt@(plfub.dual_variables[0] - plflb.dual_variables[0])'
-        self.pic = ExpressionCalc(info='Congestion price',
-                                  name='pic', unit='$/p.u.',
-                                  e_str=pic,
-                                  model='Bus', src=None)
-
-        # NOTE: another implementation of self.pi.e_str can be:
-        # self.pi.e_str = self.pie.e_str + self.pic.e_str
-        # but it is less intuitive to read, as this implementation is not likely
-        # to be used again in other routines.
-        pi = '-pb.dual_variables[0] - PTDFt@(plfub.dual_variables[0] - plflb.dual_variables[0])'
-        self.pi.e_str = pi
-        self.pi.info = 'locational marginal price (LMP)'
+        # Setup PTDF-specific components using mixin methods
+        self._setup_ptdf_params()
+        self._setup_ptdf_expressions()
 
     def _post_solve(self):
-        """Calculate aBus"""
+        """Calculate aBus and perform other post-solve operations."""
         super()._post_solve()
-        sys = self.system
-        Pbus = sys.mats.Cg._v @ self.pg.v
-        Pbus -= sys.mats.Cl._v @ self.pd.v
-        Pbus -= sys.mats.Csh._v @ self.gsh.v
-        Pbus -= self.Pbusinj.v
-        aBus = sps.linalg.spsolve(sys.mats.Bbus._v, Pbus)
-        slack0_uid = sys.Bus.idx2uid(sys.Slack.bus.v[0])
-        self.aBus.v = aBus - aBus[slack0_uid]
-        return super()._post_solve()
+        self._ptdf_post_solve()
+        return True
 
     def init(self, **kwargs):
-        if self.system.mats.PTDF._v is None:
-            logger.warning('PTDF is not available, build it now')
-            self.system.mats.build_ptdf()
+        """Initialize the routine, ensuring PTDF is available."""
+        self._check_ptdf()
         return super().init(**kwargs)
