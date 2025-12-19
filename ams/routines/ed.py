@@ -120,7 +120,7 @@ class ED(RTED, MPBase, SRBase):
 
     Notes
     -----
-    - Formulations has been adjusted with interval ``config.t``
+    - Formulations have been adjusted with interval ``config.t``
     - The tie-line flow is not implemented in this model.
     - ``EDTSlot.ug`` is used instead of ``StaticGen.u`` for generator commitment.
     - Following reserves are balanced for each "Area": RegUp reserve ``rbu``,
