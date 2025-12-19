@@ -120,7 +120,7 @@ class ED(RTED, MPBase, SRBase):
 
     Notes
     -----
-    - Formulations has been adjusted with interval ``config.t``
+    - Formulations have been adjusted with interval ``config.t``
     - The tie-line flow is not implemented in this model.
     - ``EDTSlot.ug`` is used instead of ``StaticGen.u`` for generator commitment.
     - Following reserves are balanced for each "Area": RegUp reserve ``rbu``,
@@ -238,7 +238,7 @@ class EDDG(ED, DGBase):
     """
     ED with distributed generation :ref:`DG`.
 
-    Note that EDDG only inlcudes DG output power. If ESD1 is included,
+    Note that EDDG only includes DG output power. If ESD1 is included,
     EDES should be used instead, otherwise there is no SOC.
     """
 

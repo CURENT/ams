@@ -69,7 +69,7 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
 
     Notes
     -----
-    - The formulations has been adjusted with interval ``config.t``
+    - The formulations have been adjusted with interval ``config.t``
     - The tie-line flow has not been implemented in formulations.
 
     References
@@ -337,7 +337,7 @@ class UCDG(UC, DGBase):
     """
     UC with distributed generation :ref:`DG`.
 
-    Note that UCDG only inlcudes DG output power. If ESD1 is included,
+    Note that UCDG only includes DG output power. If ESD1 is included,
     UCES should be used instead, otherwise there is no SOC.
     """
 

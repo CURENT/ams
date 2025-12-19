@@ -125,8 +125,8 @@ class RTED(DCOPF, RTEDBase, SFRBase):
 
     Notes
     -----
-    - Formulations has been adjusted with interval ``config.t``, 5/60 [Hour] by default.
-    - The tie-line flow related constraints are ommited in this formulation.
+    - Formulations have been adjusted with interval ``config.t``, 5/60 [Hour] by default.
+    - The tie-line flow related constraints are omitted in this formulation.
     - Power generation is balanced for the entire system.
     - SFR is balanced for each area.
     """
@@ -267,7 +267,7 @@ class RTEDDG(RTED, DGBase):
     """
     RTED with distributed generator :ref:`DG`.
 
-    Note that RTEDDG only inlcudes DG output power. If ESD1 is included,
+    Note that RTEDDG only includes DG output power. If ESD1 is included,
     RTEDES should be used instead, otherwise there is no SOC.
     """
 
