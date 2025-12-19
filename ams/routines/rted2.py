@@ -65,7 +65,7 @@ class RTEDDG2(RTED2, DGBase):
     """
     RTED2 with distributed generator :ref:`DG`.
 
-    Note that RTEDDG2 only inlcudes DG output power. If ESD1 is included,
+    Note that RTEDDG2 only includes DG output power. If ESD1 is included,
     RTEDES2 should be used instead, otherwise there is no SOC.
     """
 

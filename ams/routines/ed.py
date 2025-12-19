@@ -238,7 +238,7 @@ class EDDG(ED, DGBase):
     """
     ED with distributed generation :ref:`DG`.
 
-    Note that EDDG only inlcudes DG output power. If ESD1 is included,
+    Note that EDDG only includes DG output power. If ESD1 is included,
     EDES should be used instead, otherwise there is no SOC.
     """
 
