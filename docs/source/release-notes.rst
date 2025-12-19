@@ -9,6 +9,11 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
+v1.1.1 (2025-xx-xx)
+----------------------
+
+- Include objective function value in exported report
+
 v1.1.0 (2025-12-18)
 ----------------------
 
