@@ -85,13 +85,21 @@ class RParam(Param):
 
     In this example, we define the parameter `cru` from the source model
     `SFRCost` with the parameter `cru`.
+    Note since this parameter comes from model `SFRCost`, we need to ensure
+    the value is sorted in the same order as generators.
+    `gen` is the indexer that comes from model `SFR` itself, and `imodel`
+    is the indexer model, i.e., the model that has `idx` as its attribute.
+    Then, we can ensure the value of cru is sorted in the same order as the
+    indexer `StaticGen`.
 
     >>> self.cru = RParam(info='RegUp reserve coefficient',
     >>>                   tex_name=r'c_{r,u}',
     >>>                   unit=r'$/(p.u.)',
     >>>                   name='cru',
     >>>                   src='cru',
-    >>>                   model='SFRCost'
+    >>>                   model='SFRCost',
+    >>>                   indexer='gen',
+    >>>                   imodel='StaticGen',
     >>>                   )
 
     Example 2: Define a routine parameter with a user-defined value.
