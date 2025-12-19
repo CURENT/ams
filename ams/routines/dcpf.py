@@ -9,7 +9,7 @@ from ams.opt import Var, Constraint, Expression, Objective
 from ams.routines.routine import RoutineBase
 
 from ams.core.param import RParam
-from ams.core.service import VarSelect
+from ams.core.service import NumOpDual, VarSelect
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +41,18 @@ class DCPFBase(RoutineBase):
                            model='Slack', src='bus',
                            no_parse=True,)
         # --- load ---
-        self.pd = RParam(info='active demand',
-                         name='pd', tex_name=r'p_{d}',
-                         model='StaticLoad', src='p0',
-                         unit='p.u.',)
+        self.ud = RParam(info='Load connection status',
+                         name='ud', tex_name=r'u_{d}',
+                         model='StaticLoad', src='u',
+                         no_parse=True,)
+        self.pd0 = RParam(info='active demand',
+                          name='pd', tex_name=r'p_{d}',
+                          model='StaticLoad', src='p0',
+                          unit='p.u.',)
+        self.pd = NumOpDual(info='effective active demand',
+                            name='pd', tex_name=r'p_{d}',
+                            u=self.pd0, u2=self.ud,
+                            fun=np.multiply, no_parse=True,)
 
         # --- connection matrix ---
         self.Cg = RParam(info='Gen connection matrix',
@@ -105,13 +113,13 @@ class DCPFBase(RoutineBase):
                              e_str=pb, is_eq=True,)
 
         # --- bus ---
-        self.csb = VarSelect(info='select slack bus',
-                             name='csb', tex_name=r'c_{sb}',
+        self.isb = VarSelect(info='Index slack bus from all buses',
+                             name='isb', tex_name=r'I_{sb}',
                              u=self.aBus, indexer='buss',
                              no_parse=True,)
         self.sba = Constraint(info='align slack bus angle',
                               name='sbus', is_eq=True,
-                              e_str='csb@aBus',)
+                              e_str='isb@aBus',)
 
         # --- line flow ---
         self.plf = Expression(info='Line flow',

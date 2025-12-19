@@ -110,7 +110,7 @@ class OPF(DCPF1):
         Parameters
         ----------
         - opftype : str
-            Type of OPF to solve (default: 'AC').
+            Type of OPF to solve (default: ACPlocal).
         - branch_switching : bool
             Enable branch switching (default: False).
         - min_active_branches : float
