@@ -368,7 +368,7 @@ class UCES(UC, ESD1MPBase):
         self.SOC.horizon = self.timeslot
         self.pce.horizon = self.timeslot
         self.pde.horizon = self.timeslot
-        self.uce.horizon = self.timeslot
-        self.ude.horizon = self.timeslot
+        self.ucd.horizon = self.timeslot
+        self.udd.horizon = self.timeslot
         self.zce.horizon = self.timeslot
         self.zde.horizon = self.timeslot

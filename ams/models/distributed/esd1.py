@@ -17,17 +17,20 @@ class ESD1Data(PVD1Data):
     def __init__(self):
         PVD1Data.__init__(self)
 
-        self.SOCmin = NumParam(default=0.0, tex_name='SOC_{min}',
+        self.SOCmin = NumParam(default=0.1, tex_name='SOC_{min}',
                                info='Minimum required value for SOC in limiter',
                                )
 
-        self.SOCmax = NumParam(default=1.0, tex_name='SOC_{max}',
+        self.SOCmax = NumParam(default=0.9, tex_name='SOC_{max}',
                                info='Maximum allowed value for SOC in limiter',
                                )
 
-        self.SOCinit = NumParam(default=0.5, tex_name='SOC_{init}',
+        self.SOCinit = NumParam(default=0.8, tex_name='SOC_{init}',
                                 info='Initial state of charge',
                                 )
+        self.SOCend = NumParam(default=0.1, tex_name='SOC_{end}',
+                               info='Target state of charge at the end of the period',
+                               )
 
         self.En = NumParam(default=100.0, tex_name='E_n',
                            info='Rated energy capacity',
@@ -42,6 +45,37 @@ class ESD1Data(PVD1Data):
         self.EtaD = NumParam(default=1.0, tex_name='Eta_D',
                              info='Efficiency during discharging',
                              vrange=(0, 1),
+                             )
+
+        self.cesdc = NumParam(default=0.1, tex_name=r'c_{c,ESD}',
+                              info='Charging cost',
+                              unit=r'$/p.u.*h',
+                              )
+        self.cesdd = NumParam(default=0.1, tex_name=r'c_{d,ESD}',
+                              info='Discharging cost',
+                              unit=r'$/p.u.*h',
+                              )
+
+        self.tdc = NumParam(default=0.0,
+                            info='Minimum charging duration',
+                            tex_name=r't_{dc}',
+                            unit='h',
+                            )
+        self.tdd = NumParam(default=0.0,
+                            info='Minimum discharging duration',
+                            tex_name=r't_{dd}',
+                            unit='h',
+                            )
+
+        self.tdc0 = NumParam(default=0.0,
+                             info='Initial charging time',
+                             tex_name=r't_{dc0}',
+                             unit='h',
+                             )
+        self.tdd0 = NumParam(default=0.0,
+                             info='Initial discharging time',
+                             tex_name=r't_{dd0}',
+                             unit='h',
                              )
 
 

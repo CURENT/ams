@@ -454,6 +454,8 @@ class System(adSystem):
 
         # --- model parameters range check ---
         # TODO: there might be other parameters check?
+        # NOTE: for Line and GCost parameters check, we use set rather than alter
+        # to respect the original value in the case file
         adjusted_params = []
         param_to_check = ['rate_a', 'rate_b', 'rate_c', 'amax', 'amin']
         for pname in param_to_check:
@@ -465,6 +467,13 @@ class System(adSystem):
             adjusted_params_str = ', '.join(adjusted_params)
             msg = f"Zero Line parameters detected, adjusted to default values: {adjusted_params_str}."
             logger.info(msg)
+        # --- GCost correction for ESD1 ---
+        if self.ESD1.n > 0:
+            gcost_idx_esd1 = self.GCost.find_idx(keys='gen', values=self.ESD1.gen.v)
+            for param in ['c2', 'c1']:
+                self.GCost.set(src=param, attr='v', value=0, idx=gcost_idx_esd1)
+            logger.info('Parameters c2, c1 are altered to 0 as they are associated with ESD1 for'
+                        f' following GCost: {", ".join(gcost_idx_esd1)}')
         # --- bus type correction ---
         pq_bus = self.PQ.bus.v
         pv_bus = self.PV.bus.v
