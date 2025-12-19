@@ -4,7 +4,7 @@ RTED routines.
 import logging
 
 from ams.routines.dcopf2 import PTDFMixin
-from ams.routines.rted import RTED
+from ams.routines.rted import RTED, DGBase, ESD1Base
 
 
 logger = logging.getLogger(__name__)
@@ -59,3 +59,36 @@ class RTED2(PTDFMixin, RTED):
         """Initialize the routine, checking PTDF availability."""
         self._check_ptdf()
         return super().init(**kwargs)
+
+
+class RTEDDG2(RTED2, DGBase):
+    """
+    RTED2 with distributed generator :ref:`DG`.
+
+    Note that RTEDDG2 only inlcudes DG output power. If ESD1 is included,
+    RTEDES2 should be used instead, otherwise there is no SOC.
+    """
+
+    def __init__(self, system, config):
+        RTED2.__init__(self, system, config)
+        DGBase.__init__(self)
+        self.info = 'Real-time economic dispatch with DG using PTDF'
+        self.type = 'DCED'
+
+
+class RTEDES2(RTED2, ESD1Base):
+    """
+    RTED with energy storage :ref:`ESD1`.
+    The bilinear term in the formulation is linearized with big-M method.
+
+    While the formulation enforces SOCend, the ESD1 owner is not required to provide
+    an SOC constraint for every 5-minute RTED interval. The optimization treats SOCend
+    as a terminal boundary condition, allowing the dispatcher maximum flexibility to optimize
+    power output within the hour, provided the target is met at the interval's conclusion.
+    """
+
+    def __init__(self, system, config):
+        RTED2.__init__(self, system, config)
+        ESD1Base.__init__(self)
+        self.info = 'Real-time economic dispatch with energy storage using PTDF'
+        self.type = 'DCED'
