@@ -46,7 +46,7 @@ class DCPFBase(RoutineBase):
                          model='StaticLoad', src='u',
                          no_parse=True,)
         self.pd0 = RParam(info='active demand',
-                          name='pd', tex_name=r'p_{d}',
+                          name='pd0', tex_name=r'p_{d,0}',
                           model='StaticLoad', src='p0',
                           unit='p.u.',)
         self.pd = NumOpDual(info='effective active demand',
