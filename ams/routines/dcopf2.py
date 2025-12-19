@@ -115,10 +115,8 @@ class PTDFMixin:
         Pbus -= sys.mats.Csh._v @ self.gsh.v
         Pbus -= self.Pbusinj.v
 
-        # Solve for bus angles: Bbus @ aBus = -Pbus
         aBus = sps.linalg.spsolve(sys.mats.Bbus._v, Pbus)
 
-        # Reference to slack bus (set slack bus angle to 0)
         slack0_uid = sys.Bus.idx2uid(sys.Slack.bus.v[0])
         self.aBus.v = aBus - aBus[slack0_uid]
 
