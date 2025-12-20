@@ -113,6 +113,12 @@ class TestRTED2(unittest.TestCase):
         bus_idx = self.ss.Bus.idx.v
 
         DECIMALS = 4
+
+        np.testing.assert_almost_equal(self.ss.RTED.obj.v,
+                                       self.ss.RTED2.obj.v,
+                                       decimal=DECIMALS,
+                                       err_msg="Objective value between RTED2 and RTED not match!")
+
         pg = self.ss.RTED.get(src='pg', attr='v', idx=pg_idx)
         pg2 = self.ss.RTED2.get(src='pg', attr='v', idx=pg_idx)
         np.testing.assert_almost_equal(pg, pg2, decimal=DECIMALS,
@@ -232,6 +238,12 @@ class TestRTEDDG2(unittest.TestCase):
         line_idx = self.ss.Line.idx.v
 
         DECIMALS = 4
+
+        np.testing.assert_almost_equal(self.ss.RTEDDG.obj.v,
+                                       self.ss.RTEDDG2.obj.v,
+                                       decimal=DECIMALS,
+                                       err_msg="Objective value between RTEDDG2 and RTEDDG not match!")
+
         pg = self.ss.RTEDDG.get(src='pg', attr='v', idx=pg_idx)
         pg2 = self.ss.RTEDDG2.get(src='pg', attr='v', idx=pg_idx)
         np.testing.assert_almost_equal(pg, pg2, decimal=DECIMALS,
@@ -366,6 +378,12 @@ class TestRTEDES2(unittest.TestCase):
         line_idx = self.ss.Line.idx.v
 
         DECIMALS = 4
+
+        np.testing.assert_almost_equal(self.ss.RTEDES.obj.v,
+                                       self.ss.RTEDES2.obj.v,
+                                       decimal=DECIMALS,
+                                       err_msg="Objective value between RTEDES2 and RTEDES not match!")
+
         pg = self.ss.RTEDES.get(src='pg', attr='v', idx=pg_idx)
         pg2 = self.ss.RTEDES2.get(src='pg', attr='v', idx=pg_idx)
         np.testing.assert_almost_equal(pg, pg2, decimal=DECIMALS,

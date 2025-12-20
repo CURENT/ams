@@ -115,6 +115,12 @@ class TestDCOPF2(unittest.TestCase):
         line_idx = self.ss.Line.idx.v
 
         DECIMALS = 4
+
+        np.testing.assert_almost_equal(self.ss.DCOPF.obj.v,
+                                       self.ss.DCOPF2.obj.v,
+                                       decimal=DECIMALS,
+                                       err_msg="Objective value between DCOPF2 and DCOPF not match!")
+
         pg = self.ss.DCOPF.get(src='pg', attr='v', idx=pg_idx)
         pg2 = self.ss.DCOPF2.get(src='pg', attr='v', idx=pg_idx)
         np.testing.assert_almost_equal(pg, pg2, decimal=DECIMALS,
