@@ -28,7 +28,7 @@ class TestED2(unittest.TestCase):
         Test generator tripping.
         """
         # a) ensure EDTSlot.ug takes effect
-        # NOTE: manually chang ug.v for testing purpose
+        # NOTE: manually change ug.v for testing purpose
         stg = 'PV_1'
         stg_uid = self.ss.ED2.pg.get_all_idxes().index(stg)
         loc_offtime = np.array([0, 2, 4])
@@ -152,7 +152,7 @@ class TestED2DG(unittest.TestCase):
         Test generator tripping.
         """
         # a) ensure EDTSlot.ug takes effect
-        # NOTE: manually chang ug.v for testing purpose
+        # NOTE: manually change ug.v for testing purpose
         stg = 'PV_1'
         stg_uid = self.ss.ED2.pg.get_all_idxes().index(stg)
         loc_offtime = np.array([0, 2, 4])
@@ -277,7 +277,7 @@ class TestED2ES(unittest.TestCase):
         Test generator tripping.
         """
         # a) ensure EDTSlot.ug takes effect
-        # NOTE: manually chang ug.v for testing purpose
+        # NOTE: manually change ug.v for testing purpose
         stg = 'PV_1'
         stg_uid = self.ss.ED2.pg.get_all_idxes().index(stg)
         loc_offtime = np.array([0, 2, 4])
