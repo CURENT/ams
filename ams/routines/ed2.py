@@ -85,7 +85,7 @@ class ED2(PTDFMixinMP, ED):
         return super().init(**kwargs)
 
 
-class EDDG2(ED2, DGBase):
+class ED2DG(ED2, DGBase):
     """
     ED with distributed generation :ref:`DG` using PTDF.
 
@@ -102,7 +102,7 @@ class EDDG2(ED2, DGBase):
         self.pgdg.horizon = self.timeslot
 
 
-class EDES2(ED2, ESD1MPBase):
+class ED2ES(ED2, ESD1MPBase):
     """
     ED with energy storage :ref:`ESD1` using PTDF.
     """

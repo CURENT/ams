@@ -59,12 +59,12 @@ class RTED2(PTDFMixin, RTED):
         return super().init(**kwargs)
 
 
-class RTEDDG2(RTED2, DGBase):
+class RTED2DG(RTED2, DGBase):
     """
     RTED2 with distributed generator :ref:`DG`.
 
-    Note that RTEDDG2 only includes DG output power. If ESD1 is included,
-    RTEDES2 should be used instead, otherwise there is no SOC.
+    Note that RTED2DG only includes DG output power. If ESD1 is included,
+    RTED2ES should be used instead, otherwise there is no SOC.
     """
 
     def __init__(self, system, config):
@@ -73,7 +73,7 @@ class RTEDDG2(RTED2, DGBase):
         self.type = 'DCED'
 
 
-class RTEDES2(RTED2, ESD1Base):
+class RTED2ES(RTED2, ESD1Base):
     """
     RTED with energy storage :ref:`ESD1`.
     The bilinear term in the formulation is linearized with big-M method.

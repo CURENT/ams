@@ -383,8 +383,8 @@ class RTEDESP(RTEDDG, ESD1P):
     Price run of :class:`RTEDES` with energy storage :ref:`ESD1`.
 
     This routine is not intended to work standalone. It should be used after solved
-    :class:`RTEDES2` or :class:`RTEDES`.
-    When both are solved, :class:`RTEDES2` will be used.
+    :class:`RTED2ES` or :class:`RTEDES`.
+    When both are solved, :class:`RTED2ES` will be used.
     """
 
     def __init__(self, system, config):
@@ -411,12 +411,12 @@ class RTEDESP(RTEDDG, ESD1P):
 
     def init(self, **kwargs):
         used_rtn = None
-        if self.system.RTEDES2.converged:
-            used_rtn = self.system.RTEDES2
+        if self.system.RTED2ES.converged:
+            used_rtn = self.system.RTED2ES
         elif self.system.RTEDES.converged:
             used_rtn = self.system.RTEDES
         else:
-            raise ValueError('RTEDES2 or RTEDES must be solved before RTEDESP!')
+            raise ValueError('RTED2ES or RTEDES must be solved before RTEDESP!')
 
         esd1_idx = self.system.ESD1.idx.v
         esd1_stg = self.system.ESD1.get(src='gen', attr='v', idx=esd1_idx)

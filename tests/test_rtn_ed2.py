@@ -129,9 +129,9 @@ class TestED2(unittest.TestCase):
                                        err_msg="Line flow between ED2 and ED not match!")
 
 
-class TestEDDG2(unittest.TestCase):
+class TestED2DG(unittest.TestCase):
     """
-    Test routine `EDDG2`.
+    Test routine `ED2DG`.
     """
 
     def setUp(self) -> None:
@@ -144,8 +144,8 @@ class TestEDDG2(unittest.TestCase):
         """
         Test initialization.
         """
-        self.ss.EDDG2.init()
-        self.assertTrue(self.ss.EDDG2.initialized, "ED initialization failed!")
+        self.ss.ED2DG.init()
+        self.assertTrue(self.ss.ED2DG.initialized, "ED initialization failed!")
 
     def test_trip_gen(self):
         """
@@ -158,9 +158,9 @@ class TestEDDG2(unittest.TestCase):
         loc_offtime = np.array([0, 2, 4])
         self.ss.EDTSlot.ug.v[loc_offtime, stg_uid] = 0
 
-        self.ss.EDDG2.run(solver='CLARABEL')
-        self.assertTrue(self.ss.EDDG2.converged, "ED did not converge under generator trip!")
-        pg_pv1 = self.ss.EDDG2.get(src='pg', attr='v', idx=stg)
+        self.ss.ED2DG.run(solver='CLARABEL')
+        self.assertTrue(self.ss.ED2DG.converged, "ED did not converge under generator trip!")
+        pg_pv1 = self.ss.ED2DG.get(src='pg', attr='v', idx=stg)
         np.testing.assert_almost_equal(np.zeros_like(loc_offtime),
                                        pg_pv1[loc_offtime],
                                        decimal=6,
@@ -171,11 +171,11 @@ class TestEDDG2(unittest.TestCase):
         # b) ensure StaticGen.u does not take effect
         # NOTE: in ED, `EDTSlot.ug` is used instead of `StaticGen.u`
         self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
-        self.ss.EDDG2.update()
+        self.ss.ED2DG.update()
 
-        self.ss.EDDG2.run(solver='CLARABEL')
-        self.assertTrue(self.ss.EDDG2.converged, "ED did not converge under generator trip!")
-        pg_pv1 = self.ss.EDDG2.get(src='pg', attr='v', idx=stg)
+        self.ss.ED2DG.run(solver='CLARABEL')
+        self.assertTrue(self.ss.ED2DG.converged, "ED did not converge under generator trip!")
+        pg_pv1 = self.ss.ED2DG.get(src='pg', attr='v', idx=stg)
         np.testing.assert_array_less(np.zeros_like(pg_pv1), pg_pv1,
                                      err_msg="Generator trip take effect, which is unexpected!")
 
@@ -186,11 +186,11 @@ class TestEDDG2(unittest.TestCase):
         Test line tripping.
         """
         self.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
-        self.ss.EDDG2.update()
+        self.ss.ED2DG.update()
 
-        self.ss.EDDG2.run(solver='CLARABEL')
-        self.assertTrue(self.ss.EDDG2.converged, "ED did not converge under line trip!")
-        plf_l3 = self.ss.EDDG2.get(src='plf', attr='v', idx='Line_3')
+        self.ss.ED2DG.run(solver='CLARABEL')
+        self.assertTrue(self.ss.ED2DG.converged, "ED did not converge under line trip!")
+        plf_l3 = self.ss.ED2DG.get(src='plf', attr='v', idx='Line_3')
         np.testing.assert_almost_equal(np.zeros_like(plf_l3),
                                        plf_l3, decimal=6)
 
@@ -200,30 +200,30 @@ class TestEDDG2(unittest.TestCase):
         """
         Test setting and tripping load.
         """
-        self.ss.EDDG2.run(solver='CLARABEL')
-        pgs = self.ss.EDDG2.pg.v.sum()
+        self.ss.ED2DG.run(solver='CLARABEL')
+        pgs = self.ss.ED2DG.pg.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
-        self.ss.EDDG2.update()
+        self.ss.ED2DG.update()
 
-        self.ss.EDDG2.run(solver='CLARABEL')
-        pgs_pqt = self.ss.EDDG2.pg.v.sum()
+        self.ss.ED2DG.run(solver='CLARABEL')
+        pgs_pqt = self.ss.ED2DG.pg.v.sum()
         self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
         # --- trip load ---
         self.ss.PQ.alter(src='u', idx='PQ_2', value=0)
-        self.ss.EDDG2.update()
+        self.ss.ED2DG.update()
 
-        self.ss.EDDG2.run(solver='CLARABEL')
-        pgs_pqt2 = self.ss.EDDG2.pg.v.sum()
+        self.ss.ED2DG.run(solver='CLARABEL')
+        pgs_pqt2 = self.ss.ED2DG.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
-    def test_align_eddg2(self):
+    def test_align_ED2DG(self):
         """
         Test if results align with ED.
         """
-        self.ss.EDDG2.run(solver='CLARABEL')
+        self.ss.ED2DG.run(solver='CLARABEL')
         self.ss.EDDG.run(solver='CLARABEL')
 
         pg_idx = self.ss.StaticGen.get_all_idxes()
@@ -232,30 +232,30 @@ class TestEDDG2(unittest.TestCase):
 
         DECIMALS = 4
 
-        np.testing.assert_almost_equal(self.ss.EDDG2.obj.v,
+        np.testing.assert_almost_equal(self.ss.ED2DG.obj.v,
                                        self.ss.EDDG.obj.v,
                                        decimal=DECIMALS,
-                                       err_msg="Objective value between EDDG2 and EDDG not match!")
+                                       err_msg="Objective value between ED2DG and EDDG not match!")
 
         pg = self.ss.EDDG.get(src='pg', attr='v', idx=pg_idx)
-        pg2 = self.ss.EDDG2.get(src='pg', attr='v', idx=pg_idx)
+        pg2 = self.ss.ED2DG.get(src='pg', attr='v', idx=pg_idx)
         np.testing.assert_almost_equal(pg, pg2, decimal=DECIMALS,
-                                       err_msg="Generator power between EDDG2 and EDDG not match!")
+                                       err_msg="Generator power between ED2DG and EDDG not match!")
 
         aBus = self.ss.EDDG.get(src='aBus', attr='v', idx=bus_idx)
-        aBus2 = self.ss.EDDG2.get(src='aBus', attr='v', idx=bus_idx)
+        aBus2 = self.ss.ED2DG.get(src='aBus', attr='v', idx=bus_idx)
         np.testing.assert_almost_equal(aBus, aBus2, decimal=DECIMALS,
-                                       err_msg="Bus angle between EDDG2 and EDDG not match!")
+                                       err_msg="Bus angle between ED2DG and EDDG not match!")
 
         plf = self.ss.EDDG.get(src='plf', attr='v', idx=line_idx)
-        plf2 = self.ss.EDDG2.get(src='plf', attr='v', idx=line_idx)
+        plf2 = self.ss.ED2DG.get(src='plf', attr='v', idx=line_idx)
         np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
-                                       err_msg="Line flow between EDDG2 and EDDG not match!")
+                                       err_msg="Line flow between ED2DG and EDDG not match!")
 
 
-class TestEDES2(unittest.TestCase):
+class TestED2ES(unittest.TestCase):
     """
-    Test routine `EDES2`.
+    Test routine `ED2ES`.
     """
 
     def setUp(self) -> None:
@@ -268,8 +268,8 @@ class TestEDES2(unittest.TestCase):
         """
         Test initialization.
         """
-        self.ss.EDES2.init()
-        self.assertTrue(self.ss.EDES2.initialized, "ED initialization failed!")
+        self.ss.ED2ES.init()
+        self.assertTrue(self.ss.ED2ES.initialized, "ED initialization failed!")
 
     @skip_unittest_without_MISOCP
     def test_trip_gen(self):
@@ -283,9 +283,9 @@ class TestEDES2(unittest.TestCase):
         loc_offtime = np.array([0, 2, 4])
         self.ss.EDTSlot.ug.v[loc_offtime, stg_uid] = 0
 
-        self.ss.EDES2.run(solver='SCIP')
-        self.assertTrue(self.ss.EDES2.converged, "ED did not converge under generator trip!")
-        pg_pv1 = self.ss.EDES2.get(src='pg', attr='v', idx=stg)
+        self.ss.ED2ES.run(solver='SCIP')
+        self.assertTrue(self.ss.ED2ES.converged, "ED did not converge under generator trip!")
+        pg_pv1 = self.ss.ED2ES.get(src='pg', attr='v', idx=stg)
         np.testing.assert_almost_equal(np.zeros_like(loc_offtime),
                                        pg_pv1[loc_offtime],
                                        decimal=6,
@@ -296,11 +296,11 @@ class TestEDES2(unittest.TestCase):
         # b) ensure StaticGen.u does not take effect
         # NOTE: in ED, `EDTSlot.ug` is used instead of `StaticGen.u`
         self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
-        self.ss.EDES2.update()
+        self.ss.ED2ES.update()
 
-        self.ss.EDES2.run(solver='SCIP')
-        self.assertTrue(self.ss.EDES2.converged, "ED did not converge under generator trip!")
-        pg_pv1 = self.ss.EDES2.get(src='pg', attr='v', idx=stg)
+        self.ss.ED2ES.run(solver='SCIP')
+        self.assertTrue(self.ss.ED2ES.converged, "ED did not converge under generator trip!")
+        pg_pv1 = self.ss.ED2ES.get(src='pg', attr='v', idx=stg)
         np.testing.assert_array_less(np.zeros_like(pg_pv1), pg_pv1,
                                      err_msg="Generator trip take effect, which is unexpected!")
 
@@ -312,11 +312,11 @@ class TestEDES2(unittest.TestCase):
         Test line tripping.
         """
         self.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
-        self.ss.EDES2.update()
+        self.ss.ED2ES.update()
 
-        self.ss.EDES2.run(solver='SCIP')
-        self.assertTrue(self.ss.EDES2.converged, "ED did not converge under line trip!")
-        plf_l3 = self.ss.EDES2.get(src='plf', attr='v', idx='Line_3')
+        self.ss.ED2ES.run(solver='SCIP')
+        self.assertTrue(self.ss.ED2ES.converged, "ED did not converge under line trip!")
+        plf_l3 = self.ss.ED2ES.get(src='plf', attr='v', idx='Line_3')
         np.testing.assert_almost_equal(np.zeros_like(plf_l3),
                                        plf_l3, decimal=6)
 
@@ -327,23 +327,23 @@ class TestEDES2(unittest.TestCase):
         """
         Test setting and tripping load.
         """
-        self.ss.EDES2.run(solver='SCIP')
-        pgs = self.ss.EDES2.pg.v.sum()
+        self.ss.ED2ES.run(solver='SCIP')
+        pgs = self.ss.ED2ES.pg.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
-        self.ss.EDES2.update()
+        self.ss.ED2ES.update()
 
-        self.ss.EDES2.run(solver='SCIP')
-        pgs_pqt = self.ss.EDES2.pg.v.sum()
+        self.ss.ED2ES.run(solver='SCIP')
+        pgs_pqt = self.ss.ED2ES.pg.v.sum()
         self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
         # --- trip load ---
         self.ss.PQ.alter(src='u', idx='PQ_2', value=0)
-        self.ss.EDES2.update()
+        self.ss.ED2ES.update()
 
-        self.ss.EDES2.run(solver='SCIP')
-        pgs_pqt2 = self.ss.EDES2.pg.v.sum()
+        self.ss.ED2ES.run(solver='SCIP')
+        pgs_pqt2 = self.ss.ED2ES.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
     @skip_unittest_without_MISOCP
@@ -351,7 +351,7 @@ class TestEDES2(unittest.TestCase):
         """
         Test if results align with EDES.
         """
-        self.ss.EDES2.run(solver='SCIP')
+        self.ss.ED2ES.run(solver='SCIP')
         self.ss.EDES.run(solver='SCIP')
 
         pg_idx = self.ss.StaticGen.get_all_idxes()
@@ -360,22 +360,22 @@ class TestEDES2(unittest.TestCase):
 
         DECIMALS = 3
 
-        np.testing.assert_almost_equal(self.ss.EDES2.obj.v,
+        np.testing.assert_almost_equal(self.ss.ED2ES.obj.v,
                                        self.ss.EDES.obj.v,
                                        decimal=DECIMALS,
-                                       err_msg="Objective value between EDES2 and EDES not match!")
+                                       err_msg="Objective value between ED2ES and EDES not match!")
 
         pg = self.ss.EDES.get(src='pg', attr='v', idx=pg_idx)
-        pg2 = self.ss.EDES2.get(src='pg', attr='v', idx=pg_idx)
+        pg2 = self.ss.ED2ES.get(src='pg', attr='v', idx=pg_idx)
         np.testing.assert_almost_equal(pg, pg2, decimal=DECIMALS,
-                                       err_msg="Generator power between EDES2 and EDES not match!")
+                                       err_msg="Generator power between ED2ES and EDES not match!")
 
         aBus = self.ss.EDES.get(src='aBus', attr='v', idx=bus_idx)
-        aBus2 = self.ss.EDES2.get(src='aBus', attr='v', idx=bus_idx)
+        aBus2 = self.ss.ED2ES.get(src='aBus', attr='v', idx=bus_idx)
         np.testing.assert_almost_equal(aBus, aBus2, decimal=DECIMALS,
-                                       err_msg="Bus angle between EDES2 and EDES not match!")
+                                       err_msg="Bus angle between ED2ES and EDES not match!")
 
         plf = self.ss.EDES.get(src='plf', attr='v', idx=line_idx)
-        plf2 = self.ss.EDES2.get(src='plf', attr='v', idx=line_idx)
+        plf2 = self.ss.ED2ES.get(src='plf', attr='v', idx=line_idx)
         np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
-                                       err_msg="Line flow between EDES2 and EDES not match!")
+                                       err_msg="Line flow between ED2ES and EDES not match!")
