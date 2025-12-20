@@ -54,6 +54,7 @@ class PTDFMixin:
             info="PTDF transpose",
             fun=np.transpose,
             no_parse=True,
+            sparse=True,
         )
 
     def _setup_ptdf_expressions(self):
