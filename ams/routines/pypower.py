@@ -111,16 +111,16 @@ class DCPF1(RoutineBase):
 
         self.c2 = RParam(info='Gen cost coefficient 2',
                          name='c2', tex_name=r'c_{2}',
-                         unit=r'$/(p.u.^2)', model='GCost',
+                         unit=r'$/(p.u.^2)', model='GCost', src='c2',
                          indexer='gen', imodel='StaticGen',
                          nonneg=True, no_parse=True)
         self.c1 = RParam(info='Gen cost coefficient 1',
                          name='c1', tex_name=r'c_{1}',
-                         unit=r'$/(p.u.)', model='GCost',
+                         unit=r'$/(p.u.)', model='GCost', src='c1',
                          indexer='gen', imodel='StaticGen',)
         self.c0 = RParam(info='Gen cost coefficient 0',
                          name='c0', tex_name=r'c_{0}',
-                         unit=r'$', model='GCost',
+                         unit=r'$', model='GCost', src='c0',
                          indexer='gen', imodel='StaticGen',
                          no_parse=True)
 

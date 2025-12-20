@@ -56,16 +56,16 @@ class DCOPF(DCPFBase):
         # --- generator cost ---
         self.c2 = RParam(info='Gen cost coefficient 2',
                          name='c2', tex_name=r'c_{2}',
-                         unit=r'$/(p.u.^2)', model='GCost',
+                         unit=r'$/(p.u.^2)', model='GCost', src='c2',
                          indexer='gen', imodel='StaticGen',
                          nonneg=True, no_parse=True)
         self.c1 = RParam(info='Gen cost coefficient 1',
                          name='c1', tex_name=r'c_{1}',
-                         unit=r'$/(p.u.)', model='GCost',
+                         unit=r'$/(p.u.)', model='GCost', src='c1',
                          indexer='gen', imodel='StaticGen',)
         self.c0 = RParam(info='Gen cost coefficient 0',
                          name='c0', tex_name=r'c_{0}',
-                         unit=r'$', model='GCost',
+                         unit=r'$', model='GCost', src='c0',
                          indexer='gen', imodel='StaticGen',
                          no_parse=True)
         # --- generator ---
@@ -87,11 +87,11 @@ class DCOPF(DCPFBase):
                                 fun=np.multiply, no_parse=True)
         self.pmax = RParam(info='Gen maximum active power',
                            name='pmax', tex_name=r'p_{g, max}',
-                           unit='p.u.', model='StaticGen',
+                           unit='p.u.', model='StaticGen', src='pmax',
                            no_parse=False,)
         self.pmin = RParam(info='Gen minimum active power',
                            name='pmin', tex_name=r'p_{g, min}',
-                           unit='p.u.', model='StaticGen',
+                           unit='p.u.', model='StaticGen', src='pmin',
                            no_parse=False,)
 
         # --- line ---
@@ -101,7 +101,7 @@ class DCOPF(DCPFBase):
                          no_parse=True,)
         self.rate_a = RParam(info='long-term flow limit',
                              name='rate_a', tex_name=r'R_{ATEA}',
-                             unit='p.u.', model='Line',)
+                             unit='p.u.', model='Line', src='rate_a',)
         # --- line angle difference ---
         self.amax = RParam(model='Line', src='amax',
                            name='amax', tex_name=r'\theta_{bus, max}',

@@ -141,7 +141,7 @@ class RParam(Param):
         self.name = name
         self.tex_name = tex_name if (tex_name is not None) else name
         self.info = info
-        self.src = name if (src is None) else src
+        self.src = src
         self.unit = unit
         self.is_group = False
         self.model = model  # name of a group or model
