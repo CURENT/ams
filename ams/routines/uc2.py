@@ -46,6 +46,8 @@ class UC2(PTDFMixinMP, UC):
         self._setup_ptdf_params()
         self._setup_ptdf_expressions()
 
+        self.pb.e_str = "sum(pg, axis=0) - sum(pds - pdu, axis=0)"
+
     def _post_solve(self):
         """Post-solve calculations including aBus calculation."""
         super()._post_solve()
