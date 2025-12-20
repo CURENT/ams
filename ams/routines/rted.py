@@ -543,11 +543,6 @@ class RTEDES(RTED, ESD1Base):
         self.info = 'Real-time economic dispatch with energy storage'
         self.type = 'DCED'
 
-        # SOC balance
-        SOCb = 'mul(En, (SOC - SOCinit)) - t dot mul(EtaC, zce)'
-        SOCb += '+ t dot mul(REtaD, zde)'
-        self.SOCb.e_str = SOCb
-
     def _post_solve(self):
 
         esd1_idx = self.system.ESD1.idx.v
