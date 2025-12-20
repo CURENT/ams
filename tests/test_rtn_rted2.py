@@ -104,7 +104,7 @@ class TestRTED2(unittest.TestCase):
 
     def test_align_rted(self):
         """
-        Test if results from `RTED2` are aligned with those from `RTED`.
+        Test if results align with RTED.
         """
         self.ss.RTED.run(solver='CLARABEL')
         self.ss.RTED2.run(solver='CLARABEL')
@@ -228,7 +228,7 @@ class TestRTEDDG2(unittest.TestCase):
 
     def test_align_rteddg2(self):
         """
-        Test if results from `RTEDDG2` are aligned with those from `RTEDDG`.
+        Test if results align with RTEDDG.
         """
         self.ss.RTEDDG.run(solver='CLARABEL')
         self.ss.RTEDDG2.run(solver='CLARABEL')
@@ -368,7 +368,7 @@ class TestRTEDES2(unittest.TestCase):
     @skip_unittest_without_MISOCP
     def test_align_rtedes(self):
         """
-        Test if results from `RTEDES2` are aligned with those from `RTEDES`.
+        Test if results align with RTEDES.
         """
         self.ss.RTEDES.run(solver='SCIP')
         self.ss.RTEDES2.run(solver='SCIP')
@@ -401,7 +401,7 @@ class TestRTEDES2(unittest.TestCase):
 
     def test_align_rtedesp(self):
         """
-        Test if results from `RTEDES2` are aligned with those from `RTEDESP`.
+        Test if results align with RTEDESP.
         """
         self.ss.RTEDES2.run(solver='SCIP')
         self.ss.RTEDESP.run(solver='CLARABEL')

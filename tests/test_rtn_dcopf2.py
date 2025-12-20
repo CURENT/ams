@@ -104,7 +104,7 @@ class TestDCOPF2(unittest.TestCase):
 
     def test_align_dcopf(self):
         """
-        Test if results from `DCOPF2` are aligned with those from `DCOPF`.
+        Test if results align with DCOPF.
         """
         self.ss.DCOPF.run(solver='CLARABEL')
         self.ss.mats.build_ptdf()
