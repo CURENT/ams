@@ -170,7 +170,6 @@ class DCOPF2(PTDFMixin, DCOPF):
         self.info = "DCOPF using PTDF"
         self.type = "DCED"
 
-        # Setup PTDF-specific components using mixin methods
         self._setup_ptdf_params()
         self._setup_ptdf_expressions()
 

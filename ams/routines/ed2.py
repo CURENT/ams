@@ -23,8 +23,8 @@ class PTDFMixinMP(PTDFMixin):
         PTDFMixin._setup_ptdf_expressions(self)
 
         self.pb.e_str = "sum(pg, axis=0) - sum(pds, axis=0)"
+
         # --- rewrite Expression plf: line flow---
-        # Use PTDF matrix instead of Bf@aBus
         self.plf.e_str = "PTDF @ (Cg@pg - Cl@pds - Csh@gsh@tlv - Pbusinj@tlv)"
 
     def _ptdf_post_solve(self):
@@ -38,13 +38,13 @@ class PTDFMixinMP(PTDFMixin):
         # Calculate net power injection at each bus
         Pbus = sys.mats.Cg._v @ self.pg.v
         Pbus -= sys.mats.Cl._v @ self.pds.v
-        Pbus -= sys.mats.Csh._v @ self.gsh.v
+        Pbus -= sys.mats.Csh._v @ self.gsh.v @ self.tlv.v
         Pbus -= self.Pbusinj.v @ self.tlv.v
 
         aBus = sps.linalg.spsolve(sys.mats.Bbus._v, Pbus)
 
         slack0_uid = sys.Bus.idx2uid(sys.Slack.bus.v[0])
-        self.aBus.v = aBus - aBus[slack0_uid]
+        self.aBus.v = aBus - aBus[slack0_uid, :]
 
 
 class ED2(PTDFMixinMP, ED):
@@ -69,15 +69,12 @@ class ED2(PTDFMixinMP, ED):
     def __init__(self, system, config):
         ED.__init__(self, system, config)
 
-        # Setup PTDF-specific components
         self._setup_ptdf_params()
         self._setup_ptdf_expressions()
 
     def _post_solve(self):
         """Post-solve calculations including aBus calculation."""
-        # Call parent's post_solve first
         super()._post_solve()
-        # Then add PTDF-specific calculations
         self._ptdf_post_solve()
         return True
 
