@@ -445,7 +445,7 @@ class RTEDESP(RTEDDG, ESD1P):
         pde = used_rtn.get(src='pde', attr='v', idx=esd1_idx)
         self.system.StaticGen.set(src='p0', attr='v', idx=esd1_stg, value=pde - pce)
         logger.info(f'<{self.class_name}>: ESD1 associated StaticGen.p0 has been set'
-                    f'according to <{used_rtn.class_name}>')
+                    f' according to <{used_rtn.class_name}>')
 
         return super().init(**kwargs)
 
