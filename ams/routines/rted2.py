@@ -1,5 +1,5 @@
 """
-RTED routines.
+RTED routines using PTDF formulation.
 """
 import logging
 
