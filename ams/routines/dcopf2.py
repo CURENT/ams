@@ -1,5 +1,5 @@
 """
-DCOPF routines.
+DCOPF routines using PTDF formulation.
 """
 
 import logging
