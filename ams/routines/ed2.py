@@ -4,6 +4,7 @@ Economic dispatch routines using PTDF formulation.
 import logging
 
 from ams.routines.dcopf2 import PTDFMixin
+from ams.routines.rted import DGBase
 from ams.routines.ed import ED
 
 from ams.shared import sps
@@ -82,3 +83,21 @@ class ED2(PTDFMixinMP, ED):
         """Initialize the routine, checking PTDF availability."""
         self._check_ptdf()
         return super().init(**kwargs)
+
+
+class EDDG2(ED2, DGBase):
+    """
+    ED with distributed generation :ref:`DG` using PTDF.
+
+    Note that EDDG only includes DG output power. If ESD1 is included,
+    EDES should be used instead, otherwise there is no SOC.
+    """
+
+    def __init__(self, system, config):
+        ED2.__init__(self, system, config)
+        DGBase.__init__(self)
+
+        self.info = 'Economic dispatch with distributed generation'
+        self.type = 'DCED'
+
+        self.pgdg.horizon = self.timeslot
