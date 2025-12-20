@@ -5,7 +5,7 @@ import logging
 
 from ams.routines.dcopf2 import PTDFMixin
 from ams.routines.rted import DGBase
-from ams.routines.ed import ED
+from ams.routines.ed import ED, ESD1MPBase
 
 from ams.shared import sps
 
@@ -100,3 +100,15 @@ class EDDG2(ED2, DGBase):
         self.type = 'DCED'
 
         self.pgdg.horizon = self.timeslot
+
+
+class EDES2(ED2, ESD1MPBase):
+    """
+    ED with energy storage :ref:`ESD1` using PTDF.
+    """
+
+    def __init__(self, system, config):
+        ED2.__init__(self, system, config)
+        ESD1MPBase.__init__(self)
+
+        self.type = 'DCED'
