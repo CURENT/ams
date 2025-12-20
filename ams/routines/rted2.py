@@ -36,7 +36,6 @@ class RTED2(PTDFMixin, RTED):
     """
 
     def __init__(self, system, config):
-        # Initialize RTED base class
         RTED.__init__(self, system, config)
 
         # Update info to reflect RTED2's purpose

@@ -14,6 +14,7 @@ v1.1.1 (2025-xx-xx)
 
 - Include objective function value in exported report
 - Add PTDF-based routines: ``RTED2``, ``RTEDDG2``, ``RTEDES2``
+- Add routine ``RTEDESP`` for price run of ``RTEDES`` and ``RTEDES2``
 
 v1.1.0 (2025-12-18)
 ----------------------

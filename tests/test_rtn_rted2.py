@@ -113,6 +113,12 @@ class TestRTED2(unittest.TestCase):
         bus_idx = self.ss.Bus.idx.v
 
         DECIMALS = 4
+
+        np.testing.assert_almost_equal(self.ss.RTED.obj.v,
+                                       self.ss.RTED2.obj.v,
+                                       decimal=DECIMALS,
+                                       err_msg="Objective value between RTED2 and RTED not match!")
+
         pg = self.ss.RTED.get(src='pg', attr='v', idx=pg_idx)
         pg2 = self.ss.RTED2.get(src='pg', attr='v', idx=pg_idx)
         np.testing.assert_almost_equal(pg, pg2, decimal=DECIMALS,
@@ -232,6 +238,12 @@ class TestRTEDDG2(unittest.TestCase):
         line_idx = self.ss.Line.idx.v
 
         DECIMALS = 4
+
+        np.testing.assert_almost_equal(self.ss.RTEDDG.obj.v,
+                                       self.ss.RTEDDG2.obj.v,
+                                       decimal=DECIMALS,
+                                       err_msg="Objective value between RTEDDG2 and RTEDDG not match!")
+
         pg = self.ss.RTEDDG.get(src='pg', attr='v', idx=pg_idx)
         pg2 = self.ss.RTEDDG2.get(src='pg', attr='v', idx=pg_idx)
         np.testing.assert_almost_equal(pg, pg2, decimal=DECIMALS,
@@ -366,6 +378,12 @@ class TestRTEDES2(unittest.TestCase):
         line_idx = self.ss.Line.idx.v
 
         DECIMALS = 4
+
+        np.testing.assert_almost_equal(self.ss.RTEDES.obj.v,
+                                       self.ss.RTEDES2.obj.v,
+                                       decimal=DECIMALS,
+                                       err_msg="Objective value between RTEDES2 and RTEDES not match!")
+
         pg = self.ss.RTEDES.get(src='pg', attr='v', idx=pg_idx)
         pg2 = self.ss.RTEDES2.get(src='pg', attr='v', idx=pg_idx)
         np.testing.assert_almost_equal(pg, pg2, decimal=DECIMALS,
@@ -380,3 +398,36 @@ class TestRTEDES2(unittest.TestCase):
         plf2 = self.ss.RTEDES2.get(src='plf', attr='v', idx=line_idx)
         np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
                                        err_msg="plf between RTEDES2 and RTEDES not match!")
+
+    def test_align_rtedesp(self):
+        """
+        Test if results from `RTEDES2` are aligned with those from `RTEDESP`.
+        """
+        self.ss.RTEDES2.run(solver='SCIP')
+        self.ss.RTEDESP.run(solver='CLARABEL')
+
+        pg_idx = self.ss.StaticGen.get_all_idxes()
+        bus_idx = self.ss.Bus.idx.v
+        line_idx = self.ss.Line.idx.v
+
+        DECIMALS = 4
+
+        np.testing.assert_almost_equal(self.ss.RTEDES2.obj.v,
+                                       self.ss.RTEDESP.obj.v,
+                                       decimal=DECIMALS,
+                                       err_msg="Objective value between RTEDES2 and RTEDESP not match!")
+
+        pg = self.ss.RTEDES2.get(src='pg', attr='v', idx=pg_idx)
+        pg2 = self.ss.RTEDESP.get(src='pg', attr='v', idx=pg_idx)
+        np.testing.assert_almost_equal(pg, pg2, decimal=DECIMALS,
+                                       err_msg="pg between RTEDES2 and RTEDESP not match!")
+
+        aBus = self.ss.RTEDES2.get(src='aBus', attr='v', idx=bus_idx)
+        aBus2 = self.ss.RTEDESP.get(src='aBus', attr='v', idx=bus_idx)
+        np.testing.assert_almost_equal(aBus, aBus2, decimal=DECIMALS,
+                                       err_msg="aBus between RTEDES2 and RTEDESP not match!")
+
+        plf = self.ss.RTEDES2.get(src='plf', attr='v', idx=line_idx)
+        plf2 = self.ss.RTEDESP.get(src='plf', attr='v', idx=line_idx)
+        np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
+                                       err_msg="plf between RTEDES2 and RTEDESP not match!")
