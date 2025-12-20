@@ -278,13 +278,12 @@ class RTEDDG(RTED, DGBase):
         self.type = 'DCED'
 
 
-class ESD1Base(DGBase):
+class ESD1P:
     """
-    Base class for ESD1 used in DCED.
+    Base class for ESD1 used in price run of DCED.
     """
 
     def __init__(self):
-        DGBase.__init__(self)
 
         # --- params ---
         self.En = RParam(info='Rated energy capacity',
@@ -325,6 +324,148 @@ class ESD1Base(DGBase):
                             tex_name=r'c_{d,ESD}', unit=r'$/p.u.*h',
                             model='ESD1', no_parse=True,)
 
+        # --- service ---
+        self.REtaD = NumOp(name='REtaD', tex_name=r'\frac{1}{\eta_d}',
+                           u=self.EtaD, fun=np.reciprocal,)
+        self.Mb = NumOp(info='10 times of max of pmax as big M',
+                        name='Mb', tex_name=r'M_{big}',
+                        u=self.pmax, fun=np.max,
+                        rfun=np.dot, rargs=dict(b=10),
+                        array_out=False,)
+
+        # --- vars ---
+        self.SOC = Var(info='ESD1 State of Charge', unit='p.u. (%)',
+                       name='SOC', tex_name=r'SOC',
+                       model='ESD1', nonneg=True,
+                       v0=self.SOCinit,)
+
+        self.pce = Var(info='ESD1 charging power',
+                       unit='p.u.', name='pce',
+                       tex_name=r'p_{c,ESD}',
+                       model='ESD1', nonneg=True,)
+        self.pde = Var(info='ESD1 discharging power',
+                       unit='p.u.', name='pde',
+                       tex_name=r'p_{d,ESD}',
+                       model='ESD1', nonneg=True,)
+
+        self.genesd = RParam(info='gen of ESD',
+                             name='genesd', tex_name=r'g_{ESD}',
+                             model='ESD1', src='gen',
+                             no_parse=True,)
+        self.ies = VarSelect(u=self.pg, indexer='genesd',
+                             name='ies', tex_name=r'I_{ESD}',
+                             info='Index ESD from StaticGen',
+                             no_parse=True)
+        self.cesd = Constraint(name='cesd', is_eq=True,
+                               info='Select pce and pde from pg',
+                               e_str='ies @ pg + pce - pde',)
+
+        self.SOClb = Constraint(name='SOClb', is_eq=False,
+                                info='SOC lower bound',
+                                e_str='-SOC + SOCmin',)
+        self.SOCub = Constraint(name='SOCub', is_eq=False,
+                                info='SOC upper bound',
+                                e_str='SOC - SOCmax',)
+
+        SOCb = 'mul(En, (SOC - SOCinit)) - t dot mul(EtaC, pce)'
+        SOCb += '+ t dot mul(REtaD, pde)'
+        self.SOCb = Constraint(name='SOCb', is_eq=True,
+                               info='ESD1 SOC balance',
+                               e_str=SOCb,)
+
+        self.SOCr = Constraint(name='SOCr', is_eq=False,
+                               info='ESD1 final SOC requirement',
+                               e_str='SOCend - SOC',)
+
+        self.obj.e_str += '+ t dot sum(- mul(cesdc, pce) + mul(cesdd, pde))'
+
+
+class RTEDESP(RTEDDG, ESD1P):
+    """
+    Price run of :class:`RTEDES` with energy storage :ref:`ESD1`.
+
+    This routine is not intended to work standalone. It should be used after solved
+    :class:`RTEDES2` or :class:`RTEDES`.
+    When both are solved, :class:`RTEDES2` will be used.
+    """
+
+    def __init__(self, system, config):
+        RTEDDG.__init__(self, system, config)
+        ESD1P.__init__(self)
+
+        self.info = 'Price run of RTED with energy storage'
+        self.type = 'DCED'
+
+        self.ucd = RParam(info='Retrieved ESD1 charging decision',
+                          name='ucd', src='ucd0',
+                          tex_name=r'u_{c,ESD}',
+                          model='ESD1', no_parse=True,
+                          )
+        self.udd = RParam(info='Retrieved ESD1 discharging decision',
+                          name='udd', src='udd0',
+                          tex_name=r'u_{d,ESD}',
+                          model='ESD1', no_parse=True,)
+
+        self.zce = Constraint(name='zce', is_eq=False, info='zce bound',
+                              e_str='mul(1-ucd, pce)',)
+
+        self.zde = Constraint(name='zde', is_eq=False, info='zde bound',
+                              e_str='mul(1-udd, pde)',)
+
+    def init(self, **kwargs):
+        used_rtn = None
+        if self.system.RTEDES2.converged:
+            used_rtn = self.system.RTEDES2
+        elif self.system.RTEDES.converged:
+            used_rtn = self.system.RTEDES
+        else:
+            raise ValueError('RTEDES2 or RTEDES must be solved before RTEDESP!')
+
+        esd1_idx = self.system.ESD1.idx.v
+        esd1_stg = self.system.ESD1.get(src='gen', attr='v', idx=esd1_idx)
+
+        ucd = used_rtn.get(src='ucd', attr='v', idx=esd1_idx)
+        esd1_chrg = [esd1_idx[i] for i in np.where(ucd == 1)[0]]
+        esd1_disch = [esd1_idx[i] for i in np.where(ucd == 0)[0]]
+
+        # store the original values
+        self._cesdc0 = self.system.ESD1.get(src='cesdc', attr='v', idx=esd1_idx)
+        self._cesdd0 = self.system.ESD1.get(src='cesdd', attr='v', idx=esd1_idx)
+
+        # temporarily set the opposite action cost to 0
+        self.system.ESD1.set(src='cesdc', attr='v', idx=esd1_disch, value=0)
+        self.system.ESD1.set(src='cesdd', attr='v', idx=esd1_chrg, value=0)
+
+        pce = used_rtn.get(src='pce', attr='v', idx=esd1_idx)
+        pde = used_rtn.get(src='pde', attr='v', idx=esd1_idx)
+        self.system.StaticGen.set(src='p0', attr='v', idx=esd1_stg, value=pde - pce)
+        logger.info(f'<{self.class_name}>: ESD1 associated StaticGen.p0 has been set'
+                    f'according to <{used_rtn.class_name}>')
+
+        return super().init(**kwargs)
+
+    def run(self, **kwargs):
+        super().run(**kwargs)
+
+        esd1_idx = self.system.ESD1.idx.v
+
+        # reset the ESD1 cost
+        self.system.ESD1.set(src='cesdc', attr='v', idx=esd1_idx, value=self._cesdc0)
+        self.system.ESD1.set(src='cesdd', attr='v', idx=esd1_idx, value=self._cesdd0)
+
+        return True
+
+
+class ESD1Base(DGBase, ESD1P):
+    """
+    Base class for ESD1 used in DCED.
+    """
+
+    def __init__(self):
+        DGBase.__init__(self)
+        ESD1P.__init__(self)
+
+        # --- params ---
         self.tdc = RParam(info='Minimum charging duration',
                           name='tdc', src='tdc',
                           tex_name=r't_{dc}', unit='h',
@@ -343,34 +484,6 @@ class ESD1Base(DGBase):
                            tex_name=r't_{dd0}', unit='h',
                            model='ESD1', no_parse=True,)
 
-        # --- service ---
-        self.REtaD = NumOp(name='REtaD', tex_name=r'\frac{1}{\eta_d}',
-                           u=self.EtaD, fun=np.reciprocal,)
-        self.Mb = NumOp(info='10 times of max of pmax as big M',
-                        name='Mb', tex_name=r'M_{big}',
-                        u=self.pmax, fun=np.max,
-                        rfun=np.dot, rargs=dict(b=10),
-                        array_out=False,)
-
-        # --- vars ---
-        self.SOC = Var(info='ESD1 State of Charge', unit='p.u. (%)',
-                       name='SOC', tex_name=r'SOC',
-                       model='ESD1', pos=True,
-                       v0=self.SOCinit,)
-        self.SOClb = Constraint(name='SOClb', is_eq=False,
-                                info='SOC lower bound',
-                                e_str='-SOC + SOCmin',)
-        self.SOCub = Constraint(name='SOCub', is_eq=False,
-                                info='SOC upper bound',
-                                e_str='SOC - SOCmax',)
-        self.pce = Var(info='ESD1 charging power',
-                       unit='p.u.', name='pce',
-                       tex_name=r'p_{c,ESD}',
-                       model='ESD1', nonneg=True,)
-        self.pde = Var(info='ESD1 discharging power',
-                       unit='p.u.', name='pde',
-                       tex_name=r'p_{d,ESD}',
-                       model='ESD1', nonneg=True,)
         self.ucd = Var(info='ESD1 charging decision',
                        name='ucd', tex_name=r'u_{c,ESD}',
                        model='ESD1', boolean=True,)
@@ -385,18 +498,6 @@ class ESD1Base(DGBase):
                        model='ESD1', nonneg=True,)
         self.zde.info = 'Aux var for discharging, '
         self.zde.info += ':math:`z_{d,ESD}=u_{d,ESD}*p_{d,ESD}`'
-
-        self.genesd = RParam(info='gen of ESD',
-                             name='genesd', tex_name=r'g_{ESD}',
-                             model='ESD1', src='gen',
-                             no_parse=True,)
-        self.ies = VarSelect(u=self.pg, indexer='genesd',
-                             name='ies', tex_name=r'I_{ESD}',
-                             info='Index ESD from StaticGen',
-                             no_parse=True)
-        self.cesd = Constraint(name='cesd', is_eq=True,
-                               info='Select pce and pde from pg',
-                               e_str='ies @ pg + pce - pde',)
 
         # --- constraints ---
         self.cdb = Constraint(name='cdb', is_eq=True,
@@ -417,24 +518,12 @@ class ESD1Base(DGBase):
         self.zde3 = Constraint(name='zde3', is_eq=False, info='zde bound 3',
                                e_str='zde - Mb dot udd',)
 
-        SOCb = 'mul(En, (SOC - SOCinit)) - t dot mul(EtaC, zce)'
-        SOCb += '+ t dot mul(REtaD, zde)'
-        self.SOCb = Constraint(name='SOCb', is_eq=True,
-                               info='ESD1 SOC balance',
-                               e_str=SOCb,)
-
-        self.SOCr = Constraint(name='SOCr', is_eq=False,
-                               info='ESD1 final SOC requirement',
-                               e_str='SOCend - SOC',)
-
         self.tcdr = Constraint(name='tcdr', is_eq=False,
                                info='Minimum charging duration',
                                e_str='tdc - mul(ucd, t + tdc0)',)
         self.tddr = Constraint(name='tddr', is_eq=False,
                                info='Minimum discharging duration',
                                e_str='tdd - mul(udd, t + tdd0)',)
-
-        self.obj.e_str += '+ t dot sum(- cesdc * pce + cesdd * pde)'
 
 
 class RTEDES(RTED, ESD1Base):
@@ -453,6 +542,19 @@ class RTEDES(RTED, ESD1Base):
         ESD1Base.__init__(self)
         self.info = 'Real-time economic dispatch with energy storage'
         self.type = 'DCED'
+
+        # SOC balance
+        SOCb = 'mul(En, (SOC - SOCinit)) - t dot mul(EtaC, zce)'
+        SOCb += '+ t dot mul(REtaD, zde)'
+        self.SOCb.e_str = SOCb
+
+    def _post_solve(self):
+
+        esd1_idx = self.system.ESD1.idx.v
+        self.system.ESD1.set(src='ucd0', attr='v', idx=esd1_idx, value=self.ucd.v)
+        self.system.ESD1.set(src='udd0', attr='v', idx=esd1_idx, value=self.udd.v)
+
+        return super()._post_solve()
 
 
 class VISBase:
