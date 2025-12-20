@@ -360,12 +360,3 @@ class UCES(UC, ESD1MPBase):
         ESD1MPBase.__init__(self)
 
         self.type = 'DCUC'
-
-        self.pgdg.horizon = self.timeslot
-        self.SOC.horizon = self.timeslot
-        self.pce.horizon = self.timeslot
-        self.pde.horizon = self.timeslot
-        self.ucd.horizon = self.timeslot
-        self.udd.horizon = self.timeslot
-        self.zce.horizon = self.timeslot
-        self.zde.horizon = self.timeslot
