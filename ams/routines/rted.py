@@ -385,6 +385,17 @@ class RTEDESP(RTEDDG, ESD1P):
     This routine is not intended to work standalone. It should be used after solved
     :class:`RTED2ES` or :class:`RTEDES`.
     When both are solved, :class:`RTED2ES` will be used.
+
+    The binary variables ``ucd`` and ``udd`` are now parameters retrieved from
+    solved :class:`RTED2ES` or :class:`RTEDES`.
+
+    The constraints ``zce1`` - ``zce3`` and ``zde1`` - ``zde3`` are now simplified
+    to ``zce`` and ``zde`` as below:
+
+    .. math::
+
+        (1 - u_{cd}) * p_{ce} <= 0
+        (1 - u_{dd}) * p_{de} <= 0
     """
 
     def __init__(self, system, config):
