@@ -399,6 +399,7 @@ class TestRTED2ES(unittest.TestCase):
         np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
                                        err_msg="plf between RTED2ES and RTEDES not match!")
 
+    @skip_unittest_without_MISOCP
     def test_align_rtedesp(self):
         """
         Test if results align with RTEDESP.
