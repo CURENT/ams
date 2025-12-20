@@ -94,18 +94,35 @@ class TestUC2(unittest.TestCase):
         self.ss.UC2.run(solver='SCIP')
 
         pg_idx = self.ss.StaticGen.get_all_idxes()
+        bus_idx = self.ss.Bus.idx.v
+        line_idx = self.ss.Line.idx.v
 
         DECIMALS = 4
 
         np.testing.assert_almost_equal(self.ss.UC.obj.v,
                                        self.ss.UC2.obj.v,
                                        decimal=DECIMALS,
-                                       err_msg="Objective value between RTED2ES and RTEDESP not match!")
+                                       err_msg="Objective value between UC2 and UC not match!")
 
         ugd = self.ss.UC.get(src='ugd', attr='v', idx=pg_idx)
         ugd2 = self.ss.UC2.get(src='ugd', attr='v', idx=pg_idx)
         np.testing.assert_almost_equal(ugd, ugd2, decimal=DECIMALS,
-                                       err_msg="ugd between RTED2ES and RTEDESP not match!")
+                                       err_msg="ugd between UC2 and UC not match!")
+
+        pg = self.ss.UC.get(src='pg', attr='v', idx=pg_idx)
+        pg2 = self.ss.UC2.get(src='pg', attr='v', idx=pg_idx)
+        np.testing.assert_almost_equal(pg, pg2, decimal=DECIMALS,
+                                       err_msg="Generator power between UC2 and UC not match!")
+
+        aBus = self.ss.UC.get(src='aBus', attr='v', idx=bus_idx)
+        aBus2 = self.ss.UC2.get(src='aBus', attr='v', idx=bus_idx)
+        np.testing.assert_almost_equal(aBus, aBus2, decimal=DECIMALS,
+                                       err_msg="Bus angle between UC2 and UC not match!")
+
+        plf = self.ss.UC.get(src='plf', attr='v', idx=line_idx)
+        plf2 = self.ss.UC2.get(src='plf', attr='v', idx=line_idx)
+        np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
+                                       err_msg="Line flow between UC2 and UC not match!")
 
 
 class TestUC2DG(unittest.TestCase):
@@ -197,18 +214,35 @@ class TestUC2DG(unittest.TestCase):
         self.ss.UCDG.run(solver='SCIP')
 
         pg_idx = self.ss.StaticGen.get_all_idxes()
+        bus_idx = self.ss.Bus.idx.v
+        line_idx = self.ss.Line.idx.v
 
         DECIMALS = 4
 
         np.testing.assert_almost_equal(self.ss.UC2DG.obj.v,
                                        self.ss.UCDG.obj.v,
                                        decimal=DECIMALS,
-                                       err_msg="Objective value between RTED2ES and RTEDESP not match!")
+                                       err_msg="Objective value between UC2DG and UCDG not match!")
 
         ugd = self.ss.UC2DG.get(src='ugd', attr='v', idx=pg_idx)
         ugd2 = self.ss.UCDG.get(src='ugd', attr='v', idx=pg_idx)
         np.testing.assert_almost_equal(ugd, ugd2, decimal=DECIMALS,
-                                       err_msg="ugd between RTED2ES and RTEDESP not match!")
+                                       err_msg="ugd between UC2DG and UCDG not match!")
+
+        pg = self.ss.UC2DG.get(src='pg', attr='v', idx=pg_idx)
+        pg2 = self.ss.UCDG.get(src='pg', attr='v', idx=pg_idx)
+        np.testing.assert_almost_equal(pg, pg2, decimal=DECIMALS,
+                                       err_msg="Generator power between UC2DG and UCDG not match!")
+
+        aBus = self.ss.UC2DG.get(src='aBus', attr='v', idx=bus_idx)
+        aBus2 = self.ss.UCDG.get(src='aBus', attr='v', idx=bus_idx)
+        np.testing.assert_almost_equal(aBus, aBus2, decimal=DECIMALS,
+                                       err_msg="Bus angle between UC2DG and UCDG not match!")
+
+        plf = self.ss.UC2DG.get(src='plf', attr='v', idx=line_idx)
+        plf2 = self.ss.UCDG.get(src='plf', attr='v', idx=line_idx)
+        np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
+                                       err_msg="Line flow between UC2DG and UCDG not match!")
 
 
 class TestUC2ES(unittest.TestCase):
@@ -306,9 +340,17 @@ class TestUC2ES(unittest.TestCase):
         np.testing.assert_almost_equal(self.ss.UC2ES.obj.v,
                                        self.ss.UCES.obj.v,
                                        decimal=DECIMALS,
-                                       err_msg="Objective value between RTED2ES and RTEDESP not match!")
+                                       err_msg="Objective value between UC2ES and UCES not match!")
 
         ugd = self.ss.UC2ES.get(src='ugd', attr='v', idx=pg_idx)
         ugd2 = self.ss.UCES.get(src='ugd', attr='v', idx=pg_idx)
         np.testing.assert_almost_equal(ugd, ugd2, decimal=DECIMALS,
-                                       err_msg="ugd between RTED2ES and RTEDESP not match!")
+                                       err_msg="ugd between UC2ES and UCES not match!")
+
+        # NOTE: in this case, the generation allocation is not exact the same
+        # so we compare the sum of generation power for each period
+        # and skip the comparison of bus angle and line flow
+        pg = self.ss.UC2ES.get(src='pg', attr='v', idx=pg_idx)
+        pg2 = self.ss.UCES.get(src='pg', attr='v', idx=pg_idx)
+        np.testing.assert_almost_equal(pg.sum(axis=0), pg2.sum(axis=0), decimal=DECIMALS,
+                                       err_msg="Generator power between UC2ES and UCES not match!")
