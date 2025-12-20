@@ -167,7 +167,6 @@ class DCOPF2(PTDFMixin, DCOPF):
 
     def __init__(self, system, config):
         DCOPF.__init__(self, system, config)
-        self.info = "DCOPF using PTDF"
         self.type = "DCED"
 
         self._setup_ptdf_params()

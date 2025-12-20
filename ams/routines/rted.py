@@ -145,7 +145,6 @@ class RTED(DCOPF, RTEDBase, SFRBase):
                               t='T_{cfg}',
                               )
 
-        self.info = 'Real-time economic dispatch'
         self.type = 'DCED'
 
         # --- Mapping Section ---
@@ -274,7 +273,6 @@ class RTEDDG(RTED, DGBase):
     def __init__(self, system, config):
         RTED.__init__(self, system, config)
         DGBase.__init__(self)
-        self.info = 'Real-time economic dispatch with DG'
         self.type = 'DCED'
 
 
@@ -393,7 +391,6 @@ class RTEDESP(RTEDDG, ESD1P):
         RTEDDG.__init__(self, system, config)
         ESD1P.__init__(self)
 
-        self.info = 'Price run of RTED with energy storage'
         self.type = 'DCED'
 
         self.ucd = RParam(info='Retrieved ESD1 charging decision',
@@ -545,7 +542,6 @@ class RTEDES(RTED, ESD1Base):
     def __init__(self, system, config):
         RTED.__init__(self, system, config)
         ESD1Base.__init__(self)
-        self.info = 'Real-time economic dispatch with energy storage'
         self.type = 'DCED'
 
 
@@ -634,7 +630,6 @@ class RTEDVIS(RTED, VISBase):
     def __init__(self, system, config):
         RTED.__init__(self, system, config)
         VISBase.__init__(self)
-        self.info = 'Real-time economic dispatch with virtual inertia scheduling'
         self.type = 'DCED'
 
         # --- objective ---

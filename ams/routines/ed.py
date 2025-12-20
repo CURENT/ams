@@ -137,7 +137,6 @@ class ED(RTED, MPBase, SRBase):
                               t="time interval in hours",
                               )
 
-        self.info = 'Economic dispatch'
         self.type = 'DCED'
 
         self.ug.info = 'unit commitment decisions'
@@ -246,7 +245,6 @@ class EDDG(ED, DGBase):
         ED.__init__(self, system, config)
         DGBase.__init__(self)
 
-        self.info = 'Economic dispatch with distributed generation'
         self.type = 'DCED'
 
         # NOTE: extend vars to 2D
@@ -296,7 +294,6 @@ class EDES(ED, ESD1MPBase):
         ED.__init__(self, system, config)
         ESD1MPBase.__init__(self)
 
-        self.info = 'Economic dispatch with energy storage'
         self.type = 'DCED'
 
         # NOTE: extend vars to 2D

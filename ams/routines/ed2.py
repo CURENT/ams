@@ -97,7 +97,6 @@ class EDDG2(ED2, DGBase):
         ED2.__init__(self, system, config)
         DGBase.__init__(self)
 
-        self.info = 'Economic dispatch with distributed generation'
         self.type = 'DCED'
 
         self.pgdg.horizon = self.timeslot

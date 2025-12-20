@@ -35,7 +35,6 @@ class PFlow(RoutineBase):
 
     def __init__(self, system, config):
         RoutineBase.__init__(self, system, config)
-        self.info = 'AC Power Flow'
         self.type = 'PF'
         self._adsys = None
 

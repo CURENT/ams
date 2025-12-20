@@ -39,7 +39,6 @@ class RTED2(PTDFMixin, RTED):
         RTED.__init__(self, system, config)
 
         # Update info to reflect RTED2's purpose
-        self.info = 'Real-time economic dispatch using PTDF'
         self.type = 'DCED'
 
         # Setup PTDF-specific components
@@ -71,7 +70,6 @@ class RTEDDG2(RTED2, DGBase):
     def __init__(self, system, config):
         RTED2.__init__(self, system, config)
         DGBase.__init__(self)
-        self.info = 'Real-time economic dispatch with DG using PTDF'
         self.type = 'DCED'
 
 
@@ -89,5 +87,4 @@ class RTEDES2(RTED2, ESD1Base):
     def __init__(self, system, config):
         RTED2.__init__(self, system, config)
         ESD1Base.__init__(self)
-        self.info = 'Real-time economic dispatch with energy storage using PTDF'
         self.type = 'DCED'

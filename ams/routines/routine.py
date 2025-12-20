@@ -95,7 +95,6 @@ class RoutineBase:
         """
         self.system = system
         self.config = Config(self.class_name)
-        self.info = None
         self.tex_names = OrderedDict(
             (
                 ("sys_f", "f_{sys}"),

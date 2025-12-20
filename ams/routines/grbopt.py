@@ -40,7 +40,6 @@ class OPF(DCPF1):
 
     def __init__(self, system, config):
         DCPF1.__init__(self, system, config)
-        self.info = 'Optimal Power Flow'
         self.type = 'ACED'
 
         # Overwrite the config to be empty, as it is not used in this routine
