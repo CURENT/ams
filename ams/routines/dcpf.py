@@ -201,7 +201,6 @@ class DCPF(DCPFBase):
 
     def __init__(self, system, config):
         DCPFBase.__init__(self, system, config)
-        self.info = 'DC Power Flow'
         self.type = 'PF'
 
         self.genpv = RParam(info='gen of PV',

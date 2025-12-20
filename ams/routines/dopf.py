@@ -25,7 +25,6 @@ class DOPF(DCOPF):
 
     def __init__(self, system, config):
         DCOPF.__init__(self, system, config)
-        self.info = 'Linearzied distribution OPF'
         self.type = 'DED'
 
         # -- Data Section --

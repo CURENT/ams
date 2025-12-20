@@ -37,7 +37,6 @@ class DCOPF(DCPFBase):
 
     def __init__(self, system, config):
         DCPFBase.__init__(self, system, config)
-        self.info = 'DC Optimal Power Flow'
         self.type = 'DCED'
 
         # --- Mapping Section ---

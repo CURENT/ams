@@ -79,11 +79,11 @@ class ESD1Data(PVD1Data):
                              )
 
         self.ucd0 = NumParam(default=0,
-                             info='Solved charging decision',
+                             info='Solved charging decision, placeholder',
                              tex_name=r'u_{cd0}',
                              )
         self.udd0 = NumParam(default=0,
-                             info='Solved discharging decision',
+                             info='Solved discharging decision, placeholder',
                              tex_name=r'u_{dd0}',
                              )
 

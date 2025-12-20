@@ -97,7 +97,6 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
                               t='T_{cfg}',
                               )
 
-        self.info = 'unit commitment'
         self.type = 'DCUC'
 
         # --- Data Section ---
@@ -345,7 +344,6 @@ class UCDG(UC, DGBase):
         UC.__init__(self, system, config)
         DGBase.__init__(self)
 
-        self.info = 'unit commitment with distributed generation'
         self.type = 'DCUC'
 
         # NOTE: extend vars to 2D
@@ -361,14 +359,4 @@ class UCES(UC, ESD1MPBase):
         UC.__init__(self, system, config)
         ESD1MPBase.__init__(self)
 
-        self.info = 'unit commitment with energy storage'
         self.type = 'DCUC'
-
-        self.pgdg.horizon = self.timeslot
-        self.SOC.horizon = self.timeslot
-        self.pce.horizon = self.timeslot
-        self.pde.horizon = self.timeslot
-        self.ucd.horizon = self.timeslot
-        self.udd.horizon = self.timeslot
-        self.zce.horizon = self.timeslot
-        self.zde.horizon = self.timeslot

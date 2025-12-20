@@ -1,0 +1,90 @@
+"""
+Unit commitment routines using PTDF formulations.
+"""
+import logging
+
+from ams.routines.rted import DGBase
+from ams.routines.ed import ESD1MPBase
+from ams.routines.ed2 import PTDFMixinMP
+from ams.routines.uc import UC
+
+logger = logging.getLogger(__name__)
+
+
+class UC2(PTDFMixinMP, UC):
+    """
+    DC-based unit commitment (UC) using PTDF formulations:
+    The bilinear term in the formulation is linearized with big-M method.
+
+    Non-negative var `pdu` is introduced as unserved load with its penalty `cdp`.
+
+    Constraints include power balance, ramping, spinning reserve, non-spinning reserve,
+    minimum ON/OFF duration.
+    The cost inludes generation cost, startup cost, shutdown cost, spinning reserve cost,
+    non-spinning reserve cost, and unserved load penalty.
+
+    Method ``_initial_guess`` is used to make initial guess for commitment decision if all
+    generators are online at initial. It is a simple heuristic method, which may not be optimal.
+
+    Notes
+    -----
+    - The formulations have been adjusted with interval ``config.t``
+    - The tie-line flow has not been implemented in formulations.
+
+    References
+    ----------
+    1. Huang, Y., Pardalos, P. M., & Zheng, Q. P. (2017). Electrical power unit commitment: deterministic and
+       two-stage stochastic programming models and algorithms. Springer.
+    2. D. A. Tejada-Arango, S. Lumbreras, P. Sánchez-Martín and A. Ramos, "Which Unit-Commitment Formulation
+       is Best? A Comparison Framework," in IEEE Transactions on Power Systems, vol. 35, no. 4, pp. 2926-2936,
+       July 2020, doi: 10.1109/TPWRS.2019.2962024.
+    """
+
+    def __init__(self, system, config):
+        UC.__init__(self, system, config)
+
+        self._setup_ptdf_params()
+        self._setup_ptdf_expressions()
+
+        self.pb.e_str = "sum(pg, axis=0) - sum(pds - pdu, axis=0)"
+
+    def _post_solve(self):
+        """Post-solve calculations including aBus calculation."""
+        super()._post_solve()
+        self._ptdf_post_solve()
+        return True
+
+    def init(self, **kwargs):
+        """Initialize the routine, checking PTDF availability."""
+        self._check_ptdf()
+        return super().init(**kwargs)
+
+
+class UC2DG(UC2, DGBase):
+    """
+    UC with distributed generation :ref:`DG`, using PTDF formulations.
+
+    Note that UCDG only includes DG output power. If ESD1 is included,
+    UCES should be used instead, otherwise there is no SOC.
+    """
+
+    def __init__(self, system, config):
+        UC2.__init__(self, system, config)
+        DGBase.__init__(self)
+
+        self.type = 'DCUC'
+
+        # NOTE: extend vars to 2D
+        self.pgdg.horizon = self.timeslot
+
+
+class UC2ES(UC2, ESD1MPBase):
+    """
+    UC with energy storage :ref:`ESD1`, using PTDF formulations.
+    """
+
+    def __init__(self, system, config):
+        UC2.__init__(self, system, config)
+        ESD1MPBase.__init__(self)
+
+        self.type = 'DCUC'

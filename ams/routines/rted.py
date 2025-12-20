@@ -145,7 +145,6 @@ class RTED(DCOPF, RTEDBase, SFRBase):
                               t='T_{cfg}',
                               )
 
-        self.info = 'Real-time economic dispatch'
         self.type = 'DCED'
 
         # --- Mapping Section ---
@@ -274,7 +273,6 @@ class RTEDDG(RTED, DGBase):
     def __init__(self, system, config):
         RTED.__init__(self, system, config)
         DGBase.__init__(self)
-        self.info = 'Real-time economic dispatch with DG'
         self.type = 'DCED'
 
 
@@ -385,15 +383,25 @@ class RTEDESP(RTEDDG, ESD1P):
     Price run of :class:`RTEDES` with energy storage :ref:`ESD1`.
 
     This routine is not intended to work standalone. It should be used after solved
-    :class:`RTEDES2` or :class:`RTEDES`.
-    When both are solved, :class:`RTEDES2` will be used.
+    :class:`RTED2ES` or :class:`RTEDES`.
+    When both are solved, :class:`RTED2ES` will be used.
+
+    The binary variables ``ucd`` and ``udd`` are now parameters retrieved from
+    solved :class:`RTED2ES` or :class:`RTEDES`.
+
+    The constraints ``zce1`` - ``zce3`` and ``zde1`` - ``zde3`` are now simplified
+    to ``zce`` and ``zde`` as below:
+
+    .. math::
+
+        (1 - u_{cd}) * p_{ce} <= 0
+        (1 - u_{dd}) * p_{de} <= 0
     """
 
     def __init__(self, system, config):
         RTEDDG.__init__(self, system, config)
         ESD1P.__init__(self)
 
-        self.info = 'Price run of RTED with energy storage'
         self.type = 'DCED'
 
         self.ucd = RParam(info='Retrieved ESD1 charging decision',
@@ -414,12 +422,12 @@ class RTEDESP(RTEDDG, ESD1P):
 
     def init(self, **kwargs):
         used_rtn = None
-        if self.system.RTEDES2.converged:
-            used_rtn = self.system.RTEDES2
+        if self.system.RTED2ES.converged:
+            used_rtn = self.system.RTED2ES
         elif self.system.RTEDES.converged:
             used_rtn = self.system.RTEDES
         else:
-            raise ValueError('RTEDES2 or RTEDES must be solved before RTEDESP!')
+            raise ValueError('RTED2ES or RTEDES must be solved before RTEDESP!')
 
         esd1_idx = self.system.ESD1.idx.v
         esd1_stg = self.system.ESD1.get(src='gen', attr='v', idx=esd1_idx)
@@ -545,7 +553,6 @@ class RTEDES(RTED, ESD1Base):
     def __init__(self, system, config):
         RTED.__init__(self, system, config)
         ESD1Base.__init__(self)
-        self.info = 'Real-time economic dispatch with energy storage'
         self.type = 'DCED'
 
 
@@ -634,7 +641,6 @@ class RTEDVIS(RTED, VISBase):
     def __init__(self, system, config):
         RTED.__init__(self, system, config)
         VISBase.__init__(self)
-        self.info = 'Real-time economic dispatch with virtual inertia scheduling'
         self.type = 'DCED'
 
         # --- objective ---

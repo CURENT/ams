@@ -1,5 +1,5 @@
 """
-DCOPF routines.
+DCOPF routines using PTDF formulation.
 """
 
 import logging
@@ -54,6 +54,7 @@ class PTDFMixin:
             info="PTDF transpose",
             fun=np.transpose,
             no_parse=True,
+            sparse=True,
         )
 
     def _setup_ptdf_expressions(self):
@@ -167,10 +168,8 @@ class DCOPF2(PTDFMixin, DCOPF):
 
     def __init__(self, system, config):
         DCOPF.__init__(self, system, config)
-        self.info = "DCOPF using PTDF"
         self.type = "DCED"
 
-        # Setup PTDF-specific components using mixin methods
         self._setup_ptdf_params()
         self._setup_ptdf_expressions()
 
