@@ -92,11 +92,3 @@ class RTEDES2(RTED2, ESD1Base):
         ESD1Base.__init__(self)
         self.info = 'Real-time economic dispatch with energy storage using PTDF'
         self.type = 'DCED'
-
-    def _post_solve(self):
-
-        esd1_idx = self.system.ESD1.idx.v
-        self.system.ESD1.set(src='ucd0', attr='v', idx=esd1_idx, value=self.ucd.v)
-        self.system.ESD1.set(src='udd0', attr='v', idx=esd1_idx, value=self.udd.v)
-
-        return super()._post_solve()

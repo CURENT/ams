@@ -428,6 +428,11 @@ class RTEDESP(RTEDDG, ESD1P):
         esd1_chrg = [esd1_idx[i] for i in np.where(ucd == 1)[0]]
         esd1_disch = [esd1_idx[i] for i in np.where(ucd == 0)[0]]
 
+        self.system.ESD1.set(src='ucd0', attr='v', idx=esd1_idx,
+                             value=used_rtn.get(src='ucd', attr='v', idx=esd1_idx))
+        self.system.ESD1.set(src='udd0', attr='v', idx=esd1_idx,
+                             value=used_rtn.get(src='udd', attr='v', idx=esd1_idx))
+
         # store the original values
         self._cesdc0 = self.system.ESD1.get(src='cesdc', attr='v', idx=esd1_idx)
         self._cesdd0 = self.system.ESD1.get(src='cesdd', attr='v', idx=esd1_idx)
@@ -542,14 +547,6 @@ class RTEDES(RTED, ESD1Base):
         ESD1Base.__init__(self)
         self.info = 'Real-time economic dispatch with energy storage'
         self.type = 'DCED'
-
-    def _post_solve(self):
-
-        esd1_idx = self.system.ESD1.idx.v
-        self.system.ESD1.set(src='ucd0', attr='v', idx=esd1_idx, value=self.ucd.v)
-        self.system.ESD1.set(src='udd0', attr='v', idx=esd1_idx, value=self.udd.v)
-
-        return super()._post_solve()
 
 
 class VISBase:
