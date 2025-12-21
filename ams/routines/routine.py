@@ -280,28 +280,30 @@ class RoutineBase:
                 # NOTE: skip checking Shunt.g
                 if (rparam.owner.class_name == 'Shunt') and (rparam.src == 'g'):
                     pass
-                elif rparam.owner.n == 0:
-                    no_input.append(rname)
-                    owner_list.append(rparam.owner.class_name)
                 # NOTE: below is special case for PTDF availability check
                 elif rparam.owner.class_name == 'MatProcessor':
                     if rparam.src == 'PTDF':
                         if self.system.mats.PTDF._v is None:
                             logger.warning("PTDF is not available, build it now")
                             self.system.mats.build_ptdf()
-
-            if rparam.config.pos:
-                if not np.all(rparam.v > 0):
-                    logger.warning(f"RParam <{rname}> should have all positive values.")
-            if rparam.config.neg:
-                if not np.all(rparam.v < 0):
-                    logger.warning(f"RParam <{rname}> should have all negative values.")
-            if rparam.config.nonpos:
-                if not np.all(rparam.v <= 0):
-                    logger.warning(f"RParam <{rname}> should have all non-positive values.")
-            if rparam.config.nonneg:
-                if not np.all(rparam.v >= 0):
-                    logger.warning(f"RParam <{rname}> should have all non-negative values.")
+                elif rparam.owner.n == 0:
+                    no_input.append(rname)
+                    owner_list.append(rparam.owner.class_name)
+                else:
+                    # do value check for non-empty rparams
+                    if rparam.config.pos:
+                        if not np.all(rparam.v > 0):
+                            logger.warning(f"RParam <{rname}> should have all positive values.")
+                    if rparam.config.neg:
+                        if not np.all(rparam.v < 0):
+                            logger.warning(f"RParam <{rname}> should have all negative values.")
+                    if rparam.config.nonpos:
+                        if not np.all(rparam.v <= 0):
+                            logger.warning(f"RParam <{rname}> should have all non-positive values.")
+                    if rparam.config.nonneg:
+                        print(f'<{self.class_name}> RParam <{rname}> should have all non-negative values.')
+                        if not np.all(rparam.v >= 0):
+                            logger.warning(f"RParam <{rname}> should have all non-negative values.")
 
         if len(no_input) > 0:
             logger.error(f"<{self.class_name}> Following models are missing in input: {set(owner_list)}")
