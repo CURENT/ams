@@ -295,6 +295,12 @@ class RoutineBase:
         if len(no_input) > 0:
             logger.error(f"Following models are missing in input: {set(owner_list)}")
             return False
+
+        # --- Call super data check if exists (for Mixins) ---
+        if hasattr(super(), '_data_check'):
+            if not super()._data_check():
+                return False
+
         # TODO: add data validation for RParam, typical range, etc.
         logger.debug(" -> Data check passed")
         return True
