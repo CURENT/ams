@@ -20,7 +20,7 @@ class DCPFBase(RoutineBase):
     """
 
     def __init__(self, system, config):
-        RoutineBase.__init__(self, system, config)
+        super().__init__(system, config)
 
         self.ug = RParam(info='Gen connection status',
                          name='ug', tex_name=r'u_{g}',
@@ -200,7 +200,7 @@ class DCPF(DCPFBase):
     """
 
     def __init__(self, system, config):
-        DCPFBase.__init__(self, system, config)
+        super().__init__(system, config)
         self.type = 'PF'
 
         self.genpv = RParam(info='gen of PV',

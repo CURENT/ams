@@ -36,7 +36,7 @@ class DCOPF(DCPFBase):
     """
 
     def __init__(self, system, config):
-        DCPFBase.__init__(self, system, config)
+        super().__init__(system, config)
         self.type = 'DCED'
 
         # --- Mapping Section ---
