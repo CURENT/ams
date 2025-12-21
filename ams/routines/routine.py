@@ -21,7 +21,7 @@ from ams.opt import Param, Var, Constraint, Objective, ExpressionCalc, Expressio
 
 from ams.utils.paths import get_export_path
 
-from ams.shared import pd, summary_row, summary_name
+from ams.shared import pd, summary_row, summary_name, sps
 
 logger = logging.getLogger(__name__)
 
@@ -390,12 +390,35 @@ class RoutineBase:
 
     def _post_solve(self):
         """
-        Post-solve calculation.
+        Post-solve calculations.
         """
-        # --- Call super data check if exists (for Mixins) ---
-        if hasattr(super(), '_post_solve'):
-            if not super()._post_solve():
-                return False
+        # NOTE: unpack Expressions if owner and arc are available
+        for expr in self.exprs.values():
+            if expr.owner and expr.src:
+                expr.owner.set(src=expr.src, attr='v',
+                               idx=expr.get_all_idxes(), value=expr.v)
+
+        if self.type in ['DCED', 'DCUC']:
+            # NOTE: for DC type routines, set vBus to 1.0 p.u. as placeholder
+            self.vBus.v = np.ones(self.vBus.shape)
+
+            # Calculate bus angles after solving
+            sys = self.system
+            # Calculate net power injection at each bus
+            if self.pg.horizon is not None:
+                Pbus = sys.mats.Cg._v @ self.pg.v
+                Pbus -= sys.mats.Cl._v @ self.pds.v
+                Pbus -= sys.mats.Csh._v @ self.gsh.v @ self.tlv.v
+                Pbus -= self.Pbusinj.v @ self.tlv.v
+            else:
+                Pbus = sys.mats.Cg._v @ self.pg.v
+                Pbus -= sys.mats.Cl._v @ self.pd.v
+                Pbus -= sys.mats.Csh._v @ self.gsh.v
+                Pbus -= self.Pbusinj.v
+            aBus = sps.linalg.spsolve(sys.mats.Bbus._v, Pbus)
+            slack0_uid = sys.Bus.idx2uid(sys.Slack.bus.v[0])
+            self.aBus.v = aBus - aBus[slack0_uid]
+        return True
 
     def run(self, **kwargs):
         """

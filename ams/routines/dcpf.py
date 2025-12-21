@@ -11,8 +11,6 @@ from ams.routines.routine import RoutineBase
 from ams.core.param import RParam
 from ams.core.service import NumOpDual, VarSelect
 
-from ams.shared import sps
-
 logger = logging.getLogger(__name__)
 
 
@@ -179,33 +177,6 @@ class DCPFBase(RoutineBase):
 
         # label the most recent solved routine
         self.system.recent = self.system.routines[self.class_name]
-        return True
-
-    def _post_solve(self):
-        """
-        Post-solve calculations.
-        """
-        # NOTE: for DC type routines, set vBus to 1.0 p.u. as placeholder
-        self.vBus.v = np.ones(self.vBus.shape)
-
-        # NOTE: unpack Expressions if owner and arc are available
-        for expr in self.exprs.values():
-            if expr.owner and expr.src:
-                expr.owner.set(src=expr.src, attr='v',
-                               idx=expr.get_all_idxes(), value=expr.v)
-
-        # Calculate bus angles after solving
-        sys = self.system
-        # Calculate net power injection at each bus
-        Pbus = sys.mats.Cg._v @ self.pg.v
-        Pbus -= sys.mats.Cl._v @ self.pd.v
-        Pbus -= sys.mats.Csh._v @ self.gsh.v
-        Pbus -= self.Pbusinj.v
-
-        aBus = sps.linalg.spsolve(sys.mats.Bbus._v, Pbus)
-
-        slack0_uid = sys.Bus.idx2uid(sys.Slack.bus.v[0])
-        self.aBus.v = aBus - aBus[slack0_uid]
         return True
 
 
