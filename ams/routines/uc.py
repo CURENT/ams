@@ -262,7 +262,7 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         self.pb.e_str = pb
 
         # --- objective ---
-        cost = 't**2 dot sum(c2 @ zug**2 + t dot c1 @ zug)'
+        cost = 't**2 dot sum(c2 @ pg**2 + t dot c1 @ pg)'
         cost += '+ sum(mul(ug, c0) @ tlv)'
         _to_sum = 'csu * vgd + csd * wgd + csr @ prs + cnsr @ prns + cdp @ pdu'
         cost += f' + t dot sum({_to_sum})'
