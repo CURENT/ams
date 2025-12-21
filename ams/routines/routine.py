@@ -294,10 +294,20 @@ class RoutineBase:
                         if self.system.mats.PTDF._v is None:
                             logger.warning("PTDF is not available, build it now")
                             self.system.mats.build_ptdf()
-            # TODO: add more data config check?
+
             if rparam.config.pos:
                 if not np.all(rparam.v > 0):
                     logger.warning(f"RParam <{rname}> should have all positive values.")
+            if rparam.config.neg:
+                if not np.all(rparam.v < 0):
+                    logger.warning(f"RParam <{rname}> should have all negative values.")
+            if rparam.config.nonpos:
+                if not np.all(rparam.v <= 0):
+                    logger.warning(f"RParam <{rname}> should have all non-positive values.")
+            if rparam.config.nonneg:
+                if not np.all(rparam.v >= 0):
+                    logger.warning(f"RParam <{rname}> should have all non-negative values.")
+
         if len(no_input) > 0:
             logger.error(f"Following models are missing in input: {set(owner_list)}")
             return False
