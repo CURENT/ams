@@ -533,10 +533,10 @@ class ESD1Base(DGBase, ESD1P):
 
         self.tcdr = Constraint(name='tcdr', is_eq=False,
                                info='Minimum charging duration',
-                               e_str='tdc - mul(ucd, t + tdc0)',)
+                               e_str='mul(ucd, tdc - t - tdc0)',)
         self.tddr = Constraint(name='tddr', is_eq=False,
                                info='Minimum discharging duration',
-                               e_str='tdd - mul(udd, t + tdd0)',)
+                               e_str='mul(udd, tdd - t - tdd0)',)
 
 
 class RTEDES(RTED, ESD1Base):
