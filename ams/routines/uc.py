@@ -319,7 +319,7 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         AC conversion ``dc2ac`` is not implemented yet for
         multi-period scheduling.
         """
-        return NotImplementedError
+        raise NotImplementedError("dc2ac is not implemented for multi-period scheduling")
 
     def unpack(self, res, **kwargs):
         """
