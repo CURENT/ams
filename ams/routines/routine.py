@@ -304,7 +304,7 @@ class RoutineBase:
                     logger.warning(f"RParam <{rname}> should have all non-negative values.")
 
         if len(no_input) > 0:
-            logger.error(f"Following models are missing in input: {set(owner_list)}")
+            logger.error(f"<{self.class_name}> Following models are missing in input: {set(owner_list)}")
             return False
 
         # --- Call super data check if exists (for Mixins) ---
