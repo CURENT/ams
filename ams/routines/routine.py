@@ -376,7 +376,10 @@ class RoutineBase:
         """
         Post-solve calculation.
         """
-        raise NotImplementedError
+        # --- Call super data check if exists (for Mixins) ---
+        if hasattr(super(), '_post_solve'):
+            if not super()._post_solve():
+                return False
 
     def run(self, **kwargs):
         """
