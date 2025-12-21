@@ -288,7 +288,7 @@ class RoutineBase:
                 elif rparam.owner.n == 0:
                     no_input.append(rname)
                     owner_list.append(rparam.owner.class_name)
-                # NOTE: below is special cass for PTDF availability check
+                # NOTE: below is special case for PTDF availability check
                 elif rparam.owner.class_name == 'MatProcessor':
                     if rparam.src == 'PTDF':
                         if self.system.mats.PTDF._v is None:
