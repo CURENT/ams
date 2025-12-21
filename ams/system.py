@@ -666,7 +666,7 @@ class System(adSystem):
         """
         # FIXME: add system connectivity check
         # logger.info("-> System connectivity check results:")
-        rtn_check = OrderedDict((key, val._data_check(info=False)) for key, val in self.routines.items())
+        rtn_check = OrderedDict((key, val._data_check()) for key, val in self.routines.items())
         rtn_types = OrderedDict({tp: [] for tp in self.types.keys()})
 
         for name, data_pass in rtn_check.items():
