@@ -100,9 +100,6 @@ class SymProcessor:
             (r'\bexp\b', 'np.exp'),
             (r'\blog\b', 'np.log'),
             (r'\bconj\b', 'np.conj'),
-            (r'\bmaximum\b', 'np.maximum'),
-            (r'\bminimum\b', 'np.minimum'),
-            (r'\bsign\b', 'np.sign'),
         ])
 
         self.status = {
