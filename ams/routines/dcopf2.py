@@ -11,6 +11,8 @@ from ams.core.service import NumOp
 from ams.routines.dcopf import DCOPF
 from ams.opt import ExpressionCalc
 
+from ams.shared import sps
+
 logger = logging.getLogger(__name__)
 
 
@@ -75,6 +77,18 @@ class PTDFMixin:
         self.pi.e_str = pi
         self.pi.info = "locational marginal price (LMP)"
 
+    def _post_solve(self):
+        # Calculate bus angles after solving
+        sys = self.system
+        Pbus = sys.mats.Cg._v @ self.pg.v
+        Pbus -= sys.mats.Cl._v @ self.pd.v
+        Pbus -= sys.mats.Csh._v @ self.gsh.v
+        Pbus -= self.Pbusinj.v
+        aBus = sps.linalg.spsolve(sys.mats.Bbus._v, Pbus)
+        slack0_uid = sys.Bus.idx2uid(sys.Slack.bus.v[0])
+        self.aBus.v = aBus - aBus[slack0_uid]
+        return True
+
 
 class DCOPF2(DCOPF, PTDFMixin):
     """
@@ -112,3 +126,7 @@ class DCOPF2(DCOPF, PTDFMixin):
     def __init__(self, system, config):
         super().__init__(system, config)
         PTDFMixin.__init__(self)
+
+    def _post_solve(self):
+        PTDFMixin._post_solve(self)
+        return super()._post_solve()

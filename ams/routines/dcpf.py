@@ -135,6 +135,11 @@ class DCPFBase(RoutineBase):
         """
         return self.om.prob.solve(**kwargs)
 
+    def _post_solve(self):
+        # set vBus to 1.0 p.u. as placeholder
+        self.vBus.v = np.ones(self.vBus.shape)
+        return super()._post_solve()
+
     def unpack(self, res, **kwargs):
         """
         Unpack the results from CVXPY model.

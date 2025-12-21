@@ -39,6 +39,10 @@ class RTED2(RTED, PTDFMixin):
         RTED.__init__(self, system, config)
         PTDFMixin.__init__(self)
 
+    def _post_solve(self):
+        PTDFMixin._post_solve(self)
+        return super()._post_solve()
+
 
 class RTED2DG(RTED2, DGBase):
     """
