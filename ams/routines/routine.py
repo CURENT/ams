@@ -268,14 +268,9 @@ class RoutineBase:
             logger.warning(msg)
         return disabled
 
-    def _data_check(self, info=True):
+    def _data_check(self):
         """
         Check if data is valid for a routine.
-
-        Parameters
-        ----------
-        info: bool
-            Whether to print warning messages.
         """
         logger.debug(f"Entering data check for <{self.class_name}>")
         no_input = []
@@ -285,18 +280,40 @@ class RoutineBase:
                 # NOTE: skip checking Shunt.g
                 if (rparam.owner.class_name == 'Shunt') and (rparam.src == 'g'):
                     pass
+                # NOTE: below is special case for PTDF availability check
+                elif rparam.owner.class_name == 'MatProcessor':
+                    if rparam.src == 'PTDF':
+                        if self.system.mats.PTDF._v is None:
+                            logger.warning("PTDF is not available, build it now")
+                            self.system.mats.build_ptdf()
                 elif rparam.owner.n == 0:
                     no_input.append(rname)
                     owner_list.append(rparam.owner.class_name)
-            # TODO: add more data config check?
-            if rparam.config.pos:
-                if not np.all(rparam.v > 0):
-                    logger.warning(f"RParam <{rname}> should have all positive values.")
+                else:
+                    # do value check for non-empty rparams
+                    if rparam.config.pos:
+                        if not np.all(rparam.v > 0):
+                            logger.warning(f"RParam <{rname}> should have all positive values.")
+                    if rparam.config.neg:
+                        if not np.all(rparam.v < 0):
+                            logger.warning(f"RParam <{rname}> should have all negative values.")
+                    if rparam.config.nonpos:
+                        if not np.all(rparam.v <= 0):
+                            logger.warning(f"RParam <{rname}> should have all non-positive values.")
+                    if rparam.config.nonneg:
+                        print(f'<{self.class_name}> RParam <{rname}> should have all non-negative values.')
+                        if not np.all(rparam.v >= 0):
+                            logger.warning(f"RParam <{rname}> should have all non-negative values.")
+
         if len(no_input) > 0:
-            if info:
-                msg = f"Following models are missing in input: {set(owner_list)}"
-                logger.error(msg)
+            logger.error(f"<{self.class_name}> Following models are missing in input: {set(owner_list)}")
             return False
+
+        # --- Call super data check if exists (for Mixins) ---
+        if hasattr(super(), '_data_check'):
+            if not super()._data_check():
+                return False
+
         # TODO: add data validation for RParam, typical range, etc.
         logger.debug(" -> Data check passed")
         return True
@@ -370,30 +387,59 @@ class RoutineBase:
 
     def _post_solve(self):
         """
-        Post-solve calculation.
+        Post-solve calculations.
         """
-        raise NotImplementedError
+        # NOTE: unpack Expressions if owner and arc are available
+        for expr in self.exprs.values():
+            if expr.owner and expr.src:
+                expr.owner.set(src=expr.src, attr='v',
+                               idx=expr.get_all_idxes(), value=expr.v)
+        return True
 
     def run(self, **kwargs):
         """
         Run the routine.
-        args and kwargs go to `self.solve()`.
 
-        Force initialization (`force_init=True`) will do the following:
-        - Rebuild the system matrices
-        - Enable all constraints
-        - Reinitialize the optimization model
+        Following kwargs go to `self.init()`: `force`, `force_mats`, `force_constr`, `force_om`.
+
+        Following kwargs go to `self.solve()`: `solver`, `verbose`, `gp`, `qcp`, `requires_grad`,
+        `enforce_dpp`, `ignore_dpp`, `method`, and all rest.
 
         Parameters
         ----------
-        force_init: bool
-            Whether to force re-initialize the routine.
-        force_mats: bool
-            Whether to force build the system matrices.
-        force_constr: bool
+        force_init : bool, optional
+            If True, force re-initialization. Defaults to False.
+        force_mats : bool, optional
+            If True, force re-generating matrices. Defaults to False.
+        force_constr : bool, optional
             Whether to turn on all constraints.
-        force_om: bool
-            Whether to force initialize the OModel.
+        force_om : bool, optional
+            If True, force re-generating optimization model. Defaults to False.
+        solver: str, optional
+            The solver to use. For example, 'GUROBI', 'ECOS', 'SCS', or 'OSQP'.
+        verbose : bool, optional
+            Overrides the default of hiding solver output and prints logging
+            information describing CVXPY's compilation process.
+        gp : bool, optional
+            If True, parses the problem as a disciplined geometric program
+            instead of a disciplined convex program.
+        qcp : bool, optional
+            If True, parses the problem as a disciplined quasiconvex program
+            instead of a disciplined convex program.
+        requires_grad : bool, optional
+            Makes it possible to compute gradients of a solution with respect to Parameters
+            by calling problem.backward() after solving, or to compute perturbations to the variables
+            given perturbations to Parameters by calling problem.derivative().
+            Gradients are only supported for DCP and DGP problems, not quasiconvex problems.
+            When computing gradients (i.e., when this argument is True), the problem must satisfy the DPP rules.
+        enforce_dpp : bool, optional
+            When True, a DPPError will be thrown when trying to solve a
+            non-DPP problem (instead of just a warning).
+            Only relevant for problems involving Parameters. Defaults to False.
+        ignore_dpp : bool, optional
+            When True, DPP problems will be treated as non-DPP, which may speed up compilation. Defaults to False.
+        method : function, optional
+            A custom solve method to use.
         """
         # --- setup check ---
         force_init = kwargs.pop('force_init', False)

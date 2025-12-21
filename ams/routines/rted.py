@@ -132,7 +132,7 @@ class RTED(DCOPF, RTEDBase, SFRBase):
     """
 
     def __init__(self, system, config):
-        DCOPF.__init__(self, system, config)
+        super().__init__(system, config)
         RTEDBase.__init__(self)
         SFRBase.__init__(self)
 
@@ -271,12 +271,11 @@ class RTEDDG(RTED, DGBase):
     """
 
     def __init__(self, system, config):
-        RTED.__init__(self, system, config)
+        super().__init__(system, config)
         DGBase.__init__(self)
-        self.type = 'DCED'
 
 
-class ESD1P:
+class ESD1PBase:
     """
     Base class for ESD1 used in price run of DCED.
     """
@@ -377,8 +376,26 @@ class ESD1P:
 
         self.obj.e_str += '+ t dot sum(- mul(cesdc, pce) + mul(cesdd, pde))'
 
+    def _data_check(self):
+        """
+        Special data check for ESD1 included routines.
+        """
+        logger.debug(f"Entering special data check for <{self.class_name}>")
 
-class RTEDESP(RTEDDG, ESD1P):
+        # --- GCost correction ---
+        sys = self.system
+        gcost_idx_esd1 = sys.GCost.find_idx(keys='gen', values=sys.ESD1.gen.v)
+        c2 = sys.GCost.get(src='c2', attr='v', idx=gcost_idx_esd1)
+        c1 = sys.GCost.get(src='c1', attr='v', idx=gcost_idx_esd1)
+        if not (c2 == 0).all() or not (c1 == 0).all():
+            for param in ['c2', 'c1']:
+                sys.GCost.set(src=param, attr='v', value=0, idx=gcost_idx_esd1)
+            logger.info('Parameters c2, c1 are set to 0 as they are associated with ESD1 for'
+                        f' following GCost: {", ".join(gcost_idx_esd1)}')
+        return True
+
+
+class RTEDESP(RTEDDG, ESD1PBase):
     """
     Price run of :class:`RTEDES` with energy storage :ref:`ESD1`.
 
@@ -399,10 +416,8 @@ class RTEDESP(RTEDDG, ESD1P):
     """
 
     def __init__(self, system, config):
-        RTEDDG.__init__(self, system, config)
-        ESD1P.__init__(self)
-
-        self.type = 'DCED'
+        super().__init__(system, config)
+        ESD1PBase.__init__(self)
 
         self.ucd = RParam(info='Retrieved ESD1 charging decision',
                           name='ucd', src='ucd0',
@@ -469,14 +484,14 @@ class RTEDESP(RTEDDG, ESD1P):
         return True
 
 
-class ESD1Base(DGBase, ESD1P):
+class ESD1Base(DGBase, ESD1PBase):
     """
     Base class for ESD1 used in DCED.
     """
 
     def __init__(self):
         DGBase.__init__(self)
-        ESD1P.__init__(self)
+        ESD1PBase.__init__(self)
 
         # --- params ---
         self.tdc = RParam(info='Minimum charging duration',
@@ -533,10 +548,10 @@ class ESD1Base(DGBase, ESD1P):
 
         self.tcdr = Constraint(name='tcdr', is_eq=False,
                                info='Minimum charging duration',
-                               e_str='tdc - mul(ucd, t + tdc0)',)
+                               e_str='mul(ucd, tdc - t - tdc0)',)
         self.tddr = Constraint(name='tddr', is_eq=False,
                                info='Minimum discharging duration',
-                               e_str='tdd - mul(udd, t + tdd0)',)
+                               e_str='mul(udd, tdd - t - tdd0)',)
 
 
 class RTEDES(RTED, ESD1Base):
@@ -551,9 +566,8 @@ class RTEDES(RTED, ESD1Base):
     """
 
     def __init__(self, system, config):
-        RTED.__init__(self, system, config)
+        super().__init__(system, config)
         ESD1Base.__init__(self)
-        self.type = 'DCED'
 
 
 class VISBase:
@@ -639,9 +653,8 @@ class RTEDVIS(RTED, VISBase):
     """
 
     def __init__(self, system, config):
-        RTED.__init__(self, system, config)
+        super().__init__(system, config)
         VISBase.__init__(self)
-        self.type = 'DCED'
 
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'

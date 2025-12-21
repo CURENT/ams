@@ -453,8 +453,8 @@ class NumOpDual(NumOp):
 
 class MinDur(NumOpDual):
     """
-    Defined to form minimum on matrix for minimum online/offline
-    time constraints used in UC.
+    Build the coefficient matrix for minimum online/offline
+    constraints used in UC.
 
     Parameters
     ----------

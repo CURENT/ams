@@ -81,6 +81,16 @@ class GenParam:
                             tex_name=r't_{d2}',
                             unit='h',
                             )
+        self.ton0 = NumParam(default=0.0,
+                             info='initial ON time',
+                             tex_name=r't_{on0}',
+                             unit='h',
+                             )
+        self.toff0 = NumParam(default=0.0,
+                              info='initial OFF time',
+                              tex_name=r't_{off0}',
+                              unit='h',
+                              )
         self.gentype = DataParam(default=None,
                                  info='generator type',
                                  tex_name=r'g_{type}',

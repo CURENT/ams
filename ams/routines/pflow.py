@@ -132,12 +132,6 @@ class PFlow(RoutineBase):
         self.unpack(res=None)
         return self.converged
 
-    def _post_solve(self):
-        """
-        Placeholder.
-        """
-        return True
-
     def unpack(self, res, **kwargs):
         """
         Unpack the results from ANDES PFlow routine.

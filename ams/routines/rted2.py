@@ -10,7 +10,7 @@ from ams.routines.rted import RTED, DGBase, ESD1Base
 logger = logging.getLogger(__name__)
 
 
-class RTED2(PTDFMixin, RTED):
+class RTED2(RTED, PTDFMixin):
     """
     DC-based real-time economic dispatch (RTED) using PTDF.
 
@@ -37,26 +37,11 @@ class RTED2(PTDFMixin, RTED):
 
     def __init__(self, system, config):
         RTED.__init__(self, system, config)
-
-        # Update info to reflect RTED2's purpose
-        self.type = 'DCED'
-
-        # Setup PTDF-specific components
-        self._setup_ptdf_params()
-        self._setup_ptdf_expressions()
+        PTDFMixin.__init__(self)
 
     def _post_solve(self):
-        """Post-solve calculations including aBus calculation."""
-        # Call parent's post_solve first
-        super()._post_solve()
-        # Then add PTDF-specific calculations
-        self._ptdf_post_solve()
-        return True
-
-    def init(self, **kwargs):
-        """Initialize the routine, checking PTDF availability."""
-        self._check_ptdf()
-        return super().init(**kwargs)
+        PTDFMixin._post_solve(self)
+        return super()._post_solve()
 
 
 class RTED2DG(RTED2, DGBase):
@@ -70,7 +55,6 @@ class RTED2DG(RTED2, DGBase):
     def __init__(self, system, config):
         RTED2.__init__(self, system, config)
         DGBase.__init__(self)
-        self.type = 'DCED'
 
 
 class RTED2ES(RTED2, ESD1Base):
@@ -87,4 +71,3 @@ class RTED2ES(RTED2, ESD1Base):
     def __init__(self, system, config):
         RTED2.__init__(self, system, config)
         ESD1Base.__init__(self)
-        self.type = 'DCED'

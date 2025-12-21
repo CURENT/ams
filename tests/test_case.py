@@ -71,6 +71,9 @@ class Test5Bus(unittest.TestCase):
         self.ss.UCTSlot.as_df()
         self.ss.UCTSlot.as_df(vin=True)
 
+    def test_summary(self) -> None:
+        self.ss.summary()
+
     def test_pflow_reset(self):
         """
         Test resetting power flow.
