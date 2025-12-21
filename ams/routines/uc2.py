@@ -47,6 +47,9 @@ class UC2(UC, PTDFMixinMP):
         # rewrite power balance to include unserved load `pdu`
         self.pb.e_str = "sum(pg, axis=0) - sum(pds - pdu, axis=0)"
 
+        # rewrite Expression plf to include unserved load `pdu`
+        self.plf.e_str = "PTDF @ (Cg@pg - Cl@(pds - pdu) - Csh@gsh@tlv - Pbusinj@tlv)"
+
     def _post_solve(self):
         PTDFMixinMP._post_solve(self)
         return super()._post_solve()
