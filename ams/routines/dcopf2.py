@@ -75,18 +75,6 @@ class PTDFMixin:
         self.pi.e_str = pi
         self.pi.info = "locational marginal price (LMP)"
 
-    def _data_check(self):
-        """
-        Check if PTDF matrix is available and build if necessary.
-
-        The PTDF matrix should be pre-built for large systems to avoid
-        computational overhead during routine initialization.
-        """
-        if self.system.mats.PTDF._v is None:
-            logger.warning("PTDF is not available, build it now")
-            self.system.mats.build_ptdf()
-        return True
-
 
 class DCOPF2(DCOPF, PTDFMixin):
     """

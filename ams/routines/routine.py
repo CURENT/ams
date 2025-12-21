@@ -288,6 +288,12 @@ class RoutineBase:
                 elif rparam.owner.n == 0:
                     no_input.append(rname)
                     owner_list.append(rparam.owner.class_name)
+                # NOTE: below is special cass for PTDF availability check
+                elif rparam.owner.class_name == 'MatProcessor':
+                    if rparam.src == 'PTDF':
+                        if self.system.mats.PTDF._v is None:
+                            logger.warning("PTDF is not available, build it now")
+                            self.system.mats.build_ptdf()
             # TODO: add more data config check?
             if rparam.config.pos:
                 if not np.all(rparam.v > 0):
