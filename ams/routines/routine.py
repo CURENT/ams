@@ -271,11 +271,6 @@ class RoutineBase:
     def _data_check(self):
         """
         Check if data is valid for a routine.
-
-        Parameters
-        ----------
-        info: bool
-            Whether to print warning messages.
         """
         logger.debug(f"Entering data check for <{self.class_name}>")
         no_input = []
