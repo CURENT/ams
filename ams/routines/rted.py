@@ -276,7 +276,7 @@ class RTEDDG(RTED, DGBase):
         self.type = 'DCED'
 
 
-class ESD1P:
+class ESD1PBase:
     """
     Base class for ESD1 used in price run of DCED.
     """
@@ -378,7 +378,7 @@ class ESD1P:
         self.obj.e_str += '+ t dot sum(- mul(cesdc, pce) + mul(cesdd, pde))'
 
 
-class RTEDESP(RTEDDG, ESD1P):
+class RTEDESP(RTEDDG, ESD1PBase):
     """
     Price run of :class:`RTEDES` with energy storage :ref:`ESD1`.
 
@@ -400,7 +400,7 @@ class RTEDESP(RTEDDG, ESD1P):
 
     def __init__(self, system, config):
         RTEDDG.__init__(self, system, config)
-        ESD1P.__init__(self)
+        ESD1PBase.__init__(self)
 
         self.type = 'DCED'
 
@@ -469,14 +469,14 @@ class RTEDESP(RTEDDG, ESD1P):
         return True
 
 
-class ESD1Base(DGBase, ESD1P):
+class ESD1Base(DGBase, ESD1PBase):
     """
     Base class for ESD1 used in DCED.
     """
 
     def __init__(self):
         DGBase.__init__(self)
-        ESD1P.__init__(self)
+        ESD1PBase.__init__(self)
 
         # --- params ---
         self.tdc = RParam(info='Minimum charging duration',
