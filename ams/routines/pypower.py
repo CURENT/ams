@@ -279,7 +279,7 @@ class DCPF1(RoutineBase):
     def _get_off_constrs(self):
         logger.debug(f"{self.class_name} does not implement _get_off_constrs.")
 
-    def _data_check(self, info=True, **kwargs):
+    def _data_check(self, **kwargs):
         logger.debug(f"{self.class_name} does not implement _data_check.")
 
     def update(self, params=None, build_mats=False, **kwargs):

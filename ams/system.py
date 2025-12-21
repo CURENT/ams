@@ -592,14 +592,9 @@ class System(adSystem):
 
         return tab.draw()
 
-    def connectivity(self, info=True):
+    def connectivity(self):
         """
         Perform connectivity check for system.
-
-        Parameters
-        ----------
-        info : bool
-            True to log connectivity summary.
         """
 
         raise NotImplementedError

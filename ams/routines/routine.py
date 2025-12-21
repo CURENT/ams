@@ -268,7 +268,7 @@ class RoutineBase:
             logger.warning(msg)
         return disabled
 
-    def _data_check(self, info=True):
+    def _data_check(self):
         """
         Check if data is valid for a routine.
 
@@ -293,9 +293,7 @@ class RoutineBase:
                 if not np.all(rparam.v > 0):
                     logger.warning(f"RParam <{rname}> should have all positive values.")
         if len(no_input) > 0:
-            if info:
-                msg = f"Following models are missing in input: {set(owner_list)}"
-                logger.error(msg)
+            logger.error(f"Following models are missing in input: {set(owner_list)}")
             return False
         # TODO: add data validation for RParam, typical range, etc.
         logger.debug(" -> Data check passed")
