@@ -301,7 +301,6 @@ class RoutineBase:
                         if not np.all(rparam.v <= 0):
                             logger.warning(f"RParam <{rname}> should have all non-positive values.")
                     if rparam.config.nonneg:
-                        print(f'<{self.class_name}> RParam <{rname}> should have all non-negative values.')
                         if not np.all(rparam.v >= 0):
                             logger.warning(f"RParam <{rname}> should have all non-negative values.")
 
