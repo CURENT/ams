@@ -392,6 +392,14 @@ class ESD1PBase:
                 sys.GCost.set(src=param, attr='v', value=0, idx=gcost_idx_esd1)
             logger.info('Parameters c2, c1 are set to 0 as they are associated with ESD1 for'
                         f' following GCost: {", ".join(gcost_idx_esd1)}')
+
+        # --- ESD1 initial charging/discharging time ---
+        judge = sys.ESD1.tdc0.v * sys.ESD1.tdd0.v > 0
+        if any(judge):
+            uid = np.where(judge)[0]
+            idx = [sys.ESD1.idx.v[i] for i in uid]
+            logger.error(f'tdc0 and tdd0 should not be both positive! Check ESD1: {", ".join(idx)}')
+            return False
         return True
 
 
@@ -506,11 +514,13 @@ class ESD1Base(DGBase, ESD1PBase):
         self.tdc0 = RParam(info='Initial charging time',
                            name='tdc0', src='tdc0',
                            tex_name=r't_{dc0}', unit='h',
-                           model='ESD1', no_parse=True,)
+                           model='ESD1', no_parse=True,
+                           nonneg=True)
         self.tdd0 = RParam(info='Initial discharging time',
                            name='tdd0', src='tdd0',
                            tex_name=r't_{dd0}', unit='h',
-                           model='ESD1', no_parse=True,)
+                           model='ESD1', no_parse=True,
+                           nonneg=True)
 
         self.ucd = Var(info='ESD1 charging decision',
                        name='ucd', tex_name=r'u_{c,ESD}',
@@ -546,12 +556,15 @@ class ESD1Base(DGBase, ESD1PBase):
         self.zde3 = Constraint(name='zde3', is_eq=False, info='zde bound 3',
                                e_str='zde - Mb dot udd',)
 
+        tcdr = 'mul((tdc0 - tdc), ucd) + maximum(0, sign(tdc0) * (tdc - tdc0))'
         self.tcdr = Constraint(name='tcdr', is_eq=False,
                                info='Minimum charging duration',
-                               e_str='mul(ucd, tdc - t - tdc0)',)
+                               e_str=tcdr,)
+
+        tddr = 'mul((tdd0 - tdd), udd) + maximum(0, sign(tdd0) * (tdd - tdd0))'
         self.tddr = Constraint(name='tddr', is_eq=False,
                                info='Minimum discharging duration',
-                               e_str='mul(udd, tdd - t - tdd0)',)
+                               e_str=tddr,)
 
 
 class RTEDES(RTED, ESD1Base):
@@ -563,6 +576,9 @@ class RTEDES(RTED, ESD1Base):
     an SOC constraint for every 5-minute RTED interval. The optimization treats SOCend
     as a terminal boundary condition, allowing the dispatcher maximum flexibility to optimize
     power output within the hour, provided the target is met at the interval's conclusion.
+
+    The minimum charging/discharging duration logic is implemented in `tcdr` and `tddr`.
+    When the duration is not met, the corresponding decision variable is set to 1.
     """
 
     def __init__(self, system, config):
