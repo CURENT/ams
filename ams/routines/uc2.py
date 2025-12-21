@@ -11,7 +11,7 @@ from ams.routines.uc import UC
 logger = logging.getLogger(__name__)
 
 
-class UC2(PTDFMixinMP, UC):
+class UC2(UC, PTDFMixinMP):
     """
     DC-based unit commitment (UC) using PTDF formulations:
     The bilinear term in the formulation is linearized with big-M method.
@@ -41,23 +41,11 @@ class UC2(PTDFMixinMP, UC):
     """
 
     def __init__(self, system, config):
-        UC.__init__(self, system, config)
+        super().__init__(system, config)
+        PTDFMixinMP.__init__(self)
 
-        self._setup_ptdf_params()
-        self._setup_ptdf_expressions()
-
+        # rewrite power balance to include unserved load `pdu`
         self.pb.e_str = "sum(pg, axis=0) - sum(pds - pdu, axis=0)"
-
-    def _post_solve(self):
-        """Post-solve calculations including aBus calculation."""
-        super()._post_solve()
-        self._ptdf_post_solve()
-        return True
-
-    def init(self, **kwargs):
-        """Initialize the routine, checking PTDF availability."""
-        self._check_ptdf()
-        return super().init(**kwargs)
 
 
 class UC2DG(UC2, DGBase):
@@ -69,12 +57,9 @@ class UC2DG(UC2, DGBase):
     """
 
     def __init__(self, system, config):
-        UC2.__init__(self, system, config)
+        super().__init__(system, config)
         DGBase.__init__(self)
 
-        self.type = 'DCUC'
-
-        # NOTE: extend vars to 2D
         self.pgdg.horizon = self.timeslot
 
 
@@ -84,7 +69,5 @@ class UC2ES(UC2, ESD1MPBase):
     """
 
     def __init__(self, system, config):
-        UC2.__init__(self, system, config)
+        super().__init__(system, config)
         ESD1MPBase.__init__(self)
-
-        self.type = 'DCUC'
