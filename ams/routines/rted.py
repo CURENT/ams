@@ -556,12 +556,14 @@ class ESD1Base(DGBase, ESD1PBase):
         self.zde3 = Constraint(name='zde3', is_eq=False, info='zde bound 3',
                                e_str='zde - Mb dot udd',)
 
-        tcdr = 'mul((tdc0 - tdc), ucd) + maximum(0, sign(tdc0) * (tdc - tdc0))'
+        # force cahrging flag `fcd`: (tdc0 > 0) * (tdc > tdc0)
+        tcdr = '(tdc0 > 0) * (tdc > tdc0) - ucd'
         self.tcdr = Constraint(name='tcdr', is_eq=False,
                                info='Minimum charging duration',
                                e_str=tcdr,)
 
-        tddr = 'mul((tdd0 - tdd), udd) + maximum(0, sign(tdd0) * (tdd - tdd0))'
+        # force discharging flag `fdd`: (tdd0 > 0) * (tdd > tdd0)
+        tddr = '(tdd0 > 0) * (tdd > tdd0) - udd'
         self.tddr = Constraint(name='tddr', is_eq=False,
                                info='Minimum discharging duration',
                                e_str=tddr,)
@@ -578,7 +580,8 @@ class RTEDES(RTED, ESD1Base):
     power output within the hour, provided the target is met at the interval's conclusion.
 
     The minimum charging/discharging duration logic is implemented in `tcdr` and `tddr`.
-    When the duration is not met, the corresponding decision variable is set to 1.
+    For example, the logic of `tcdr` is:
+    `u_{cd} >= fcd`, where `fcd = 1` if `tdc0 > 0` and `tdc > tdc0`, else `fcd = 0`.
     """
 
     def __init__(self, system, config):
