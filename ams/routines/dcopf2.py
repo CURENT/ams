@@ -88,7 +88,7 @@ class PTDFMixin:
         aBus = sps.linalg.spsolve(sys.mats.Bbus._v, Pbus)
         slack0_uid = sys.Bus.idx2uid(sys.Slack.bus.v[0])
         self.aBus.v = aBus - aBus[slack0_uid]
-        return True
+        return super()._post_solve()
 
 
 class DCOPF2(PTDFMixin, DCOPF):
