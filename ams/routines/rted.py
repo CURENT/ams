@@ -14,49 +14,13 @@ from ams.opt import Var, Constraint
 logger = logging.getLogger(__name__)
 
 
-class RTEDBase:
-    """
-    Base class for real-time economic dispatch (RTED).
-    """
-
-    def __init__(self):
-        # --- area ---
-        self.zg = RParam(info='Gen area',
-                         name='zg', tex_name='z_{one,g}',
-                         model='StaticGen', src='area',
-                         no_parse=True)
-        self.zd = RParam(info='Load area',
-                         name='zd', tex_name='z_{one,d}',
-                         model='StaticLoad', src='area',
-                         no_parse=True)
-        self.gs = ZonalSum(u=self.zg, zone='Area',
-                           name='gs', tex_name=r'S_{g}',
-                           info='Sum Gen vars vector in shape of area',
-                           no_parse=True, sparse=True)
-        self.ds = ZonalSum(u=self.zd, zone='Area',
-                           name='ds', tex_name=r'S_{d}',
-                           info='Sum pd vector in shape of area',
-                           no_parse=True,)
-        self.pdz = NumOpDual(u=self.ds, u2=self.pd,
-                             fun=np.multiply,
-                             rfun=np.sum, rargs=dict(axis=1),
-                             expand_dims=0,
-                             name='pdz', tex_name=r'p_{d,z}',
-                             unit='p.u.', info='zonal total load',
-                             no_parse=True,)
-        # --- generator ---
-        self.R10 = RParam(info='10-min ramp rate',
-                          name='R10', tex_name=r'R_{10}',
-                          model='StaticGen', src='R10',
-                          unit='p.u./h',)
-
-
 class SFRBase:
     """
     Base class for SFR used in DCED.
     """
 
-    def __init__(self):
+    def __init__(self, system, config):
+        super().__init__(system, config)
         #  --- SFR cost ---
         self.cru = RParam(info='RegUp reserve coefficient',
                           name='cru', tex_name=r'c_{r,u}',
@@ -107,72 +71,42 @@ class SFRBase:
                               info='Gen ramping down',)
 
 
-class RTED(DCOPF, RTEDBase, SFRBase):
+class RTEDBase:
     """
-    DC-based real-time economic dispatch (RTED).
-
-    RTED extends DCOPF with:
-
-    - Vars for SFR reserve: ``pru`` and ``prd``
-    - Param for linear SFR cost: ``cru`` and ``crd``
-    - Param for SFR requirement: ``du`` and ``dd``
-    - Param for ramping: start point ``pg0`` and ramping limit ``R10``
-    - Param ``pg0``, which can be retrieved from dynamic simulation results.
-
-    The function ``dc2ac`` sets the ``vBus`` value from solved ACOPF.
-    Without this conversion, dynamic simulation might fail due to the gap between
-    DC-based dispatch results and AC-based dynamic initialization.
-
-    Notes
-    -----
-    - Formulations have been adjusted with interval ``config.t``, 5/60 [Hour] by default.
-    - The tie-line flow related constraints are omitted in this formulation.
-    - Power generation is balanced for the entire system.
-    - SFR is balanced for each area.
+    Base class for real-time economic dispatch (RTED).
     """
 
     def __init__(self, system, config):
         super().__init__(system, config)
-        RTEDBase.__init__(self)
-        SFRBase.__init__(self)
-
-        self.config.add(OrderedDict((('t', 5/60),
-                                     )))
-        self.config.add_extra("_help",
-                              t="time interval in hours",
-                              )
-        self.config.add_extra("_tex",
-                              t='T_{cfg}',
-                              )
-
-        self.type = 'DCED'
-
-        # --- Mapping Section ---
-        # Add p -> pg0 in from map
-        self.map1.update({
-            'pg0': ('StaticGen', 'p'),
-        })
-        # nothing to do with to map
-
-        # --- Model Section ---
-        # --- SFR ---
-        # RegUp/Dn reserve balance
-        self.rbu.e_str = 'gs @ mul(ug, pru) - dud'
-        self.rbd.e_str = 'gs @ mul(ug, prd) - ddd'
-        # RegUp/Dn reserve source
-        self.rru.e_str = 'mul(ug, (pg + pru)) - mul(ug, pmaxe)'
-        self.rrd.e_str = 'mul(ug, (-pg + prd)) + mul(ug, pmine)'
-        # Gen ramping up/down
-        self.rgu.e_str = 'mul(ug, (pg-pg0-R10))'
-        self.rgd.e_str = 'mul(ug, (-pg+pg0-R10))'
-
-        # --- objective ---
-        self.obj.info = 'total generation and reserve cost'
-        # NOTE: the product involved t should use ``dot``
-        cost = 't**2 dot sum(mul(c2, pg**2)) + sum(ug * c0)'
-        _to_sum = 'c1 @ pg + cru * pru + crd * prd'
-        cost += f'+ t dot sum({_to_sum})'
-        self.obj.e_str = cost
+        # --- area ---
+        self.zg = RParam(info='Gen area',
+                         name='zg', tex_name='z_{one,g}',
+                         model='StaticGen', src='area',
+                         no_parse=True)
+        self.zd = RParam(info='Load area',
+                         name='zd', tex_name='z_{one,d}',
+                         model='StaticLoad', src='area',
+                         no_parse=True)
+        self.gs = ZonalSum(u=self.zg, zone='Area',
+                           name='gs', tex_name=r'S_{g}',
+                           info='Sum Gen vars vector in shape of area',
+                           no_parse=True, sparse=True)
+        self.ds = ZonalSum(u=self.zd, zone='Area',
+                           name='ds', tex_name=r'S_{d}',
+                           info='Sum pd vector in shape of area',
+                           no_parse=True,)
+        self.pdz = NumOpDual(u=self.ds, u2=self.pd,
+                             fun=np.multiply,
+                             rfun=np.sum, rargs=dict(axis=1),
+                             expand_dims=0,
+                             name='pdz', tex_name=r'p_{d,z}',
+                             unit='p.u.', info='zonal total load',
+                             no_parse=True,)
+        # --- generator ---
+        self.R10 = RParam(info='10-min ramp rate',
+                          name='R10', tex_name=r'R_{10}',
+                          model='StaticGen', src='R10',
+                          unit='p.u./h',)
 
     def dc2ac(self, kloss=1.0, **kwargs):
         exec_time = self.exec_time
@@ -227,12 +161,80 @@ class RTED(DCOPF, RTEDBase, SFRBase):
         return True
 
 
+class RTED(SFRBase, RTEDBase, DCOPF):
+    """
+    DC-based real-time economic dispatch (RTED).
+
+    RTED extends DCOPF with:
+
+    - Vars for SFR reserve: ``pru`` and ``prd``
+    - Param for linear SFR cost: ``cru`` and ``crd``
+    - Param for SFR requirement: ``du`` and ``dd``
+    - Param for ramping: start point ``pg0`` and ramping limit ``R10``
+    - Param ``pg0``, which can be retrieved from dynamic simulation results.
+
+    The function ``dc2ac`` sets the ``vBus`` value from solved ACOPF.
+    Without this conversion, dynamic simulation might fail due to the gap between
+    DC-based dispatch results and AC-based dynamic initialization.
+
+    Notes
+    -----
+    - Formulations have been adjusted with interval ``config.t``, 5/60 [Hour] by default.
+    - The tie-line flow related constraints are omitted in this formulation.
+    - Power generation is balanced for the entire system.
+    - SFR is balanced for each area.
+    """
+
+    def __init__(self, system, config):
+        super().__init__(system, config)
+
+        self.config.add(OrderedDict((('t', 5/60),
+                                     )))
+        self.config.add_extra("_help",
+                              t="time interval in hours",
+                              )
+        self.config.add_extra("_tex",
+                              t='T_{cfg}',
+                              )
+
+        self.type = 'DCED'
+
+        # --- Mapping Section ---
+        # Add p -> pg0 in from map
+        self.map1.update({
+            'pg0': ('StaticGen', 'p'),
+        })
+        # nothing to do with to map
+
+        # --- Model Section ---
+        # --- SFR ---
+        # RegUp/Dn reserve balance
+        self.rbu.e_str = 'gs @ mul(ug, pru) - dud'
+        self.rbd.e_str = 'gs @ mul(ug, prd) - ddd'
+        # RegUp/Dn reserve source
+        self.rru.e_str = 'mul(ug, (pg + pru)) - mul(ug, pmaxe)'
+        self.rrd.e_str = 'mul(ug, (-pg + prd)) + mul(ug, pmine)'
+        # Gen ramping up/down
+        self.rgu.e_str = 'mul(ug, (pg-pg0-R10))'
+        self.rgd.e_str = 'mul(ug, (-pg+pg0-R10))'
+
+        # --- objective ---
+        self.obj.info = 'total generation and reserve cost'
+        # NOTE: the product involved t should use ``dot``
+        cost = 't**2 dot sum(mul(c2, pg**2)) + sum(ug * c0)'
+        _to_sum = 'c1 @ pg + cru * pru + crd * prd'
+        cost += f'+ t dot sum({_to_sum})'
+        self.obj.e_str = cost
+
+
 class DGBase:
     """
     Base class for DG used in DCED.
     """
 
-    def __init__(self):
+    def __init__(self, system, config):
+        super().__init__(system, config)
+
         # --- params ---
         self.gendg = RParam(info='gen of DG',
                             name='gendg', tex_name=r'g_{DG}',
@@ -262,7 +264,7 @@ class DGBase:
                                e_str='idg @ pg - pgdg',)
 
 
-class RTEDDG(RTED, DGBase):
+class RTEDDG(DGBase, RTED):
     """
     RTED with distributed generator :ref:`DG`.
 
@@ -272,7 +274,6 @@ class RTEDDG(RTED, DGBase):
 
     def __init__(self, system, config):
         super().__init__(system, config)
-        DGBase.__init__(self)
 
 
 class ESD1PBase:
@@ -280,7 +281,8 @@ class ESD1PBase:
     Base class for ESD1 used in price run of DCED.
     """
 
-    def __init__(self):
+    def __init__(self, system, config):
+        super().__init__(system, config)
 
         # --- params ---
         self.En = RParam(info='Rated energy capacity',
@@ -380,7 +382,7 @@ class ESD1PBase:
         """
         Special data check for ESD1 included routines.
         """
-        logger.debug(f"Entering special data check for <{self.class_name}>")
+        logger.info(f"Entering supplemental data check for <{self.class_name}>")
 
         # --- GCost correction ---
         sys = self.system
@@ -400,10 +402,10 @@ class ESD1PBase:
             idx = [sys.ESD1.idx.v[i] for i in uid]
             logger.error(f'tdc0 and tdd0 should not be both positive! Check ESD1: {", ".join(idx)}')
             return False
-        return True
+        return super()._data_check()
 
 
-class RTEDESP(RTEDDG, ESD1PBase):
+class RTEDESP(ESD1PBase, RTEDDG):
     """
     Price run of :class:`RTEDES` with energy storage :ref:`ESD1`.
 
@@ -425,7 +427,6 @@ class RTEDESP(RTEDDG, ESD1PBase):
 
     def __init__(self, system, config):
         super().__init__(system, config)
-        ESD1PBase.__init__(self)
 
         self.ucd = RParam(info='Retrieved ESD1 charging decision',
                           name='ucd', src='ucd0',
@@ -445,12 +446,10 @@ class RTEDESP(RTEDDG, ESD1PBase):
 
     def init(self, **kwargs):
         used_rtn = None
-        if self.system.RTED2ES.converged:
-            used_rtn = self.system.RTED2ES
-        elif self.system.RTEDES.converged:
+        if self.system.RTEDES.converged:
             used_rtn = self.system.RTEDES
         else:
-            raise ValueError('RTED2ES or RTEDES must be solved before RTEDESP!')
+            raise ValueError('RTEDES must be solved before RTEDESP!')
 
         esd1_idx = self.system.ESD1.idx.v
         esd1_stg = self.system.ESD1.get(src='gen', attr='v', idx=esd1_idx)
@@ -476,7 +475,7 @@ class RTEDESP(RTEDDG, ESD1PBase):
         pde = used_rtn.get(src='pde', attr='v', idx=esd1_idx)
         self.system.StaticGen.set(src='p0', attr='v', idx=esd1_stg, value=pde - pce)
         logger.info(f'<{self.class_name}>: ESD1 associated StaticGen.p0 has been set'
-                    f' according to <{used_rtn.class_name}>')
+                    f' using the values from {used_rtn.class_name}.pg.v')
 
         return super().init(**kwargs)
 
@@ -497,9 +496,8 @@ class ESD1Base(DGBase, ESD1PBase):
     Base class for ESD1 used in DCED.
     """
 
-    def __init__(self):
-        DGBase.__init__(self)
-        ESD1PBase.__init__(self)
+    def __init__(self, system, config):
+        super().__init__(system, config)
 
         # --- params ---
         self.tdc = RParam(info='Minimum charging duration',
@@ -569,7 +567,7 @@ class ESD1Base(DGBase, ESD1PBase):
                                e_str=tddr,)
 
 
-class RTEDES(RTED, ESD1Base):
+class RTEDES(ESD1Base, RTED):
     """
     RTED with energy storage :ref:`ESD1`.
     The bilinear term in the formulation is linearized with big-M method.
@@ -586,7 +584,6 @@ class RTEDES(RTED, ESD1Base):
 
     def __init__(self, system, config):
         super().__init__(system, config)
-        ESD1Base.__init__(self)
 
 
 class VISBase:
@@ -594,7 +591,9 @@ class VISBase:
     Base class for virtual inertia scheduling.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, system, config) -> None:
+        super().__init__(system, config)
+
         # --- Data Section ---
         self.cm = RParam(info='Virtual inertia cost',
                          name='cm', src='cm',
@@ -657,7 +656,7 @@ class VISBase:
         # NOTE: revise the objective function to include virtual inertia cost
 
 
-class RTEDVIS(RTED, VISBase):
+class RTEDVIS(VISBase, RTED):
     """
     RTED with virtual inertia scheduling.
 
@@ -673,7 +672,6 @@ class RTEDVIS(RTED, VISBase):
 
     def __init__(self, system, config):
         super().__init__(system, config)
-        VISBase.__init__(self)
 
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'

@@ -28,7 +28,8 @@ class PTDFMixin:
     explicitly in the optimization problem.
     """
 
-    def __init__(self):
+    def __init__(self, system, config):
+        super().__init__(system, config)
         # NOTE: in this way, we still follow the implementation that devices
         # connectivity status is considered in connection matrix
         self.PTDF = RParam(info="PTDF",
@@ -90,7 +91,7 @@ class PTDFMixin:
         return True
 
 
-class DCOPF2(DCOPF, PTDFMixin):
+class DCOPF2(PTDFMixin, DCOPF):
     """
     DC optimal power flow (DCOPF) using PTDF formulation.
 
@@ -125,8 +126,3 @@ class DCOPF2(DCOPF, PTDFMixin):
 
     def __init__(self, system, config):
         super().__init__(system, config)
-        PTDFMixin.__init__(self)
-
-    def _post_solve(self):
-        PTDFMixin._post_solve(self)
-        return super()._post_solve()
