@@ -10,7 +10,7 @@ from ams.core.param import RParam
 from ams.core.service import (NumOp, NumOpDual, MinDur)
 from ams.routines.dcopf import DCOPF
 from ams.routines.rted import RTEDBase
-from ams.routines.ed import SRBase, MPBase, ESD1MPBase, DGBase
+from ams.routines.ed import SRBase, MPBase, ESD1MPBase, DGMPBase
 
 from ams.opt import Var, Constraint
 
@@ -19,10 +19,12 @@ logger = logging.getLogger(__name__)
 
 class NSRBase:
     """
-    Base class for non-spinning reserve.
+    Base class for non-spinning reserve components.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, system, config) -> None:
+        super().__init__(system, config)
+
         self.cnsr = RParam(info='cost for non-spinning reserve',
                            name='cnsr', tex_name=r'c_{nsr}',
                            model='NSRCost', src='cnsr',
@@ -52,7 +54,7 @@ class NSRBase:
                                name='rnsr', is_eq=False,)
 
 
-class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
+class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
     """
     DC-based unit commitment (UC):
     The bilinear term in the formulation is linearized with big-M method.
@@ -82,11 +84,7 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
     """
 
     def __init__(self, system, config):
-        DCOPF.__init__(self, system, config)
-        RTEDBase.__init__(self)
-        MPBase.__init__(self)
-        SRBase.__init__(self)
-        NSRBase.__init__(self)
+        super().__init__(system, config)
 
         self.config.add(OrderedDict((('t', 1),
                                      )))
@@ -333,7 +331,7 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         return None
 
 
-class UCDG(UC, DGBase):
+class UCDG(DGMPBase, UC):
     """
     UC with distributed generation :ref:`DG`.
 
@@ -342,22 +340,13 @@ class UCDG(UC, DGBase):
     """
 
     def __init__(self, system, config):
-        UC.__init__(self, system, config)
-        DGBase.__init__(self)
-
-        self.type = 'DCUC'
-
-        # NOTE: extend vars to 2D
-        self.pgdg.horizon = self.timeslot
+        super().__init__(system, config)
 
 
-class UCES(UC, ESD1MPBase):
+class UCES(ESD1MPBase, UC):
     """
     UC with energy storage :ref:`ESD1`.
     """
 
     def __init__(self, system, config):
-        UC.__init__(self, system, config)
-        ESD1MPBase.__init__(self)
-
-        self.type = 'DCUC'
+        super().__init__(system, config)
