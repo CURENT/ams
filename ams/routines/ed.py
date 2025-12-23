@@ -20,7 +20,8 @@ class SRBase:
     Base class for spinning reserve.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, system, config) -> None:
+        super().__init__(system, config)
         self.dsrp = RParam(info='spinning reserve requirement in percentage',
                            name='dsr', tex_name=r'd_{sr}',
                            model='SR', src='demand',
@@ -55,7 +56,8 @@ class MPBase:
     Base class for multi-period scheduling.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, system, config) -> None:
+        super().__init__(system, config)
         # NOTE: Setting `ED.scale.owner` to `Horizon` will cause an error when calling `ED.scale.v`.
         # This is because `Horizon` is a group that only contains the model `TimeSlot`.
         # The `get` method of `Horizon` calls `andes.models.group.GroupBase.get` and results in an error.
@@ -108,7 +110,7 @@ class MPBase:
         self.mu2.horizon = self.timeslot
 
 
-class ED(RTED, MPBase, SRBase):
+class ED(SRBase, MPBase, RTED):
     """
     DC-based multi-period economic dispatch (ED).
     Dispatch interval ``config.t`` ($T_{cfg}$) is introduced, 1 [Hour] by default.
@@ -128,16 +130,12 @@ class ED(RTED, MPBase, SRBase):
     """
 
     def __init__(self, system, config):
-        RTED.__init__(self, system, config)
-        MPBase.__init__(self)
-        SRBase.__init__(self)
+        super().__init__(system, config)
 
         self.config.t = 1  # scheduling interval in hour
         self.config.add_extra("_help",
                               t="time interval in hours",
                               )
-
-        self.type = 'DCED'
 
         self.ug.info = 'unit commitment decisions'
         self.ug.model = 'EDTSlot'
@@ -233,7 +231,19 @@ class ED(RTED, MPBase, SRBase):
         return None
 
 
-class EDDG(ED, DGBase):
+class DGMPBase(DGBase):
+    """
+    Extend :ref:`DGBase` for multi-period scheduling.
+    """
+
+    def __init__(self, system, config):
+        super().__init__(system, config)
+
+        # NOTE: extend vars to 2D
+        self.pgdg.horizon = self.timeslot
+
+
+class EDDG(DGMPBase, ED):
     """
     ED with distributed generation :ref:`DG`.
 
@@ -242,22 +252,16 @@ class EDDG(ED, DGBase):
     """
 
     def __init__(self, system, config):
-        ED.__init__(self, system, config)
-        DGBase.__init__(self)
-
-        self.type = 'DCED'
-
-        # NOTE: extend vars to 2D
-        self.pgdg.horizon = self.timeslot
+        super().__init__(system, config)
 
 
 class ESD1MPBase(ESD1Base):
     """
-    Extended base class for energy storage in multi-period scheduling.
+    Extend :ref:`ESD1Base` for multi-period scheduling.
     """
 
-    def __init__(self):
-        ESD1Base.__init__(self)
+    def __init__(self, system, config):
+        super().__init__(system, config)
 
         self.Mre = RampSub(u=self.SOC, name='Mre', tex_name=r'M_{r,ES}',
                            info='Subtraction matrix for SOC',
@@ -294,14 +298,11 @@ class ESD1MPBase(ESD1Base):
         self.zde.horizon = self.timeslot
 
 
-class EDES(ED, ESD1MPBase):
+class EDES(ESD1MPBase, ED):
     """
     ED with energy storage :ref:`ESD1`.
     The bilinear term in the formulation is linearized with big-M method.
     """
 
     def __init__(self, system, config):
-        ED.__init__(self, system, config)
-        ESD1MPBase.__init__(self)
-
-        self.type = 'DCED'
+        super().__init__(system, config)
