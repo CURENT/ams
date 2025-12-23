@@ -298,4 +298,5 @@ class TestEDES(unittest.TestCase):
         Test vBus is not all zero.
         """
         self.ss.EDES.run(solver='SCIP')
+        self.assertTrue(self.ss.EDES.converged, "EDES did not converge!")
         self.assertTrue(np.any(self.ss.EDES.vBus.v), "vBus is all zero!")
