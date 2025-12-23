@@ -86,6 +86,15 @@ class TestUC2(unittest.TestCase):
         self.ss.Line.alter(src='u', idx='Line_3', value=1)
 
     @skip_unittest_without_MISOCP
+    def test_vBus_aBus(self):
+        """
+        Test vBus and aBus are not all zero.
+        """
+        self.ss.UC2.run(solver='SCIP')
+        self.assertTrue(np.any(self.ss.UC2.vBus.v), "vBus is all zero!")
+        self.assertTrue(np.any(self.ss.UC2.aBus.v), "aBus is all zero!")
+
+    @skip_unittest_without_MISOCP
     def test_align_uc(self):
         """
         Test if results align with UC.
@@ -123,6 +132,12 @@ class TestUC2(unittest.TestCase):
         plf2 = self.ss.UC2.get(src='plf', attr='v', idx=line_idx)
         np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
                                        err_msg="Line flow between UC2 and UC not match!")
+
+    def test_pb_formula(self):
+        """
+        Test the pb formula is not the angle-based formulation.
+        """
+        self.assertFalse('aBus' in self.ss.UC2.pb.e_str, "Bus angle is used in UC2.pb!")
 
 
 class TestUC2DG(unittest.TestCase):
@@ -206,6 +221,15 @@ class TestUC2DG(unittest.TestCase):
         self.ss.Line.alter(src='u', idx='Line_3', value=1)
 
     @skip_unittest_without_MISOCP
+    def test_vBus_aBus(self):
+        """
+        Test vBus and aBus are not all zero.
+        """
+        self.ss.UC2DG.run(solver='SCIP')
+        self.assertTrue(np.any(self.ss.UC2DG.vBus.v), "vBus is all zero!")
+        self.assertTrue(np.any(self.ss.UC2DG.aBus.v), "aBus is all zero!")
+
+    @skip_unittest_without_MISOCP
     def test_align_ucdg(self):
         """
         Test if results align with UCDG.
@@ -243,6 +267,12 @@ class TestUC2DG(unittest.TestCase):
         plf2 = self.ss.UCDG.get(src='plf', attr='v', idx=line_idx)
         np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
                                        err_msg="Line flow between UC2DG and UCDG not match!")
+
+    def test_pb_formula(self):
+        """
+        Test the pb formula is not the angle-based formulation.
+        """
+        self.assertFalse('aBus' in self.ss.UC2DG.pb.e_str, "Bus angle is used in UC2DG.pb!")
 
 
 class TestUC2ES(unittest.TestCase):
@@ -326,6 +356,15 @@ class TestUC2ES(unittest.TestCase):
         self.ss.Line.alter(src='u', idx='Line_3', value=1)
 
     @skip_unittest_without_MISOCP
+    def test_vBus_aBus(self):
+        """
+        Test vBus and aBus are not all zero.
+        """
+        self.ss.UC2ES.run(solver='SCIP')
+        self.assertTrue(np.any(self.ss.UC2ES.vBus.v), "vBus is all zero!")
+        self.assertTrue(np.any(self.ss.UC2ES.aBus.v), "aBus is all zero!")
+
+    @skip_unittest_without_MISOCP
     def test_align_uces(self):
         """
         Test if results align with UCES.
@@ -365,3 +404,9 @@ class TestUC2ES(unittest.TestCase):
         # plf2 = self.ss.UCES.get(src='plf', attr='v', idx=line_idx)
         # np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
         #                                err_msg="Line flow between UC2ES and UCES not match!")
+
+    def test_pb_formula(self):
+        """
+        Test the pb formula is not the angle-based formulation.
+        """
+        self.assertFalse('aBus' in self.ss.UC2ES.pb.e_str, "Bus angle is used in UC2ES.pb!")

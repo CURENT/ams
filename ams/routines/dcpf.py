@@ -19,8 +19,8 @@ class DCPFBase(RoutineBase):
     Base class for DC power flow.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         self.ug = RParam(info='Gen connection status',
                          name='ug', tex_name=r'u_{g}',
@@ -190,21 +190,21 @@ class DCPF(DCPFBase):
     DC power flow.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
         self.type = 'PF'
 
         self.genpv = RParam(info='gen of PV',
                             name='genpv', tex_name=r'g_{DG}',
                             model='PV', src='idx',
                             no_parse=True,)
-        self.cpv = VarSelect(u=self.pg, indexer='genpv',
-                             name='cpv', tex_name=r'C_{PV}',
+        self.ipv = VarSelect(u=self.pg, indexer='genpv',
+                             name='ipv', tex_name=r'C_{PV}',
                              info='Select PV from pg',
                              no_parse=True,)
 
         self.pvb = Constraint(name='pvb', info='PV generator',
-                              e_str='cpv @ (pg - mul(ug, pg0))',
+                              e_str='ipv @ (pg - mul(ug, pg0))',
                               is_eq=True,)
 
         self.obj = Objective(name='obj',

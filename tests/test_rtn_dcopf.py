@@ -4,6 +4,7 @@ import unittest
 import numpy as np
 
 import ams
+from ams.shared import skip_unittest_without_PYPOWER
 
 
 class TestDCOPF(unittest.TestCase):
@@ -79,6 +80,14 @@ class TestDCOPF(unittest.TestCase):
         pgs_pqt2 = self.ss.DCOPF.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
+    def test_vBus(self):
+        """
+        Test vBus is not all zero.
+        """
+        self.ss.DCOPF.run(solver='CLARABEL')
+        self.assertTrue(np.any(self.ss.DCOPF.vBus.v), "vBus is all zero!")
+
+    @skip_unittest_without_PYPOWER
     def test_dc2ac(self):
         """
         Test `DCOPF.dc2ac()` method.

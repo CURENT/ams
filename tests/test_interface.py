@@ -10,6 +10,7 @@ import ams
 
 from ams.interface import (build_group_table, make_link_table, to_andes,
                            parse_addfile, verify_pf)
+from ams.shared import skip_unittest_without_PYPOWER
 
 
 class TestAndesConversion(unittest.TestCase):
@@ -182,10 +183,8 @@ class TestDataExchange(unittest.TestCase):
                            setup=True,
                            no_output=True,
                            default_config=True,)
-        self.sp.RTED.run(solver='CLARABEL')
-        self.sp.RTED.dc2ac()
-        self.stg_idx = self.sp.RTED.pg.get_all_idxes()
 
+    @skip_unittest_without_PYPOWER
     def test_data_exchange(self):
         """
         Test data exchange between AMS and ANDES.
@@ -198,6 +197,9 @@ class TestDataExchange(unittest.TestCase):
         sa.TGOV1.set(src='VMAX', idx=sa.TGOV1.idx.v, attr='v', value=100*np.ones(sa.TGOV1.n))
         sa.TGOV1.set(src='VMIN', idx=sa.TGOV1.idx.v, attr='v', value=np.zeros(sa.TGOV1.n))
 
+        self.sp.RTED.run(solver='CLARABEL')
+        self.sp.RTED.dc2ac()
+        self.stg_idx = self.sp.RTED.pg.get_all_idxes()
         # --- test before PFlow ---
         self.sp.dyn.send(adsys=sa, routine='RTED')
         p0 = sa.StaticGen.get(src='p0', attr='v', idx=self.stg_idx)

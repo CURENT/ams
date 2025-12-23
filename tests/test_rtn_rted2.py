@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 import ams
-from ams.shared import skip_unittest_without_MISOCP
+from ams.shared import skip_unittest_without_MISOCP, skip_unittest_without_PYPOWER
 
 
 class TestRTED2(unittest.TestCase):
@@ -79,6 +79,15 @@ class TestRTED2(unittest.TestCase):
         pgs_pqt2 = self.ss.RTED2.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
+    def test_vBus_aBus(self):
+        """
+        Test vBus and aBus are not all zero.
+        """
+        self.ss.RTED2.run(solver='CLARABEL')
+        self.assertTrue(np.any(self.ss.RTED2.vBus.v), "vBus is all zero!")
+        self.assertTrue(np.any(self.ss.RTED2.aBus.v), "aBus is all zero!")
+
+    @skip_unittest_without_PYPOWER
     def test_dc2ac(self):
         """
         Test `RTED2.dc2ac()` method.
@@ -128,6 +137,12 @@ class TestRTED2(unittest.TestCase):
         aBus2 = self.ss.RTED2.get(src='aBus', attr='v', idx=bus_idx)
         np.testing.assert_almost_equal(aBus, aBus2, decimal=DECIMALS,
                                        err_msg="aBus between RTED2 and RTED not match!")
+
+    def test_pb_formula(self):
+        """
+        Test the pb formula is not the angle-based formulation.
+        """
+        self.assertFalse('aBus' in self.ss.RTED2.pb.e_str, "Bus angle is used in RTED2.pb!")
 
 
 class TestRTED2DG(unittest.TestCase):
@@ -203,6 +218,15 @@ class TestRTED2DG(unittest.TestCase):
         pgs_pqt2 = self.ss.RTED2DG.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
+    def test_vBus_aBus(self):
+        """
+        Test vBus and aBus are not all zero.
+        """
+        self.ss.RTED2DG.run(solver='CLARABEL')
+        self.assertTrue(np.any(self.ss.RTED2DG.vBus.v), "vBus is all zero!")
+        self.assertTrue(np.any(self.ss.RTED2DG.aBus.v), "aBus is all zero!")
+
+    @skip_unittest_without_PYPOWER
     def test_dc2ac(self):
         """
         Test `RTED2DG.dc2ac()` method.
@@ -263,6 +287,12 @@ class TestRTED2DG(unittest.TestCase):
         plf2 = self.ss.RTED2DG.get(src='plf', attr='v', idx=line_idx)
         np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
                                        err_msg="plf between RTED2DG and RTEDDG not match!")
+
+    def test_pb_formula(self):
+        """
+        Test the pb formula is not the angle-based formulation.
+        """
+        self.assertFalse('aBus' in self.ss.RTED2DG.pb.e_str, "Bus angle is used in RTED2DG.pb!")
 
 
 class TestRTED2ES(unittest.TestCase):
@@ -342,6 +372,16 @@ class TestRTED2ES(unittest.TestCase):
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
     @skip_unittest_without_MISOCP
+    def test_vBus_aBus(self):
+        """
+        Test vBus and aBus are not all zero.
+        """
+        self.ss.RTED2ES.run(solver='SCIP')
+        self.assertTrue(np.any(self.ss.RTED2ES.vBus.v), "vBus is all zero!")
+        self.assertTrue(np.any(self.ss.RTED2ES.aBus.v), "aBus is all zero!")
+
+    @skip_unittest_without_PYPOWER
+    @skip_unittest_without_MISOCP
     def test_dc2ac(self):
         """
         Test DC to AC conversion.
@@ -405,7 +445,7 @@ class TestRTED2ES(unittest.TestCase):
         Test if results align with RTEDESP.
         """
         self.ss.RTED2ES.run(solver='SCIP')
-        self.ss.RTEDESP.run(solver='CLARABEL')
+        self.ss.RTED2ESP.run(solver='CLARABEL')
 
         pg_idx = self.ss.StaticGen.get_all_idxes()
         bus_idx = self.ss.Bus.idx.v
@@ -414,21 +454,27 @@ class TestRTED2ES(unittest.TestCase):
         DECIMALS = 4
 
         np.testing.assert_almost_equal(self.ss.RTED2ES.obj.v,
-                                       self.ss.RTEDESP.obj.v,
+                                       self.ss.RTED2ESP.obj.v,
                                        decimal=DECIMALS,
                                        err_msg="Objective value between RTED2ES and RTEDESP not match!")
 
         pg = self.ss.RTED2ES.get(src='pg', attr='v', idx=pg_idx)
-        pg2 = self.ss.RTEDESP.get(src='pg', attr='v', idx=pg_idx)
+        pg2 = self.ss.RTED2ESP.get(src='pg', attr='v', idx=pg_idx)
         np.testing.assert_almost_equal(pg, pg2, decimal=DECIMALS,
                                        err_msg="pg between RTED2ES and RTEDESP not match!")
 
         aBus = self.ss.RTED2ES.get(src='aBus', attr='v', idx=bus_idx)
-        aBus2 = self.ss.RTEDESP.get(src='aBus', attr='v', idx=bus_idx)
+        aBus2 = self.ss.RTED2ESP.get(src='aBus', attr='v', idx=bus_idx)
         np.testing.assert_almost_equal(aBus, aBus2, decimal=DECIMALS,
                                        err_msg="aBus between RTED2ES and RTEDESP not match!")
 
         plf = self.ss.RTED2ES.get(src='plf', attr='v', idx=line_idx)
-        plf2 = self.ss.RTEDESP.get(src='plf', attr='v', idx=line_idx)
+        plf2 = self.ss.RTED2ESP.get(src='plf', attr='v', idx=line_idx)
         np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
                                        err_msg="plf between RTED2ES and RTEDESP not match!")
+
+    def test_pb_formula(self):
+        """
+        Test the pb formula is not the angle-based formulation.
+        """
+        self.assertFalse('aBus' in self.ss.RTED2ES.pb.e_str, "Bus angle is used in RTED2ES.pb!")

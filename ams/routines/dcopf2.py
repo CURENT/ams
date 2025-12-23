@@ -16,19 +16,16 @@ from ams.shared import sps
 logger = logging.getLogger(__name__)
 
 
-class PTDFMixin:
+class PTDFBase:
     """
-    Mixin class for PTDF-based formulations.
+    Base class for PTDF-based formulations components.
 
-    This mixin provides PTDF parameters and methods for routines that need
+    This class provides PTDF parameters and methods for routines that need
     to use PTDF formulation instead of B-theta formulation.
-
-    The PTDF (Power Transfer Distribution Factor) formulation is more efficient
-    for large-scale systems as it eliminates the need to solve for bus angles
-    explicitly in the optimization problem.
     """
 
-    def __init__(self):
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
         # NOTE: in this way, we still follow the implementation that devices
         # connectivity status is considered in connection matrix
         self.PTDF = RParam(info="PTDF",
@@ -78,19 +75,20 @@ class PTDFMixin:
         self.pi.info = "locational marginal price (LMP)"
 
     def _post_solve(self):
-        # Calculate bus angles after solving
-        sys = self.system
-        Pbus = sys.mats.Cg._v @ self.pg.v
-        Pbus -= sys.mats.Cl._v @ self.pd.v
-        Pbus -= sys.mats.Csh._v @ self.gsh.v
-        Pbus -= self.Pbusinj.v
-        aBus = sps.linalg.spsolve(sys.mats.Bbus._v, Pbus)
-        slack0_uid = sys.Bus.idx2uid(sys.Slack.bus.v[0])
-        self.aBus.v = aBus - aBus[slack0_uid]
-        return True
+        if self.aBus.horizon is None:
+            # Calculate bus angles after solving
+            sys = self.system
+            Pbus = sys.mats.Cg._v @ self.pg.v
+            Pbus -= sys.mats.Cl._v @ self.pd.v
+            Pbus -= sys.mats.Csh._v @ self.gsh.v
+            Pbus -= self.Pbusinj.v
+            aBus = sps.linalg.spsolve(sys.mats.Bbus._v, Pbus)
+            slack0_uid = sys.Bus.idx2uid(sys.Slack.bus.v[0])
+            self.aBus.v = aBus - aBus[slack0_uid]
+        return super()._post_solve()
 
 
-class DCOPF2(DCOPF, PTDFMixin):
+class DCOPF2(PTDFBase, DCOPF):
     """
     DC optimal power flow (DCOPF) using PTDF formulation.
 
@@ -123,10 +121,5 @@ class DCOPF2(DCOPF, PTDFMixin):
        pp. 4668-4681, Sept. 2023
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
-        PTDFMixin.__init__(self)
-
-    def _post_solve(self):
-        PTDFMixin._post_solve(self)
-        return super()._post_solve()
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)

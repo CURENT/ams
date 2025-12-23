@@ -14,49 +14,13 @@ from ams.opt import Var, Constraint
 logger = logging.getLogger(__name__)
 
 
-class RTEDBase:
-    """
-    Base class for real-time economic dispatch (RTED).
-    """
-
-    def __init__(self):
-        # --- area ---
-        self.zg = RParam(info='Gen area',
-                         name='zg', tex_name='z_{one,g}',
-                         model='StaticGen', src='area',
-                         no_parse=True)
-        self.zd = RParam(info='Load area',
-                         name='zd', tex_name='z_{one,d}',
-                         model='StaticLoad', src='area',
-                         no_parse=True)
-        self.gs = ZonalSum(u=self.zg, zone='Area',
-                           name='gs', tex_name=r'S_{g}',
-                           info='Sum Gen vars vector in shape of area',
-                           no_parse=True, sparse=True)
-        self.ds = ZonalSum(u=self.zd, zone='Area',
-                           name='ds', tex_name=r'S_{d}',
-                           info='Sum pd vector in shape of area',
-                           no_parse=True,)
-        self.pdz = NumOpDual(u=self.ds, u2=self.pd,
-                             fun=np.multiply,
-                             rfun=np.sum, rargs=dict(axis=1),
-                             expand_dims=0,
-                             name='pdz', tex_name=r'p_{d,z}',
-                             unit='p.u.', info='zonal total load',
-                             no_parse=True,)
-        # --- generator ---
-        self.R10 = RParam(info='10-min ramp rate',
-                          name='R10', tex_name=r'R_{10}',
-                          model='StaticGen', src='R10',
-                          unit='p.u./h',)
-
-
 class SFRBase:
     """
-    Base class for SFR used in DCED.
+    Base class for SFR components.
     """
 
-    def __init__(self):
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
         #  --- SFR cost ---
         self.cru = RParam(info='RegUp reserve coefficient',
                           name='cru', tex_name=r'c_{r,u}',
@@ -107,7 +71,45 @@ class SFRBase:
                               info='Gen ramping down',)
 
 
-class RTED(DCOPF, RTEDBase, SFRBase):
+class RTEDBase:
+    """
+    Base class for RTED components.
+    """
+
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
+        # --- area ---
+        self.zg = RParam(info='Gen area',
+                         name='zg', tex_name='z_{one,g}',
+                         model='StaticGen', src='area',
+                         no_parse=True)
+        self.zd = RParam(info='Load area',
+                         name='zd', tex_name='z_{one,d}',
+                         model='StaticLoad', src='area',
+                         no_parse=True)
+        self.gs = ZonalSum(u=self.zg, zone='Area',
+                           name='gs', tex_name=r'S_{g}',
+                           info='Sum Gen vars vector in shape of area',
+                           no_parse=True, sparse=True)
+        self.ds = ZonalSum(u=self.zd, zone='Area',
+                           name='ds', tex_name=r'S_{d}',
+                           info='Sum pd vector in shape of area',
+                           no_parse=True,)
+        self.pdz = NumOpDual(u=self.ds, u2=self.pd,
+                             fun=np.multiply,
+                             rfun=np.sum, rargs=dict(axis=1),
+                             expand_dims=0,
+                             name='pdz', tex_name=r'p_{d,z}',
+                             unit='p.u.', info='zonal total load',
+                             no_parse=True,)
+        # --- generator ---
+        self.R10 = RParam(info='10-min ramp rate',
+                          name='R10', tex_name=r'R_{10}',
+                          model='StaticGen', src='R10',
+                          unit='p.u./h',)
+
+
+class RTED(SFRBase, RTEDBase, DCOPF):
     """
     DC-based real-time economic dispatch (RTED).
 
@@ -131,10 +133,8 @@ class RTED(DCOPF, RTEDBase, SFRBase):
     - SFR is balanced for each area.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
-        RTEDBase.__init__(self)
-        SFRBase.__init__(self)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         self.config.add(OrderedDict((('t', 5/60),
                                      )))
@@ -229,10 +229,12 @@ class RTED(DCOPF, RTEDBase, SFRBase):
 
 class DGBase:
     """
-    Base class for DG used in DCED.
+    Base class for DG components.
     """
 
-    def __init__(self):
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
+
         # --- params ---
         self.gendg = RParam(info='gen of DG',
                             name='gendg', tex_name=r'g_{DG}',
@@ -262,7 +264,7 @@ class DGBase:
                                e_str='idg @ pg - pgdg',)
 
 
-class RTEDDG(RTED, DGBase):
+class RTEDDG(DGBase, RTED):
     """
     RTED with distributed generator :ref:`DG`.
 
@@ -270,17 +272,17 @@ class RTEDDG(RTED, DGBase):
     RTEDES should be used instead, otherwise there is no SOC.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
-        DGBase.__init__(self)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
 
 class ESD1PBase:
     """
-    Base class for ESD1 used in price run of DCED.
+    Base class for ESD1 price run components.
     """
 
-    def __init__(self):
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         # --- params ---
         self.En = RParam(info='Rated energy capacity',
@@ -380,7 +382,7 @@ class ESD1PBase:
         """
         Special data check for ESD1 included routines.
         """
-        logger.debug(f"Entering special data check for <{self.class_name}>")
+        logger.info(f"Entering supplemental data check for <{self.class_name}>")
 
         # --- GCost correction ---
         sys = self.system
@@ -392,19 +394,26 @@ class ESD1PBase:
                 sys.GCost.set(src=param, attr='v', value=0, idx=gcost_idx_esd1)
             logger.info('Parameters c2, c1 are set to 0 as they are associated with ESD1 for'
                         f' following GCost: {", ".join(gcost_idx_esd1)}')
-        return True
+
+        # --- ESD1 initial charging/discharging time ---
+        judge = sys.ESD1.tdc0.v * sys.ESD1.tdd0.v > 0
+        if any(judge):
+            uid = np.where(judge)[0]
+            idx = [sys.ESD1.idx.v[i] for i in uid]
+            logger.error(f'tdc0 and tdd0 should not be both positive! Check ESD1: {", ".join(idx)}')
+            return False
+        return super()._data_check()
 
 
-class RTEDESP(RTEDDG, ESD1PBase):
+class RTEDESP(ESD1PBase, RTEDDG):
     """
-    Price run of :class:`RTEDES` with energy storage :ref:`ESD1`.
+    Price run of RTED with energy storage :ref:`ESD1`.
 
     This routine is not intended to work standalone. It should be used after solved
-    :class:`RTED2ES` or :class:`RTEDES`.
-    When both are solved, :class:`RTED2ES` will be used.
+    :class:`RTEDES`.
 
     The binary variables ``ucd`` and ``udd`` are now parameters retrieved from
-    solved :class:`RTED2ES` or :class:`RTEDES`.
+    solved :class:`RTEDES`.
 
     The constraints ``zce1`` - ``zce3`` and ``zde1`` - ``zde3`` are now simplified
     to ``zce`` and ``zde`` as below:
@@ -415,9 +424,8 @@ class RTEDESP(RTEDDG, ESD1PBase):
         (1 - u_{dd}) * p_{de} <= 0
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
-        ESD1PBase.__init__(self)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         self.ucd = RParam(info='Retrieved ESD1 charging decision',
                           name='ucd', src='ucd0',
@@ -435,63 +443,39 @@ class RTEDESP(RTEDDG, ESD1PBase):
         self.zde = Constraint(name='zde', is_eq=False, info='zde bound',
                               e_str='mul(1-udd, pde)',)
 
-    def init(self, **kwargs):
-        used_rtn = None
-        if self.system.RTED2ES.converged:
-            used_rtn = self.system.RTED2ES
-        elif self.system.RTEDES.converged:
-            used_rtn = self.system.RTEDES
-        else:
-            raise ValueError('RTED2ES or RTEDES must be solved before RTEDESP!')
+    def _preinit(self):
+        """
+        Extra run at the beginning of RTEDESP.init().
+        """
+        if not self.system.RTEDES.converged:
+            raise ValueError('<RTEDES> must be solved before <RTEDESP>!')
+        self._used_rtn = self.system.RTEDES
 
+    def init(self, **kwargs):
+        self._preinit()
         esd1_idx = self.system.ESD1.idx.v
         esd1_stg = self.system.ESD1.get(src='gen', attr='v', idx=esd1_idx)
 
-        ucd = used_rtn.get(src='ucd', attr='v', idx=esd1_idx)
-        esd1_chrg = [esd1_idx[i] for i in np.where(ucd == 1)[0]]
-        esd1_disch = [esd1_idx[i] for i in np.where(ucd == 0)[0]]
-
         self.system.ESD1.set(src='ucd0', attr='v', idx=esd1_idx,
-                             value=used_rtn.get(src='ucd', attr='v', idx=esd1_idx))
+                             value=self._used_rtn.get(src='ucd', attr='v', idx=esd1_idx))
         self.system.ESD1.set(src='udd0', attr='v', idx=esd1_idx,
-                             value=used_rtn.get(src='udd', attr='v', idx=esd1_idx))
+                             value=self._used_rtn.get(src='udd', attr='v', idx=esd1_idx))
 
-        # store the original values
-        self._cesdc0 = self.system.ESD1.get(src='cesdc', attr='v', idx=esd1_idx)
-        self._cesdd0 = self.system.ESD1.get(src='cesdd', attr='v', idx=esd1_idx)
-
-        # temporarily set the opposite action cost to 0
-        self.system.ESD1.set(src='cesdc', attr='v', idx=esd1_disch, value=0)
-        self.system.ESD1.set(src='cesdd', attr='v', idx=esd1_chrg, value=0)
-
-        pce = used_rtn.get(src='pce', attr='v', idx=esd1_idx)
-        pde = used_rtn.get(src='pde', attr='v', idx=esd1_idx)
+        pce = self._used_rtn.get(src='pce', attr='v', idx=esd1_idx)
+        pde = self._used_rtn.get(src='pde', attr='v', idx=esd1_idx)
         self.system.StaticGen.set(src='p0', attr='v', idx=esd1_stg, value=pde - pce)
         logger.info(f'<{self.class_name}>: ESD1 associated StaticGen.p0 has been set'
-                    f' according to <{used_rtn.class_name}>')
-
+                    f' using the values from {self._used_rtn.class_name}.pg.v')
         return super().init(**kwargs)
-
-    def run(self, **kwargs):
-        super().run(**kwargs)
-
-        esd1_idx = self.system.ESD1.idx.v
-
-        # reset the ESD1 cost
-        self.system.ESD1.set(src='cesdc', attr='v', idx=esd1_idx, value=self._cesdc0)
-        self.system.ESD1.set(src='cesdd', attr='v', idx=esd1_idx, value=self._cesdd0)
-
-        return True
 
 
 class ESD1Base(DGBase, ESD1PBase):
     """
-    Base class for ESD1 used in DCED.
+    Base class for ESD1 components.
     """
 
-    def __init__(self):
-        DGBase.__init__(self)
-        ESD1PBase.__init__(self)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         # --- params ---
         self.tdc = RParam(info='Minimum charging duration',
@@ -506,11 +490,13 @@ class ESD1Base(DGBase, ESD1PBase):
         self.tdc0 = RParam(info='Initial charging time',
                            name='tdc0', src='tdc0',
                            tex_name=r't_{dc0}', unit='h',
-                           model='ESD1', no_parse=True,)
+                           model='ESD1', no_parse=True,
+                           nonneg=True)
         self.tdd0 = RParam(info='Initial discharging time',
                            name='tdd0', src='tdd0',
                            tex_name=r't_{dd0}', unit='h',
-                           model='ESD1', no_parse=True,)
+                           model='ESD1', no_parse=True,
+                           nonneg=True)
 
         self.ucd = Var(info='ESD1 charging decision',
                        name='ucd', tex_name=r'u_{c,ESD}',
@@ -546,28 +532,36 @@ class ESD1Base(DGBase, ESD1PBase):
         self.zde3 = Constraint(name='zde3', is_eq=False, info='zde bound 3',
                                e_str='zde - Mb dot udd',)
 
+        # force charging flag `fcd`: (tdc0 > 0) * (tdc > tdc0)
+        tcdr = '(tdc0 > 0) * (tdc > tdc0) - ucd'
         self.tcdr = Constraint(name='tcdr', is_eq=False,
                                info='Minimum charging duration',
-                               e_str='mul(ucd, tdc - t - tdc0)',)
+                               e_str=tcdr,)
+
+        # force discharging flag `fdd`: (tdd0 > 0) * (tdd > tdd0)
+        tddr = '(tdd0 > 0) * (tdd > tdd0) - udd'
         self.tddr = Constraint(name='tddr', is_eq=False,
                                info='Minimum discharging duration',
-                               e_str='mul(udd, tdd - t - tdd0)',)
+                               e_str=tddr,)
 
 
-class RTEDES(RTED, ESD1Base):
+class RTEDES(ESD1Base, RTED):
     """
     RTED with energy storage :ref:`ESD1`.
     The bilinear term in the formulation is linearized with big-M method.
 
     While the formulation enforces SOCend, the ESD1 owner is not required to provide
-    an SOC constraint for every 5-minute RTED interval. The optimization treats SOCend
+    an SOC constraint for every RTED interval. The optimization treats SOCend
     as a terminal boundary condition, allowing the dispatcher maximum flexibility to optimize
     power output within the hour, provided the target is met at the interval's conclusion.
+
+    The minimum charging/discharging duration logic is implemented in `tcdr` and `tddr`.
+    For example, the logic of `tcdr` is:
+    `u_{cd} >= fcd`, where `fcd = 1` if `tdc0 > 0` and `tdc > tdc0`, else `fcd = 0`.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
-        ESD1Base.__init__(self)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
 
 class VISBase:
@@ -575,7 +569,9 @@ class VISBase:
     Base class for virtual inertia scheduling.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, system, config, **kwargs) -> None:
+        super().__init__(system, config, **kwargs)
+
         # --- Data Section ---
         self.cm = RParam(info='Virtual inertia cost',
                          name='cm', src='cm',
@@ -638,7 +634,7 @@ class VISBase:
         # NOTE: revise the objective function to include virtual inertia cost
 
 
-class RTEDVIS(RTED, VISBase):
+class RTEDVIS(VISBase, RTED):
     """
     RTED with virtual inertia scheduling.
 
@@ -652,9 +648,8 @@ class RTEDVIS(RTED, VISBase):
        Sustainable Energy, vol. 15, no. 2, pp. 938-951, April 2024, doi: 10.1109/TSTE.2023.3319307.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
-        VISBase.__init__(self)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'

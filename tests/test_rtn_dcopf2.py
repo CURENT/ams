@@ -2,6 +2,7 @@ import unittest
 import numpy as np
 
 import ams
+from ams.shared import skip_unittest_without_PYPOWER
 
 
 class TestDCOPF2(unittest.TestCase):
@@ -79,6 +80,15 @@ class TestDCOPF2(unittest.TestCase):
         pgs_pqt2 = self.ss.DCOPF2.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
+    def test_vBus_aBus(self):
+        """
+        Test vBus and aBus are not all zero.
+        """
+        self.ss.DCOPF2.run(solver='CLARABEL')
+        self.assertTrue(np.any(self.ss.DCOPF2.vBus.v), "vBus is all zero!")
+        self.assertTrue(np.any(self.ss.DCOPF2.aBus.v), "aBus is all zero!")
+
+    @skip_unittest_without_PYPOWER
     def test_dc2ac(self):
         """
         Test `DCOPF2.dc2ac()` method.
@@ -140,3 +150,9 @@ class TestDCOPF2(unittest.TestCase):
         plf2 = self.ss.DCOPF2.get(src='plf', attr='v', idx=line_idx)
         np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
                                        err_msg="plf between DCOPF2 and DCOPF not match!")
+
+    def test_pb_formula(self):
+        """
+        Test the pb formula is not the angle-based formulation.
+        """
+        self.assertFalse('aBus' in self.ss.DCOPF2.pb.e_str, "Bus angle is used in DCOPF2.pb!")

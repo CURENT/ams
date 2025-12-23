@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 import ams
-from ams.shared import skip_unittest_without_MISOCP
+from ams.shared import skip_unittest_without_MISOCP, skip_unittest_without_PYPOWER
 
 
 class TestRTED(unittest.TestCase):
@@ -77,6 +77,14 @@ class TestRTED(unittest.TestCase):
         pgs_pqt2 = self.ss.RTED.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
+    def test_vBus(self):
+        """
+        Test vBus is not all zero.
+        """
+        self.ss.RTED.run(solver='CLARABEL')
+        self.assertTrue(np.any(self.ss.RTED.vBus.v), "vBus is all zero!")
+
+    @skip_unittest_without_PYPOWER
     def test_dc2ac(self):
         """
         Test `RTED.dc2ac()` method.
@@ -173,6 +181,14 @@ class TestRTEDDG(unittest.TestCase):
         pgs_pqt2 = self.ss.RTEDDG.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
+    def test_vBus(self):
+        """
+        Test vBus is not all zero.
+        """
+        self.ss.RTEDDG.run(solver='CLARABEL')
+        self.assertTrue(np.any(self.ss.RTEDDG.vBus.v), "vBus is all zero!")
+
+    @skip_unittest_without_PYPOWER
     def test_dc2ac(self):
         """
         Test `RTEDDG.dc2ac()` method.
@@ -271,3 +287,85 @@ class TestRTEDES(unittest.TestCase):
         self.ss.RTEDES.run(solver='SCIP')
         pgs_pqt2 = self.ss.RTEDES.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
+
+    @skip_unittest_without_MISOCP
+    def test_vBus(self):
+        """
+        Test vBus is not all zero.
+        """
+        self.ss.RTEDES.run(solver='SCIP')
+        self.assertTrue(np.any(self.ss.RTEDES.vBus.v), "vBus is all zero!")
+
+    @skip_unittest_without_MISOCP
+    def test_ch_decision(self):
+        """
+        Test charging/discharging decision for charging/discharging duration time.
+
+        Scenarios to validate:
+                    res     ucd     tdc     tdc0
+        0           True    1       1.0     0.5
+        1           False   0       1.0     0.5
+        2           True    1       1.0     0.0
+        3           True    0       1.0     0.0
+        4           True    1       0.5     1.0
+        5           True    0       0.5     1.0
+        """
+        self.ss.RTEDES.init()
+
+        self.ss.ESD1.set(src='tdc0', attr='v', idx='ESD1_1', value=0.5)
+        self.ss.ESD1.set(src='tdc', attr='v', idx='ESD1_1', value=1.0)
+        # scenario 1: initially charging, charging duration time not met, decision to charge
+        self.ss.RTEDES.ucd.optz.value = np.array([1])
+        self.assertTrue(self.ss.RTEDES.tcdr.e[0] <= 0,
+                        "RTEDES.tcdr should be respected in scenario 1!")
+        # scenario 2: initially charging, with charging duration time not met, decision not to charge
+        self.ss.RTEDES.ucd.optz.value = np.array([0])
+        self.assertFalse(self.ss.RTEDES.tcdr.e[0] <= 0,
+                         "RTEDES.tcdr should be broken in scenario 2!")
+
+        self.ss.ESD1.set(src='tdc0', attr='v', idx='ESD1_1', value=0.0)
+        self.ss.ESD1.set(src='tdc', attr='v', idx='ESD1_1', value=1.0)
+        # scenario 3: initially not charging, decision to charge
+        self.ss.RTEDES.ucd.optz.value = np.array([1])
+        self.assertTrue(self.ss.RTEDES.tcdr.e[0] <= 0,
+                        "RTEDES.tcdr should be respected in scenario 3!")
+        # scenario 4: initially not charging, decision not to charge
+        self.ss.RTEDES.ucd.optz.value = np.array([0])
+        self.assertTrue(self.ss.RTEDES.tcdr.e[0] <= 0,
+                        "RTEDES.tcdr should be respected in scenario 4!")
+
+        self.ss.ESD1.set(src='tdc0', attr='v', idx='ESD1_1', value=1.0)
+        self.ss.ESD1.set(src='tdc', attr='v', idx='ESD1_1', value=0.5)
+        # scenario 5: initially charging, charging duration time met, decision to charge
+        self.ss.RTEDES.ucd.optz.value = np.array([1])
+        self.assertTrue(self.ss.RTEDES.tcdr.e[0] <= 0,
+                        "RTEDES.tcdr should be respected in scenario 5!")
+        # scenario 6: initially charging, charging duration time met, decision not to charge
+        self.ss.RTEDES.ucd.optz.value = np.array([0])
+        self.assertTrue(self.ss.RTEDES.tcdr.e[0] <= 0,
+                        "RTEDES.tcdr should be respected in scenario 6!")
+
+    @skip_unittest_without_PYPOWER
+    @skip_unittest_without_MISOCP
+    def test_dc2ac(self):
+        """
+        Test `RTEDES.dc2ac()` method.
+        """
+        self.ss.RTEDES.run(solver='SCIP')
+        self.ss.RTEDES.dc2ac()
+        self.assertTrue(self.ss.RTEDES.converted, "AC conversion failed!")
+        self.assertTrue(self.ss.RTEDES.exec_time > 0, "Execution time is not greater than 0.")
+
+        stg_idx = self.ss.StaticGen.get_all_idxes()
+        pg_rtedes = self.ss.RTEDES.get(src='pg', attr='v', idx=stg_idx)
+        pg_acopf = self.ss.ACOPF.get(src='pg', attr='v', idx=stg_idx)
+        np.testing.assert_almost_equal(pg_rtedes, pg_acopf, decimal=3)
+
+        bus_idx = self.ss.Bus.get_all_idxes()
+        v_rtedes = self.ss.RTEDES.get(src='vBus', attr='v', idx=bus_idx)
+        v_acopf = self.ss.ACOPF.get(src='vBus', attr='v', idx=bus_idx)
+        np.testing.assert_almost_equal(v_rtedes, v_acopf, decimal=3)
+
+        a_rtedes = self.ss.RTEDES.get(src='aBus', attr='v', idx=bus_idx)
+        a_acopf = self.ss.ACOPF.get(src='aBus', attr='v', idx=bus_idx)
+        np.testing.assert_almost_equal(a_rtedes, a_acopf, decimal=3)

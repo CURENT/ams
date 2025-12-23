@@ -82,7 +82,7 @@ class RoutineBase:
         Flag indicating whether AC conversion has been performed.
     """
 
-    def __init__(self, system=None, config=None):
+    def __init__(self, system=None, config=None, **kwargs):
         """
         Initialize the routine.
 
@@ -272,7 +272,7 @@ class RoutineBase:
         """
         Check if data is valid for a routine.
         """
-        logger.debug(f"Entering data check for <{self.class_name}>")
+        logger.info(f"Entering data check for <{self.class_name}>")
         no_input = []
         owner_list = []
         for rname, rparam in self.rparams.items():
@@ -301,7 +301,6 @@ class RoutineBase:
                         if not np.all(rparam.v <= 0):
                             logger.warning(f"RParam <{rname}> should have all non-positive values.")
                     if rparam.config.nonneg:
-                        print(f'<{self.class_name}> RParam <{rname}> should have all non-negative values.')
                         if not np.all(rparam.v >= 0):
                             logger.warning(f"RParam <{rname}> should have all non-negative values.")
 
@@ -309,13 +308,8 @@ class RoutineBase:
             logger.error(f"<{self.class_name}> Following models are missing in input: {set(owner_list)}")
             return False
 
-        # --- Call super data check if exists (for Mixins) ---
-        if hasattr(super(), '_data_check'):
-            if not super()._data_check():
-                return False
-
         # TODO: add data validation for RParam, typical range, etc.
-        logger.debug(" -> Data check passed")
+        logger.info(" -> Data check passed")
         return True
 
     def init(self, **kwargs):

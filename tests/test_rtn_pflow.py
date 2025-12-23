@@ -1,5 +1,6 @@
 import unittest
 
+import numpy as np
 import ams
 
 
@@ -73,6 +74,13 @@ class TestDCPF(unittest.TestCase):
         self.ss.DCPF.run()
         pgs_pqt2 = self.ss.DCPF.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
+
+    def test_vBus(self):
+        """
+        Test vBus is not all zero.
+        """
+        self.ss.DCPF.run(solver='CLARABEL')
+        self.assertTrue(np.any(self.ss.DCPF.vBus.v), "vBus is all zero!")
 
 
 class TestPFlow(unittest.TestCase):

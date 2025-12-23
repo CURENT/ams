@@ -85,6 +85,14 @@ class TestUC(unittest.TestCase):
 
         self.ss.Line.alter(src='u', idx='Line_3', value=1)
 
+    @skip_unittest_without_MISOCP
+    def test_vBus(self):
+        """
+        Test vBus is not all zero.
+        """
+        self.ss.UC.run(solver='SCIP')
+        self.assertTrue(np.any(self.ss.UC.vBus.v), "vBus is all zero!")
+
 
 class TestUCDG(unittest.TestCase):
     """
@@ -166,6 +174,14 @@ class TestUCDG(unittest.TestCase):
 
         self.ss.Line.alter(src='u', idx='Line_3', value=1)
 
+    @skip_unittest_without_MISOCP
+    def test_vBus(self):
+        """
+        Test vBus is not all zero.
+        """
+        self.ss.UCDG.run(solver='SCIP')
+        self.assertTrue(np.any(self.ss.UCDG.vBus.v), "vBus is all zero!")
+
 
 class TestUCES(unittest.TestCase):
     """
@@ -246,3 +262,11 @@ class TestUCES(unittest.TestCase):
                                        plf_l3, decimal=6)
 
         self.ss.Line.alter(src='u', idx='Line_3', value=1)
+
+    @skip_unittest_without_MISOCP
+    def test_vBus(self):
+        """
+        Test vBus is not all zero.
+        """
+        self.ss.UCES.run(solver='SCIP')
+        self.assertTrue(np.any(self.ss.UCES.vBus.v), "vBus is all zero!")

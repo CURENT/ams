@@ -23,8 +23,8 @@ class DOPF(DCOPF):
        pp. 4061-4073, Jul. 2018, doi: 10.1109/TPWRS.2017.2767632.
     """
 
-    def __init__(self, system, config):
-        DCOPF.__init__(self, system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
         self.type = 'DED'
 
         # -- Data Section --
@@ -121,8 +121,8 @@ class DOPFVIS(DOPF):
        pp. 4061-4073, Jul. 2018, doi: 10.1109/TPWRS.2017.2767632.
     """
 
-    def __init__(self, system, config):
-        DOPF.__init__(self, system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         # --- params ---
         self.cm = RParam(info='Virtual inertia cost',

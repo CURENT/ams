@@ -72,6 +72,13 @@ class TestED(unittest.TestCase):
 
         self.ss.Line.alter(src='u', idx='Line_3', value=1)  # reset
 
+    def test_vBus(self):
+        """
+        Test vBus is not all zero.
+        """
+        self.ss.ED.run(solver='CLARABEL')
+        self.assertTrue(np.any(self.ss.ED.vBus.v), "vBus is all zero!")
+
     def test_set_load(self):
         """
         Test setting and tripping load.
@@ -186,6 +193,13 @@ class TestEDDG(unittest.TestCase):
         pgs_pqt2 = self.ss.EDDG.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
+    def test_vBus(self):
+        """
+        Test vBus is not all zero.
+        """
+        self.ss.EDDG.run(solver='CLARABEL')
+        self.assertTrue(np.any(self.ss.EDDG.vBus.v), "vBus is all zero!")
+
 
 class TestEDES(unittest.TestCase):
     """
@@ -277,3 +291,11 @@ class TestEDES(unittest.TestCase):
         self.ss.EDES.run(solver='SCIP')
         pgs_pqt2 = self.ss.EDES.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
+
+    @skip_unittest_without_MISOCP
+    def test_vBus(self):
+        """
+        Test vBus is not all zero.
+        """
+        self.ss.EDES.run(solver='SCIP')
+        self.assertTrue(np.any(self.ss.EDES.vBus.v), "vBus is all zero!")

@@ -33,7 +33,7 @@ class PFlow(RoutineBase):
        https://andes.readthedocs.io/en/stable/_examples/ex1.html
     """
 
-    def __init__(self, system, config):
+    def __init__(self, system, config, **kwargs):
         RoutineBase.__init__(self, system, config)
         self.type = 'PF'
         self._adsys = None

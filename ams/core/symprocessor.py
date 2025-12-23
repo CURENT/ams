@@ -67,6 +67,8 @@ class SymProcessor:
             (r'\bpos\b', f'{lang}.pos'),
             (r'\bpower\b', f'{lang}.power'),
             (r'\bsign\b', f'{lang}.sign'),
+            (r'\bmaximum\b', f'{lang}.maximum'),
+            (r'\bminimum\b', f'{lang}.minimum'),
             (r'\bsquare\b', f'{lang}.square'),
             (r'\bquad_over_lin\b', f'{lang}.quad_over_lin'),
             (r'\bdiag\b', f'{lang}.diag'),
