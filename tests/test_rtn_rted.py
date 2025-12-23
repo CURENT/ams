@@ -77,6 +77,13 @@ class TestRTED(unittest.TestCase):
         pgs_pqt2 = self.ss.RTED.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
+    def test_vBus(self):
+        """
+        Test vBus is not all zero.
+        """
+        self.ss.RTED.run(solver='CLARABEL')
+        self.assertTrue(np.any(self.ss.RTED.vBus.v), "vBus is all zero!")
+
     def test_dc2ac(self):
         """
         Test `RTED.dc2ac()` method.
@@ -172,6 +179,13 @@ class TestRTEDDG(unittest.TestCase):
         self.ss.RTEDDG.run(solver='CLARABEL')
         pgs_pqt2 = self.ss.RTEDDG.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
+
+    def test_vBus(self):
+        """
+        Test vBus is not all zero.
+        """
+        self.ss.RTED.run(solver='CLARABEL')
+        self.assertTrue(np.any(self.ss.RTED.vBus.v), "vBus is all zero!")
 
     def test_dc2ac(self):
         """
@@ -273,6 +287,14 @@ class TestRTEDES(unittest.TestCase):
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
     @skip_unittest_without_MISOCP
+    def test_vBus(self):
+        """
+        Test vBus is not all zero.
+        """
+        self.ss.RTEDES.run(solver='SCIP')
+        self.assertTrue(np.any(self.ss.RTEDES.vBus.v), "vBus is all zero!")
+
+    @skip_unittest_without_MISOCP
     def test_ch_decision(self):
         """
         Test charging/discharging decision for charging/discharging duration time.
@@ -320,3 +342,27 @@ class TestRTEDES(unittest.TestCase):
         self.ss.RTEDES.ucd.optz.value = np.array([0])
         self.assertTrue(self.ss.RTEDES.tcdr.e[0] <= 0,
                         "RTEDES.tcdr should be respected in scenario 6!")
+
+    @skip_unittest_without_MISOCP
+    def test_dc2ac(self):
+        """
+        Test `RTEDES.dc2ac()` method.
+        """
+        self.ss.RTEDES.run(solver='SCIP')
+        self.ss.RTEDES.dc2ac()
+        self.assertTrue(self.ss.RTEDES.converted, "AC conversion failed!")
+        self.assertTrue(self.ss.RTEDES.exec_time > 0, "Execution time is not greater than 0.")
+
+        stg_idx = self.ss.StaticGen.get_all_idxes()
+        pg_rtedes = self.ss.RTEDES.get(src='pg', attr='v', idx=stg_idx)
+        pg_acopf = self.ss.ACOPF.get(src='pg', attr='v', idx=stg_idx)
+        np.testing.assert_almost_equal(pg_rtedes, pg_acopf, decimal=3)
+
+        bus_idx = self.ss.Bus.get_all_idxes()
+        v_rtedes = self.ss.RTEDES.get(src='vBus', attr='v', idx=bus_idx)
+        v_acopf = self.ss.ACOPF.get(src='vBus', attr='v', idx=bus_idx)
+        np.testing.assert_almost_equal(v_rtedes, v_acopf, decimal=3)
+
+        a_rtedes = self.ss.RTEDES.get(src='aBus', attr='v', idx=bus_idx)
+        a_acopf = self.ss.ACOPF.get(src='aBus', attr='v', idx=bus_idx)
+        np.testing.assert_almost_equal(a_rtedes, a_acopf, decimal=3)

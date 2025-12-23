@@ -79,6 +79,14 @@ class TestRTED2(unittest.TestCase):
         pgs_pqt2 = self.ss.RTED2.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
+    def test_vBus_aBus(self):
+        """
+        Test vBus and aBus are not all zero.
+        """
+        self.ss.RTED2.run(solver='CLARABEL')
+        self.assertTrue(np.any(self.ss.RTED2.vBus.v), "vBus is all zero!")
+        self.assertTrue(np.any(self.ss.RTED2.aBus.v), "aBus is all zero!")
+
     def test_dc2ac(self):
         """
         Test `RTED2.dc2ac()` method.
@@ -208,6 +216,14 @@ class TestRTED2DG(unittest.TestCase):
         self.ss.RTED2DG.run(solver='CLARABEL')
         pgs_pqt2 = self.ss.RTED2DG.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
+
+    def test_vBus_aBus(self):
+        """
+        Test vBus and aBus are not all zero.
+        """
+        self.ss.RTED2DG.run(solver='CLARABEL')
+        self.assertTrue(np.any(self.ss.RTED2DG.vBus.v), "vBus is all zero!")
+        self.assertTrue(np.any(self.ss.RTED2DG.aBus.v), "aBus is all zero!")
 
     def test_dc2ac(self):
         """
@@ -352,6 +368,15 @@ class TestRTED2ES(unittest.TestCase):
         self.ss.RTED2ES.run(solver='SCIP')
         pgs_pqt2 = self.ss.RTED2ES.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
+
+    @skip_unittest_without_MISOCP
+    def test_vBus_aBus(self):
+        """
+        Test vBus and aBus are not all zero.
+        """
+        self.ss.RTED2ES.run(solver='SCIP')
+        self.assertTrue(np.any(self.ss.RTED2ES.vBus.v), "vBus is all zero!")
+        self.assertTrue(np.any(self.ss.RTED2ES.aBus.v), "aBus is all zero!")
 
     @skip_unittest_without_MISOCP
     def test_dc2ac(self):
