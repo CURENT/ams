@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class SFRBase:
     """
-    Base class for SFR used in DCED.
+    Base class for SFR components.
     """
 
     def __init__(self, system, config):
@@ -73,7 +73,7 @@ class SFRBase:
 
 class RTEDBase:
     """
-    Base class for real-time economic dispatch (RTED).
+    Base class for RTED components.
     """
 
     def __init__(self, system, config):
@@ -229,7 +229,7 @@ class RTED(SFRBase, RTEDBase, DCOPF):
 
 class DGBase:
     """
-    Base class for DG used in DCED.
+    Base class for DG components.
     """
 
     def __init__(self, system, config):
@@ -278,7 +278,7 @@ class RTEDDG(DGBase, RTED):
 
 class ESD1PBase:
     """
-    Base class for ESD1 used in price run of DCED.
+    Base class for ESD1 price run components.
     """
 
     def __init__(self, system, config):
@@ -407,10 +407,10 @@ class ESD1PBase:
 
 class RTEDESP(ESD1PBase, RTEDDG):
     """
-    Price run of :class:`RTEDES` with energy storage :ref:`ESD1`.
+    Price run of RTED with energy storage :ref:`ESD1`.
 
     This routine is not intended to work standalone. It should be used after solved
-    :class:`RTED2ES` or :class:`RTEDES`.
+    :class:`RTEDES`.
     When both are solved, :class:`RTED2ES` will be used.
 
     The binary variables ``ucd`` and ``udd`` are now parameters retrieved from
@@ -472,7 +472,7 @@ class RTEDESP(ESD1PBase, RTEDDG):
 
 class ESD1Base(DGBase, ESD1PBase):
     """
-    Base class for ESD1 used in DCED.
+    Base class for ESD1 components.
     """
 
     def __init__(self, system, config):
@@ -552,7 +552,7 @@ class RTEDES(ESD1Base, RTED):
     The bilinear term in the formulation is linearized with big-M method.
 
     While the formulation enforces SOCend, the ESD1 owner is not required to provide
-    an SOC constraint for every 5-minute RTED interval. The optimization treats SOCend
+    an SOC constraint for every RTED interval. The optimization treats SOCend
     as a terminal boundary condition, allowing the dispatcher maximum flexibility to optimize
     power output within the hour, provided the target is met at the interval's conclusion.
 

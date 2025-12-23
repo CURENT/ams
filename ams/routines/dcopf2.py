@@ -16,16 +16,12 @@ from ams.shared import sps
 logger = logging.getLogger(__name__)
 
 
-class PTDFMixin:
+class PTDFBase:
     """
-    Mixin class for PTDF-based formulations.
+    Base class for PTDF-based formulations components.
 
-    This mixin provides PTDF parameters and methods for routines that need
+    This class provides PTDF parameters and methods for routines that need
     to use PTDF formulation instead of B-theta formulation.
-
-    The PTDF (Power Transfer Distribution Factor) formulation is more efficient
-    for large-scale systems as it eliminates the need to solve for bus angles
-    explicitly in the optimization problem.
     """
 
     def __init__(self, system, config):
@@ -91,7 +87,7 @@ class PTDFMixin:
         return super()._post_solve()
 
 
-class DCOPF2(PTDFMixin, DCOPF):
+class DCOPF2(PTDFBase, DCOPF):
     """
     DC optimal power flow (DCOPF) using PTDF formulation.
 

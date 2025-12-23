@@ -3,14 +3,14 @@ RTED routines using PTDF formulation.
 """
 import logging
 
-from ams.routines.dcopf2 import PTDFMixin
+from ams.routines.dcopf2 import PTDFBase
 from ams.routines.rted import RTED, RTEDDG, RTEDESP, RTEDES
 
 
 logger = logging.getLogger(__name__)
 
 
-class RTED2(PTDFMixin, RTED):
+class RTED2(PTDFBase, RTED):
     """
     DC-based real-time economic dispatch (RTED) using PTDF.
 
@@ -39,9 +39,9 @@ class RTED2(PTDFMixin, RTED):
         super().__init__(system, config)
 
 
-class RTED2DG(PTDFMixin, RTEDDG):
+class RTED2DG(PTDFBase, RTEDDG):
     """
-    RTED2 with distributed generator :ref:`DG`.
+    RTED with distributed generator :ref:`DG` using PTDF formulation.
 
     Note that RTED2DG only includes DG output power. If ESD1 is included,
     RTED2ES should be used instead, otherwise there is no SOC.
@@ -51,9 +51,24 @@ class RTED2DG(PTDFMixin, RTEDDG):
         super().__init__(system, config)
 
 
-class RTED2ESP(PTDFMixin, RTEDESP):
+class RTED2ESP(PTDFBase, RTEDESP):
     """
-    RTED2 with energy storage :ref:`ESD1`.
+    Price run of RTED with energy storage :ref:`ESD1` using PTDF formulation.
+
+    This routine is not intended to work standalone. It should be used after solved
+    :class:`RTED2ES`.
+    When both are solved, :class:`RTED2ES` will be used.
+
+    The binary variables ``ucd`` and ``udd`` are now parameters retrieved from
+    solved :class:`RTED2ES`.
+
+    The constraints ``zce1`` - ``zce3`` and ``zde1`` - ``zde3`` are now simplified
+    to ``zce`` and ``zde`` as below:
+
+    .. math::
+
+        (1 - u_{cd}) * p_{ce} <= 0
+        (1 - u_{dd}) * p_{de} <= 0
     """
 
     def __init__(self, system, config):
@@ -65,13 +80,13 @@ class RTED2ESP(PTDFMixin, RTEDESP):
         self._used_rtn = self.system.RTED2ES
 
 
-class RTED2ES(PTDFMixin, RTEDES):
+class RTED2ES(PTDFBase, RTEDES):
     """
     RTED with energy storage :ref:`ESD1`.
     The bilinear term in the formulation is linearized with big-M method.
 
     While the formulation enforces SOCend, the ESD1 owner is not required to provide
-    an SOC constraint for every 5-minute RTED interval. The optimization treats SOCend
+    an SOC constraint for every RTED interval. The optimization treats SOCend
     as a terminal boundary condition, allowing the dispatcher maximum flexibility to optimize
     power output within the hour, provided the target is met at the interval's conclusion.
     """
