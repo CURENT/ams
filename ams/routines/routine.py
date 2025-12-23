@@ -394,7 +394,7 @@ class RoutineBase:
         """
         Run the routine.
 
-        Following kwargs go to `self.init()`: `force`, `force_mats`, `force_constr`, `force_om`.
+        Following kwargs go to `self.init()`: `force_init`, `force_mats`, `force_constr`, `force_om`.
 
         Following kwargs go to `self.solve()`: `solver`, `verbose`, `gp`, `qcp`, `requires_grad`,
         `enforce_dpp`, `ignore_dpp`, `method`, and all rest.

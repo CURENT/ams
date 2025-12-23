@@ -121,7 +121,8 @@ class OPF(DCPF1):
         - time_limit : float
             Time limit for the solver (default: 0.0, no limit).
         """
-        # NOTE: gurobi-optimods iteration count is under a different key path
+        # NOTE: gurobi-optimods iteration count is stored differently from PYPOWER,
+        # so we do not attempt to extract it here and rely on the default.
         return self._run_with_external_solver(
             solver_name="gurobi-optimods",
             iter_key_path=['raw', 'output', 'iterations'],
