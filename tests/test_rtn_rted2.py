@@ -129,6 +129,12 @@ class TestRTED2(unittest.TestCase):
         np.testing.assert_almost_equal(aBus, aBus2, decimal=DECIMALS,
                                        err_msg="aBus between RTED2 and RTED not match!")
 
+    def test_pb_formula(self):
+        """
+        Test the pb formula is not the angle-based formulation.
+        """
+        self.assertFalse('aBus' in self.ss.RTED2.pb.e_str)
+
 
 class TestRTED2DG(unittest.TestCase):
     """
@@ -263,6 +269,12 @@ class TestRTED2DG(unittest.TestCase):
         plf2 = self.ss.RTED2DG.get(src='plf', attr='v', idx=line_idx)
         np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
                                        err_msg="plf between RTED2DG and RTEDDG not match!")
+
+    def test_pb_formula(self):
+        """
+        Test the pb formula is not the angle-based formulation.
+        """
+        self.assertFalse('aBus' in self.ss.RTED2DG.pb.e_str)
 
 
 class TestRTED2ES(unittest.TestCase):
@@ -405,7 +417,7 @@ class TestRTED2ES(unittest.TestCase):
         Test if results align with RTEDESP.
         """
         self.ss.RTED2ES.run(solver='SCIP')
-        self.ss.RTEDESP.run(solver='CLARABEL')
+        self.ss.RTED2ESP.run(solver='CLARABEL')
 
         pg_idx = self.ss.StaticGen.get_all_idxes()
         bus_idx = self.ss.Bus.idx.v
@@ -414,21 +426,27 @@ class TestRTED2ES(unittest.TestCase):
         DECIMALS = 4
 
         np.testing.assert_almost_equal(self.ss.RTED2ES.obj.v,
-                                       self.ss.RTEDESP.obj.v,
+                                       self.ss.RTED2ESP.obj.v,
                                        decimal=DECIMALS,
                                        err_msg="Objective value between RTED2ES and RTEDESP not match!")
 
         pg = self.ss.RTED2ES.get(src='pg', attr='v', idx=pg_idx)
-        pg2 = self.ss.RTEDESP.get(src='pg', attr='v', idx=pg_idx)
+        pg2 = self.ss.RTED2ESP.get(src='pg', attr='v', idx=pg_idx)
         np.testing.assert_almost_equal(pg, pg2, decimal=DECIMALS,
                                        err_msg="pg between RTED2ES and RTEDESP not match!")
 
         aBus = self.ss.RTED2ES.get(src='aBus', attr='v', idx=bus_idx)
-        aBus2 = self.ss.RTEDESP.get(src='aBus', attr='v', idx=bus_idx)
+        aBus2 = self.ss.RTED2ESP.get(src='aBus', attr='v', idx=bus_idx)
         np.testing.assert_almost_equal(aBus, aBus2, decimal=DECIMALS,
                                        err_msg="aBus between RTED2ES and RTEDESP not match!")
 
         plf = self.ss.RTED2ES.get(src='plf', attr='v', idx=line_idx)
-        plf2 = self.ss.RTEDESP.get(src='plf', attr='v', idx=line_idx)
+        plf2 = self.ss.RTED2ESP.get(src='plf', attr='v', idx=line_idx)
         np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
                                        err_msg="plf between RTED2ES and RTEDESP not match!")
+
+    def test_pb_formula(self):
+        """
+        Test the pb formula is not the angle-based formulation.
+        """
+        self.assertFalse('aBus' in self.ss.RTED2ES.pb.e_str)

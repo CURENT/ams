@@ -444,27 +444,29 @@ class RTEDESP(ESD1PBase, RTEDDG):
         self.zde = Constraint(name='zde', is_eq=False, info='zde bound',
                               e_str='mul(1-udd, pde)',)
 
-    def _prereq(self):
+    def _preinit(self):
+        """
+        Extra run at the beginning of RTEDESP.init().
+        """
         if not self.system.RTEDES.converged:
             raise ValueError('<RTEDES> must be solved before <RTEDESP>!')
+        self._used_rtn = self.system.RTEDES
 
     def init(self, **kwargs):
-        used_rtn = self.system.RTEDES
-
+        self._preinit()
         esd1_idx = self.system.ESD1.idx.v
         esd1_stg = self.system.ESD1.get(src='gen', attr='v', idx=esd1_idx)
 
         self.system.ESD1.set(src='ucd0', attr='v', idx=esd1_idx,
-                             value=used_rtn.get(src='ucd', attr='v', idx=esd1_idx))
+                             value=self._used_rtn.get(src='ucd', attr='v', idx=esd1_idx))
         self.system.ESD1.set(src='udd0', attr='v', idx=esd1_idx,
-                             value=used_rtn.get(src='udd', attr='v', idx=esd1_idx))
+                             value=self._used_rtn.get(src='udd', attr='v', idx=esd1_idx))
 
-        pce = used_rtn.get(src='pce', attr='v', idx=esd1_idx)
-        pde = used_rtn.get(src='pde', attr='v', idx=esd1_idx)
+        pce = self._used_rtn.get(src='pce', attr='v', idx=esd1_idx)
+        pde = self._used_rtn.get(src='pde', attr='v', idx=esd1_idx)
         self.system.StaticGen.set(src='p0', attr='v', idx=esd1_stg, value=pde - pce)
         logger.info(f'<{self.class_name}>: ESD1 associated StaticGen.p0 has been set'
-                    f' using the values from {used_rtn.class_name}.pg.v')
-
+                    f' using the values from {self._used_rtn.class_name}.pg.v')
         return super().init(**kwargs)
 
 

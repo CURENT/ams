@@ -4,7 +4,7 @@ RTED routines using PTDF formulation.
 import logging
 
 from ams.routines.dcopf2 import PTDFMixin
-from ams.routines.rted import RTED, DGBase, ESD1Base
+from ams.routines.rted import RTED, RTEDDG, RTEDESP, RTEDES
 
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class RTED2(PTDFMixin, RTED):
         super().__init__(system, config)
 
 
-class RTED2DG(DGBase, RTED2):
+class RTED2DG(PTDFMixin, RTEDDG):
     """
     RTED2 with distributed generator :ref:`DG`.
 
@@ -51,7 +51,21 @@ class RTED2DG(DGBase, RTED2):
         super().__init__(system, config)
 
 
-class RTED2ES(ESD1Base, RTED2):
+class RTED2ESP(PTDFMixin, RTEDESP):
+    """
+    RTED2 with energy storage :ref:`ESD1`.
+    """
+
+    def __init__(self, system, config):
+        super().__init__(system, config)
+
+    def _preinit(self):
+        if not self.system.RTED2ES.converged:
+            raise ValueError('<RTED2ES> must be solved before <RTED2ESP>!')
+        self._used_rtn = self.system.RTED2ES
+
+
+class RTED2ES(PTDFMixin, RTEDES):
     """
     RTED with energy storage :ref:`ESD1`.
     The bilinear term in the formulation is linearized with big-M method.
