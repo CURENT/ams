@@ -198,13 +198,13 @@ class DCPF(DCPFBase):
                             name='genpv', tex_name=r'g_{DG}',
                             model='PV', src='idx',
                             no_parse=True,)
-        self.cpv = VarSelect(u=self.pg, indexer='genpv',
-                             name='cpv', tex_name=r'C_{PV}',
+        self.ipv = VarSelect(u=self.pg, indexer='genpv',
+                             name='ipv', tex_name=r'C_{PV}',
                              info='Select PV from pg',
                              no_parse=True,)
 
         self.pvb = Constraint(name='pvb', info='PV generator',
-                              e_str='cpv @ (pg - mul(ug, pg0))',
+                              e_str='ipv @ (pg - mul(ug, pg0))',
                               is_eq=True,)
 
         self.obj = Objective(name='obj',
