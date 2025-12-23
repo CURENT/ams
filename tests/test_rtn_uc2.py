@@ -225,9 +225,9 @@ class TestUC2DG(unittest.TestCase):
         """
         Test vBus and aBus are not all zero.
         """
-        self.ss.UC2.run(solver='SCIP')
-        self.assertTrue(np.any(self.ss.UC2.vBus.v), "vBus is all zero!")
-        self.assertTrue(np.any(self.ss.UC2.aBus.v), "aBus is all zero!")
+        self.ss.UC2DG.run(solver='SCIP')
+        self.assertTrue(np.any(self.ss.UC2DG.vBus.v), "vBus is all zero!")
+        self.assertTrue(np.any(self.ss.UC2DG.aBus.v), "aBus is all zero!")
 
     @skip_unittest_without_MISOCP
     def test_align_ucdg(self):
