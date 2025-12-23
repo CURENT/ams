@@ -318,7 +318,7 @@ class TestRTEDES(unittest.TestCase):
         self.ss.RTEDES.ucd.optz.value = np.array([1])
         self.assertTrue(self.ss.RTEDES.tcdr.e[0] <= 0,
                         "RTEDES.tcdr should be respected in scenario 1!")
-        # scenario 2: initially charging, with charging duration time not met, decision to charge
+        # scenario 2: initially charging, with charging duration time not met, decision not to charge
         self.ss.RTEDES.ucd.optz.value = np.array([0])
         self.assertFalse(self.ss.RTEDES.tcdr.e[0] <= 0,
                          "RTEDES.tcdr should be broken in scenario 2!")
@@ -329,7 +329,7 @@ class TestRTEDES(unittest.TestCase):
         self.ss.RTEDES.ucd.optz.value = np.array([1])
         self.assertTrue(self.ss.RTEDES.tcdr.e[0] <= 0,
                         "RTEDES.tcdr should be respected in scenario 3!")
-        # scenario 4: initially not charging, decision to charge
+        # scenario 4: initially not charging, decision not to charge
         self.ss.RTEDES.ucd.optz.value = np.array([0])
         self.assertTrue(self.ss.RTEDES.tcdr.e[0] <= 0,
                         "RTEDES.tcdr should be respected in scenario 4!")
@@ -340,7 +340,7 @@ class TestRTEDES(unittest.TestCase):
         self.ss.RTEDES.ucd.optz.value = np.array([1])
         self.assertTrue(self.ss.RTEDES.tcdr.e[0] <= 0,
                         "RTEDES.tcdr should be respected in scenario 5!")
-        # scenario 6: initially charging, charging duration time met, decision to charge
+        # scenario 6: initially charging, charging duration time met, decision not to charge
         self.ss.RTEDES.ucd.optz.value = np.array([0])
         self.assertTrue(self.ss.RTEDES.tcdr.e[0] <= 0,
                         "RTEDES.tcdr should be respected in scenario 6!")

@@ -411,10 +411,9 @@ class RTEDESP(ESD1PBase, RTEDDG):
 
     This routine is not intended to work standalone. It should be used after solved
     :class:`RTEDES`.
-    When both are solved, :class:`RTED2ES` will be used.
 
     The binary variables ``ucd`` and ``udd`` are now parameters retrieved from
-    solved :class:`RTED2ES` or :class:`RTEDES`.
+    solved :class:`RTEDES`.
 
     The constraints ``zce1`` - ``zce3`` and ``zde1`` - ``zde3`` are now simplified
     to ``zce`` and ``zde`` as below:
