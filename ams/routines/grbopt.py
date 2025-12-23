@@ -39,7 +39,7 @@ class OPF(DCPF1):
     """
 
     def __init__(self, system, config):
-        DCPF1.__init__(self, system, config)
+        super().__init__(system, config)
         self.type = 'ACED'
 
         # Overwrite the config to be empty, as it is not used in this routine

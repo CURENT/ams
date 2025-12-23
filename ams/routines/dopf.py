@@ -24,7 +24,7 @@ class DOPF(DCOPF):
     """
 
     def __init__(self, system, config):
-        DCOPF.__init__(self, system, config)
+        super().__init__(system, config)
         self.type = 'DED'
 
         # -- Data Section --
@@ -122,7 +122,7 @@ class DOPFVIS(DOPF):
     """
 
     def __init__(self, system, config):
-        DOPF.__init__(self, system, config)
+        super().__init__(system, config)
 
         # --- params ---
         self.cm = RParam(info='Virtual inertia cost',
