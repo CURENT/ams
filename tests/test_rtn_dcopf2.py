@@ -79,6 +79,14 @@ class TestDCOPF2(unittest.TestCase):
         pgs_pqt2 = self.ss.DCOPF2.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
+    def test_vBus_aBus(self):
+        """
+        Test vBus and aBus are not all zero.
+        """
+        self.ss.DCOPF2.run(solver='CLARABEL')
+        self.assertTrue(np.any(self.ss.DCOPF2.vBus.v), "vBus is all zero!")
+        self.assertTrue(np.any(self.ss.DCOPF2.aBus.v), "aBus is all zero!")
+
     def test_dc2ac(self):
         """
         Test `DCOPF2.dc2ac()` method.
