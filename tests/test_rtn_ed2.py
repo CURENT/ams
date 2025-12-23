@@ -100,6 +100,7 @@ class TestED2(unittest.TestCase):
         Test vBus and aBus are not all zero.
         """
         self.ss.ED2.run(solver='CLARABEL')
+        self.assertTrue(self.ss.ED2.converged, "ED2 did not converge!")
         self.assertTrue(np.any(self.ss.ED2.vBus.v), "vBus is all zero!")
         self.assertTrue(np.any(self.ss.ED2.aBus.v), "aBus is all zero!")
 
@@ -238,6 +239,7 @@ class TestED2DG(unittest.TestCase):
         Test vBus and aBus are not all zero.
         """
         self.ss.ED2DG.run(solver='CLARABEL')
+        self.assertTrue(self.ss.ED2DG.converged, "ED2DG did not converge!")
         self.assertTrue(np.any(self.ss.ED2DG.vBus.v), "vBus is all zero!")
         self.assertTrue(np.any(self.ss.ED2DG.aBus.v), "aBus is all zero!")
 
@@ -380,6 +382,7 @@ class TestED2ES(unittest.TestCase):
         Test vBus and aBus are not all zero.
         """
         self.ss.ED2ES.run(solver='SCIP')
+        self.assertTrue(self.ss.ED2ES.converged, "ED2ES did not converge!")
         self.assertTrue(np.any(self.ss.ED2ES.vBus.v), "vBus is all zero!")
         self.assertTrue(np.any(self.ss.ED2ES.aBus.v), "aBus is all zero!")
 

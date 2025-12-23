@@ -84,6 +84,7 @@ class TestRTED2(unittest.TestCase):
         Test vBus and aBus are not all zero.
         """
         self.ss.RTED2.run(solver='CLARABEL')
+        self.assertTrue(self.ss.RTED2.converged, "RTED2 did not converge!")
         self.assertTrue(np.any(self.ss.RTED2.vBus.v), "vBus is all zero!")
         self.assertTrue(np.any(self.ss.RTED2.aBus.v), "aBus is all zero!")
 
@@ -223,6 +224,7 @@ class TestRTED2DG(unittest.TestCase):
         Test vBus and aBus are not all zero.
         """
         self.ss.RTED2DG.run(solver='CLARABEL')
+        self.assertTrue(self.ss.RTED2DG.converged, "RTED2DG did not converge!")
         self.assertTrue(np.any(self.ss.RTED2DG.vBus.v), "vBus is all zero!")
         self.assertTrue(np.any(self.ss.RTED2DG.aBus.v), "aBus is all zero!")
 
@@ -377,6 +379,7 @@ class TestRTED2ES(unittest.TestCase):
         Test vBus and aBus are not all zero.
         """
         self.ss.RTED2ES.run(solver='SCIP')
+        self.assertTrue(self.ss.RTED2ES.converged, "RTED2ES did not converge!")
         self.assertTrue(np.any(self.ss.RTED2ES.vBus.v), "vBus is all zero!")
         self.assertTrue(np.any(self.ss.RTED2ES.aBus.v), "aBus is all zero!")
 

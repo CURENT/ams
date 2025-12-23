@@ -85,6 +85,7 @@ class TestDCOPF(unittest.TestCase):
         Test vBus is not all zero.
         """
         self.ss.DCOPF.run(solver='CLARABEL')
+        self.assertTrue(self.ss.DCOPF.converged, "DCOPF did not converge!")
         self.assertTrue(np.any(self.ss.DCOPF.vBus.v), "vBus is all zero!")
 
     @skip_unittest_without_PYPOWER

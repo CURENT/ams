@@ -91,6 +91,7 @@ class TestUC(unittest.TestCase):
         Test vBus is not all zero.
         """
         self.ss.UC.run(solver='SCIP')
+        self.assertTrue(self.ss.UC.converged, "UC did not converge!")
         self.assertTrue(np.any(self.ss.UC.vBus.v), "vBus is all zero!")
 
 
@@ -180,6 +181,7 @@ class TestUCDG(unittest.TestCase):
         Test vBus is not all zero.
         """
         self.ss.UCDG.run(solver='SCIP')
+        self.assertTrue(self.ss.UCDG.converged, "UCDG did not converge!")
         self.assertTrue(np.any(self.ss.UCDG.vBus.v), "vBus is all zero!")
 
 
@@ -269,4 +271,5 @@ class TestUCES(unittest.TestCase):
         Test vBus is not all zero.
         """
         self.ss.UCES.run(solver='SCIP')
+        self.assertTrue(self.ss.UCES.converged, "UCES did not converge!")
         self.assertTrue(np.any(self.ss.UCES.vBus.v), "vBus is all zero!")

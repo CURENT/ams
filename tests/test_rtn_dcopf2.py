@@ -85,6 +85,7 @@ class TestDCOPF2(unittest.TestCase):
         Test vBus and aBus are not all zero.
         """
         self.ss.DCOPF2.run(solver='CLARABEL')
+        self.assertTrue(self.ss.DCOPF2.converged, "DCOPF2 did not converge!")
         self.assertTrue(np.any(self.ss.DCOPF2.vBus.v), "vBus is all zero!")
         self.assertTrue(np.any(self.ss.DCOPF2.aBus.v), "aBus is all zero!")
 

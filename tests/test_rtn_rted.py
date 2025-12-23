@@ -82,6 +82,7 @@ class TestRTED(unittest.TestCase):
         Test vBus is not all zero.
         """
         self.ss.RTED.run(solver='CLARABEL')
+        self.assertTrue(self.ss.RTED.converged, "RTED did not converge!")
         self.assertTrue(np.any(self.ss.RTED.vBus.v), "vBus is all zero!")
 
     @skip_unittest_without_PYPOWER
@@ -186,6 +187,7 @@ class TestRTEDDG(unittest.TestCase):
         Test vBus is not all zero.
         """
         self.ss.RTEDDG.run(solver='CLARABEL')
+        self.assertTrue(self.ss.RTEDDG.converged, "RTEDDG did not converge!")
         self.assertTrue(np.any(self.ss.RTEDDG.vBus.v), "vBus is all zero!")
 
     @skip_unittest_without_PYPOWER
@@ -294,6 +296,7 @@ class TestRTEDES(unittest.TestCase):
         Test vBus is not all zero.
         """
         self.ss.RTEDES.run(solver='SCIP')
+        self.assertTrue(self.ss.RTEDES.converged, "RTEDES did not converge!")
         self.assertTrue(np.any(self.ss.RTEDES.vBus.v), "vBus is all zero!")
 
     @skip_unittest_without_MISOCP

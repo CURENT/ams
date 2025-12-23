@@ -80,6 +80,7 @@ class TestDCPF(unittest.TestCase):
         Test vBus is not all zero.
         """
         self.ss.DCPF.run(solver='CLARABEL')
+        self.assertTrue(self.ss.DCPF.converged, "DCPF did not converge!")
         self.assertTrue(np.any(self.ss.DCPF.vBus.v), "vBus is all zero!")
 
 

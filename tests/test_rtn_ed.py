@@ -77,6 +77,7 @@ class TestED(unittest.TestCase):
         Test vBus is not all zero.
         """
         self.ss.ED.run(solver='CLARABEL')
+        self.assertTrue(self.ss.ED.converged, "ED did not converge!")
         self.assertTrue(np.any(self.ss.ED.vBus.v), "vBus is all zero!")
 
     def test_set_load(self):
@@ -198,6 +199,7 @@ class TestEDDG(unittest.TestCase):
         Test vBus is not all zero.
         """
         self.ss.EDDG.run(solver='CLARABEL')
+        self.assertTrue(self.ss.EDDG.converged, "EDDG did not converge!")
         self.assertTrue(np.any(self.ss.EDDG.vBus.v), "vBus is all zero!")
 
 
