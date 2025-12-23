@@ -2,6 +2,8 @@ import unittest
 
 import ams
 
+from ams.shared import skip_unittest_without_PYPOWER
+
 
 class TestACOPF(unittest.TestCase):
     """
@@ -19,6 +21,7 @@ class TestACOPF(unittest.TestCase):
         self.ss.ACOPF.init()
         self.assertTrue(self.ss.ACOPF.initialized, "ACOPF initialization failed!")
 
+    @skip_unittest_without_PYPOWER
     def test_trip_gen(self):
         """
         Test generator tripping.
@@ -35,6 +38,7 @@ class TestACOPF(unittest.TestCase):
 
         self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=1)
 
+    @skip_unittest_without_PYPOWER
     def test_trip_line(self):
         """
         Test line tripping.
@@ -50,6 +54,7 @@ class TestACOPF(unittest.TestCase):
 
         self.ss.Line.alter(src='u', idx='Line_3', value=1)
 
+    @skip_unittest_without_PYPOWER
     def test_set_load(self):
         """
         Test setting and tripping load.

@@ -5,6 +5,7 @@ import numpy as np
 
 import ams
 from ams.utils.paths import get_case
+from ams.shared import skip_unittest_without_PYPOWER
 
 
 class Test5Bus(unittest.TestCase):
@@ -92,6 +93,7 @@ class Test5Bus(unittest.TestCase):
         self.assertEqual(self.ss.PV.v0.v[1], 0.98)
         self.ss.PFlow.run()
 
+    @skip_unittest_without_PYPOWER
     def test_alter_param_before_routine(self):
         """
         Test altering parameter before running routine.
@@ -104,6 +106,7 @@ class Test5Bus(unittest.TestCase):
         self.ss.ACOPF.run()
         np.testing.assert_array_equal(self.ss.GCost.get(src='c1', attr='v', idx=gcost_idx), gcost_val)
 
+    @skip_unittest_without_PYPOWER
     def test_alter_param_after_routine(self):
         """
         Test altering parameter after running routine.

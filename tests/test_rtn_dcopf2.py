@@ -2,6 +2,7 @@ import unittest
 import numpy as np
 
 import ams
+from ams.shared import skip_unittest_without_PYPOWER
 
 
 class TestDCOPF2(unittest.TestCase):
@@ -87,6 +88,7 @@ class TestDCOPF2(unittest.TestCase):
         self.assertTrue(np.any(self.ss.DCOPF2.vBus.v), "vBus is all zero!")
         self.assertTrue(np.any(self.ss.DCOPF2.aBus.v), "aBus is all zero!")
 
+    @skip_unittest_without_PYPOWER
     def test_dc2ac(self):
         """
         Test `DCOPF2.dc2ac()` method.

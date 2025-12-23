@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 import ams
-from ams.shared import skip_unittest_without_MISOCP
+from ams.shared import skip_unittest_without_MISOCP, skip_unittest_without_PYPOWER
 
 
 class TestRTED2(unittest.TestCase):
@@ -87,6 +87,7 @@ class TestRTED2(unittest.TestCase):
         self.assertTrue(np.any(self.ss.RTED2.vBus.v), "vBus is all zero!")
         self.assertTrue(np.any(self.ss.RTED2.aBus.v), "aBus is all zero!")
 
+    @skip_unittest_without_PYPOWER
     def test_dc2ac(self):
         """
         Test `RTED2.dc2ac()` method.
@@ -225,6 +226,7 @@ class TestRTED2DG(unittest.TestCase):
         self.assertTrue(np.any(self.ss.RTED2DG.vBus.v), "vBus is all zero!")
         self.assertTrue(np.any(self.ss.RTED2DG.aBus.v), "aBus is all zero!")
 
+    @skip_unittest_without_PYPOWER
     def test_dc2ac(self):
         """
         Test `RTED2DG.dc2ac()` method.
@@ -378,6 +380,7 @@ class TestRTED2ES(unittest.TestCase):
         self.assertTrue(np.any(self.ss.RTED2ES.vBus.v), "vBus is all zero!")
         self.assertTrue(np.any(self.ss.RTED2ES.aBus.v), "aBus is all zero!")
 
+    @skip_unittest_without_PYPOWER
     @skip_unittest_without_MISOCP
     def test_dc2ac(self):
         """
