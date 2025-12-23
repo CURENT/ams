@@ -36,7 +36,7 @@ class RTED2(RTED, PTDFMixin):
     """
 
     def __init__(self, system, config):
-        RTED.__init__(self, system, config)
+        super().__init__(system, config)
         PTDFMixin.__init__(self)
 
     def _post_solve(self):
@@ -53,7 +53,7 @@ class RTED2DG(RTED2, DGBase):
     """
 
     def __init__(self, system, config):
-        RTED2.__init__(self, system, config)
+        super().__init__(system, config)
         DGBase.__init__(self)
 
 
@@ -69,5 +69,5 @@ class RTED2ES(RTED2, ESD1Base):
     """
 
     def __init__(self, system, config):
-        RTED2.__init__(self, system, config)
+        super().__init__(system, config)
         ESD1Base.__init__(self)
