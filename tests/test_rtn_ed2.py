@@ -278,7 +278,7 @@ class TestED2DG(unittest.TestCase):
         """
         Test the pb formula is not the angle-based formulation.
         """
-        self.assertFalse('aBus' in self.ss.ED2.pb.e_str, "Bus angle is used in ED2.pb!")
+        self.assertFalse('aBus' in self.ss.ED2DG.pb.e_str, "Bus angle is used in ED2DG.pb!")
 
 
 class TestED2ES(unittest.TestCase):

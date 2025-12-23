@@ -257,14 +257,14 @@ class DCPF1(RoutineBase):
         """
         if not self.initialized:
             self.init()
-        
+
         t0, _ = elapsed()
         res = self.solve(**kwargs)
         self.converged = res['success']
         self.exit_code = 0 if res['success'] else 1
         _, s = elapsed(t0)
         self.exec_time = float(s.split(" ")[0])
-        
+
         # Extract iteration count from result
         n_iter = -1
         if iter_key_path:
@@ -273,11 +273,16 @@ class DCPF1(RoutineBase):
                 for key in iter_key_path:
                     val = val[key]
                 n_iter = val
-            except (KeyError, TypeError):
-                pass
-        
+            except (KeyError, TypeError) as e:
+                logger.debug(
+                    "Could not extract iteration count using iter_key_path %s: %s. "
+                    "Falling back to default n_iter = -1.",
+                    iter_key_path,
+                    e,
+                )
+
         n_iter_str = f"{n_iter} iterations " if n_iter > 1 else f"{n_iter} iteration "
-        
+
         if self.exit_code == 0:
             msg = f"<{self.class_name}> converged in {s}, "
             msg += n_iter_str + f"with {solver_name}."

@@ -184,8 +184,8 @@ class TestRTEDDG(unittest.TestCase):
         """
         Test vBus is not all zero.
         """
-        self.ss.RTED.run(solver='CLARABEL')
-        self.assertTrue(np.any(self.ss.RTED.vBus.v), "vBus is all zero!")
+        self.ss.RTEDDG.run(solver='CLARABEL')
+        self.assertTrue(np.any(self.ss.RTEDDG.vBus.v), "vBus is all zero!")
 
     def test_dc2ac(self):
         """

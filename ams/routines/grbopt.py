@@ -8,7 +8,6 @@ import io
 import scipy.io
 
 from andes.shared import np, pd
-from andes.utils.misc import elapsed
 
 from ams.core import Config
 
@@ -128,4 +127,3 @@ class OPF(DCPF1):
             iter_key_path=['raw', 'output', 'iterations'],
             **kwargs
         )
-

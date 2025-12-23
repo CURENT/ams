@@ -179,8 +179,8 @@ class TestUCDG(unittest.TestCase):
         """
         Test vBus is not all zero.
         """
-        self.ss.UC.run(solver='SCIP')
-        self.assertTrue(np.any(self.ss.UC.vBus.v), "vBus is all zero!")
+        self.ss.UCDG.run(solver='SCIP')
+        self.assertTrue(np.any(self.ss.UCDG.vBus.v), "vBus is all zero!")
 
 
 class TestUCES(unittest.TestCase):
@@ -268,5 +268,5 @@ class TestUCES(unittest.TestCase):
         """
         Test vBus is not all zero.
         """
-        self.ss.UC.run(solver='SCIP')
-        self.assertTrue(np.any(self.ss.UC.vBus.v), "vBus is all zero!")
+        self.ss.UCES.run(solver='SCIP')
+        self.assertTrue(np.any(self.ss.UCES.vBus.v), "vBus is all zero!")

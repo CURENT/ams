@@ -108,58 +108,6 @@ class RTEDBase:
                           model='StaticGen', src='R10',
                           unit='p.u./h',)
 
-    def dc2ac(self, kloss=1.0, **kwargs):
-        exec_time = self.exec_time
-        if self.exec_time == 0 or self.exit_code != 0:
-            logger.warning(f'{self.class_name} is not executed successfully, quit conversion.')
-            return False
-        # set pru and prd into pmin and pmax
-        pr_idx = self.pru.get_all_idxes()
-        pmin0 = self.system.StaticGen.get(src='pmin', attr='v', idx=pr_idx)
-        pmax0 = self.system.StaticGen.get(src='pmax', attr='v', idx=pr_idx)
-        p00 = self.system.StaticGen.get(src='p0', attr='v', idx=pr_idx)
-
-        # --- ACOPF ---
-        # scale up load
-        pq_idx = self.system.StaticLoad.get_all_idxes()
-        pd0 = self.system.StaticLoad.get(src='p0', attr='v', idx=pq_idx).copy()
-        qd0 = self.system.StaticLoad.get(src='q0', attr='v', idx=pq_idx).copy()
-        self.system.StaticLoad.set(src='p0', idx=pq_idx, attr='v', value=pd0 * kloss)
-        self.system.StaticLoad.set(src='q0', idx=pq_idx, attr='v', value=qd0 * kloss)
-        # preserve generator reserve
-        ACOPF = self.system.ACOPF
-        pmin = pmin0 + self.prd.v
-        pmax = pmax0 - self.pru.v
-        self.system.StaticGen.set(src='pmin', idx=pr_idx, attr='v', value=pmin)
-        self.system.StaticGen.set(src='pmax', idx=pr_idx, attr='v', value=pmax)
-        self.system.StaticGen.set(src='p0', idx=pr_idx, attr='v', value=self.pg.v)
-        # run ACOPF
-        ACOPF.run()
-        # scale load back
-        self.system.StaticLoad.set(src='p0', idx=pq_idx, attr='v', value=pd0)
-        self.system.StaticLoad.set(src='q0', idx=pq_idx, attr='v', value=qd0)
-        if not ACOPF.exit_code == 0:
-            logger.warning('<ACOPF> did not converge, conversion failed.')
-            self.vBus.optz.value = np.ones(self.system.Bus.n)
-            self.aBus.optz.value = np.zeros(self.system.Bus.n)
-            return False
-
-        self.pg.optz.value = ACOPF.pg.v
-        self.vBus.optz.value = ACOPF.vBus.v
-        self.aBus.optz.value = ACOPF.aBus.v
-        self.exec_time = exec_time
-
-        # reset pmin, pmax, p0
-        self.system.StaticGen.set(src='pmin', idx=pr_idx, attr='v', value=pmin0)
-        self.system.StaticGen.set(src='pmax', idx=pr_idx, attr='v', value=pmax0)
-        self.system.StaticGen.set(src='p0', idx=pr_idx, attr='v', value=p00)
-
-        # --- set status ---
-        self.system.recent = self
-        self.converted = True
-        logger.warning(f'<{self.class_name}> converted to AC.')
-        return True
-
 
 class RTED(SFRBase, RTEDBase, DCOPF):
     """
@@ -225,6 +173,58 @@ class RTED(SFRBase, RTEDBase, DCOPF):
         _to_sum = 'c1 @ pg + cru * pru + crd * prd'
         cost += f'+ t dot sum({_to_sum})'
         self.obj.e_str = cost
+
+    def dc2ac(self, kloss=1.0, **kwargs):
+        exec_time = self.exec_time
+        if self.exec_time == 0 or self.exit_code != 0:
+            logger.warning(f'{self.class_name} is not executed successfully, quit conversion.')
+            return False
+        # set pru and prd into pmin and pmax
+        pr_idx = self.pru.get_all_idxes()
+        pmin0 = self.system.StaticGen.get(src='pmin', attr='v', idx=pr_idx)
+        pmax0 = self.system.StaticGen.get(src='pmax', attr='v', idx=pr_idx)
+        p00 = self.system.StaticGen.get(src='p0', attr='v', idx=pr_idx)
+
+        # --- ACOPF ---
+        # scale up load
+        pq_idx = self.system.StaticLoad.get_all_idxes()
+        pd0 = self.system.StaticLoad.get(src='p0', attr='v', idx=pq_idx).copy()
+        qd0 = self.system.StaticLoad.get(src='q0', attr='v', idx=pq_idx).copy()
+        self.system.StaticLoad.set(src='p0', idx=pq_idx, attr='v', value=pd0 * kloss)
+        self.system.StaticLoad.set(src='q0', idx=pq_idx, attr='v', value=qd0 * kloss)
+        # preserve generator reserve
+        ACOPF = self.system.ACOPF
+        pmin = pmin0 + self.prd.v
+        pmax = pmax0 - self.pru.v
+        self.system.StaticGen.set(src='pmin', idx=pr_idx, attr='v', value=pmin)
+        self.system.StaticGen.set(src='pmax', idx=pr_idx, attr='v', value=pmax)
+        self.system.StaticGen.set(src='p0', idx=pr_idx, attr='v', value=self.pg.v)
+        # run ACOPF
+        ACOPF.run()
+        # scale load back
+        self.system.StaticLoad.set(src='p0', idx=pq_idx, attr='v', value=pd0)
+        self.system.StaticLoad.set(src='q0', idx=pq_idx, attr='v', value=qd0)
+        if not ACOPF.exit_code == 0:
+            logger.warning('<ACOPF> did not converge, conversion failed.')
+            self.vBus.optz.value = np.ones(self.system.Bus.n)
+            self.aBus.optz.value = np.zeros(self.system.Bus.n)
+            return False
+
+        self.pg.optz.value = ACOPF.pg.v
+        self.vBus.optz.value = ACOPF.vBus.v
+        self.aBus.optz.value = ACOPF.aBus.v
+        self.exec_time = exec_time
+
+        # reset pmin, pmax, p0
+        self.system.StaticGen.set(src='pmin', idx=pr_idx, attr='v', value=pmin0)
+        self.system.StaticGen.set(src='pmax', idx=pr_idx, attr='v', value=pmax0)
+        self.system.StaticGen.set(src='p0', idx=pr_idx, attr='v', value=p00)
+
+        # --- set status ---
+        self.system.recent = self
+        self.converted = True
+        logger.warning(f'<{self.class_name}> converted to AC.')
+        return True
 
 
 class DGBase:
@@ -533,7 +533,7 @@ class ESD1Base(DGBase, ESD1PBase):
         self.zde3 = Constraint(name='zde3', is_eq=False, info='zde bound 3',
                                e_str='zde - Mb dot udd',)
 
-        # force cahrging flag `fcd`: (tdc0 > 0) * (tdc > tdc0)
+        # force charging flag `fcd`: (tdc0 > 0) * (tdc > tdc0)
         tcdr = '(tdc0 > 0) * (tdc > tdc0) - ucd'
         self.tcdr = Constraint(name='tcdr', is_eq=False,
                                info='Minimum charging duration',
