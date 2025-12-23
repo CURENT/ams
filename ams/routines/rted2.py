@@ -10,7 +10,7 @@ from ams.routines.rted import RTED, DGBase, ESD1Base
 logger = logging.getLogger(__name__)
 
 
-class RTED2(RTED, PTDFMixin):
+class RTED2(PTDFMixin, RTED):
     """
     DC-based real-time economic dispatch (RTED) using PTDF.
 
@@ -37,14 +37,9 @@ class RTED2(RTED, PTDFMixin):
 
     def __init__(self, system, config):
         super().__init__(system, config)
-        PTDFMixin.__init__(self)
-
-    def _post_solve(self):
-        PTDFMixin._post_solve(self)
-        return super()._post_solve()
 
 
-class RTED2DG(RTED2, DGBase):
+class RTED2DG(DGBase, RTED2):
     """
     RTED2 with distributed generator :ref:`DG`.
 
@@ -54,10 +49,9 @@ class RTED2DG(RTED2, DGBase):
 
     def __init__(self, system, config):
         super().__init__(system, config)
-        DGBase.__init__(self)
 
 
-class RTED2ES(RTED2, ESD1Base):
+class RTED2ES(ESD1Base, RTED2):
     """
     RTED with energy storage :ref:`ESD1`.
     The bilinear term in the formulation is linearized with big-M method.
@@ -70,4 +64,3 @@ class RTED2ES(RTED2, ESD1Base):
 
     def __init__(self, system, config):
         super().__init__(system, config)
-        ESD1Base.__init__(self)
