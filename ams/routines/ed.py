@@ -20,7 +20,8 @@ class SRBase:
     Base class for spinning reserve.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, system, config, **kwargs) -> None:
+        super().__init__(system, config, **kwargs)
         self.dsrp = RParam(info='spinning reserve requirement in percentage',
                            name='dsr', tex_name=r'd_{sr}',
                            model='SR', src='demand',
@@ -55,7 +56,8 @@ class MPBase:
     Base class for multi-period scheduling.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, system, config, **kwargs) -> None:
+        super().__init__(system, config, **kwargs)
         # NOTE: Setting `ED.scale.owner` to `Horizon` will cause an error when calling `ED.scale.v`.
         # This is because `Horizon` is a group that only contains the model `TimeSlot`.
         # The `get` method of `Horizon` calls `andes.models.group.GroupBase.get` and results in an error.
@@ -108,7 +110,7 @@ class MPBase:
         self.mu2.horizon = self.timeslot
 
 
-class ED(RTED, MPBase, SRBase):
+class ED(SRBase, MPBase, RTED):
     """
     DC-based multi-period economic dispatch (ED).
     Dispatch interval ``config.t`` ($T_{cfg}$) is introduced, 1 [Hour] by default.
@@ -120,25 +122,20 @@ class ED(RTED, MPBase, SRBase):
 
     Notes
     -----
-    - Formulations has been adjusted with interval ``config.t``
+    - Formulations have been adjusted with interval ``config.t``
     - The tie-line flow is not implemented in this model.
     - ``EDTSlot.ug`` is used instead of ``StaticGen.u`` for generator commitment.
     - Following reserves are balanced for each "Area": RegUp reserve ``rbu``,
       RegDn reserve ``rbd``, and Spinning reserve ``rsr``.
     """
 
-    def __init__(self, system, config):
-        RTED.__init__(self, system, config)
-        MPBase.__init__(self)
-        SRBase.__init__(self)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         self.config.t = 1  # scheduling interval in hour
         self.config.add_extra("_help",
                               t="time interval in hours",
                               )
-
-        self.info = 'Economic dispatch'
-        self.type = 'DCED'
 
         self.ug.info = 'unit commitment decisions'
         self.ug.model = 'EDTSlot'
@@ -221,7 +218,7 @@ class ED(RTED, MPBase, SRBase):
         AC conversion ``dc2ac`` is not implemented yet for
         multi-period scheduling.
         """
-        return NotImplementedError
+        raise NotImplementedError("dc2ac is not implemented for multi-period scheduling")
 
     def unpack(self, res, **kwargs):
         """
@@ -234,32 +231,37 @@ class ED(RTED, MPBase, SRBase):
         return None
 
 
-class EDDG(ED, DGBase):
+class DGMPBase(DGBase):
     """
-    ED with distributed generation :ref:`DG`.
-
-    Note that EDDG only inlcudes DG output power. If ESD1 is included,
-    EDES should be used instead, otherwise there is no SOC.
+    Extend :ref:`DGBase` for multi-period scheduling.
     """
 
-    def __init__(self, system, config):
-        ED.__init__(self, system, config)
-        DGBase.__init__(self)
-
-        self.info = 'Economic dispatch with distributed generation'
-        self.type = 'DCED'
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         # NOTE: extend vars to 2D
         self.pgdg.horizon = self.timeslot
 
 
-class ESD1MPBase(ESD1Base):
+class EDDG(DGMPBase, ED):
     """
-    Extended base class for energy storage in multi-period scheduling.
+    ED with distributed generation :ref:`DG`.
+
+    Note that EDDG only includes DG output power. If ESD1 is included,
+    EDES should be used instead, otherwise there is no SOC.
     """
 
-    def __init__(self):
-        ESD1Base.__init__(self)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
+
+
+class ESD1MPBase(ESD1Base):
+    """
+    Extend :ref:`ESD1Base` for multi-period scheduling.
+    """
+
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         self.Mre = RampSub(u=self.SOC, name='Mre', tex_name=r'M_{r,ES}',
                            info='Subtraction matrix for SOC',
@@ -273,31 +275,17 @@ class ESD1MPBase(ESD1Base):
         self.REtaDR = NumHstack(u=self.REtaD, ref=self.Mre,
                                 name='REtaDR', tex_name=r'R_{\eta_d,R}',
                                 info='Repeated REtaD as 2D matrix, (ng, ng-1)')
-        SOCb = 'mul(EnR, SOC @ Mre) - t dot mul(EtaCR, zce[:, 1:])'
-        SOCb += ' + t dot mul(REtaDR, zde[:, 1:])'
+        SOCb = 'mul(EnR, SOC @ Mre) - t dot mul(EtaCR, pce[:, 1:])'
+        SOCb += ' + t dot mul(REtaDR, pde[:, 1:])'
         self.SOCb.e_str = SOCb
 
-        SOCb0 = 'mul(En, SOC[:, 0] - SOCinit) - t dot mul(EtaC, zce[:, 0])'
-        SOCb0 += ' + t dot mul(REtaD, zde[:, 0])'
+        SOCb0 = 'mul(En, SOC[:, 0] - SOCinit) - t dot mul(EtaC, pce[:, 0])'
+        SOCb0 += ' + t dot mul(REtaD, pde[:, 0])'
         self.SOCb0 = Constraint(name='SOCb0', is_eq=True,
                                 info='ESD1 SOC initial balance',
                                 e_str=SOCb0,)
 
         self.SOCr.e_str = 'SOCend - SOC[:, -1]'
-
-
-class EDES(ED, ESD1MPBase):
-    """
-    ED with energy storage :ref:`ESD1`.
-    The bilinear term in the formulation is linearized with big-M method.
-    """
-
-    def __init__(self, system, config):
-        ED.__init__(self, system, config)
-        ESD1MPBase.__init__(self)
-
-        self.info = 'Economic dispatch with energy storage'
-        self.type = 'DCED'
 
         # NOTE: extend vars to 2D
         self.pgdg.horizon = self.timeslot
@@ -308,3 +296,13 @@ class EDES(ED, ESD1MPBase):
         self.udd.horizon = self.timeslot
         self.zce.horizon = self.timeslot
         self.zde.horizon = self.timeslot
+
+
+class EDES(ESD1MPBase, ED):
+    """
+    ED with energy storage :ref:`ESD1`.
+    The bilinear term in the formulation is linearized with big-M method.
+    """
+
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)

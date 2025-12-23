@@ -2,6 +2,7 @@ import unittest
 import numpy as np
 
 import ams
+from ams.shared import skip_unittest_without_PYPOWER
 
 
 class TestDCOPF2(unittest.TestCase):
@@ -79,6 +80,16 @@ class TestDCOPF2(unittest.TestCase):
         pgs_pqt2 = self.ss.DCOPF2.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
+    def test_vBus_aBus(self):
+        """
+        Test vBus and aBus are not all zero.
+        """
+        self.ss.DCOPF2.run(solver='CLARABEL')
+        self.assertTrue(self.ss.DCOPF2.converged, "DCOPF2 did not converge!")
+        self.assertTrue(np.any(self.ss.DCOPF2.vBus.v), "vBus is all zero!")
+        self.assertTrue(np.any(self.ss.DCOPF2.aBus.v), "aBus is all zero!")
+
+    @skip_unittest_without_PYPOWER
     def test_dc2ac(self):
         """
         Test `DCOPF2.dc2ac()` method.
@@ -104,7 +115,7 @@ class TestDCOPF2(unittest.TestCase):
 
     def test_align_dcopf(self):
         """
-        Test if results from `DCOPF2` are aligned with those from `DCOPF`.
+        Test if results align with DCOPF.
         """
         self.ss.DCOPF.run(solver='CLARABEL')
         self.ss.mats.build_ptdf()
@@ -115,6 +126,12 @@ class TestDCOPF2(unittest.TestCase):
         line_idx = self.ss.Line.idx.v
 
         DECIMALS = 4
+
+        np.testing.assert_almost_equal(self.ss.DCOPF.obj.v,
+                                       self.ss.DCOPF2.obj.v,
+                                       decimal=DECIMALS,
+                                       err_msg="Objective value between DCOPF2 and DCOPF not match!")
+
         pg = self.ss.DCOPF.get(src='pg', attr='v', idx=pg_idx)
         pg2 = self.ss.DCOPF2.get(src='pg', attr='v', idx=pg_idx)
         np.testing.assert_almost_equal(pg, pg2, decimal=DECIMALS,
@@ -134,3 +151,9 @@ class TestDCOPF2(unittest.TestCase):
         plf2 = self.ss.DCOPF2.get(src='plf', attr='v', idx=line_idx)
         np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
                                        err_msg="plf between DCOPF2 and DCOPF not match!")
+
+    def test_pb_formula(self):
+        """
+        Test the pb formula is not the angle-based formulation.
+        """
+        self.assertFalse('aBus' in self.ss.DCOPF2.pb.e_str, "Bus angle is used in DCOPF2.pb!")

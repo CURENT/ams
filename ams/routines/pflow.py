@@ -33,9 +33,8 @@ class PFlow(RoutineBase):
        https://andes.readthedocs.io/en/stable/_examples/ex1.html
     """
 
-    def __init__(self, system, config):
+    def __init__(self, system, config, **kwargs):
         RoutineBase.__init__(self, system, config)
-        self.info = 'AC Power Flow'
         self.type = 'PF'
         self._adsys = None
 
@@ -132,12 +131,6 @@ class PFlow(RoutineBase):
 
         self.unpack(res=None)
         return self.converged
-
-    def _post_solve(self):
-        """
-        Placeholder.
-        """
-        return True
 
     def unpack(self, res, **kwargs):
         """

@@ -78,6 +78,15 @@ class ESD1Data(PVD1Data):
                              unit='h',
                              )
 
+        self.ucd0 = NumParam(default=0,
+                             info='Solved charging decision, placeholder',
+                             tex_name=r'u_{cd0}',
+                             )
+        self.udd0 = NumParam(default=0,
+                             info='Solved discharging decision, placeholder',
+                             tex_name=r'u_{dd0}',
+                             )
+
 
 class ESD1(ESD1Data, Model):
     """

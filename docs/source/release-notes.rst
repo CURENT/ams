@@ -9,6 +9,18 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.0
 ==========
 
+v1.1.1 (2025-12-23)
+----------------------
+
+- Include objective function value in exported report
+- Add PTDF-based routines: ``RTED2``, ``RTED2DG``, ``RTED2ES``
+- Add routine ``RTEDESP`` for price run of ``RTED2`` and ``RTED2ES``
+- Remove attribute `info` from class RoutineBase and all derived routines
+- Fix charging/discharging duration constraints in ``RTEDES``
+- Refactor routine architecture to use cooperative multiple inheritance (MRO)
+  for better component mixins
+- Refactor `DCPF1.run` and `OPF.run`
+
 v1.1.0 (2025-12-18)
 ----------------------
 

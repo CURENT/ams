@@ -122,6 +122,10 @@ class Report:
             header.append(None)
             row_name.append(None)
             data.append(None)
+            text.append([''])
+            header.append(['Objective Function'])
+            row_name.append([f'Value in {rtn.obj.unit}'])
+            data.append([rtn.obj.v])
             if hasattr(rtn, 'timeslot'):
                 for slot in rtn.timeslot.v:
                     # --- timeslot summary ---

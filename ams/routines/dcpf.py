@@ -19,8 +19,8 @@ class DCPFBase(RoutineBase):
     Base class for DC power flow.
     """
 
-    def __init__(self, system, config):
-        RoutineBase.__init__(self, system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         self.ug = RParam(info='Gen connection status',
                          name='ug', tex_name=r'u_{g}',
@@ -135,6 +135,11 @@ class DCPFBase(RoutineBase):
         """
         return self.om.prob.solve(**kwargs)
 
+    def _post_solve(self):
+        # set vBus to 1.0 p.u. as placeholder
+        self.vBus.v = np.ones(self.vBus.shape)
+        return super()._post_solve()
+
     def unpack(self, res, **kwargs):
         """
         Unpack the results from CVXPY model.
@@ -179,42 +184,27 @@ class DCPFBase(RoutineBase):
         self.system.recent = self.system.routines[self.class_name]
         return True
 
-    def _post_solve(self):
-        """
-        Post-solve calculations.
-        """
-        # NOTE: for DC type routines, set vBus to 1.0 p.u. as placeholder
-        self.vBus.v = np.ones(self.vBus.shape)
-
-        # NOTE: unpack Expressions if owner and arc are available
-        for expr in self.exprs.values():
-            if expr.owner and expr.src:
-                expr.owner.set(src=expr.src, attr='v',
-                               idx=expr.get_all_idxes(), value=expr.v)
-        return True
-
 
 class DCPF(DCPFBase):
     """
     DC power flow.
     """
 
-    def __init__(self, system, config):
-        DCPFBase.__init__(self, system, config)
-        self.info = 'DC Power Flow'
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
         self.type = 'PF'
 
         self.genpv = RParam(info='gen of PV',
                             name='genpv', tex_name=r'g_{DG}',
                             model='PV', src='idx',
                             no_parse=True,)
-        self.cpv = VarSelect(u=self.pg, indexer='genpv',
-                             name='cpv', tex_name=r'C_{PV}',
+        self.ipv = VarSelect(u=self.pg, indexer='genpv',
+                             name='ipv', tex_name=r'C_{PV}',
                              info='Select PV from pg',
                              no_parse=True,)
 
         self.pvb = Constraint(name='pvb', info='PV generator',
-                              e_str='cpv @ (pg - mul(ug, pg0))',
+                              e_str='ipv @ (pg - mul(ug, pg0))',
                               is_eq=True,)
 
         self.obj = Objective(name='obj',

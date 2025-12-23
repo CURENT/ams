@@ -14,49 +14,13 @@ from ams.opt import Var, Constraint
 logger = logging.getLogger(__name__)
 
 
-class RTEDBase:
-    """
-    Base class for real-time economic dispatch (RTED).
-    """
-
-    def __init__(self):
-        # --- area ---
-        self.zg = RParam(info='Gen area',
-                         name='zg', tex_name='z_{one,g}',
-                         model='StaticGen', src='area',
-                         no_parse=True)
-        self.zd = RParam(info='Load area',
-                         name='zd', tex_name='z_{one,d}',
-                         model='StaticLoad', src='area',
-                         no_parse=True)
-        self.gs = ZonalSum(u=self.zg, zone='Area',
-                           name='gs', tex_name=r'S_{g}',
-                           info='Sum Gen vars vector in shape of area',
-                           no_parse=True, sparse=True)
-        self.ds = ZonalSum(u=self.zd, zone='Area',
-                           name='ds', tex_name=r'S_{d}',
-                           info='Sum pd vector in shape of area',
-                           no_parse=True,)
-        self.pdz = NumOpDual(u=self.ds, u2=self.pd,
-                             fun=np.multiply,
-                             rfun=np.sum, rargs=dict(axis=1),
-                             expand_dims=0,
-                             name='pdz', tex_name=r'p_{d,z}',
-                             unit='p.u.', info='zonal total load',
-                             no_parse=True,)
-        # --- generator ---
-        self.R10 = RParam(info='10-min ramp rate',
-                          name='R10', tex_name=r'R_{10}',
-                          model='StaticGen', src='R10',
-                          unit='p.u./h',)
-
-
 class SFRBase:
     """
-    Base class for SFR used in DCED.
+    Base class for SFR components.
     """
 
-    def __init__(self):
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
         #  --- SFR cost ---
         self.cru = RParam(info='RegUp reserve coefficient',
                           name='cru', tex_name=r'c_{r,u}',
@@ -107,7 +71,45 @@ class SFRBase:
                               info='Gen ramping down',)
 
 
-class RTED(DCOPF, RTEDBase, SFRBase):
+class RTEDBase:
+    """
+    Base class for RTED components.
+    """
+
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
+        # --- area ---
+        self.zg = RParam(info='Gen area',
+                         name='zg', tex_name='z_{one,g}',
+                         model='StaticGen', src='area',
+                         no_parse=True)
+        self.zd = RParam(info='Load area',
+                         name='zd', tex_name='z_{one,d}',
+                         model='StaticLoad', src='area',
+                         no_parse=True)
+        self.gs = ZonalSum(u=self.zg, zone='Area',
+                           name='gs', tex_name=r'S_{g}',
+                           info='Sum Gen vars vector in shape of area',
+                           no_parse=True, sparse=True)
+        self.ds = ZonalSum(u=self.zd, zone='Area',
+                           name='ds', tex_name=r'S_{d}',
+                           info='Sum pd vector in shape of area',
+                           no_parse=True,)
+        self.pdz = NumOpDual(u=self.ds, u2=self.pd,
+                             fun=np.multiply,
+                             rfun=np.sum, rargs=dict(axis=1),
+                             expand_dims=0,
+                             name='pdz', tex_name=r'p_{d,z}',
+                             unit='p.u.', info='zonal total load',
+                             no_parse=True,)
+        # --- generator ---
+        self.R10 = RParam(info='10-min ramp rate',
+                          name='R10', tex_name=r'R_{10}',
+                          model='StaticGen', src='R10',
+                          unit='p.u./h',)
+
+
+class RTED(SFRBase, RTEDBase, DCOPF):
     """
     DC-based real-time economic dispatch (RTED).
 
@@ -125,16 +127,14 @@ class RTED(DCOPF, RTEDBase, SFRBase):
 
     Notes
     -----
-    - Formulations has been adjusted with interval ``config.t``, 5/60 [Hour] by default.
-    - The tie-line flow related constraints are ommited in this formulation.
+    - Formulations have been adjusted with interval ``config.t``, 5/60 [Hour] by default.
+    - The tie-line flow related constraints are omitted in this formulation.
     - Power generation is balanced for the entire system.
     - SFR is balanced for each area.
     """
 
-    def __init__(self, system, config):
-        DCOPF.__init__(self, system, config)
-        RTEDBase.__init__(self)
-        SFRBase.__init__(self)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         self.config.add(OrderedDict((('t', 5/60),
                                      )))
@@ -145,7 +145,6 @@ class RTED(DCOPF, RTEDBase, SFRBase):
                               t='T_{cfg}',
                               )
 
-        self.info = 'Real-time economic dispatch'
         self.type = 'DCED'
 
         # --- Mapping Section ---
@@ -230,10 +229,12 @@ class RTED(DCOPF, RTEDBase, SFRBase):
 
 class DGBase:
     """
-    Base class for DG used in DCED.
+    Base class for DG components.
     """
 
-    def __init__(self):
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
+
         # --- params ---
         self.gendg = RParam(info='gen of DG',
                             name='gendg', tex_name=r'g_{DG}',
@@ -263,28 +264,25 @@ class DGBase:
                                e_str='idg @ pg - pgdg',)
 
 
-class RTEDDG(RTED, DGBase):
+class RTEDDG(DGBase, RTED):
     """
     RTED with distributed generator :ref:`DG`.
 
-    Note that RTEDDG only inlcudes DG output power. If ESD1 is included,
+    Note that RTEDDG only includes DG output power. If ESD1 is included,
     RTEDES should be used instead, otherwise there is no SOC.
     """
 
-    def __init__(self, system, config):
-        RTED.__init__(self, system, config)
-        DGBase.__init__(self)
-        self.info = 'Real-time economic dispatch with DG'
-        self.type = 'DCED'
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
 
-class ESD1Base(DGBase):
+class ESD1PBase:
     """
-    Base class for ESD1 used in DCED.
+    Base class for ESD1 price run components.
     """
 
-    def __init__(self):
-        DGBase.__init__(self)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         # --- params ---
         self.En = RParam(info='Rated energy capacity',
@@ -325,24 +323,6 @@ class ESD1Base(DGBase):
                             tex_name=r'c_{d,ESD}', unit=r'$/p.u.*h',
                             model='ESD1', no_parse=True,)
 
-        self.tdc = RParam(info='Minimum charging duration',
-                          name='tdc', src='tdc',
-                          tex_name=r't_{dc}', unit='h',
-                          model='ESD1', no_parse=True,)
-        self.tdd = RParam(info='Minimum discharging duration',
-                          name='tdd', src='tdd',
-                          tex_name=r't_{dd}', unit='h',
-                          model='ESD1', no_parse=True,)
-
-        self.tdc0 = RParam(info='Initial charging time',
-                           name='tdc0', src='tdc0',
-                           tex_name=r't_{dc0}', unit='h',
-                           model='ESD1', no_parse=True,)
-        self.tdd0 = RParam(info='Initial discharging time',
-                           name='tdd0', src='tdd0',
-                           tex_name=r't_{dd0}', unit='h',
-                           model='ESD1', no_parse=True,)
-
         # --- service ---
         self.REtaD = NumOp(name='REtaD', tex_name=r'\frac{1}{\eta_d}',
                            u=self.EtaD, fun=np.reciprocal,)
@@ -355,14 +335,9 @@ class ESD1Base(DGBase):
         # --- vars ---
         self.SOC = Var(info='ESD1 State of Charge', unit='p.u. (%)',
                        name='SOC', tex_name=r'SOC',
-                       model='ESD1', pos=True,
+                       model='ESD1', nonneg=True,
                        v0=self.SOCinit,)
-        self.SOClb = Constraint(name='SOClb', is_eq=False,
-                                info='SOC lower bound',
-                                e_str='-SOC + SOCmin',)
-        self.SOCub = Constraint(name='SOCub', is_eq=False,
-                                info='SOC upper bound',
-                                e_str='SOC - SOCmax',)
+
         self.pce = Var(info='ESD1 charging power',
                        unit='p.u.', name='pce',
                        tex_name=r'p_{c,ESD}',
@@ -371,6 +346,158 @@ class ESD1Base(DGBase):
                        unit='p.u.', name='pde',
                        tex_name=r'p_{d,ESD}',
                        model='ESD1', nonneg=True,)
+
+        self.genesd = RParam(info='gen of ESD',
+                             name='genesd', tex_name=r'g_{ESD}',
+                             model='ESD1', src='gen',
+                             no_parse=True,)
+        self.ies = VarSelect(u=self.pg, indexer='genesd',
+                             name='ies', tex_name=r'I_{ESD}',
+                             info='Index ESD from StaticGen',
+                             no_parse=True)
+        self.cesd = Constraint(name='cesd', is_eq=True,
+                               info='Select pce and pde from pg',
+                               e_str='ies @ pg + pce - pde',)
+
+        self.SOClb = Constraint(name='SOClb', is_eq=False,
+                                info='SOC lower bound',
+                                e_str='-SOC + SOCmin',)
+        self.SOCub = Constraint(name='SOCub', is_eq=False,
+                                info='SOC upper bound',
+                                e_str='SOC - SOCmax',)
+
+        SOCb = 'mul(En, (SOC - SOCinit)) - t dot mul(EtaC, pce)'
+        SOCb += '+ t dot mul(REtaD, pde)'
+        self.SOCb = Constraint(name='SOCb', is_eq=True,
+                               info='ESD1 SOC balance',
+                               e_str=SOCb,)
+
+        self.SOCr = Constraint(name='SOCr', is_eq=False,
+                               info='ESD1 final SOC requirement',
+                               e_str='SOCend - SOC',)
+
+        self.obj.e_str += '+ t dot sum(- mul(cesdc, pce) + mul(cesdd, pde))'
+
+    def _data_check(self):
+        """
+        Special data check for ESD1 included routines.
+        """
+        logger.info(f"Entering supplemental data check for <{self.class_name}>")
+
+        # --- GCost correction ---
+        sys = self.system
+        gcost_idx_esd1 = sys.GCost.find_idx(keys='gen', values=sys.ESD1.gen.v)
+        c2 = sys.GCost.get(src='c2', attr='v', idx=gcost_idx_esd1)
+        c1 = sys.GCost.get(src='c1', attr='v', idx=gcost_idx_esd1)
+        if not (c2 == 0).all() or not (c1 == 0).all():
+            for param in ['c2', 'c1']:
+                sys.GCost.set(src=param, attr='v', value=0, idx=gcost_idx_esd1)
+            logger.info('Parameters c2, c1 are set to 0 as they are associated with ESD1 for'
+                        f' following GCost: {", ".join(gcost_idx_esd1)}')
+
+        # --- ESD1 initial charging/discharging time ---
+        judge = sys.ESD1.tdc0.v * sys.ESD1.tdd0.v > 0
+        if any(judge):
+            uid = np.where(judge)[0]
+            idx = [sys.ESD1.idx.v[i] for i in uid]
+            logger.error(f'tdc0 and tdd0 should not be both positive! Check ESD1: {", ".join(idx)}')
+            return False
+        return super()._data_check()
+
+
+class RTEDESP(ESD1PBase, RTEDDG):
+    """
+    Price run of RTED with energy storage :ref:`ESD1`.
+
+    This routine is not intended to work standalone. It should be used after solved
+    :class:`RTEDES`.
+
+    The binary variables ``ucd`` and ``udd`` are now parameters retrieved from
+    solved :class:`RTEDES`.
+
+    The constraints ``zce1`` - ``zce3`` and ``zde1`` - ``zde3`` are now simplified
+    to ``zce`` and ``zde`` as below:
+
+    .. math::
+
+        (1 - u_{cd}) * p_{ce} <= 0
+        (1 - u_{dd}) * p_{de} <= 0
+    """
+
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
+
+        self.ucd = RParam(info='Retrieved ESD1 charging decision',
+                          name='ucd', src='ucd0',
+                          tex_name=r'u_{c,ESD}',
+                          model='ESD1', no_parse=True,
+                          )
+        self.udd = RParam(info='Retrieved ESD1 discharging decision',
+                          name='udd', src='udd0',
+                          tex_name=r'u_{d,ESD}',
+                          model='ESD1', no_parse=True,)
+
+        self.zce = Constraint(name='zce', is_eq=False, info='zce bound',
+                              e_str='mul(1-ucd, pce)',)
+
+        self.zde = Constraint(name='zde', is_eq=False, info='zde bound',
+                              e_str='mul(1-udd, pde)',)
+
+    def _preinit(self):
+        """
+        Extra run at the beginning of RTEDESP.init().
+        """
+        if not self.system.RTEDES.converged:
+            raise ValueError('<RTEDES> must be solved before <RTEDESP>!')
+        self._used_rtn = self.system.RTEDES
+
+    def init(self, **kwargs):
+        self._preinit()
+        esd1_idx = self.system.ESD1.idx.v
+        esd1_stg = self.system.ESD1.get(src='gen', attr='v', idx=esd1_idx)
+
+        self.system.ESD1.set(src='ucd0', attr='v', idx=esd1_idx,
+                             value=self._used_rtn.get(src='ucd', attr='v', idx=esd1_idx))
+        self.system.ESD1.set(src='udd0', attr='v', idx=esd1_idx,
+                             value=self._used_rtn.get(src='udd', attr='v', idx=esd1_idx))
+
+        pce = self._used_rtn.get(src='pce', attr='v', idx=esd1_idx)
+        pde = self._used_rtn.get(src='pde', attr='v', idx=esd1_idx)
+        self.system.StaticGen.set(src='p0', attr='v', idx=esd1_stg, value=pde - pce)
+        logger.info(f'<{self.class_name}>: ESD1 associated StaticGen.p0 has been set'
+                    f' using the values from {self._used_rtn.class_name}.pg.v')
+        return super().init(**kwargs)
+
+
+class ESD1Base(DGBase, ESD1PBase):
+    """
+    Base class for ESD1 components.
+    """
+
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
+
+        # --- params ---
+        self.tdc = RParam(info='Minimum charging duration',
+                          name='tdc', src='tdc',
+                          tex_name=r't_{dc}', unit='h',
+                          model='ESD1', no_parse=True,)
+        self.tdd = RParam(info='Minimum discharging duration',
+                          name='tdd', src='tdd',
+                          tex_name=r't_{dd}', unit='h',
+                          model='ESD1', no_parse=True,)
+
+        self.tdc0 = RParam(info='Initial charging time',
+                           name='tdc0', src='tdc0',
+                           tex_name=r't_{dc0}', unit='h',
+                           model='ESD1', no_parse=True,
+                           nonneg=True)
+        self.tdd0 = RParam(info='Initial discharging time',
+                           name='tdd0', src='tdd0',
+                           tex_name=r't_{dd0}', unit='h',
+                           model='ESD1', no_parse=True,
+                           nonneg=True)
+
         self.ucd = Var(info='ESD1 charging decision',
                        name='ucd', tex_name=r'u_{c,ESD}',
                        model='ESD1', boolean=True,)
@@ -385,18 +512,6 @@ class ESD1Base(DGBase):
                        model='ESD1', nonneg=True,)
         self.zde.info = 'Aux var for discharging, '
         self.zde.info += ':math:`z_{d,ESD}=u_{d,ESD}*p_{d,ESD}`'
-
-        self.genesd = RParam(info='gen of ESD',
-                             name='genesd', tex_name=r'g_{ESD}',
-                             model='ESD1', src='gen',
-                             no_parse=True,)
-        self.ies = VarSelect(u=self.pg, indexer='genesd',
-                             name='ies', tex_name=r'I_{ESD}',
-                             info='Index ESD from StaticGen',
-                             no_parse=True)
-        self.cesd = Constraint(name='cesd', is_eq=True,
-                               info='Select pce and pde from pg',
-                               e_str='ies @ pg + pce - pde',)
 
         # --- constraints ---
         self.cdb = Constraint(name='cdb', is_eq=True,
@@ -417,42 +532,36 @@ class ESD1Base(DGBase):
         self.zde3 = Constraint(name='zde3', is_eq=False, info='zde bound 3',
                                e_str='zde - Mb dot udd',)
 
-        SOCb = 'mul(En, (SOC - SOCinit)) - t dot mul(EtaC, zce)'
-        SOCb += '+ t dot mul(REtaD, zde)'
-        self.SOCb = Constraint(name='SOCb', is_eq=True,
-                               info='ESD1 SOC balance',
-                               e_str=SOCb,)
-
-        self.SOCr = Constraint(name='SOCr', is_eq=False,
-                               info='ESD1 final SOC requirement',
-                               e_str='SOCend - SOC',)
-
+        # force charging flag `fcd`: (tdc0 > 0) * (tdc > tdc0)
+        tcdr = '(tdc0 > 0) * (tdc > tdc0) - ucd'
         self.tcdr = Constraint(name='tcdr', is_eq=False,
                                info='Minimum charging duration',
-                               e_str='tdc - mul(ucd, t + tdc0)',)
+                               e_str=tcdr,)
+
+        # force discharging flag `fdd`: (tdd0 > 0) * (tdd > tdd0)
+        tddr = '(tdd0 > 0) * (tdd > tdd0) - udd'
         self.tddr = Constraint(name='tddr', is_eq=False,
                                info='Minimum discharging duration',
-                               e_str='tdd - mul(udd, t + tdd0)',)
-
-        self.obj.e_str += '+ t dot sum(- cesdc * pce + cesdd * pde)'
+                               e_str=tddr,)
 
 
-class RTEDES(RTED, ESD1Base):
+class RTEDES(ESD1Base, RTED):
     """
     RTED with energy storage :ref:`ESD1`.
     The bilinear term in the formulation is linearized with big-M method.
 
     While the formulation enforces SOCend, the ESD1 owner is not required to provide
-    an SOC constraint for every 5-minute RTED interval. The optimization treats SOCend
+    an SOC constraint for every RTED interval. The optimization treats SOCend
     as a terminal boundary condition, allowing the dispatcher maximum flexibility to optimize
     power output within the hour, provided the target is met at the interval's conclusion.
+
+    The minimum charging/discharging duration logic is implemented in `tcdr` and `tddr`.
+    For example, the logic of `tcdr` is:
+    `u_{cd} >= fcd`, where `fcd = 1` if `tdc0 > 0` and `tdc > tdc0`, else `fcd = 0`.
     """
 
-    def __init__(self, system, config):
-        RTED.__init__(self, system, config)
-        ESD1Base.__init__(self)
-        self.info = 'Real-time economic dispatch with energy storage'
-        self.type = 'DCED'
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
 
 class VISBase:
@@ -460,7 +569,9 @@ class VISBase:
     Base class for virtual inertia scheduling.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, system, config, **kwargs) -> None:
+        super().__init__(system, config, **kwargs)
+
         # --- Data Section ---
         self.cm = RParam(info='Virtual inertia cost',
                          name='cm', src='cm',
@@ -523,7 +634,7 @@ class VISBase:
         # NOTE: revise the objective function to include virtual inertia cost
 
 
-class RTEDVIS(RTED, VISBase):
+class RTEDVIS(VISBase, RTED):
     """
     RTED with virtual inertia scheduling.
 
@@ -537,11 +648,8 @@ class RTEDVIS(RTED, VISBase):
        Sustainable Energy, vol. 15, no. 2, pp. 938-951, April 2024, doi: 10.1109/TSTE.2023.3319307.
     """
 
-    def __init__(self, system, config):
-        RTED.__init__(self, system, config)
-        VISBase.__init__(self)
-        self.info = 'Real-time economic dispatch with virtual inertia scheduling'
-        self.type = 'DCED'
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'

@@ -28,9 +28,9 @@ class TestED(unittest.TestCase):
         Test generator tripping.
         """
         # a) ensure EDTSlot.ug takes effect
-        # NOTE: manually chang ug.v for testing purpose
+        # NOTE: manually change ug.v for testing purpose
         stg = 'PV_1'
-        stg_uid = self.ss.ED.pg.get_all_idxes().index(stg)
+        stg_uid = self.ss.StaticGen.get_all_idxes().index(stg)
         loc_offtime = np.array([0, 2, 4])
         self.ss.EDTSlot.ug.v[loc_offtime, stg_uid] = 0
 
@@ -71,6 +71,14 @@ class TestED(unittest.TestCase):
                                        plf_l3, decimal=6)
 
         self.ss.Line.alter(src='u', idx='Line_3', value=1)  # reset
+
+    def test_vBus(self):
+        """
+        Test vBus is not all zero.
+        """
+        self.ss.ED.run(solver='CLARABEL')
+        self.assertTrue(self.ss.ED.converged, "ED did not converge!")
+        self.assertTrue(np.any(self.ss.ED.vBus.v), "vBus is all zero!")
 
     def test_set_load(self):
         """
@@ -119,9 +127,9 @@ class TestEDDG(unittest.TestCase):
         Test generator tripping.
         """
         # a) ensure EDTSlot.ug takes effect
-        # NOTE: manually chang ug.v for testing purpose
+        # NOTE: manually change ug.v for testing purpose
         stg = 'PV_1'
-        stg_uid = self.ss.EDDG.pg.get_all_idxes().index(stg)
+        stg_uid = self.ss.StaticGen.get_all_idxes().index(stg)
         loc_offtime = np.array([0, 2, 4])
         self.ss.EDTSlot.ug.v[loc_offtime, stg_uid] = 0
 
@@ -186,6 +194,14 @@ class TestEDDG(unittest.TestCase):
         pgs_pqt2 = self.ss.EDDG.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
+    def test_vBus(self):
+        """
+        Test vBus is not all zero.
+        """
+        self.ss.EDDG.run(solver='CLARABEL')
+        self.assertTrue(self.ss.EDDG.converged, "EDDG did not converge!")
+        self.assertTrue(np.any(self.ss.EDDG.vBus.v), "vBus is all zero!")
+
 
 class TestEDES(unittest.TestCase):
     """
@@ -211,9 +227,9 @@ class TestEDES(unittest.TestCase):
         Test generator tripping.
         """
         # a) ensure EDTSlot.ug takes effect
-        # NOTE: manually chang ug.v for testing purpose
+        # NOTE: manually change ug.v for testing purpose
         stg = 'PV_1'
-        stg_uid = self.ss.EDES.pg.get_all_idxes().index(stg)
+        stg_uid = self.ss.StaticGen.get_all_idxes().index(stg)
         loc_offtime = np.array([0, 2])
         self.ss.EDTSlot.ug.v[loc_offtime, stg_uid] = 0
 
@@ -277,3 +293,12 @@ class TestEDES(unittest.TestCase):
         self.ss.EDES.run(solver='SCIP')
         pgs_pqt2 = self.ss.EDES.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
+
+    @skip_unittest_without_MISOCP
+    def test_vBus(self):
+        """
+        Test vBus is not all zero.
+        """
+        self.ss.EDES.run(solver='SCIP')
+        self.assertTrue(self.ss.EDES.converged, "EDES did not converge!")
+        self.assertTrue(np.any(self.ss.EDES.vBus.v), "vBus is all zero!")

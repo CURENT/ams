@@ -10,7 +10,7 @@ from ams.core.param import RParam
 from ams.core.service import (NumOp, NumOpDual, MinDur)
 from ams.routines.dcopf import DCOPF
 from ams.routines.rted import RTEDBase
-from ams.routines.ed import SRBase, MPBase, ESD1MPBase, DGBase
+from ams.routines.ed import SRBase, MPBase, ESD1MPBase, DGMPBase
 
 from ams.opt import Var, Constraint
 
@@ -19,10 +19,12 @@ logger = logging.getLogger(__name__)
 
 class NSRBase:
     """
-    Base class for non-spinning reserve.
+    Base class for non-spinning reserve components.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, system, config, **kwargs) -> None:
+        super().__init__(system, config, **kwargs)
+
         self.cnsr = RParam(info='cost for non-spinning reserve',
                            name='cnsr', tex_name=r'c_{nsr}',
                            model='NSRCost', src='cnsr',
@@ -52,7 +54,7 @@ class NSRBase:
                                name='rnsr', is_eq=False,)
 
 
-class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
+class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
     """
     DC-based unit commitment (UC):
     The bilinear term in the formulation is linearized with big-M method.
@@ -69,7 +71,7 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
 
     Notes
     -----
-    - The formulations has been adjusted with interval ``config.t``
+    - The formulations have been adjusted with interval ``config.t``
     - The tie-line flow has not been implemented in formulations.
 
     References
@@ -81,12 +83,8 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
        July 2020, doi: 10.1109/TPWRS.2019.2962024.
     """
 
-    def __init__(self, system, config):
-        DCOPF.__init__(self, system, config)
-        RTEDBase.__init__(self)
-        MPBase.__init__(self)
-        SRBase.__init__(self)
-        NSRBase.__init__(self)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         self.config.add(OrderedDict((('t', 1),
                                      )))
@@ -97,7 +95,6 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
                               t='T_{cfg}',
                               )
 
-        self.info = 'unit commitment'
         self.type = 'DCUC'
 
         # --- Data Section ---
@@ -263,7 +260,8 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         self.pb.e_str = pb
 
         # --- objective ---
-        cost = 't**2 dot sum(c2 @ zug**2 + t dot c1 @ zug)'
+        cost = 't**2 dot sum(c2 @ pg**2)'
+        cost += '+ t dot sum(c1 @ pg)'
         cost += '+ sum(mul(ug, c0) @ tlv)'
         _to_sum = 'csu * vgd + csd * wgd + csr @ prs + cnsr @ prns + cdp @ pdu'
         cost += f' + t dot sum({_to_sum})'
@@ -320,7 +318,7 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         AC conversion ``dc2ac`` is not implemented yet for
         multi-period scheduling.
         """
-        return NotImplementedError
+        raise NotImplementedError("dc2ac is not implemented for multi-period scheduling")
 
     def unpack(self, res, **kwargs):
         """
@@ -333,42 +331,22 @@ class UC(DCOPF, RTEDBase, MPBase, SRBase, NSRBase):
         return None
 
 
-class UCDG(UC, DGBase):
+class UCDG(DGMPBase, UC):
     """
     UC with distributed generation :ref:`DG`.
 
-    Note that UCDG only inlcudes DG output power. If ESD1 is included,
+    Note that UCDG only includes DG output power. If ESD1 is included,
     UCES should be used instead, otherwise there is no SOC.
     """
 
-    def __init__(self, system, config):
-        UC.__init__(self, system, config)
-        DGBase.__init__(self)
-
-        self.info = 'unit commitment with distributed generation'
-        self.type = 'DCUC'
-
-        # NOTE: extend vars to 2D
-        self.pgdg.horizon = self.timeslot
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
 
-class UCES(UC, ESD1MPBase):
+class UCES(ESD1MPBase, UC):
     """
     UC with energy storage :ref:`ESD1`.
     """
 
-    def __init__(self, system, config):
-        UC.__init__(self, system, config)
-        ESD1MPBase.__init__(self)
-
-        self.info = 'unit commitment with energy storage'
-        self.type = 'DCUC'
-
-        self.pgdg.horizon = self.timeslot
-        self.SOC.horizon = self.timeslot
-        self.pce.horizon = self.timeslot
-        self.pde.horizon = self.timeslot
-        self.ucd.horizon = self.timeslot
-        self.udd.horizon = self.timeslot
-        self.zce.horizon = self.timeslot
-        self.zde.horizon = self.timeslot
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)

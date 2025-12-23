@@ -467,13 +467,6 @@ class System(adSystem):
             adjusted_params_str = ', '.join(adjusted_params)
             msg = f"Zero Line parameters detected, adjusted to default values: {adjusted_params_str}."
             logger.info(msg)
-        # --- GCost correction for ESD1 ---
-        if self.ESD1.n > 0:
-            gcost_idx_esd1 = self.GCost.find_idx(keys='gen', values=self.ESD1.gen.v)
-            for param in ['c2', 'c1']:
-                self.GCost.set(src=param, attr='v', value=0, idx=gcost_idx_esd1)
-            logger.info('Parameters c2, c1 are altered to 0 as they are associated with ESD1 for'
-                        f' following GCost: {", ".join(gcost_idx_esd1)}')
         # --- bus type correction ---
         pq_bus = self.PQ.bus.v
         pv_bus = self.PV.bus.v
@@ -592,14 +585,9 @@ class System(adSystem):
 
         return tab.draw()
 
-    def connectivity(self, info=True):
+    def connectivity(self):
         """
         Perform connectivity check for system.
-
-        Parameters
-        ----------
-        info : bool
-            True to log connectivity summary.
         """
 
         raise NotImplementedError
@@ -678,7 +666,7 @@ class System(adSystem):
         """
         # FIXME: add system connectivity check
         # logger.info("-> System connectivity check results:")
-        rtn_check = OrderedDict((key, val._data_check(info=False)) for key, val in self.routines.items())
+        rtn_check = OrderedDict((key, val._data_check()) for key, val in self.routines.items())
         rtn_types = OrderedDict({tp: [] for tp in self.types.keys()})
 
         for name, data_pass in rtn_check.items():

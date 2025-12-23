@@ -35,9 +35,8 @@ class DCOPF(DCPFBase):
        pp. 4668-4681, Sept. 2023
     """
 
-    def __init__(self, system, config):
-        DCPFBase.__init__(self, system, config)
-        self.info = 'DC Optimal Power Flow'
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
         self.type = 'DCED'
 
         # --- Mapping Section ---
@@ -56,16 +55,16 @@ class DCOPF(DCPFBase):
         # --- generator cost ---
         self.c2 = RParam(info='Gen cost coefficient 2',
                          name='c2', tex_name=r'c_{2}',
-                         unit=r'$/(p.u.^2)', model='GCost',
+                         unit=r'$/(p.u.^2)', model='GCost', src='c2',
                          indexer='gen', imodel='StaticGen',
                          nonneg=True, no_parse=True)
         self.c1 = RParam(info='Gen cost coefficient 1',
                          name='c1', tex_name=r'c_{1}',
-                         unit=r'$/(p.u.)', model='GCost',
+                         unit=r'$/(p.u.)', model='GCost', src='c1',
                          indexer='gen', imodel='StaticGen',)
         self.c0 = RParam(info='Gen cost coefficient 0',
                          name='c0', tex_name=r'c_{0}',
-                         unit=r'$', model='GCost',
+                         unit=r'$', model='GCost', src='c0',
                          indexer='gen', imodel='StaticGen',
                          no_parse=True)
         # --- generator ---
@@ -87,11 +86,11 @@ class DCOPF(DCPFBase):
                                 fun=np.multiply, no_parse=True)
         self.pmax = RParam(info='Gen maximum active power',
                            name='pmax', tex_name=r'p_{g, max}',
-                           unit='p.u.', model='StaticGen',
+                           unit='p.u.', model='StaticGen', src='pmax',
                            no_parse=False,)
         self.pmin = RParam(info='Gen minimum active power',
                            name='pmin', tex_name=r'p_{g, min}',
-                           unit='p.u.', model='StaticGen',
+                           unit='p.u.', model='StaticGen', src='pmin',
                            no_parse=False,)
 
         # --- line ---
@@ -101,7 +100,7 @@ class DCOPF(DCPFBase):
                          no_parse=True,)
         self.rate_a = RParam(info='long-term flow limit',
                              name='rate_a', tex_name=r'R_{ATEA}',
-                             unit='p.u.', model='Line',)
+                             unit='p.u.', model='Line', src='rate_a',)
         # --- line angle difference ---
         self.amax = RParam(model='Line', src='amax',
                            name='amax', tex_name=r'\theta_{bus, max}',
@@ -207,50 +206,3 @@ class DCOPF(DCPFBase):
         self.converted = True
         logger.warning(f'<{self.class_name}> converted to AC.')
         return True
-
-    def run(self, **kwargs):
-        """
-        Run the routine.
-
-        Following kwargs go to `self.init()`: `force`, `force_mats`, `force_constr`, `force_om`.
-
-        Following kwargs go to `self.solve()`: `solver`, `verbose`, `gp`, `qcp`, `requires_grad`,
-        `enforce_dpp`, `ignore_dpp`, `method`, and all rest.
-
-        Parameters
-        ----------
-        force : bool, optional
-            If True, force re-initialization. Defaults to False.
-        force_mats : bool, optional
-            If True, force re-generating matrices. Defaults to False.
-        force_constr : bool, optional
-            Whether to turn on all constraints.
-        force_om : bool, optional
-            If True, force re-generating optimization model. Defaults to False.
-        solver: str, optional
-            The solver to use. For example, 'GUROBI', 'ECOS', 'SCS', or 'OSQP'.
-        verbose : bool, optional
-            Overrides the default of hiding solver output and prints logging
-            information describing CVXPY's compilation process.
-        gp : bool, optional
-            If True, parses the problem as a disciplined geometric program
-            instead of a disciplined convex program.
-        qcp : bool, optional
-            If True, parses the problem as a disciplined quasiconvex program
-            instead of a disciplined convex program.
-        requires_grad : bool, optional
-            Makes it possible to compute gradients of a solution with respect to Parameters
-            by calling problem.backward() after solving, or to compute perturbations to the variables
-            given perturbations to Parameters by calling problem.derivative().
-            Gradients are only supported for DCP and DGP problems, not quasiconvex problems.
-            When computing gradients (i.e., when this argument is True), the problem must satisfy the DPP rules.
-        enforce_dpp : bool, optional
-            When True, a DPPError will be thrown when trying to solve a
-            non-DPP problem (instead of just a warning).
-            Only relevant for problems involving Parameters. Defaults to False.
-        ignore_dpp : bool, optional
-            When True, DPP problems will be treated as non-DPP, which may speed up compilation. Defaults to False.
-        method : function, optional
-            A custom solve method to use.
-        """
-        return super().run(**kwargs)
