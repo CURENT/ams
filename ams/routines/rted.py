@@ -19,8 +19,8 @@ class SFRBase:
     Base class for SFR components.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
         #  --- SFR cost ---
         self.cru = RParam(info='RegUp reserve coefficient',
                           name='cru', tex_name=r'c_{r,u}',
@@ -76,8 +76,8 @@ class RTEDBase:
     Base class for RTED components.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
         # --- area ---
         self.zg = RParam(info='Gen area',
                          name='zg', tex_name='z_{one,g}',
@@ -133,8 +133,8 @@ class RTED(SFRBase, RTEDBase, DCOPF):
     - SFR is balanced for each area.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         self.config.add(OrderedDict((('t', 5/60),
                                      )))
@@ -232,8 +232,8 @@ class DGBase:
     Base class for DG components.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         # --- params ---
         self.gendg = RParam(info='gen of DG',
@@ -272,8 +272,8 @@ class RTEDDG(DGBase, RTED):
     RTEDES should be used instead, otherwise there is no SOC.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
 
 class ESD1PBase:
@@ -281,8 +281,8 @@ class ESD1PBase:
     Base class for ESD1 price run components.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         # --- params ---
         self.En = RParam(info='Rated energy capacity',
@@ -425,8 +425,8 @@ class RTEDESP(ESD1PBase, RTEDDG):
         (1 - u_{dd}) * p_{de} <= 0
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         self.ucd = RParam(info='Retrieved ESD1 charging decision',
                           name='ucd', src='ucd0',
@@ -475,8 +475,8 @@ class ESD1Base(DGBase, ESD1PBase):
     Base class for ESD1 components.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         # --- params ---
         self.tdc = RParam(info='Minimum charging duration',
@@ -561,8 +561,8 @@ class RTEDES(ESD1Base, RTED):
     `u_{cd} >= fcd`, where `fcd = 1` if `tdc0 > 0` and `tdc > tdc0`, else `fcd = 0`.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
 
 class VISBase:
@@ -570,8 +570,8 @@ class VISBase:
     Base class for virtual inertia scheduling.
     """
 
-    def __init__(self, system, config) -> None:
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs) -> None:
+        super().__init__(system, config, **kwargs)
 
         # --- Data Section ---
         self.cm = RParam(info='Virtual inertia cost',
@@ -649,8 +649,8 @@ class RTEDVIS(VISBase, RTED):
        Sustainable Energy, vol. 15, no. 2, pp. 938-951, April 2024, doi: 10.1109/TSTE.2023.3319307.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'

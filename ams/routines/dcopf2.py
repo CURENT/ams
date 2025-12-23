@@ -24,8 +24,8 @@ class PTDFBase:
     to use PTDF formulation instead of B-theta formulation.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
         # NOTE: in this way, we still follow the implementation that devices
         # connectivity status is considered in connection matrix
         self.PTDF = RParam(info="PTDF",
@@ -121,5 +121,5 @@ class DCOPF2(PTDFBase, DCOPF):
        pp. 4668-4681, Sept. 2023
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)

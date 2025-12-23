@@ -37,8 +37,8 @@ class OPF(DCPF1):
     .. versionadded:: 1.0.10
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
         self.type = 'ACED'
 
         # Overwrite the config to be empty, as it is not used in this routine

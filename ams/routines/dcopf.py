@@ -35,8 +35,8 @@ class DCOPF(DCPFBase):
        pp. 4668-4681, Sept. 2023
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
         self.type = 'DCED'
 
         # --- Mapping Section ---

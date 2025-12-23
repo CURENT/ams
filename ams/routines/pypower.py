@@ -36,8 +36,8 @@ class DCPF1(RoutineBase):
     .. versionadded:: 1.0.10
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         self.type = 'PF'
 
@@ -406,8 +406,8 @@ class PFlow1(DCPF1):
     .. versionadded:: 1.0.10
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         # PFlow does not receive nor send
         self.map1 = OrderedDict()
@@ -480,8 +480,8 @@ class DCOPF1(DCPF1):
     .. versionadded:: 1.0.10
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
         self.type = 'DCED'
 
         self.map1 = OrderedDict()   # DCOPF does not receive
@@ -631,8 +631,8 @@ class ACOPF1(DCOPF1):
     .. versionadded:: 1.0.10
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
         self.type = 'ACED'
 
         self.map1 = OrderedDict()   # ACOPF does not receive

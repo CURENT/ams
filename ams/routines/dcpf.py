@@ -19,8 +19,8 @@ class DCPFBase(RoutineBase):
     Base class for DC power flow.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         self.ug = RParam(info='Gen connection status',
                          name='ug', tex_name=r'u_{g}',
@@ -190,8 +190,8 @@ class DCPF(DCPFBase):
     DC power flow.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
         self.type = 'PF'
 
         self.genpv = RParam(info='gen of PV',

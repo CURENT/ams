@@ -22,8 +22,8 @@ class NSRBase:
     Base class for non-spinning reserve components.
     """
 
-    def __init__(self, system, config) -> None:
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs) -> None:
+        super().__init__(system, config, **kwargs)
 
         self.cnsr = RParam(info='cost for non-spinning reserve',
                            name='cnsr', tex_name=r'c_{nsr}',
@@ -83,8 +83,8 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
        July 2020, doi: 10.1109/TPWRS.2019.2962024.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         self.config.add(OrderedDict((('t', 1),
                                      )))
@@ -339,8 +339,8 @@ class UCDG(DGMPBase, UC):
     UCES should be used instead, otherwise there is no SOC.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
 
 class UCES(ESD1MPBase, UC):
@@ -348,5 +348,5 @@ class UCES(ESD1MPBase, UC):
     UC with energy storage :ref:`ESD1`.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)

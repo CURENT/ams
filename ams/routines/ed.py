@@ -20,8 +20,8 @@ class SRBase:
     Base class for spinning reserve.
     """
 
-    def __init__(self, system, config) -> None:
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs) -> None:
+        super().__init__(system, config, **kwargs)
         self.dsrp = RParam(info='spinning reserve requirement in percentage',
                            name='dsr', tex_name=r'd_{sr}',
                            model='SR', src='demand',
@@ -56,8 +56,8 @@ class MPBase:
     Base class for multi-period scheduling.
     """
 
-    def __init__(self, system, config) -> None:
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs) -> None:
+        super().__init__(system, config, **kwargs)
         # NOTE: Setting `ED.scale.owner` to `Horizon` will cause an error when calling `ED.scale.v`.
         # This is because `Horizon` is a group that only contains the model `TimeSlot`.
         # The `get` method of `Horizon` calls `andes.models.group.GroupBase.get` and results in an error.
@@ -129,8 +129,8 @@ class ED(SRBase, MPBase, RTED):
       RegDn reserve ``rbd``, and Spinning reserve ``rsr``.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         self.config.t = 1  # scheduling interval in hour
         self.config.add_extra("_help",
@@ -236,8 +236,8 @@ class DGMPBase(DGBase):
     Extend :ref:`DGBase` for multi-period scheduling.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         # NOTE: extend vars to 2D
         self.pgdg.horizon = self.timeslot
@@ -251,8 +251,8 @@ class EDDG(DGMPBase, ED):
     EDES should be used instead, otherwise there is no SOC.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
 
 class ESD1MPBase(ESD1Base):
@@ -260,8 +260,8 @@ class ESD1MPBase(ESD1Base):
     Extend :ref:`ESD1Base` for multi-period scheduling.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         self.Mre = RampSub(u=self.SOC, name='Mre', tex_name=r'M_{r,ES}',
                            info='Subtraction matrix for SOC',
@@ -304,5 +304,5 @@ class EDES(ESD1MPBase, ED):
     The bilinear term in the formulation is linearized with big-M method.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)

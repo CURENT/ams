@@ -35,8 +35,8 @@ class RTED2(PTDFBase, RTED):
     - SFR is balanced for each area.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
 
 class RTED2DG(PTDFBase, RTEDDG):
@@ -47,8 +47,8 @@ class RTED2DG(PTDFBase, RTEDDG):
     RTED2ES should be used instead, otherwise there is no SOC.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
 
 class RTED2ESP(PTDFBase, RTEDESP):
@@ -71,8 +71,8 @@ class RTED2ESP(PTDFBase, RTEDESP):
         (1 - u_{dd}) * p_{de} <= 0
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
     def _preinit(self):
         if not self.system.RTED2ES.converged:
@@ -91,5 +91,5 @@ class RTED2ES(PTDFBase, RTEDES):
     power output within the hour, provided the target is met at the interval's conclusion.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)

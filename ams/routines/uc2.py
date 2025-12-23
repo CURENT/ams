@@ -39,8 +39,8 @@ class UC2(PTDFMPBase, UC):
        July 2020, doi: 10.1109/TPWRS.2019.2962024.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         # rewrite power balance to include unserved load `pdu`
         self.pb.e_str = "sum(pg, axis=0) - sum(pds - pdu, axis=0)"
@@ -57,8 +57,8 @@ class UC2DG(DGMPBase, UC2):
     UCES should be used instead, otherwise there is no SOC.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
 
 class UC2ES(ESD1MPBase, UC2):
@@ -66,5 +66,5 @@ class UC2ES(ESD1MPBase, UC2):
     UC with energy storage :ref:`ESD1`, using PTDF formulations.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)

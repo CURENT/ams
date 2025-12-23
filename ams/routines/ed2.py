@@ -15,8 +15,8 @@ class PTDFMPBase(PTDFBase):
     """
     Extend :ref:`PTDFBase` for multi-period scheduling.
     """
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
         # rewrite pb to ensure power balance for each period
         self.pb.e_str = "sum(pg, axis=0) - sum(pds, axis=0)"
@@ -57,8 +57,8 @@ class ED2(PTDFMPBase, ED):
       RegDn reserve ``rbd``, and Spinning reserve ``rsr``.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
 
 class ED2DG(DGMPBase, ED2):
@@ -69,8 +69,8 @@ class ED2DG(DGMPBase, ED2):
     ED2ES should be used instead, otherwise there is no SOC.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)
 
 
 class ED2ES(ESD1MPBase, ED2):
@@ -78,5 +78,5 @@ class ED2ES(ESD1MPBase, ED2):
     ED with energy storage :ref:`ESD1` using PTDF.
     """
 
-    def __init__(self, system, config):
-        super().__init__(system, config)
+    def __init__(self, system, config, **kwargs):
+        super().__init__(system, config, **kwargs)

@@ -82,7 +82,7 @@ class RoutineBase:
         Flag indicating whether AC conversion has been performed.
     """
 
-    def __init__(self, system=None, config=None):
+    def __init__(self, system=None, config=None, **kwargs):
         """
         Initialize the routine.
 
