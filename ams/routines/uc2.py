@@ -3,15 +3,14 @@ Unit commitment routines using PTDF formulations.
 """
 import logging
 
-from ams.routines.rted import DGBase
-from ams.routines.ed import ESD1MPBase
-from ams.routines.ed2 import PTDFMixinMP
+from ams.routines.ed import ESD1MPBase, DGMPBase
+from ams.routines.ed2 import PTDFMPBase
 from ams.routines.uc import UC
 
 logger = logging.getLogger(__name__)
 
 
-class UC2(UC, PTDFMixinMP):
+class UC2(PTDFMPBase, UC):
     """
     DC-based unit commitment (UC) using PTDF formulations:
     The bilinear term in the formulation is linearized with big-M method.
@@ -42,7 +41,6 @@ class UC2(UC, PTDFMixinMP):
 
     def __init__(self, system, config):
         super().__init__(system, config)
-        PTDFMixinMP.__init__(self)
 
         # rewrite power balance to include unserved load `pdu`
         self.pb.e_str = "sum(pg, axis=0) - sum(pds - pdu, axis=0)"
@@ -50,12 +48,8 @@ class UC2(UC, PTDFMixinMP):
         # rewrite Expression plf to include unserved load `pdu`
         self.plf.e_str = "PTDF @ (Cg@pg - Cl@(pds - pdu) - Csh@gsh@tlv - Pbusinj@tlv)"
 
-    def _post_solve(self):
-        PTDFMixinMP._post_solve(self)
-        return super()._post_solve()
 
-
-class UC2DG(UC2, DGBase):
+class UC2DG(DGMPBase, UC2):
     """
     UC with distributed generation :ref:`DG`, using PTDF formulations.
 
@@ -65,16 +59,12 @@ class UC2DG(UC2, DGBase):
 
     def __init__(self, system, config):
         super().__init__(system, config)
-        DGBase.__init__(self)
-
-        self.pgdg.horizon = self.timeslot
 
 
-class UC2ES(UC2, ESD1MPBase):
+class UC2ES(ESD1MPBase, UC2):
     """
     UC with energy storage :ref:`ESD1`, using PTDF formulations.
     """
 
     def __init__(self, system, config):
         super().__init__(system, config)
-        ESD1MPBase.__init__(self)
