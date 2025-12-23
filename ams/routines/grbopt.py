@@ -122,35 +122,10 @@ class OPF(DCPF1):
         - time_limit : float
             Time limit for the solver (default: 0.0, no limit).
         """
-        if not self.initialized:
-            self.init()
-        t0, _ = elapsed()
+        # NOTE: gurobi-optimods iteration count is under a different key path
+        return self._run_with_external_solver(
+            solver_name="gurobi-optimods",
+            iter_key_path=['raw', 'output', 'iterations'],
+            **kwargs
+        )
 
-        # --- solve optimization ---
-        t0, _ = elapsed()
-        res = self.solve(**kwargs)
-        self.converged = res['success']
-        self.exit_code = 0 if res['success'] else 1
-        _, s = elapsed(t0)
-        self.exec_time = float(s.split(" ")[0])
-        try:
-            n_iter = res['raw']['output']['iterations']
-        except Exception:
-            n_iter = -1
-        n_iter_str = f"{n_iter} iterations " if n_iter > 1 else f"{n_iter} iteration "
-        if self.exit_code == 0:
-            msg = f"<{self.class_name}> converged in {s}, "
-            msg += n_iter_str + "with gurobi-optimods."
-            logger.warning(msg)
-            try:
-                self.unpack(res)
-            except Exception as e:
-                logger.error(f"Failed to unpack results from {self.class_name}.\n{e}")
-                return False
-            self.system.report()
-            return True
-        else:
-            msg = f"{self.class_name} failed to converge in {s}, "
-            msg += n_iter_str + "with gurobi-optimods."
-            logger.warning(msg)
-            return False

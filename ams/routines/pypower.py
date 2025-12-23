@@ -235,9 +235,20 @@ class DCPF1(RoutineBase):
         self.system.recent = self.system.routines[self.class_name]
         return True
 
-    def run(self, **kwargs):
+    def _run_with_external_solver(self, solver_name="PYPOWER", iter_key_path=None, **kwargs):
         """
-        Run the DC power flow using PYPOWER.
+        Common run method for external solvers (PYPOWER, gurobi-optimods, etc.).
+
+        Parameters
+        ----------
+        solver_name : str
+            Name of the external solver, used in logging messages.
+        iter_key_path : list or tuple, optional
+            Path to iteration count in the result dictionary.
+            E.g., ['raw', 'output', 'iterations'] for PYPOWER.
+            If None or lookup fails, iteration count defaults to -1.
+        **kwargs : dict
+            Additional keyword arguments passed to solve().
 
         Returns
         -------
@@ -246,23 +257,30 @@ class DCPF1(RoutineBase):
         """
         if not self.initialized:
             self.init()
-        t0, _ = elapsed()
-
-        # --- solve optimization ---
+        
         t0, _ = elapsed()
         res = self.solve(**kwargs)
         self.converged = res['success']
         self.exit_code = 0 if res['success'] else 1
         _, s = elapsed(t0)
         self.exec_time = float(s.split(" ")[0])
-        try:
-            n_iter = res['raw']['output']['iterations']
-        except Exception:
-            n_iter = -1
+        
+        # Extract iteration count from result
+        n_iter = -1
+        if iter_key_path:
+            try:
+                val = res
+                for key in iter_key_path:
+                    val = val[key]
+                n_iter = val
+            except (KeyError, TypeError):
+                pass
+        
         n_iter_str = f"{n_iter} iterations " if n_iter > 1 else f"{n_iter} iteration "
+        
         if self.exit_code == 0:
             msg = f"<{self.class_name}> converged in {s}, "
-            msg += n_iter_str + "with PYPOWER."
+            msg += n_iter_str + f"with {solver_name}."
             logger.warning(msg)
             try:
                 self.unpack(res)
@@ -273,9 +291,24 @@ class DCPF1(RoutineBase):
             return True
         else:
             msg = f"{self.class_name} failed to converge in {s}, "
-            msg += n_iter_str + "with PYPOWER."
+            msg += n_iter_str + f"with {solver_name}."
             logger.warning(msg)
             return False
+
+    def run(self, **kwargs):
+        """
+        Run the DC power flow using PYPOWER.
+
+        Returns
+        -------
+        bool
+            True if the optimization converged successfully, False otherwise.
+        """
+        return self._run_with_external_solver(
+            solver_name="PYPOWER",
+            iter_key_path=['raw', 'output', 'iterations'],
+            **kwargs
+        )
 
     def _get_off_constrs(self):
         logger.debug(f"{self.class_name} does not implement _get_off_constrs.")
