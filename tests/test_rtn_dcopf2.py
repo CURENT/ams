@@ -148,3 +148,9 @@ class TestDCOPF2(unittest.TestCase):
         plf2 = self.ss.DCOPF2.get(src='plf', attr='v', idx=line_idx)
         np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
                                        err_msg="plf between DCOPF2 and DCOPF not match!")
+
+    def test_pb_formula(self):
+        """
+        Test the pb formula is not the angle-based formulation.
+        """
+        self.assertFalse('aBus' in self.ss.DCOPF2.pb.e_str, "Bus angle is used in DCOPF2.pb!")

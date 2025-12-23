@@ -141,7 +141,7 @@ class TestRTED2(unittest.TestCase):
         """
         Test the pb formula is not the angle-based formulation.
         """
-        self.assertFalse('aBus' in self.ss.RTED2.pb.e_str)
+        self.assertFalse('aBus' in self.ss.RTED2.pb.e_str, "Bus angle is used in RTED2.pb!")
 
 
 class TestRTED2DG(unittest.TestCase):
@@ -290,7 +290,7 @@ class TestRTED2DG(unittest.TestCase):
         """
         Test the pb formula is not the angle-based formulation.
         """
-        self.assertFalse('aBus' in self.ss.RTED2DG.pb.e_str)
+        self.assertFalse('aBus' in self.ss.RTED2DG.pb.e_str, "Bus angle is used in RTED2DG.pb!")
 
 
 class TestRTED2ES(unittest.TestCase):
@@ -474,4 +474,4 @@ class TestRTED2ES(unittest.TestCase):
         """
         Test the pb formula is not the angle-based formulation.
         """
-        self.assertFalse('aBus' in self.ss.RTED2ES.pb.e_str)
+        self.assertFalse('aBus' in self.ss.RTED2ES.pb.e_str, "Bus angle is used in RTED2ES.pb!")

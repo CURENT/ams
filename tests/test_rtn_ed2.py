@@ -95,6 +95,14 @@ class TestED2(unittest.TestCase):
         pgs_pqt2 = self.ss.ED2.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
+    def test_vBus_aBus(self):
+        """
+        Test vBus and aBus are not all zero.
+        """
+        self.ss.ED2.run(solver='CLARABEL')
+        self.assertTrue(np.any(self.ss.ED2.vBus.v), "vBus is all zero!")
+        self.assertTrue(np.any(self.ss.ED2.aBus.v), "aBus is all zero!")
+
     def test_align_ed(self):
         """
         Test if results align with ED.
@@ -127,6 +135,12 @@ class TestED2(unittest.TestCase):
         plf2 = self.ss.ED2.get(src='plf', attr='v', idx=line_idx)
         np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
                                        err_msg="Line flow between ED2 and ED not match!")
+
+    def test_pb_formula(self):
+        """
+        Test the pb formula is not the angle-based formulation.
+        """
+        self.assertFalse('aBus' in self.ss.ED2.pb.e_str, "Bus angle is used in ED2.pb!")
 
 
 class TestED2DG(unittest.TestCase):
@@ -219,6 +233,14 @@ class TestED2DG(unittest.TestCase):
         pgs_pqt2 = self.ss.ED2DG.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
+    def test_vBus_aBus(self):
+        """
+        Test vBus and aBus are not all zero.
+        """
+        self.ss.ED2DG.run(solver='CLARABEL')
+        self.assertTrue(np.any(self.ss.ED2DG.vBus.v), "vBus is all zero!")
+        self.assertTrue(np.any(self.ss.ED2DG.aBus.v), "aBus is all zero!")
+
     def test_align_ED2DG(self):
         """
         Test if results align with ED.
@@ -251,6 +273,12 @@ class TestED2DG(unittest.TestCase):
         plf2 = self.ss.ED2DG.get(src='plf', attr='v', idx=line_idx)
         np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
                                        err_msg="Line flow between ED2DG and EDDG not match!")
+
+    def test_pb_formula(self):
+        """
+        Test the pb formula is not the angle-based formulation.
+        """
+        self.assertFalse('aBus' in self.ss.ED2.pb.e_str, "Bus angle is used in ED2.pb!")
 
 
 class TestED2ES(unittest.TestCase):
@@ -347,6 +375,15 @@ class TestED2ES(unittest.TestCase):
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 
     @skip_unittest_without_MISOCP
+    def test_vBus_aBus(self):
+        """
+        Test vBus and aBus are not all zero.
+        """
+        self.ss.ED2ES.run(solver='SCIP')
+        self.assertTrue(np.any(self.ss.ED2ES.vBus.v), "vBus is all zero!")
+        self.assertTrue(np.any(self.ss.ED2ES.aBus.v), "aBus is all zero!")
+
+    @skip_unittest_without_MISOCP
     def test_align_edes(self):
         """
         Test if results align with EDES.
@@ -379,3 +416,9 @@ class TestED2ES(unittest.TestCase):
         plf2 = self.ss.ED2ES.get(src='plf', attr='v', idx=line_idx)
         np.testing.assert_almost_equal(plf, plf2, decimal=DECIMALS,
                                        err_msg="Line flow between ED2ES and EDES not match!")
+
+    def test_pb_formula(self):
+        """
+        Test the pb formula is not the angle-based formulation.
+        """
+        self.assertFalse('aBus' in self.ss.ED2ES.pb.e_str, "Bus angle is used in ED2ES.pb!")
