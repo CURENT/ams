@@ -444,32 +444,20 @@ class RTEDESP(ESD1PBase, RTEDDG):
         self.zde = Constraint(name='zde', is_eq=False, info='zde bound',
                               e_str='mul(1-udd, pde)',)
 
+    def _prereq(self):
+        if not self.system.RTEDES.converged:
+            raise ValueError('<RTEDES> must be solved before <RTEDESP>!')
+
     def init(self, **kwargs):
-        used_rtn = None
-        if self.system.RTEDES.converged:
-            used_rtn = self.system.RTEDES
-        else:
-            raise ValueError('RTEDES must be solved before RTEDESP!')
+        used_rtn = self.system.RTEDES
 
         esd1_idx = self.system.ESD1.idx.v
         esd1_stg = self.system.ESD1.get(src='gen', attr='v', idx=esd1_idx)
-
-        ucd = used_rtn.get(src='ucd', attr='v', idx=esd1_idx)
-        esd1_chrg = [esd1_idx[i] for i in np.where(ucd == 1)[0]]
-        esd1_disch = [esd1_idx[i] for i in np.where(ucd == 0)[0]]
 
         self.system.ESD1.set(src='ucd0', attr='v', idx=esd1_idx,
                              value=used_rtn.get(src='ucd', attr='v', idx=esd1_idx))
         self.system.ESD1.set(src='udd0', attr='v', idx=esd1_idx,
                              value=used_rtn.get(src='udd', attr='v', idx=esd1_idx))
-
-        # store the original values
-        self._cesdc0 = self.system.ESD1.get(src='cesdc', attr='v', idx=esd1_idx)
-        self._cesdd0 = self.system.ESD1.get(src='cesdd', attr='v', idx=esd1_idx)
-
-        # temporarily set the opposite action cost to 0
-        self.system.ESD1.set(src='cesdc', attr='v', idx=esd1_disch, value=0)
-        self.system.ESD1.set(src='cesdd', attr='v', idx=esd1_chrg, value=0)
 
         pce = used_rtn.get(src='pce', attr='v', idx=esd1_idx)
         pde = used_rtn.get(src='pde', attr='v', idx=esd1_idx)
