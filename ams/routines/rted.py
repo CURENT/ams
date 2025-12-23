@@ -467,17 +467,6 @@ class RTEDESP(ESD1PBase, RTEDDG):
 
         return super().init(**kwargs)
 
-    def run(self, **kwargs):
-        super().run(**kwargs)
-
-        esd1_idx = self.system.ESD1.idx.v
-
-        # reset the ESD1 cost
-        self.system.ESD1.set(src='cesdc', attr='v', idx=esd1_idx, value=self._cesdc0)
-        self.system.ESD1.set(src='cesdd', attr='v', idx=esd1_idx, value=self._cesdd0)
-
-        return True
-
 
 class ESD1Base(DGBase, ESD1PBase):
     """
