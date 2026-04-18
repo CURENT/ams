@@ -18,7 +18,15 @@ import textwrap
 from ._version import get_versions
 
 from andes.main import _find_cases
-from andes.shared import Pool, Process, coloredlogs, unittest, NCPUS_PHYSICAL
+from andes.shared import Pool, Process, unittest
+try:
+    from andes.shared import NCPUS_PHYSICAL
+except ImportError:
+    from andes.shared import NCPUS as NCPUS_PHYSICAL  # renamed in ANDES v2.0.0
+try:
+    from andes.shared import coloredlogs
+except ImportError:
+    coloredlogs = None  # removed in ANDES v2.0.0
 from andes.utils.misc import elapsed, is_interactive
 
 import ams
@@ -111,7 +119,7 @@ def config_logger(stream_level=logging.INFO, *,
         set_logger_level(lg, logging.StreamHandler, stream_level)
         set_logger_level(lg, logging.FileHandler, file_level)
 
-    if not is_interactive():
+    if not is_interactive() and coloredlogs is not None:
         coloredlogs.install(logger=lg, level=stream_level, fmt=sh_formatter_str)
 
 

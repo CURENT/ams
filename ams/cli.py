@@ -8,7 +8,10 @@ import platform
 import sys
 from time import strftime
 
-from andes.shared import NCPUS_PHYSICAL
+try:
+    from andes.shared import NCPUS_PHYSICAL
+except ImportError:
+    from andes.shared import NCPUS as NCPUS_PHYSICAL  # renamed in ANDES v2.0.0
 
 from ams.main import config_logger
 from ams.utils.paths import get_log_dir
