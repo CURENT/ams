@@ -7,8 +7,8 @@ from typing import Optional
 
 import numpy as np
 
-from andes.thirdparty.npfunc import safe_div
-from andes.utils.misc import elapsed
+from ams.utils.func import safe_div
+from ams.utils.misc import elapsed
 
 from ams.opt import Param
 

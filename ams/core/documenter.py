@@ -6,7 +6,7 @@ import re
 
 import logging
 from collections import OrderedDict
-from andes.utils.tab import make_doc_table, math_wrap
+from ams.utils.tab import make_doc_table, math_wrap
 
 logger = logging.getLogger(__name__)
 

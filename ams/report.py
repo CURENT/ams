@@ -6,8 +6,8 @@ from collections import OrderedDict
 from typing import List, Dict, Optional
 
 from andes.io.txt import dump_data
-from andes.shared import np
-from andes.utils.misc import elapsed
+import numpy as np
+from ams.utils.misc import elapsed
 
 from ams import __version__ as version
 from ams.shared import copyright_msg, nowarranty_msg, report_time

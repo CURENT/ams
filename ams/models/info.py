@@ -2,7 +2,7 @@
 Module for the information container models.
 """
 from andes.core.param import DataParam
-from andes.core.model.modeldata import ModelData
+from andes.core.model import ModelData
 
 from ams.core.model import Model
 

@@ -6,7 +6,7 @@ import logging
 from typing import Any
 from collections import OrderedDict
 
-from andes.utils.misc import elapsed
+from ams.utils.misc import elapsed
 
 import cvxpy as cp
 

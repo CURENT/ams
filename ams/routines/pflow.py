@@ -7,7 +7,7 @@ from collections import OrderedDict
 
 import numpy as np
 
-from andes.utils.misc import elapsed
+from ams.utils.misc import elapsed
 
 from ams.core.param import RParam
 from ams.routines.routine import RoutineBase

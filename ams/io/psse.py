@@ -6,7 +6,8 @@ This module is the existing module in ``andes.io.psse``.
 from andes.io.psse import testlines  # NOQA
 from andes.io.psse import read as ad_read
 from andes.io.xlsx import confirm_overwrite
-from andes.shared import rad2deg, pd
+import pandas as pd
+from ams.utils.func import rad2deg
 
 from ams import __version__ as version
 from ams.shared import copyright_msg, nowarranty_msg, report_time

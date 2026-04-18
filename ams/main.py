@@ -3,13 +3,17 @@ Main entry point for the AMS CLI and scripting interfaces.
 """
 
 import cProfile
+import glob
 import io
 import logging
 import os
 import platform
+import pprint
 import pstats
 import sys
+import unittest
 from functools import partial
+from multiprocessing import Pool, Process
 from subprocess import call
 from time import sleep
 from typing import Optional, Union
@@ -17,9 +21,7 @@ import textwrap
 
 from ._version import get_versions
 
-from andes.main import _find_cases
-from andes.shared import Pool, Process, coloredlogs, unittest, NCPUS_PHYSICAL
-from andes.utils.misc import elapsed, is_interactive
+from ams.utils.misc import elapsed, is_interactive
 
 import ams
 from ams.routines import routine_cli
@@ -27,7 +29,61 @@ from ams.system import System
 from ams.utils.paths import get_config_path, get_log_dir, tests_root
 from ams.shared import copyright_msg
 
+# Number of physical CPUs — used as the default for multiprocessing.
+# os.cpu_count() returns None on some exotic platforms; fall back to 1.
+NCPUS_PHYSICAL = os.cpu_count() or 1
+
 logger = logging.getLogger(__name__)
+
+
+def _find_cases(filename, path):
+    """
+    Find valid cases using the provided names and path.
+
+    Parameters
+    ----------
+    filename : str or list
+        Test case file name(s) or glob pattern(s).
+    path : str
+        Input search path prefix.
+
+    Returns
+    -------
+    list
+        Sorted list of valid (existing) case file paths.
+
+    Notes
+    -----
+    Adapted from ``andes.main._find_cases``.
+    Original author: Hantao Cui. License: GPL-3.0.
+    """
+    logger.info('Working directory: "%s"', os.getcwd())
+
+    if len(filename) == 0:
+        logger.info('info: no input file. Use `ams run -h` for help.')
+    if isinstance(filename, str):
+        filename = [filename]
+
+    cases = []
+    for file in filename:
+        full_paths = os.path.join(path, file)
+        found = glob.glob(full_paths)
+        if len(found) == 0:
+            logger.error('error: file "%s" does not exist.', full_paths)
+        else:
+            cases += found
+
+    # Remove folders and deduplicate.
+    unique_cases = list(set(cases))
+    valid_cases = []
+    for case in unique_cases:
+        if os.path.isfile(case):
+            valid_cases.append(case)
+    if len(valid_cases) > 0:
+        valid_cases = sorted(valid_cases)
+        logger.debug('Found files: %s', pprint.pformat(valid_cases))
+
+    return valid_cases
 
 
 def config_logger(stream_level=logging.INFO, *,
@@ -86,33 +142,30 @@ def config_logger(stream_level=logging.INFO, *,
         stream_level = 10
 
     sh_formatter = logging.Formatter(sh_formatter_str)
-    if len(lg.handlers) == 0:
 
-        # create a StreamHandler
-        if stream is True:
-            sh = logging.StreamHandler()
-            sh.setFormatter(sh_formatter)
-            sh.setLevel(stream_level)
-            lg.addHandler(sh)
+    # Clear existing handlers so that repeated calls fully reconfigure the
+    # logger (e.g., when verbosity changes between interactive calls).
+    # Use removeHandler + close() rather than lg.handlers.clear() to avoid
+    # leaking file descriptors and keep log files unlocked on Windows.
+    for handler in list(lg.handlers):
+        lg.removeHandler(handler)
+        handler.close()
 
-        # file handler for level DEBUG and up
-        if file is True and (log_file is not None):
-            log_full_path = os.path.join(log_path, log_file)
-            fh_formatter = logging.Formatter('%(process)d: %(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            fh = logging.FileHandler(log_full_path)
-            fh.setLevel(file_level)
-            fh.setFormatter(fh_formatter)
-            lg.addHandler(fh)
+    # create a StreamHandler
+    if stream is True:
+        sh = logging.StreamHandler()
+        sh.setFormatter(sh_formatter)
+        sh.setLevel(stream_level)
+        lg.addHandler(sh)
 
-        globals()['logger'] = lg
-
-    else:
-        # update the handlers
-        set_logger_level(lg, logging.StreamHandler, stream_level)
-        set_logger_level(lg, logging.FileHandler, file_level)
-
-    if not is_interactive():
-        coloredlogs.install(logger=lg, level=stream_level, fmt=sh_formatter_str)
+    # file handler for level DEBUG and up
+    if file is True and (log_file is not None):
+        log_full_path = os.path.join(log_path, log_file)
+        fh_formatter = logging.Formatter('%(process)d: %(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        fh = logging.FileHandler(log_full_path)
+        fh.setLevel(file_level)
+        fh.setFormatter(fh_formatter)
+        lg.addHandler(fh)
 
 
 def load(case, setup=True,
@@ -279,8 +332,7 @@ def _run_mp_proc(cases, ncpu=NCPUS_PHYSICAL, **kwargs):
         jobs.append(job)
         job.start()
         start_msg = f'Process {idx:d} for "{file:s}" started.'
-        print(start_msg)
-        logger.debug(start_msg)
+        logger.info(start_msg)
         if (idx % ncpu == ncpu - 1) or (idx == len(cases) - 1):
             sleep(0.1)
             for job in jobs:
@@ -315,16 +367,16 @@ def _run_mp_pool(cases, ncpu=NCPUS_PHYSICAL, verbose=logging.INFO, **kwargs):
     License: GNU General Public License v3.0 (GPL-3.0)
     """
 
-    pool = Pool(ncpu)
-    print("Cases are processed in the following order:")
-    print('\n'.join([f'"{name}"' for name in cases]))
+    logger.info("Cases are processed in the following order:\n%s",
+                '\n'.join([f'"{name}"' for name in cases]))
 
-    ret = pool.map(partial(run_case,
-                           verbose=verbose,
-                           remove_pycapsule=True,
-                           autogen_stale=False,
-                           **kwargs),
-                   cases)
+    with Pool(ncpu) as pool:
+        ret = pool.map(partial(run_case,
+                               verbose=verbose,
+                               remove_pycapsule=True,
+                               autogen_stale=False,
+                               **kwargs),
+                       cases)
 
     # FIXME: does following code work in AMS?
     # # fix address for in-place arrays
@@ -422,7 +474,7 @@ def run(filename, input_path='', verbose=20, mp_verbose=30,
         log_files = find_log_path(logger)
         if len(log_files) > 0:
             log_paths = '\n'.join(log_files)
-            print(f'Log saved to "{log_paths}".')
+            logger.info('Log saved to "%s".', log_paths)
 
     t0, s0 = elapsed(t0)
 
@@ -438,14 +490,14 @@ def run(filename, input_path='', verbose=20, mp_verbose=30,
 
     if len(cases) == 1:
         if ex_code == 0:
-            print(f'-> Single process finished in {s0}.')
+            logger.info('-> Single process finished in %s.', s0)
         else:
-            print(f'-> Single process exit with an error in {s0}.')
+            logger.error('-> Single process exit with an error in %s.', s0)
     elif len(cases) > 1:
         if ex_code == 0:
-            print(f'-> Multiprocessing finished in {s0}.')
+            logger.info('-> Multiprocessing finished in %s.', s0)
         else:
-            print(f'-> Multiprocessing exit with an error in {s0}.')
+            logger.error('-> Multiprocessing exit with an error in %s.', s0)
 
     # IPython interactive shell
     if shell is True:
@@ -518,10 +570,6 @@ def misc(edit_config='', save_config='', show_license=False, clean=True, recursi
         return
     if clean is True:
         remove_output(recursive)
-        return
-
-    if demo is True:
-        demo(**kwargs)
         return
 
     if version is True:

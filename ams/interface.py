@@ -7,7 +7,7 @@ import json
 import logging
 from collections import OrderedDict, Counter
 
-from andes.utils.misc import elapsed
+from ams.utils.misc import elapsed
 from andes.system import System as adSystem
 
 from ams.utils import create_entry
@@ -588,10 +588,7 @@ class Dynamic:
             msg = 'ANDES dynamic generator online status should be switched using Toggle!'
             msg += ' Otherwise, unexpected results might occur.'
             raise ValueError(msg)
-        # FIXME: below code seems to be unnecessary
-        sa.SynGen.set(src='u', idx=syg_idx, attr='v', value=stg_u_ams)
-        sa.DG.set(src='u', idx=dg_idx, attr='v', value=dg_u_ams)
-        sa.RenGen.set(src='u', idx=rg_idx, attr='v', value=rg_u_ams)
+        # If cond is False, statuses already match — no-op needed.
         return True
 
     def _sync_check(self, amsys, adsys):

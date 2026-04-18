@@ -7,7 +7,7 @@ import numpy as np
 
 from andes.io import read_file_like
 from andes.io.xlsx import confirm_overwrite
-from andes.shared import deg2rad, rad2deg
+from ams.utils.func import deg2rad, rad2deg
 
 from ams import __version__ as version
 from ams.shared import copyright_msg, nowarranty_msg, report_time

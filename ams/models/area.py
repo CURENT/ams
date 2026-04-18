@@ -1,7 +1,7 @@
 import logging
 
 from andes.models.area import AreaData
-from andes.utils.tab import Tab
+from ams.utils.tab import Tab
 from andes.core.service import BackRef
 
 from ams.core.model import Model

@@ -1,7 +1,7 @@
 from andes.models.line.line import LineData
 from andes.models.line.jumper import JumperData
 from andes.core.param import NumParam
-from andes.shared import deg2rad
+from ams.utils.func import deg2rad
 
 from ams.core.model import Model
 

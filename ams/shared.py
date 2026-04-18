@@ -3,6 +3,7 @@ Shared constants and delayed imports.
 
 This module is supplementary to the ``andes.shared`` module.
 """
+import functools
 import logging
 import sys
 import unittest
@@ -11,9 +12,7 @@ from time import strftime
 
 import cvxpy as cp
 
-from andes.utils.lazyimport import LazyImport
-
-from andes.system import System as adSystem
+from ams.utils.lazyimport import LazyImport
 
 from ._version import get_versions
 
@@ -28,11 +27,48 @@ runopf = LazyImport('from pypower.runopf import runopf')
 opf = LazyImport('from gurobi_optimods import opf')
 tqdm = LazyImport('from tqdm.auto import tqdm')
 
-# --- an empty ANDES system ---
-empty_adsys = adSystem(autogen_stale=False)
-ad_models = list(empty_adsys.models.keys())
-ad_pf_models = [mname for mname, model in empty_adsys.models.items() if model.flags.pflow]
-ad_dyn_models = [mname for mname, model in empty_adsys.models.items() if model.flags.tds and not model.flags.pflow]
+
+# ---------------------------------------------------------------------------
+# Deferred ANDES model catalog
+# ---------------------------------------------------------------------------
+
+@functools.lru_cache(maxsize=1)
+def _load_andes_catalog():
+    """
+    Build the ANDES model catalog on first call and cache it for the lifetime
+    of the process.
+
+    Returns
+    -------
+    tuple
+        ``(empty_adsys, ad_models, ad_pf_models, ad_dyn_models)``
+
+    Notes
+    -----
+    Deferred so that ``import ams`` does not instantiate an ANDES System.
+    The cost is paid once, on first IO write or first ``System.add()`` call.
+    """
+    from andes.system import System as adSystem
+    sys_obj = adSystem(autogen_stale=False)
+    models = list(sys_obj.models.keys())
+    pf_models = [m for m, mdl in sys_obj.models.items() if mdl.flags.pflow]
+    dyn_models = [m for m, mdl in sys_obj.models.items()
+                  if mdl.flags.tds and not mdl.flags.pflow]
+    return sys_obj, models, pf_models, dyn_models
+
+
+def __getattr__(name):
+    """Support ``from ams.shared import ad_models`` etc. with lazy loading."""
+    _catalog_map = {
+        'empty_adsys':   0,
+        'ad_models':     1,
+        'ad_pf_models':  2,
+        'ad_dyn_models': 3,
+    }
+    if name in _catalog_map:
+        return _load_andes_catalog()[_catalog_map[name]]
+    raise AttributeError(f"module 'ams.shared' has no attribute {name!r}")
+
 
 # --- NumPy constants ---
 # NOTE: In NumPy 2.0, np.Inf and np.NaN are deprecated.
@@ -191,6 +227,7 @@ def ams_params_not_in_andes(mdl_name, am_params):
     list
         A list of parameters that are not in the ANDES model.
     """
+    empty_adsys, ad_models, _, _ = _load_andes_catalog()
     if mdl_name not in ad_models:
         return []
     ad_params = list(empty_adsys.models[mdl_name].params.keys())
@@ -215,6 +252,7 @@ def model2df(instance, skip_empty, to_andes):
     pd.DataFrame
         The prepared DataFrame.
     """
+    _, ad_models, _, _ = _load_andes_catalog()
     name = instance.class_name
 
     if skip_empty and instance.n == 0:

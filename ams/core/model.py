@@ -9,7 +9,7 @@ from typing import Iterable
 import numpy as np
 from andes.core.param import ExtParam
 from andes.core.service import BaseService, BackRef
-from andes.utils.func import list_flatten
+from ams.utils.func import list_flatten
 
 from ams.core.documenter import Documenter
 from ams.core.var import Algeb
@@ -177,7 +177,7 @@ class Model:
                         for i in uid]
         return self.__dict__[src].__dict__[attr][uid]
 
-    def set(self, src, idx, attr, value):
+    def set(self, src, idx, *args, value=None, attr='v', base=None):
         """
         Set the value of an attribute of a model property.
 
@@ -189,25 +189,70 @@ class Model:
         To alter parameters and reflect it in the case file, use :meth:`alter`
         instead.
 
+        .. note::
+            The signature was updated in the ANDES v2.0.0 compatibility shim.
+            ANDES v2.0.0 ``GroupBase.set()`` dispatches as
+            ``mdl.set(src, idx, val, attr=attr, base=base)`` — passing the
+            value positionally and ``attr`` as a keyword argument.  The old AMS
+            callers used ``mdl.set(src, idx, attr_str, value)`` — positional
+            ``attr`` followed by positional ``value``.  The ``*args`` approach
+            below supports both call patterns.
+
         Parameters
         ----------
         src : str
             Name of the model property
         idx : str, int, float, array-like
             Indices of the devices
+        *args : positional
+            Accepted for compatibility.  Two interpretations depending on
+            whether ``attr`` is also passed as a keyword:
+
+            - ``set(src, idx, value_array)``  — one positional extra arg,
+              ``attr`` keyword selects the sub-attribute (v2.0.0 style).
+            - ``set(src, idx, attr_str, value_array)`` — two positional extra
+              args, first is the attribute name (old AMS caller style).
         attr : str, optional, default='v'
             The internal attribute of the property to get.
             ``v`` for values, ``a`` for address, and ``e`` for equation value.
-        value : array-like
-            New values to be set
+        value : array-like, optional
+            New values to be set (keyword form; takes precedence over *args).
+        base : ignored
+            Accepted for API compatibility with ANDES v2.0.0; not used by AMS.
 
         Returns
         -------
         bool
             True when successful.
         """
+        # Resolve attr and value from the mixed positional / keyword call styles.
+        #
+        # Style A (ANDES v2.0.0 GroupBase dispatch):
+        #   set(src, idx, val, attr=attr, base=base)
+        #   → args = (val,), attr already set by keyword
+        #
+        # Style B (old AMS callers):
+        #   set(src, idx, attr_str, value_array)
+        #   → args = (attr_str, value_array), attr keyword still at default 'v'
+        if value is not None:
+            # Explicit keyword `value=` wins unconditionally.
+            resolved_value = value
+            resolved_attr = attr
+        elif len(args) == 2:
+            # Old positional style: (attr_str, value_array)
+            resolved_attr, resolved_value = args
+        elif len(args) == 1:
+            # New ANDES v2.0.0 style: (value_array,) with attr as keyword
+            resolved_value = args[0]
+            resolved_attr = attr
+        else:
+            raise TypeError(
+                f"set() requires a value; got src={src!r}, idx={idx!r}, "
+                f"args={args!r}, value={value!r}"
+            )
+
         uid = self.idx2uid(idx)
-        self.__dict__[src].__dict__[attr][uid] = value
+        self.__dict__[src].__dict__[resolved_attr][uid] = resolved_value
         return True
 
     def alter(self, src, idx, value, attr='v'):

@@ -295,7 +295,9 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
         gen = gen.sort_values(by='wsum', ascending=True)
 
         # Turn off 30% of the generators as initial guess
-        priority = gen['idx'].values
+        # NOTE: use np.array(..., dtype=object) instead of .values to avoid
+        # pandas 2.2+ returning a StringArray (unhashable in ANDES idx2uid).
+        priority = np.array(gen['idx'], dtype=object)
         g_idx = priority[0:int(0.3*len(priority))]
         ug0 = np.zeros_like(g_idx)
         # NOTE: if number of generators is too small, turn off the first one
