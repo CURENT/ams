@@ -37,6 +37,23 @@ from ams.io.psse import write_raw
 logger = logging.getLogger(__name__)
 
 
+class _ConfigRuntimeStub:
+    """
+    Minimal ANDES v2.0.0 SystemConfigRuntime interface stub for AMS.
+
+    Defined at module scope (not inside System.__init__) so that System
+    instances remain picklable and work correctly with multiprocessing.Pool.
+    """
+
+    def collect_config_rows(self):
+        """Return an empty list; AMS runtime config is not persisted to JSON."""
+        return []
+
+    def apply_cli_overrides(self, *args, **kwargs):
+        """No-op; AMS handles CLI overrides via _update_config_object()."""
+        pass
+
+
 class System:
     """
     Base system class, revised from `andes.system.System`.
@@ -200,16 +217,8 @@ class System:
         # never created by ANDES.  Provide a minimal stub that satisfies the interface.
         # The stub also exposes apply_cli_overrides() which ANDES v2.0.0 FutureWarnings
         # direct subclasses to call instead of _update_config_object().
-        class _ConfigRuntimeStub:
-            """Minimal ANDES v2.0.0 SystemConfigRuntime interface stub for AMS."""
-            def collect_config_rows(self):
-                """Return an empty list; AMS runtime config is not persisted to JSON."""
-                return []
-
-            def apply_cli_overrides(self, *args, **kwargs):
-                """No-op; AMS handles CLI overrides via _update_config_object()."""
-                pass
-
+        # NOTE: defined at module scope (see _ConfigRuntimeStub below __init__) so that
+        # System instances are picklable and work correctly with multiprocessing.Pool.
         self.config_runtime = _ConfigRuntimeStub()
 
         # TODO: revise the following attributes, it seems that these are not used in AMS
@@ -570,10 +579,8 @@ class System:
         if len(config_option) == 0:
             return
 
-        newobj = False
         if self._config_object is None:
             self._config_object = configparser.ConfigParser()
-            newobj = True
 
         for item in config_option:
             if item.count('=') != 1:
@@ -588,13 +595,11 @@ class System:
             section, key = field.split('.')
             section, key, value = section.strip(), key.strip(), value.strip()
 
-            if not newobj:
-                self._config_object.set(section, key, value)
-                logger.debug("Existing config option set: %s.%s=%s", section, key, value)
-            else:
+            if not self._config_object.has_section(section):
                 self._config_object.add_section(section)
-                self._config_object.set(section, key, value)
-                logger.debug("New config option added: %s.%s=%s", section, key, value)
+                logger.debug("New config section added: %s", section)
+            self._config_object.set(section, key, value)
+            logger.debug("Config option set: %s.%s=%s", section, key, value)
 
     def call_models(self, method: str, models: OrderedDict, *args, **kwargs):
         """

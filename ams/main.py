@@ -145,7 +145,11 @@ def config_logger(stream_level=logging.INFO, *,
 
     # Clear existing handlers so that repeated calls fully reconfigure the
     # logger (e.g., when verbosity changes between interactive calls).
-    lg.handlers.clear()
+    # Use removeHandler + close() rather than lg.handlers.clear() to avoid
+    # leaking file descriptors and keep log files unlocked on Windows.
+    for handler in list(lg.handlers):
+        lg.removeHandler(handler)
+        handler.close()
 
     # create a StreamHandler
     if stream is True:
@@ -363,16 +367,16 @@ def _run_mp_pool(cases, ncpu=NCPUS_PHYSICAL, verbose=logging.INFO, **kwargs):
     License: GNU General Public License v3.0 (GPL-3.0)
     """
 
-    pool = Pool(ncpu)
     logger.info("Cases are processed in the following order:\n%s",
                 '\n'.join([f'"{name}"' for name in cases]))
 
-    ret = pool.map(partial(run_case,
-                           verbose=verbose,
-                           remove_pycapsule=True,
-                           autogen_stale=False,
-                           **kwargs),
-                   cases)
+    with Pool(ncpu) as pool:
+        ret = pool.map(partial(run_case,
+                               verbose=verbose,
+                               remove_pycapsule=True,
+                               autogen_stale=False,
+                               **kwargs),
+                       cases)
 
     # FIXME: does following code work in AMS?
     # # fix address for in-place arrays
