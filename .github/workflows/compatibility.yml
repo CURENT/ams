@@ -49,7 +49,6 @@ jobs:
       name: pytest
       run: |
         pytest
-      continue-on-error: ${{ matrix.os == 'windows-latest' || matrix.python-version == '3.13' }}
 
     - if: ${{ failure() && matrix.os == 'windows-latest' }}
       shell: bash -el {0}
