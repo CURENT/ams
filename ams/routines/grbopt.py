@@ -7,7 +7,8 @@ import io
 
 import scipy.io
 
-from andes.shared import np, pd
+import numpy as np
+import pandas as pd
 
 from ams.core import Config
 

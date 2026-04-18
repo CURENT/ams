@@ -12,7 +12,8 @@ import scipy.stats as stats
 
 from andes.core.param import NumParam
 from andes.core.model import ModelData
-from andes.shared import np, pd
+import numpy as np
+import pandas as pd
 from ams.utils.misc import elapsed
 
 from ams.core.model import Model

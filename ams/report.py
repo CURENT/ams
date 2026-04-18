@@ -6,7 +6,7 @@ from collections import OrderedDict
 from typing import List, Dict, Optional
 
 from andes.io.txt import dump_data
-from andes.shared import np
+import numpy as np
 from ams.utils.misc import elapsed
 
 from ams import __version__ as version

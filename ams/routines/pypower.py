@@ -5,7 +5,8 @@ import logging
 from typing import Optional, Union, Type
 from collections import OrderedDict
 
-from andes.shared import deg2rad, np
+import numpy as np
+from ams.utils.func import deg2rad
 from ams.utils.misc import elapsed
 
 from ams.io.pypower import system2ppc

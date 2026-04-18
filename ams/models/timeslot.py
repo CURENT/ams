@@ -3,7 +3,7 @@ Models for multi-period scheduling.
 """
 
 from andes.core import ModelData, NumParam
-from andes.models.timeseries import str_list_iconv
+from ams.utils.func import str_list_iconv
 from ams.core.model import Model
 
 
