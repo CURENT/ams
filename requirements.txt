@@ -7,7 +7,7 @@ pandas
 matplotlib
 psutil
 openpyxl
-andes>=1.9.3
+andes>=2.0.0
 pybind11
 cvxpy
 cffi
