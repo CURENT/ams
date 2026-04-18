@@ -828,6 +828,48 @@ class System:
 
         return tab.draw()
 
+    def supported_models(self, export='plain'):
+        """
+        Return the supported group names and model names in a table.
+
+        Parameters
+        ----------
+        export : str, optional
+            Export format: 'plain' (default) or 'rest' for reStructuredText.
+
+        Returns
+        -------
+        str
+            A table-formatted string listing groups and their models.
+
+        Notes
+        -----
+        Adapted from ``andes.system.System.supported_models``.
+        Original author: Hantao Cui. License: GPL-3.0.
+        """
+
+        def rst_ref(name, export):
+            if export == 'rest':
+                return ":ref:`" + name + '`'
+            else:
+                return name
+
+        pairs = list()
+        for g in self.groups:
+            models = list()
+            for m in self.groups[g].models:
+                models.append(rst_ref(m, export))
+            if len(models) > 0:
+                pairs.append((rst_ref(g, export), ', '.join(models)))
+
+        tab = Tab(title='Supported Groups and Models',
+                  header=['Group', 'Models'],
+                  data=pairs,
+                  export=export,
+                  )
+
+        return tab.draw()
+
     def connectivity(self):
         """
         Perform connectivity check for system.
