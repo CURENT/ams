@@ -725,7 +725,13 @@ class Dynamic:
 
             # --- other scenarios ---
             if _dest_check(mname=mname_ads, pname=pname_ads, idx=idx_ads, adsys=sa):
-                mdl_ads.set(src=pname_ads, idx=idx_ads, attr='v', value=var_ams.v)
+                if pname_ads == 'u':
+                    # ANDES v2.0.0 Model/Group.set(src='u') emits FutureWarning
+                    # on a setup system; use set_status() per-device instead.
+                    for _ii, _vv in zip(idx_ads, var_ams.v):
+                        mdl_ads.set_status(_ii, int(_vv))
+                else:
+                    mdl_ads.set(src=pname_ads, idx=idx_ads, attr='v', value=var_ams.v)
                 logger.warning(f'Send <{vname_ams}> to {mname_ads}.{pname_ads}')
         return True
 
