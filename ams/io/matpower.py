@@ -6,7 +6,7 @@ import re
 import numpy as np
 
 from andes.io import read_file_like
-from andes.io.xlsx import confirm_overwrite
+from ams.utils.paths import confirm_overwrite
 from ams.utils.func import deg2rad, rad2deg
 
 from ams import __version__ as version
