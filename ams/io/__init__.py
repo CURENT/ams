@@ -7,7 +7,7 @@ import logging
 
 import os
 
-from andes.utils.misc import elapsed
+from ams.utils.misc import elapsed
 from andes.io import dump  # NOQA
 
 from ams.io import xlsx, psse, matpower, pypower, json   # NOQA

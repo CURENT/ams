@@ -21,11 +21,7 @@ import textwrap
 
 from ._version import get_versions
 
-try:
-    from andes.shared import coloredlogs
-except ImportError:
-    coloredlogs = None  # removed in ANDES v2.0.0; Step 1.5 will drop this entirely
-from andes.utils.misc import elapsed, is_interactive
+from ams.utils.misc import elapsed, is_interactive
 
 # Number of physical CPUs — used as the default for multiprocessing.
 # os.cpu_count() returns None on some exotic platforms; fall back to 1.
@@ -146,33 +142,26 @@ def config_logger(stream_level=logging.INFO, *,
         stream_level = 10
 
     sh_formatter = logging.Formatter(sh_formatter_str)
-    if len(lg.handlers) == 0:
 
-        # create a StreamHandler
-        if stream is True:
-            sh = logging.StreamHandler()
-            sh.setFormatter(sh_formatter)
-            sh.setLevel(stream_level)
-            lg.addHandler(sh)
+    # Clear existing handlers so that repeated calls fully reconfigure the
+    # logger (e.g., when verbosity changes between interactive calls).
+    lg.handlers.clear()
 
-        # file handler for level DEBUG and up
-        if file is True and (log_file is not None):
-            log_full_path = os.path.join(log_path, log_file)
-            fh_formatter = logging.Formatter('%(process)d: %(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            fh = logging.FileHandler(log_full_path)
-            fh.setLevel(file_level)
-            fh.setFormatter(fh_formatter)
-            lg.addHandler(fh)
+    # create a StreamHandler
+    if stream is True:
+        sh = logging.StreamHandler()
+        sh.setFormatter(sh_formatter)
+        sh.setLevel(stream_level)
+        lg.addHandler(sh)
 
-        globals()['logger'] = lg
-
-    else:
-        # update the handlers
-        set_logger_level(lg, logging.StreamHandler, stream_level)
-        set_logger_level(lg, logging.FileHandler, file_level)
-
-    if not is_interactive() and coloredlogs is not None:
-        coloredlogs.install(logger=lg, level=stream_level, fmt=sh_formatter_str)
+    # file handler for level DEBUG and up
+    if file is True and (log_file is not None):
+        log_full_path = os.path.join(log_path, log_file)
+        fh_formatter = logging.Formatter('%(process)d: %(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        fh = logging.FileHandler(log_full_path)
+        fh.setLevel(file_level)
+        fh.setFormatter(fh_formatter)
+        lg.addHandler(fh)
 
 
 def load(case, setup=True,

@@ -7,7 +7,7 @@ import json
 import logging
 from collections import OrderedDict, Counter
 
-from andes.utils.misc import elapsed
+from ams.utils.misc import elapsed
 from andes.system import System as adSystem
 
 from ams.utils import create_entry

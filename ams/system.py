@@ -13,7 +13,7 @@ from andes.system import System as adSystem
 from andes.system import (_config_numpy, load_config_rc)
 from andes.variables import FileMan
 
-from andes.utils.misc import elapsed
+from ams.utils.misc import elapsed
 from andes.utils.tab import Tab
 
 import ams

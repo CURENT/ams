@@ -9,7 +9,7 @@ from typing import Optional, Union, Type, Iterable, Dict
 
 import numpy as np
 
-from andes.utils.misc import elapsed
+from ams.utils.misc import elapsed
 
 from ams.core import Config
 from ams.core.param import RParam

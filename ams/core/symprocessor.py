@@ -15,7 +15,7 @@ from collections import OrderedDict
 
 import sympy as sp
 
-from andes.utils.misc import elapsed
+from ams.utils.misc import elapsed
 from ams.core.matprocessor import MatProcessor
 
 logger = logging.getLogger(__name__)

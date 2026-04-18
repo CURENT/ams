@@ -1,7 +1,60 @@
 import warnings
 import functools
+from decimal import Decimal, ROUND_DOWN
+from time import time
 
-from andes.utils.misc import elapsed
+
+def elapsed(t0=0.0):
+    """
+    Return the current time and the elapsed time from ``t0``.
+
+    If ``t0`` is not given (default 0.0), returns the Unix epoch time and a
+    string of the elapsed seconds from epoch (not useful on its own — pass
+    the first return value as ``t0`` on a subsequent call).
+
+    Parameters
+    ----------
+    t0 : float, optional
+        Start time from a previous ``elapsed()`` call. Default 0.0.
+
+    Returns
+    -------
+    t : float
+        Current Unix time.
+    s : str
+        Elapsed time from ``t0`` formatted as ``'X.XXXX second(s)'``.
+
+    Notes
+    -----
+    Adapted from ``andes.utils.misc.elapsed``.
+    Original author: Hantao Cui. License: GPL-3.0.
+    """
+    t = time()
+    dt = t - t0
+    dt_sec = Decimal(str(dt)).quantize(Decimal('.0001'), rounding=ROUND_DOWN)
+    s = str(dt_sec) + (' second' if dt_sec == 1 else ' seconds')
+    return t, s
+
+
+def is_interactive():
+    """
+    Return ``True`` if running inside an interactive Python/IPython shell.
+
+    Notes
+    -----
+    Adapted from ``andes.utils.misc.is_interactive``.
+    Original author: Hantao Cui. License: GPL-3.0.
+    """
+    ipython = False
+    try:
+        cls_name = get_ipython().__class__.__name__  # noqa: F821
+        if cls_name in ('InteractiveShellEmbed', 'TerminalInteractiveShell'):
+            ipython = True
+    except NameError:
+        pass
+
+    import __main__ as main
+    return not hasattr(main, '__file__') or ipython
 
 
 def timer(func):

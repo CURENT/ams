@@ -6,7 +6,7 @@ from typing import Optional, Union, Type
 from collections import OrderedDict
 
 from andes.shared import deg2rad, np
-from andes.utils.misc import elapsed
+from ams.utils.misc import elapsed
 
 from ams.io.pypower import system2ppc
 from ams.core.param import RParam
