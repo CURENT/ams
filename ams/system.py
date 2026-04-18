@@ -26,7 +26,7 @@ from ams.core import Config
 from ams.core.matprocessor import MatProcessor
 from ams.interface import to_andes
 from ams.report import Report
-from ams.shared import ad_dyn_models
+from ams.shared import _load_andes_catalog
 
 from ams.io.matpower import system2mpc
 from ams.io.matpower import write as write_m
@@ -444,6 +444,7 @@ class System(adSystem):
         Revised from ``andes.system.System.add``.
         """
         if model not in self.models and (model not in self.model_aliases):
+            _, _, _, ad_dyn_models = _load_andes_catalog()
             if model in ad_dyn_models:
                 logger.debug("ANDES dynamic model <%s> is skipped.", model)
             else:
