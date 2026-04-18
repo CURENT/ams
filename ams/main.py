@@ -23,15 +23,15 @@ from ._version import get_versions
 
 from ams.utils.misc import elapsed, is_interactive
 
-# Number of physical CPUs — used as the default for multiprocessing.
-# os.cpu_count() returns None on some exotic platforms; fall back to 1.
-NCPUS_PHYSICAL = os.cpu_count() or 1
-
 import ams
 from ams.routines import routine_cli
 from ams.system import System
 from ams.utils.paths import get_config_path, get_log_dir, tests_root
 from ams.shared import copyright_msg
+
+# Number of physical CPUs — used as the default for multiprocessing.
+# os.cpu_count() returns None on some exotic platforms; fall back to 1.
+NCPUS_PHYSICAL = os.cpu_count() or 1
 
 logger = logging.getLogger(__name__)
 

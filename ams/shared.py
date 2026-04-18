@@ -69,6 +69,7 @@ def __getattr__(name):
         return _load_andes_catalog()[_catalog_map[name]]
     raise AttributeError(f"module 'ams.shared' has no attribute {name!r}")
 
+
 # --- NumPy constants ---
 # NOTE: In NumPy 2.0, np.Inf and np.NaN are deprecated.
 inf = np.inf
