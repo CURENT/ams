@@ -200,6 +200,47 @@ class System(adSystem):
                       invalid=self.config.np_invalid,
                       )
 
+        # NOTE: ANDES v2.0.0 split System.config into System.config (case params)
+        # and System.runtime (machine/env params). Internal ANDES methods such as
+        # call_models() and _list2array() now access self.runtime.save_stats /
+        # self.runtime.ipadd. AMS never calls super().__init__(), so we must
+        # create this object explicitly.  Values are loaded from the rc file so
+        # that user overrides in [Runtime] are honoured.
+        self.runtime = Config('Runtime')
+        self.runtime.load(self._config_object)
+        self.runtime.add(OrderedDict((('numba', 0),
+                                      ('numba_parallel', 0),
+                                      ('numba_nopython', 1),
+                                      ('yapf_pycode', 0),
+                                      ('save_stats', 0),
+                                      ('ipadd', 1),
+                                      ('sparselib', 'klu'),
+                                      ('seed', 'None'),
+                                      ('np_divide', 'warn'),
+                                      ('np_invalid', 'warn'),
+                                      ('dime_enabled', 0),
+                                      ('dime_name', 'andes'),
+                                      ('dime_address', 'ipc:///tmp/dime2'),
+                                      )))
+        self.runtime.check()
+
+        # NOTE: ANDES v2.0.0 io/json.py accesses system.config_runtime.collect_config_rows()
+        # when dumping a case to JSON.  AMS never calls super().__init__() so this object is
+        # never created by ANDES.  Provide a minimal stub that satisfies the interface.
+        # The stub also exposes apply_cli_overrides() which ANDES v2.0.0 FutureWarnings
+        # direct subclasses to call instead of _update_config_object().
+        class _ConfigRuntimeStub:
+            """Minimal ANDES v2.0.0 SystemConfigRuntime interface stub for AMS."""
+            def collect_config_rows(self):
+                """Return an empty list; AMS runtime config is not persisted to JSON."""
+                return []
+
+            def apply_cli_overrides(self, *args, **kwargs):
+                """No-op; AMS handles CLI overrides via _update_config_object()."""
+                pass
+
+        self.config_runtime = _ConfigRuntimeStub()
+
         # TODO: revise the following attributes, it seems that these are not used in AMS
         self._getters = dict(f=list(), g=list(), x=list(), y=list())
         self._adders = dict(f=list(), g=list(), x=list(), y=list())
