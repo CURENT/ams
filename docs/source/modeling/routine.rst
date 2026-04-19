@@ -76,6 +76,57 @@ A summary table is shown below.
       Objective
       OModel
 
+Expression Notation in ``e_str``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Routine constraints, objectives, and expressions are written as Python source
+strings in the ``e_str`` argument. Before being passed to CVXPY, ``e_str`` is
+rewritten by :py:class:`ams.core.symprocessor.SymProcessor` so that bare names
+like ``pg`` or ``Cft`` resolve to the underlying CVXPY ``Variable`` /
+``Parameter`` / sparse-matrix objects of the host routine.
+
+Multiplication is the easiest place to introduce silent bugs because there are
+**three semantically distinct operations** that all read like "multiply":
+
+==================  ==========================  ==============================================
+Notation in e_str   Meaning                     When to use
+==================  ==========================  ==============================================
+``a @ b``           Matrix / matrix-vector mul  Topology matrix times a stacked vector, e.g.
+                                                ``Cft @ pl``, ``PTDF @ p``.
+``mul(a, b)``       Element-wise multiply       Per-device scaling, e.g. ``mul(ug, pg)`` to
+                    (alias for ``cp.multiply``) gate generator output by its commitment.
+                                                Broadcasts a scalar / 1-D parameter against a
+                                                vector variable.
+``2 * x``,          Scalar multiply             A literal number or a 0-D parameter scaling an
+``coeff * y``                                   expression. CVXPY accepts ``*`` here.
+==================  ==========================  ==============================================
+
+Two convenience aliases exist for readability:
+
+* ``a dot b`` — same as ``mul(a, b)`` (kept for legacy expressions).
+* ``multiply(a, b)`` — same as ``mul(a, b)``.
+
+**Bare ``a * b`` between two identifiers is not rewritten and will be passed
+to CVXPY as-is.** CVXPY will then either raise a shape error or, worse,
+emit a deprecation warning and silently perform matrix multiplication. Always
+write ``@`` or ``mul()`` explicitly. As of refactor step 1.4 the
+historical catch-all rewrite ``word * word`` → ``word @ word`` has been
+removed; existing routines were audited and the only affected expression
+(``dopf.lvd``) was migrated to ``mul()``.
+
+Other ``e_str`` rewrites worth knowing:
+
+* ``sum(x)``, ``norm(x)``, ``pos(x)``, ``square(x)``, ``power(x, n)``,
+  ``vstack(...)``, ``maximum(...)``, ``minimum(...)``, ``quad_form(...)``,
+  ``sum_squares(...)``, ``diag(...)`` are forwarded to their ``cp.*``
+  equivalents.
+* Comparisons ``... == 0`` and ``... <= 0`` define equality and inequality
+  constraints respectively (set via the ``is_eq`` flag on ``Constraint``).
+* Powers use ``**`` (e.g. ``vmax**2``).
+
+If in doubt, check an existing routine such as :py:mod:`ams.routines.dcopf`
+or :py:mod:`ams.routines.rted` for canonical patterns.
+
 Interoperation with ANDES
 -----------------------------------
 
