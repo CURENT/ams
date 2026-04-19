@@ -18,7 +18,7 @@ from ams.utils.tab import Tab
 
 import ams
 from ams.models.group import GroupBase
-from ams.routines.type import TypeBase
+from ams.routines.typecls import TypeBase
 from ams.models import file_classes
 from ams.routines import all_routines
 from ams.utils.paths import get_config_path
@@ -238,12 +238,12 @@ class System:
 
     def import_types(self):
         """
-        Import all types classes defined in ``routines/type.py``.
+        Import all types classes defined in ``routines/typecls.py``.
 
         Types will be stored as instances with the name as class names.
         All types will be stored to dictionary ``System.types``.
         """
-        module = importlib.import_module('ams.routines.type')
+        module = importlib.import_module('ams.routines.typecls')
         for m in inspect.getmembers(module, inspect.isclass):
             name, cls = m
             if name == 'TypeBase':
