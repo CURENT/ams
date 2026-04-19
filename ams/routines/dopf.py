@@ -91,7 +91,7 @@ class DOPF(DCOPF):
                        unit='p.u.', model='Line',)
         self.lvd = Constraint(info='line voltage drop',
                               name='lvd', is_eq=True,
-                              e_str='CftT@vsq - (r * plf + x * qlf)',)
+                              e_str='CftT@vsq - (mul(r, plf) + mul(x, qlf))',)
         # --- power balance ---
         # NOTE: following Eqn seems to be wrong, double check
         # g_Q(\Theta, V, Q_g) = B_{bus}V\Theta + Q_{bus,shift} + Q_d + B_{sh} - C_gQ_g = 0

@@ -50,9 +50,11 @@ class SymProcessor:
         self.tex_map = OrderedDict()
 
         lang = "cp"  # TODO: might need to be generalized to other solvers
-        # only used for CVXPY
+        # only used for CVXPY.
+        # NOTE: e_str must use explicit notation: `@` for matrix-multiply,
+        # `mul(a, b)` for element-wise. Bare `*` between identifiers is no
+        # longer rewritten to `@` — see refactor step 1.4.
         self.sub_map = OrderedDict([
-            (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 @ \2'),
             (r'\b(\w+)\s+dot\s+(\w+)\b', r'\1 * \2'),
             (r' dot ', r' * '),
             (r'\bsum\b', f'{lang}.sum'),
