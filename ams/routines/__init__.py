@@ -24,3 +24,5 @@ all_routines = OrderedDict([
 
 class_names = list_flatten(list(all_routines.values()))
 routine_cli = OrderedDict([(item.lower(), item) for item in class_names])
+
+__all__ = ['all_routines', 'class_names', 'routine_cli']
