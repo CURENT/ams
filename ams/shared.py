@@ -261,8 +261,7 @@ def model2df(instance, skip_empty, to_andes):
     if name not in ad_models and to_andes:
         return None
 
-    instance.cache.refresh("df_in")
-    df = instance.cache.df_in
+    df = instance.as_df(vin=True)
 
     if to_andes:
         skipped_params = ams_params_not_in_andes(name, df.columns.tolist())

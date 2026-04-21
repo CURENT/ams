@@ -51,13 +51,13 @@ class TestGroup(unittest.TestCase):
                                 [1.0, 0.95])
 
         # --- set ---
-        ss.DG.set('EtaC', 'ESD1_1', 'v', 0.95)
+        ss.DG.set('EtaC', 'ESD1_1', 0.95, attr='v')
         np.testing.assert_equal(ss.DG.get('EtaC', 'ESD1_1',), 0.95)
 
-        ss.DG.set('EtaC', ['ESD1_1'], 'v', 0.97)
+        ss.DG.set('EtaC', ['ESD1_1'], 0.97, attr='v')
         np.testing.assert_equal(ss.DG.get('EtaC', ['ESD1_1'],), [0.97])
 
-        ss.DG.set('EtaC', ['ESD1_1'], 'v', [0.99])
+        ss.DG.set('EtaC', ['ESD1_1'], [0.99], attr='v')
         np.testing.assert_equal(ss.DG.get('EtaC', ['ESD1_1'],), [0.99])
 
         # --- find_idx ---

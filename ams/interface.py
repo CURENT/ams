@@ -80,8 +80,11 @@ def sync_adsys(amsys, adsys):
                 continue
             # NOTE: when setting list values to DataParam, sometimes run into error
             try:
-                ad_mdl.set(src=param, attr='v', idx=idx,
-                           value=am_mdl.get(src=param, attr='v', idx=idx))
+                value = am_mdl.get(src=param, attr='v', idx=idx)
+                if param == 'u':
+                    ad_mdl.set_status(idx=idx, value=value)
+                else:
+                    ad_mdl.set(src=param, idx=idx, value=value, attr='v')
             except Exception as e:
                 logger.warning(f"Failed to sync parameter '{param}' for model '{mname}': {e}")
                 continue
@@ -114,8 +117,7 @@ def to_andes_pflow(system, no_output=False, default_config=True, **kwargs):
 
     for mdl_name, mdl_cols in pflow_dict.items():
         mdl = getattr(system, mdl_name)
-        mdl.cache.refresh("df_in")  # refresh cache
-        for row in mdl.cache.df_in[mdl_cols].to_dict(orient='records'):
+        for row in mdl.as_df(vin=True)[mdl_cols].to_dict(orient='records'):
             adsys.add(mdl_name, row)
 
     return adsys
@@ -406,7 +408,7 @@ def parse_addfile(adsys, amsys, addfile):
             msg = f'Following <{name}> parameters in addfile are overwriten: '
             msg += ', '.join(overlap_params)
             logger.debug(msg)
-            tmp = amsys.models[name].cache.df_in[overlap_params]
+            tmp = amsys.models[name].as_df(vin=True)[overlap_params]
             df = pd.merge(left=tmp, right=df[ad_rest_params],
                           on='idx', how='left')
         for row in df.to_dict(orient='records'):
