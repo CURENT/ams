@@ -39,19 +39,18 @@ logger = logging.getLogger(__name__)
 
 class _ConfigRuntimeStub:
     """
-    Minimal ANDES v2.0.0 SystemConfigRuntime interface stub for AMS.
+    Minimal stub satisfying the ANDES v2.0.0 ``SystemConfigRuntime`` surface
+    reached via ``ams.run(..., convert=...)``. That path re-exports
+    ``andes.io.dump``, which routes into ANDES's json/xlsx writers; those
+    call ``system.config_runtime.collect_config_rows()`` during dump.
+    AMS does not persist per-system config rows, so return an empty list.
 
-    Defined at module scope (not inside System.__init__) so that System
-    instances remain picklable and work correctly with multiprocessing.Pool.
+    Defined at module scope so System instances remain picklable for
+    multiprocessing.Pool.
     """
 
     def collect_config_rows(self):
-        """Return an empty list; AMS runtime config is not persisted to JSON."""
         return []
-
-    def apply_cli_overrides(self, *args, **kwargs):
-        """No-op; AMS handles CLI overrides via _update_config_object()."""
-        pass
 
 
 class System:
@@ -161,7 +160,6 @@ class System:
         self.config.add(OrderedDict((('freq', 60),
                                      ('mva', 100),
                                      ('seed', 'None'),
-                                     ('save_stats', 0),  # TODO: not sure what this is for
                                      ('np_divide', 'warn'),
                                      ('np_invalid', 'warn'),
                                      )))
@@ -188,37 +186,9 @@ class System:
                       invalid=self.config.np_invalid,
                       )
 
-        # NOTE: ANDES v2.0.0 split System.config into System.config (case params)
-        # and System.runtime (machine/env params). Internal ANDES methods such as
-        # call_models() and _list2array() now access self.runtime.save_stats /
-        # self.runtime.ipadd. AMS never calls super().__init__(), so we must
-        # create this object explicitly.  Values are loaded from the rc file so
-        # that user overrides in [Runtime] are honoured.
-        self.runtime = Config('Runtime')
-        self.runtime.load(self._config_object)
-        self.runtime.add(OrderedDict((('numba', 0),
-                                      ('numba_parallel', 0),
-                                      ('numba_nopython', 1),
-                                      ('yapf_pycode', 0),
-                                      ('save_stats', 0),
-                                      ('ipadd', 1),
-                                      ('sparselib', 'klu'),
-                                      ('seed', 'None'),
-                                      ('np_divide', 'warn'),
-                                      ('np_invalid', 'warn'),
-                                      ('dime_enabled', 0),
-                                      ('dime_name', 'andes'),
-                                      ('dime_address', 'ipc:///tmp/dime2'),
-                                      )))
-        self.runtime.check()
-
-        # NOTE: ANDES v2.0.0 io/json.py accesses system.config_runtime.collect_config_rows()
-        # when dumping a case to JSON.  AMS never calls super().__init__() so this object is
-        # never created by ANDES.  Provide a minimal stub that satisfies the interface.
-        # The stub also exposes apply_cli_overrides() which ANDES v2.0.0 FutureWarnings
-        # direct subclasses to call instead of _update_config_object().
-        # NOTE: defined at module scope (see _ConfigRuntimeStub below __init__) so that
-        # System instances are picklable and work correctly with multiprocessing.Pool.
+        # ANDES v2.0.0 json/xlsx writers (reached via ``ams.run(..., convert=...)``
+        # re-exporting ``andes.io.dump``) call ``system.config_runtime.collect_config_rows()``.
+        # AMS does not persist per-system config rows; provide a minimal stub.
         self.config_runtime = _ConfigRuntimeStub()
 
         # TODO: revise the following attributes, it seems that these are not used in AMS
