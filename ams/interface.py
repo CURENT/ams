@@ -405,7 +405,7 @@ def parse_addfile(adsys, amsys, addfile):
             ad_params = set(df.columns)
             overlap_params = list(am_params.intersection(ad_params))
             ad_rest_params = list(ad_params - am_params) + ['idx']
-            msg = f'Following <{name}> parameters in addfile are overwriten: '
+            msg = f'Following <{name}> parameters in addfile are overwritten: '
             msg += ', '.join(overlap_params)
             logger.debug(msg)
             tmp = amsys.models[name].as_df(vin=True)[overlap_params]

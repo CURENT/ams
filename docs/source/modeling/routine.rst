@@ -103,7 +103,9 @@ Notation in e_str   Meaning                     When to use
 
 Two convenience aliases exist for readability:
 
-* ``a dot b`` — same as ``mul(a, b)`` (kept for legacy expressions).
+* ``a dot b`` — rewritten to ``a * b`` (kept for legacy expressions; typically
+  used for scalar-times-expression forms such as ``t dot expr``). Note this
+  is *not* an alias for ``mul()`` / element-wise multiply.
 * ``multiply(a, b)`` — same as ``mul(a, b)``.
 
 **Bare ``a * b`` between two identifiers is not rewritten and will be passed
