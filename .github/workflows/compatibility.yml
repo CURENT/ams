@@ -36,7 +36,7 @@ jobs:
 
     - shell: bash -el {0}
       name: Lint with flake8
-      if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      if: github.event_name == 'push' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       run: |
         flake8 .
 
