@@ -263,7 +263,8 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
         cost = 't**2 dot sum(c2 @ pg**2)'
         cost += '+ t dot sum(c1 @ pg)'
         cost += '+ sum(mul(ug, c0) @ tlv)'
-        _to_sum = 'csu * vgd + csd * wgd + csr @ prs + cnsr @ prns + cdp @ pdu'
+        cost += '+ sum(csu @ vgd + csd @ wgd)'
+        _to_sum = 'csr @ prs + cnsr @ prns + cdp @ pdu'
         cost += f' + t dot sum({_to_sum})'
         self.obj.e_str = cost
 
