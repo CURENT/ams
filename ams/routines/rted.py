@@ -169,8 +169,8 @@ class RTED(SFRBase, RTEDBase, DCOPF):
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
         # NOTE: the product involved t should use ``dot``
-        cost = 't**2 dot sum(mul(c2, pg**2)) + sum(ug * c0)'
-        _to_sum = 'c1 @ pg + cru * pru + crd * prd'
+        cost = 't**2 dot sum(mul(c2, pg**2)) + sum(mul(ug, c0))'
+        _to_sum = 'c1 @ pg + cru @ pru + crd @ prd'
         cost += f'+ t dot sum({_to_sum})'
         self.obj.e_str = cost
 

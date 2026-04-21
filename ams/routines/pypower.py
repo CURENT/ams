@@ -567,7 +567,7 @@ class DCOPF1(DCPF1):
                               scpdipm_red_it=r'o_{scpdipm\_red\_it}',
                               )
 
-        self.obj.e_str = 'sum(c2 * pg**2 + c1 * pg + c0)'
+        self.obj.e_str = 'sum(mul(c2, pg**2)) + sum(mul(c1, pg)) + sum(mul(ug, c0))'
 
         self.pi = Var(info='Lagrange multiplier on real power mismatch',
                       name='pi', unit='$/p.u.',
