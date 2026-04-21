@@ -134,7 +134,7 @@ def parse(system):
     return True
 
 
-def dump(system, output_format, full_path=None, overwrite=False, **kwargs):
+def dump(system, output_format, full_path=None, overwrite=None, **kwargs):
     """
     Dump the AMS system data into the requested output format.
 
@@ -142,13 +142,16 @@ def dump(system, output_format, full_path=None, overwrite=False, **kwargs):
     ----------
     system
         System object.
-    output_format : str or bool or None
-        Output format name. ``None`` or ``True`` defaults to ``'xlsx'``.
+    output_format : str
+        Output format name (``'xlsx'`` or ``'json'``). As a convenience,
+        ``None`` or ``True`` is treated as ``'xlsx'``.
     full_path : str, optional
         Full path for the output file. Defaults to
         ``<output_path>/<case_name>.<ext>``.
-    overwrite : bool, optional
-        Overwrite an existing file without prompting.
+    overwrite : bool or None, optional
+        ``None`` (default) prompts interactively when the target exists;
+        ``True`` overwrites without prompting; ``False`` refuses to
+        overwrite. Matches ``ams.io.xlsx.write`` / ``ams.io.json.write``.
     **kwargs
         Forwarded to the per-format writer. ``add_book`` is xlsx-only and
         is dropped for json.
