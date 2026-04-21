@@ -37,22 +37,6 @@ from ams.io.psse import write_raw
 logger = logging.getLogger(__name__)
 
 
-class _ConfigRuntimeStub:
-    """
-    Minimal stub satisfying the ANDES v2.0.0 ``SystemConfigRuntime`` surface
-    reached via ``ams.run(..., convert=...)``. That path re-exports
-    ``andes.io.dump``, which routes into ANDES's json/xlsx writers; those
-    call ``system.config_runtime.collect_config_rows()`` during dump.
-    AMS does not persist per-system config rows, so return an empty list.
-
-    Defined at module scope so System instances remain picklable for
-    multiprocessing.Pool.
-    """
-
-    def collect_config_rows(self):
-        return []
-
-
 class System:
     """
     Base system class, revised from `andes.system.System`.
@@ -185,11 +169,6 @@ class System:
                       divide=self.config.np_divide,
                       invalid=self.config.np_invalid,
                       )
-
-        # ANDES v2.0.0 json/xlsx writers (reached via ``ams.run(..., convert=...)``
-        # re-exporting ``andes.io.dump``) call ``system.config_runtime.collect_config_rows()``.
-        # AMS does not persist per-system config rows; provide a minimal stub.
-        self.config_runtime = _ConfigRuntimeStub()
 
         # TODO: revise the following attributes, it seems that these are not used in AMS
         self._getters = dict(f=list(), g=list(), x=list(), y=list())
