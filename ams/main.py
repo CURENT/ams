@@ -16,7 +16,7 @@ from functools import partial
 from multiprocessing import Pool, Process
 from subprocess import call
 from time import sleep
-from typing import Optional, Union
+from typing import List, Optional, Union
 import textwrap
 
 from ._version import get_versions
@@ -168,9 +168,10 @@ def config_logger(stream_level=logging.INFO, *,
         lg.addHandler(fh)
 
 
-def load(case, setup=True,
-         use_input_path=True,
-         **kwargs):
+def load(case: str,
+         setup: bool = True,
+         use_input_path: bool = True,
+         **kwargs) -> Optional[System]:
     """
     Load a case and set up a system without running routine.
     Return a system.
@@ -386,9 +387,11 @@ def _run_mp_pool(cases, ncpu=NCPUS_PHYSICAL, verbose=logging.INFO, **kwargs):
     return ret
 
 
-def run(filename, input_path='', verbose=20, mp_verbose=30,
-        ncpu=NCPUS_PHYSICAL, pool=False,
-        cli=False, shell=False, **kwargs):
+def run(filename: Union[str, List[str]], input_path: str = '',
+        verbose: int = 20, mp_verbose: int = 30,
+        ncpu: int = NCPUS_PHYSICAL, pool: bool = False,
+        cli: bool = False, shell: bool = False,
+        **kwargs) -> Union[System, List[System], int, None]:
     """
     Entry point to run AMS routines.
 
