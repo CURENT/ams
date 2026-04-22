@@ -1,18 +1,27 @@
 """CLI entry point: ``python -m ams.bench``.
 
-M1 scaffold — emits a report with the environment captured and an
-empty ``results`` list. M2 wires in the Tier A benchmarks.
+Emits a JSON report with the ``environment`` captured and the results
+of the selected ``--suite``. ``tier_a`` is the only suite that
+produces real measurements today; M4 adds Tier B (co-sim, solver
+sweep).
 """
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import sys
 from typing import Sequence
 
 from ams.bench.env import capture_env
 from ams.bench.harness import Measurement
+from ams.bench.routines import run_smoke, run_tier_a
 from ams.bench.schema import build_report
+
+_SUITES = {
+    "smoke": run_smoke,
+    "tier_a": run_tier_a,
+}
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -23,6 +32,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--suite",
         default="tier_a",
+        choices=sorted(_SUITES.keys()),
         help="Suite to run (default: tier_a).",
     )
     parser.add_argument(
@@ -42,10 +52,27 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=1,
         help="Warmup reps, discarded (default: 1).",
     )
+    parser.add_argument(
+        "--solver",
+        default="CLARABEL",
+        help="Solver to use for routine_solve benchmarks (default: CLARABEL). "
+             "Per-result JSON records the solver used so outputs from different "
+             "runs stay comparable. UC-family routines need a MIP solver and "
+             "are not in Tier A.",
+    )
     args = parser.parse_args(argv)
 
     env = capture_env()
-    results: list[Measurement] = []  # M2 populates this.
+
+    # Some benchmarked routines (notably ACOPF via PYPOWER) print to
+    # stdout while solving. Redirect stdout to stderr during suite
+    # execution so our JSON report on real stdout stays clean.
+    with contextlib.redirect_stdout(sys.stderr):
+        results: list[Measurement] = _SUITES[args.suite](
+            reps=args.reps,
+            warmup_reps=args.warmup_reps,
+            solver=args.solver,
+        )
 
     report = build_report(suite=args.suite, environment=env, results=results)
     payload = json.dumps(report, indent=2)

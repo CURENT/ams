@@ -3,13 +3,16 @@
 Zero non-stdlib deps. ``measure()`` wraps a callable with a configurable
 warmup + repeat count and returns a ``Measurement`` summary. Exceptions
 are caught per-rep so a single broken benchmark never aborts the suite.
+``summarize()`` builds the same structure from a pre-collected list of
+per-rep timings — useful when one iteration produces multiple dimensions
+(e.g., 5-phase routine-init breakdowns that share one system load).
 """
 from __future__ import annotations
 
 import logging
 import statistics
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable
 
 logger = logging.getLogger(__name__)
@@ -21,6 +24,9 @@ class Measurement:
 
     ``raw_s`` holds the per-rep wall-clock seconds; summary fields are
     ``None`` when the benchmark errored before producing any reps.
+    Structured dimensions (``routine`` / ``case`` / ``solver`` / ``phase``)
+    are optional tags that let downstream consumers (dashboards, cloud
+    reporters) filter without parsing the ``name`` string.
     """
 
     name: str
@@ -33,6 +39,11 @@ class Measurement:
     max_s: float | None
     raw_s: list[float]
     error: str | None = None
+    routine: str | None = None
+    case: str | None = None
+    solver: str | None = None
+    phase: str | None = None
+    metadata: dict = field(default_factory=dict)
 
 
 def measure(
@@ -42,6 +53,11 @@ def measure(
     group: str,
     reps: int = 5,
     warmup_reps: int = 1,
+    routine: str | None = None,
+    case: str | None = None,
+    solver: str | None = None,
+    phase: str | None = None,
+    metadata: dict | None = None,
 ) -> Measurement:
     """Run ``fn`` ``warmup_reps`` times (discarded) then ``reps`` times measured.
 
@@ -74,20 +90,59 @@ def measure(
             err = str(exc)
             break
 
-    if not raw:
-        return _failed(name, group, reps, warmup_reps, err or "no successful reps")
-
-    return Measurement(
+    return summarize(
+        raw,
         name=name,
         group=group,
         reps=reps,
         warmup_reps=warmup_reps,
+        error=err,
+        routine=routine,
+        case=case,
+        solver=solver,
+        phase=phase,
+        metadata=metadata,
+    )
+
+
+def summarize(
+    raw: list[float],
+    *,
+    name: str,
+    group: str,
+    reps: int,
+    warmup_reps: int,
+    error: str | None = None,
+    routine: str | None = None,
+    case: str | None = None,
+    solver: str | None = None,
+    phase: str | None = None,
+    metadata: dict | None = None,
+) -> Measurement:
+    """Build a Measurement from a pre-collected list of per-rep timings.
+
+    Use when you can't fit the work into a single ``fn`` call — e.g., a
+    multi-phase init breakdown where one system load produces five
+    timings, one per phase.
+    """
+    common = dict(
+        name=name, group=group, reps=reps, warmup_reps=warmup_reps,
+        routine=routine, case=case, solver=solver, phase=phase,
+        metadata=metadata or {},
+    )
+    if not raw:
+        return Measurement(
+            mean_s=None, stdev_s=None, min_s=None, max_s=None, raw_s=[],
+            error=error or "no successful reps", **common,
+        )
+    return Measurement(
         mean_s=statistics.fmean(raw),
         stdev_s=statistics.stdev(raw) if len(raw) > 1 else 0.0,
         min_s=min(raw),
         max_s=max(raw),
         raw_s=raw,
-        error=err,
+        error=error,
+        **common,
     )
 
 
