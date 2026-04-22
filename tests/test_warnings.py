@@ -11,6 +11,10 @@ recognized`` line on a default ``ams.load``:
    the rc-loaded config before ``Config.check()`` runs, so a user's
    ``~/.ams/ams.rc`` written against an older AMS release doesn't
    flood the log.
+
+Also locks the contract that deprecated keys do not round-trip through
+``save_config()`` — running ``ams misc --save-config`` on a stale rc
+must produce a clean rc with no retired keys.
 """
 import io
 import logging
@@ -85,3 +89,46 @@ def test_deprecated_rc_keys_are_purged_silently(tmp_path):
         f"got {len(leftover)} warnings from stale rc:\n"
         + "\n".join(leftover[:10])
     )
+
+
+def test_deprecated_keys_are_not_re_persisted_by_save_config(tmp_path):
+    """``save_config()`` after loading a stale rc must not re-write the retired keys.
+
+    Catches the scenario where a user regenerates their rc via
+    ``ams misc --save-config`` — the output file must be free of
+    deprecated keys, otherwise they'd round-trip indefinitely.
+    Specifically guards against a regression where ``Config._dict``
+    (the backing store used by ``as_dict()``) retains retired keys
+    even after ``__dict__`` is purged.
+    """
+    stale_rc = tmp_path / "stale.rc"
+    stale_rc.write_text(textwrap.dedent("""
+        [System]
+        freq = 60
+        save_stats = 0
+
+        [Bus]
+        allow_adjust = 1
+        adjust_lower = 0
+        adjust_upper = 1
+
+        [PQ]
+        allow_adjust = 1
+        adjust_lower = 0
+        adjust_upper = 1
+    """).strip())
+
+    ss = ams.load(
+        ams.get_case("5bus/pjm5bus_demo.xlsx"),
+        setup=True, no_output=True, config_path=str(stale_rc),
+    )
+
+    out_rc = tmp_path / "regenerated.rc"
+    ss.save_config(file_path=str(out_rc), overwrite=True)
+    written = out_rc.read_text()
+
+    for deprecated in ("save_stats", "allow_adjust", "adjust_lower", "adjust_upper"):
+        assert deprecated not in written, (
+            f"deprecated key {deprecated!r} was re-persisted by save_config:\n"
+            + written
+        )

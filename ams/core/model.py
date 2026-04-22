@@ -59,9 +59,14 @@ class Model:
             self.config.load(config)
 
         # Silently drop keys that were valid in older AMS releases but
-        # have since been retired. See _DEPRECATED_MODEL_CONFIG_KEYS.
+        # have since been retired. Purge from both the attribute view
+        # (``__dict__``) and Config's lazy backing store (``_dict``)
+        # so ``as_dict()`` / ``save_config()`` can never re-persist
+        # them if a future code path populates ``_dict`` before this
+        # loop runs. See ``_DEPRECATED_MODEL_CONFIG_KEYS``.
         for _deprecated_key in _DEPRECATED_MODEL_CONFIG_KEYS:
             self.config.__dict__.pop(_deprecated_key, None)
+            self.config._dict.pop(_deprecated_key, None)
 
         self.docum = Documenter(self)
 

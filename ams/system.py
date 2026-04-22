@@ -152,9 +152,13 @@ class System:
         # Silently drop keys that were valid in older releases but have
         # since been removed. A user's ~/.ams/ams.rc written against an
         # older AMS will otherwise trip Config.check() warnings on every
-        # load. Add to this set whenever a System.config key is retired.
+        # load. Purge both ``__dict__`` and Config's ``_dict`` backing
+        # store so ``as_dict()`` / ``save_config()`` can never re-persist
+        # retired keys. Add to ``_DEPRECATED_SYSTEM_CONFIG_KEYS`` whenever
+        # a System.config key is retired.
         for _deprecated_key in _DEPRECATED_SYSTEM_CONFIG_KEYS:
             self.config.__dict__.pop(_deprecated_key, None)
+            self.config._dict.pop(_deprecated_key, None)
 
         # custom configuration for system goes after this line
         self.config.add(OrderedDict((('freq', 60),
