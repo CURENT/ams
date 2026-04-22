@@ -59,10 +59,13 @@ Each run emits one JSON document with `schema_version`, `suite`,
 - **`case_load`** — `ams.load(case)` wall-clock. File-parse + data-setup cost.
 - **`routine_init_phase`** — 5 phases per routine per case
   (`mats`, `parse`, `evaluate`, `finalize`, `init`). Each rep starts
-  with a fresh `ams.load(setup=True)` which already triggers first-time
-  CVXPY compilation; the timed phase calls exercise **re-execution**
-  cost, not cold start. Catches regressions in the interactive-iteration
-  path. Cold-start timing is separate future work.
+  with a fresh `ams.load(setup=True)`; warmup reps typically absorb
+  first-time CVXPY compilation and other cold-start work triggered
+  later during `rtn.om.parse` / `evaluate` / `finalize` / `init` (and
+  sometimes solve). The timed phase calls therefore exercise
+  **re-execution** cost, not cold start. Catches regressions in the
+  interactive-iteration path. Cold-start timing is separate future
+  work.
 - **`routine_solve`** — `rtn.run(solver=...)` only. `rtn.init()` is
   called explicitly outside the timed loop so the first rep's number
   is insensitive to `--warmup-reps`.
@@ -110,9 +113,12 @@ belong to the repo, not to pip-installed users. The wheel ships
 
 - **Warm-path init** — `routine_init_phase` does not capture
   first-time CVXPY compile cost (see above).
-- **UC / UC2 not in Tier A** — these are MIPs and the default
-  `CLARABEL` can't solve them. Pass `--solver HIGHS` (or `GUROBI`,
-  `MOSEK`) to bench UC-family routines; a Tier B suite is planned.
+- **UC / UC2 not benchmarked yet** — these are MIPs and the default
+  `CLARABEL` can't solve them. `--solver` only affects routines in
+  the selected suite (currently `smoke` and `tier_a`, neither of
+  which includes UC / UC2); passing `--solver HIGHS` / `GUROBI` /
+  `MOSEK` does not add UC-family benchmarks on its own. A Tier B
+  suite that exercises UC / UC2 is planned.
 - **Quiet machine matters** — numbers on a busy laptop have higher
   stdev. Check `memory_percent_used_at_start` to gauge pressure;
   compare means ± stdev, not single reps.
