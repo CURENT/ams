@@ -187,7 +187,7 @@ class TestDataExchange(unittest.TestCase):
     def test_data_exchange(self):
         """
         Test the full co-simulation data-exchange chain:
-        ams.load -> RTED.run -> to_andes -> dc2ac -> dyn.send ->
+        ams.load -> to_andes -> RTED.run -> dc2ac -> dyn.send ->
         PFlow -> TDS -> dyn.send -> dyn.receive.
 
         Iterates across ieee14 and ieee39 to catch case-dependent
