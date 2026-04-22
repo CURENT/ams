@@ -196,7 +196,7 @@ class TestDataExchange(unittest.TestCase):
         within decision bounds) — the composition-sensitive point
         that was previously executed but unasserted.
         """
-        for am_case, ad_case in zip(self.am_cases, self.ad_cases):
+        for am_case, ad_case in zip(self.am_cases, self.ad_cases, strict=True):
             with self.subTest(case=am_case):
                 self._run_cosim_chain(am_case, ad_case)
 
