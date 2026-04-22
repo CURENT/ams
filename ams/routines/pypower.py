@@ -671,4 +671,4 @@ class ACOPF1(DCOPF1):
         bool
             True if the optimization converged successfully, False otherwise.
         """
-        super().run(**kwargs)
+        return super().run(**kwargs)

@@ -391,7 +391,7 @@ def run(filename: Union[str, List[str]], input_path: str = '',
         verbose: int = 20, mp_verbose: int = 30,
         ncpu: int = NCPUS_PHYSICAL, pool: bool = False,
         cli: bool = False, shell: bool = False,
-        **kwargs) -> Union[System, List[System], int, None]:
+        **kwargs) -> Union[System, List[Optional[System]], bool, int, None]:
     """
     Entry point to run AMS routines.
 
@@ -419,8 +419,12 @@ def run(filename: Union[str, List[str]], input_path: str = '',
 
     Returns
     -------
-    System or exit_code
-        An instance of system (if `cli == False`) or an exit code otherwise..
+    System, list of Systems, bool, int, or None
+        When ``cli`` is True, returns an exit code (int). Otherwise:
+        a single ``System`` for a one-case run, a list of ``System``
+        (or ``None`` for cases that failed to parse) when ``pool`` is
+        True, and ``True`` as a sentinel from the ``Process``-based
+        multi-case path.
 
     Notes
     -----
