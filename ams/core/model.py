@@ -20,6 +20,18 @@ from ams.utils.misc import deprec_get_idx
 logger = logging.getLogger(__name__)
 
 
+# Keys that were injected into every Model.config by older AMS releases
+# (ported from andes.core.model but never read by AMS). Users' persisted
+# ~/.ams/ams.rc from that era still carry them per-model, so load() will
+# restore them unless we purge them here. Grow this set when any other
+# per-model config key is retired.
+_DEPRECATED_MODEL_CONFIG_KEYS: frozenset = frozenset({
+    "allow_adjust",
+    "adjust_lower",
+    "adjust_upper",
+})
+
+
 class Model:
     """
     Base class for power system scheduling models.
@@ -46,11 +58,16 @@ class Model:
         if config is not None:
             self.config.load(config)
 
-        # basic configs
-        self.config.add(OrderedDict((('allow_adjust', 1),
-                                    ('adjust_lower', 0),
-                                    ('adjust_upper', 1),
-                                     )))
+        # Silently drop keys that were valid in older AMS releases but
+        # have since been retired. Purge from both the attribute view
+        # (``__dict__``) and Config's lazy backing store (``_dict``)
+        # so ``as_dict()`` / ``save_config()`` can never re-persist
+        # them if a future code path populates ``_dict`` before this
+        # loop runs. See ``_DEPRECATED_MODEL_CONFIG_KEYS``.
+        for _deprecated_key in _DEPRECATED_MODEL_CONFIG_KEYS:
+            self.config.__dict__.pop(_deprecated_key, None)
+            self.config._dict.pop(_deprecated_key, None)
+
         self.docum = Documenter(self)
 
     def _all_vars(self):

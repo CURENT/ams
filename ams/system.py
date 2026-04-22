@@ -37,6 +37,15 @@ from ams.io.psse import write_raw
 logger = logging.getLogger(__name__)
 
 
+# Keys that were valid in older AMS releases but have since been removed
+# from System.config. Purged from any loaded rc file so users' persisted
+# ~/.ams/ams.rc don't trip `Config.check()` warnings on every load. Add
+# a new entry here whenever a System.config key is retired.
+_DEPRECATED_SYSTEM_CONFIG_KEYS: frozenset[str] = frozenset({
+    "save_stats",  # retired in PR #213 (2026-04-21), runtime-stub retirement
+})
+
+
 class System:
     """
     Base system class, revised from `andes.system.System`.
@@ -139,6 +148,17 @@ class System:
         self._update_config_object()
         self.config = Config(self.__class__.__name__, dct=config)
         self.config.load(self._config_object)
+
+        # Silently drop keys that were valid in older releases but have
+        # since been removed. A user's ~/.ams/ams.rc written against an
+        # older AMS will otherwise trip Config.check() warnings on every
+        # load. Purge both ``__dict__`` and Config's ``_dict`` backing
+        # store so ``as_dict()`` / ``save_config()`` can never re-persist
+        # retired keys. Add to ``_DEPRECATED_SYSTEM_CONFIG_KEYS`` whenever
+        # a System.config key is retired.
+        for _deprecated_key in _DEPRECATED_SYSTEM_CONFIG_KEYS:
+            self.config.__dict__.pop(_deprecated_key, None)
+            self.config._dict.pop(_deprecated_key, None)
 
         # custom configuration for system goes after this line
         self.config.add(OrderedDict((('freq', 60),
