@@ -36,7 +36,7 @@ class Measurement:
 
 
 def measure(
-    fn: Callable[[], float | None],
+    fn: Callable[[], float | int | None],
     *,
     name: str,
     group: str,
@@ -45,12 +45,14 @@ def measure(
 ) -> Measurement:
     """Run ``fn`` ``warmup_reps`` times (discarded) then ``reps`` times measured.
 
-    ``fn`` can self-time by returning a float (seconds), or return ``None``
+    ``fn`` can self-time by returning a number (seconds), or return ``None``
     and let this helper wrap the call in ``perf_counter``. Self-timing lets
     benchmarks exclude setup/teardown from the measured window.
 
-    On any exception, logs a warning and returns a ``Measurement`` with
-    ``error`` set and ``None`` summary stats; the caller continues.
+    On a rep exception, logs a warning, stops iterating, and returns a
+    ``Measurement`` built from whatever successful reps completed — with
+    ``error`` set to the exception string so partial progress isn't hidden.
+    Only when *no* rep succeeds are summary stats ``None``.
     """
     try:
         for _ in range(warmup_reps):
@@ -60,6 +62,7 @@ def measure(
         return _failed(name, group, reps, warmup_reps, str(exc))
 
     raw: list[float] = []
+    err: str | None = None
     for _ in range(reps):
         try:
             t0 = time.perf_counter()
@@ -68,7 +71,11 @@ def measure(
             raw.append(float(out) if isinstance(out, (int, float)) else dt)
         except Exception as exc:
             logger.warning("bench %s/%s: rep failed: %s", group, name, exc)
-            return _failed(name, group, reps, warmup_reps, str(exc))
+            err = str(exc)
+            break
+
+    if not raw:
+        return _failed(name, group, reps, warmup_reps, err or "no successful reps")
 
     return Measurement(
         name=name,
@@ -80,6 +87,7 @@ def measure(
         min_s=min(raw),
         max_s=max(raw),
         raw_s=raw,
+        error=err,
     )
 
 

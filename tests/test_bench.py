@@ -11,11 +11,14 @@ import sys
 
 def test_bench_cli_emits_valid_schema_v1_report():
     """``python -m ams.bench`` emits a schema-v1 JSON with env captured."""
-    out = subprocess.check_output(
+    result = subprocess.run(
         [sys.executable, "-m", "ams.bench", "--suite", "tier_a"],
+        capture_output=True,
         text=True,
+        check=True,
+        timeout=30,
     )
-    report = json.loads(out)
+    report = json.loads(result.stdout)
 
     assert report["schema_version"] == 1
     assert report["suite"] == "tier_a"
