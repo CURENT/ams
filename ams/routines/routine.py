@@ -312,7 +312,7 @@ class RoutineBase:
         logger.info(" -> Data check passed")
         return True
 
-    def init(self, **kwargs):
+    def init(self, **kwargs) -> bool:
         """
         Initialize the routine.
 
@@ -390,7 +390,7 @@ class RoutineBase:
                                idx=expr.get_all_idxes(), value=expr.v)
         return True
 
-    def run(self, **kwargs):
+    def run(self, **kwargs) -> bool:
         """
         Run the routine.
 
