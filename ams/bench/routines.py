@@ -22,7 +22,7 @@ from ams.bench.harness import Measurement, summarize
 logger = logging.getLogger(__name__)
 
 INIT_PHASES: tuple[str, ...] = (
-    "mats", "parse", "evaluate", "finalize", "postinit",
+    "mats", "parse", "evaluate", "finalize", "init",
 )
 
 TIER_A_ROUTINES: tuple[str, ...] = ("DCOPF", "RTED", "ED", "ACOPF")
@@ -93,7 +93,7 @@ def bench_routine_init_phases(
 
             t0 = time.perf_counter()
             rtn.init()
-            phase_times["postinit"] = time.perf_counter() - t0
+            phase_times["init"] = time.perf_counter() - t0
 
             if i >= warmup_reps:
                 for phase in INIT_PHASES:
@@ -132,9 +132,11 @@ def bench_routine_solve(
 ) -> Measurement:
     """Time ``rtn.run(solver=...)`` wall-clock.
 
-    Loads + inits once outside the measured window; each rep calls
-    ``rtn.run(solver=...)``. Setup cost is excluded from the timing
-    so the measurement reflects solver + model evaluation, not I/O.
+    Loads + explicitly initializes the routine once outside the
+    measured window; each rep then calls ``rtn.run(solver=...)`` so
+    the measurement reflects solver + model evaluation, not load or
+    init. ``rtn.init()`` is called explicitly so the first timed rep
+    is insensitive to ``warmup_reps``.
     """
     try:
         sp = ams.load(
@@ -142,9 +144,10 @@ def bench_routine_solve(
             setup=True, no_output=True, default_config=True,
         )
         rtn = sp.routines[routine]
+        rtn.init()
     except Exception as exc:
         logger.warning(
-            "bench solve %s/%s/%s: load failed: %s",
+            "bench solve %s/%s/%s: load/init failed: %s",
             routine, case.name, solver, exc,
         )
         return summarize(
@@ -217,13 +220,12 @@ def run_tier_a(
 ) -> list[Measurement]:
     """Run the full Tier A suite and return all Measurements.
 
-    Emits ~40 measurements in three groups:
+    Emits 53 measurements across three groups:
 
-    - ``case_load`` for every entry in ``CASE_LADDER``.
-    - ``routine_init_phase`` = 5 phases × 4 routines × 2 routine
-      cases = 40 (but collected as per-phase Measurements, so each
-      Measurement is one row).
-    - ``routine_solve`` = 4 routines × 2 routine cases = 8.
+    - ``case_load``: 5 (one per entry in ``CASE_LADDER``).
+    - ``routine_init_phase``: 40 (5 phases × 4 routines × 2 routine
+      cases; one Measurement per phase).
+    - ``routine_solve``: 8 (4 routines × 2 routine cases).
     """
     results: list[Measurement] = []
 

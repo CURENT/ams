@@ -96,7 +96,7 @@ def _cpu_brand() -> str:
             for line in proc_cpuinfo.read_text().splitlines():
                 if line.startswith("model name"):
                     return line.split(":", 1)[1].strip()
-        except OSError:
+        except Exception:  # env capture must never raise
             pass
     # macOS: sysctl
     try:
