@@ -116,38 +116,24 @@ pushing back code edits will require significant manual efforts.
 
 .. _`Step 2`:
 
-Step 2: Install dependencies
+Step 2: Install AMS in development mode
 
 In the Mambaforge environment, use ``cd`` to change directory to the AMS root folder.
-The folder should contain the ``setup.py`` file.
+The folder should contain the ``pyproject.toml`` file.
 
-Install dependencies with
-
-.. code:: bash
-
-    mamba install --file requirements.txt
-    mamba install --file requirements-dev.txt
-    mamba install --file requirements-doc.txt
-    mamba install --file requirements-nlp.txt
-
-Alternatively, you can install them with ``pip``:
+Install AMS together with the extras you need from ``pyproject.toml``:
 
 .. code:: bash
 
-    pip install -r requirements.txt
-    pip install -r requirements-dev.txt
-    pip install -r requirements-doc.txt
-    pip install -r requirements-nlp.txt
+    pip install -e .[dev,doc,nlp]
 
-Alternatively, if you have a modern version of pip (>=23.1), you can install all dependencies specified in ``pyproject.toml`` with:
-
-    pip install .[dev,doc,nlp]
-
-Step 3: Install AMS in the development mode using
+If you prefer conda/mamba for the heavy binary dependencies, install
+those first, then ``pip install`` AMS:
 
 .. code:: bash
 
-    python3 -m pip install -e .
+    mamba install -y kvxopt numpy scipy sympy pandas matplotlib cvxpy
+    pip install -e .[dev,doc,nlp]
 
 Note the dot at the end. Pip will take care of the rest.
 

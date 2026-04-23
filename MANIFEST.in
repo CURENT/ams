@@ -1,8 +1,6 @@
 include CONTRIBUTING.rst
 include LICENSE
 include README.md
-include requirements.txt
-include requirements-dev.txt
 include docs/source/images/curent.ico
 
 recursive-exclude * __pycache__
