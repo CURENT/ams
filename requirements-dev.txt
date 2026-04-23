@@ -3,5 +3,6 @@ pytest
 pytest-cov
 coverage
 flake8
+Flake8-pyproject
 numpydoc
 toml
