@@ -6,6 +6,45 @@ Release notes
 
 The APIs before v3.0.0 are in beta and may change without prior notice.
 
+v1.2
+==========
+
+v1.2.0 (2026-04-23)
+----------------------
+
+**Breaking changes:**
+
+- Requires ANDES >= 2.0.0
+- Minimum Python version raised to 3.11 (supported: 3.11, 3.12, 3.13)
+- Installation now uses pyproject extras instead of ``requirements*.txt``
+  files. Development install: ``pip install -e '.[dev,nlp]'``; docs:
+  ``pip install -e '.[doc]'`` (single quotes are required in ``zsh``
+  because ``[...]`` is a glob pattern)
+- In routine ``e_str`` expressions, multiplication must be explicit:
+  use ``@`` for matrix-vector, ``mul()`` for element-wise, or ``*`` for
+  scalar. The previous automatic ``word*word → @`` rewrite has been
+  removed. See :doc:`/modeling/routine` for details
+
+**New:**
+
+- Performance benchmark suite under ``ams.bench``. Run
+  ``python -m ams.bench`` to reproduce timings across standard cases
+  and routines; baselines in ``bench/baselines/``
+
+**Improvements:**
+
+- ``import ams`` is faster and no longer instantiates an ANDES
+  ``System`` at import time
+- CLI: ``ams`` without a subcommand now prints help cleanly; unknown
+  commands produce a clear error instead of a traceback
+- Loading a case produces far fewer warnings (retired config keys are
+  now silently purged instead of flagged on every startup)
+
+**Internal:**
+
+- Build system migrated from ``versioneer`` to ``setuptools-scm``;
+  this is the first release produced by the new pipeline
+
 v1.0
 ==========
 
