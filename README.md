@@ -113,16 +113,19 @@ pip install ltbams
 You can also install with optional dependencies, such as ``dev``, ``docs``, and ``nlp``:
 
 ```bash
-pip install ltbams[dev]
-pip install ltbams[docs]
-pip install ltbams[nlp]
+pip install 'ltbams[dev]'
+pip install 'ltbams[docs]'
+pip install 'ltbams[nlp]'
 ```
 
 Or install with all optional dependencies:
 
 ```bash
-pip install ltbams[all]
+pip install 'ltbams[all]'
 ```
+
+> **Note:** Single quotes are required in `zsh` (the default shell on macOS)
+> because `[...]` is a glob pattern. They are harmless on other shells.
 
 Install from conda-forge using conda:
 
