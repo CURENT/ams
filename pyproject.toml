@@ -41,7 +41,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-cov", "coverage", "flake8", "numpydoc", "toml"]
+dev = ["pytest", "pytest-cov", "coverage", "flake8", "flake8-pyproject", "numpydoc", "toml"]
 nlp = ["PYPOWER", "pyoptinterface", "gurobipy", "gurobi-optimods"]
 doc = [
     "pandoc",
@@ -89,3 +89,27 @@ skips = ["B404", "B603"]
 # `.prospector.yaml` which configures the same via Codacy's prospector
 # engine.
 add-ignore = "D203,D213"
+
+[tool.flake8]
+max-line-length = 115
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "demos",
+    "cases",
+    "dev",
+    "ams/solver/pypower/",
+    "cards",
+    "versioneer.py",
+    "ams/_version.py",
+    "docs/source/conf.py",
+    "docs/source/_build",
+    "benchmarks",
+    "andes/pycode",
+    "scripts",
+    ".history",
+    "ams/pypower",
+    "icebar/*",
+]
