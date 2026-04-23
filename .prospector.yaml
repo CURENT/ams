@@ -1,0 +1,12 @@
+---
+# Prospector configuration. Codacy runs prospector as its Python linter
+# umbrella; tool-level disables here propagate to Codacy's static analysis
+# findings on every PR.
+
+pydocstyle:
+  # AMS follows PEP 257 defaults: summary on first line (D212), no blank
+  # line before class docstrings (D211). Disable the conflicting minority
+  # choices so they don't fire as false positives.
+  disable:
+    - D203  # "1 blank line required before class docstring" — conflicts with D211
+    - D213  # "Multi-line docstring summary should start at second line" — conflicts with D212

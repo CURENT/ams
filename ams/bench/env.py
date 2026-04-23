@@ -96,8 +96,8 @@ def _cpu_brand() -> str:
             for line in proc_cpuinfo.read_text().splitlines():
                 if line.startswith("model name"):
                     return line.split(":", 1)[1].strip()
-        except Exception:  # env capture must never raise
-            pass
+        except Exception as exc:  # env capture must never raise
+            logger.debug("bench env: /proc/cpuinfo read failed: %s", exc)
     # macOS: sysctl
     try:
         out = subprocess.run(
