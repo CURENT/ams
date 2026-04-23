@@ -19,8 +19,6 @@ from time import sleep
 from typing import List, Optional, Union
 import textwrap
 
-from ._version import get_versions
-
 from ams.utils.misc import elapsed, is_interactive
 
 import ams
@@ -624,7 +622,7 @@ def versioninfo():
     from ams.shared import installed_solvers
 
     versions = {'Python': platform.python_version(),
-                'ams': get_versions()['version'],
+                'ams': ams.__version__,
                 'andes': andes.__version__,
                 'numpy': np.__version__,
                 'cvxpy': cvxpy.__version__,
