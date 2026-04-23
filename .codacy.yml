@@ -1,4 +1,14 @@
 ---
+# Top-level Codacy repo config. Pattern-level rule disabling is NOT
+# expressible here (per Codacy docs) — it lives either:
+#   (a) in the Codacy web UI at "Project -> Code Patterns", or
+#   (b) in tool-native config files checked into the repo, which
+#       Codacy's engines honor when running those tools:
+#         - pyproject.toml [tool.bandit] -> skips = [...]
+#         - pyproject.toml [tool.pydocstyle] -> add-ignore = "..."
+#         - .prospector.yaml -> pydocstyle: { disable: [...] }
+# See those files for current disables and rationale.
+
 engines:
   flake8:
     enabled: true

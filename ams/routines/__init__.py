@@ -3,7 +3,7 @@ Scheduling routines.
 """
 
 from collections import OrderedDict
-from andes.utils.func import list_flatten
+from ams.utils.func import list_flatten
 
 all_routines = OrderedDict([
     ('dcpf', ['DCPF']),
@@ -24,3 +24,5 @@ all_routines = OrderedDict([
 
 class_names = list_flatten(list(all_routines.values()))
 routine_cli = OrderedDict([(item.lower(), item) for item in class_names])
+
+__all__ = ['all_routines', 'class_names', 'routine_cli']

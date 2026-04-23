@@ -1,5 +1,7 @@
-from . import _version
-__version__ = _version.get_versions()['version']
+try:
+    from ams._version import version as __version__
+except ImportError:
+    __version__ = "0.0.0+unknown"
 
 from ams import opt  # NOQA
 
@@ -9,4 +11,4 @@ from ams.utils.paths import get_case, list_cases  # NOQA
 
 __author__ = 'Jining Wang'
 
-__all__ = ['System', 'get_case']
+__all__ = ['System', 'load', 'run', 'config_logger', 'get_case', 'list_cases']

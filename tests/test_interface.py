@@ -174,48 +174,81 @@ class TestDataExchange(unittest.TestCase):
     """
     Tests for data exchange between AMS and ANDES.
     """
-
-    def setUp(self) -> None:
-        """
-        Test setup. This is executed before each test case.
-        """
-        self.sp = ams.load(ams.get_case('ieee14/ieee14_uced.xlsx'),
-                           setup=True,
-                           no_output=True,
-                           default_config=True,)
+    am_cases = [
+        'ieee14/ieee14_uced.xlsx',
+        'ieee39/ieee39_uced.xlsx',
+    ]
+    ad_cases = [
+        'ieee14/ieee14_full.xlsx',
+        'ieee39/ieee39_full.xlsx',
+    ]
 
     @skip_unittest_without_PYPOWER
     def test_data_exchange(self):
         """
-        Test data exchange between AMS and ANDES.
-        """
-        sa = to_andes(self.sp, setup=True,
-                      addfile=andes.get_case('ieee14/ieee14_full.xlsx'),
-                      no_output=True,
-                      default_config=True,)
-        # alleviate limiter
-        sa.TGOV1.set(src='VMAX', idx=sa.TGOV1.idx.v, attr='v', value=100*np.ones(sa.TGOV1.n))
-        sa.TGOV1.set(src='VMIN', idx=sa.TGOV1.idx.v, attr='v', value=np.zeros(sa.TGOV1.n))
+        Test the full co-simulation data-exchange chain:
+        ams.load -> to_andes -> RTED.run -> dc2ac -> dyn.send ->
+        PFlow -> TDS -> dyn.send -> dyn.receive.
 
-        self.sp.RTED.run(solver='CLARABEL')
-        self.sp.RTED.dc2ac()
-        self.stg_idx = self.sp.RTED.pg.get_all_idxes()
+        Iterates across ieee14 and ieee39 to catch case-dependent
+        regressions, and asserts post-TDS dyn.receive leaves
+        sp.RTED.pg in a coherent state (finite, shape-preserved,
+        within decision bounds) — the composition-sensitive point
+        that was previously executed but unasserted.
+        """
+        for am_case, ad_case in zip(self.am_cases, self.ad_cases, strict=True):
+            with self.subTest(case=am_case):
+                self._run_cosim_chain(am_case, ad_case)
+
+    def _run_cosim_chain(self, am_case, ad_case):
+        sp = ams.load(ams.get_case(am_case),
+                      setup=True, no_output=True, default_config=True,)
+        sa = to_andes(sp, setup=True,
+                      addfile=andes.get_case(ad_case),
+                      no_output=True, default_config=True,)
+        # alleviate limiter
+        sa.TGOV1.set(src='VMAX', idx=sa.TGOV1.idx.v, attr='v',
+                     value=100*np.ones(sa.TGOV1.n))
+        sa.TGOV1.set(src='VMIN', idx=sa.TGOV1.idx.v, attr='v',
+                     value=np.zeros(sa.TGOV1.n))
+
+        sp.RTED.run(solver='CLARABEL')
+        sp.RTED.dc2ac()
+        stg_idx = sp.RTED.pg.get_all_idxes()
         # --- test before PFlow ---
-        self.sp.dyn.send(adsys=sa, routine='RTED')
-        p0 = sa.StaticGen.get(src='p0', attr='v', idx=self.stg_idx)
-        pg = self.sp.RTED.get(src='pg', attr='v', idx=self.stg_idx)
+        sp.dyn.send(adsys=sa, routine='RTED')
+        p0 = sa.StaticGen.get(src='p0', attr='v', idx=stg_idx)
+        pg = sp.RTED.get(src='pg', attr='v', idx=stg_idx)
         np.testing.assert_array_equal(p0, pg)
 
         # --- test after TDS ---
-        self.assertFalse(self.sp.dyn.is_tds)
+        self.assertFalse(sp.dyn.is_tds)
         sa.PFlow.run()
         sa.TDS.init()
-        self.assertTrue(self.sp.dyn.is_tds)
+        self.assertTrue(sp.dyn.is_tds)
 
         sa.TDS.config.tf = 1
         sa.TDS.run()
-        self.sp.dyn.send(adsys=sa, routine='RTED')
-        self.sp.dyn.receive(adsys=sa, routine='RTED', no_update=False)
+        sp.dyn.send(adsys=sa, routine='RTED')
+        pg_before_receive = sp.RTED.pg.v.copy()
+        sp.dyn.receive(adsys=sa, routine='RTED', no_update=False)
+        pg_after_receive = sp.RTED.pg.v
+
+        # Guard the composition-sensitive back-flow: dyn.receive must
+        # leave pg finite, shape-preserved, and within RTED decision
+        # bounds. Rules out NaN corruption and indexing desync.
+        self.assertTrue(np.all(np.isfinite(pg_after_receive)),
+                        f'dyn.receive produced non-finite pg for {am_case}')
+        self.assertEqual(pg_before_receive.shape, pg_after_receive.shape,
+                         f'dyn.receive changed pg shape for {am_case}')
+        pmax = sp.StaticGen.get(src='pmax', attr='v', idx=stg_idx)
+        pmin = sp.StaticGen.get(src='pmin', attr='v', idx=stg_idx)
+        self.assertTrue(
+            np.all(pg_after_receive <= pmax + 1e-6),
+            f'dyn.receive pushed pg above pmax for {am_case}')
+        self.assertTrue(
+            np.all(pg_after_receive >= pmin - 1e-6),
+            f'dyn.receive pushed pg below pmin for {am_case}')
 
 
 class TestLoadANDESFile(unittest.TestCase):

@@ -7,11 +7,11 @@ import logging
 
 import os
 
-from andes.utils.misc import elapsed
-from andes.io import dump  # NOQA
+from ams.utils.misc import elapsed
 
 from ams.io import xlsx, psse, matpower, pypower, json   # NOQA
 
+__all__ = ['guess', 'parse', 'dump', 'input_formats', 'output_formats']
 
 logger = logging.getLogger(__name__)
 
@@ -132,3 +132,60 @@ def parse(system):
         logger.info('Addfile parsed in %s.', s)
 
     return True
+
+
+def dump(system, output_format, full_path=None, overwrite=None, **kwargs):
+    """
+    Dump the AMS system data into the requested output format.
+
+    Parameters
+    ----------
+    system
+        System object.
+    output_format : str
+        Output format name (``'xlsx'`` or ``'json'``). As a convenience,
+        ``None`` or ``True`` is treated as ``'xlsx'``.
+    full_path : str, optional
+        Full path for the output file. Defaults to
+        ``<output_path>/<case_name>.<ext>``.
+    overwrite : bool or None, optional
+        ``None`` (default) prompts interactively when the target exists;
+        ``True`` overwrites without prompting; ``False`` refuses to
+        overwrite. Matches ``ams.io.xlsx.write`` / ``ams.io.json.write``.
+    **kwargs
+        Forwarded to the per-format writer. ``add_book`` is xlsx-only and
+        is dropped for json.
+
+    Returns
+    -------
+    bool
+        True if successful; False otherwise.
+    """
+    if output_format is None or output_format is True:
+        output_format = 'xlsx'
+
+    if output_format not in output_formats:
+        logger.error("Dump format <%s> not supported.", output_format)
+        return False
+
+    ext = output_formats[output_format][0]
+    if full_path is not None:
+        system.files.dump = full_path
+    else:
+        system.files.dump = os.path.join(system.files.output_path,
+                                         system.files.name + '.' + ext)
+
+    t, _ = elapsed()
+    if output_format == 'xlsx':
+        ret = xlsx.write(system, system.files.dump, overwrite=overwrite, **kwargs)
+    elif output_format == 'json':
+        # ``add_book`` is xlsx-only; ams.io.json.write has no **kwargs, so strip it.
+        json_kwargs = {k: v for k, v in kwargs.items() if k != 'add_book'}
+        ret = json.write(system, system.files.dump, overwrite=overwrite, **json_kwargs)
+    _, s = elapsed(t)
+
+    if ret:
+        logger.info('Format conversion completed in %s.', s)
+        return True
+    logger.error('Format conversion failed.')
+    return False

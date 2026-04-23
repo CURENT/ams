@@ -5,8 +5,9 @@ This module is the existing module in ``andes.io.psse``.
 
 from andes.io.psse import testlines  # NOQA
 from andes.io.psse import read as ad_read
-from andes.io.xlsx import confirm_overwrite
-from andes.shared import rad2deg, pd
+from ams.utils.paths import confirm_overwrite
+import pandas as pd
+from ams.utils.func import rad2deg
 
 from ams import __version__ as version
 from ams.shared import copyright_msg, nowarranty_msg, report_time
@@ -78,7 +79,7 @@ def write_raw(system, outfile: str, overwrite: bool = None):
         f.write(f"{name.upper()} \n")
 
         # --- Bus ---
-        bus = system.Bus.cache.df_in
+        bus = system.Bus.as_df(vin=True)
         # 0,  1,    2,      3,    4,    5,    6,     7,  8,  9,    10
         # ID, Name, BaseKV, Type, Area, Zone, Owner, Vm, Va, Vmax, Vmin
         # Define column widths for alignment
@@ -105,7 +106,7 @@ def write_raw(system, outfile: str, overwrite: bool = None):
 
         # --- Load ---
         f.write("0 / END OF BUS DATA, BEGIN LOAD DATA\n")
-        load = system.PQ.cache.df_in
+        load = system.PQ.as_df(vin=True)
         # 0,   1,  2,      3,    4,    5,      6,       7,  8,  9,  10, 11
         # Bus, Id, Status, Area, Zone, PL(MW), QL (MW), IP, IQ, YP, YQ, Owner
         # NOTE: load are converted to constant load, IP, IQ, YP, YQ are ignored by setting to 0
@@ -136,7 +137,7 @@ def write_raw(system, outfile: str, overwrite: bool = None):
 
         # --- Fixed Shunt ---
         f.write("0 / END OF LOAD DATA, BEGIN FIXED SHUNT DATA\n")
-        shunt = system.Shunt.cache.df_in
+        shunt = system.Shunt.as_df(vin=True)
         # 0,   1,  2,      3,      4
         # Bus, Id, Status, G (MW), B (Mvar)
         # NOTE: ANDES parse v33 swshunt into fixed shunt
@@ -161,8 +162,8 @@ def write_raw(system, outfile: str, overwrite: bool = None):
 
         # --- Generator ---
         f.write("0 / END OF FIXED SHUNT DATA, BEGIN GENERATOR DATA\n")
-        pv = system.PV.cache.df_in
-        slack = system.Slack.cache.df_in
+        pv = system.PV.as_df(vin=True)
+        slack = system.Slack.as_df(vin=True)
 
         gen = pd.concat([pv, slack.drop(columns=['a0'])], axis=0)
         gen["subidx"] = gen.groupby('bus').cumcount() + 1
@@ -203,7 +204,7 @@ def write_raw(system, outfile: str, overwrite: bool = None):
 
         # --- Line ---
         f.write("0 / END OF GENERATOR DATA, BEGIN BRANCH DATA\n")
-        line = system.Line.cache.df_in
+        line = system.Line.as_df(vin=True)
         branch = line[line['trans'] == 0].reset_index(drop=True)
         transf = line[line['trans'] == 1].reset_index(drop=True)
         # 1) branch
@@ -267,7 +268,7 @@ def write_raw(system, outfile: str, overwrite: bool = None):
 
             # --- Area ---
             f.write("0 / END OF TRANSFORMER DATA, BEGIN AREA DATA\n")
-            area = system.Area.cache.df_in
+            area = system.Area.as_df(vin=True)
             for row in area.itertuples():
                 # PSSE expects: ID, ISW, PDES, PTOL, NAME
                 # Here, ISW, PDES, PTOL are set to 0 by default
@@ -275,7 +276,7 @@ def write_raw(system, outfile: str, overwrite: bool = None):
 
             # --- Zone ---
             f.write("0 / END OF AREA DATA, BEGIN ZONE DATA\n")
-            zone = system.Zone.cache.df_in
+            zone = system.Zone.as_df(vin=True)
             # 0,    1
             # ID, Name
             for row in zone.itertuples():

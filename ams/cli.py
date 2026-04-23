@@ -4,15 +4,17 @@ AMS command-line interface and argument parsers.
 import logging
 import argparse
 import importlib
+import os
 import platform
 import sys
 from time import strftime
-
-from andes.shared import NCPUS_PHYSICAL
-
 from ams.main import config_logger
 from ams.utils.paths import get_log_dir
 from ams.routines import routine_cli
+
+# Use stdlib directly — no ANDES dependency needed here.
+NCPUS_PHYSICAL = os.cpu_count() or 1
+
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +139,11 @@ def main():
 
     # Run the command
     if args.command is None:
-        parser.parse_args(sys.argv.append('--help'))
+        # No subcommand given: print help and exit cleanly.
+        # (Previously called parse_args(sys.argv.append('--help')), which passed
+        # None — a no-op that fell through silently.)
+        parser.print_help()
+        sys.exit(0)
 
     else:
         cmd = args.command
@@ -145,5 +151,10 @@ def main():
             if cmd in aliases:
                 cmd = fullcmd
 
-        func = getattr(module, cmd)
+        try:
+            func = getattr(module, cmd)
+        except AttributeError:
+            logger.error('Command "%s" is not implemented.', cmd)
+            sys.exit(1)
+
         return func(cli=True, **vars(args))

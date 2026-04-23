@@ -7,7 +7,7 @@ import json
 import logging
 from collections import OrderedDict, Counter
 
-from andes.utils.misc import elapsed
+from ams.utils.misc import elapsed
 from andes.system import System as adSystem
 
 from ams.utils import create_entry
@@ -80,8 +80,11 @@ def sync_adsys(amsys, adsys):
                 continue
             # NOTE: when setting list values to DataParam, sometimes run into error
             try:
-                ad_mdl.set(src=param, attr='v', idx=idx,
-                           value=am_mdl.get(src=param, attr='v', idx=idx))
+                value = am_mdl.get(src=param, attr='v', idx=idx)
+                if param == 'u':
+                    ad_mdl.set_status(idx=idx, value=value)
+                else:
+                    ad_mdl.set(src=param, idx=idx, value=value, attr='v')
             except Exception as e:
                 logger.warning(f"Failed to sync parameter '{param}' for model '{mname}': {e}")
                 continue
@@ -114,8 +117,7 @@ def to_andes_pflow(system, no_output=False, default_config=True, **kwargs):
 
     for mdl_name, mdl_cols in pflow_dict.items():
         mdl = getattr(system, mdl_name)
-        mdl.cache.refresh("df_in")  # refresh cache
-        for row in mdl.cache.df_in[mdl_cols].to_dict(orient='records'):
+        for row in mdl.as_df(vin=True)[mdl_cols].to_dict(orient='records'):
             adsys.add(mdl_name, row)
 
     return adsys
@@ -403,10 +405,10 @@ def parse_addfile(adsys, amsys, addfile):
             ad_params = set(df.columns)
             overlap_params = list(am_params.intersection(ad_params))
             ad_rest_params = list(ad_params - am_params) + ['idx']
-            msg = f'Following <{name}> parameters in addfile are overwriten: '
+            msg = f'Following <{name}> parameters in addfile are overwritten: '
             msg += ', '.join(overlap_params)
             logger.debug(msg)
-            tmp = amsys.models[name].cache.df_in[overlap_params]
+            tmp = amsys.models[name].as_df(vin=True)[overlap_params]
             df = pd.merge(left=tmp, right=df[ad_rest_params],
                           on='idx', how='left')
         for row in df.to_dict(orient='records'):
@@ -588,10 +590,7 @@ class Dynamic:
             msg = 'ANDES dynamic generator online status should be switched using Toggle!'
             msg += ' Otherwise, unexpected results might occur.'
             raise ValueError(msg)
-        # FIXME: below code seems to be unnecessary
-        sa.SynGen.set(src='u', idx=syg_idx, attr='v', value=stg_u_ams)
-        sa.DG.set(src='u', idx=dg_idx, attr='v', value=dg_u_ams)
-        sa.RenGen.set(src='u', idx=rg_idx, attr='v', value=rg_u_ams)
+        # If cond is False, statuses already match — no-op needed.
         return True
 
     def _sync_check(self, amsys, adsys):
@@ -728,7 +727,13 @@ class Dynamic:
 
             # --- other scenarios ---
             if _dest_check(mname=mname_ads, pname=pname_ads, idx=idx_ads, adsys=sa):
-                mdl_ads.set(src=pname_ads, idx=idx_ads, attr='v', value=var_ams.v)
+                if pname_ads == 'u':
+                    # ANDES v2.0.0 Model/Group.set(src='u') emits FutureWarning
+                    # on a setup system; use set_status() per-device instead.
+                    for _ii, _vv in zip(idx_ads, var_ams.v):
+                        mdl_ads.set_status(_ii, int(_vv))
+                else:
+                    mdl_ads.set(src=pname_ads, idx=idx_ads, attr='v', value=var_ams.v)
                 logger.warning(f'Send <{vname_ams}> to {mname_ads}.{pname_ads}')
         return True
 

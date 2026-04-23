@@ -1,24 +1,24 @@
 """
 Module for system.
 """
+import configparser
 import importlib
 import inspect
 import logging
+import os
 from collections import OrderedDict
 from typing import Dict, Optional
 
 import numpy as np
 
-from andes.system import System as adSystem
-from andes.system import (_config_numpy, load_config_rc)
-from andes.variables import FileMan
-
-from andes.utils.misc import elapsed
-from andes.utils.tab import Tab
+from ams.utils.fileman import FileMan
+from ams.utils.misc import elapsed
+from ams.utils.paths import _config_numpy, confirm_overwrite, load_config_rc
+from ams.utils.tab import Tab
 
 import ams
 from ams.models.group import GroupBase
-from ams.routines.type import TypeBase
+from ams.routines.typecls import TypeBase
 from ams.models import file_classes
 from ams.routines import all_routines
 from ams.utils.paths import get_config_path
@@ -26,7 +26,7 @@ from ams.core import Config
 from ams.core.matprocessor import MatProcessor
 from ams.interface import to_andes
 from ams.report import Report
-from ams.shared import ad_dyn_models
+from ams.shared import _load_andes_catalog
 
 from ams.io.matpower import system2mpc
 from ams.io.matpower import write as write_m
@@ -37,19 +37,16 @@ from ams.io.psse import write_raw
 logger = logging.getLogger(__name__)
 
 
-def disable_method(func):
-    def wrapper(*args, **kwargs):
-        logger.warning("This method is included in ANDES but not supported in AMS.")
-        return None
-    return wrapper
+# Keys that were valid in older AMS releases but have since been removed
+# from System.config. Purged from any loaded rc file so users' persisted
+# ~/.ams/ams.rc don't trip `Config.check()` warnings on every load. Add
+# a new entry here whenever a System.config key is retired.
+_DEPRECATED_SYSTEM_CONFIG_KEYS: frozenset[str] = frozenset({
+    "save_stats",  # retired in PR #213 (2026-04-21), runtime-stub retirement
+})
 
 
-def disable_methods(methods):
-    for method in methods:
-        setattr(System, method, disable_method(getattr(System, method)))
-
-
-class System(adSystem):
+class System:
     """
     Base system class, revised from `andes.system.System`.
     This class encapsulates data, models, and routines for scheduling
@@ -123,23 +120,6 @@ class System(adSystem):
                  **kwargs
                  ):
 
-        # TODO: might need _check_group_common
-        func_to_disable = [
-            # --- not sure ---
-            'set_config', 'set_dae_names', 'set_output_subidx', 'set_var_arrays',
-            # --- not used in AMS ---
-            '_check_group_common', '_clear_adder_setter', '_e_to_dae', '_expand_pycode', '_finalize_pycode',
-            '_find_stale_models', '_get_models', '_init_numba', '_load_calls', '_mp_prepare',
-            '_p_restore', '_store_calls', '_store_tf', '_to_orddct', '_v_to_dae',
-            'save_config', 'collect_config', 'e_clear', 'f_update',
-            'fg_to_dae', 'from_ipysheet', 'g_islands', 'g_update', 'get_z',
-            'init', 'j_islands', 'j_update', 'l_update_eq',
-            'l_update_var', 'precompile', 'prepare', 'reload', 'remove_pycapsule',
-            's_update_post', 's_update_var', 'store_adder_setter', 'store_no_check_init',
-            'store_sparse_pattern', 'store_switch_times', 'switch_action', 'to_ipysheet',
-            'undill']
-        disable_methods(func_to_disable)
-
         self.name = name
         self.options = {}
         if options is not None:
@@ -169,11 +149,21 @@ class System(adSystem):
         self.config = Config(self.__class__.__name__, dct=config)
         self.config.load(self._config_object)
 
+        # Silently drop keys that were valid in older releases but have
+        # since been removed. A user's ~/.ams/ams.rc written against an
+        # older AMS will otherwise trip Config.check() warnings on every
+        # load. Purge both ``__dict__`` and Config's ``_dict`` backing
+        # store so ``as_dict()`` / ``save_config()`` can never re-persist
+        # retired keys. Add to ``_DEPRECATED_SYSTEM_CONFIG_KEYS`` whenever
+        # a System.config key is retired.
+        for _deprecated_key in _DEPRECATED_SYSTEM_CONFIG_KEYS:
+            self.config.__dict__.pop(_deprecated_key, None)
+            self.config._dict.pop(_deprecated_key, None)
+
         # custom configuration for system goes after this line
         self.config.add(OrderedDict((('freq', 60),
                                      ('mva', 100),
                                      ('seed', 'None'),
-                                     ('save_stats', 0),  # TODO: not sure what this is for
                                      ('np_divide', 'warn'),
                                      ('np_invalid', 'warn'),
                                      )))
@@ -217,12 +207,12 @@ class System(adSystem):
 
     def import_types(self):
         """
-        Import all types classes defined in ``routines/type.py``.
+        Import all types classes defined in ``routines/typecls.py``.
 
         Types will be stored as instances with the name as class names.
         All types will be stored to dictionary ``System.types``.
         """
-        module = importlib.import_module('ams.routines.type')
+        module = importlib.import_module('ams.routines.typecls')
         for m in inspect.getmembers(module, inspect.isclass):
             name, cls = m
             if name == 'TypeBase':
@@ -403,6 +393,7 @@ class System(adSystem):
         Revised from ``andes.system.System.add``.
         """
         if model not in self.models and (model not in self.model_aliases):
+            _, _, _, ad_dyn_models = _load_andes_catalog()
             if model in ad_dyn_models:
                 logger.debug("ANDES dynamic model <%s> is skipped.", model)
             else:
@@ -538,15 +529,241 @@ class System(adSystem):
 
         return ret
 
-    # FIXME: remove unused methods
-    # # Disable methods not supported in AMS
-    # func_to_include = [
-    #     'import_models', 'import_groups', 'import_routines',
-    #     'setup', 'init_algebs',
-    #     '_update_config_object',
-    #     ]
-    # # disable_methods(func_to_disable)
-    # __dict__ = {method: lambda self: self.x for method in func_to_include}
+    # ---------------------------------------------------------------------------
+    # Methods adapted from andes.system.System (GPL-3.0, Hantao Cui)
+    # ---------------------------------------------------------------------------
+
+    def _update_config_object(self):
+        """
+        Apply command-line ``config_option`` overrides to the rc config object.
+
+        Notes
+        -----
+        Adapted from ``andes.system.System._update_config_object``.
+        Original author: Hantao Cui. License: GPL-3.0.
+        """
+        config_option = self.options.get('config_option', None)
+        if config_option is None:
+            return
+        if len(config_option) == 0:
+            return
+
+        if self._config_object is None:
+            self._config_object = configparser.ConfigParser()
+
+        for item in config_option:
+            if item.count('=') != 1:
+                raise ValueError(f'config_option "{item}" must be an assignment expression')
+
+            field, value = item.split('=')
+            if field.count('.') != 1:
+                raise ValueError(
+                    f'config_option left-hand side "{field}" must use format SECTION.FIELD'
+                )
+
+            section, key = field.split('.')
+            section, key, value = section.strip(), key.strip(), value.strip()
+
+            if not self._config_object.has_section(section):
+                self._config_object.add_section(section)
+                logger.debug("New config section added: %s", section)
+            self._config_object.set(section, key, value)
+            logger.debug("Config option set: %s.%s=%s", section, key, value)
+
+    def call_models(self, method: str, models: OrderedDict, *args, **kwargs):
+        """
+        Call a named method on each model in *models*.
+
+        Parameters
+        ----------
+        method : str
+            Name of the model method to call.
+        models : OrderedDict
+            Mapping of model name → model instance.
+
+        Returns
+        -------
+        OrderedDict
+            Return values keyed by model name.
+
+        Notes
+        -----
+        Adapted from ``andes.system.System.call_models`` (stats tracking removed
+        as AMS does not use the ANDES call-stats machinery).
+        Original author: Hantao Cui. License: GPL-3.0.
+        """
+        ret = OrderedDict()
+        for name, mdl in models.items():
+            ret[name] = getattr(mdl, method)(*args, **kwargs)
+        return ret
+
+    def _list2array(self):
+        """
+        Call ``list2array`` on every model to pre-allocate NumPy arrays.
+
+        Notes
+        -----
+        Adapted from ``andes.system.System._list2array``.
+        Original author: Hantao Cui. License: GPL-3.0.
+        """
+        self.call_models('list2array', self.models)
+
+    def link_ext_param(self, model=None):
+        """
+        Retrieve values for ``ExtParam`` instances across models.
+
+        Parameters
+        ----------
+        model : None
+            Reserved for API compatibility; AMS always links all models.
+
+        Returns
+        -------
+        bool
+            True if all external parameters were linked successfully.
+
+        Notes
+        -----
+        Adapted from ``andes.system.System.link_ext_param``.
+        Original author: Hantao Cui. License: GPL-3.0.
+        """
+        ret = True
+        for mdl in self.models.values():
+            for instance in mdl.params_ext.values():
+                ext_name = instance.model
+                ext_model = self.__dict__[ext_name]
+                try:
+                    instance.link_external(ext_model)
+                except (IndexError, KeyError) as e:
+                    logger.error(
+                        'Error: <%s> cannot retrieve <%s> from <%s> using <%s>:\n  %s',
+                        mdl.class_name, instance.name, instance.model,
+                        instance.indexer.name, repr(e),
+                    )
+                    ret = False
+        return ret
+
+    def calc_pu_coeff(self):
+        """
+        Perform per-unit value conversion for all model parameters.
+
+        Notes
+        -----
+        Adapted from ``andes.system.System.calc_pu_coeff``.
+        Original author: Hantao Cui. License: GPL-3.0.
+        """
+        Sb = self.config.mva
+
+        for mdl in self.models.values():
+            Sn = mdl.Sn.v if 'Sn' in mdl.__dict__ else Sb
+
+            Vb, Vn = 1, 1
+            if 'bus' in mdl.__dict__:
+                Vb = self.Bus.get(src='Vn', idx=mdl.bus.v, attr='v')
+                Vn = mdl.Vn.v if 'Vn' in mdl.__dict__ else Vb
+            elif 'bus1' in mdl.__dict__:
+                Vb = self.Bus.get(src='Vn', idx=mdl.bus1.v, attr='v')
+                Vn = mdl.Vn1.v if 'Vn1' in mdl.__dict__ else Vb
+
+            Zn = Vn ** 2 / Sn
+            Zb = Vb ** 2 / Sb
+
+            Vdcb, Vdcn, Idcn = 1, 1, 1
+            if 'node' in mdl.__dict__:
+                Vdcb = self.Node.get(src='Vdcn', idx=mdl.node.v, attr='v')
+                Vdcn = mdl.Vdcn.v if 'Vdcn' in mdl.__dict__ else Vdcb
+                Idcn = mdl.Idcn.v if 'Idcn' in mdl.__dict__ else (Sb / Vdcb)
+            elif 'node1' in mdl.__dict__:
+                Vdcb = self.Node.get(src='Vdcn', idx=mdl.node1.v, attr='v')
+                Vdcn = mdl.Vdcn1.v if 'Vdcn1' in mdl.__dict__ else Vdcb
+                Idcn = mdl.Idcn.v if 'Idcn' in mdl.__dict__ else (Sb / Vdcb)
+            Idcb = Sb / Vdcb
+            Rb = Vdcb / Idcb
+            Rn = Vdcn / Idcn
+
+            coeffs = {
+                'voltage':    Vn / Vb,
+                'power':      Sn / Sb,
+                'ipower':     Sb / Sn,
+                'current':    (Sn / Vn) / (Sb / Vb),
+                'z':          Zn / Zb,
+                'y':          Zb / Zn,
+                'dc_voltage': Vdcn / Vdcb,
+                'dc_current': Idcn / Idcb,
+                'r':          Rn / Rb,
+                'g':          Rb / Rn,
+            }
+
+            for prop, coeff in coeffs.items():
+                for p in mdl.find_param(prop).values():
+                    p.set_pu_coeff(coeff)
+
+            mdl.coeffs = coeffs
+            mdl.bases = {'Sn': Sn, 'Sb': Sb, 'Vn': Vn, 'Vb': Vb, 'Zn': Zn, 'Zb': Zb}
+
+    def collect_config(self):
+        """
+        Collect config data from system, routines, and models into a
+        :class:`configparser.ConfigParser` object.
+
+        Returns
+        -------
+        configparser.ConfigParser
+
+        Notes
+        -----
+        Adapted from ``andes.system.System.collect_config``.
+        Original author: Hantao Cui. License: GPL-3.0.
+        """
+        config_dict = configparser.ConfigParser()
+        config_dict[self.__class__.__name__] = self.config.as_dict()
+
+        all_with_config = OrderedDict(
+            list(self.routines.items()) + list(self.models.items())
+        )
+        for name, instance in all_with_config.items():
+            cfg = instance.config.as_dict()
+            if len(cfg) > 0:
+                config_dict[name] = cfg
+
+        return config_dict
+
+    def save_config(self, file_path=None, overwrite=False):
+        """
+        Save all system, routine, and model configurations to an rc-formatted
+        file.
+
+        Parameters
+        ----------
+        file_path : str or None, optional
+            Path to the configuration file. Defaults to ``~/.ams/ams.rc``.
+        overwrite : bool, optional
+            If ``True``, overwrite an existing file without prompting.
+
+        Returns
+        -------
+        str or None
+            Path to the written config file, or ``None`` if write was skipped.
+
+        Notes
+        -----
+        Adapted from ``andes.system.System.save_config``.
+        Original author: Hantao Cui. License: GPL-3.0.
+        """
+        if file_path is None:
+            ams_path = os.path.join(os.path.expanduser('~'), '.ams')
+            os.makedirs(ams_path, exist_ok=True)
+            file_path = os.path.join(ams_path, 'ams.rc')
+        elif os.path.isfile(file_path):
+            if not confirm_overwrite(file_path, overwrite=overwrite):
+                return None
+
+        conf = self.collect_config()
+        with open(file_path, 'w') as f:
+            conf.write(f)
+
+        logger.info('Config written to "%s"', file_path)
+        return file_path
 
     def supported_routines(self, export='plain'):
         """
@@ -579,6 +796,48 @@ class System(adSystem):
 
         tab = Tab(title='Supported Types and Routines',
                   header=['Type', 'Routines'],
+                  data=pairs,
+                  export=export,
+                  )
+
+        return tab.draw()
+
+    def supported_models(self, export='plain'):
+        """
+        Return the supported group names and model names in a table.
+
+        Parameters
+        ----------
+        export : str, optional
+            Export format: 'plain' (default) or 'rest' for reStructuredText.
+
+        Returns
+        -------
+        str
+            A table-formatted string listing groups and their models.
+
+        Notes
+        -----
+        Adapted from ``andes.system.System.supported_models``.
+        Original author: Hantao Cui. License: GPL-3.0.
+        """
+
+        def rst_ref(name, export):
+            if export == 'rest':
+                return ":ref:`" + name + '`'
+            else:
+                return name
+
+        pairs = list()
+        for g in self.groups:
+            models = list()
+            for m in self.groups[g].models:
+                models.append(rst_ref(m, export))
+            if len(models) > 0:
+                pairs.append((rst_ref(g, export), ', '.join(models)))
+
+        tab = Tab(title='Supported Groups and Models',
+                  header=['Group', 'Models'],
                   data=pairs,
                   export=export,
                   )
@@ -899,7 +1158,7 @@ class System(adSystem):
         return write_raw(self, outfile=outfile, overwrite=overwrite)
 
 # --------------- Helper Functions ---------------
-# NOTE: _config_numpy, load_config_rc are imported from andes.system
+# NOTE: _config_numpy, load_config_rc are owned in ams.utils.paths
 
 
 def example(setup=True, no_output=True, **kwargs):

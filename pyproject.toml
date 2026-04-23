@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "wheel", "versioneer[toml]"]
+requires = ["setuptools>=64", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -12,11 +12,15 @@ authors = [
 ]
 
 license = {text = "GPL-3.0-or-later"}
+requires-python = ">=3.11"
 
 classifiers = [
     "Development Status :: 4 - Beta",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Environment :: Console"
 ]
@@ -30,14 +34,14 @@ dependencies = [
     "matplotlib",
     "psutil",
     "openpyxl",
-    "andes>=1.9.3",
+    "andes>=2.0.0",
     "pybind11",
     "cvxpy",
     "cffi",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-cov", "coverage", "flake8", "numpydoc", "toml"]
+dev = ["pytest", "pytest-cov", "coverage", "flake8", "flake8-pyproject", "numpydoc", "toml"]
 nlp = ["PYPOWER", "pyoptinterface", "gurobipy", "gurobi-optimods"]
 doc = [
     "pandoc",
@@ -54,12 +58,10 @@ doc = [
 [project.scripts]
 ams = "ams.cli:main"
 
-[tool.versioneer]
-VCS = "git"
-style = "pep440-post"
-versionfile_source = "ams/_version.py"
-versionfile_build = "ams/_version.py"
-tag_prefix = "v"
+[tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "node-and-date"
+write_to = "ams/_version.py"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -67,3 +69,44 @@ exclude = ["tests", "tests.*"]
 
 [tool.setuptools]
 license-files = []
+
+[tool.bandit]
+# Skip rules that fire false positives on AMS's use of subprocess.
+# `ams/bench/env.py` runs subprocess only for legitimate environment
+# capture (`sysctl` for CPU brand, `git rev-parse`/`git status` for SHA
+# + dirty flag) with literal list args — no shell, no user-controlled
+# input. B110 (try/except/pass) is NOT skipped so real swallowed errors
+# stay visible. Codacy honors this section when running Bandit.
+skips = ["B404", "B603"]
+
+[tool.pydocstyle]
+# AMS docstrings follow PEP 257 defaults: summary on the first line
+# (D212) and no blank line before class docstrings (D211). Skip the
+# conflicting minority choices (D203, D213) so dozens of style-
+# preference findings don't surface on every PR. See also
+# `.prospector.yaml` which configures the same via Codacy's prospector
+# engine.
+add-ignore = "D203,D213"
+
+[tool.flake8]
+max-line-length = 115
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "demos",
+    "cases",
+    "dev",
+    "ams/solver/pypower/",
+    "cards",
+    "ams/_version.py",
+    "docs/source/conf.py",
+    "docs/source/_build",
+    "benchmarks",
+    "andes/pycode",
+    "scripts",
+    ".history",
+    "ams/pypower",
+    "icebar/*",
+]

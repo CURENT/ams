@@ -28,7 +28,7 @@ class TestDCPF(unittest.TestCase):
         self.ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
 
         self.ss.DCPF.update()
-        self.ss.DCPF.run()
+        self.ss.DCPF.run(solver='CLARABEL')
         self.assertTrue(self.ss.DCPF.converged, "DCPF did not converge under generator trip!")
         self.assertAlmostEqual(self.ss.DCPF.get(src='pg', attr='v', idx=stg),
                                0, places=6,
@@ -43,7 +43,7 @@ class TestDCPF(unittest.TestCase):
         self.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
 
         self.ss.DCPF.update()
-        self.ss.DCPF.run()
+        self.ss.DCPF.run(solver='CLARABEL')
         self.assertTrue(self.ss.DCPF.converged, "DCPF did not converge under line trip!")
         self.assertAlmostEqual(self.ss.DCPF.get(src='plf', attr='v', idx='Line_3'),
                                0, places=6,
@@ -56,14 +56,14 @@ class TestDCPF(unittest.TestCase):
         Test setting and tripping load.
         """
         # --- run DCPF ---
-        self.ss.DCPF.run()
+        self.ss.DCPF.run(solver='CLARABEL')
         pgs = self.ss.DCPF.pg.v.sum()
 
         # --- set load ---
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
         self.ss.DCPF.update()
 
-        self.ss.DCPF.run()
+        self.ss.DCPF.run(solver='CLARABEL')
         pgs_pqt = self.ss.DCPF.pg.v.sum()
         self.assertLess(pgs_pqt, pgs, "Load set does not take effect!")
 
@@ -71,7 +71,7 @@ class TestDCPF(unittest.TestCase):
         self.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0)
         self.ss.DCPF.update()
 
-        self.ss.DCPF.run()
+        self.ss.DCPF.run(solver='CLARABEL')
         pgs_pqt2 = self.ss.DCPF.pg.v.sum()
         self.assertLess(pgs_pqt2, pgs_pqt, "Load trip does not take effect!")
 

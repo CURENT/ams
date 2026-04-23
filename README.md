@@ -11,7 +11,7 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 | Badges |  |  |
 |---|---|---|
 | Repo | ![Project Status: Active](https://www.repostatus.org/badges/latest/active.svg) | ![Repo Size](https://img.shields.io/github/repo-size/CURENT/ams) |
-| Python | [![Python Versions](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/) |
+| Python | [![Python Versions](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/) |
 | Version | [![PyPI Version](https://img.shields.io/pypi/v/ltbams.svg)](https://pypi.org/project/ltbams/) | [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ltbams/badges/version.svg)](https://anaconda.org/conda-forge/ltbams) |
 | Tag | [![GitHub Tag](https://img.shields.io/github/v/tag/CURENT/ams)](https://github.com/CURENT/ams/tags) | ![GitHub commits since latest release (branch)](https://img.shields.io/github/commits-since/curent/ams/latest/develop) |
 | Documentation | [![Read the Docs](https://img.shields.io/readthedocs/ams?label=stable)](https://ltb.readthedocs.io/projects/ams/en/stable/?badge=stable) | [![Read the Docs](https://img.shields.io/readthedocs/ams?label=develop)](https://ltb.readthedocs.io/projects/ams/en/develop/?badge=develop) |
@@ -19,8 +19,7 @@ Python Software for Power System Scheduling Modeling and Co-Simulation with Dyna
 | Quality | ![Codacy Badge](https://app.codacy.com/project/badge/Grade/69456da1b8634f2f984bd769e35f0050) |
 | Coverage | ![Codacy Badge](https://app.codacy.com/project/badge/Coverage/69456da1b8634f2f984bd769e35f0050) | ![codecov](https://codecov.io/gh/CURENT/ams/graph/badge.svg?token=RZI5GLLBQH) |
 | Last Commit | ![GitHub last commit (master)](https://img.shields.io/github/last-commit/CURENT/ams/master?label=last%20commit%20to%20master) | ![GitHub last commit (develop)](https://img.shields.io/github/last-commit/CURENT/ams/develop?label=last%20commit%20to%20develop) |
-| CI | [![Compatibility](https://github.com/CURENT/ams/actions/workflows/compatibility.yml/badge.svg)](https://github.com/CURENT/ams/actions/workflows/compatibility.yml) | [![Build Status](https://dev.azure.com/curentltb/ams/_apis/build/status%2FCURENT.ams?branchName=master)](https://dev.azure.com/curentltb/ams/_build/latest?definitionId=2&branchName=master) |
-| CD | [![Publish](https://github.com/CURENT/ams/actions/workflows/publish-pypi.yml/badge.svg)](https://github.com/CURENT/ams/actions/workflows/publish-pypi.yml) | [![Build Status](https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/ltbams-feedstock?branchName=main)](https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=21708&branchName=main) |
+| CI/CD | [![Compatibility](https://github.com/CURENT/ams/actions/workflows/compatibility.yml/badge.svg)](https://github.com/CURENT/ams/actions/workflows/compatibility.yml) | [![Publish](https://github.com/CURENT/ams/actions/workflows/publish-pypi.yml/badge.svg)](https://github.com/CURENT/ams/actions/workflows/publish-pypi.yml) |
 | Structure | [![Structure](https://img.shields.io/badge/code_base-visualize-blue)](https://mango-dune-07a8b7110.1.azurestaticapps.net/?repo=CURENT%2Fams) | [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/CURENT/ams) |
 | Dependency | [![libraries](https://img.shields.io/librariesio/release/pypi/ltbams)](https://libraries.io/pypi/ltbams) |  |
 | Try on Binder | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/curent/ams/master) |  |

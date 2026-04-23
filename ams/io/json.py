@@ -9,7 +9,7 @@ import logging
 from collections import OrderedDict
 
 from andes.io.json import (testlines, read)  # NOQA
-from andes.utils.paths import confirm_overwrite
+from ams.utils.paths import confirm_overwrite
 
 from ams.shared import pd
 from ams.shared import summary_row, summary_name, model2df

@@ -257,6 +257,54 @@ def confirm_overwrite(outfile, overwrite=None):
     return True
 
 
+def _config_numpy(seed='None', divide='warn', invalid='warn'):
+    """
+    Configure NumPy error handling and random seed.
+
+    Notes
+    -----
+    Adapted from ``andes.system._config_numpy``.
+    Original author: Hantao Cui. License: GPL-3.0.
+    """
+    import numpy as np
+
+    if isinstance(seed, int):
+        np.random.seed(seed)
+        logger.debug("Random seed set to <%d>.", seed)
+
+    np.seterr(divide=divide, invalid=invalid)
+
+
+def load_config_rc(conf_path=None):
+    """
+    Load config from an rc-formatted file.
+
+    Parameters
+    ----------
+    conf_path : None or str
+        Path to the config file. If ``None``, the function returns ``None``
+        without reading.
+
+    Returns
+    -------
+    configparser.ConfigParser or None
+
+    Notes
+    -----
+    Adapted from ``andes.system.load_config_rc``.
+    Original author: Hantao Cui. License: GPL-3.0.
+    """
+    import configparser
+
+    if conf_path is None:
+        return None
+
+    conf = configparser.ConfigParser()
+    conf.read(conf_path)
+    logger.info('> Loaded config from file "%s"', conf_path)
+    return conf
+
+
 def get_export_path(system, fname, path=None, fmt='csv'):
     """
     Get the absolute export path and the derived file name for

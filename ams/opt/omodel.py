@@ -3,14 +3,17 @@ Module for optimization OModel.
 """
 import logging
 
-from typing import Any
+from typing import Any, TYPE_CHECKING
 from collections import OrderedDict
 
-from andes.utils.misc import elapsed
+from ams.utils.misc import elapsed
 
 import cvxpy as cp
 
 from ams.opt.optzbase import ensure_symbols, ensure_mats_and_parsed
+
+if TYPE_CHECKING:
+    from ams.routines.routine import RoutineBase
 
 
 logger = logging.getLogger(__name__)
@@ -21,7 +24,7 @@ class OModelBase:
     Template class for optimization models.
     """
 
-    def __init__(self, routine):
+    def __init__(self, routine: "RoutineBase") -> None:
         self.rtn = routine
         self.prob = None
         self.exprs = OrderedDict()
@@ -146,7 +149,7 @@ class OModel(OModelBase):
         Flag indicating if the model is finalized.
     """
 
-    def __init__(self, routine):
+    def __init__(self, routine: "RoutineBase") -> None:
         OModelBase.__init__(self, routine)
 
     @ensure_symbols

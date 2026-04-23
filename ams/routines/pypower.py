@@ -5,8 +5,9 @@ import logging
 from typing import Optional, Union, Type
 from collections import OrderedDict
 
-from andes.shared import deg2rad, np
-from andes.utils.misc import elapsed
+import numpy as np
+from ams.utils.func import deg2rad
+from ams.utils.misc import elapsed
 
 from ams.io.pypower import system2ppc
 from ams.core.param import RParam
@@ -566,7 +567,7 @@ class DCOPF1(DCPF1):
                               scpdipm_red_it=r'o_{scpdipm\_red\_it}',
                               )
 
-        self.obj.e_str = 'sum(c2 * pg**2 + c1 * pg + c0)'
+        self.obj.e_str = 'sum(mul(c2, pg**2)) + sum(mul(c1, pg)) + sum(mul(ug, c0))'
 
         self.pi = Var(info='Lagrange multiplier on real power mismatch',
                       name='pi', unit='$/p.u.',
@@ -670,4 +671,4 @@ class ACOPF1(DCOPF1):
         bool
             True if the optimization converged successfully, False otherwise.
         """
-        super().run(**kwargs)
+        return super().run(**kwargs)

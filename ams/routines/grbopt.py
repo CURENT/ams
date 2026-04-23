@@ -7,7 +7,8 @@ import io
 
 import scipy.io
 
-from andes.shared import np, pd
+import numpy as np
+import pandas as pd
 
 from ams.core import Config
 
@@ -46,9 +47,9 @@ class OPF(DCPF1):
 
         self.obj = Objective(name='obj',
                              info='total cost, placeholder',
-                             e_str='sum(c2 * pg**2 + c1 * pg + c0)',
                              unit='$',
                              sense='min',)
+        self.obj.e_str = 'sum(mul(c2, pg**2)) + sum(mul(c1, pg)) + sum(mul(ug, c0))'
 
         self.pi = Var(info='Lagrange multiplier on real power mismatch',
                       name='pi', unit='$/p.u.',

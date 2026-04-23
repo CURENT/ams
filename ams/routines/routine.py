@@ -9,7 +9,7 @@ from typing import Optional, Union, Type, Iterable, Dict
 
 import numpy as np
 
-from andes.utils.misc import elapsed
+from ams.utils.misc import elapsed
 
 from ams.core import Config
 from ams.core.param import RParam
@@ -312,7 +312,7 @@ class RoutineBase:
         logger.info(" -> Data check passed")
         return True
 
-    def init(self, **kwargs):
+    def init(self, **kwargs) -> bool:
         """
         Initialize the routine.
 
@@ -390,7 +390,7 @@ class RoutineBase:
                                idx=expr.get_all_idxes(), value=expr.v)
         return True
 
-    def run(self, **kwargs):
+    def run(self, **kwargs) -> bool:
         """
         Run the routine.
 
