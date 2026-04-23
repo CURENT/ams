@@ -83,7 +83,13 @@ To install packages in the ``dev`` when installing AMS, do:
 
 .. code:: bash
 
-    pip install .[dev]
+    pip install '.[dev]'
+
+.. note::
+
+    Single quotes are required in ``zsh`` (the default shell on macOS)
+    because ``[...]`` is a glob pattern. The quotes are harmless on
+    other shells.
 
 .. _Develop Install:
 
@@ -125,7 +131,7 @@ Install AMS together with the extras you need from ``pyproject.toml``:
 
 .. code:: bash
 
-    pip install -e .[dev,doc,nlp]
+    pip install -e '.[dev,doc,nlp]'
 
 If you prefer conda/mamba for the heavy binary dependencies, install
 those first, then ``pip install`` AMS:
@@ -133,7 +139,7 @@ those first, then ``pip install`` AMS:
 .. code:: bash
 
     mamba install -y kvxopt numpy scipy sympy pandas matplotlib cvxpy
-    pip install -e .[dev,doc,nlp]
+    pip install -e '.[dev,doc,nlp]'
 
 Note the dot at the end. Pip will take care of the rest.
 
@@ -158,9 +164,10 @@ Note the dot at the end. Pip will take care of the rest.
 .. note::
 
     To install extra support packages, one can append ``[NAME_OF_EXTRA]`` to
-    ``pip install -e .``. For example, ``pip install -e .[doc]`` will
+    ``pip install -e .``. For example, ``pip install -e '.[doc]'`` will
     install packages to support documentation when installing AMS in the
-    development, editable mode.
+    development, editable mode. The single quotes protect the square
+    brackets from being interpreted as a shell glob pattern.
 
 Updating AMS
 ==============
