@@ -66,7 +66,7 @@ set up your fork for local development::
 
     $ mkvirtualenv ams
     $ cd ams/
-    $ pip install -e .[dev]
+    $ pip install -e '.[dev]'
 
 4. Create a branch for local development::
 
