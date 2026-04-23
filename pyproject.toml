@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "wheel", "versioneer[toml]"]
+requires = ["setuptools>=64", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -58,12 +58,10 @@ doc = [
 [project.scripts]
 ams = "ams.cli:main"
 
-[tool.versioneer]
-VCS = "git"
-style = "pep440-post"
-versionfile_source = "ams/_version.py"
-versionfile_build = "ams/_version.py"
-tag_prefix = "v"
+[tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "node-and-date"
+write_to = "ams/_version.py"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -102,7 +100,6 @@ exclude = [
     "dev",
     "ams/solver/pypower/",
     "cards",
-    "versioneer.py",
     "ams/_version.py",
     "docs/source/conf.py",
     "docs/source/_build",
