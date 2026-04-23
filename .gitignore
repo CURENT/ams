@@ -53,3 +53,5 @@ coverage.xml
 
 # secrets
 .env
+# setuptools-scm regenerates this at build time; don't track
+ams/_version.py
