@@ -134,34 +134,41 @@ class TestMatProcessorBasic(unittest.TestCase):
         one_vec = MParam(v=sps.csr_matrix(np.ones(self.ss.Bus.n)))
         # check if `_v` is `sps.csr_matrix` instance
         self.assertIsInstance(one_vec._v, sps.csr_matrix)
-        # check if `v` is 1D-array
-        self.assertEqual(one_vec.v.shape, (self.ss.Bus.n,))
+        # `.v` returns the underlying sparse object as-is; `.dense()`
+        # squeezes a 1-row sparse to a 1D ndarray
+        self.assertTrue(sps.issparse(one_vec.v))
+        self.assertEqual(one_vec.dense().shape, (self.ss.Bus.n,))
 
     def test_c(self):
         """
-        Test connectivity matrices.
+        Test connectivity matrices. `.v` returns the underlying sparse
+        object; `.dense()` materializes a dense ndarray.
         """
         # Test `Cg`
         self.assertIsInstance(self.mats.Cg._v, (sps.csr_matrix, sps.lil_matrix))
-        self.assertIsInstance(self.mats.Cg.v, np.ndarray)
+        self.assertTrue(sps.issparse(self.mats.Cg.v))
+        self.assertIsInstance(self.mats.Cg.dense(), np.ndarray)
         self.assertEqual(self.mats.Cg._v.max(), 1)
         np.testing.assert_equal(self.mats.Cg._v.sum(axis=0), np.ones((1, self.ng)))
 
         # Test `Cl`
         self.assertIsInstance(self.mats.Cl._v, (sps.csr_matrix, sps.lil_matrix))
-        self.assertIsInstance(self.mats.Cl.v, np.ndarray)
+        self.assertTrue(sps.issparse(self.mats.Cl.v))
+        self.assertIsInstance(self.mats.Cl.dense(), np.ndarray)
         self.assertEqual(self.mats.Cl._v.max(), 1)
         np.testing.assert_equal(self.mats.Cl._v.sum(axis=0), np.ones((1, self.nD)))
 
         # Test `Csh`
         self.assertIsInstance(self.mats.Csh._v, (sps.csr_matrix, sps.lil_matrix))
-        self.assertIsInstance(self.mats.Csh.v, np.ndarray)
+        self.assertTrue(sps.issparse(self.mats.Csh.v))
+        self.assertIsInstance(self.mats.Csh.dense(), np.ndarray)
         self.assertEqual(self.mats.Csh._v.max(), 1)
         np.testing.assert_equal(self.mats.Csh._v.sum(axis=0), np.ones((1, self.nsh)))
 
         # Test `Cft`
         self.assertIsInstance(self.mats.Cft._v, (sps.csr_matrix, sps.lil_matrix))
-        self.assertIsInstance(self.mats.Cft.v, np.ndarray)
+        self.assertTrue(sps.issparse(self.mats.Cft.v))
+        self.assertIsInstance(self.mats.Cft.dense(), np.ndarray)
         self.assertEqual(self.mats.Cft._v.max(), 1)
         np.testing.assert_equal(self.mats.Cft._v.sum(axis=0), np.zeros((1, self.nl)))
 
@@ -260,7 +267,7 @@ class TestBuildPTDF(unittest.TestCase):
                                           no_tqdm=True)
         np.testing.assert_array_almost_equal(ptdf_l2.todense(),
                                              self.ptdf_full[[2], :])
-        self.assertTrue(sps.isspmatrix_lil(ptdf_l2))
+        self.assertTrue(sps.issparse(ptdf_l2))
         self.assertIsNone(self.ss.mats.PTDF._v)
 
         # input list with single element
@@ -269,7 +276,7 @@ class TestBuildPTDF(unittest.TestCase):
                                            no_tqdm=False)
         np.testing.assert_array_almost_equal(ptdf_l2p.todense(),
                                              self.ptdf_full[[2], :])
-        self.assertTrue(sps.isspmatrix_lil(ptdf_l2p))
+        self.assertTrue(sps.issparse(ptdf_l2p))
         self.assertIsNone(self.ss.mats.PTDF._v)
 
         # input list with multiple elements
@@ -277,7 +284,7 @@ class TestBuildPTDF(unittest.TestCase):
                                            incremental=True, no_store=False)
         np.testing.assert_array_almost_equal(ptdf_l23.todense(),
                                              self.ptdf_full[2:4, :])
-        self.assertTrue(sps.isspmatrix_lil(ptdf_l23))
+        self.assertTrue(sps.issparse(ptdf_l23))
 
     def test_ptdf_incremental_step(self):
         """
@@ -286,7 +293,7 @@ class TestBuildPTDF(unittest.TestCase):
         # step < line length
         ptdf_c1 = self.ss.mats.build_ptdf(line=self.ss.Line.idx.v[2:4], incremental=True,
                                           no_store=False, step=1)
-        self.assertTrue(sps.isspmatrix_lil(ptdf_c1))
+        self.assertTrue(sps.issparse(ptdf_c1))
         self.assertIsNone(self.ss.mats.PTDF._v)
         np.testing.assert_array_almost_equal(ptdf_c1.todense(),
                                              self.ptdf_full[2:4, :],)
@@ -294,7 +301,7 @@ class TestBuildPTDF(unittest.TestCase):
         # step = line length
         ptdf_c2 = self.ss.mats.build_ptdf(line=self.ss.Line.idx.v[2:4], incremental=True,
                                           no_store=False, step=2)
-        self.assertTrue(sps.isspmatrix_lil(ptdf_c2))
+        self.assertTrue(sps.issparse(ptdf_c2))
         self.assertIsNone(self.ss.mats.PTDF._v)
         np.testing.assert_array_almost_equal(ptdf_c2.todense(),
                                              self.ptdf_full[2:4, :],)
@@ -302,7 +309,7 @@ class TestBuildPTDF(unittest.TestCase):
         # step > line length
         ptdf_c5 = self.ss.mats.build_ptdf(line=self.ss.Line.idx.v[2:4], incremental=True,
                                           no_store=False, step=5)
-        self.assertTrue(sps.isspmatrix_lil(ptdf_c5))
+        self.assertTrue(sps.issparse(ptdf_c5))
         self.assertIsNone(self.ss.mats.PTDF._v)
         np.testing.assert_array_almost_equal(ptdf_c5.todense(),
                                              self.ptdf_full[2:4, :],)
@@ -366,14 +373,14 @@ class TestBuildLODF(unittest.TestCase):
         np.testing.assert_array_almost_equal(lodf_l2.todense(),
                                              self.lodf_full[:, [2]],
                                              decimal=self.dec)
-        self.assertTrue(sps.isspmatrix_lil(lodf_l2))
+        self.assertTrue(sps.issparse(lodf_l2))
 
         # input list with single element
         lodf_l2p = self.ss.mats.build_lodf(line=[self.ss.Line.idx.v[2]], incremental=True, no_store=False)
         np.testing.assert_array_almost_equal(lodf_l2p.todense(),
                                              self.lodf_full[:, [2]],
                                              decimal=self.dec)
-        self.assertTrue(sps.isspmatrix_lil(lodf_l2p))
+        self.assertTrue(sps.issparse(lodf_l2p))
 
         # input list with multiple elements
         lodf_l23 = self.ss.mats.build_lodf(line=self.ss.Line.idx.v[2:4], incremental=True, no_store=False)
@@ -389,7 +396,7 @@ class TestBuildLODF(unittest.TestCase):
         lodf_c1 = self.ss.mats.build_lodf(line=self.ss.Line.idx.v[2:4],
                                           incremental=True,
                                           no_store=False, step=1)
-        self.assertTrue(sps.isspmatrix_lil(lodf_c1))
+        self.assertTrue(sps.issparse(lodf_c1))
         np.testing.assert_array_almost_equal(lodf_c1.todense(),
                                              self.lodf_full[:, 2:4],
                                              decimal=self.dec)
@@ -398,7 +405,7 @@ class TestBuildLODF(unittest.TestCase):
         lodf_c2 = self.ss.mats.build_lodf(line=self.ss.Line.idx.v[2:4],
                                           incremental=True,
                                           no_store=False, step=2)
-        self.assertTrue(sps.isspmatrix_lil(lodf_c2))
+        self.assertTrue(sps.issparse(lodf_c2))
         np.testing.assert_array_almost_equal(lodf_c2.todense(),
                                              self.lodf_full[:, 2:4],
                                              decimal=self.dec)
@@ -407,7 +414,7 @@ class TestBuildLODF(unittest.TestCase):
         lodf_c5 = self.ss.mats.build_lodf(line=self.ss.Line.idx.v[2:4],
                                           incremental=True,
                                           no_store=False, step=5)
-        self.assertTrue(sps.isspmatrix_lil(lodf_c5))
+        self.assertTrue(sps.issparse(lodf_c5))
         np.testing.assert_array_almost_equal(lodf_c5.todense(),
                                              self.lodf_full[:, 2:4],
                                              decimal=self.dec)

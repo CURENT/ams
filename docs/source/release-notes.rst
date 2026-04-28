@@ -14,6 +14,25 @@ v1.2.1 (unreleased)
 
 **Improvements:**
 
+- ``MParam.v`` no longer auto-densifies sparse-stored matrices on every
+  property access. The underlying scipy.sparse object is now returned
+  as-is; a new ``MParam.dense()`` method materializes a dense
+  :class:`numpy.ndarray` when one is genuinely required. ``.shape`` and
+  ``.n`` consult the underlying value directly without densifying.
+  Together with the ``sparse=True`` declarations on the matrix
+  ``RParam`` consumers in ``DCPF`` / ``DCOPF`` / ``DCOPF2``, this lets
+  routines actually pass sparse matrices to CVXPY instead of silently
+  densifying them on every parameter set
+- ``MatProcessor.build_ptdf`` / ``build_lodf`` now finalize the result
+  as ``csr_matrix`` rather than leaving it as ``lil_matrix``. ``lil`` is
+  the right format for incremental row assignment during construction
+  but is poorly supported by downstream consumers (CVXPY, scipy ``COO``
+  conversion); freezing to ``csr`` at the end is the canonical pattern
+- ``NumOp.v0``: pass scipy.sparse outputs through untouched when
+  ``array_out=True``. Previously sparse results were wrapped in a
+  1-element :class:`numpy.ndarray` of object dtype, which broke the
+  subsequent ``csr_matrix`` conversion in :meth:`NumOp.v` for sparse
+  ``NumOp``\ s such as ``DCOPF2.PTDFt``
 - ``MatProcessor.build_lodf``: replace the dense ``np.ones`` + ``np.tile``
   column-broadcast inside the chunk loop with sparse column scaling
   that divides each column by ``(1 - h_chunk[j])``, zeroing columns
