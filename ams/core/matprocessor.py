@@ -595,7 +595,7 @@ class MatProcessor:
         step : int, optional
             RHS chunk size when `incremental=True`. Default is 1000.
         no_tqdm : bool, optional
-            If True, disable the progress bar. Default is False.
+            If True, disable the progress bar. Default is True.
         permc_spec : str, optional
             Column permutation strategy passed to :func:`scipy.sparse.linalg.splu`. Default is None
             (SuperLU's default, COLAMD).
@@ -653,7 +653,10 @@ class MatProcessor:
 
         # factor the reduced bus susceptance matrix once and reuse across chunks
         A = Bbus[np.ix_(noslack, noref)].T.tocsc()
-        lu = sps.linalg.splu(A, permc_spec=permc_spec)
+        if permc_spec is None:
+            lu = sps.linalg.splu(A)
+        else:
+            lu = sps.linalg.splu(A, permc_spec=permc_spec)
 
         chunk = step if incremental else nline
         H = sps.lil_matrix((nline, nbus))
@@ -662,7 +665,7 @@ class MatProcessor:
 
         for start in range(0, nline, chunk):
             end = min(start + chunk, nline)
-            rhs = np.asarray(Bf[np.ix_(luid[start:end], noref)].T.todense())
+            rhs = Bf[np.ix_(luid[start:end], noref)].T.toarray()
             sol = lu.solve(rhs).T
             H[start:end, noslack] = sol
             _update_pbar(pbar, end, nline)
