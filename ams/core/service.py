@@ -299,7 +299,9 @@ class NumOp(ROperationService):
     def v0(self):
         out = self.fun(self.u.v, **self.args)
         if self.array_out:
-            if not isinstance(out, np.ndarray):
+            # wrap genuine Python scalars in a 1-element ndarray; pass
+            # ndarrays and scipy.sparse matrices through untouched
+            if not isinstance(out, np.ndarray) and not spr.issparse(out):
                 out = np.array([out])
         return out
 
