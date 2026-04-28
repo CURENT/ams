@@ -196,38 +196,50 @@ class MParam(Param):
                                           path=path,
                                           fmt='csv')
 
-        pd.DataFrame(data=self.v, columns=self.col_names, index=self.row_names).to_csv(path)
+        pd.DataFrame(data=self.dense(), columns=self.col_names, index=self.row_names).to_csv(path)
 
         return file_name
 
     @property
     def v(self):
         """
-        Return the value of the parameter.
+        Return the underlying value of the parameter.
+
+        For ``sparse=True`` MParams the underlying scipy.sparse matrix is
+        returned as-is. Use :meth:`dense` (or call ``.toarray()`` on the
+        sparse object directly) when an :class:`numpy.ndarray` is required.
         """
-        # NOTE: scipy.sparse matrix will return 2D array
-        # so we squeeze it here if only one row
-        if isinstance(self._v, (sps.csr_matrix, sps.lil_matrix, sps.csc_matrix)):
+        return self._v
+
+    def dense(self):
+        """
+        Return the parameter value as a dense :class:`numpy.ndarray`.
+
+        For sparse-stored MParams this materializes the full dense matrix
+        and squeezes a single-row result down to a 1D array (preserving
+        the historical 1-row shape contract). For dense storage this is
+        a no-op pass-through.
+        """
+        if sps.issparse(self._v):
             out = self._v.toarray()
             if out.shape[0] == 1:
                 return np.squeeze(out)
-            else:
-                return out
+            return out
         return self._v
 
     @property
     def shape(self):
         """
-        Return the shape of the parameter.
+        Return the shape of the parameter without materializing the value.
         """
-        return self.v.shape
+        return self._v.shape
 
     @property
     def n(self):
         """
-        Return the szie of the parameter.
+        Return the size of the parameter without materializing the value.
         """
-        return len(self.v)
+        return self._v.shape[0]
 
     @property
     def class_name(self):
@@ -604,8 +616,10 @@ class MatProcessor:
 
         Returns
         -------
-        PTDF : scipy.sparse.lil_matrix
-            Power transfer distribution factor.
+        PTDF : scipy.sparse.csr_matrix
+            Power transfer distribution factor. The result is built into a
+            ``lil_matrix`` for fast row-block assignment during the chunk
+            loop and frozen to ``csr_matrix`` before being returned.
 
         References
         ----------
@@ -658,6 +672,7 @@ class MatProcessor:
             lu = sps.linalg.splu(A, permc_spec=permc_spec)
 
         chunk = step if incremental else nline
+        # build with lil for fast row-block assignment, freeze to csr at the end
         H = sps.lil_matrix((nline, nbus))
 
         pbar = _init_pbar(total=100, unit='%', no_tqdm=no_tqdm)
@@ -668,6 +683,8 @@ class MatProcessor:
             sol = lu.solve(rhs).T
             H[start:end, noslack] = sol
             _update_pbar(pbar, end, nline)
+
+        H = H.tocsr()
 
         # reshape results into 1D array if only one line
         if isinstance(line, (int, str)):
@@ -691,7 +708,9 @@ class MatProcessor:
         It requires DC PTDF and Cft.
 
         For large cases where memory is a concern, use `incremental=True` to
-        calculate the sparse LODF in chunks in the format of scipy.sparse.lil_matrix.
+        calculate the sparse LODF in chunks. The result is assembled into a
+        ``lil_matrix`` for fast row-block assignment during the chunk loop
+        and frozen to ``csr_matrix`` before being returned.
 
         Parameters
         ----------
@@ -710,7 +729,7 @@ class MatProcessor:
 
         Returns
         -------
-        LODF : scipy.sparse.lil_matrix
+        LODF : scipy.sparse.csr_matrix
             Line outage distribution factor.
 
         References
@@ -768,6 +787,8 @@ class MatProcessor:
             LODF[:, [luid.index(i) for i in luidi]] = H_chunk
 
             _update_pbar(pbar, luid.index(luidi[-1]), nline)
+
+        LODF = LODF.tocsr()
 
         # reshape results into 1D array if only one line
         if isinstance(line, (int, str)):

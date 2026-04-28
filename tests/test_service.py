@@ -1,9 +1,15 @@
 import unittest
 import numpy as np
+import scipy.sparse as sps
 
 import ams
 from ams.core.matprocessor import MParam
 from ams.core.service import NumOp, NumOpDual, ZonalSum
+
+
+def _as_dense(x):
+    """Return a dense ndarray from either a sparse or dense input."""
+    return x.toarray() if sps.issparse(x) else np.asarray(x)
 
 
 class TestService(unittest.TestCase):
@@ -25,14 +31,16 @@ class TestService(unittest.TestCase):
         Test `NumOp` without return function.
         """
         CftT = NumOp(u=self.ss.mats.Cft, fun=np.transpose)
-        np.testing.assert_array_equal(CftT.v.transpose(), self.ss.mats.Cft.v)
+        np.testing.assert_array_equal(_as_dense(CftT.v).transpose(),
+                                      self.ss.mats.Cft.dense())
 
     def test_NumOp_rfun(self):
         """
         Test `NumOp` with return function.
         """
         CftTT = NumOp(u=self.ss.mats.Cft, fun=np.transpose, rfun=np.transpose)
-        np.testing.assert_array_equal(CftTT.v, self.ss.mats.Cft.v)
+        np.testing.assert_array_equal(_as_dense(CftTT.v),
+                                      self.ss.mats.Cft.dense())
 
     def test_NumOp_ArrayOut(self):
         """
