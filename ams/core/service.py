@@ -300,9 +300,13 @@ class NumOp(ROperationService):
         out = self.fun(self.u.v, **self.args)
         if self.array_out:
             # wrap genuine Python scalars in a 1-element ndarray; pass
-            # ndarrays and scipy.sparse matrices through untouched
+            # ndarrays and scipy.sparse matrices through untouched;
+            # convert other array-likes (lists/tuples) via np.asarray
             if not isinstance(out, np.ndarray) and not spr.issparse(out):
-                out = np.array([out])
+                if np.isscalar(out):
+                    out = np.array([out])
+                else:
+                    out = np.asarray(out)
         return out
 
     @property
