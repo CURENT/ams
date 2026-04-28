@@ -15,10 +15,11 @@ v1.2.1 (unreleased)
 **Improvements:**
 
 - ``MatProcessor.build_lodf``: replace the dense ``np.ones`` + ``np.tile``
-  column-broadcast inside the chunk loop with sparse column scaling via
-  ``sps.diags(1 / (1 - h_chunk))``. Removes a transient
-  ``nbranch × step`` dense allocation that reached ~1 GB on
-  ~70k-bus grids. Numerical output is unchanged.
+  column-broadcast inside the chunk loop with sparse column scaling
+  that divides each column by ``(1 - h_chunk[j])``, zeroing columns
+  where the denominator is zero to preserve the prior ``safe_div``
+  behavior. Removes a transient ``nbranch × step`` dense allocation
+  that reached ~1 GB on ~70k-bus grids. Numerical output is unchanged.
 - ``MatProcessor.build_cg``: replace the O(ng²) ``list.index`` lookup
   with ``StaticGen.idx2uid`` for O(ng) total cost. Matters as
   generator counts grow; modest at current case sizes.
