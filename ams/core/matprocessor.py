@@ -616,8 +616,10 @@ class MatProcessor:
 
         Returns
         -------
-        PTDF : scipy.sparse.lil_matrix
-            Power transfer distribution factor.
+        PTDF : scipy.sparse.csr_matrix
+            Power transfer distribution factor. The result is built into a
+            ``lil_matrix`` for fast row-block assignment during the chunk
+            loop and frozen to ``csr_matrix`` before being returned.
 
         References
         ----------
@@ -706,7 +708,9 @@ class MatProcessor:
         It requires DC PTDF and Cft.
 
         For large cases where memory is a concern, use `incremental=True` to
-        calculate the sparse LODF in chunks in the format of scipy.sparse.lil_matrix.
+        calculate the sparse LODF in chunks. The result is assembled into a
+        ``lil_matrix`` for fast row-block assignment during the chunk loop
+        and frozen to ``csr_matrix`` before being returned.
 
         Parameters
         ----------
@@ -725,7 +729,7 @@ class MatProcessor:
 
         Returns
         -------
-        LODF : scipy.sparse.lil_matrix
+        LODF : scipy.sparse.csr_matrix
             Line outage distribution factor.
 
         References

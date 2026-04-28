@@ -8,7 +8,7 @@ from ams.core.service import NumOp, NumOpDual, ZonalSum
 
 
 def _as_dense(x):
-    """Return a dense ndarray view of either a sparse or dense input."""
+    """Return a dense ndarray from either a sparse or dense input."""
     return x.toarray() if sps.issparse(x) else np.asarray(x)
 
 
