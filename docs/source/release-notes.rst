@@ -9,6 +9,20 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.2
 ==========
 
+v1.2.1 (unreleased)
+----------------------
+
+**Improvements:**
+
+- ``MatProcessor.build_ptdf``: factorize the reduced bus susceptance
+  matrix once via :func:`scipy.sparse.linalg.splu` and reuse the
+  factorization across all line chunks. Removes the dense full-``Bbus``
+  solver path, which materialized an ``nb × nb`` dense matrix and was
+  unusable on grids beyond a few thousand buses. Large-case PTDF builds
+  are noticeably faster (e.g. ~2.5× on a 2000-bus case in incremental
+  mode); numerical output is unchanged. The ``use_umfpack`` keyword is
+  retained for backward compatibility but is now a no-op
+
 v1.2.0 (2026-04-23)
 ----------------------
 

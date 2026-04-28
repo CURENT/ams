@@ -578,8 +578,9 @@ class MatProcessor:
         PTDF[m, n] represents the increased line flow on line `m` for a 1 p.u. power injection at bus `n`.
         It is similar to the Generation Shift Factor (GSF).
 
-        For large cases, use `incremental=True` to calculate the sparse PTDF in chunks. In this mode, the
-        PTDF is calculated in chunks, and thus more memory friendly.
+        The reduced bus susceptance matrix is factorized once via :func:`scipy.sparse.linalg.splu`
+        and the factorization is reused across all line chunks; the dense full-`Bbus` solver path
+        used previously is removed because it materialized an `nb x nb` dense matrix.
 
         Parameters
         ----------
@@ -588,16 +589,19 @@ class MatProcessor:
         no_store : bool, optional
             If False, store the PTDF in `MatProcessor.PTDF._v`. Default is False.
         incremental : bool, optional
-            If True, calculate the sparse PTDF in chunks to save memory. Default is False.
+            Controls chunking of the right-hand side. If True, solve in chunks of size `step` to
+            cap peak memory; if False, solve all line rows at once (one chunk). The reduced bus
+            matrix is factored once in either mode. Default is False.
         step : int, optional
-            Step size for incremental calculation. Default is 1000.
+            RHS chunk size when `incremental=True`. Default is 1000.
         no_tqdm : bool, optional
             If True, disable the progress bar. Default is False.
         permc_spec : str, optional
-            Column permutation strategy for sparsity preservation. Default is 'COLAMD'.
+            Column permutation strategy passed to :func:`scipy.sparse.linalg.splu`. Default is None
+            (SuperLU's default, COLAMD).
         use_umfpack : bool, optional
-            If True, use UMFPACK as the solver. Effective only when (`incremental=True`)
-            & (`line` contains a single line or `step` is 1). Default is True.
+            Retained for backward compatibility; ignored. The factorization now uses SuperLU via
+            :func:`scipy.sparse.linalg.splu`, factored once and reused for all chunks.
 
         Returns
         -------
@@ -609,6 +613,8 @@ class MatProcessor:
         1. PowerWorld Documentation, Power Transfer Distribution Factors,
            https://www.powerworld.com/WebHelp/Content/MainDocumentation_HTML/Power_Transfer_Distribution_Factors.htm
         """
+        del use_umfpack  # accepted for API back-compat; see docstring
+
         system = self.system
 
         # use first slack bus as reference slack bus
@@ -645,28 +651,21 @@ class MatProcessor:
         Bbus = self.Bbus._v
         Bf = self.Bf._v
 
-        if incremental:
-            # initialize progress bar
-            pbar = _init_pbar(total=100, unit='%', no_tqdm=no_tqdm)
+        # factor the reduced bus susceptance matrix once and reuse across chunks
+        A = Bbus[np.ix_(noslack, noref)].T.tocsc()
+        lu = sps.linalg.splu(A, permc_spec=permc_spec)
 
-            H = sps.lil_matrix((nline, system.Bus.n))
+        chunk = step if incremental else nline
+        H = sps.lil_matrix((nline, nbus))
 
-            # NOTE: for PTDF, we are building rows by rows
-            for start in range(0, nline, step):
-                end = min(start + step, nline)
-                sol = sps.linalg.spsolve(A=Bbus[np.ix_(noslack, noref)].T,
-                                         b=Bf[np.ix_(luid[start:end], noref)].T,
-                                         permc_spec=permc_spec,
-                                         use_umfpack=use_umfpack).T
-                H[start:end, noslack] = sol
+        pbar = _init_pbar(total=100, unit='%', no_tqdm=no_tqdm)
 
-                _update_pbar(pbar, end, nline)
-
-        else:
-            H = sps.lil_matrix((nline, nbus))
-            sol = np.linalg.solve(Bbus.todense()[np.ix_(noslack, noref)].T,
-                                  Bf.todense()[np.ix_(luid, noref)].T).T
-            H[:, noslack] = sol
+        for start in range(0, nline, chunk):
+            end = min(start + chunk, nline)
+            rhs = np.asarray(Bf[np.ix_(luid[start:end], noref)].T.todense())
+            sol = lu.solve(rhs).T
+            H[start:end, noslack] = sol
+            _update_pbar(pbar, end, nline)
 
         # reshape results into 1D array if only one line
         if isinstance(line, (int, str)):
