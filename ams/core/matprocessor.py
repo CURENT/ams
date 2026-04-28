@@ -7,7 +7,6 @@ from typing import Optional
 
 import numpy as np
 
-from ams.utils.func import safe_div
 from ams.utils.misc import elapsed
 
 from ams.opt import Param
@@ -367,8 +366,8 @@ class MatProcessor:
         on_gen_idx = [idx_gen[i] for i in on_gen]  # idx of online generators
         on_gen_bus = system.StaticGen.get(src='bus', attr='v', idx=on_gen_idx)
 
-        row = np.array([system.Bus.idx2uid(x) for x in on_gen_bus])
-        col = np.array([idx_gen.index(x) for x in on_gen_idx])
+        row = np.asarray(system.Bus.idx2uid(on_gen_bus))
+        col = np.asarray(system.StaticGen.idx2uid(on_gen_idx))
         self.Cg._v = sps.csr_matrix((np.ones(len(on_gen_idx)), (row, col)), (nb, ng))
         self.Cg.col_names = idx_gen
         self.Cg.row_names = system.Bus.idx.v
@@ -751,9 +750,13 @@ class MatProcessor:
         for luidi in luidp:
             H_chunk = ptdf @ self.Cft._v[:, luidi]
             h_chunk = H_chunk.diagonal(-luidi[0])
-            rden = safe_div(np.ones(H_chunk.shape),
-                            np.tile(np.ones_like(h_chunk) - h_chunk, (nbranch, 1)))
-            H_chunk = H_chunk.multiply(rden).tolil()
+            # column-scale: H_chunk[i, j] /= (1 - h_chunk[j]); preserves
+            # safe_div semantics by zeroing columns where (1 - h_chunk) == 0
+            denom = 1.0 - h_chunk
+            inv = np.zeros_like(denom)
+            mask = denom != 0
+            inv[mask] = 1.0 / denom[mask]
+            H_chunk = (H_chunk @ sps.diags(inv)).tolil()
             # NOTE: use lil_matrix to set diagonal values as -1
             rsid = sps.diags(H_chunk.diagonal(-luidi[0])) + sps.eye(H_chunk.shape[1])
             if H_chunk.shape[0] > rsid.shape[0]:
