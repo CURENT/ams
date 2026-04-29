@@ -36,7 +36,7 @@ def create_parser():
 
     from ams import __version__
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog='ams')
 
     parser.add_argument(
         '--version',
