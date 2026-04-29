@@ -84,7 +84,6 @@ class TestService(unittest.TestCase):
         # object-dtype ndarray as the pre-#233 NumOp bug used to do.
         self.assertTrue(sps.issparse(op.v0))
 
-
     def test_ZonalSum(self):
         """
         Test `ZonalSum`.
