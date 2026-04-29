@@ -10,3 +10,34 @@ pydocstyle:
   disable:
     - D203  # "1 blank line required before class docstring" — conflicts with D211
     - D213  # "Multi-line docstring summary should start at second line" — conflicts with D212
+
+pylint:
+  # Bulk-suppress pylint patterns that produce false-positive churn on
+  # AMS's long-standing code without flagging real defects:
+  #   - too-many-arguments / -positional-arguments / -locals / -branches:
+  #     several AMS public APIs (``ams.main.run``, ``Model.set``,
+  #     ``bench.harness.measure``, ``utils.tab.Tab``) are designed with
+  #     5–11 explicit kwargs for clarity; refactoring just to satisfy
+  #     the default thresholds would harm the API.
+  #   - use-list-literal / use-dict-literal: micro-style nit; fix when
+  #     touching surrounding code, don't churn on legacy modules.
+  #   - no-else-return: stylistic; explicit ``else:`` after ``return`` is
+  #     fine in short branches and improves readability.
+  #   - import-outside-toplevel: intentional in ``ams.bench.env``,
+  #     ``ams.shared``, ``ams.utils.paths``, etc. — lazy/optional-dep
+  #     imports kept at point-of-use to avoid pulling in heavy or
+  #     optional modules at package import time.
+  #   - eval-used: ``ams.utils.lazyimport`` uses ``eval()`` for
+  #     deferred-name resolution; an ``importlib`` rewrite is a
+  #     standalone follow-up (tracked in the codacy_cleanup_post_v1_2_0
+  #     plan). Suppress here in the meantime.
+  disable:
+    - too-many-arguments
+    - too-many-positional-arguments
+    - too-many-locals
+    - too-many-branches
+    - use-list-literal
+    - use-dict-literal
+    - no-else-return
+    - import-outside-toplevel
+    - eval-used
