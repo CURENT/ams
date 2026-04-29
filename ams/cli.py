@@ -34,7 +34,14 @@ def create_parser():
         Parser with all AMS options
     """
 
+    from ams import __version__
+
     parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        '--version',
+        action='version',
+        version=f'%(prog)s {__version__}')
 
     parser.add_argument(
         '-v', '--verbose',
