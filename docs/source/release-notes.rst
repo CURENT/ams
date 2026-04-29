@@ -9,6 +9,19 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.2
 ==========
 
+v1.2.2 (unreleased)
+----------------------
+
+**Internal:**
+
+- Silence Codacy's Bandit findings on the env-capture subprocess calls
+  in ``ams/bench/env.py`` via per-call ``# nosec B404``/``# nosec B603``
+  markers. Codacy's Bandit engine doesn't honor the
+  ``[tool.bandit] skips`` block in ``pyproject.toml`` (it only passes a
+  config file when the project's pattern set is empty), so the inline
+  markers are what actually apply on Codacy. Local ``bandit -c
+  pyproject.toml`` runs continue to honor the skips list.
+
 v1.2.1 (2026-04-29)
 ----------------------
 
