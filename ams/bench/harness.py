@@ -150,5 +150,3 @@ def summarize(
         error=error,
         **common,
     )
-
-
