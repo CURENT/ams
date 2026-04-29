@@ -4,6 +4,7 @@ import scipy.sparse as sps
 
 import ams
 from ams.core.matprocessor import MParam
+from ams.core.param import RParam
 from ams.core.service import NumOp, NumOpDual, ZonalSum
 
 
@@ -67,6 +68,22 @@ class TestService(unittest.TestCase):
                           fun=np.multiply, rfun=np.sum)
         self.assertEqual(p_sum.v, self.ss.PQ.p0.v.sum())
 
+    def test_NumOpDual_sparse_passthrough(self):
+        """
+        ``NumOpDual.v0`` should pass scipy.sparse outputs through
+        untouched when ``array_out=True``, mirroring the ``NumOp.v0``
+        contract from PR #233.
+        """
+        sm = sps.csr_matrix(np.eye(3))
+        u = MParam(v=sm)
+        u2 = MParam(v=sm)
+        op = NumOpDual(u=u, u2=u2,
+                       fun=lambda a, b: a + b,
+                       array_out=True)
+        # Sparse-in, sparse-out: must not be wrapped in an
+        # object-dtype ndarray as the pre-#233 NumOp bug used to do.
+        self.assertTrue(sps.issparse(op.v0))
+
     def test_ZonalSum(self):
         """
         Test `ZonalSum`.
@@ -79,3 +96,20 @@ class TestService(unittest.TestCase):
         np.testing.assert_array_equal(ds.v.shape, (self.nR, self.nD))
         # check if the values are correct
         self.assertTrue(np.all(ds.v.sum(axis=1) <= np.array([self.nB, self.nB])))
+
+
+class TestRParam(unittest.TestCase):
+    """
+    Test functionality of ``RParam``.
+    """
+
+    def test_RParam_sparse_passthrough(self):
+        """
+        Externally-supplied sparse values should flow through
+        ``RParam.v`` without being densified, completing the
+        no-auto-densify contract started by PR #233.
+        """
+        sm = sps.csr_matrix([[1, 0], [0, 2]])
+        rp = RParam(v=sm)
+        self.assertTrue(sps.issparse(rp.v))
+        np.testing.assert_array_equal(rp.v.toarray(), sm.toarray())
