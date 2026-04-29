@@ -19,6 +19,18 @@ v1.2.1 (unreleased)
   ``pip``, ``pytest``, ``git``, and others. ``ams misc --version`` is
   unchanged and still prints the multi-line dependency block (Python,
   andes, numpy, cvxpy, solvers) for bug reports
+- ``RParam.v``: pass scipy.sparse values through untouched on the
+  ``is_ext`` branch (caller-supplied ``v=...``). PR #233 fixed
+  ``MParam.v`` but missed this parallel path; now the no-auto-densify
+  contract is consistent across ``RParam`` and ``MParam``
+- ``NumOpDual.v0``: pass scipy.sparse outputs through untouched when
+  ``array_out=True``, mirroring the ``NumOp.v0`` fix from PR #233.
+  Previously sparse results were wrapped in a 1-element object-dtype
+  ``ndarray``, which broke downstream ``csr_matrix`` conversion. Audit
+  of all other ``v0`` overrides (``NumHstack``, ``ZonalSum``,
+  ``VarSelect``, ``VarReduction``, ``RampSub``) confirmed they all
+  construct results via numpy ops that already return ``ndarray``, so
+  no parallel fix was needed there
 - ``MParam.v`` no longer auto-densifies sparse-stored matrices on every
   property access. The underlying scipy.sparse object is now returned
   as-is; a new ``MParam.dense()`` method materializes a dense
