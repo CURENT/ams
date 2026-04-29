@@ -8,7 +8,6 @@ import logging
 from typing import Optional, Iterable
 
 import numpy as np
-from scipy.sparse import issparse
 
 from ams.opt import Param
 
@@ -173,10 +172,7 @@ class RParam(Param):
             raise NotImplementedError(msg)
         if self.indexer is None:
             if self.is_ext:
-                if issparse(self._v):
-                    out = self._v.toarray()
-                else:
-                    out = self._v
+                out = self._v
             elif self.is_group:
                 out = self.owner.get(src=self.src, attr='v',
                                      idx=self.owner.get_all_idxes())
