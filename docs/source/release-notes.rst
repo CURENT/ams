@@ -25,6 +25,13 @@ v1.2.2 (unreleased)
 
 **Internal:**
 
+- Drop Codecov from CI in favor of Codacy as the single coverage
+  provider. Removes ``.codecov.yml``, the ``codecov/codecov-action``
+  + ``codecov/test-results-action`` upload steps, the duplicate
+  pytest run that produced ``junit.xml``, and the Codecov badge in
+  ``README.md``. Renames ``.github/workflows/codecov.yml`` to
+  ``coverage.yml`` to match its now-Codacy-only role. The
+  ``CODECOV_TOKEN`` repository secret can be deleted.
 - Silence Codacy's Bandit findings on the env-capture subprocess calls
   in ``ams/bench/env.py`` via per-call ``# nosec B404``/``# nosec B603``
   markers. Codacy's Bandit engine doesn't honor the
