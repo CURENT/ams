@@ -8,6 +8,7 @@ import os
 import platform
 import sys
 from time import strftime
+from ams import __version__
 from ams.main import config_logger
 from ams.utils.paths import get_log_dir
 from ams.routines import routine_cli
@@ -34,7 +35,12 @@ def create_parser():
         Parser with all AMS options
     """
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog='ams')
+
+    parser.add_argument(
+        '--version',
+        action='version',
+        version=f'%(prog)s {__version__}')
 
     parser.add_argument(
         '-v', '--verbose',
