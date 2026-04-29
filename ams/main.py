@@ -854,33 +854,44 @@ def selftest(quick=False, extra=False, **kwargs):
         )
         return
 
-    try:
+    # Suppress unittest's per-test prints by redirecting stdout to
+    # /dev/null. Save the caller's stdout (not ``sys.__stdout__``) so
+    # ``contextlib.redirect_stdout`` and similar wrappers survive, and
+    # restore + close in a ``finally`` so an exception inside discovery
+    # or the runner doesn't leak the file handle or leave stdout
+    # suppressed.
+    saved_stdout = sys.stdout
+    devnull = None
+    if logger.handlers:
         logger.handlers[0].setLevel(logging.WARNING)
-        sys.stdout = open(os.devnull, 'w')  # suppress print statements
-    except IndexError:  # logger not set up
-        pass
+        devnull = open(os.devnull, 'w')
+        sys.stdout = devnull
 
-    suite = unittest.TestLoader().discover(test_directory)
+    try:
+        suite = unittest.TestLoader().discover(test_directory)
 
-    # remove codegen for quick mode
-    for test_group in suite._tests:
-        for test_class in test_group._tests:
-            tests_keep = list()
+        # remove codegen for quick mode
+        for test_group in suite._tests:
+            for test_class in test_group._tests:
+                tests_keep = list()
 
-            if not hasattr(test_class, '_tests'):
-                continue
-            for t in test_class._tests:
-                # skip the extra tests if `extra` is not True
-                if (extra is not True) and (extra_test in t._testMethodName):
+                if not hasattr(test_class, '_tests'):
                     continue
+                for t in test_class._tests:
+                    # skip the extra tests if `extra` is not True
+                    if (extra is not True) and (extra_test in t._testMethodName):
+                        continue
 
-                # skip the ones for `quick`
-                if quick is True and (t._testMethodName in quick_skips):
-                    continue
+                    # skip the ones for `quick`
+                    if quick is True and (t._testMethodName in quick_skips):
+                        continue
 
-                tests_keep.append(t)
+                    tests_keep.append(t)
 
-            test_class._tests = tests_keep
+                test_class._tests = tests_keep
 
-    unittest.TextTestRunner(verbosity=verbose).run(suite)
-    sys.stdout = sys.__stdout__
+        unittest.TextTestRunner(verbosity=verbose).run(suite)
+    finally:
+        sys.stdout = saved_stdout
+        if devnull is not None:
+            devnull.close()
