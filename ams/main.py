@@ -840,14 +840,26 @@ def selftest(quick=False, extra=False, **kwargs):
     # extra test naming convention
     extra_test = 'extra_test'
 
+    # The test suite ships with the source tree but is excluded from the
+    # built wheel (see ``[tool.setuptools.packages.find].exclude`` in
+    # pyproject.toml). On a wheel install ``tests_root()`` therefore
+    # points at a directory that does not exist; degrade gracefully
+    # instead of crashing inside unittest discovery.
+    test_directory = tests_root()
+    if not os.path.isdir(test_directory):
+        logger.warning(
+            "ams st: test suite is not packaged with wheel installs. "
+            "Clone https://github.com/CURENT/ams and run 'pytest' from "
+            "the repository root for the full suite."
+        )
+        return
+
     try:
         logger.handlers[0].setLevel(logging.WARNING)
         sys.stdout = open(os.devnull, 'w')  # suppress print statements
     except IndexError:  # logger not set up
         pass
 
-    # discover test cases
-    test_directory = tests_root()
     suite = unittest.TestLoader().discover(test_directory)
 
     # remove codegen for quick mode
