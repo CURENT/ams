@@ -76,7 +76,14 @@ license-files = []
 # capture (`sysctl` for CPU brand, `git rev-parse`/`git status` for SHA
 # + dirty flag) with literal list args — no shell, no user-controlled
 # input. B110 (try/except/pass) is NOT skipped so real swallowed errors
-# stay visible. Codacy honors this section when running Bandit.
+# stay visible.
+#
+# Honored by local `bandit -c pyproject.toml -r ams` runs. NOT honored
+# by Codacy: codacy-bandit only passes a config file to bandit when the
+# project's pattern set is empty, and we leave the default Codacy
+# patterns enabled. The per-call `# nosec B404` / `# nosec B603`
+# comments in `ams/bench/env.py` are what actually silence these on
+# Codacy.
 skips = ["B404", "B603"]
 
 [tool.pydocstyle]
