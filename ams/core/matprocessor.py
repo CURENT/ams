@@ -7,7 +7,6 @@ from typing import Optional
 
 import numpy as np
 
-from ams.utils.func import safe_div
 from ams.utils.misc import elapsed
 
 from ams.opt import Param
@@ -197,38 +196,50 @@ class MParam(Param):
                                           path=path,
                                           fmt='csv')
 
-        pd.DataFrame(data=self.v, columns=self.col_names, index=self.row_names).to_csv(path)
+        pd.DataFrame(data=self.dense(), columns=self.col_names, index=self.row_names).to_csv(path)
 
         return file_name
 
     @property
     def v(self):
         """
-        Return the value of the parameter.
+        Return the underlying value of the parameter.
+
+        For ``sparse=True`` MParams the underlying scipy.sparse matrix is
+        returned as-is. Use :meth:`dense` (or call ``.toarray()`` on the
+        sparse object directly) when an :class:`numpy.ndarray` is required.
         """
-        # NOTE: scipy.sparse matrix will return 2D array
-        # so we squeeze it here if only one row
-        if isinstance(self._v, (sps.csr_matrix, sps.lil_matrix, sps.csc_matrix)):
+        return self._v
+
+    def dense(self):
+        """
+        Return the parameter value as a dense :class:`numpy.ndarray`.
+
+        For sparse-stored MParams this materializes the full dense matrix
+        and squeezes a single-row result down to a 1D array (preserving
+        the historical 1-row shape contract). For dense storage this is
+        a no-op pass-through.
+        """
+        if sps.issparse(self._v):
             out = self._v.toarray()
             if out.shape[0] == 1:
                 return np.squeeze(out)
-            else:
-                return out
+            return out
         return self._v
 
     @property
     def shape(self):
         """
-        Return the shape of the parameter.
+        Return the shape of the parameter without materializing the value.
         """
-        return self.v.shape
+        return self._v.shape
 
     @property
     def n(self):
         """
-        Return the szie of the parameter.
+        Return the size of the parameter without materializing the value.
         """
-        return len(self.v)
+        return self._v.shape[0]
 
     @property
     def class_name(self):
@@ -367,8 +378,8 @@ class MatProcessor:
         on_gen_idx = [idx_gen[i] for i in on_gen]  # idx of online generators
         on_gen_bus = system.StaticGen.get(src='bus', attr='v', idx=on_gen_idx)
 
-        row = np.array([system.Bus.idx2uid(x) for x in on_gen_bus])
-        col = np.array([idx_gen.index(x) for x in on_gen_idx])
+        row = np.asarray(system.Bus.idx2uid(on_gen_bus))
+        col = np.asarray(system.StaticGen.idx2uid(on_gen_idx))
         self.Cg._v = sps.csr_matrix((np.ones(len(on_gen_idx)), (row, col)), (nb, ng))
         self.Cg.col_names = idx_gen
         self.Cg.row_names = system.Bus.idx.v
@@ -578,8 +589,9 @@ class MatProcessor:
         PTDF[m, n] represents the increased line flow on line `m` for a 1 p.u. power injection at bus `n`.
         It is similar to the Generation Shift Factor (GSF).
 
-        For large cases, use `incremental=True` to calculate the sparse PTDF in chunks. In this mode, the
-        PTDF is calculated in chunks, and thus more memory friendly.
+        The reduced bus susceptance matrix is factorized once via :func:`scipy.sparse.linalg.splu`
+        and the factorization is reused across all line chunks; the dense full-`Bbus` solver path
+        used previously is removed because it materialized an `nb x nb` dense matrix.
 
         Parameters
         ----------
@@ -588,27 +600,34 @@ class MatProcessor:
         no_store : bool, optional
             If False, store the PTDF in `MatProcessor.PTDF._v`. Default is False.
         incremental : bool, optional
-            If True, calculate the sparse PTDF in chunks to save memory. Default is False.
+            Controls chunking of the right-hand side. If True, solve in chunks of size `step` to
+            cap peak memory; if False, solve all line rows at once (one chunk). The reduced bus
+            matrix is factored once in either mode. Default is False.
         step : int, optional
-            Step size for incremental calculation. Default is 1000.
+            RHS chunk size when `incremental=True`. Default is 1000.
         no_tqdm : bool, optional
-            If True, disable the progress bar. Default is False.
+            If True, disable the progress bar. Default is True.
         permc_spec : str, optional
-            Column permutation strategy for sparsity preservation. Default is 'COLAMD'.
+            Column permutation strategy passed to :func:`scipy.sparse.linalg.splu`. Default is None
+            (SuperLU's default, COLAMD).
         use_umfpack : bool, optional
-            If True, use UMFPACK as the solver. Effective only when (`incremental=True`)
-            & (`line` contains a single line or `step` is 1). Default is True.
+            Retained for backward compatibility; ignored. The factorization now uses SuperLU via
+            :func:`scipy.sparse.linalg.splu`, factored once and reused for all chunks.
 
         Returns
         -------
-        PTDF : scipy.sparse.lil_matrix
-            Power transfer distribution factor.
+        PTDF : scipy.sparse.csr_matrix
+            Power transfer distribution factor. The result is built into a
+            ``lil_matrix`` for fast row-block assignment during the chunk
+            loop and frozen to ``csr_matrix`` before being returned.
 
         References
         ----------
         1. PowerWorld Documentation, Power Transfer Distribution Factors,
            https://www.powerworld.com/WebHelp/Content/MainDocumentation_HTML/Power_Transfer_Distribution_Factors.htm
         """
+        del use_umfpack  # accepted for API back-compat; see docstring
+
         system = self.system
 
         # use first slack bus as reference slack bus
@@ -645,28 +664,27 @@ class MatProcessor:
         Bbus = self.Bbus._v
         Bf = self.Bf._v
 
-        if incremental:
-            # initialize progress bar
-            pbar = _init_pbar(total=100, unit='%', no_tqdm=no_tqdm)
-
-            H = sps.lil_matrix((nline, system.Bus.n))
-
-            # NOTE: for PTDF, we are building rows by rows
-            for start in range(0, nline, step):
-                end = min(start + step, nline)
-                sol = sps.linalg.spsolve(A=Bbus[np.ix_(noslack, noref)].T,
-                                         b=Bf[np.ix_(luid[start:end], noref)].T,
-                                         permc_spec=permc_spec,
-                                         use_umfpack=use_umfpack).T
-                H[start:end, noslack] = sol
-
-                _update_pbar(pbar, end, nline)
-
+        # factor the reduced bus susceptance matrix once and reuse across chunks
+        A = Bbus[np.ix_(noslack, noref)].T.tocsc()
+        if permc_spec is None:
+            lu = sps.linalg.splu(A)
         else:
-            H = sps.lil_matrix((nline, nbus))
-            sol = np.linalg.solve(Bbus.todense()[np.ix_(noslack, noref)].T,
-                                  Bf.todense()[np.ix_(luid, noref)].T).T
-            H[:, noslack] = sol
+            lu = sps.linalg.splu(A, permc_spec=permc_spec)
+
+        chunk = step if incremental else nline
+        # build with lil for fast row-block assignment, freeze to csr at the end
+        H = sps.lil_matrix((nline, nbus))
+
+        pbar = _init_pbar(total=100, unit='%', no_tqdm=no_tqdm)
+
+        for start in range(0, nline, chunk):
+            end = min(start + chunk, nline)
+            rhs = Bf[np.ix_(luid[start:end], noref)].T.toarray()
+            sol = lu.solve(rhs).T
+            H[start:end, noslack] = sol
+            _update_pbar(pbar, end, nline)
+
+        H = H.tocsr()
 
         # reshape results into 1D array if only one line
         if isinstance(line, (int, str)):
@@ -690,7 +708,9 @@ class MatProcessor:
         It requires DC PTDF and Cft.
 
         For large cases where memory is a concern, use `incremental=True` to
-        calculate the sparse LODF in chunks in the format of scipy.sparse.lil_matrix.
+        calculate the sparse LODF in chunks. The result is assembled into a
+        ``lil_matrix`` for fast row-block assignment during the chunk loop
+        and frozen to ``csr_matrix`` before being returned.
 
         Parameters
         ----------
@@ -709,7 +729,7 @@ class MatProcessor:
 
         Returns
         -------
-        LODF : scipy.sparse.lil_matrix
+        LODF : scipy.sparse.csr_matrix
             Line outage distribution factor.
 
         References
@@ -749,9 +769,13 @@ class MatProcessor:
         for luidi in luidp:
             H_chunk = ptdf @ self.Cft._v[:, luidi]
             h_chunk = H_chunk.diagonal(-luidi[0])
-            rden = safe_div(np.ones(H_chunk.shape),
-                            np.tile(np.ones_like(h_chunk) - h_chunk, (nbranch, 1)))
-            H_chunk = H_chunk.multiply(rden).tolil()
+            # column-scale: H_chunk[i, j] /= (1 - h_chunk[j]); preserves
+            # safe_div semantics by zeroing columns where (1 - h_chunk) == 0
+            denom = 1.0 - h_chunk
+            inv = np.zeros_like(denom)
+            mask = denom != 0
+            inv[mask] = 1.0 / denom[mask]
+            H_chunk = (H_chunk @ sps.diags(inv)).tolil()
             # NOTE: use lil_matrix to set diagonal values as -1
             rsid = sps.diags(H_chunk.diagonal(-luidi[0])) + sps.eye(H_chunk.shape[1])
             if H_chunk.shape[0] > rsid.shape[0]:
@@ -763,6 +787,8 @@ class MatProcessor:
             LODF[:, [luid.index(i) for i in luidi]] = H_chunk
 
             _update_pbar(pbar, luid.index(luidi[-1]), nline)
+
+        LODF = LODF.tocsr()
 
         # reshape results into 1D array if only one line
         if isinstance(line, (int, str)):

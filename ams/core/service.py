@@ -299,8 +299,14 @@ class NumOp(ROperationService):
     def v0(self):
         out = self.fun(self.u.v, **self.args)
         if self.array_out:
-            if not isinstance(out, np.ndarray):
-                out = np.array([out])
+            # wrap genuine Python scalars in a 1-element ndarray; pass
+            # ndarrays and scipy.sparse matrices through untouched;
+            # convert other array-likes (lists/tuples) via np.asarray
+            if not isinstance(out, np.ndarray) and not spr.issparse(out):
+                if np.isscalar(out):
+                    out = np.array([out])
+                else:
+                    out = np.asarray(out)
         return out
 
     @property
@@ -444,8 +450,14 @@ class NumOpDual(NumOp):
     def v0(self):
         out = self.fun(self.u.v, self.u2.v, **self.args)
         if self.array_out:
-            if not isinstance(out, np.ndarray):
-                out = np.array([out])
+            # wrap genuine Python scalars in a 1-element ndarray; pass
+            # ndarrays and scipy.sparse matrices through untouched;
+            # convert other array-likes (lists/tuples) via np.asarray
+            if not isinstance(out, np.ndarray) and not spr.issparse(out):
+                if np.isscalar(out):
+                    out = np.array([out])
+                else:
+                    out = np.asarray(out)
         if self.sparse:
             return spr.csr_matrix(out)
         return out

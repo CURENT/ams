@@ -9,6 +9,81 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.2
 ==========
 
+v1.2.1 (2026-04-29)
+----------------------
+
+**Bug fixes:**
+
+- ``ams st`` (a.k.a. ``ams.main.selftest``) now degrades gracefully on
+  wheel installs. v1.2.0 correctly excluded the ``tests/`` directory
+  from the built wheel, but ``ams st`` was still calling
+  ``unittest.TestLoader().discover('<site-packages>/tests')`` and
+  crashing with ``ImportError: Start directory is not importable``. The
+  command now detects the missing directory, logs a one-line message
+  pointing the user to ``pytest`` from a clone, and exits cleanly. From
+  a source clone the behavior is unchanged. While in the function,
+  also harden the stdout-suppression block: save the caller's stdout
+  (not ``sys.__stdout__``) so wrappers like
+  ``contextlib.redirect_stdout`` are preserved, restore + close the
+  ``/dev/null`` handle in a ``finally``, and gate the redirect on
+  ``logger.handlers`` being non-empty (replacing a try/except IndexError)
+
+**Improvements:**
+
+- Add top-level ``ams --version`` flag that prints the AMS version
+  (``ams X.Y.Z``), following the standard CLI convention used by
+  ``pip``, ``pytest``, ``git``, and others. ``ams misc --version`` is
+  unchanged and still prints the multi-line dependency block (Python,
+  andes, numpy, cvxpy, solvers) for bug reports
+- ``RParam.v``: pass scipy.sparse values through untouched on the
+  ``is_ext`` branch (caller-supplied ``v=...``). PR #233 fixed
+  ``MParam.v`` but missed this parallel path; now the no-auto-densify
+  contract is consistent across ``RParam`` and ``MParam``
+- ``NumOpDual.v0``: pass scipy.sparse outputs through untouched when
+  ``array_out=True``, mirroring the ``NumOp.v0`` fix from PR #233.
+  Previously sparse results were wrapped in a 1-element object-dtype
+  ``ndarray``, which broke downstream ``csr_matrix`` conversion. Audit
+  of all other ``v0`` overrides (``NumHstack``, ``ZonalSum``,
+  ``VarSelect``, ``VarReduction``, ``RampSub``) confirmed they all
+  construct results via numpy ops that already return ``ndarray``, so
+  no parallel fix was needed there
+- ``MParam.v`` no longer auto-densifies sparse-stored matrices on every
+  property access. The underlying scipy.sparse object is now returned
+  as-is; a new ``MParam.dense()`` method materializes a dense
+  :class:`numpy.ndarray` when one is genuinely required. ``.shape`` and
+  ``.n`` consult the underlying value directly without densifying.
+  Together with the ``sparse=True`` declarations on the matrix
+  ``RParam`` consumers in ``DCPF`` / ``DCOPF`` / ``DCOPF2``, this lets
+  routines actually pass sparse matrices to CVXPY instead of silently
+  densifying them on every parameter set
+- ``MatProcessor.build_ptdf`` / ``build_lodf`` now finalize the result
+  as ``csr_matrix`` rather than leaving it as ``lil_matrix``. ``lil`` is
+  the right format for incremental row assignment during construction
+  but is poorly supported by downstream consumers (CVXPY, scipy ``COO``
+  conversion); freezing to ``csr`` at the end is the canonical pattern
+- ``NumOp.v0``: pass scipy.sparse outputs through untouched when
+  ``array_out=True``. Previously sparse results were wrapped in a
+  1-element :class:`numpy.ndarray` of object dtype, which broke the
+  subsequent ``csr_matrix`` conversion in :meth:`NumOp.v` for sparse
+  ``NumOp``\ s such as ``DCOPF2.PTDFt``
+- ``MatProcessor.build_lodf``: replace the dense ``np.ones`` + ``np.tile``
+  column-broadcast inside the chunk loop with sparse column scaling
+  that divides each column by ``(1 - h_chunk[j])``, zeroing columns
+  where the denominator is zero to preserve the prior ``safe_div``
+  behavior. Removes a transient ``nbranch × step`` dense allocation
+  that reached ~1 GB on ~70k-bus grids. Numerical output is unchanged.
+- ``MatProcessor.build_cg``: replace the O(ng²) ``list.index`` lookup
+  with ``StaticGen.idx2uid`` for O(ng) total cost. Matters as
+  generator counts grow; modest at current case sizes.
+- ``MatProcessor.build_ptdf``: factorize the reduced bus susceptance
+  matrix once via :func:`scipy.sparse.linalg.splu` and reuse the
+  factorization across all line chunks. Removes the dense full-``Bbus``
+  solver path, which materialized an ``nb × nb`` dense matrix and was
+  unusable on grids beyond a few thousand buses. Large-case PTDF builds
+  are noticeably faster (e.g. ~2.5× on a 2000-bus case in incremental
+  mode); numerical output is unchanged. The ``use_umfpack`` keyword is
+  retained for backward compatibility but is now a no-op.
+
 v1.2.0 (2026-04-23)
 ----------------------
 
