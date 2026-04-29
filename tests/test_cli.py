@@ -1,6 +1,9 @@
-import unittest
+import contextlib
+import io
 import os
+import unittest
 
+import ams
 import ams.main
 import ams.cli
 
@@ -9,6 +12,16 @@ class TestCLI(unittest.TestCase):
 
     def test_cli_parser(self):
         ams.cli.create_parser()
+
+    def test_cli_version_flag(self):
+        parser = ams.cli.create_parser()
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            with self.assertRaises(SystemExit) as cm:
+                parser.parse_args(['--version'])
+        self.assertEqual(cm.exception.code, 0)
+        out = buf.getvalue().strip()
+        self.assertEqual(out, f'ams {ams.__version__}')
 
     def test_cli_preamble(self):
         ams.cli.preamble()
