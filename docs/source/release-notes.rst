@@ -12,6 +12,22 @@ v1.2
 v1.2.1 (unreleased)
 ----------------------
 
+**Bug fixes:**
+
+- ``ams st`` (a.k.a. ``ams.main.selftest``) now degrades gracefully on
+  wheel installs. v1.2.0 correctly excluded the ``tests/`` directory
+  from the built wheel, but ``ams st`` was still calling
+  ``unittest.TestLoader().discover('<site-packages>/tests')`` and
+  crashing with ``ImportError: Start directory is not importable``. The
+  command now detects the missing directory, logs a one-line message
+  pointing the user to ``pytest`` from a clone, and exits cleanly. From
+  a source clone the behavior is unchanged. While in the function,
+  also harden the stdout-suppression block: save the caller's stdout
+  (not ``sys.__stdout__``) so wrappers like
+  ``contextlib.redirect_stdout`` are preserved, restore + close the
+  ``/dev/null`` handle in a ``finally``, and gate the redirect on
+  ``logger.handlers`` being non-empty (replacing a try/except IndexError)
+
 **Improvements:**
 
 - Add top-level ``ams --version`` flag that prints the AMS version
