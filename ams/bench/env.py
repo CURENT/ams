@@ -93,7 +93,7 @@ def _cpu_brand() -> str:
     proc_cpuinfo = Path("/proc/cpuinfo")
     if proc_cpuinfo.exists():
         try:
-            for line in proc_cpuinfo.read_text().splitlines():
+            for line in proc_cpuinfo.read_text(encoding='utf-8').splitlines():
                 if line.startswith("model name"):
                     return line.split(":", 1)[1].strip()
         except Exception as exc:  # env capture must never raise

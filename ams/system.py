@@ -627,6 +627,7 @@ class System:
         Adapted from ``andes.system.System.link_ext_param``.
         Original author: Hantao Cui. License: GPL-3.0.
         """
+        del model  # API-compat noop — AMS always links all models
         ret = True
         for mdl in self.models.values():
             for instance in mdl.params_ext.values():
@@ -759,7 +760,7 @@ class System:
                 return None
 
         conf = self.collect_config()
-        with open(file_path, 'w') as f:
+        with open(file_path, 'w', encoding='utf-8') as f:
             conf.write(f)
 
         logger.info('Config written to "%s"', file_path)
@@ -828,9 +829,9 @@ class System:
             else:
                 return name
 
-        pairs = list()
+        pairs = []
         for g in self.groups:
-            models = list()
+            models = []
             for m in self.groups[g].models:
                 models.append(rst_ref(m, export))
             if len(models) > 0:
