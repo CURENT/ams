@@ -12,6 +12,17 @@ v1.2
 v1.2.2 (unreleased)
 ----------------------
 
+**Bug fixes:**
+
+- ``bench.harness.measure``: when warmup raises, the failure path now
+  preserves the structured tags (``routine``, ``case``, ``solver``,
+  ``phase``, ``metadata``) on the returned ``Measurement`` instead of
+  dropping them.
+- ``LazyImport.__maybe_import_complementary_imports__`` narrows the
+  swallowed exception from bare ``except Exception`` to
+  ``except ImportError`` and logs at DEBUG, so unexpected failures stop
+  being silently hidden.
+
 **Internal:**
 
 - Silence Codacy's Bandit findings on the env-capture subprocess calls
@@ -21,6 +32,24 @@ v1.2.2 (unreleased)
   config file when the project's pattern set is empty), so the inline
   markers are what actually apply on Codacy. Local ``bandit -c
   pyproject.toml`` runs continue to honor the skips list.
+- ``ams.io.dump``: initialize ``ret`` defensively before the
+  format-dispatch ``if/elif`` to silence pylint's
+  ``possibly-used-before-assignment``. The earlier ``output_formats``
+  membership guard already ensures one branch fires at runtime, so
+  ``ret`` was never actually unbound — this is a static-analysis
+  cleanup, not a behavior change.
+- Add ``encoding='utf-8'`` to text-mode ``open()`` /
+  ``Path.read_text`` calls in ``ams.bench.env``, ``ams.bench.__main__``,
+  and ``ams.system`` (config-file write). Avoids the platform-default
+  encoding foot-gun on Windows.
+- ``link_ext_param(model=None)`` and ``Model.set(..., base=None)``:
+  document and explicitly drop the API-compat-only arguments so they
+  no longer surface as ``unused-argument`` lint findings.
+- Bulk-disable noisy pylint patterns in ``.prospector.yaml``
+  (``too-many-arguments`` / ``-locals`` / ``-branches``,
+  ``use-list-literal`` / ``use-dict-literal``, ``no-else-return``,
+  ``import-outside-toplevel``, ``eval-used``) with rationale; replaces
+  per-PR Codacy churn on long-standing code.
 
 v1.2.1 (2026-04-29)
 ----------------------
