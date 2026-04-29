@@ -242,6 +242,7 @@ class Model:
         bool
             True when successful.
         """
+        del base  # API-compat noop — accepted but ignored (see docstring)
         # Resolve attr and value from the mixed positional / keyword call styles.
         #
         # Style A (ANDES v2.0.0 GroupBase dispatch):

@@ -75,7 +75,13 @@ def measure(
             fn()
     except Exception as exc:
         logger.warning("bench %s/%s: warmup failed: %s", group, name, exc)
-        return _failed(name, group, reps, warmup_reps, str(exc))
+        return summarize(
+            [],
+            name=name, group=group, reps=reps, warmup_reps=warmup_reps,
+            error=str(exc),
+            routine=routine, case=case, solver=solver, phase=phase,
+            metadata=metadata,
+        )
 
     raw: list[float] = []
     err: str | None = None
@@ -146,16 +152,3 @@ def summarize(
     )
 
 
-def _failed(name: str, group: str, reps: int, warmup_reps: int, msg: str) -> Measurement:
-    return Measurement(
-        name=name,
-        group=group,
-        reps=reps,
-        warmup_reps=warmup_reps,
-        mean_s=None,
-        stdev_s=None,
-        min_s=None,
-        max_s=None,
-        raw_s=[],
-        error=msg,
-    )

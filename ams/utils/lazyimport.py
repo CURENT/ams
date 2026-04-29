@@ -1,5 +1,4 @@
-"""
-Lazy import utility for optional and deferred dependencies.
+"""Lazy import utility for optional and deferred dependencies.
 
 Notes
 -----
@@ -27,6 +26,9 @@ Original pyforest license (MIT):
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 """
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class LazyImport:
@@ -60,8 +62,11 @@ class LazyImport:
         for lazy_import in self.__complementary_imports__:
             try:
                 lazy_import.__maybe_import__()
-            except Exception:  # NOQA
-                pass
+            except ImportError as exc:
+                logger.debug(
+                    "lazy complementary import %r failed: %s",
+                    lazy_import.__import_statement__, exc,
+                )
 
     def __maybe_import__(self):
         self.__maybe_import_complementary_imports__()
