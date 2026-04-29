@@ -10,6 +10,12 @@ class TestCLI(unittest.TestCase):
     def test_cli_parser(self):
         ams.cli.create_parser()
 
+    def test_cli_version_flag(self):
+        parser = ams.cli.create_parser()
+        with self.assertRaises(SystemExit) as cm:
+            parser.parse_args(['--version'])
+        self.assertEqual(cm.exception.code, 0)
+
     def test_cli_preamble(self):
         ams.cli.preamble()
 

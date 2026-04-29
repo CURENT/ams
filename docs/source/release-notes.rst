@@ -14,6 +14,11 @@ v1.2.1 (unreleased)
 
 **Improvements:**
 
+- Add top-level ``ams --version`` flag that prints the AMS version
+  (``ams X.Y.Z``), following the standard CLI convention used by
+  ``pip``, ``pytest``, ``git``, and others. ``ams misc --version`` is
+  unchanged and still prints the multi-line dependency block (Python,
+  andes, numpy, cvxpy, solvers) for bug reports
 - ``MParam.v`` no longer auto-densifies sparse-stored matrices on every
   property access. The underlying scipy.sparse object is now returned
   as-is; a new ``MParam.dense()`` method materializes a dense
