@@ -109,6 +109,60 @@ class TestEfnPlumbing(unittest.TestCase):
         self.assertEqual(o.sense, 'maximize')
 
 
+class TestRuntimeCustomization(unittest.TestCase):
+    """Regression for the ex8.ipynb pattern: post-init e_str modification.
+
+    After ``routine.init()`` runs auto-prep, ``e_str`` must remain readable
+    and writable so authors can do the documented customization pattern:
+
+        sp.DCOPF.obj.e_str += '+ sum(mul(ce, pg))'
+
+    Fixed by routing ``_link_pycode`` through the raw ``_e_fn`` slot
+    (preserves ``e_str``) and tracking ``_e_dirty`` on the descriptor so
+    re-init's wiring respects user overrides.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ss = ams.load(
+            ams.get_case('5bus/pjm5bus_demo.xlsx'),
+            setup=True,
+            no_output=True,
+            default_config=True,
+        )
+
+    def test_e_str_preserved_after_init(self):
+        """First init wires e_fn but must not clear e_str."""
+        self.ss.DCOPF.init()
+        self.assertIsNotNone(self.ss.DCOPF.obj.e_str,
+                             "obj.e_str cleared after init — breaks the "
+                             "addConstrs / e_str+= customization pattern")
+        self.assertIsNotNone(self.ss.DCOPF.obj.e_fn,
+                             "auto-prep should still wire e_fn")
+
+    def test_e_str_append_then_reinit(self):
+        """The exact ex8.ipynb cell-24 pattern."""
+        ss = ams.load(
+            ams.get_case('5bus/pjm5bus_demo.xlsx'),
+            setup=True, no_output=True, default_config=True,
+        )
+        ss.DCOPF.init()
+        # Read should not be None.
+        original = ss.DCOPF.obj.e_str
+        self.assertIsNotNone(original)
+        # Append (the documented customization knob).
+        ss.DCOPF.obj.e_str = original + ' + 0 * sum(pg)'  # no-op term
+        # Mutex must mark dirty so re-init doesn't restore the wired e_fn.
+        self.assertTrue(getattr(ss.DCOPF.obj, '_e_dirty', False),
+                        "appending to e_str must mark item dirty")
+        self.assertIsNone(ss.DCOPF.obj.e_fn,
+                          "appending to e_str must clear the wired e_fn "
+                          "so the legacy regex path picks up the new text")
+        ss.DCOPF.init()
+        ss.DCOPF.run(solver='CLARABEL')
+        self.assertEqual(ss.DCOPF.exit_code, 0)
+
+
 class TestDopfInitsViaEfn(unittest.TestCase):
     """Smoke test: DOPF / DOPFVIS init cleanly via the codegen e_fn path."""
 

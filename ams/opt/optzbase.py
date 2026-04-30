@@ -77,6 +77,15 @@ class _EFormDescriptor:
     Setting one to a non-None value clears the other so the most recent
     assignment wins. Lets subclasses override an inherited element's
     ``e_str`` without inheriting a stale ``e_fn`` from the parent class.
+
+    When the assignment *replaces* a previously-set other form, set the
+    ``_e_dirty`` flag on the instance. ``_link_pycode`` reads this flag to
+    decide whether to wire codegen output: a dirty item has been
+    user-modified at runtime (e.g. ``obj.e_str += '...'``) and must keep
+    its current state; auto-prep would otherwise overwrite the user's
+    intent with a stale callable from the disk cache. Codegen wiring
+    itself bypasses the descriptor by writing ``_e_fn`` directly, so it
+    never trips this flag.
     """
 
     def __init__(self, mine, other):
@@ -89,9 +98,12 @@ class _EFormDescriptor:
         return getattr(obj, self._mine, None)
 
     def __set__(self, obj, value):
+        prior_other = getattr(obj, self._other, None)
         setattr(obj, self._mine, value)
         if value is not None:
             setattr(obj, self._other, None)
+            if prior_other is not None:
+                obj._e_dirty = True
 
 
 class OptzBase:

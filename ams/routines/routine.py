@@ -199,13 +199,24 @@ class RoutineBase:
             spec.loader.exec_module(gen)
 
         # Wire e_fn (and pre-rendered tex) from the generated module onto
-        # items missing them. The descriptor mutex ensures the e_str path
-        # is preempted; setting e_tex is purely additive metadata used by
-        # the documenter to recover LaTeX after e_str clears.
+        # items missing them. Two semantic notes:
+        #
+        # 1) We write the raw ``_e_fn`` slot (bypassing the descriptor
+        #    mutex) so the original ``e_str`` is preserved on the item.
+        #    This lets users do ``routine.obj.e_str += '...'`` post-init
+        #    — a documented customization pattern (see examples/ex8.ipynb)
+        #    that the previous mutex-clearing behavior broke.
+        #
+        # 2) We skip items the user has explicitly modified at runtime
+        #    (``_e_dirty == True``). Their custom ``e_str`` flows through
+        #    the legacy regex+eval path in ``parse()`` / ``evaluate()`` so
+        #    we don't clobber user intent with a stale codegen callable.
         def _wire(item, prefix, name):
+            if getattr(item, '_e_dirty', False):
+                return
             fn = getattr(gen, f'_{prefix}_{name}', None)
-            if fn is not None and item.e_fn is None:
-                item.e_fn = fn
+            if fn is not None and getattr(item, '_e_fn', None) is None:
+                item._e_fn = fn
             tex = getattr(gen, f'_{prefix}_{name}_tex', None)
             if tex is not None and getattr(item, 'e_tex', None) is None:
                 item.e_tex = tex
