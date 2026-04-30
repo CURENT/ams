@@ -53,6 +53,51 @@ _FUNCTION_REWRITES = OrderedDict([
 ])
 
 
+# Static tex_map templates — mirror those built in
+# :class:`ams.core.symprocessor.SymProcessor.__init__`. The codegen
+# needs the same templates plus the per-symbol ``\b<name>\b → tex_name``
+# rules (added in :func:`_build_tex_map`).
+_TEX_TEMPLATES = OrderedDict([
+    (r'\*\*(\d+)', '^{\\1}'),
+    (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 \2'),
+    (r'\@', r' '),
+    (r'dot', r' '),
+    (r'sum_squares\((.*?)\)', r"SUM((\1))^2"),
+    (r'multiply\(([^,]+), ([^)]+)\)', r'\1 \2'),
+    (r'\bnp.linalg.pinv(\d+)', r'\1^{\-1}'),
+    (r'\bpos\b', 'F^{+}'),
+    (r'mul\((.*?),\s*(.*?)\)', r'\1 \2'),
+    (r'\bmul\b\((.*?),\s*(.*?)\)', r'\1 \2'),
+    (r'\bsum\b', 'SUM'),
+    (r'power\((.*?),\s*(\d+)\)', r'\1^\2'),
+    (r'(\w+).dual_variables\[0\]', r'\phi[\1]'),
+])
+
+
+def _build_tex_map(routine) -> "OrderedDict[str, str]":
+    """Build the tex_map for codegen-time LaTeX rendering.
+
+    Mirrors what :meth:`SymProcessor.generate_symbols` would put in
+    ``rtn.syms.tex_map`` — the static templates plus a
+    ``\\b<name>\\b → <tex_name>`` rule per symbol. The codegen running
+    this against an item's ``e_str`` produces the same string the
+    legacy runtime path produced.
+    """
+    tex_map = OrderedDict(_TEX_TEMPLATES)
+    for name, var in routine.vars.items():
+        tex_map[rf'\b{name}\b'] = var.tex_name or name
+    for name, rparam in routine.rparams.items():
+        tex_map[rf'\b{name}\b'] = rparam.tex_name or name
+    for name, service in routine.services.items():
+        tex_map[rf'\b{name}\b'] = service.tex_name or name
+    for name, expr in routine.exprs.items():
+        tex_map[rf'\b{name}\b'] = expr.tex_name or name
+    cfg_tex = getattr(routine.config, 'tex_names', {}) or {}
+    for key in routine.config.as_dict():
+        tex_map[rf'\b{key}\b'] = cfg_tex.get(key, key)
+    return tex_map
+
+
 def _collect_symbol_names(routine) -> list:
     """All symbol names the runtime :class:`RoutineNS` resolves."""
     names = set()
@@ -144,6 +189,31 @@ def _emit_callable(prefix: str, name: str, body: str,
     return [snippet]
 
 
+def _render_tex(item, tex_map) -> str:
+    """Run an item's ``e_str`` through the same tex_map pipeline the
+    documenter uses (``ams.core.documenter._tex_pre``).
+
+    Calling the existing helper preserves the map_before/map_post
+    sigil-escape dance so backslashed replacements (``\\sum``,
+    ``\\theta``, ``\\eta`` …) survive ``re.sub``'s replacement-string
+    interpretation. The result is identical to the runtime
+    documenter path; we just compute it once at codegen time and
+    embed in pycode for items that won't have ``e_str`` post-init.
+    """
+    from ams.core.documenter import _tex_pre
+
+    class _StubDocm:
+        class parent:
+            class_name = '<codegen>'
+
+    return _tex_pre(_StubDocm(), item, tex_map)
+
+
+def _emit_tex_string(prefix: str, name: str, tex: str) -> List[str]:
+    """Render ``_<prefix>_<name>_tex = <repr>`` — a pre-rendered LaTeX string."""
+    return [f'_{prefix}_{name}_tex = {tex!r}\n']
+
+
 def generate_for_routine(routine, *, header_extra: str = '') -> str:
     """Generate pycode source for one routine instance.
 
@@ -172,6 +242,7 @@ def generate_for_routine(routine, *, header_extra: str = '') -> str:
     """
     function_rewrites = _FUNCTION_REWRITES
     symbol_regex = _build_symbol_regex(_collect_symbol_names(routine))
+    tex_map = _build_tex_map(routine)
     cls = type(routine)
     src_file = inspect.getsourcefile(cls)
 
@@ -199,6 +270,7 @@ def generate_for_routine(routine, *, header_extra: str = '') -> str:
             continue
         body = _rewrite(expr.e_str, function_rewrites, symbol_regex)
         parts.extend(_emit_callable('expr', name, body))
+        parts.extend(_emit_tex_string('expr', name, _render_tex(expr, tex_map)))
         parts.append('\n')
 
     # --- Constraints ---
@@ -212,6 +284,7 @@ def generate_for_routine(routine, *, header_extra: str = '') -> str:
             continue
         body = _rewrite(constr.e_str, function_rewrites, symbol_regex)
         parts.extend(_emit_callable('constr', name, body))
+        parts.extend(_emit_tex_string('constr', name, _render_tex(constr, tex_map)))
         parts.append('\n')
 
     # --- ExpressionCalcs ---
@@ -220,12 +293,14 @@ def generate_for_routine(routine, *, header_extra: str = '') -> str:
             continue
         body = _rewrite(exprc.e_str, function_rewrites, symbol_regex)
         parts.extend(_emit_callable('exprcalc', name, body))
+        parts.extend(_emit_tex_string('exprcalc', name, _render_tex(exprc, tex_map)))
         parts.append('\n')
 
     # --- Objective ---
     if routine.obj is not None and routine.obj.e_fn is None and routine.obj.e_str is not None:
         body = _rewrite(routine.obj.e_str, function_rewrites, symbol_regex)
         parts.extend(_emit_callable('obj', routine.obj.name, body))
+        parts.extend(_emit_tex_string('obj', routine.obj.name, _render_tex(routine.obj, tex_map)))
         parts.append('\n')
 
     return ''.join(parts)

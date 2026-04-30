@@ -129,6 +129,12 @@ class OptzBase:
         self.rtn = None
         self.optz = None  # corresponding optimization element
         self.code = None
+        # Pre-rendered LaTeX, populated by ``RoutineBase._link_pycode``
+        # from the generator's ``_<prefix>_<name>_tex`` strings. The
+        # documenter prefers this over running ``tex_map`` regex at
+        # doc-build time, which lets LaTeX rendering survive the
+        # descriptor mutex clearing ``e_str`` after ``e_fn`` is wired.
+        self.e_tex = None
         self.model = model  # indicate if this element belongs to a model or group
         self.owner = None  # instance of the owner model or group
         self.is_group = False
