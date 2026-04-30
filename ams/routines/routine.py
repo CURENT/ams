@@ -151,12 +151,10 @@ class RoutineBase:
         cvxpy / ams versions; mismatch triggers a regen.
         """
         import importlib.util
-        import logging as _logging
         from pathlib import Path
 
         import cvxpy as _cp
 
-        import ams as _ams
         from ams.prep import generate_for_routine, source_md5
 
         target = (Path.home() / '.ams' / 'pycode'
@@ -171,10 +169,14 @@ class RoutineBase:
                     f'ams._user_pycode.{self.class_name.lower()}', target)
                 gen = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(gen)
+                # NB: ams.__version__ deliberately *not* part of the staleness
+                # check — setuptools-scm gives dev installs a ``.postN+g…``
+                # suffix that bumps every commit, which would force a regen
+                # on every save with no behavior delta. The source md5 already
+                # captures any change worth invalidating on.
                 stale = (
                     getattr(gen, 'md5', None) != expected_md5
                     or getattr(gen, 'cvxpy_version', None) != _cp.__version__
-                    or getattr(gen, 'ams_version', None) != _ams.__version__
                 )
                 if stale:
                     gen = None
