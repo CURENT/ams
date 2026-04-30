@@ -3,48 +3,11 @@ Distributional optimal power flow (DOPF).
 """
 import numpy as np
 
-import cvxpy as cp
-
 from ams.core.param import RParam
 
 from ams.routines.dcopf import DCOPF
 
 from ams.opt import Var, Constraint, Objective
-
-
-# --- e_fn callables (Phase 4.3 migration) ---
-
-def _qglb(r):
-    return -r.qg + cp.multiply(r.ug, r.qmin) <= 0
-
-
-def _qgub(r):
-    return r.qg - cp.multiply(r.ug, r.qmax) <= 0
-
-
-def _vu(r):
-    return r.vsq - r.vmax ** 2 <= 0
-
-
-def _vl(r):
-    return -r.vsq + r.vmin ** 2 <= 0
-
-
-def _lvd(r):
-    return r.CftT @ r.vsq - (cp.multiply(r.r, r.plf) + cp.multiply(r.x, r.qlf)) == 0
-
-
-def _qb(r):
-    return cp.sum(r.qd) - cp.sum(r.qg) == 0
-
-
-def _dopfvis_obj(r):
-    # Original e_str used cvxpy's deprecated `*` which is matrix-multiply
-    # for vectors. c2/c1/c0/ug/pg are size 5 (StaticGen); cm/cd/M/D are
-    # size 4 (VSG). Each term is a scalar dot product; preserve those
-    # semantics with `@`.
-    return (r.c2 @ r.pg ** 2 + r.c1 @ r.pg + r.ug @ r.c0
-            + r.cm @ r.M + r.cd @ r.D)
 
 
 class DOPF(DCOPF):
@@ -100,8 +63,12 @@ class DOPF(DCOPF):
         self.qg = Var(info='Gen reactive power',
                       name='qg', tex_name=r'q_{g}', unit='p.u.',
                       model='StaticGen', src='q',)
-        self.qglb = Constraint(name='qglb', info='qg min', e_fn=_qglb,)
-        self.qgub = Constraint(name='qgub', info='qg max', e_fn=_qgub,)
+        self.qglb = Constraint(name='qglb', is_eq=False,
+                               info='qg min',
+                               e_str='-qg + mul(ug, qmin)',)
+        self.qgub = Constraint(name='qgub', is_eq=False,
+                               info='qg max',
+                               e_str='qg - mul(ug, qmax)',)
         # --- bus ---
         self.v = Var(info='Bus voltage',
                      name='v', tex_name=r'v',
@@ -112,21 +79,25 @@ class DOPF(DCOPF):
                        model='Bus',)
         self.vu = Constraint(name='vu',
                              info='Voltage upper limit',
-                             e_fn=_vu,)
+                             e_str='vsq - vmax**2',
+                             is_eq=False,)
         self.vl = Constraint(name='vl',
                              info='Voltage lower limit',
-                             e_fn=_vl,)
+                             e_str='-vsq + vmin**2',
+                             is_eq=False,)
         # --- line ---
         self.qlf = Var(info='line reactive power',
                        name='qlf', tex_name=r'q_{lf}',
                        unit='p.u.', model='Line',)
         self.lvd = Constraint(info='line voltage drop',
-                              name='lvd', e_fn=_lvd,)
+                              name='lvd', is_eq=True,
+                              e_str='CftT@vsq - (mul(r, plf) + mul(x, qlf))',)
         # --- power balance ---
         # NOTE: following Eqn seems to be wrong, double check
         # g_Q(\Theta, V, Q_g) = B_{bus}V\Theta + Q_{bus,shift} + Q_d + B_{sh} - C_gQ_g = 0
         self.qb = Constraint(info='reactive power balance',
-                             name='qb', e_fn=_qb,)
+                             name='qb', is_eq=True,
+                             e_str='sum(qd) - sum(qg)',)
 
         # --- objective ---
         # NOTE: no need to revise objective function
@@ -171,7 +142,8 @@ class DOPFVIS(DOPF):
         self.D = Var(info='Emulated damping coefficient from REGCV1',
                      name='D', tex_name=r'D', unit='p.u.',
                      model='VSG',)
+        obj = 'sum(c2 * pg**2 + c1 * pg + ug * c0 + cm * M + cd * D)'
         self.obj = Objective(name='tc',
                              info='total cost', unit='$',
-                             e_fn=_dopfvis_obj,
+                             e_str=obj,
                              sense='min',)
