@@ -3,7 +3,7 @@ Module for optimization Objective.
 """
 import logging
 
-from typing import Optional
+from typing import Callable, Optional
 import re
 
 import numpy as np  # noqa: F401  # used by routine `e_str` evaluation context
@@ -13,6 +13,7 @@ import cvxpy as cp
 from ams.utils import pretty_long_message
 from ams.shared import _prefix, _max_length
 
+from ams.core.routine_ns import RoutineNS
 from ams.opt import OptzBase, ensure_symbols, ensure_mats_and_parsed
 
 logger = logging.getLogger(__name__)
@@ -22,16 +23,20 @@ class Objective(OptzBase):
     """
     Base class for objective functions.
 
-    This class serves as a template for defining objective functions. Each
-    instance of this class represents a single objective function that can
-    be minimized or maximized depending on the sense ('min' or 'max').
+    Exactly one of ``e_str`` or ``e_fn`` should be provided. ``e_fn(r)``
+    is the Phase 4.1+ form: a callable that takes a :class:`RoutineNS`
+    and returns the inner CVXPY expression to be minimized/maximized
+    (the ``cp.Minimize``/``cp.Maximize`` wrapping is handled by
+    ``Objective.evaluate``).
 
     Parameters
     ----------
     name : str, optional
         A user-defined name for the objective function.
     e_str : str, optional
-        A mathematical expression representing the objective function.
+        A mathematical expression (legacy form).
+    e_fn : callable, optional
+        Callable ``e_fn(r) -> cp.Expression`` taking a :class:`RoutineNS`.
     info : str, optional
         Additional informational text about the objective function.
     sense : str, optional
@@ -52,11 +57,13 @@ class Objective(OptzBase):
     def __init__(self,
                  name: Optional[str] = None,
                  e_str: Optional[str] = None,
+                 e_fn: Optional[Callable] = None,
                  info: Optional[str] = None,
                  unit: Optional[str] = None,
                  sense: Optional[str] = 'min'):
         OptzBase.__init__(self, name=name, info=info, unit=unit)
         self.e_str = e_str
+        self.e_fn = e_fn
         self.sense = sense
         self.code = None
 
@@ -84,6 +91,10 @@ class Objective(OptzBase):
         bool
             Returns True if the parsing is successful, False otherwise.
         """
+        if self.sense not in ['min', 'max']:
+            raise ValueError(f'Objective sense {self.sense} is not supported.')
+        if self.e_fn is not None:
+            return True
         # parse the expression str
         sub_map = self.om.rtn.syms.sub_map
         code_obj = self.e_str
@@ -92,8 +103,6 @@ class Objective(OptzBase):
                 code_obj = re.sub(pattern, replacement, code_obj)
             except Exception as e:
                 raise Exception(f"Error in parsing obj <{self.name}>.\n{e}")
-        if self.sense not in ['min', 'max']:
-            raise ValueError(f'Objective sense {self.sense} is not supported.')
         sense = 'cp.Minimize' if self.sense == 'min' else 'cp.Maximize'
         self.code = f"{sense}({code_obj})"
         msg = f" - Objective <{self.name}>: {self.code}"
@@ -110,6 +119,15 @@ class Objective(OptzBase):
         bool
             Returns True if the evaluation is successful, False otherwise.
         """
+        if self.e_fn is not None:
+            try:
+                inner = self.e_fn(RoutineNS(self.om.rtn))
+                wrap = cp.Minimize if self.sense == 'min' else cp.Maximize
+                self.optz = wrap(inner)
+            except Exception as e:
+                raise Exception(f"Error in evaluating Objective <{self.name}> "
+                                f"via e_fn.\n{e}")
+            return True
         logger.debug(f" - Objective <{self.name}>: {self.e_str}")
         try:
             local_vars = {'self': self, 'cp': cp}
