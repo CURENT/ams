@@ -1,12 +1,11 @@
 """
-Parity tests for :class:`ams.core.routine_ns.RoutineNS` and the
-``e_fn`` plumbing on Constraint / Expression / Objective.
+Tests for :class:`ams.core.routine_ns.RoutineNS` and the ``e_fn``
+plumbing on Constraint / Expression / Objective.
 
-Validates Phase 4.1 scaffolding: every symbol the legacy ``sub_map``
-regex resolves on a real routine should also resolve via ``RoutineNS``
-attribute access, and to an object of the same type / identity where
-possible. This is the R2 (silent wrong-symbol resolution) safeguard
-called out in projects/opt_layer_overhaul/plan.md.
+Validates that every symbol the legacy ``sub_map`` regex resolves on a
+real routine also resolves via ``RoutineNS`` attribute access, and to
+an object of the same type / identity where possible — the R2 (silent
+wrong-symbol resolution) safeguard for the codegen path.
 """
 
 import unittest
@@ -14,9 +13,7 @@ import unittest
 import cvxpy as cp
 
 import ams
-import numpy as np
 
-from ams.core.model_param import ModelParam
 from ams.core.routine_ns import RoutineNS
 from ams.opt.constraint import Constraint
 from ams.opt.expression import Expression
@@ -113,7 +110,7 @@ class TestEfnPlumbing(unittest.TestCase):
 
 
 class TestDopfInitsViaEfn(unittest.TestCase):
-    """Smoke test: DOPF / DOPFVIS init cleanly via e_fn after Phase 4.3."""
+    """Smoke test: DOPF / DOPFVIS init cleanly via the codegen e_fn path."""
 
     @classmethod
     def setUpClass(cls):
@@ -131,43 +128,6 @@ class TestDopfInitsViaEfn(unittest.TestCase):
     def test_dopfvis_init(self):
         self.ss.DOPFVIS.init()
         self.assertTrue(self.ss.DOPFVIS.om.prob.is_dcp(dpp=True))
-
-
-class TestModelParam(unittest.TestCase):
-    """ModelParam: dual-access (.v / .cp) wrapper used inside e_fn(r)."""
-
-    def test_value_form(self):
-        arr = np.array([1.0, 2.0, 3.0])
-        mp = ModelParam(value=arr, name='pmax')
-        self.assertIs(mp.v, arr)
-
-    def test_cached_cp_parameter(self):
-        arr = np.array([1.0, 2.0, 3.0])
-        mp = ModelParam(value=arr, name='pmax', nonneg=True)
-        first = mp.cp
-        second = mp.cp
-        self.assertIs(first, second, "cp.Parameter must be cached for DPP identity")
-        self.assertEqual(first.shape, (3,))
-
-    def test_push_updates_cp_value(self):
-        arr = np.array([1.0, 2.0, 3.0])
-        mp = ModelParam(value=arr, name='pmax')
-        param = mp.cp
-        np.testing.assert_array_equal(param.value, arr)
-        # Replace stored value and push.
-        mp._value = np.array([10.0, 20.0, 30.0])
-        mp.push()
-        np.testing.assert_array_equal(param.value, mp._value)
-
-    def test_source_form(self):
-        class _Src:
-            v = np.array([4.0, 5.0])
-        mp = ModelParam(source=_Src(), name='pmin')
-        np.testing.assert_array_equal(mp.v, [4.0, 5.0])
-
-    def test_source_or_value_mutually_exclusive(self):
-        with self.assertRaises(ValueError):
-            ModelParam(source=object(), value=np.array([1.0]))
 
 
 if __name__ == '__main__':

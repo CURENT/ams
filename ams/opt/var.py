@@ -107,14 +107,9 @@ class Var(OptzBase):
                  pos: Optional[bool] = False,
                  neg: Optional[bool] = False,
                  ):
-        self.name = name
-        self.info = info
-        self.unit = unit
-
-        self.tex_name = tex_name if tex_name else name
-        # variable internal index inside a model (assigned in run time)
-        self.id = None
         OptzBase.__init__(self, name=name, info=info, unit=unit, model=model)
+        self.tex_name = tex_name if tex_name else name
+        self.id = None
         self.src = src
         self.v0 = v0
         self.horizon = horizon
@@ -204,8 +199,6 @@ class Var(OptzBase):
                 config['PSD'] = v
             elif k == 'nsd':
                 config['NSD'] = v
-            elif k == 'bool':
-                config['boolean'] = v
             else:
                 config[k] = v
         shape = self._resolve_shape()

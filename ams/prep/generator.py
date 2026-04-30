@@ -52,6 +52,16 @@ _FUNCTION_REWRITES = OrderedDict([
     (r'\bsum_squares\b', 'cp.sum_squares'),
 ])
 
+# Bare identifiers above that, if used as a routine symbol name, would be
+# silently consumed by the function-rewrite pass before symbol resolution
+# runs. ``dot`` is also reserved (the two top-of-list patterns rewrite it
+# to ``*``). Hard-fail at codegen rather than emit subtly broken code.
+_RESERVED_SYMBOL_NAMES = frozenset({
+    'sum', 'var', 'param', 'const', 'problem', 'multiply', 'mul',
+    'vstack', 'norm', 'pos', 'power', 'sign', 'maximum', 'minimum',
+    'square', 'quad_over_lin', 'diag', 'quad_form', 'sum_squares', 'dot',
+})
+
 
 # Static tex_map templates — mirror those built in
 # :class:`ams.core.symprocessor.SymProcessor.__init__`. The codegen
@@ -107,6 +117,15 @@ def _collect_symbol_names(routine) -> list:
     names.update(routine.config.as_dict().keys())
     names.add('sys_f')
     names.add('sys_mva')
+    collisions = names & _RESERVED_SYMBOL_NAMES
+    if collisions:
+        raise ValueError(
+            f"codegen: routine <{type(routine).__name__}> has symbol(s) "
+            f"{sorted(collisions)} that collide with the function-rewrite "
+            f"vocabulary ({sorted(_RESERVED_SYMBOL_NAMES)}). Rename the "
+            f"symbol(s) — they would be silently consumed before symbol "
+            f"resolution runs."
+        )
     return sorted(names)
 
 
@@ -181,10 +200,9 @@ def source_md5(routine_cls) -> str:
     return hashlib.md5(Path(src_file).read_bytes()).hexdigest()
 
 
-def _emit_callable(prefix: str, name: str, body: str,
-                   suffix: str = '') -> List[str]:
-    """Render one ``def _<prefix>_<name>(r): return <body><suffix>``."""
-    snippet = f'def _{prefix}_{name}(r):\n    return {body}{suffix}\n'
+def _emit_callable(prefix: str, name: str, body: str) -> List[str]:
+    """Render one ``def _<prefix>_<name>(r): return <body>``."""
+    snippet = f'def _{prefix}_{name}(r):\n    return {body}\n'
     _validate_python(snippet, where=f'<codegen:{prefix}_{name}>')
     return [snippet]
 
