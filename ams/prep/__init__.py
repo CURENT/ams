@@ -23,6 +23,8 @@ import shutil
 from pathlib import Path
 from typing import Iterable, Optional
 
+import cvxpy as _cp
+
 from ams.prep.generator import generate_for_routine, source_md5, write_for_routine  # noqa: F401
 
 logger = logging.getLogger(__name__)
@@ -88,12 +90,14 @@ def prep_all(routines: Optional[Iterable[str]] = None,
                 continue
             target = pycode_dir() / f'{name.lower()}.py'
             if not force and target.exists():
-                # Re-uses the same staleness check as _link_pycode.
+                # Mirror the staleness check in _link_pycode: both md5 AND
+                # cvxpy_version must match, otherwise regen.
                 expected = source_md5(type(rtn))
                 try:
                     txt = target.read_text()
-                    # quick check via substring; full import is heavier
-                    if f"md5 = {expected!r}" in txt:
+                    md5_ok = f"md5 = {expected!r}" in txt
+                    cvx_ok = f"cvxpy_version = {_cp.__version__!r}" in txt
+                    if md5_ok and cvx_ok:
                         if verbose:
                             logger.debug(f"  {name}: up-to-date")
                         continue
