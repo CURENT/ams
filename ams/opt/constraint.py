@@ -88,22 +88,6 @@ class Constraint(OptzBase):
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         return True
 
-    def _evaluate_expression(self, code, local_vars=None):
-        """
-        Helper method to evaluate the expression code.
-
-        Parameters
-        ----------
-        code : str
-            The code string representing the expression.
-
-        Returns
-        -------
-        cp.Expression
-            The evaluated cvxpy expression.
-        """
-        return eval(code, {}, local_vars)
-
     @ensure_mats_and_parsed
     def evaluate(self):
         """
@@ -113,7 +97,7 @@ class Constraint(OptzBase):
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         try:
             local_vars = {'self': self, 'cp': cp, 'sub_map': self.om.rtn.syms.val_map}
-            self.optz = self._evaluate_expression(self.code, local_vars=local_vars)
+            self.optz = eval(self.code, {}, local_vars)
         except Exception as e:
             raise Exception(f"Error in evaluating Constraint <{self.name}>.\n{e}")
 
@@ -121,38 +105,6 @@ class Constraint(OptzBase):
         enabled = 'OFF' if self.is_disabled else 'ON'
         out = f"{self.class_name}: {self.name} [{enabled}]"
         return out
-
-    @property
-    def e(self):
-        """
-        Return the calculated constraint LHS value.
-        Note that `v` should be used primarily as it is obtained
-        from the solver directly.
-
-        `e` is for debugging purpose. For a successfully solved problem,
-        `e` should equal to `v`. However, when a problem is infeasible
-        or unbounded, `e` can be used to check the constraint LHS value.
-        """
-        if self.code is None:
-            logger.info(f"Constraint <{self.name}> is not parsed yet.")
-            return None
-
-        val_map = self.om.rtn.syms.val_map
-        code = self.code
-        for pattern, replacement in val_map.items():
-            try:
-                code = re.sub(pattern, replacement, code)
-            except TypeError as e:
-                raise TypeError(e)
-
-        try:
-            logger.debug(pretty_long_message(f"Value code: {code}",
-                                             _prefix, max_length=_max_length))
-            local_vars = {'self': self, 'np': np, 'cp': cp, 'val_map': val_map}
-            return self._evaluate_expression(code, local_vars)
-        except Exception as e:
-            logger.error(f"Error in calculating constr <{self.name}>.\n{e}")
-            return None
 
     @property
     def v(self):

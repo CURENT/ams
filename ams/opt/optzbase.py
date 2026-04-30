@@ -2,10 +2,16 @@
 Module for optimization base classes.
 """
 import logging
+import re
 
 from typing import Optional
 
+import numpy as np
+import cvxpy as cp
+
 from ams.utils.misc import deprec_get_idx
+from ams.utils import pretty_long_message
+from ams.shared import _prefix, _max_length
 
 
 logger = logging.getLogger(__name__)
@@ -155,6 +161,36 @@ class OptzBase:
             return self.om.__dict__[self.name].size
         else:
             logger.warning(f'Routine <{self.rtn.class_name}> is not initialized yet.')
+            return None
+
+    @property
+    def e(self):
+        """
+        Return the calculated numerical value of the underlying expression.
+
+        Used for debugging — for a successfully solved problem, ``e`` should
+        equal ``v``. For infeasible/unbounded problems, ``e`` lets you
+        inspect the LHS at the returned (possibly invalid) point.
+        """
+        if self.code is None:
+            logger.info(f"{self.class_name} <{self.name}> is not parsed yet.")
+            return None
+
+        val_map = self.om.rtn.syms.val_map
+        code = self.code
+        for pattern, replacement in val_map.items():
+            try:
+                code = re.sub(pattern, replacement, code)
+            except TypeError as exc:
+                raise TypeError(exc)
+
+        try:
+            logger.debug(pretty_long_message(f"Value code: {code}",
+                                             _prefix, max_length=_max_length))
+            local_vars = {'self': self, 'np': np, 'cp': cp, 'val_map': val_map}
+            return eval(code, {}, local_vars)
+        except Exception as exc:
+            logger.error(f"Error in calculating {self.class_name} <{self.name}>.\n{exc}")
             return None
 
     def __repr__(self):

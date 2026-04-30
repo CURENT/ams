@@ -5,7 +5,6 @@ import logging
 
 from typing import Optional, Union
 from collections import OrderedDict
-import re
 
 import numpy as np
 
@@ -163,40 +162,29 @@ class Var(OptzBase):
         else:
             self.optz.value = value
 
+    def _resolve_shape(self):
+        """Resolve the variable shape from `owner`/`horizon`/`_shape`."""
+        if self.owner is not None:
+            nr = self.owner.n
+            if self.horizon:
+                return (nr, int(self.horizon.n))
+            return (nr,)
+        if isinstance(self._shape, int):
+            return (self._shape,)
+        if isinstance(self._shape, tuple):
+            return self._shape
+        raise ValueError(f"Invalid shape {self._shape}.")
+
     @ensure_symbols
     def parse(self):
         """
         Parse the variable.
+
+        Var construction is fully AMS-controlled — there's no user-supplied
+        ``e_str`` to rewrite — so parse is a no-op kept for OModel lifecycle
+        symmetry. Shape resolution and ``cp.Variable`` construction happen
+        in :meth:`evaluate`.
         """
-        sub_map = self.om.rtn.syms.sub_map
-        # NOTE: number of rows is the size of the source variable
-        if self.owner is not None:
-            nr = self.owner.n
-            nc = 0
-            if self.horizon:
-                # NOTE: numer of columns is the horizon if exists
-                nc = int(self.horizon.n)
-                shape = (nr, nc)
-            else:
-                shape = (nr,)
-        elif isinstance(self._shape, int):
-            shape = (self._shape,)
-            nr = shape
-            nc = 0
-        elif isinstance(self._shape, tuple):
-            shape = self._shape
-            nr = shape[0]
-            nc = shape[1] if len(shape) > 1 else 0
-        else:
-            raise ValueError(f"Invalid shape {self._shape}.")
-        code_var = f"var({shape}, **config)"
-        logger.debug(f" - Var <{self.name}>: {self.code}")
-        for pattern, replacement, in sub_map.items():
-            try:
-                code_var = re.sub(pattern, replacement, code_var)
-            except Exception as e:
-                raise Exception(f"Error in parsing var <{self.name}>.\n{e}")
-        self.code = code_var
         return True
 
     @ensure_mats_and_parsed
@@ -209,8 +197,8 @@ class Var(OptzBase):
         bool
             Returns True if the evaluation is successful, False otherwise.
         """
-        # NOTE: in CVXPY, Config only allow lower case letters
-        config = {}  # used in `self.code`
+        # NOTE: cvxpy Variable accepts attribute names with specific casing
+        config = {}
         for k, v in self.config.as_dict().items():
             if k == 'psd':
                 config['PSD'] = v
@@ -220,11 +208,11 @@ class Var(OptzBase):
                 config['boolean'] = v
             else:
                 config[k] = v
-        msg = f" - Var <{self.name}>: {self.code}"
+        shape = self._resolve_shape()
+        msg = f" - Var <{self.name}>: cp.Variable({shape}, **{config})"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         try:
-            local_vars = {'self': self, 'config': config, 'cp': cp}
-            self.optz = eval(self.code, {}, local_vars)
+            self.optz = cp.Variable(shape, **config)
         except Exception as e:
             raise Exception(f"Error in evaluating Var <{self.name}>.\n{e}")
         return True

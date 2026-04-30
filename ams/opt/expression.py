@@ -6,7 +6,7 @@ import logging
 from typing import Optional
 import re
 
-import numpy as np
+import numpy as np  # noqa: F401  # used by routine `e_str` evaluation context
 
 import cvxpy as cp
 
@@ -101,26 +101,10 @@ class Expression(OptzBase):
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         try:
             local_vars = {'self': self, 'np': np, 'cp': cp, 'sub_map': self.om.rtn.syms.val_map}
-            self.optz = self._evaluate_expression(self.code, local_vars=local_vars)
+            self.optz = eval(self.code, {}, local_vars)
         except Exception as e:
             raise Exception(f"Error in evaluating Expression <{self.name}>.\n{e}")
         return True
-
-    def _evaluate_expression(self, code, local_vars=None):
-        """
-        Helper method to evaluate the expression code.
-
-        Parameters
-        ----------
-        code : str
-            The code string representing the expression.
-
-        Returns
-        -------
-        cp.Expression
-            The evaluated cvxpy expression.
-        """
-        return eval(code, {}, local_vars)
 
     @property
     def v(self):
@@ -139,50 +123,3 @@ class Expression(OptzBase):
         """
         raise NotImplementedError('Cannot set value to an Expression.')
 
-    @property
-    def shape(self):
-        """
-        Return the shape.
-        """
-        try:
-            return self.om.__dict__[self.name].shape
-        except KeyError:
-            logger.warning('Shape info is not ready before initialization.')
-            return None
-
-    @property
-    def size(self):
-        """
-        Return the size.
-        """
-        if self.rtn.initialized:
-            return self.om.__dict__[self.name].size
-        else:
-            logger.warning(f'Routine <{self.rtn.class_name}> is not initialized yet.')
-            return None
-
-    @property
-    def e(self):
-        """
-        Return the calculated expression value.
-        """
-        if self.code is None:
-            logger.info(f"Expression <{self.name}> is not parsed yet.")
-            return None
-
-        val_map = self.om.rtn.syms.val_map
-        code = self.code
-        for pattern, replacement in val_map.items():
-            try:
-                code = re.sub(pattern, replacement, code)
-            except TypeError as e:
-                raise TypeError(e)
-
-        try:
-            logger.debug(pretty_long_message(f"Value code: {code}",
-                                             _prefix, max_length=_max_length))
-            local_vars = {'self': self, 'np': np, 'cp': cp, 'val_map': val_map}
-            return self._evaluate_expression(code, local_vars)
-        except Exception as e:
-            logger.error(f"Error in calculating expr <{self.name}>.\n{e}")
-            return None
