@@ -197,7 +197,10 @@ def source_md5(routine_cls) -> str:
     src_file = inspect.getsourcefile(routine_cls)
     if src_file is None:
         return 'no-source'
-    return hashlib.md5(Path(src_file).read_bytes()).hexdigest()
+    # md5 is fine here — used as a cache key for code regeneration, not
+    # for any security or integrity property. nosec for Codacy's Bandit
+    # engine (which ignores [tool.bandit] skips in pyproject.toml).
+    return hashlib.md5(Path(src_file).read_bytes()).hexdigest()  # nosec B324
 
 
 def _emit_callable(prefix: str, name: str, body: str) -> List[str]:
