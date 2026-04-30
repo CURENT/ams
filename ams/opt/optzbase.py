@@ -206,25 +206,41 @@ class OptzBase:
           it; the legacy regex pipeline.
         """
         if self.code is None:
-            # e_fn form: re-evaluate against current parameter state.
-            # Calling e_fn fresh (rather than reading self.optz._expr.value)
-            # captures changes to underlying numpy params (e.g. tdc0/tdc set
-            # post-build), which the test_ch_decision use-case relies on.
-            from ams.core.routine_ns import RoutineNS as _NS
+            # e_fn form: re-evaluate against the current numeric state
+            # via NumericRoutineNS. Resolves Vars to ``Var.v`` (which
+            # falls back to ``np.zeros`` when ``optz.value`` is None),
+            # so ``.e`` is informative even on a failed/incomplete
+            # solve — matching the legacy val_map+eval behavior.
+            #
+            # The e_fn may return: (a) a cp.Constraint (legacy form),
+            # (b) a cp.Expression (LHS or Objective inner), or (c) a
+            # pure numpy result when every operand is numpy and no
+            # cp.X wrapper is present. Handle all three.
+            from ams.core.routine_ns import NumericRoutineNS
             e_fn = getattr(self, 'e_fn', None)
             if e_fn is not None:
                 try:
-                    optz = e_fn(_NS(self.om.rtn))
+                    result = e_fn(NumericRoutineNS(self.om.rtn))
                 except Exception as exc:
                     logger.error(
                         f"Error in re-evaluating {self.class_name} "
                         f"<{self.name}> via e_fn for `.e`.\n{exc}"
                     )
                     return None
-                inner = getattr(optz, '_expr', optz)
-                return getattr(inner, 'value', None)
+                # Constraint legacy form: extract LHS via _expr.value.
+                if isinstance(result, cp.constraints.Constraint):
+                    inner = getattr(result, '_expr', None)
+                    if inner is None:
+                        # Some constraint subclasses expose ``args[0]``
+                        inner = result.args[0] if result.args else None
+                    return getattr(inner, 'value', None)
+                # cp.Expression / cp.Constant: take .value.
+                if hasattr(result, 'value'):
+                    return result.value
+                # Pure numpy: that IS the value.
+                return result
 
-            # Fallback to the cached optz (no e_fn / e_str path).
+            # No e_fn either — fall back to cached optz.
             optz = getattr(self, 'optz', None)
             if optz is None:
                 logger.info(f"{self.class_name} <{self.name}> is not evaluated yet.")

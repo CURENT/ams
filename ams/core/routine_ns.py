@@ -104,3 +104,89 @@ class RoutineNS:
     def __repr__(self):
         rtn = object.__getattribute__(self, '_rtn')
         return f'RoutineNS({rtn.class_name})'
+
+
+class NumericRoutineNS:
+    """
+    Numeric proxy for ``e_fn(r)``-style callables, used by ``.e``.
+
+    Same resolution order as :class:`RoutineNS`, but returns numpy
+    values for Vars (via ``Var.v`` — which falls back to ``np.zeros``
+    when the solver hasn't run / bailed) and for cp.Parameter-backed
+    RParams (via ``RParam.v``). Expressions are recomputed by
+    re-invoking their ``e_fn`` against the same proxy.
+
+    The result of an ``e_fn(numeric_r)`` call is a CVXPY constant
+    expression (``cp.multiply`` / ``cp.sum`` etc. wrap numpy inputs in
+    ``cp.Constant``). Read ``.value`` (or ``._expr.value`` for a
+    Constraint result) to get the numpy LHS — that's what ``.e``
+    returns for debugging.
+    """
+
+    __slots__ = ('_rtn',)
+
+    def __init__(self, routine):
+        object.__setattr__(self, '_rtn', routine)
+
+    def __getattr__(self, name):
+        rtn = object.__getattribute__(self, '_rtn')
+
+        # 1. Vars → .v (numpy, zeros fallback when optz.value is None)
+        vars_ = getattr(rtn, 'vars', {})
+        if name in vars_:
+            return vars_[name].v
+
+        # 2. RParams → .v (always a numpy view at the source)
+        rparams = getattr(rtn, 'rparams', {})
+        if name in rparams:
+            rp = rparams[name]
+            if isinstance(rp.owner, MatProcessor):
+                if rp.sparse:
+                    return getattr(rtn.system.mats, name)._v
+                return rp.v
+            return rp.v
+
+        # 3. Routine Services → .v (numpy)
+        services = getattr(rtn, 'services', {})
+        if name in services:
+            return services[name].v
+
+        # 4. Expressions — recompute against this proxy if e_fn is wired,
+        # else fall back to optz.value.
+        exprs = getattr(rtn, 'exprs', {})
+        if name in exprs:
+            expr = exprs[name]
+            if expr.e_fn is not None:
+                result = expr.e_fn(self)
+                return getattr(result, 'value', result)
+            return expr.v
+
+        # 5. Constraints — referenced from ExpressionCalc as ``pb.dual_variables[0]``.
+        # Return the cvxpy Constraint so ``.dual_variables`` etc. work.
+        constrs = getattr(rtn, 'constrs', {})
+        if name in constrs:
+            return constrs[name].optz
+
+        # 6. Config values
+        if hasattr(rtn, 'config') and name in rtn.config.as_dict():
+            return getattr(rtn.config, name)
+
+        # 7. Conventional names
+        if name == 'sys_f':
+            return rtn.system.config.freq
+        if name == 'sys_mva':
+            return rtn.system.config.mva
+
+        raise AttributeError(
+            f"NumericRoutineNS: no symbol <{name}> in routine "
+            f"<{rtn.class_name}>"
+        )
+
+    def __setattr__(self, name, value):
+        raise AttributeError(
+            "NumericRoutineNS is read-only; attribute assignment is not supported."
+        )
+
+    def __repr__(self):
+        rtn = object.__getattribute__(self, '_rtn')
+        return f'NumericRoutineNS({rtn.class_name})'
