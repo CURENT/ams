@@ -3,7 +3,7 @@ Module for optimization Expression.
 """
 import logging
 
-from typing import Optional
+from typing import Callable, Optional
 import re
 
 import numpy as np  # noqa: F401  # used by routine `e_str` evaluation context
@@ -13,6 +13,7 @@ import cvxpy as cp
 from ams.utils import pretty_long_message
 from ams.shared import _prefix, _max_length
 
+from ams.core.routine_ns import RoutineNS
 from ams.opt import OptzBase, ensure_symbols, ensure_mats_and_parsed
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,11 @@ logger = logging.getLogger(__name__)
 class Expression(OptzBase):
     """
     Base class for expressions used in a routine.
+
+    Exactly one of ``e_str`` or ``e_fn`` should be provided. ``e_fn(r)``
+    is the Phase 4.1+ form: a callable that takes a :class:`RoutineNS`
+    proxy and returns a CVXPY expression. ``e_str`` is the legacy
+    regex-rewritten string form, slated for deletion in Phase 4.5.
 
     Parameters
     ----------
@@ -35,7 +41,9 @@ class Expression(OptzBase):
     unit : str, optional
         Unit
     e_str : str, optional
-        Expression string
+        Expression string (legacy form).
+    e_fn : callable, optional
+        Callable ``e_fn(r) -> cp.Expression`` taking a :class:`RoutineNS`.
     model : str, optional
         Name of the owner model or group.
     src : str, optional
@@ -52,6 +60,7 @@ class Expression(OptzBase):
                  info: Optional[str] = None,
                  unit: Optional[str] = None,
                  e_str: Optional[str] = None,
+                 e_fn: Optional[Callable] = None,
                  model: Optional[str] = None,
                  src: Optional[str] = None,
                  vtype: Optional[str] = float,
@@ -60,6 +69,7 @@ class Expression(OptzBase):
         OptzBase.__init__(self, name=name, info=info, unit=unit, model=model)
         self.tex_name = tex_name
         self.e_str = e_str
+        self.e_fn = e_fn
         self.optz = None
         self.code = None
         self.src = src
@@ -75,6 +85,9 @@ class Expression(OptzBase):
         bool
             Returns True if the parsing is successful, False otherwise.
         """
+        if self.e_fn is not None:
+            # e_fn form: nothing to parse — defer everything to evaluate()
+            return True
         sub_map = self.om.rtn.syms.sub_map
         code_expr = self.e_str
         for pattern, replacement in sub_map.items():
@@ -97,6 +110,13 @@ class Expression(OptzBase):
         bool
             Returns True if the evaluation is successful, False otherwise.
         """
+        if self.e_fn is not None:
+            try:
+                self.optz = self.e_fn(RoutineNS(self.om.rtn))
+            except Exception as e:
+                raise Exception(f"Error in evaluating Expression <{self.name}> "
+                                f"via e_fn.\n{e}")
+            return True
         msg = f" - Expression <{self.name}>: {self.code}"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         try:

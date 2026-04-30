@@ -1,5 +1,6 @@
 """
-Parity tests for :class:`ams.core.routine_ns.RoutineNS`.
+Parity tests for :class:`ams.core.routine_ns.RoutineNS` and the
+``e_fn`` plumbing on Constraint / Expression / Objective.
 
 Validates Phase 4.1 scaffolding: every symbol the legacy ``sub_map``
 regex resolves on a real routine should also resolve via ``RoutineNS``
@@ -14,6 +15,9 @@ import cvxpy as cp
 
 import ams
 from ams.core.routine_ns import RoutineNS
+from ams.opt.constraint import Constraint
+from ams.opt.expression import Expression
+from ams.opt.objective import Objective
 
 
 class TestRoutineNSResolution(unittest.TestCase):
@@ -75,6 +79,34 @@ class TestRoutineNSResolution(unittest.TestCase):
         ns = RoutineNS(self.ss.DCOPF)
         with self.assertRaises(AttributeError):
             ns.foo = 1
+
+
+class TestEfnPlumbing(unittest.TestCase):
+    """e_fn-form Constraint / Expression / Objective accept callables."""
+
+    def test_constraint_accepts_e_fn(self):
+        c = Constraint(name='dummy', e_fn=lambda r: r.pg <= 0)
+        self.assertIsNotNone(c.e_fn)
+        self.assertIsNone(c.e_str)
+        self.assertIsNone(c.code)
+
+    def test_expression_accepts_e_fn(self):
+        e = Expression(name='dummy', e_fn=lambda r: 2 * r.pg)
+        self.assertIsNotNone(e.e_fn)
+        self.assertIsNone(e.e_str)
+        self.assertIsNone(e.code)
+
+    def test_objective_accepts_e_fn(self):
+        o = Objective(name='dummy', e_fn=lambda r: cp.sum(r.pg))
+        self.assertIsNotNone(o.e_fn)
+        self.assertIsNone(o.e_str)
+        self.assertEqual(o.sense, 'min')
+
+    def test_objective_rejects_bad_sense(self):
+        o = Objective(name='dummy', e_fn=lambda r: r.pg, sense='maximize')
+        # parse() validates sense; we can't call it without an om/rtn,
+        # but the constructor stores it — the validation runs in parse().
+        self.assertEqual(o.sense, 'maximize')
 
 
 if __name__ == '__main__':

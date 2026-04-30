@@ -3,7 +3,7 @@ Module for optimization Constraint.
 """
 import logging
 
-from typing import Optional
+from typing import Callable, Optional
 import re
 
 import numpy as np
@@ -13,6 +13,7 @@ import cvxpy as cp
 from ams.utils import pretty_long_message
 from ams.shared import _prefix, _max_length
 
+from ams.core.routine_ns import RoutineNS
 from ams.opt import OptzBase, ensure_symbols, ensure_mats_and_parsed
 
 logger = logging.getLogger(__name__)
@@ -22,20 +23,26 @@ class Constraint(OptzBase):
     """
     Base class for constraints.
 
-    This class is used as a template for defining constraints. Each
-    instance of this class represents a single constraint.
+    Exactly one of ``e_str`` or ``e_fn`` should be provided. ``e_fn(r)``
+    is the Phase 4.1+ form: a callable that takes a :class:`RoutineNS`
+    proxy and returns a CVXPY constraint (e.g., ``r.pg <= r.pmax.cp``).
+    ``e_str`` is the legacy regex-rewritten string form, slated for
+    deletion in Phase 4.5.
 
     Parameters
     ----------
     name : str, optional
         A user-defined name for the constraint.
     e_str : str, optional
-        A mathematical expression representing the constraint.
+        A mathematical expression representing the constraint (legacy form).
+    e_fn : callable, optional
+        Callable ``e_fn(r) -> cp.Constraint`` taking a :class:`RoutineNS`.
     info : str, optional
         Additional informational text about the constraint.
     is_eq : str, optional
         Flag indicating if the constraint is an equality constraint. False indicates
-        an inequality constraint in the form of `<= 0`.
+        an inequality constraint in the form of `<= 0`. Ignored when ``e_fn`` is used —
+        the callable returns the fully-formed constraint.
 
     Attributes
     ----------
@@ -52,11 +59,13 @@ class Constraint(OptzBase):
     def __init__(self,
                  name: Optional[str] = None,
                  e_str: Optional[str] = None,
+                 e_fn: Optional[Callable] = None,
                  info: Optional[str] = None,
                  is_eq: Optional[bool] = False,
                  ):
         OptzBase.__init__(self, name=name, info=info)
         self.e_str = e_str
+        self.e_fn = e_fn
         self.is_eq = is_eq
         self.is_disabled = False
         self.code = None
@@ -72,6 +81,8 @@ class Constraint(OptzBase):
         """
         Parse the constraint.
         """
+        if self.e_fn is not None:
+            return True
         # parse the expression str
         sub_map = self.om.rtn.syms.sub_map
         code_constr = self.e_str
@@ -93,6 +104,13 @@ class Constraint(OptzBase):
         """
         Evaluate the constraint.
         """
+        if self.e_fn is not None:
+            try:
+                self.optz = self.e_fn(RoutineNS(self.om.rtn))
+            except Exception as e:
+                raise Exception(f"Error in evaluating Constraint <{self.name}> "
+                                f"via e_fn.\n{e}")
+            return True
         msg = f" - Constr <{self.name}>: {self.code}"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         try:
