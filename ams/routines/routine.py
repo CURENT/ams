@@ -212,9 +212,11 @@ class RoutineBase:
             fn = getattr(gen, f'_obj_{self.obj.name}', None)
             if fn is not None:
                 self.obj.e_fn = fn
-        # ExpressionCalc still uses e_str path — generator emits
-        # `_exprcalc_<name>` callables, but the class doesn't accept
-        # e_fn yet. Adding that is a small follow-up (4.5-D's neighbor).
+        for name, exprc in self.exprcs.items():
+            if exprc.e_fn is None:
+                fn = getattr(gen, f'_exprcalc_{name}', None)
+                if fn is not None:
+                    exprc.e_fn = fn
 
     def get(self, src: str, idx, attr: str = 'v',
             horizon: Optional[Union[int, str, Iterable]] = None):
