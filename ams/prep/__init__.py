@@ -35,6 +35,26 @@ def pycode_dir() -> Path:
     return Path.home() / '.ams' / 'pycode'
 
 
+_PRISTINE_SYSTEM = None
+
+
+def _get_pristine_system():
+    """
+    Lazily construct (and cache) an ``ams.System`` to use as the source
+    of pristine routine instances for codegen.
+
+    Per-process singleton so ``_link_pycode`` can drive codegen against
+    untouched routines no matter how mutated the user's working
+    ``System`` has become. Cheap to keep around — a no-input System is
+    a few MB.
+    """
+    global _PRISTINE_SYSTEM
+    if _PRISTINE_SYSTEM is None:
+        import ams as _ams
+        _PRISTINE_SYSTEM = _ams.System(no_input=True, default_config=True)
+    return _PRISTINE_SYSTEM
+
+
 def clean(verbose: bool = True) -> None:
     """Remove the entire pycode cache directory."""
     target = pycode_dir()
@@ -68,7 +88,6 @@ def prep_all(routines: Optional[Iterable[str]] = None,
     n : int
         Number of routine pycode files written.
     """
-    import ams
     from ams.routines import all_routines
 
     # Build the set of routine class names to prep.
@@ -76,9 +95,9 @@ def prep_all(routines: Optional[Iterable[str]] = None,
     if routines is not None:
         wanted = {r.lower() for r in routines}
 
-    # Spin up an empty system; instantiating a System constructs every
-    # routine class once, populating the constraint/expr/obj registries.
-    system = ams.System(no_input=True, default_config=True)
+    # Reuse the singleton pristine System so we don't construct two if
+    # ``_link_pycode`` already built one for an in-process auto-prep.
+    system = _get_pristine_system()
     n = 0
     for group, names in all_routines.items():
         for name in names:
@@ -97,7 +116,8 @@ def prep_all(routines: Optional[Iterable[str]] = None,
                     txt = target.read_text()
                     md5_ok = f"md5 = {expected!r}" in txt
                     cvx_ok = f"cvxpy_version = {_cp.__version__!r}" in txt
-                    if md5_ok and cvx_ok:
+                    pristine_ok = "pristine = True" in txt
+                    if md5_ok and cvx_ok and pristine_ok:
                         if verbose:
                             logger.debug(f"  {name}: up-to-date")
                         continue
