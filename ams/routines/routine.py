@@ -273,6 +273,13 @@ class RoutineBase:
         tally = {'codegen': 0, 'manual': 0,
                  'sub_map_dirty': 0, 'sub_map_added': 0}
 
+        # ``_link_pycode`` is the one place that legitimately reaches
+        # into ``_e_fn`` / ``_e_dirty`` / ``_e_fn_source`` on opt items —
+        # writing the raw slots is what bypasses the descriptor mutex so
+        # ``e_str`` is preserved post-wire (see method docstring). The
+        # protected-access disables below acknowledge this; pylint
+        # otherwise flags every line.
+        # pylint: disable=protected-access
         def _wire(item, prefix, name):
             if getattr(item, '_e_dirty', False):
                 # User modified this item; we leave it alone. The runtime
@@ -307,6 +314,7 @@ class RoutineBase:
             tex = getattr(gen, f'_{prefix}_{name}_tex', None)
             if tex is not None and getattr(item, 'e_tex', None) is None:
                 item.e_tex = tex
+        # pylint: enable=protected-access
 
         for name, expr in self.exprs.items():
             _wire(expr, 'expr', name)
@@ -332,7 +340,7 @@ class RoutineBase:
             if tally['sub_map_added']:
                 parts.append(f"sub_map(added)={tally['sub_map_added']}")
             logger.info(
-                f"<{self.class_name}> formulation: " + ", ".join(parts)
+                "<%s> formulation: %s", self.class_name, ", ".join(parts)
             )
 
     def formulation_summary(self, return_rows: bool = False):
@@ -371,7 +379,7 @@ class RoutineBase:
 
         if not rows:
             print(f"<{self.class_name}>: no opt elements registered.")
-            return
+            return None
 
         kw = max(len(r[0]) for r in rows)
         nw = max(len(r[1]) for r in rows)
@@ -385,6 +393,7 @@ class RoutineBase:
         print(f"  {'-'*kw}  {'-'*nw}  {'-'*sw}  {'-'*40}")
         for kind, name, src, e_str in rows:
             print(f"  {kind:<{kw}}  {name:<{nw}}  {src:<{sw}}  {e_str}")
+        return None
 
     def get(self, src: str, idx, attr: str = 'v',
             horizon: Optional[Union[int, str, Iterable]] = None):
