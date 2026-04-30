@@ -129,6 +129,36 @@ Other ``e_str`` rewrites worth knowing:
 If in doubt, check an existing routine such as :py:mod:`ams.routines.dcopf`
 or :py:mod:`ams.routines.rted` for canonical patterns.
 
+How ``e_str`` becomes a CVXPY problem (codegen)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``e_str`` rewrites above are applied **once at prep time**, not on
+every routine init. The first time a routine is instantiated, AMS:
+
+1. Walks the constructed routine's ``constrs`` / ``exprs`` / ``exprcs``
+   / ``obj`` registries.
+2. Applies the ``sub_map`` rewrites to each ``e_str``.
+3. Emits a small Python module at ``~/.ams/pycode/<routine>.py`` with
+   one named callable per opt element — e.g.
+   ``def _constr_pglb(r): return -r.pg + r.pmine`` — plus the
+   pre-rendered LaTeX string for documentation.
+4. Wires those callables onto the routine's ``Constraint`` /
+   ``Expression`` / ``Objective`` instances via their ``e_fn``
+   attribute.
+
+Subsequent inits skip step 2-3 and just import. The cache is keyed by
+md5 of the routine source file; editing an ``e_str`` regenerates
+automatically. The whole cache can be refreshed or wiped via
+``ams prep`` (see :ref:`ReleaseNotes` v1.2.2).
+
+This is analogous to ANDES's ``andes prep`` / ``~/.andes/pycode/``
+pipeline. **Author-facing API is unchanged** — you keep writing
+``e_str``. The codegen is what runs underneath.
+
+Authors who prefer to skip the DSL and write a callable directly may
+pass ``e_fn=callable`` instead of ``e_str``; the runtime accepts both,
+and the codegen leaves manually-set ``e_fn`` alone.
+
 Interoperation with ANDES
 -----------------------------------
 

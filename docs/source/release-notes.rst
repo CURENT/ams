@@ -12,6 +12,50 @@ v1.2
 v1.2.2 (unreleased)
 ----------------------
 
+**New features:**
+
+- **Opt-layer codegen.** Routine constraints, expressions, and
+  objectives written as ``e_str`` strings are now compiled once to
+  named Python callables in ``~/.ams/pycode/<routine>.py``. The
+  runtime path imports those callables instead of regex-rewriting
+  ``e_str`` and ``eval``-ing the result on every routine init.
+
+  Author-facing API is unchanged — keep writing ``e_str``. The
+  generated cache refreshes on first init when the routine source
+  ``md5`` changes; it can also be regenerated explicitly with the
+  new ``ams prep`` CLI:
+
+  .. code-block:: console
+
+     $ ams prep                    # generate for every routine
+     $ ams prep --routine DCOPF    # restrict to one
+     $ ams prep --force            # regenerate even when md5 matches
+     $ ams prep --clean            # wipe ~/.ams/pycode/
+     $ ams prep --where            # print the cache path
+
+  See :ref:`Routine` for the rendered pipeline. Generated pycode is
+  per-user and never shipped in the wheel — analogous to ANDES's
+  ``andes prep`` / ``~/.andes/pycode/`` pattern.
+
+- ``Objective.add_term(fn)`` lets a mixin subclass extend a parent
+  objective with an extra cost term via callable rather than the
+  legacy ``self.obj.e_str += '...'`` string append. Used internally
+  by ``ESD1Base`` (charge/discharge cost) and ``RTEDVIS`` (virtual
+  inertia/damping cost); available to user-defined mixins too.
+
+- DPP-compliance diagnostic logged at ``OModel.finalize`` time. When
+  a routine has parameters but the resulting ``cp.Problem`` is not
+  DPP, an info-level log line warns that warm re-solves will
+  re-canonicalize. Helps catch accidental non-DPP terms early.
+
+**Behavior changes:**
+
+- ``.e`` (the post-solve / debug numerical value of a constraint
+  LHS, expression, or objective) now works correctly even when the
+  solver bails or hasn't run yet. Resolves through a numeric proxy
+  that returns ``Var.v`` (zeros fallback) for unset variables — the
+  same semantics the legacy ``val_map``-eval path had.
+
 **Bug fixes:**
 
 - ``bench.harness.measure``: when warmup raises, the failure path now
