@@ -4,8 +4,6 @@ Economic dispatch routines.
 import logging
 import numpy as np
 
-import cvxpy as cp
-
 from ams.core.param import RParam
 from ams.core.service import (NumOpDual, NumHstack,
                               RampSub, NumOp, LoadScale)
@@ -15,114 +13,6 @@ from ams.routines.rted import RTED, DGBase, ESD1Base
 from ams.opt import Var, Constraint
 
 logger = logging.getLogger(__name__)
-
-
-# --- ED e_fn callables (Phase 4.4) ---
-
-
-def _ed_pmaxe(r):
-    return (cp.multiply(cp.multiply(r.nctrle, r.pg0), r.tlv)
-            + cp.multiply(cp.multiply(r.ctrle, r.tlv), r.pmax))
-
-
-def _ed_pmine(r):
-    return (cp.multiply(cp.multiply(r.nctrle, r.pg0), r.tlv)
-            + cp.multiply(cp.multiply(r.ctrle, r.tlv), r.pmin))
-
-
-def _ed_pglb(r):
-    return -r.pg + r.pmine <= 0
-
-
-def _ed_pgub(r):
-    return r.pg - r.pmaxe <= 0
-
-
-def _ed_prsb(r):
-    return cp.multiply(r.ugt, r.pmax @ r.tlv - r.pg) - r.prs == 0
-
-
-def _ed_rsr(r):
-    return -r.gs @ r.prs + r.dsr <= 0
-
-
-def _ed_plflb(r):
-    return -r.Bf @ r.aBus - r.Pfinj @ r.tlv - cp.multiply(r.ul, r.rate_a) @ r.tlv <= 0
-
-
-def _ed_plfub(r):
-    return r.Bf @ r.aBus + r.Pfinj @ r.tlv - cp.multiply(r.ul, r.rate_a) @ r.tlv <= 0
-
-
-def _ed_alflb(r):
-    return -r.CftT @ r.aBus + r.amin @ r.tlv <= 0
-
-
-def _ed_alfub(r):
-    return r.CftT @ r.aBus - r.amax @ r.tlv <= 0
-
-
-def _ed_plf(r):
-    return r.Bf @ r.aBus + r.Pfinj @ r.tlv
-
-
-def _ed_pb(r):
-    return r.Bbus @ r.aBus + r.Pbusinj @ r.tlv + r.Cl @ r.pds + r.Csh @ r.gsh @ r.tlv - r.Cg @ r.pg == 0
-
-
-def _ed_rbu(r):
-    return r.gs @ cp.multiply(r.ugt, r.pru) - cp.multiply(r.dud, r.tlv) == 0
-
-
-def _ed_rbd(r):
-    return r.gs @ cp.multiply(r.ugt, r.prd) - cp.multiply(r.ddd, r.tlv) == 0
-
-
-def _ed_rru(r):
-    return r.pg + r.pru - cp.multiply(cp.multiply(r.ugt, r.pmax), r.tlv) <= 0
-
-
-def _ed_rrd(r):
-    return -r.pg + r.prd + cp.multiply(cp.multiply(r.ugt, r.pmin), r.tlv) <= 0
-
-
-def _ed_rgu(r):
-    return r.pg @ r.Mr - r.t * r.RR30 <= 0
-
-
-def _ed_rgd(r):
-    return -r.pg @ r.Mr - r.t * r.RR30 <= 0
-
-
-def _ed_rgu0(r):
-    return cp.multiply(r.ugt[:, 0], r.pg[:, 0] - r.pg0[:, 0] - r.R30) <= 0
-
-
-def _ed_rgd0(r):
-    return cp.multiply(r.ugt[:, 0], -r.pg[:, 0] + r.pg0[:, 0] - r.R30) <= 0
-
-
-def _ed_obj(r):
-    return (cp.sum(r.t ** 2 * r.c2 @ r.pg ** 2)
-            + r.t * cp.sum(r.c1 @ r.pg + r.csr @ r.prs)
-            + cp.sum(cp.multiply(r.ugt, cp.multiply(r.c0, r.tlv))))
-
-
-# ESD1MPBase
-def _esd1mp_SOCb(r):
-    return (cp.multiply(r.EnR, r.SOC @ r.Mre)
-            - r.t * cp.multiply(r.EtaCR, r.pce[:, 1:])
-            + r.t * cp.multiply(r.REtaDR, r.pde[:, 1:])) == 0
-
-
-def _esd1mp_SOCb0(r):
-    return (cp.multiply(r.En, r.SOC[:, 0] - r.SOCinit)
-            - r.t * cp.multiply(r.EtaC, r.pce[:, 0])
-            + r.t * cp.multiply(r.REtaD, r.pde[:, 0])) == 0
-
-
-def _esd1mp_SOCr(r):
-    return r.SOCend - r.SOC[:, -1] <= 0
 
 
 class SRBase:
@@ -263,16 +153,18 @@ class ED(SRBase, MPBase, RTED):
                          info='input ug transpose',
                          no_parse=True)
 
-        # --- Model Section (Phase 4.4: e_fn form) ---
+        # --- Model Section ---
         # --- gen ---
         self.ctrle.u2 = self.ugt
         self.nctrle.u2 = self.ugt
-        self.pmaxe.e_fn = _ed_pmaxe
+        pmaxe = 'mul(mul(nctrle, pg0), tlv) + mul(mul(ctrle, tlv), pmax)'
+        self.pmaxe.e_str = pmaxe
         self.pmaxe.horizon = self.timeslot
-        self.pmine.e_fn = _ed_pmine
+        pmine = 'mul(mul(nctrle, pg0), tlv) + mul(mul(ctrle, tlv), pmin)'
+        self.pmine.e_str = pmine
         self.pmine.horizon = self.timeslot
-        self.pglb.e_fn = _ed_pglb
-        self.pgub.e_fn = _ed_pgub
+        self.pglb.e_str = '-pg + pmine'
+        self.pgub.e_str = 'pg - pmaxe'
 
         self.pru.horizon = self.timeslot
         self.pru.info = '2D RegUp power'
@@ -280,41 +172,46 @@ class ED(SRBase, MPBase, RTED):
         self.prd.info = '2D RegDn power'
 
         self.prs.horizon = self.timeslot
-        self.prsb.e_fn = _ed_prsb
-        self.rsr.e_fn = _ed_rsr
+        self.prsb.e_str = 'mul(ugt, pmax@tlv - pg) - prs'
+        self.rsr.e_str = '-gs@prs + dsr'
 
         # --- line ---
         self.plf.horizon = self.timeslot
         self.plf.info = '2D Line flow'
-        self.plflb.e_fn = _ed_plflb
-        self.plfub.e_fn = _ed_plfub
-        self.alflb.e_fn = _ed_alflb
-        self.alfub.e_fn = _ed_alfub
+        self.plflb.e_str = '-Bf@aBus - Pfinj@tlv - mul(ul, rate_a)@tlv'
+        self.plfub.e_str = 'Bf@aBus + Pfinj@tlv - mul(ul, rate_a)@tlv'
+        self.alflb.e_str = '-CftT@aBus + amin@tlv'
+        self.alfub.e_str = 'CftT@aBus - amax@tlv'
 
-        self.plf.e_fn = _ed_plf
+        self.plf.e_str = 'Bf@aBus + Pfinj@tlv'
 
         # --- power balance ---
-        self.pb.e_fn = _ed_pb
+        self.pb.e_str = 'Bbus@aBus + Pbusinj@tlv + Cl@pds + Csh@gsh@tlv - Cg@pg'
 
         # --- ramping ---
-        self.rbu.e_fn = _ed_rbu
-        self.rbd.e_fn = _ed_rbd
+        self.rbu.e_str = 'gs@mul(ugt, pru) - mul(dud, tlv)'
+        self.rbd.e_str = 'gs@mul(ugt, prd) - mul(ddd, tlv)'
 
-        self.rru.e_fn = _ed_rru
-        self.rrd.e_fn = _ed_rrd
+        self.rru.e_str = 'pg + pru - mul(mul(ugt, pmax), tlv)'
+        self.rrd.e_str = '-pg + prd + mul(mul(ugt, pmin), tlv)'
 
-        self.rgu.e_fn = _ed_rgu
-        self.rgd.e_fn = _ed_rgd
+        self.rgu.e_str = 'pg @ Mr - t dot RR30'
+        self.rgd.e_str = '-pg @ Mr - t dot RR30'
 
         self.rgu0 = Constraint(name='rgu0',
                                info='Initial gen ramping up',
-                               e_fn=_ed_rgu0,)
+                               e_str='mul(ugt[:, 0], pg[:, 0] - pg0[:, 0] - R30)',
+                               is_eq=False,)
         self.rgd0 = Constraint(name='rgd0',
                                info='Initial gen ramping down',
-                               e_fn=_ed_rgd0,)
+                               e_str='mul(ugt[:, 0], -pg[:, 0] + pg0[:, 0] - R30)',
+                               is_eq=False,)
 
         # --- objective ---
-        self.obj.e_fn = _ed_obj
+        cost = 'sum(t**2 dot c2 @ pg**2)'
+        cost += '+ t dot sum(c1 @ pg + csr @ prs)'
+        cost += '+ sum(mul(ugt, mul(c0, tlv)))'
+        self.obj.e_str = cost
 
     def dc2ac(self, kloss=1.0, **kwargs):
         """
@@ -378,13 +275,17 @@ class ESD1MPBase(ESD1Base):
         self.REtaDR = NumHstack(u=self.REtaD, ref=self.Mre,
                                 name='REtaDR', tex_name=r'R_{\eta_d,R}',
                                 info='Repeated REtaD as 2D matrix, (ng, ng-1)')
-        self.SOCb.e_fn = _esd1mp_SOCb
+        SOCb = 'mul(EnR, SOC @ Mre) - t dot mul(EtaCR, pce[:, 1:])'
+        SOCb += ' + t dot mul(REtaDR, pde[:, 1:])'
+        self.SOCb.e_str = SOCb
 
-        self.SOCb0 = Constraint(name='SOCb0',
+        SOCb0 = 'mul(En, SOC[:, 0] - SOCinit) - t dot mul(EtaC, pce[:, 0])'
+        SOCb0 += ' + t dot mul(REtaD, pde[:, 0])'
+        self.SOCb0 = Constraint(name='SOCb0', is_eq=True,
                                 info='ESD1 SOC initial balance',
-                                e_fn=_esd1mp_SOCb0,)
+                                e_str=SOCb0,)
 
-        self.SOCr.e_fn = _esd1mp_SOCr
+        self.SOCr.e_str = 'SOCend - SOC[:, -1]'
 
         # NOTE: extend vars to 2D
         self.pgdg.horizon = self.timeslot

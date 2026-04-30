@@ -4,9 +4,6 @@ DCOPF routines.
 import logging
 
 import numpy as np
-
-import cvxpy as cp
-
 from ams.core.param import RParam
 from ams.core.service import NumOp, NumOpDual
 
@@ -16,48 +13,6 @@ from ams.opt import Constraint, Objective, ExpressionCalc, Expression
 
 
 logger = logging.getLogger(__name__)
-
-
-# --- e_fn callables (Phase 4.2 migration; mirrors the prior e_str) ---
-
-def _pmaxe(r):
-    """Effective pmax: mul(nctrle, pg0) + mul(ctrle, pmax)."""
-    return cp.multiply(r.nctrle, r.pg0) + cp.multiply(r.ctrle, r.pmax)
-
-
-def _pmine(r):
-    """Effective pmin: mul(nctrle, pg0) + mul(ctrle, pmin)."""
-    return cp.multiply(r.nctrle, r.pg0) + cp.multiply(r.ctrle, r.pmin)
-
-
-def _pglb(r):
-    return -r.pg + r.pmine <= 0
-
-
-def _pgub(r):
-    return r.pg - r.pmaxe <= 0
-
-
-def _plflb(r):
-    return -r.plf - cp.multiply(r.ul, r.rate_a) <= 0
-
-
-def _plfub(r):
-    return r.plf - cp.multiply(r.ul, r.rate_a) <= 0
-
-
-def _alflb(r):
-    return -r.CftT @ r.aBus + r.amin <= 0
-
-
-def _alfub(r):
-    return r.CftT @ r.aBus - r.amax <= 0
-
-
-def _obj(r):
-    return (cp.sum(cp.multiply(r.c2, r.pg ** 2))
-            + cp.sum(cp.multiply(r.c1, r.pg))
-            + cp.sum(cp.multiply(r.ug, r.c0)))
 
 
 class DCOPF(DCPFBase):
@@ -156,29 +111,33 @@ class DCOPF(DCPFBase):
                            info='min line angle difference',
                            no_parse=True,)
 
-        # --- Model Section (Phase 4.2: e_fn form) ---
+        # --- Model Section ---
         self.pmaxe = Expression(info='Effective pmax',
                                 name='pmaxe', tex_name=r'p_{g, max, e}',
-                                e_fn=_pmaxe,
+                                e_str='mul(nctrle, pg0) + mul(ctrle, pmax)',
                                 model='StaticGen', src=None, unit='p.u.',)
         self.pmine = Expression(info='Effective pmin',
                                 name='pmine', tex_name=r'p_{g, min, e}',
-                                e_fn=_pmine,
+                                e_str='mul(nctrle, pg0) + mul(ctrle, pmin)',
                                 model='StaticGen', src=None, unit='p.u.',)
         self.pglb = Constraint(name='pglb', info='pg min',
-                               e_fn=_pglb,)
+                               e_str='-pg + pmine', is_eq=False,)
         self.pgub = Constraint(name='pgub', info='pg max',
-                               e_fn=_pgub,)
+                               e_str='pg - pmaxe', is_eq=False,)
 
         # --- line flow ---
         self.plflb = Constraint(info='line flow lower bound',
-                                name='plflb', e_fn=_plflb,)
+                                name='plflb', is_eq=False,
+                                e_str='-plf - mul(ul, rate_a)',)
         self.plfub = Constraint(info='line flow upper bound',
-                                name='plfub', e_fn=_plfub,)
+                                name='plfub', is_eq=False,
+                                e_str='plf - mul(ul, rate_a)',)
         self.alflb = Constraint(info='line angle difference lower bound',
-                                name='alflb', e_fn=_alflb,)
+                                name='alflb', is_eq=False,
+                                e_str='-CftT@aBus + amin',)
         self.alfub = Constraint(info='line angle difference upper bound',
-                                name='alfub', e_fn=_alfub,)
+                                name='alfub', is_eq=False,
+                                e_str='CftT@aBus - amax',)
         # NOTE: in CVXPY, dual_variables returns a list
         self.pi = ExpressionCalc(info='LMP, dual of <pb>',
                                  name='pi', unit='$/p.u.',
@@ -194,9 +153,12 @@ class DCOPF(DCPFBase):
                                   e_str='plfub.dual_variables[0]')
 
         # --- objective ---
+        obj = 'sum(mul(c2, pg**2))'
+        obj += '+ sum(mul(c1, pg))'
+        obj += '+ sum(mul(ug, c0))'
         self.obj = Objective(name='obj',
                              info='total cost', unit='$',
-                             sense='min', e_fn=_obj,)
+                             sense='min', e_str=obj,)
 
     def dc2ac(self, kloss=1.0, **kwargs):
         """
