@@ -72,6 +72,23 @@ class Objective(OptzBase):
         self.e_fn = e_fn
         self.sense = sense
         self.code = None
+        self._extra_terms = []
+
+    def add_term(self, fn: Callable):
+        """
+        Register an extra cost term added to this objective at evaluate time.
+
+        Used by mixin subclasses (e.g. :class:`ESD1Base`, :class:`RTEDVIS`)
+        that extend a parent's objective without rewriting it. ``fn(r)``
+        receives a :class:`RoutineNS` and returns a scalar CVXPY
+        expression; that expression is summed onto the base objective
+        before the ``cp.Minimize``/``cp.Maximize`` wrap.
+
+        Composes equally with ``e_str``-form and ``e_fn``-form parents,
+        so a parent can migrate from one to the other without breaking
+        any subclass that registered terms.
+        """
+        self._extra_terms.append(fn)
 
     @property
     def v(self):
@@ -101,7 +118,10 @@ class Objective(OptzBase):
             raise ValueError(f'Objective sense {self.sense} is not supported.')
         if self.e_fn is not None:
             return True
-        # parse the expression str
+        # parse the expression str. Note: ``self.code`` stores the *inner*
+        # expression only; the ``cp.Minimize``/``cp.Maximize`` wrap is
+        # applied in :meth:`evaluate` so extra cost terms can be summed
+        # onto the inner before wrapping.
         sub_map = self.om.rtn.syms.sub_map
         code_obj = self.e_str
         for pattern, replacement, in sub_map.items():
@@ -109,8 +129,7 @@ class Objective(OptzBase):
                 code_obj = re.sub(pattern, replacement, code_obj)
             except Exception as e:
                 raise Exception(f"Error in parsing obj <{self.name}>.\n{e}")
-        sense = 'cp.Minimize' if self.sense == 'min' else 'cp.Maximize'
-        self.code = f"{sense}({code_obj})"
+        self.code = code_obj
         msg = f" - Objective <{self.name}>: {self.code}"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         return True
@@ -120,26 +139,42 @@ class Objective(OptzBase):
         """
         Evaluate the objective function.
 
+        Composes ``base_inner + sum(extra_term(r) for ...)`` and wraps
+        with ``cp.Minimize`` / ``cp.Maximize`` per ``sense``.
+
         Returns
         -------
         bool
             Returns True if the evaluation is successful, False otherwise.
         """
+        # 1) Compute the base inner expression.
         if self.e_fn is not None:
             try:
                 inner = self.e_fn(RoutineNS(self.om.rtn))
-                wrap = cp.Minimize if self.sense == 'min' else cp.Maximize
-                self.optz = wrap(inner)
             except Exception as e:
                 raise Exception(f"Error in evaluating Objective <{self.name}> "
                                 f"via e_fn.\n{e}")
-            return True
-        logger.debug(f" - Objective <{self.name}>: {self.e_str}")
-        try:
-            local_vars = {'self': self, 'cp': cp}
-            self.optz = eval(self.code, {}, local_vars)
-        except Exception as e:
-            raise Exception(f"Error in evaluating Objective <{self.name}>.\n{e}")
+        else:
+            logger.debug(f" - Objective <{self.name}>: {self.e_str}")
+            try:
+                local_vars = {'self': self, 'cp': cp}
+                inner = eval(self.code, {}, local_vars)
+            except Exception as e:
+                raise Exception(f"Error in evaluating Objective <{self.name}>.\n{e}")
+
+        # 2) Add registered extra terms (from mixins).
+        if self._extra_terms:
+            ns = RoutineNS(self.om.rtn)
+            for term_fn in self._extra_terms:
+                try:
+                    inner = inner + term_fn(ns)
+                except Exception as e:
+                    raise Exception(f"Error composing extra cost term in "
+                                    f"Objective <{self.name}>.\n{e}")
+
+        # 3) Wrap with sense.
+        wrap = cp.Minimize if self.sense == 'min' else cp.Maximize
+        self.optz = wrap(inner)
         return True
 
     def __repr__(self):

@@ -49,6 +49,16 @@ def _rted_obj(r):
             + r.t * cp.sum(r.c1 @ r.pg + r.cru @ r.pru + r.crd @ r.prd))
 
 
+def _esd1_obj_extra(r):
+    """ESD1Base extra objective term (registered via Objective.add_term)."""
+    return r.t * cp.sum(-cp.multiply(r.cesdc, r.pce) + cp.multiply(r.cesdd, r.pde))
+
+
+def _rtedvis_obj_extra(r):
+    """RTEDVIS extra objective term."""
+    return r.t * cp.sum(cp.multiply(r.cm, r.M) + cp.multiply(r.cd, r.D))
+
+
 class SFRBase:
     """
     Base class for SFR components.
@@ -200,16 +210,8 @@ class RTED(SFRBase, RTEDBase, DCOPF):
         self.rgd.e_fn = _rted_rgd
 
         # --- objective ---
-        # NOTE: kept on e_str because subclasses (ESD1Base, DGBase, ...)
-        # extend the cost via ``self.obj.e_str += '...'``. Migrating the
-        # objective would require collapsing those subclasses to callable
-        # composition, which is out of scope for the routine-level
-        # migration pass.
         self.obj.info = 'total generation and reserve cost'
-        cost = 't**2 dot sum(mul(c2, pg**2)) + sum(mul(ug, c0))'
-        _to_sum = 'c1 @ pg + cru @ pru + crd @ prd'
-        cost += f'+ t dot sum({_to_sum})'
-        self.obj.e_str = cost
+        self.obj.e_fn = _rted_obj
 
     def dc2ac(self, kloss=1.0, **kwargs):
         exec_time = self.exec_time
@@ -413,7 +415,7 @@ class ESD1PBase:
                                info='ESD1 final SOC requirement',
                                e_str='SOCend - SOC',)
 
-        self.obj.e_str += '+ t dot sum(- mul(cesdc, pce) + mul(cesdd, pde))'
+        self.obj.add_term(_esd1_obj_extra)
 
     def _data_check(self):
         """
@@ -690,8 +692,7 @@ class RTEDVIS(VISBase, RTED):
 
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
-        vsgcost = '+ t dot sum(cm * M + cd * D)'
-        self.obj.e_str += vsgcost
+        self.obj.add_term(_rtedvis_obj_extra)
 
         self.map2.update({
             'M': ('RenGen', 'M'),
