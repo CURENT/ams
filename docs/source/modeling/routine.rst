@@ -1,3 +1,5 @@
+.. _routine:
+
 Routine
 ===========
 
@@ -88,18 +90,26 @@ like ``pg`` or ``Cft`` resolve to the underlying CVXPY ``Variable`` /
 Multiplication is the easiest place to introduce silent bugs because there are
 **three semantically distinct operations** that all read like "multiply":
 
-==================  ==========================  ==============================================
-Notation in e_str   Meaning                     When to use
-==================  ==========================  ==============================================
-``a @ b``           Matrix / matrix-vector mul  Topology matrix times a stacked vector, e.g.
-                                                ``Cft @ pl``, ``PTDF @ p``.
-``mul(a, b)``       Element-wise multiply       Per-device scaling, e.g. ``mul(ug, pg)`` to
-                    (alias for ``cp.multiply``) gate generator output by its commitment.
-                                                Broadcasts a scalar / 1-D parameter against a
-                                                vector variable.
-``2 * x``,          Scalar multiply             A literal number or a 0-D parameter scaling an
-``coeff * y``                                   expression. CVXPY accepts ``*`` here.
-==================  ==========================  ==============================================
+.. list-table::
+   :header-rows: 1
+   :widths: 20 25 55
+
+   * - Notation in ``e_str``
+     - Meaning
+     - When to use
+   * - ``a @ b``
+     - Matrix / matrix-vector multiply
+     - Topology matrix times a stacked vector, e.g. ``Cft @ pl``,
+       ``PTDF @ p``.
+   * - ``mul(a, b)``
+     - Element-wise multiply (alias for ``cp.multiply``)
+     - Per-device scaling, e.g. ``mul(ug, pg)`` to gate generator
+       output by its commitment. Broadcasts a scalar / 1-D parameter
+       against a vector variable.
+   * - ``2 * x``, ``coeff * y``
+     - Scalar multiply
+     - A literal number or a 0-D parameter scaling an expression.
+       CVXPY accepts ``*`` here.
 
 Two convenience aliases exist for readability:
 
