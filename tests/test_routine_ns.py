@@ -112,6 +112,27 @@ class TestEfnPlumbing(unittest.TestCase):
         self.assertEqual(o.sense, 'maximize')
 
 
+class TestDopfInitsViaEfn(unittest.TestCase):
+    """Smoke test: DOPF / DOPFVIS init cleanly via e_fn after Phase 4.3."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ss = ams.load(
+            ams.get_case('5bus/pjm5bus_demo.xlsx'),
+            setup=True,
+            no_output=True,
+            default_config=True,
+        )
+
+    def test_dopf_init(self):
+        self.ss.DOPF.init()
+        self.assertTrue(self.ss.DOPF.om.prob.is_dcp(dpp=True))
+
+    def test_dopfvis_init(self):
+        self.ss.DOPFVIS.init()
+        self.assertTrue(self.ss.DOPFVIS.om.prob.is_dcp(dpp=True))
+
+
 class TestModelParam(unittest.TestCase):
     """ModelParam: dual-access (.v / .cp) wrapper used inside e_fn(r)."""
 
