@@ -147,20 +147,28 @@ class RoutineBase:
         know the routine instance is fully constructed and we're about
         to hit the parse/evaluate path).
 
-        Cache key is an md5 of the routine class's source file plus the
-        cvxpy / ams versions; mismatch triggers a regen.
+        Cache validity requires three matches: a sha256 of the routine
+        class's source file, the bound CVXPY version, and the
+        ``pristine = True`` marker. Any mismatch triggers a regen. AMS's
+        own ``__version__`` is deliberately excluded — setuptools-scm
+        gives dev installs a ``.postN+g…`` suffix that bumps every
+        commit, which would force regen on every save with no behavior
+        delta. The source hash already captures every change worth
+        invalidating on.
         """
         import importlib.util
-        from pathlib import Path
 
         import cvxpy as _cp
 
         from ams.prep import (
-            _get_pristine_system, generate_for_routine, source_md5,
+            _get_pristine_system, generate_for_routine, pycode_dir,
+            source_md5,
         )
 
-        target = (Path.home() / '.ams' / 'pycode'
-                  / f'{self.class_name.lower()}.py')
+        # Use ``ams.prep.pycode_dir`` (instead of constructing the path
+        # in-line) so tests can monkeypatch the cache location to a
+        # tmp dir without touching the real ``~/.ams/pycode/``.
+        target = pycode_dir() / f'{self.class_name.lower()}.py'
         expected_md5 = source_md5(type(self))
 
         # Resolve the pristine routine instance up front. The wire step

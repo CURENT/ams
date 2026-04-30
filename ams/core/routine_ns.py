@@ -25,9 +25,20 @@ Plus the conventional symbols ``sys_f`` and ``sys_mva``.
 
 import logging
 
-from ams.core.matprocessor import MatProcessor
-
 logger = logging.getLogger(__name__)
+
+
+def _is_matprocessor(obj):
+    """Lazy ``isinstance(obj, MatProcessor)`` check.
+
+    ``MatProcessor`` (in ``ams.core.matprocessor``) imports ``ams.opt.Param``
+    transitively, so a top-level import here would force the entire
+    ``ams.opt`` namespace to load whenever ``ams.core.routine_ns`` is
+    imported — making the proxy module heavier than it needs to be and
+    introducing import-order fragility. Import on demand instead.
+    """
+    from ams.core.matprocessor import MatProcessor
+    return isinstance(obj, MatProcessor)
 
 
 class RoutineNS:
@@ -57,7 +68,7 @@ class RoutineNS:
         rparams = getattr(rtn, 'rparams', {})
         if name in rparams:
             rp = rparams[name]
-            if isinstance(rp.owner, MatProcessor):
+            if _is_matprocessor(rp.owner):
                 if rp.sparse:
                     return getattr(rtn.system.mats, name)._v
                 return rp.v
@@ -140,7 +151,7 @@ class NumericRoutineNS:
         rparams = getattr(rtn, 'rparams', {})
         if name in rparams:
             rp = rparams[name]
-            if isinstance(rp.owner, MatProcessor):
+            if _is_matprocessor(rp.owner):
                 if rp.sparse:
                     return getattr(rtn.system.mats, name)._v
                 return rp.v

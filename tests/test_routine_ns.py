@@ -120,16 +120,37 @@ class TestRuntimeCustomization(unittest.TestCase):
     Fixed by routing ``_link_pycode`` through the raw ``_e_fn`` slot
     (preserves ``e_str``) and tracking ``_e_dirty`` on the descriptor so
     re-init's wiring respects user overrides.
+
+    Test isolation: redirects ``ams.prep.pycode_dir`` to a per-class tmp
+    directory so the tests can freely create / unlink cache files
+    without touching the real ``~/.ams/pycode/``.
     """
 
     @classmethod
     def setUpClass(cls):
+        import tempfile
+        from pathlib import Path
+        from ams.prep import _get_pristine_system  # warm singleton first
+        _get_pristine_system()
+        # Redirect pycode cache to a tmp dir for the lifetime of this class.
+        cls._tmp = tempfile.TemporaryDirectory(prefix='ams-test-pycode-')
+        cls._tmp_path = Path(cls._tmp.name)
+        import ams.prep as _prep
+        cls._orig_pycode_dir = _prep.pycode_dir
+        _prep.pycode_dir = lambda: cls._tmp_path
+
         cls.ss = ams.load(
             ams.get_case('5bus/pjm5bus_demo.xlsx'),
             setup=True,
             no_output=True,
             default_config=True,
         )
+
+    @classmethod
+    def tearDownClass(cls):
+        import ams.prep as _prep
+        _prep.pycode_dir = cls._orig_pycode_dir
+        cls._tmp.cleanup()
 
     def test_e_str_preserved_after_init(self):
         """First init wires e_fn but must not clear e_str."""
@@ -172,10 +193,8 @@ class TestRuntimeCustomization(unittest.TestCase):
         constructing ``sp0`` fresh and asserting it solves to the
         original (un-mutated) optimum.
         """
-        from pathlib import Path
-
-        # Start from a clean cache.
-        cache = Path.home() / '.ams' / 'pycode' / 'dcopf.py'
+        # Start from a clean cache (in the redirected tmp dir).
+        cache = self._tmp_path / 'dcopf.py'
         if cache.exists():
             cache.unlink()
 
@@ -208,8 +227,7 @@ class TestRuntimeCustomization(unittest.TestCase):
 
     def test_pristine_marker_in_disk_cache(self):
         """Generated pycode must declare itself pristine."""
-        from pathlib import Path
-        cache = Path.home() / '.ams' / 'pycode' / 'dcopf.py'
+        cache = self._tmp_path / 'dcopf.py'
         if cache.exists():
             cache.unlink()
         ss = ams.load(
