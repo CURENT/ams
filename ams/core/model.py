@@ -195,7 +195,7 @@ class Model:
         return self.__dict__[src].__dict__[attr][uid]
 
     def set(self, src, idx, *args, value=None, attr='v', base=None):
-        """
+        r"""
         Set the value of an attribute of a model property.
 
         Performs ``self.<src>.<attr>[idx] = value``. This method will not modify
@@ -221,7 +221,7 @@ class Model:
             Name of the model property
         idx : str, int, float, array-like
             Indices of the devices
-        *args : positional
+        \*args : positional
             Accepted for compatibility.  Two interpretations depending on
             whether ``attr`` is also passed as a keyword:
 
@@ -233,7 +233,7 @@ class Model:
             The internal attribute of the property to get.
             ``v`` for values, ``a`` for address, and ``e`` for equation value.
         value : array-like, optional
-            New values to be set (keyword form; takes precedence over *args).
+            New values to be set (keyword form; takes precedence over ``*args``).
         base : ignored
             Accepted for API compatibility with ANDES v2.0.0; not used by AMS.
 
