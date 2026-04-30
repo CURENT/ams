@@ -198,9 +198,12 @@ def source_md5(routine_cls) -> str:
     if src_file is None:
         return 'no-source'
     # md5 is fine here — used as a cache key for code regeneration, not
-    # for any security or integrity property. nosec for Codacy's Bandit
-    # engine (which ignores [tool.bandit] skips in pyproject.toml).
-    return hashlib.md5(Path(src_file).read_bytes()).hexdigest()  # nosec B324
+    # for any security or integrity property. Pass ``usedforsecurity=False``
+    # (Python 3.9+) to make that intent explicit; both Bandit and Codacy's
+    # Semgrep crypto rule honor this flag.
+    return hashlib.md5(
+        Path(src_file).read_bytes(), usedforsecurity=False
+    ).hexdigest()
 
 
 def _emit_callable(prefix: str, name: str, body: str) -> List[str]:

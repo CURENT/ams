@@ -409,8 +409,10 @@ class OModel(OModelBase):
         # Auto-prep: ensure pycode for this routine is up-to-date and
         # wire generated e_fn callables before parse/evaluate. Idempotent
         # — runs the cache-check on every init call but only regenerates
-        # when md5 / version markers change.
-        self.rtn._link_pycode()
+        # when md5 / version markers change. ``_link_pycode`` is the
+        # routine's internal hook for the OModel lifecycle, intentionally
+        # underscore-prefixed because it's not a stable user-facing API.
+        self.rtn._link_pycode()  # pylint: disable=protected-access
 
         self.parse(force=force)
         self.evaluate(force=force)

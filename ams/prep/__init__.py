@@ -61,9 +61,9 @@ def clean(verbose: bool = True) -> None:
     if target.exists():
         shutil.rmtree(target)
         if verbose:
-            logger.info(f"Removed {target}")
+            logger.info("Removed %s", target)
     elif verbose:
-        logger.info(f"Nothing to clean: {target} does not exist")
+        logger.info("Nothing to clean: %s does not exist", target)
 
 
 def prep_all(routines: Optional[Iterable[str]] = None,
@@ -99,13 +99,13 @@ def prep_all(routines: Optional[Iterable[str]] = None,
     # ``_link_pycode`` already built one for an in-process auto-prep.
     system = _get_pristine_system()
     n = 0
-    for group, names in all_routines.items():
+    for _group, names in all_routines.items():
         for name in names:
             if wanted is not None and name.lower() not in wanted:
                 continue
             rtn = getattr(system, name, None)
             if rtn is None:
-                logger.debug(f"Skip {name}: not present on System")
+                logger.debug("Skip %s: not present on System", name)
                 continue
             target = pycode_dir() / f'{name.lower()}.py'
             if not force and target.exists():
@@ -119,12 +119,12 @@ def prep_all(routines: Optional[Iterable[str]] = None,
                     pristine_ok = "pristine = True" in txt
                     if md5_ok and cvx_ok and pristine_ok:
                         if verbose:
-                            logger.debug(f"  {name}: up-to-date")
+                            logger.debug("  %s: up-to-date", name)
                         continue
                 except OSError:
                     pass
             write_for_routine(rtn, target)
             if verbose:
-                logger.info(f"  prepped {name} -> {target}")
+                logger.info("  prepped %s -> %s", name, target)
             n += 1
     return n
