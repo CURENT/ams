@@ -109,13 +109,24 @@ class Constraint(OptzBase):
     def evaluate(self):
         """
         Evaluate the constraint.
+
+        ``e_fn(r)`` may return either a fully-formed ``cp.Constraint``
+        (legacy convention; ``r.pg <= 0``) or just the LHS expression
+        (codegen convention; ``r.pg``). When it returns the LHS, the
+        relational op is applied here based on ``is_eq``. The LHS form
+        is required for ``.e`` to recover a numpy LHS during a failed
+        solve — see ``OptzBase.e``.
         """
         if self.e_fn is not None:
             try:
-                self.optz = self.e_fn(RoutineNS(self.om.rtn))
+                result = self.e_fn(RoutineNS(self.om.rtn))
             except Exception as e:
                 raise Exception(f"Error in evaluating Constraint <{self.name}> "
                                 f"via e_fn.\n{e}")
+            if isinstance(result, cp.constraints.Constraint):
+                self.optz = result
+            else:
+                self.optz = (result == 0) if self.is_eq else (result <= 0)
             return True
         msg = f" - Constr <{self.name}>: {self.code}"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))

@@ -202,12 +202,16 @@ def generate_for_routine(routine, *, header_extra: str = '') -> str:
         parts.append('\n')
 
     # --- Constraints ---
+    # Codegen convention: emit the LHS expression only. Constraint.evaluate
+    # applies ``<= 0`` / ``== 0`` based on ``is_eq``. This lets ``.e`` recover
+    # a numpy LHS during a failed/incomplete solve via ``NumericRoutineNS``;
+    # the legacy ``return <body> <= 0`` form short-circuits to a numpy bool
+    # when every operand is numpy, which loses the LHS.
     for name, constr in routine.constrs.items():
         if constr.e_fn is not None or constr.e_str is None:
             continue
         body = _rewrite(constr.e_str, function_rewrites, symbol_regex)
-        op = '== 0' if constr.is_eq else '<= 0'
-        parts.extend(_emit_callable('constr', name, f'({body})', f' {op}'))
+        parts.extend(_emit_callable('constr', name, body))
         parts.append('\n')
 
     # --- ExpressionCalcs ---
