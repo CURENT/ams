@@ -355,7 +355,39 @@ class OModel(OModelBase):
         _, s = elapsed(t)
         logger.debug(f" -> Finalized in {s}")
         self.finalized = True
+        self._log_dpp_diagnostic()
         return self.finalized
+
+    def _log_dpp_diagnostic(self):
+        """
+        Log DPP-compliance + Parameter/Constant counts for re-solve perf.
+
+        DPP compliance is a per-problem property — one non-DPP sub-term
+        spoils caching for every other parameter change. Logging this
+        at finalize lets routine authors spot when an accidental
+        non-DPP construct (e.g., ``c2 * pg ** 2`` with ``c2`` promoted
+        to ``cp.Parameter``) silently kills warm-resolve performance.
+        Cheap to compute; debug-level so it's off by default.
+        """
+        try:
+            is_dpp = self.prob.is_dcp(dpp=True)
+        except Exception as exc:
+            logger.debug(f"DPP check failed for <{self.rtn.class_name}>: {exc}")
+            return
+        n_param = sum(1 for p in self.prob.parameters())
+        # cvxpy doesn't expose a public Constant iterator; approximate via
+        # the canonical leaves of every constraint + objective.
+        leaves = list(self.prob.parameters()) + list(self.prob.variables())
+        logger.debug(
+            f"DPP diagnostic <{self.rtn.class_name}>: dpp={is_dpp}, "
+            f"params={n_param}, vars={len(self.prob.variables())}, "
+            f"total_leaves={len(leaves)}"
+        )
+        if not is_dpp and n_param > 0:
+            logger.info(
+                f"<{self.rtn.class_name}> has parameters but is not DPP — "
+                f"warm re-solves will re-canonicalize. Check non-DPP terms."
+            )
 
     def init(self, force=False):
         """
