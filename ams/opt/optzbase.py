@@ -206,11 +206,30 @@ class OptzBase:
           it; the legacy regex pipeline.
         """
         if self.code is None:
+            # e_fn form: re-evaluate against current parameter state.
+            # Calling e_fn fresh (rather than reading self.optz._expr.value)
+            # captures changes to underlying numpy params (e.g. tdc0/tdc set
+            # post-build), which the test_ch_decision use-case relies on.
+            from ams.core.routine_ns import RoutineNS as _NS
+            e_fn = getattr(self, 'e_fn', None)
+            if e_fn is not None:
+                try:
+                    optz = e_fn(_NS(self.om.rtn))
+                except Exception as exc:
+                    logger.error(
+                        f"Error in re-evaluating {self.class_name} "
+                        f"<{self.name}> via e_fn for `.e`.\n{exc}"
+                    )
+                    return None
+                inner = getattr(optz, '_expr', optz)
+                return getattr(inner, 'value', None)
+
+            # Fallback to the cached optz (no e_fn / e_str path).
             optz = getattr(self, 'optz', None)
             if optz is None:
                 logger.info(f"{self.class_name} <{self.name}> is not evaluated yet.")
                 return None
-            inner = getattr(optz, '_expr', optz)  # cp.Constraint stores LHS on _expr
+            inner = getattr(optz, '_expr', optz)
             return getattr(inner, 'value', None)
 
         val_map = self.om.rtn.syms.val_map

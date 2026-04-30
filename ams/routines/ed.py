@@ -108,6 +108,23 @@ def _ed_obj(r):
             + cp.sum(cp.multiply(r.ugt, cp.multiply(r.c0, r.tlv))))
 
 
+# ESD1MPBase
+def _esd1mp_SOCb(r):
+    return (cp.multiply(r.EnR, r.SOC @ r.Mre)
+            - r.t * cp.multiply(r.EtaCR, r.pce[:, 1:])
+            + r.t * cp.multiply(r.REtaDR, r.pde[:, 1:])) == 0
+
+
+def _esd1mp_SOCb0(r):
+    return (cp.multiply(r.En, r.SOC[:, 0] - r.SOCinit)
+            - r.t * cp.multiply(r.EtaC, r.pce[:, 0])
+            + r.t * cp.multiply(r.REtaD, r.pde[:, 0])) == 0
+
+
+def _esd1mp_SOCr(r):
+    return r.SOCend - r.SOC[:, -1] <= 0
+
+
 class SRBase:
     """
     Base class for spinning reserve.
@@ -361,17 +378,13 @@ class ESD1MPBase(ESD1Base):
         self.REtaDR = NumHstack(u=self.REtaD, ref=self.Mre,
                                 name='REtaDR', tex_name=r'R_{\eta_d,R}',
                                 info='Repeated REtaD as 2D matrix, (ng, ng-1)')
-        SOCb = 'mul(EnR, SOC @ Mre) - t dot mul(EtaCR, pce[:, 1:])'
-        SOCb += ' + t dot mul(REtaDR, pde[:, 1:])'
-        self.SOCb.e_str = SOCb
+        self.SOCb.e_fn = _esd1mp_SOCb
 
-        SOCb0 = 'mul(En, SOC[:, 0] - SOCinit) - t dot mul(EtaC, pce[:, 0])'
-        SOCb0 += ' + t dot mul(REtaD, pde[:, 0])'
-        self.SOCb0 = Constraint(name='SOCb0', is_eq=True,
+        self.SOCb0 = Constraint(name='SOCb0',
                                 info='ESD1 SOC initial balance',
-                                e_str=SOCb0,)
+                                e_fn=_esd1mp_SOCb0,)
 
-        self.SOCr.e_str = 'SOCend - SOC[:, -1]'
+        self.SOCr.e_fn = _esd1mp_SOCr
 
         # NOTE: extend vars to 2D
         self.pgdg.horizon = self.timeslot
