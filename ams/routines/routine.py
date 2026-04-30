@@ -351,7 +351,7 @@ class RoutineBase:
 
         See Also
         --------
-        :py:attr:`ams.opt.OptzBase.formulation_source` — per-item source.
+        ams.opt.OptzBase.formulation_source : per-item source string.
         """
         rows = []
         for kind, registry in (('expr', self.exprs),

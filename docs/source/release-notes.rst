@@ -48,7 +48,41 @@ v1.2.2 (unreleased)
   DPP, an info-level log line warns that warm re-solves will
   re-canonicalize. Helps catch accidental non-DPP terms early.
 
+- **Formulation-source introspection.** Three ways to see which
+  execution path an opt element runs through after ``init()``:
+
+  - per-item :py:attr:`ams.opt.OptzBase.formulation_source` →
+    ``'codegen' | 'sub_map' | 'manual' | 'pending'``;
+  - :py:meth:`ams.routines.routine.RoutineBase.formulation_summary`
+    prints a per-item table;
+  - an INFO log line on every ``init()``::
+
+       <DCOPF> formulation: codegen=14/17, sub_map(customized)=1, sub_map(added)=2
+
+  Useful for confirming a runtime customization
+  (``addConstrs``, ``obj.e_str += '...'``) actually reaches the
+  optimizer rather than being silently overwritten by the cached
+  callable.
+
 **Behavior changes:**
+
+- **Disk cache is always pristine.** The generated pycode at
+  ``~/.ams/pycode/<routine>.py`` is now guaranteed to reflect only
+  the routine source code, never per-instance customizations. Codegen
+  always runs against a fresh ``ams.System`` instance fetched from a
+  per-process singleton, never against the user's ``self``. A
+  ``pristine = True`` marker in the generated module's header
+  auto-invalidates caches written by older AMS versions on next read.
+  This means runtime mutations on one ``System`` (``sp.DCOPF.obj.e_str
+  += '...'``, ``sp.DCOPF.addConstrs(...)``) cannot leak into another
+  freshly-loaded ``System``. See ``examples/ex8.ipynb`` for a working
+  sp1 / sp2 / sp3 demonstration.
+
+- ``e_str`` is preserved on items after auto-prep wires their
+  ``e_fn`` from pycode. Lets users do
+  ``sp.DCOPF.obj.e_str += '+ ...'`` post-init — a documented
+  customization pattern that briefly broke when the ``_EFormDescriptor``
+  mutex cleared ``e_str`` on internal codegen wiring.
 
 - ``.e`` (the post-solve / debug numerical value of a constraint
   LHS, expression, or objective) now works correctly even when the
