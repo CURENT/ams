@@ -18,4 +18,89 @@ Public API:
 - :func:`prep_all` — emit source for every registered routine class.
 """
 
-from ams.prep.generator import generate_for_routine, source_md5  # noqa: F401
+import logging
+import shutil
+from pathlib import Path
+from typing import Iterable, Optional
+
+from ams.prep.generator import generate_for_routine, source_md5, write_for_routine  # noqa: F401
+
+logger = logging.getLogger(__name__)
+
+
+def pycode_dir() -> Path:
+    """The on-disk directory holding generated pycode."""
+    return Path.home() / '.ams' / 'pycode'
+
+
+def clean(verbose: bool = True) -> None:
+    """Remove the entire pycode cache directory."""
+    target = pycode_dir()
+    if target.exists():
+        shutil.rmtree(target)
+        if verbose:
+            logger.info(f"Removed {target}")
+    elif verbose:
+        logger.info(f"Nothing to clean: {target} does not exist")
+
+
+def prep_all(routines: Optional[Iterable[str]] = None,
+             force: bool = False,
+             verbose: bool = True) -> int:
+    """
+    Generate (or refresh) pycode for every registered routine.
+
+    Parameters
+    ----------
+    routines : iterable of str, optional
+        Subset of routine class names to prep. If omitted, all routines
+        registered in :data:`ams.routines.all_routines` are prepared.
+    force : bool, optional
+        If True, regenerate even when the cached md5 matches the current
+        source.
+    verbose : bool, optional
+        If True (default), log each routine prepared.
+
+    Returns
+    -------
+    n : int
+        Number of routine pycode files written.
+    """
+    import ams
+    from ams.routines import all_routines
+
+    # Build the set of routine class names to prep.
+    wanted = None
+    if routines is not None:
+        wanted = {r.lower() for r in routines}
+
+    # Spin up an empty system; instantiating a System constructs every
+    # routine class once, populating the constraint/expr/obj registries.
+    system = ams.System(no_input=True, default_config=True)
+    n = 0
+    for group, names in all_routines.items():
+        for name in names:
+            if wanted is not None and name.lower() not in wanted:
+                continue
+            rtn = getattr(system, name, None)
+            if rtn is None:
+                logger.debug(f"Skip {name}: not present on System")
+                continue
+            target = pycode_dir() / f'{name.lower()}.py'
+            if not force and target.exists():
+                # Re-uses the same staleness check as _link_pycode.
+                expected = source_md5(type(rtn))
+                try:
+                    txt = target.read_text()
+                    # quick check via substring; full import is heavier
+                    if f"md5 = {expected!r}" in txt:
+                        if verbose:
+                            logger.debug(f"  {name}: up-to-date")
+                        continue
+                except OSError:
+                    pass
+            write_for_routine(rtn, target)
+            if verbose:
+                logger.info(f"  prepped {name} -> {target}")
+            n += 1
+    return n
