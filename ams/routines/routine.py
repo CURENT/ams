@@ -198,27 +198,26 @@ class RoutineBase:
             gen = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(gen)
 
-        # Wire e_fn from the generated module onto items missing one.
-        # The descriptor mutex ensures the e_str path is preempted.
+        # Wire e_fn (and pre-rendered tex) from the generated module onto
+        # items missing them. The descriptor mutex ensures the e_str path
+        # is preempted; setting e_tex is purely additive metadata used by
+        # the documenter to recover LaTeX after e_str clears.
+        def _wire(item, prefix, name):
+            fn = getattr(gen, f'_{prefix}_{name}', None)
+            if fn is not None and item.e_fn is None:
+                item.e_fn = fn
+            tex = getattr(gen, f'_{prefix}_{name}_tex', None)
+            if tex is not None and getattr(item, 'e_tex', None) is None:
+                item.e_tex = tex
+
         for name, expr in self.exprs.items():
-            if expr.e_fn is None:
-                fn = getattr(gen, f'_expr_{name}', None)
-                if fn is not None:
-                    expr.e_fn = fn
+            _wire(expr, 'expr', name)
         for name, constr in self.constrs.items():
-            if constr.e_fn is None:
-                fn = getattr(gen, f'_constr_{name}', None)
-                if fn is not None:
-                    constr.e_fn = fn
-        if self.obj is not None and self.obj.e_fn is None:
-            fn = getattr(gen, f'_obj_{self.obj.name}', None)
-            if fn is not None:
-                self.obj.e_fn = fn
+            _wire(constr, 'constr', name)
+        if self.obj is not None:
+            _wire(self.obj, 'obj', self.obj.name)
         for name, exprc in self.exprcs.items():
-            if exprc.e_fn is None:
-                fn = getattr(gen, f'_exprcalc_{name}', None)
-                if fn is not None:
-                    exprc.e_fn = fn
+            _wire(exprc, 'exprcalc', name)
 
     def get(self, src: str, idx, attr: str = 'v',
             horizon: Optional[Union[int, str, Iterable]] = None):
