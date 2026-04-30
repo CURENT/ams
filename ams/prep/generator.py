@@ -53,37 +53,47 @@ _FUNCTION_REWRITES = OrderedDict([
 ])
 
 
-def _build_codegen_sub_map(routine) -> "OrderedDict[str, str]":
-    """Build the codegen rewrite map.
+def _collect_symbol_names(routine) -> list:
+    """All symbol names the runtime :class:`RoutineNS` resolves."""
+    names = set()
+    for category in (routine.vars, routine.rparams, routine.services,
+                     routine.exprs, routine.constrs):
+        names.update(category.keys())
+    names.update(routine.config.as_dict().keys())
+    names.add('sys_f')
+    names.add('sys_mva')
+    return sorted(names)
 
-    Function-name rewrites first (so ``sum``, ``mul``, ``dot`` resolve
-    before symbols), then a ``\\b<name>\\b → r.<name>`` rule per symbol
-    in every category the runtime :class:`RoutineNS` resolves.
+
+def _build_symbol_regex(names: list):
+    """Single alternation regex matching any symbol name (with word boundaries).
+
+    Sort by length descending so a longer name takes precedence over a
+    shorter prefix when both are in the alternation (e.g. ``pmax`` over
+    ``p`` if both existed).
     """
-    sub_map = OrderedDict(_FUNCTION_REWRITES)
-    # 1. Vars  2. RParams  3. Services  4. Expressions  5. Constraints  6. Config
-    for name in routine.vars:
-        sub_map[rf'\b{name}\b'] = f'r.{name}'
-    for name in routine.rparams:
-        sub_map[rf'\b{name}\b'] = f'r.{name}'
-    for name in routine.services:
-        sub_map[rf'\b{name}\b'] = f'r.{name}'
-    for name in routine.exprs:
-        sub_map[rf'\b{name}\b'] = f'r.{name}'
-    for name in routine.constrs:
-        sub_map[rf'\b{name}\b'] = f'r.{name}'
-    for key in routine.config.as_dict():
-        sub_map[rf'\b{key}\b'] = f'r.{key}'
-    # Conventional names from BaseRoutine
-    sub_map[r'\bsys_f\b'] = 'r.sys_f'
-    sub_map[r'\bsys_mva\b'] = 'r.sys_mva'
-    return sub_map
+    if not names:
+        return None
+    sorted_names = sorted(names, key=lambda n: (-len(n), n))
+    return re.compile(r'\b(' + '|'.join(re.escape(n) for n in sorted_names) + r')\b')
 
 
-def _rewrite(e_str: str, sub_map) -> str:
-    """Apply the rewrite map to one e_str expression."""
+def _rewrite(e_str: str, function_rewrites, symbol_regex) -> str:
+    """Apply the codegen rewrites in two passes.
+
+    Pass 1: function-name rewrites (``mul → cp.multiply``, ``dot → *``,
+    ``sum → cp.sum``, etc.). These can run sequentially because their
+    outputs (``cp.multiply``, ``*``) never match a later input pattern.
+
+    Pass 2: a *single* substitution that resolves every symbol name at
+    once, ``r.<name>``. Sequential per-name substitutions cascade —
+    e.g. when a routine has a symbol named ``r`` (DOPF.r = line
+    resistance), substituting ``\\br\\b → r.r`` first, then later
+    seeing the already-emitted ``r.Bf`` and matching ``r`` again yields
+    ``r.r.Bf``. Single-pass alternation prevents that.
+    """
     code = e_str
-    for pattern, replacement in sub_map.items():
+    for pattern, replacement in function_rewrites.items():
         try:
             code = re.sub(pattern, replacement, code)
         except re.error as exc:
@@ -91,6 +101,8 @@ def _rewrite(e_str: str, sub_map) -> str:
                 f"codegen: regex failure on pattern {pattern!r} "
                 f"applying to {e_str!r}: {exc}"
             )
+    if symbol_regex is not None:
+        code = symbol_regex.sub(r'r.\1', code)
     return code
 
 
@@ -158,7 +170,8 @@ def generate_for_routine(routine, *, header_extra: str = '') -> str:
     ValueError
         On regex failure.
     """
-    sub_map = _build_codegen_sub_map(routine)
+    function_rewrites = _FUNCTION_REWRITES
+    symbol_regex = _build_symbol_regex(_collect_symbol_names(routine))
     cls = type(routine)
     src_file = inspect.getsourcefile(cls)
 
@@ -184,7 +197,7 @@ def generate_for_routine(routine, *, header_extra: str = '') -> str:
     for name, expr in routine.exprs.items():
         if expr.e_fn is not None or expr.e_str is None:
             continue
-        body = _rewrite(expr.e_str, sub_map)
+        body = _rewrite(expr.e_str, function_rewrites, symbol_regex)
         parts.extend(_emit_callable('expr', name, body))
         parts.append('\n')
 
@@ -192,7 +205,7 @@ def generate_for_routine(routine, *, header_extra: str = '') -> str:
     for name, constr in routine.constrs.items():
         if constr.e_fn is not None or constr.e_str is None:
             continue
-        body = _rewrite(constr.e_str, sub_map)
+        body = _rewrite(constr.e_str, function_rewrites, symbol_regex)
         op = '== 0' if constr.is_eq else '<= 0'
         parts.extend(_emit_callable('constr', name, f'({body})', f' {op}'))
         parts.append('\n')
@@ -201,13 +214,13 @@ def generate_for_routine(routine, *, header_extra: str = '') -> str:
     for name, exprc in routine.exprcs.items():
         if exprc.e_str is None:
             continue
-        body = _rewrite(exprc.e_str, sub_map)
+        body = _rewrite(exprc.e_str, function_rewrites, symbol_regex)
         parts.extend(_emit_callable('exprcalc', name, body))
         parts.append('\n')
 
     # --- Objective ---
     if routine.obj is not None and routine.obj.e_fn is None and routine.obj.e_str is not None:
-        body = _rewrite(routine.obj.e_str, sub_map)
+        body = _rewrite(routine.obj.e_str, function_rewrites, symbol_regex)
         parts.extend(_emit_callable('obj', routine.obj.name, body))
         parts.append('\n')
 

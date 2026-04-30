@@ -414,6 +414,12 @@ class OModel(OModelBase):
 
         t, _ = elapsed()
 
+        # Auto-prep: ensure pycode for this routine is up-to-date and
+        # wire generated e_fn callables before parse/evaluate. Idempotent
+        # — runs the cache-check on every init call but only regenerates
+        # when md5 / version markers change.
+        self.rtn._link_pycode()
+
         self.parse(force=force)
         self.evaluate(force=force)
         self.finalize(force=force)

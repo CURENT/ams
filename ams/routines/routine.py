@@ -138,6 +138,84 @@ class RoutineBase:
     def class_name(self):
         return self.__class__.__name__
 
+    def _link_pycode(self):
+        """
+        Ensure pycode for this routine is current, then wire generated
+        ``e_fn`` callables onto items that don't already have one.
+
+        Idempotent. Called from ``OModel.init`` (the one place where we
+        know the routine instance is fully constructed and we're about
+        to hit the parse/evaluate path).
+
+        Cache key is an md5 of the routine class's source file plus the
+        cvxpy / ams versions; mismatch triggers a regen.
+        """
+        import importlib.util
+        import logging as _logging
+        from pathlib import Path
+
+        import cvxpy as _cp
+
+        import ams as _ams
+        from ams.prep import generate_for_routine, source_md5
+
+        target = (Path.home() / '.ams' / 'pycode'
+                  / f'{self.class_name.lower()}.py')
+        expected_md5 = source_md5(type(self))
+
+        gen = None
+        # Try to use existing pycode if it matches.
+        if target.exists():
+            try:
+                spec = importlib.util.spec_from_file_location(
+                    f'ams._user_pycode.{self.class_name.lower()}', target)
+                gen = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(gen)
+                stale = (
+                    getattr(gen, 'md5', None) != expected_md5
+                    or getattr(gen, 'cvxpy_version', None) != _cp.__version__
+                    or getattr(gen, 'ams_version', None) != _ams.__version__
+                )
+                if stale:
+                    gen = None
+            except Exception as exc:
+                logger.debug(
+                    f"pycode at {target} not loadable ({exc}); regenerating."
+                )
+                gen = None
+
+        # Regenerate if missing or stale. Hard-fail on generation errors —
+        # a malformed e_str should surface here, not silently downgrade
+        # to the runtime sub_map fallback.
+        if gen is None:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            src = generate_for_routine(self)
+            target.write_text(src)
+            spec = importlib.util.spec_from_file_location(
+                f'ams._user_pycode.{self.class_name.lower()}', target)
+            gen = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(gen)
+
+        # Wire e_fn from the generated module onto items missing one.
+        # The descriptor mutex ensures the e_str path is preempted.
+        for name, expr in self.exprs.items():
+            if expr.e_fn is None:
+                fn = getattr(gen, f'_expr_{name}', None)
+                if fn is not None:
+                    expr.e_fn = fn
+        for name, constr in self.constrs.items():
+            if constr.e_fn is None:
+                fn = getattr(gen, f'_constr_{name}', None)
+                if fn is not None:
+                    constr.e_fn = fn
+        if self.obj is not None and self.obj.e_fn is None:
+            fn = getattr(gen, f'_obj_{self.obj.name}', None)
+            if fn is not None:
+                self.obj.e_fn = fn
+        # ExpressionCalc still uses e_str path — generator emits
+        # `_exprcalc_<name>` callables, but the class doesn't accept
+        # e_fn yet. Adding that is a small follow-up (4.5-D's neighbor).
+
     def get(self, src: str, idx, attr: str = 'v',
             horizon: Optional[Union[int, str, Iterable]] = None):
         """
