@@ -44,8 +44,11 @@ class Constraint(OptzBase):
         Additional informational text about the constraint.
     is_eq : str, optional
         Flag indicating if the constraint is an equality constraint. False indicates
-        an inequality constraint in the form of `<= 0`. Ignored when ``e_fn`` is used —
-        the callable returns the fully-formed constraint.
+        an inequality constraint in the form of ``<= 0``. Honored for both the
+        ``e_str`` form and the codegen ``e_fn`` form (which returns only the LHS
+        — :meth:`evaluate` then applies ``== 0`` or ``<= 0`` based on this flag).
+        It is *only* ignored when an author manually passes an ``e_fn`` that
+        returns a fully-formed ``cp.Constraint``.
 
     Attributes
     ----------

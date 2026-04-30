@@ -33,7 +33,7 @@ v1.2.2 (unreleased)
      $ ams prep --clean            # wipe ~/.ams/pycode/
      $ ams prep --where            # print the cache path
 
-  See :ref:`Routine` for the rendered pipeline. Generated pycode is
+  See :ref:`routine` for the rendered pipeline. Generated pycode is
   per-user and never shipped in the wheel — analogous to ANDES's
   ``andes prep`` / ``~/.andes/pycode/`` pattern.
 
