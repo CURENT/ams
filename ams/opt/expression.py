@@ -24,10 +24,11 @@ class Expression(OptzBase):
     """
     Base class for expressions used in a routine.
 
-    Exactly one of ``e_str`` or ``e_fn`` should be provided. ``e_fn(r)``
-    is the Phase 4.1+ form: a callable that takes a :class:`RoutineNS`
-    proxy and returns a CVXPY expression. ``e_str`` is the legacy
-    regex-rewritten string form, slated for deletion in Phase 4.5.
+    Routines are authored with ``e_str`` strings; the codegen at
+    :func:`ams.prep.generate_for_routine` compiles each ``e_str`` into
+    a callable ``e_fn(r)`` taking a :class:`RoutineNS` proxy and
+    returning a CVXPY expression. The mutex descriptor on
+    ``e_str`` / ``e_fn`` keeps the two forms exclusive.
 
     Parameters
     ----------
@@ -148,4 +149,3 @@ class Expression(OptzBase):
         Set the value.
         """
         raise NotImplementedError('Cannot set value to an Expression.')
-
