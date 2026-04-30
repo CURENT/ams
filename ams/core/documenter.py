@@ -696,6 +696,10 @@ def _tex_pre(docm, p, tex_map):
     ])
 
     expr = p.e_str
+    if expr is None:
+        # e_fn form (Phase 4.1+): no string to rewrite. Return a
+        # placeholder until e_tex authoring lands in Phase 4.6.
+        return f'\\text{{{p.name}}}'
 
     for pattern, replacement in tex_map.items():
         for key, val in map_before.items():

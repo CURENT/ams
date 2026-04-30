@@ -15,6 +15,7 @@ from ams.shared import _prefix, _max_length
 
 from ams.core.routine_ns import RoutineNS
 from ams.opt import OptzBase, ensure_symbols, ensure_mats_and_parsed
+from ams.opt.optzbase import _EFormDescriptor
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,9 @@ class Expression(OptzBase):
         Horizon
     """
 
+    e_str = _EFormDescriptor('e_str', 'e_fn')
+    e_fn = _EFormDescriptor('e_fn', 'e_str')
+
     def __init__(self,
                  name: Optional[str] = None,
                  tex_name: Optional[str] = None,
@@ -68,6 +72,8 @@ class Expression(OptzBase):
                  ):
         OptzBase.__init__(self, name=name, info=info, unit=unit, model=model)
         self.tex_name = tex_name
+        self._e_str = None
+        self._e_fn = None
         self.e_str = e_str
         self.e_fn = e_fn
         self.optz = None
