@@ -5,6 +5,8 @@ import logging
 from collections import OrderedDict
 import numpy as np
 
+import cvxpy as cp
+
 from ams.core.param import RParam
 from ams.core.service import ZonalSum, VarSelect, NumOp, NumOpDual
 from ams.routines.dcopf import DCOPF
@@ -12,6 +14,39 @@ from ams.routines.dcopf import DCOPF
 from ams.opt import Var, Constraint
 
 logger = logging.getLogger(__name__)
+
+
+# --- RTED e_fn callables (Phase 4.4) ---
+
+
+def _rted_rbu(r):
+    return r.gs @ cp.multiply(r.ug, r.pru) - r.dud == 0
+
+
+def _rted_rbd(r):
+    return r.gs @ cp.multiply(r.ug, r.prd) - r.ddd == 0
+
+
+def _rted_rru(r):
+    return cp.multiply(r.ug, r.pg + r.pru) - cp.multiply(r.ug, r.pmaxe) <= 0
+
+
+def _rted_rrd(r):
+    return cp.multiply(r.ug, -r.pg + r.prd) + cp.multiply(r.ug, r.pmine) <= 0
+
+
+def _rted_rgu(r):
+    return cp.multiply(r.ug, r.pg - r.pg0 - r.R10) <= 0
+
+
+def _rted_rgd(r):
+    return cp.multiply(r.ug, -r.pg + r.pg0 - r.R10) <= 0
+
+
+def _rted_obj(r):
+    return (r.t ** 2 * cp.sum(cp.multiply(r.c2, r.pg ** 2))
+            + cp.sum(cp.multiply(r.ug, r.c0))
+            + r.t * cp.sum(r.c1 @ r.pg + r.cru @ r.pru + r.crd @ r.prd))
 
 
 class SFRBase:
@@ -154,21 +189,23 @@ class RTED(SFRBase, RTEDBase, DCOPF):
         })
         # nothing to do with to map
 
-        # --- Model Section ---
+        # --- Model Section (Phase 4.4: e_fn form) ---
         # --- SFR ---
-        # RegUp/Dn reserve balance
-        self.rbu.e_str = 'gs @ mul(ug, pru) - dud'
-        self.rbd.e_str = 'gs @ mul(ug, prd) - ddd'
-        # RegUp/Dn reserve source
-        self.rru.e_str = 'mul(ug, (pg + pru)) - mul(ug, pmaxe)'
-        self.rrd.e_str = 'mul(ug, (-pg + prd)) + mul(ug, pmine)'
+        self.rbu.e_fn = _rted_rbu
+        self.rbd.e_fn = _rted_rbd
+        self.rru.e_fn = _rted_rru
+        self.rrd.e_fn = _rted_rrd
         # Gen ramping up/down
-        self.rgu.e_str = 'mul(ug, (pg-pg0-R10))'
-        self.rgd.e_str = 'mul(ug, (-pg+pg0-R10))'
+        self.rgu.e_fn = _rted_rgu
+        self.rgd.e_fn = _rted_rgd
 
         # --- objective ---
+        # NOTE: kept on e_str because subclasses (ESD1Base, DGBase, ...)
+        # extend the cost via ``self.obj.e_str += '...'``. Migrating the
+        # objective would require collapsing those subclasses to callable
+        # composition, which is out of scope for the routine-level
+        # migration pass.
         self.obj.info = 'total generation and reserve cost'
-        # NOTE: the product involved t should use ``dot``
         cost = 't**2 dot sum(mul(c2, pg**2)) + sum(mul(ug, c0))'
         _to_sum = 'c1 @ pg + cru @ pru + crd @ prd'
         cost += f'+ t dot sum({_to_sum})'
