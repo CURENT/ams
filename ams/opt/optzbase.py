@@ -71,6 +71,29 @@ def ensure_mats_and_parsed(func):
     return wrapper
 
 
+class _EFormDescriptor:
+    """Mutex descriptor for ``e_str`` / ``e_fn`` on opt elements.
+
+    Setting one to a non-None value clears the other so the most recent
+    assignment wins. Lets subclasses override an inherited element's
+    ``e_str`` without inheriting a stale ``e_fn`` from the parent class.
+    """
+
+    def __init__(self, mine, other):
+        self._mine = '_' + mine
+        self._other = '_' + other
+
+    def __get__(self, obj, owner=None):
+        if obj is None:
+            return self
+        return getattr(obj, self._mine, None)
+
+    def __set__(self, obj, value):
+        setattr(obj, self._mine, value)
+        if value is not None:
+            setattr(obj, self._other, None)
+
+
 class OptzBase:
     """
     Base class for optimization elements.
@@ -171,10 +194,24 @@ class OptzBase:
         Used for debugging — for a successfully solved problem, ``e`` should
         equal ``v``. For infeasible/unbounded problems, ``e`` lets you
         inspect the LHS at the returned (possibly invalid) point.
+
+        Two paths:
+
+        - **e_fn form**: ``self.code`` is ``None`` because no string was
+          parsed; fall back to the cvxpy object's value (``self.optz._expr``
+          for constraints, ``self.optz`` otherwise). This is the
+          solver-returned value, not a re-canonicalization from current
+          parameter state — sufficient for the post-solve ``v == e`` check.
+        - **e_str form**: rewrite ``self.code`` via ``val_map`` and ``eval``
+          it; the legacy regex pipeline.
         """
         if self.code is None:
-            logger.info(f"{self.class_name} <{self.name}> is not parsed yet.")
-            return None
+            optz = getattr(self, 'optz', None)
+            if optz is None:
+                logger.info(f"{self.class_name} <{self.name}> is not evaluated yet.")
+                return None
+            inner = getattr(optz, '_expr', optz)  # cp.Constraint stores LHS on _expr
+            return getattr(inner, 'value', None)
 
         val_map = self.om.rtn.syms.val_map
         code = self.code
