@@ -183,11 +183,15 @@ def _validate_python(source: str, where: str) -> None:
 
 
 def source_md5(routine_cls) -> str:
-    """md5 of the routine class's source file.
+    """Cache-key hash of the routine class's source file.
 
     Used as the cache key for the generated pycode. A change to the
     routine module (new e_str, edited mixin) invalidates pycode and
-    triggers a regen on the next instantiation.
+    triggers a regen on the next instantiation. The function name still
+    reads ``_md5`` for historical reasons; the underlying digest is
+    sha256 (no cryptographic intent, just a cache key — sha256 makes
+    Codacy's Semgrep crypto rule happy without complicating the call
+    site with ``# nosec`` markers).
 
     NOTE: does not currently traverse the MRO across multiple files.
     If a parent class lives in a different module and that file
@@ -197,13 +201,7 @@ def source_md5(routine_cls) -> str:
     src_file = inspect.getsourcefile(routine_cls)
     if src_file is None:
         return 'no-source'
-    # md5 is fine here — used as a cache key for code regeneration, not
-    # for any security or integrity property. Pass ``usedforsecurity=False``
-    # (Python 3.9+) to make that intent explicit; both Bandit and Codacy's
-    # Semgrep crypto rule honor this flag.
-    return hashlib.md5(
-        Path(src_file).read_bytes(), usedforsecurity=False
-    ).hexdigest()
+    return hashlib.sha256(Path(src_file).read_bytes()).hexdigest()
 
 
 def _emit_callable(prefix: str, name: str, body: str) -> List[str]:
@@ -344,7 +342,10 @@ def write_for_routine(routine, target: Optional[Path] = None) -> Path:
     Default target: ``~/.ams/pycode/<class_name_lower>.py``.
     """
     if target is None:
-        target = Path.home() / '.ams' / 'pycode' / f'{type(routine).__name__.lower()}.py'
+        # Imported here (not at module top) to avoid an import cycle:
+        # ``ams.prep.__init__`` already imports from this module.
+        from ams.prep import pycode_dir
+        target = pycode_dir() / f'{type(routine).__name__.lower()}.py'
     target.parent.mkdir(parents=True, exist_ok=True)
     src = generate_for_routine(routine)
     target.write_text(src)

@@ -154,13 +154,14 @@ class Constraint(OptzBase):
         if self.optz is None:
             return None
         if self.optz._expr.value is None:
+            # Solver hasn't run / didn't converge; return a zeros array
+            # of the right shape rather than ``None`` so callers doing
+            # post-solve diagnostics get an array of the expected size.
             try:
-                shape = self._expr.shape
-                return np.zeros(shape)
+                return np.zeros(self.optz._expr.shape)
             except AttributeError:
                 return None
-        else:
-            return self.optz._expr.value
+        return self.optz._expr.value
 
     @v.setter
     def v(self, value):
