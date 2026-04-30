@@ -49,33 +49,32 @@ class SymProcessor:
         self.tex_names = OrderedDict()
         self.tex_map = OrderedDict()
 
-        lang = "cp"  # TODO: might need to be generalized to other solvers
-        # only used for CVXPY.
+        # CVXPY is the sole modeling language.
         # NOTE: e_str must use explicit notation: `@` for matrix-multiply,
         # `mul(a, b)` for element-wise. Bare `*` between identifiers is no
         # longer rewritten to `@` — see refactor step 1.4.
         self.sub_map = OrderedDict([
             (r'\b(\w+)\s+dot\s+(\w+)\b', r'\1 * \2'),
             (r' dot ', r' * '),
-            (r'\bsum\b', f'{lang}.sum'),
-            (r'\bvar\b', f'{lang}.Variable'),
-            (r'\bparam\b', f'{lang}.Parameter'),
-            (r'\bconst\b', f'{lang}.Constant'),
-            (r'\bproblem\b', f'{lang}.Problem'),
-            (r'\bmultiply\b', f'{lang}.multiply'),
-            (r'\bmul\b', f'{lang}.multiply'),  # alias for multiply
-            (r'\bvstack\b', f'{lang}.vstack'),
-            (r'\bnorm\b', f'{lang}.norm'),
-            (r'\bpos\b', f'{lang}.pos'),
-            (r'\bpower\b', f'{lang}.power'),
-            (r'\bsign\b', f'{lang}.sign'),
-            (r'\bmaximum\b', f'{lang}.maximum'),
-            (r'\bminimum\b', f'{lang}.minimum'),
-            (r'\bsquare\b', f'{lang}.square'),
-            (r'\bquad_over_lin\b', f'{lang}.quad_over_lin'),
-            (r'\bdiag\b', f'{lang}.diag'),
-            (r'\bquad_form\b', f'{lang}.quad_form'),
-            (r'\bsum_squares\b', f'{lang}.sum_squares'),
+            (r'\bsum\b', 'cp.sum'),
+            (r'\bvar\b', 'cp.Variable'),
+            (r'\bparam\b', 'cp.Parameter'),
+            (r'\bconst\b', 'cp.Constant'),
+            (r'\bproblem\b', 'cp.Problem'),
+            (r'\bmultiply\b', 'cp.multiply'),
+            (r'\bmul\b', 'cp.multiply'),  # alias for multiply
+            (r'\bvstack\b', 'cp.vstack'),
+            (r'\bnorm\b', 'cp.norm'),
+            (r'\bpos\b', 'cp.pos'),
+            (r'\bpower\b', 'cp.power'),
+            (r'\bsign\b', 'cp.sign'),
+            (r'\bmaximum\b', 'cp.maximum'),
+            (r'\bminimum\b', 'cp.minimum'),
+            (r'\bsquare\b', 'cp.square'),
+            (r'\bquad_over_lin\b', 'cp.quad_over_lin'),
+            (r'\bdiag\b', 'cp.diag'),
+            (r'\bquad_form\b', 'cp.quad_form'),
+            (r'\bsum_squares\b', 'cp.sum_squares'),
         ])
 
         self.tex_map = OrderedDict([
