@@ -695,7 +695,21 @@ def _tex_pre(docm, p, tex_map):
         ('UNDERLINE', r'\underline'),
     ])
 
+    # Phase 4.6+: prefer the pre-rendered ``e_tex`` written into pycode
+    # by the codegen. Survives ``e_str`` being cleared once ``e_fn`` is
+    # wired. The map_post pass below still runs so sigil escaping
+    # (``SUM`` → ``\sum`` etc.) lands correctly.
+    pre_rendered = getattr(p, 'e_tex', None)
+    if pre_rendered is not None:
+        expr = pre_rendered
+        for pattern, replacement in map_post.items():
+            expr = expr.replace(pattern, replacement)
+        return expr
+
     expr = p.e_str
+    if expr is None:
+        # No e_str (e_fn form, no pycode tex). Placeholder.
+        return f'\\text{{{p.name}}}'
 
     for pattern, replacement in tex_map.items():
         for key, val in map_before.items():

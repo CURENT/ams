@@ -31,7 +31,7 @@ Typical acronyms used in AMS include:
 +------------+---------------------------+
 | RT-        | Real-Time                 |
 +------------+---------------------------+
-| -DG       | Distributed Generation     |
+| -DG        | Distributed Generation    |
 +------------+---------------------------+
 | -ES        | Energy Storage            |
 +------------+---------------------------+

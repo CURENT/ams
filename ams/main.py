@@ -895,3 +895,23 @@ def selftest(quick=False, extra=False, **kwargs):
         sys.stdout = saved_stdout
         if devnull is not None:
             devnull.close()
+
+
+def prep(routine=None, force=False, clean=False, where=False, **kwargs):
+    """
+    AMS opt-layer codegen entry point (``ams prep``).
+
+    Walks the registered routines, ensures each has up-to-date pycode
+    in ``~/.ams/pycode/``. Roughly the AMS analogue of ``andes prep``.
+    """
+    from ams.prep import clean as _clean, prep_all, pycode_dir
+
+    if where:
+        print(pycode_dir())
+        return 0
+    if clean:
+        _clean()
+        return 0
+    n = prep_all(routines=routine, force=force)
+    logger.info(f"prep: {n} routine(s) updated; cache at {pycode_dir()}")
+    return 0

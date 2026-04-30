@@ -3,7 +3,7 @@ Module for optimization Constraint.
 """
 import logging
 
-from typing import Optional
+from typing import Callable, Optional
 import re
 
 import numpy as np
@@ -13,7 +13,9 @@ import cvxpy as cp
 from ams.utils import pretty_long_message
 from ams.shared import _prefix, _max_length
 
+from ams.core.routine_ns import RoutineNS
 from ams.opt import OptzBase, ensure_symbols, ensure_mats_and_parsed
+from ams.opt.optzbase import _EFormDescriptor
 
 logger = logging.getLogger(__name__)
 
@@ -22,20 +24,31 @@ class Constraint(OptzBase):
     """
     Base class for constraints.
 
-    This class is used as a template for defining constraints. Each
-    instance of this class represents a single constraint.
+    Routines are authored with ``e_str`` strings; the codegen at
+    :func:`ams.prep.generate_for_routine` compiles each ``e_str`` into
+    a callable ``e_fn(r)`` taking a :class:`RoutineNS` proxy and
+    returning a CVXPY constraint. The mutex descriptor on
+    ``e_str`` / ``e_fn`` keeps the two forms exclusive. Authors who
+    need to bypass the DSL may pass ``e_fn=`` directly; codegen leaves
+    a manually-set ``e_fn`` alone.
 
     Parameters
     ----------
     name : str, optional
         A user-defined name for the constraint.
     e_str : str, optional
-        A mathematical expression representing the constraint.
+        A mathematical expression representing the constraint (legacy form).
+    e_fn : callable, optional
+        Callable ``e_fn(r) -> cp.Constraint`` taking a :class:`RoutineNS`.
     info : str, optional
         Additional informational text about the constraint.
     is_eq : str, optional
         Flag indicating if the constraint is an equality constraint. False indicates
-        an inequality constraint in the form of `<= 0`.
+        an inequality constraint in the form of ``<= 0``. Honored for both the
+        ``e_str`` form and the codegen ``e_fn`` form (which returns only the LHS
+        — :meth:`evaluate` then applies ``== 0`` or ``<= 0`` based on this flag).
+        It is *only* ignored when an author manually passes an ``e_fn`` that
+        returns a fully-formed ``cp.Constraint``.
 
     Attributes
     ----------
@@ -49,14 +62,21 @@ class Constraint(OptzBase):
         The code string for the constraint
     """
 
+    e_str = _EFormDescriptor('e_str', 'e_fn')
+    e_fn = _EFormDescriptor('e_fn', 'e_str')
+
     def __init__(self,
                  name: Optional[str] = None,
                  e_str: Optional[str] = None,
+                 e_fn: Optional[Callable] = None,
                  info: Optional[str] = None,
                  is_eq: Optional[bool] = False,
                  ):
         OptzBase.__init__(self, name=name, info=info)
+        self._e_str = None
+        self._e_fn = None
         self.e_str = e_str
+        self.e_fn = e_fn
         self.is_eq = is_eq
         self.is_disabled = False
         self.code = None
@@ -72,6 +92,8 @@ class Constraint(OptzBase):
         """
         Parse the constraint.
         """
+        if self.e_fn is not None:
+            return True
         # parse the expression str
         sub_map = self.om.rtn.syms.sub_map
         code_constr = self.e_str
@@ -88,32 +110,34 @@ class Constraint(OptzBase):
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         return True
 
-    def _evaluate_expression(self, code, local_vars=None):
-        """
-        Helper method to evaluate the expression code.
-
-        Parameters
-        ----------
-        code : str
-            The code string representing the expression.
-
-        Returns
-        -------
-        cp.Expression
-            The evaluated cvxpy expression.
-        """
-        return eval(code, {}, local_vars)
-
     @ensure_mats_and_parsed
     def evaluate(self):
         """
         Evaluate the constraint.
+
+        ``e_fn(r)`` may return either a fully-formed ``cp.Constraint``
+        (legacy convention; ``r.pg <= 0``) or just the LHS expression
+        (codegen convention; ``r.pg``). When it returns the LHS, the
+        relational op is applied here based on ``is_eq``. The LHS form
+        is required for ``.e`` to recover a numpy LHS during a failed
+        solve — see ``OptzBase.e``.
         """
+        if self.e_fn is not None:
+            try:
+                result = self.e_fn(RoutineNS(self.om.rtn))
+            except Exception as e:
+                raise Exception(f"Error in evaluating Constraint <{self.name}> "
+                                f"via e_fn.\n{e}")
+            if isinstance(result, cp.constraints.Constraint):
+                self.optz = result
+            else:
+                self.optz = (result == 0) if self.is_eq else (result <= 0)
+            return True
         msg = f" - Constr <{self.name}>: {self.code}"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         try:
             local_vars = {'self': self, 'cp': cp, 'sub_map': self.om.rtn.syms.val_map}
-            self.optz = self._evaluate_expression(self.code, local_vars=local_vars)
+            self.optz = eval(self.code, {}, local_vars)
         except Exception as e:
             raise Exception(f"Error in evaluating Constraint <{self.name}>.\n{e}")
 
@@ -123,38 +147,6 @@ class Constraint(OptzBase):
         return out
 
     @property
-    def e(self):
-        """
-        Return the calculated constraint LHS value.
-        Note that `v` should be used primarily as it is obtained
-        from the solver directly.
-
-        `e` is for debugging purpose. For a successfully solved problem,
-        `e` should equal to `v`. However, when a problem is infeasible
-        or unbounded, `e` can be used to check the constraint LHS value.
-        """
-        if self.code is None:
-            logger.info(f"Constraint <{self.name}> is not parsed yet.")
-            return None
-
-        val_map = self.om.rtn.syms.val_map
-        code = self.code
-        for pattern, replacement in val_map.items():
-            try:
-                code = re.sub(pattern, replacement, code)
-            except TypeError as e:
-                raise TypeError(e)
-
-        try:
-            logger.debug(pretty_long_message(f"Value code: {code}",
-                                             _prefix, max_length=_max_length))
-            local_vars = {'self': self, 'np': np, 'cp': cp, 'val_map': val_map}
-            return self._evaluate_expression(code, local_vars)
-        except Exception as e:
-            logger.error(f"Error in calculating constr <{self.name}>.\n{e}")
-            return None
-
-    @property
     def v(self):
         """
         Return the CVXPY constraint LHS value.
@@ -162,13 +154,14 @@ class Constraint(OptzBase):
         if self.optz is None:
             return None
         if self.optz._expr.value is None:
+            # Solver hasn't run / didn't converge; return a zeros array
+            # of the right shape rather than ``None`` so callers doing
+            # post-solve diagnostics get an array of the expected size.
             try:
-                shape = self._expr.shape
-                return np.zeros(shape)
+                return np.zeros(self.optz._expr.shape)
             except AttributeError:
                 return None
-        else:
-            return self.optz._expr.value
+        return self.optz._expr.value
 
     @v.setter
     def v(self, value):

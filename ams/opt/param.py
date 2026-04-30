@@ -5,7 +5,6 @@ import logging
 
 from typing import Optional
 from collections import OrderedDict
-import re
 
 import numpy as np
 
@@ -95,19 +94,12 @@ class Param(OptzBase):
         """
         Parse the parameter.
 
-        Returns
-        -------
-        bool
-            Returns True if the parsing is successful, False otherwise.
+        ``Param`` construction is fully AMS-controlled — there's no
+        user-supplied ``e_str`` to rewrite — so parse is a no-op kept
+        for OModel lifecycle symmetry. The actual ``cp.Parameter`` is
+        constructed in :meth:`evaluate`. Mirrors the same simplification
+        ``Var.parse`` got in Phase 4.0.
         """
-        sub_map = self.om.rtn.syms.sub_map
-        code_param = "param(**config)"
-        for pattern, replacement, in sub_map.items():
-            try:
-                code_param = re.sub(pattern, replacement, code_param)
-            except Exception as e:
-                raise Exception(f"Error in parsing param <{self.name}>.\n{e}")
-        self.code = code_param
         return True
 
     @ensure_mats_and_parsed

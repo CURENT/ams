@@ -138,6 +138,271 @@ class RoutineBase:
     def class_name(self):
         return self.__class__.__name__
 
+    def _link_pycode(self):
+        """
+        Ensure pycode for this routine is current, then wire generated
+        ``e_fn`` callables onto items that don't already have one.
+
+        Idempotent. Called from ``OModel.init`` (the one place where we
+        know the routine instance is fully constructed and we're about
+        to hit the parse/evaluate path).
+
+        Cache validity requires three matches: a sha256 of the routine
+        class's source file, the bound CVXPY version, and the
+        ``pristine = True`` marker. Any mismatch triggers a regen. AMS's
+        own ``__version__`` is deliberately excluded — setuptools-scm
+        gives dev installs a ``.postN+g…`` suffix that bumps every
+        commit, which would force regen on every save with no behavior
+        delta. The source hash already captures every change worth
+        invalidating on.
+        """
+        import importlib.util
+
+        import cvxpy as _cp
+
+        from ams.prep import (
+            _get_pristine_system, generate_for_routine, pycode_dir,
+            source_md5,
+        )
+
+        # Use ``ams.prep.pycode_dir`` (instead of constructing the path
+        # in-line) so tests can monkeypatch the cache location to a
+        # tmp dir without touching the real ``~/.ams/pycode/``.
+        target = pycode_dir() / f'{self.class_name.lower()}.py'
+        expected_md5 = source_md5(type(self))
+
+        # Resolve the pristine routine instance up front. The wire step
+        # below uses it to detect user mutation of e_str even on the
+        # cache-hit path (a user can mutate before init while a cache
+        # already exists from a prior run).
+        sys_p = _get_pristine_system()
+        pristine_rtn = getattr(sys_p, self.class_name, None)
+
+        gen = None
+        # Try to use existing pycode if it matches.
+        if target.exists():
+            try:
+                spec = importlib.util.spec_from_file_location(
+                    f'ams._user_pycode.{self.class_name.lower()}', target)
+                gen = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(gen)
+                # Staleness conditions:
+                # - ``md5`` mismatch — routine source file changed.
+                # - ``cvxpy_version`` mismatch — bound CVXPY version differs.
+                # - ``pristine`` absent or False — cache was written from a
+                #   live (possibly customized) instance by an older AMS
+                #   version. Reject it so the regen path below produces a
+                #   faithful snapshot of the source.
+                # NB: ``ams.__version__`` deliberately *not* part of the
+                # check — setuptools-scm gives dev installs a ``.postN+g…``
+                # suffix that bumps every commit, which would force regen
+                # on every save with no behavior delta.
+                stale = (
+                    getattr(gen, 'md5', None) != expected_md5
+                    or getattr(gen, 'cvxpy_version', None) != _cp.__version__
+                    or not getattr(gen, 'pristine', False)
+                )
+                if stale:
+                    gen = None
+            except Exception as exc:
+                logger.debug(
+                    f"pycode at {target} not loadable ({exc}); regenerating."
+                )
+                gen = None
+
+        # Regenerate if missing or stale. Codegen always runs against a
+        # pristine routine pulled from a fresh ``ams.System`` — never
+        # against ``self``, which may carry user customizations
+        # (``addConstrs``, ``obj.e_str += '...'``). This keeps the disk
+        # cache faithful to the routine's source code so that a second
+        # ``System`` instance loading the cache later doesn't inherit the
+        # first user's mutations.
+        if gen is None:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            codegen_src_rtn = pristine_rtn
+            if codegen_src_rtn is None:
+                # Defensive: every registered routine class should be on
+                # the pristine system. If it isn't, the routine isn't
+                # standard — fall back to ``self``.
+                logger.debug(
+                    f"<{self.class_name}> not present on pristine System; "
+                    f"falling back to self for codegen."
+                )
+                codegen_src_rtn = self
+            src = generate_for_routine(codegen_src_rtn)
+            target.write_text(src)
+            spec = importlib.util.spec_from_file_location(
+                f'ams._user_pycode.{self.class_name.lower()}', target)
+            gen = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(gen)
+
+        # Build a lookup of pristine ``_e_str`` values keyed by (prefix,
+        # name) so we can detect when ``self`` has diverged from the
+        # source. Divergence implies user customization (either pre-init
+        # ``obj.e_str = ...`` or post-init ``obj.e_str += ...``); in
+        # either case we must NOT wire the codegen callable, or it would
+        # override the user's intent.
+        def _pristine_e_str(prefix, name):
+            if pristine_rtn is None or pristine_rtn is self:
+                return None
+            registry = {
+                'expr':     pristine_rtn.exprs,
+                'constr':   pristine_rtn.constrs,
+                'exprcalc': pristine_rtn.exprcs,
+            }.get(prefix)
+            if registry is not None:
+                p_item = registry.get(name)
+                return getattr(p_item, '_e_str', None) if p_item else None
+            if prefix == 'obj':
+                p_obj = pristine_rtn.obj
+                if p_obj is not None and p_obj.name == name:
+                    return getattr(p_obj, '_e_str', None)
+            return None
+
+        # Wire e_fn (and pre-rendered tex) from the generated module onto
+        # items missing them. Two semantic notes:
+        #
+        # 1) We write the raw ``_e_fn`` slot (bypassing the descriptor
+        #    mutex) so the original ``e_str`` is preserved on the item.
+        #    This lets users do ``routine.obj.e_str += '...'`` post-init
+        #    — a documented customization pattern (see examples/ex8.ipynb)
+        #    that the previous mutex-clearing behavior broke.
+        #
+        # 2) We skip items the user has modified relative to the pristine
+        #    source. This is detected via ``_e_dirty`` (set by the
+        #    descriptor mutex when user replaces a wired e_fn) OR by
+        #    direct e_str comparison against the pristine instance
+        #    (catches pre-init mutations that don't trip the mutex's
+        #    prior-other check). Skipped items flow through the legacy
+        #    regex+eval path in ``parse()`` / ``evaluate()``.
+        # Tally for the end-of-link summary log. Classifies each item by
+        # the runtime path it will take, which mirrors the per-item
+        # ``formulation_source`` property.
+        tally = {'codegen': 0, 'manual': 0,
+                 'sub_map_dirty': 0, 'sub_map_added': 0}
+
+        # ``_link_pycode`` is the one place that legitimately reaches
+        # into ``_e_fn`` / ``_e_dirty`` / ``_e_fn_source`` on opt items —
+        # writing the raw slots is what bypasses the descriptor mutex so
+        # ``e_str`` is preserved post-wire (see method docstring). The
+        # protected-access disables below acknowledge this; pylint
+        # otherwise flags every line.
+        # pylint: disable=protected-access
+        def _wire(item, prefix, name):
+            if getattr(item, '_e_dirty', False):
+                # User modified this item; we leave it alone. The runtime
+                # path is 'manual' if a callable is now in place,
+                # otherwise the legacy 'sub_map' regex pipeline.
+                if getattr(item, '_e_fn', None) is not None:
+                    tally['manual'] += 1
+                else:
+                    tally['sub_map_dirty'] += 1
+                return
+            pristine_str = _pristine_e_str(prefix, name)
+            if (pristine_str is not None
+                    and getattr(item, '_e_str', None) != pristine_str):
+                item._e_dirty = True
+                tally['sub_map_dirty'] += 1
+                return
+            fn = getattr(gen, f'_{prefix}_{name}', None)
+            if fn is not None:
+                if getattr(item, '_e_fn', None) is None:
+                    item._e_fn = fn
+                    # Provenance: this e_fn came from disk pycode.
+                    item._e_fn_source = 'codegen'
+                # Whether we just wired or it was already wired from a
+                # previous init, the item's runtime path is the codegen
+                # callable.
+                tally['codegen'] += 1
+            else:
+                # Item has no entry in pycode (e.g. added at runtime via
+                # ``addConstrs``). It will fall through to the sub_map
+                # path at parse/evaluate time.
+                tally['sub_map_added'] += 1
+            tex = getattr(gen, f'_{prefix}_{name}_tex', None)
+            if tex is not None and getattr(item, 'e_tex', None) is None:
+                item.e_tex = tex
+        # pylint: enable=protected-access
+
+        for name, expr in self.exprs.items():
+            _wire(expr, 'expr', name)
+        for name, constr in self.constrs.items():
+            _wire(constr, 'constr', name)
+        if self.obj is not None:
+            _wire(self.obj, 'obj', self.obj.name)
+        for name, exprc in self.exprcs.items():
+            _wire(exprc, 'exprcalc', name)
+
+        # One info-level log line per init() that summarizes which
+        # execution path each item will take. Lets users (and the tests
+        # in icebar/ex8/) verify customization actually takes effect by
+        # eye, without having to introspect ``formulation_source`` on
+        # each item.
+        total = sum(tally.values())
+        if total > 0:
+            parts = [f"codegen={tally['codegen']}/{total}"]
+            if tally['manual']:
+                parts.append(f"manual={tally['manual']}")
+            if tally['sub_map_dirty']:
+                parts.append(f"sub_map(customized)={tally['sub_map_dirty']}")
+            if tally['sub_map_added']:
+                parts.append(f"sub_map(added)={tally['sub_map_added']}")
+            logger.info(
+                "<%s> formulation: %s", self.class_name, ", ".join(parts)
+            )
+
+    def formulation_summary(self, return_rows: bool = False):
+        """
+        Print (or return) a per-item table of the live formulation source.
+
+        Useful for verifying which path each opt element runs through after
+        custom edits — e.g. ``addConstrs`` and ``obj.e_str += '...'``
+        should show ``sub_map``, while untouched items show ``codegen``.
+
+        Parameters
+        ----------
+        return_rows : bool, optional
+            If True, return the list of ``(kind, name, source, e_str_excerpt)``
+            tuples instead of printing. Default False (prints).
+
+        See Also
+        --------
+        ams.opt.OptzBase.formulation_source : per-item source string.
+        """
+        rows = []
+        for kind, registry in (('expr', self.exprs),
+                               ('constr', self.constrs),
+                               ('exprcalc', self.exprcs)):
+            for name, item in registry.items():
+                src = getattr(item, 'formulation_source', '?')
+                e_str = getattr(item, '_e_str', None) or ''
+                rows.append((kind, name, src, e_str[:60]))
+        if self.obj is not None:
+            obj = self.obj
+            rows.append(('obj', obj.name, getattr(obj, 'formulation_source', '?'),
+                         (getattr(obj, '_e_str', None) or '')[:60]))
+
+        if return_rows:
+            return rows
+
+        if not rows:
+            print(f"<{self.class_name}>: no opt elements registered.")
+            return None
+
+        kw = max(len(r[0]) for r in rows)
+        nw = max(len(r[1]) for r in rows)
+        sw = max(len(r[2]) for r in rows)
+        print(f"<{self.class_name}> formulation summary "
+              f"({sum(1 for r in rows if r[2] == 'codegen')} codegen / "
+              f"{sum(1 for r in rows if r[2] == 'sub_map')} sub_map / "
+              f"{sum(1 for r in rows if r[2] == 'manual')} manual / "
+              f"{sum(1 for r in rows if r[2] == 'pending')} pending)")
+        print(f"  {'kind':<{kw}}  {'name':<{nw}}  {'source':<{sw}}  e_str")
+        print(f"  {'-'*kw}  {'-'*nw}  {'-'*sw}  {'-'*40}")
+        for kind, name, src, e_str in rows:
+            print(f"  {kind:<{kw}}  {name:<{nw}}  {src:<{sw}}  {e_str}")
+        return None
+
     def get(self, src: str, idx, attr: str = 'v',
             horizon: Optional[Union[int, str, Iterable]] = None):
         """
