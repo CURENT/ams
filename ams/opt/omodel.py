@@ -178,28 +178,31 @@ class OModel(OModelBase):
 
         t, _ = elapsed()
         logger.warning(f'Parsing OModel for <{self.rtn.class_name}>')
-        # --- add expressions ---
+        # --- expressions ---
         for key, val in self.rtn.exprs.items():
-            val.parse()
+            try:
+                val.parse()
+            except Exception as e:
+                raise Exception(f"Failed to parse Expression <{key}>.\n{e}")
 
-        # --- add RParams and Services as parameters ---
+        # --- RParams and Services as parameters ---
         for key, val in self.rtn.params.items():
             if not val.no_parse:
                 val.parse()
 
-        # --- add decision variables ---
+        # --- decision variables ---
         for key, val in self.rtn.vars.items():
             val.parse()
 
-        # --- add constraints ---
+        # --- constraints ---
         for key, val in self.rtn.constrs.items():
             val.parse()
 
-        # --- add ExpressionCalcs ---
+        # --- ExpressionCalcs ---
         for key, val in self.rtn.exprcs.items():
             val.parse()
 
-        # --- parse objective functions ---
+        # --- objective ---
         if self.rtn.obj is not None:
             try:
                 self.rtn.obj.parse()
@@ -210,12 +213,6 @@ class OModel(OModelBase):
             self.parsed = False
             return self.parsed
 
-        # --- parse expressions ---
-        for key, val in self.rtn.exprs.items():
-            try:
-                val.parse()
-            except Exception as e:
-                raise Exception(f"Failed to parse ExpressionCalc <{key}>.\n{e}")
         _, s = elapsed(t)
         logger.debug(f"  -> Parsed in {s}")
 
