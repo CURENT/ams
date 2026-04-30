@@ -155,11 +155,20 @@ class RoutineBase:
 
         import cvxpy as _cp
 
-        from ams.prep import generate_for_routine, source_md5
+        from ams.prep import (
+            _get_pristine_system, generate_for_routine, source_md5,
+        )
 
         target = (Path.home() / '.ams' / 'pycode'
                   / f'{self.class_name.lower()}.py')
         expected_md5 = source_md5(type(self))
+
+        # Resolve the pristine routine instance up front. The wire step
+        # below uses it to detect user mutation of e_str even on the
+        # cache-hit path (a user can mutate before init while a cache
+        # already exists from a prior run).
+        sys_p = _get_pristine_system()
+        pristine_rtn = getattr(sys_p, self.class_name, None)
 
         gen = None
         # Try to use existing pycode if it matches.
@@ -169,14 +178,21 @@ class RoutineBase:
                     f'ams._user_pycode.{self.class_name.lower()}', target)
                 gen = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(gen)
-                # NB: ams.__version__ deliberately *not* part of the staleness
+                # Staleness conditions:
+                # - ``md5`` mismatch — routine source file changed.
+                # - ``cvxpy_version`` mismatch — bound CVXPY version differs.
+                # - ``pristine`` absent or False — cache was written from a
+                #   live (possibly customized) instance by an older AMS
+                #   version. Reject it so the regen path below produces a
+                #   faithful snapshot of the source.
+                # NB: ``ams.__version__`` deliberately *not* part of the
                 # check — setuptools-scm gives dev installs a ``.postN+g…``
-                # suffix that bumps every commit, which would force a regen
-                # on every save with no behavior delta. The source md5 already
-                # captures any change worth invalidating on.
+                # suffix that bumps every commit, which would force regen
+                # on every save with no behavior delta.
                 stale = (
                     getattr(gen, 'md5', None) != expected_md5
                     or getattr(gen, 'cvxpy_version', None) != _cp.__version__
+                    or not getattr(gen, 'pristine', False)
                 )
                 if stale:
                     gen = None
@@ -186,17 +202,54 @@ class RoutineBase:
                 )
                 gen = None
 
-        # Regenerate if missing or stale. Hard-fail on generation errors —
-        # a malformed e_str should surface here, not silently downgrade
-        # to the runtime sub_map fallback.
+        # Regenerate if missing or stale. Codegen always runs against a
+        # pristine routine pulled from a fresh ``ams.System`` — never
+        # against ``self``, which may carry user customizations
+        # (``addConstrs``, ``obj.e_str += '...'``). This keeps the disk
+        # cache faithful to the routine's source code so that a second
+        # ``System`` instance loading the cache later doesn't inherit the
+        # first user's mutations.
         if gen is None:
             target.parent.mkdir(parents=True, exist_ok=True)
-            src = generate_for_routine(self)
+            codegen_src_rtn = pristine_rtn
+            if codegen_src_rtn is None:
+                # Defensive: every registered routine class should be on
+                # the pristine system. If it isn't, the routine isn't
+                # standard — fall back to ``self``.
+                logger.debug(
+                    f"<{self.class_name}> not present on pristine System; "
+                    f"falling back to self for codegen."
+                )
+                codegen_src_rtn = self
+            src = generate_for_routine(codegen_src_rtn)
             target.write_text(src)
             spec = importlib.util.spec_from_file_location(
                 f'ams._user_pycode.{self.class_name.lower()}', target)
             gen = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(gen)
+
+        # Build a lookup of pristine ``_e_str`` values keyed by (prefix,
+        # name) so we can detect when ``self`` has diverged from the
+        # source. Divergence implies user customization (either pre-init
+        # ``obj.e_str = ...`` or post-init ``obj.e_str += ...``); in
+        # either case we must NOT wire the codegen callable, or it would
+        # override the user's intent.
+        def _pristine_e_str(prefix, name):
+            if pristine_rtn is None or pristine_rtn is self:
+                return None
+            registry = {
+                'expr':     pristine_rtn.exprs,
+                'constr':   pristine_rtn.constrs,
+                'exprcalc': pristine_rtn.exprcs,
+            }.get(prefix)
+            if registry is not None:
+                p_item = registry.get(name)
+                return getattr(p_item, '_e_str', None) if p_item else None
+            if prefix == 'obj':
+                p_obj = pristine_rtn.obj
+                if p_obj is not None and p_obj.name == name:
+                    return getattr(p_obj, '_e_str', None)
+            return None
 
         # Wire e_fn (and pre-rendered tex) from the generated module onto
         # items missing them. Two semantic notes:
@@ -207,12 +260,20 @@ class RoutineBase:
         #    — a documented customization pattern (see examples/ex8.ipynb)
         #    that the previous mutex-clearing behavior broke.
         #
-        # 2) We skip items the user has explicitly modified at runtime
-        #    (``_e_dirty == True``). Their custom ``e_str`` flows through
-        #    the legacy regex+eval path in ``parse()`` / ``evaluate()`` so
-        #    we don't clobber user intent with a stale codegen callable.
+        # 2) We skip items the user has modified relative to the pristine
+        #    source. This is detected via ``_e_dirty`` (set by the
+        #    descriptor mutex when user replaces a wired e_fn) OR by
+        #    direct e_str comparison against the pristine instance
+        #    (catches pre-init mutations that don't trip the mutex's
+        #    prior-other check). Skipped items flow through the legacy
+        #    regex+eval path in ``parse()`` / ``evaluate()``.
         def _wire(item, prefix, name):
             if getattr(item, '_e_dirty', False):
+                return
+            pristine_str = _pristine_e_str(prefix, name)
+            if (pristine_str is not None
+                    and getattr(item, '_e_str', None) != pristine_str):
+                item._e_dirty = True
                 return
             fn = getattr(gen, f'_{prefix}_{name}', None)
             if fn is not None and getattr(item, '_e_fn', None) is None:

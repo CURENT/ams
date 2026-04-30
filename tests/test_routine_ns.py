@@ -162,6 +162,67 @@ class TestRuntimeCustomization(unittest.TestCase):
         ss.DCOPF.run(solver='CLARABEL')
         self.assertEqual(ss.DCOPF.exit_code, 0)
 
+    def test_customization_does_not_pollute_other_instances(self):
+        """One System's customization must not leak into another's cache.
+
+        The user-stated invariant: ``~/.ams/pycode/<routine>.py`` is
+        always a faithful representation of the source code, never
+        polluted by runtime customization. Confirms by mutating ``sp``
+        before its first init (the pre-init pollution scenario), then
+        constructing ``sp0`` fresh and asserting it solves to the
+        original (un-mutated) optimum.
+        """
+        from pathlib import Path
+
+        # Start from a clean cache.
+        cache = Path.home() / '.ams' / 'pycode' / 'dcopf.py'
+        if cache.exists():
+            cache.unlink()
+
+        # sp: customize obj BEFORE first init, then init+solve.
+        sp = ams.load(
+            ams.get_case('5bus/pjm5bus_demo.xlsx'),
+            setup=True, no_output=True, default_config=True,
+        )
+        original = sp.DCOPF.obj.e_str
+        sp.DCOPF.obj.e_str = original + ' + 1e-6 * sum(pg)'  # tiny perturbation
+        sp.DCOPF.run(solver='CLARABEL')
+        self.assertEqual(sp.exit_code, 0)
+        sp_obj = float(sp.DCOPF.obj.v)
+
+        # sp0: fresh instance, no customization.
+        sp0 = ams.load(
+            ams.get_case('5bus/pjm5bus_demo.xlsx'),
+            setup=True, no_output=True, default_config=True,
+        )
+        sp0.DCOPF.run(solver='CLARABEL')
+        sp0_obj = float(sp0.DCOPF.obj.v)
+
+        # The perturbation is small but non-zero; if sp0 inherited it,
+        # its objective would equal sp's. They must differ.
+        self.assertNotAlmostEqual(
+            sp_obj, sp0_obj, places=8,
+            msg="sp0 inherited sp's pre-init customization — disk cache "
+                "was polluted by sp's mutated state.",
+        )
+
+    def test_pristine_marker_in_disk_cache(self):
+        """Generated pycode must declare itself pristine."""
+        from pathlib import Path
+        cache = Path.home() / '.ams' / 'pycode' / 'dcopf.py'
+        if cache.exists():
+            cache.unlink()
+        ss = ams.load(
+            ams.get_case('5bus/pjm5bus_demo.xlsx'),
+            setup=True, no_output=True, default_config=True,
+        )
+        ss.DCOPF.init()
+        self.assertTrue(cache.exists())
+        text = cache.read_text()
+        self.assertIn('pristine = True', text,
+                      "disk cache must contain `pristine = True` marker so "
+                      "older polluted caches are auto-invalidated")
+
 
 class TestDopfInitsViaEfn(unittest.TestCase):
     """Smoke test: DOPF / DOPFVIS init cleanly via the codegen e_fn path."""

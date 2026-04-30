@@ -283,7 +283,15 @@ def generate_for_routine(routine, *, header_extra: str = '') -> str:
     parts.append(f'class_name = {cls.__name__!r}\n')
     parts.append(f'md5 = {source_md5(cls)!r}\n')
     parts.append(f'ams_version = {ams.__version__!r}\n')
-    parts.append(f'cvxpy_version = {cp.__version__!r}\n\n')
+    parts.append(f'cvxpy_version = {cp.__version__!r}\n')
+    # ``pristine`` asserts the cache was generated from a routine instance
+    # untouched by user customizations (a fresh ``ams.System`` constructed
+    # inside ``_link_pycode``, not the user's ``sp.DCOPF`` which may carry
+    # ``addConstrs`` / ``e_str+=`` mutations). ``_link_pycode`` rejects any
+    # cache without this marker as stale, which auto-heals polluted caches
+    # written by older AMS versions that codegen'd against the live
+    # instance.
+    parts.append('pristine = True\n\n')
 
     # --- Expressions ---
     for name, expr in routine.exprs.items():
