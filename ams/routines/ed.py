@@ -4,6 +4,8 @@ Economic dispatch routines.
 import logging
 import numpy as np
 
+import cvxpy as cp
+
 from ams.core.param import RParam
 from ams.core.service import (NumOpDual, NumHstack,
                               RampSub, NumOp, LoadScale)
@@ -13,6 +15,97 @@ from ams.routines.rted import RTED, DGBase, ESD1Base
 from ams.opt import Var, Constraint
 
 logger = logging.getLogger(__name__)
+
+
+# --- ED e_fn callables (Phase 4.4) ---
+
+
+def _ed_pmaxe(r):
+    return (cp.multiply(cp.multiply(r.nctrle, r.pg0), r.tlv)
+            + cp.multiply(cp.multiply(r.ctrle, r.tlv), r.pmax))
+
+
+def _ed_pmine(r):
+    return (cp.multiply(cp.multiply(r.nctrle, r.pg0), r.tlv)
+            + cp.multiply(cp.multiply(r.ctrle, r.tlv), r.pmin))
+
+
+def _ed_pglb(r):
+    return -r.pg + r.pmine <= 0
+
+
+def _ed_pgub(r):
+    return r.pg - r.pmaxe <= 0
+
+
+def _ed_prsb(r):
+    return cp.multiply(r.ugt, r.pmax @ r.tlv - r.pg) - r.prs == 0
+
+
+def _ed_rsr(r):
+    return -r.gs @ r.prs + r.dsr <= 0
+
+
+def _ed_plflb(r):
+    return -r.Bf @ r.aBus - r.Pfinj @ r.tlv - cp.multiply(r.ul, r.rate_a) @ r.tlv <= 0
+
+
+def _ed_plfub(r):
+    return r.Bf @ r.aBus + r.Pfinj @ r.tlv - cp.multiply(r.ul, r.rate_a) @ r.tlv <= 0
+
+
+def _ed_alflb(r):
+    return -r.CftT @ r.aBus + r.amin @ r.tlv <= 0
+
+
+def _ed_alfub(r):
+    return r.CftT @ r.aBus - r.amax @ r.tlv <= 0
+
+
+def _ed_plf(r):
+    return r.Bf @ r.aBus + r.Pfinj @ r.tlv
+
+
+def _ed_pb(r):
+    return r.Bbus @ r.aBus + r.Pbusinj @ r.tlv + r.Cl @ r.pds + r.Csh @ r.gsh @ r.tlv - r.Cg @ r.pg == 0
+
+
+def _ed_rbu(r):
+    return r.gs @ cp.multiply(r.ugt, r.pru) - cp.multiply(r.dud, r.tlv) == 0
+
+
+def _ed_rbd(r):
+    return r.gs @ cp.multiply(r.ugt, r.prd) - cp.multiply(r.ddd, r.tlv) == 0
+
+
+def _ed_rru(r):
+    return r.pg + r.pru - cp.multiply(cp.multiply(r.ugt, r.pmax), r.tlv) <= 0
+
+
+def _ed_rrd(r):
+    return -r.pg + r.prd + cp.multiply(cp.multiply(r.ugt, r.pmin), r.tlv) <= 0
+
+
+def _ed_rgu(r):
+    return r.pg @ r.Mr - r.t * r.RR30 <= 0
+
+
+def _ed_rgd(r):
+    return -r.pg @ r.Mr - r.t * r.RR30 <= 0
+
+
+def _ed_rgu0(r):
+    return cp.multiply(r.ugt[:, 0], r.pg[:, 0] - r.pg0[:, 0] - r.R30) <= 0
+
+
+def _ed_rgd0(r):
+    return cp.multiply(r.ugt[:, 0], -r.pg[:, 0] + r.pg0[:, 0] - r.R30) <= 0
+
+
+def _ed_obj(r):
+    return (cp.sum(r.t ** 2 * r.c2 @ r.pg ** 2)
+            + r.t * cp.sum(r.c1 @ r.pg + r.csr @ r.prs)
+            + cp.sum(cp.multiply(r.ugt, cp.multiply(r.c0, r.tlv))))
 
 
 class SRBase:
@@ -153,18 +246,16 @@ class ED(SRBase, MPBase, RTED):
                          info='input ug transpose',
                          no_parse=True)
 
-        # --- Model Section ---
+        # --- Model Section (Phase 4.4: e_fn form) ---
         # --- gen ---
         self.ctrle.u2 = self.ugt
         self.nctrle.u2 = self.ugt
-        pmaxe = 'mul(mul(nctrle, pg0), tlv) + mul(mul(ctrle, tlv), pmax)'
-        self.pmaxe.e_str = pmaxe
+        self.pmaxe.e_fn = _ed_pmaxe
         self.pmaxe.horizon = self.timeslot
-        pmine = 'mul(mul(nctrle, pg0), tlv) + mul(mul(ctrle, tlv), pmin)'
-        self.pmine.e_str = pmine
+        self.pmine.e_fn = _ed_pmine
         self.pmine.horizon = self.timeslot
-        self.pglb.e_str = '-pg + pmine'
-        self.pgub.e_str = 'pg - pmaxe'
+        self.pglb.e_fn = _ed_pglb
+        self.pgub.e_fn = _ed_pgub
 
         self.pru.horizon = self.timeslot
         self.pru.info = '2D RegUp power'
@@ -172,46 +263,41 @@ class ED(SRBase, MPBase, RTED):
         self.prd.info = '2D RegDn power'
 
         self.prs.horizon = self.timeslot
-        self.prsb.e_str = 'mul(ugt, pmax@tlv - pg) - prs'
-        self.rsr.e_str = '-gs@prs + dsr'
+        self.prsb.e_fn = _ed_prsb
+        self.rsr.e_fn = _ed_rsr
 
         # --- line ---
         self.plf.horizon = self.timeslot
         self.plf.info = '2D Line flow'
-        self.plflb.e_str = '-Bf@aBus - Pfinj@tlv - mul(ul, rate_a)@tlv'
-        self.plfub.e_str = 'Bf@aBus + Pfinj@tlv - mul(ul, rate_a)@tlv'
-        self.alflb.e_str = '-CftT@aBus + amin@tlv'
-        self.alfub.e_str = 'CftT@aBus - amax@tlv'
+        self.plflb.e_fn = _ed_plflb
+        self.plfub.e_fn = _ed_plfub
+        self.alflb.e_fn = _ed_alflb
+        self.alfub.e_fn = _ed_alfub
 
-        self.plf.e_str = 'Bf@aBus + Pfinj@tlv'
+        self.plf.e_fn = _ed_plf
 
         # --- power balance ---
-        self.pb.e_str = 'Bbus@aBus + Pbusinj@tlv + Cl@pds + Csh@gsh@tlv - Cg@pg'
+        self.pb.e_fn = _ed_pb
 
         # --- ramping ---
-        self.rbu.e_str = 'gs@mul(ugt, pru) - mul(dud, tlv)'
-        self.rbd.e_str = 'gs@mul(ugt, prd) - mul(ddd, tlv)'
+        self.rbu.e_fn = _ed_rbu
+        self.rbd.e_fn = _ed_rbd
 
-        self.rru.e_str = 'pg + pru - mul(mul(ugt, pmax), tlv)'
-        self.rrd.e_str = '-pg + prd + mul(mul(ugt, pmin), tlv)'
+        self.rru.e_fn = _ed_rru
+        self.rrd.e_fn = _ed_rrd
 
-        self.rgu.e_str = 'pg @ Mr - t dot RR30'
-        self.rgd.e_str = '-pg @ Mr - t dot RR30'
+        self.rgu.e_fn = _ed_rgu
+        self.rgd.e_fn = _ed_rgd
 
         self.rgu0 = Constraint(name='rgu0',
                                info='Initial gen ramping up',
-                               e_str='mul(ugt[:, 0], pg[:, 0] - pg0[:, 0] - R30)',
-                               is_eq=False,)
+                               e_fn=_ed_rgu0,)
         self.rgd0 = Constraint(name='rgd0',
                                info='Initial gen ramping down',
-                               e_str='mul(ugt[:, 0], -pg[:, 0] + pg0[:, 0] - R30)',
-                               is_eq=False,)
+                               e_fn=_ed_rgd0,)
 
         # --- objective ---
-        cost = 'sum(t**2 dot c2 @ pg**2)'
-        cost += '+ t dot sum(c1 @ pg + csr @ prs)'
-        cost += '+ sum(mul(ugt, mul(c0, tlv)))'
-        self.obj.e_str = cost
+        self.obj.e_fn = _ed_obj
 
     def dc2ac(self, kloss=1.0, **kwargs):
         """

@@ -6,6 +6,8 @@ from collections import OrderedDict
 import numpy as np
 import pandas as pd
 
+import cvxpy as cp
+
 from ams.core.param import RParam
 from ams.core.service import (NumOp, NumOpDual, MinDur)
 from ams.routines.dcopf import DCOPF
@@ -15,6 +17,113 @@ from ams.routines.ed import SRBase, MPBase, ESD1MPBase, DGMPBase
 from ams.opt import Var, Constraint
 
 logger = logging.getLogger(__name__)
+
+
+# --- UC e_fn callables (Phase 4.4) ---
+
+
+def _uc_pmaxe(r):
+    return (cp.multiply(cp.multiply(r.nctrl, r.pg0), r.ugd)
+            + cp.multiply(cp.multiply(r.ctrl, r.pmax), r.ugd))
+
+
+def _uc_pmine(r):
+    return (cp.multiply(cp.multiply(r.ctrl, r.pmin), r.ugd)
+            + cp.multiply(cp.multiply(r.nctrl, r.pg0), r.ugd))
+
+
+def _uc_pglb(r):
+    return -r.pg + r.pmine <= 0
+
+
+def _uc_pgub(r):
+    return r.pg - r.pmaxe <= 0
+
+
+def _uc_actv(r):
+    return r.ugd @ r.Mr - r.vgd[:, 1:] == 0
+
+
+def _uc_actv0(r):
+    return r.ugd[:, 0] - r.ug[:, 0] - r.vgd[:, 0] == 0
+
+
+def _uc_actw(r):
+    return -r.ugd @ r.Mr - r.wgd[:, 1:] == 0
+
+
+def _uc_actw0(r):
+    return -r.ugd[:, 0] + r.ug[:, 0] - r.wgd[:, 0] == 0
+
+
+def _uc_prsb(r):
+    return cp.multiply(r.ugd, cp.multiply(r.pmax, r.tlv)) - r.zug - r.prs == 0
+
+
+def _uc_rsr(r):
+    return -r.gs @ r.prs + r.dsr <= 0
+
+
+def _uc_prnsb(r):
+    return cp.multiply(1 - r.ugd, cp.multiply(r.pmax, r.tlv)) - r.prns == 0
+
+
+def _uc_rnsr(r):
+    return -r.gs @ r.prns + r.dnsr <= 0
+
+
+def _uc_zuglb(r):
+    return -r.zug + r.pg <= 0
+
+
+def _uc_zugub(r):
+    return r.zug - r.pg - r.Mzug * (1 - r.ugd) <= 0
+
+
+def _uc_zugub2(r):
+    return r.zug - r.Mzug * r.ugd <= 0
+
+
+def _uc_don(r):
+    return cp.multiply(r.Con, r.vgd) - r.ugd <= 0
+
+
+def _uc_doff(r):
+    return cp.multiply(r.Coff, r.wgd) - (1 - r.ugd) <= 0
+
+
+def _uc_plflb(r):
+    return -r.Bf @ r.aBus - r.Pfinj - cp.multiply(r.rate_a, r.tlv) <= 0
+
+
+def _uc_plfub(r):
+    return r.Bf @ r.aBus + r.Pfinj - cp.multiply(r.rate_a, r.tlv) <= 0
+
+
+def _uc_alflb(r):
+    return -r.CftT @ r.aBus - r.amax @ r.tlv <= 0
+
+
+def _uc_alfub(r):
+    return r.CftT @ r.aBus - r.amax @ r.tlv <= 0
+
+
+def _uc_pdumax(r):
+    return r.pdu - cp.multiply(r.pdsp, r.dctrl @ r.tlv) <= 0
+
+
+def _uc_pb(r):
+    return (r.Bbus @ r.aBus + r.Pbusinj @ r.tlv
+            + r.Cl @ (r.pds - r.pdu) + r.Csh @ r.gsh @ r.tlv
+            - r.Cg @ r.pg) == 0
+
+
+def _uc_obj(r):
+    return (r.t ** 2 * cp.sum(r.c2 @ r.pg ** 2)
+            + r.t * cp.sum(r.c1 @ r.pg)
+            + cp.sum(cp.multiply(r.ug, r.c0) @ r.tlv)
+            + cp.sum(r.csu @ r.vgd + r.csd @ r.wgd)
+            + r.t * cp.sum(r.csr @ r.prs + r.cnsr @ r.prns + r.cdp @ r.pdu))
 
 
 class NSRBase:
@@ -138,7 +247,7 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
         self.amin.expand_dims = 1
         self.amax.expand_dims = 1
 
-        # --- Model Section ---
+        # --- Model Section (Phase 4.4: e_fn form) ---
         # --- gen ---
         # NOTE: extend pg to 2D matrix, where row for gen and col for timeslot
         self.pg.horizon = self.timeslot
@@ -148,14 +257,12 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
         self.ctrle.info = 'Reshaped controllability'
         self.nctrle.u2 = self.tlv
         self.nctrle.info = 'Reshaped non-controllability'
-        pmaxe = 'mul(mul(nctrl, pg0), ugd) + mul(mul(ctrl, pmax), ugd)'
-        self.pmaxe.e_str = pmaxe
+        self.pmaxe.e_fn = _uc_pmaxe
         self.pmaxe.horizon = self.timeslot
-        pmine = 'mul(mul(ctrl, pmin), ugd) + mul(mul(nctrl, pg0), ugd)'
-        self.pmine.e_str = pmine
+        self.pmine.e_fn = _uc_pmine
         self.pmine.horizon = self.timeslot
-        self.pglb.e_str = '-pg + pmine'
-        self.pgub.e_str = 'pg - pmaxe'
+        self.pglb.e_fn = _uc_pglb
+        self.pgub.e_fn = _uc_pgub
 
         self.ugd = Var(info='commitment decision',
                        horizon=self.timeslot,
@@ -177,18 +284,12 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
                        name='zug', tex_name=r'z_{ug}',
                        model='StaticGen', pos=True,)
         # NOTE: actions have two parts: initial status and the rest
-        self.actv = Constraint(name='actv', is_eq=True,
-                               info='startup action',
-                               e_str='ugd @ Mr - vgd[:, 1:]',)
-        self.actv0 = Constraint(name='actv0', is_eq=True,
-                                info='initial startup action',
-                                e_str='ugd[:, 0] - ug[:, 0]  - vgd[:, 0]',)
-        self.actw = Constraint(name='actw', is_eq=True,
-                               info='shutdown action',
-                               e_str='-ugd @ Mr - wgd[:, 1:]',)
-        self.actw0 = Constraint(name='actw0', is_eq=True,
-                                info='initial shutdown action',
-                                e_str='-ugd[:, 0] + ug[:, 0] - wgd[:, 0]',)
+        self.actv = Constraint(name='actv', info='startup action', e_fn=_uc_actv,)
+        self.actv0 = Constraint(name='actv0', info='initial startup action',
+                                e_fn=_uc_actv0,)
+        self.actw = Constraint(name='actw', info='shutdown action', e_fn=_uc_actw,)
+        self.actw0 = Constraint(name='actw0', info='initial shutdown action',
+                                e_fn=_uc_actw0,)
 
         self.prs.horizon = self.timeslot
         self.prs.info = '2D Spinning reserve'
@@ -197,14 +298,12 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
         self.prns.info = '2D Non-spinning reserve'
 
         # spinning reserve
-        self.prsb.e_str = 'mul(ugd, mul(pmax, tlv)) - zug - prs'
-        # spinning reserve requirement
-        self.rsr.e_str = '-gs@prs + dsr'
+        self.prsb.e_fn = _uc_prsb
+        self.rsr.e_fn = _uc_rsr
 
         # non-spinning reserve
-        self.prnsb.e_str = 'mul(1-ugd, mul(pmax, tlv)) - prns'
-        # non-spinning reserve requirement
-        self.rnsr.e_str = '-gs@prns + dnsr'
+        self.prnsb.e_fn = _uc_prnsb
+        self.rnsr.e_fn = _uc_rnsr
 
         # --- big M for ugd*pg ---
         self.Mzug = NumOp(info='10 times of max of pmax as big M for zug',
@@ -212,34 +311,29 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
                           u=self.pmax, fun=np.max,
                           rfun=np.dot, rargs=dict(b=10),
                           array_out=False,)
-        self.zuglb = Constraint(name='zuglb', info='zug lower bound',
-                                is_eq=False, e_str='- zug + pg')
-        self.zugub = Constraint(name='zugub', info='zug upper bound',
-                                is_eq=False, e_str='zug - pg - Mzug dot (1 - ugd)')
-        self.zugub2 = Constraint(name='zugub2', info='zug upper bound',
-                                 is_eq=False, e_str='zug - Mzug dot ugd')
+        self.zuglb = Constraint(name='zuglb', info='zug lower bound', e_fn=_uc_zuglb,)
+        self.zugub = Constraint(name='zugub', info='zug upper bound', e_fn=_uc_zugub,)
+        self.zugub2 = Constraint(name='zugub2', info='zug upper bound', e_fn=_uc_zugub2,)
 
         # --- minimum ON/OFF duration ---
         self.Con = MinDur(u=self.pg, u2=self.td1,
                           name='Con', tex_name=r'T_{on}',
                           info='minimum ON coefficient',)
         self.don = Constraint(info='minimum online duration',
-                              name='don', is_eq=False,
-                              e_str='multiply(Con, vgd) - ugd')
+                              name='don', e_fn=_uc_don,)
         self.Coff = MinDur(u=self.pg, u2=self.td2,
                            name='Coff', tex_name=r'T_{off}',
                            info='minimum OFF coefficient',)
         self.doff = Constraint(info='minimum offline duration',
-                               name='doff', is_eq=False,
-                               e_str='multiply(Coff, wgd) - (1 - ugd)')
+                               name='doff', e_fn=_uc_doff,)
 
         # --- line ---
         self.plf.horizon = self.timeslot
         self.plf.info = '2D Line flow'
-        self.plflb.e_str = '-Bf@aBus - Pfinj - mul(rate_a, tlv)'
-        self.plfub.e_str = 'Bf@aBus + Pfinj - mul(rate_a, tlv)'
-        self.alflb.e_str = '-CftT@aBus - amax@tlv'
-        self.alfub.e_str = 'CftT@aBus - amax@tlv'
+        self.plflb.e_fn = _uc_plflb
+        self.plfub.e_fn = _uc_plfub
+        self.alflb.e_fn = _uc_alflb
+        self.alfub.e_fn = _uc_alfub
 
         # --- unserved load ---
         self.pdu = Var(info='unserved demand',
@@ -252,21 +346,13 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
                           info='positive demand',
                           name='pdsp', tex_name=r'p_{d,s}^{+}',)
         self.pdumax = Constraint(info='unserved demand upper bound',
-                                 name='pdumax', is_eq=False,
-                                 e_str='pdu - mul(pdsp, dctrl@tlv)')
+                                 name='pdumax', e_fn=_uc_pdumax,)
         # --- power balance ---
         # NOTE: nodal balance is also contributed by unserved load
-        pb = 'Bbus@aBus + Pbusinj@tlv + Cl@(pds-pdu) + Csh@gsh@tlv - Cg@pg'
-        self.pb.e_str = pb
+        self.pb.e_fn = _uc_pb
 
         # --- objective ---
-        cost = 't**2 dot sum(c2 @ pg**2)'
-        cost += '+ t dot sum(c1 @ pg)'
-        cost += '+ sum(mul(ug, c0) @ tlv)'
-        cost += '+ sum(csu @ vgd + csd @ wgd)'
-        _to_sum = 'csr @ prs + cnsr @ prns + cdp @ pdu'
-        cost += f' + t dot sum({_to_sum})'
-        self.obj.e_str = cost
+        self.obj.e_fn = _uc_obj
 
     def _initial_guess(self):
         """
