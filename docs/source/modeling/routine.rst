@@ -169,6 +169,92 @@ Authors who prefer to skip the DSL and write a callable directly may
 pass ``e_fn=callable`` instead of ``e_str``; the runtime accepts both,
 and the codegen leaves manually-set ``e_fn`` alone.
 
+Two execution paths: codegen vs ``sub_map``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Internally, two execution paths from ``e_str`` to a CVXPY object live
+side by side:
+
+- **Codegen path** (fast, default for source-defined items). At
+  ``init()`` time, :py:meth:`ams.routines.routine.RoutineBase._link_pycode`
+  loads the per-class pycode and wires each item's ``e_fn`` from a
+  named callable in that module. ``parse()`` and ``evaluate()`` then
+  just invoke the callable with a :py:class:`ams.core.routine_ns.RoutineNS`
+  proxy; no regex, no ``eval``.
+
+- **``sub_map`` path** (legacy, used as a fall-through). At ``parse()``
+  time, :py:class:`ams.core.symprocessor.SymProcessor` regex-rewrites
+  the item's ``e_str`` into a Python source string (``mul(a, b)`` →
+  ``cp.multiply(a, b)``, ``pg`` → ``self.om.pg``, …) and stores it in
+  ``item.code``. ``evaluate()`` then ``eval``\ s ``item.code``.
+
+Both paths must produce the same CVXPY object given the same ``e_str``
+— the codegen is the AOT-compiled version of the ``sub_map`` rewrite
+pipeline.
+
+Which path runs is decided per-item by ``_link_pycode``:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 15 50
+
+   * - Item state
+     - Path
+     - Why
+   * - In source code, no runtime mutation
+     - codegen
+     - The pristine ``e_str`` matches what the cache was generated
+       from; ``e_fn`` is wired from the cache.
+   * - Added at runtime via ``addConstrs`` / ``addExpressions`` /
+       ``addExprcs``
+     - sub_map
+     - The cache (always generated against a pristine instance —
+       see :ref:`pycode-pristine-invariant` below) doesn't know
+       about runtime additions.
+   * - ``e_str`` reassigned post-construction (e.g.
+       ``obj.e_str += '+ ...'``)
+     - sub_map
+     - The descriptor mutex on ``e_str`` / ``e_fn`` marks the item
+       ``_e_dirty``; ``_link_pycode`` skips wiring so the user's new
+       ``e_str`` flows through ``parse()``.
+
+Authors and users can introspect which path is in effect:
+
+- :py:attr:`ams.opt.OptzBase.formulation_source` — per-item, returns
+  ``'codegen' | 'sub_map' | 'manual' | 'pending'``.
+- :py:meth:`ams.routines.routine.RoutineBase.formulation_summary` —
+  full table.
+- An INFO-level log line ``<RoutineName> formulation: codegen=X/Y, …``
+  is emitted on every ``init()``.
+
+.. _pycode-pristine-invariant:
+
+The pristine-source invariant
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``~/.ams/pycode/<routine>.py`` is **always** a faithful representation
+of the routine source code, never of any user customization. To
+guarantee this, ``_link_pycode`` runs codegen against a pristine
+routine instance fetched from a per-process singleton
+``ams.System(no_input=True)`` (see
+:py:func:`ams.prep._get_pristine_system`), never against the user's
+``self``. A ``pristine = True`` marker in the generated module's
+header acts as a cache-validation tripwire — caches written by older
+AMS versions (which codegen'd against the live instance) lack the
+marker and are auto-invalidated on next read.
+
+This means a user can do::
+
+    sp = ams.load(...)
+    sp.DCOPF.obj.e_str += '+ extra_term'
+    sp.DCOPF.run(...)                        # uses customization
+
+    sp0 = ams.load(...)                       # fresh instance
+    sp0.DCOPF.run(...)                        # uses original formulation
+
+without ``sp``'s mutation leaking into ``sp0``. See
+``examples/ex8.ipynb`` for a working sp1 / sp2 / sp3 walkthrough.
+
 Interoperation with ANDES
 -----------------------------------
 

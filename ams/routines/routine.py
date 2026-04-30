@@ -267,17 +267,43 @@ class RoutineBase:
         #    (catches pre-init mutations that don't trip the mutex's
         #    prior-other check). Skipped items flow through the legacy
         #    regex+eval path in ``parse()`` / ``evaluate()``.
+        # Tally for the end-of-link summary log. Classifies each item by
+        # the runtime path it will take, which mirrors the per-item
+        # ``formulation_source`` property.
+        tally = {'codegen': 0, 'manual': 0,
+                 'sub_map_dirty': 0, 'sub_map_added': 0}
+
         def _wire(item, prefix, name):
             if getattr(item, '_e_dirty', False):
+                # User modified this item; we leave it alone. The runtime
+                # path is 'manual' if a callable is now in place,
+                # otherwise the legacy 'sub_map' regex pipeline.
+                if getattr(item, '_e_fn', None) is not None:
+                    tally['manual'] += 1
+                else:
+                    tally['sub_map_dirty'] += 1
                 return
             pristine_str = _pristine_e_str(prefix, name)
             if (pristine_str is not None
                     and getattr(item, '_e_str', None) != pristine_str):
                 item._e_dirty = True
+                tally['sub_map_dirty'] += 1
                 return
             fn = getattr(gen, f'_{prefix}_{name}', None)
-            if fn is not None and getattr(item, '_e_fn', None) is None:
-                item._e_fn = fn
+            if fn is not None:
+                if getattr(item, '_e_fn', None) is None:
+                    item._e_fn = fn
+                    # Provenance: this e_fn came from disk pycode.
+                    item._e_fn_source = 'codegen'
+                # Whether we just wired or it was already wired from a
+                # previous init, the item's runtime path is the codegen
+                # callable.
+                tally['codegen'] += 1
+            else:
+                # Item has no entry in pycode (e.g. added at runtime via
+                # ``addConstrs``). It will fall through to the sub_map
+                # path at parse/evaluate time.
+                tally['sub_map_added'] += 1
             tex = getattr(gen, f'_{prefix}_{name}_tex', None)
             if tex is not None and getattr(item, 'e_tex', None) is None:
                 item.e_tex = tex
@@ -290,6 +316,75 @@ class RoutineBase:
             _wire(self.obj, 'obj', self.obj.name)
         for name, exprc in self.exprcs.items():
             _wire(exprc, 'exprcalc', name)
+
+        # One info-level log line per init() that summarizes which
+        # execution path each item will take. Lets users (and the tests
+        # in icebar/ex8/) verify customization actually takes effect by
+        # eye, without having to introspect ``formulation_source`` on
+        # each item.
+        total = sum(tally.values())
+        if total > 0:
+            parts = [f"codegen={tally['codegen']}/{total}"]
+            if tally['manual']:
+                parts.append(f"manual={tally['manual']}")
+            if tally['sub_map_dirty']:
+                parts.append(f"sub_map(customized)={tally['sub_map_dirty']}")
+            if tally['sub_map_added']:
+                parts.append(f"sub_map(added)={tally['sub_map_added']}")
+            logger.info(
+                f"<{self.class_name}> formulation: " + ", ".join(parts)
+            )
+
+    def formulation_summary(self, return_rows: bool = False):
+        """
+        Print (or return) a per-item table of the live formulation source.
+
+        Useful for verifying which path each opt element runs through after
+        custom edits — e.g. ``addConstrs`` and ``obj.e_str += '...'``
+        should show ``sub_map``, while untouched items show ``codegen``.
+
+        Parameters
+        ----------
+        return_rows : bool, optional
+            If True, return the list of ``(kind, name, source, e_str_excerpt)``
+            tuples instead of printing. Default False (prints).
+
+        See Also
+        --------
+        :py:attr:`ams.opt.OptzBase.formulation_source` — per-item source.
+        """
+        rows = []
+        for kind, registry in (('expr', self.exprs),
+                               ('constr', self.constrs),
+                               ('exprcalc', self.exprcs)):
+            for name, item in registry.items():
+                src = getattr(item, 'formulation_source', '?')
+                e_str = getattr(item, '_e_str', None) or ''
+                rows.append((kind, name, src, e_str[:60]))
+        if self.obj is not None:
+            obj = self.obj
+            rows.append(('obj', obj.name, getattr(obj, 'formulation_source', '?'),
+                         (getattr(obj, '_e_str', None) or '')[:60]))
+
+        if return_rows:
+            return rows
+
+        if not rows:
+            print(f"<{self.class_name}>: no opt elements registered.")
+            return
+
+        kw = max(len(r[0]) for r in rows)
+        nw = max(len(r[1]) for r in rows)
+        sw = max(len(r[2]) for r in rows)
+        print(f"<{self.class_name}> formulation summary "
+              f"({sum(1 for r in rows if r[2] == 'codegen')} codegen / "
+              f"{sum(1 for r in rows if r[2] == 'sub_map')} sub_map / "
+              f"{sum(1 for r in rows if r[2] == 'manual')} manual / "
+              f"{sum(1 for r in rows if r[2] == 'pending')} pending)")
+        print(f"  {'kind':<{kw}}  {'name':<{nw}}  {'source':<{sw}}  e_str")
+        print(f"  {'-'*kw}  {'-'*nw}  {'-'*sw}  {'-'*40}")
+        for kind, name, src, e_str in rows:
+            print(f"  {kind:<{kw}}  {name:<{nw}}  {src:<{sw}}  {e_str}")
 
     def get(self, src: str, idx, attr: str = 'v',
             horizon: Optional[Union[int, str, Iterable]] = None):

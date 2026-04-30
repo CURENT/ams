@@ -104,6 +104,13 @@ class _EFormDescriptor:
             setattr(obj, self._other, None)
             if prior_other is not None:
                 obj._e_dirty = True
+            # Update provenance. Public-API ``e_fn = fn`` is "manual";
+            # ``e_str = '...'`` clears the provenance because the live
+            # e_fn (if any) just got cleared by the line above.
+            if self._mine == '_e_fn':
+                obj._e_fn_source = 'manual'
+            else:
+                obj._e_fn_source = None
 
 
 class OptzBase:
@@ -150,6 +157,14 @@ class OptzBase:
         self.model = model  # indicate if this element belongs to a model or group
         self.owner = None  # instance of the owner model or group
         self.is_group = False
+        # Provenance of the live ``e_fn`` (when one is set). Values:
+        #   - 'codegen' : wired from ``~/.ams/pycode/`` by ``_link_pycode``
+        #   - 'manual'  : assigned directly via ``item.e_fn = fn``
+        #   - None      : no e_fn (uses sub_map+eval path)
+        # Read via :pyattr:`formulation_source` — this raw attribute is
+        # written by ``_link_pycode`` and reset whenever ``e_str`` is
+        # reassigned (descriptor mutex side-effect).
+        self._e_fn_source = None
 
     @ensure_symbols
     def parse(self):
@@ -171,6 +186,37 @@ class OptzBase:
         Return the class name
         """
         return self.__class__.__name__
+
+    @property
+    def formulation_source(self):
+        """
+        Where the live CVXPY object for this item came from. Useful for
+        debugging "did my customization actually take effect?".
+
+        Returns one of:
+
+        - ``'pending'`` — item hasn't been evaluated yet (no live ``optz``).
+        - ``'codegen'`` — ``e_fn`` was wired from ``~/.ams/pycode/<routine>.py``
+          (the fast AOT path); only happens for items that exactly match
+          the pristine source.
+        - ``'manual'`` — author/user code assigned ``item.e_fn = fn``
+          directly, bypassing both codegen and the sub_map regex.
+        - ``'sub_map'`` — legacy path: ``e_str`` was rewritten by
+          :class:`SymProcessor` and ``eval``-ed at parse/evaluate time.
+          This is what runs for items the user customized via
+          ``e_str = '...'`` or ``addConstrs(...)``.
+        """
+        if getattr(self, 'optz', None) is None:
+            return 'pending'
+        if getattr(self, '_e_fn_source', None) == 'codegen':
+            return 'codegen'
+        if getattr(self, '_e_fn_source', None) == 'manual':
+            return 'manual'
+        if getattr(self, 'e_fn', None) is not None:
+            # e_fn set but provenance lost — defensive fallback. Shouldn't
+            # happen in normal flow.
+            return 'manual'
+        return 'sub_map'
 
     @property
     def n(self):
