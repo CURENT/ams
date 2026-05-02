@@ -271,3 +271,18 @@ class TestLoadANDESFile(unittest.TestCase):
                        no_output=True,
                        default_config=True,)
         self.assertIn('PVD1', sp2.models.keys())
+
+
+class TestJumperToAndes(unittest.TestCase):
+    """
+    Test `to_andes` carries the `Jumper` device through the AMS-ANDES bridge.
+    Originally lived in ``tests/test_jumper.py``.
+    """
+
+    def setUp(self) -> None:
+        self.sp = ams.load(ams.get_case("5bus/pjm5bus_jumper.xlsx"),
+                           setup=True, no_output=True, default_config=True)
+
+    def test_to_andes(self):
+        sa = self.sp.to_andes()
+        self.assertEqual(sa.Jumper.n, 1)
