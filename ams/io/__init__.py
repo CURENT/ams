@@ -176,6 +176,7 @@ def dump(system, output_format, full_path=None, overwrite=None, **kwargs):
                                          system.files.name + '.' + ext)
 
     t, _ = elapsed()
+    ret = False
     if output_format == 'xlsx':
         ret = xlsx.write(system, system.files.dump, overwrite=overwrite, **kwargs)
     elif output_format == 'json':

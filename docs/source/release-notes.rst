@@ -9,6 +9,133 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.2
 ==========
 
+v1.2.2 (unreleased)
+----------------------
+
+**New features:**
+
+- **Opt-layer codegen.** Routine constraints, expressions, and
+  objectives written as ``e_str`` strings are now compiled once to
+  named Python callables in ``~/.ams/pycode/<routine>.py``. The
+  runtime path imports those callables instead of regex-rewriting
+  ``e_str`` and ``eval``-ing the result on every routine init.
+
+  Author-facing API is unchanged — keep writing ``e_str``. The
+  generated cache refreshes on first init when the routine source
+  ``md5`` changes; it can also be regenerated explicitly with the
+  new ``ams prep`` CLI:
+
+  .. code-block:: console
+
+     $ ams prep                    # generate for every routine
+     $ ams prep --routine DCOPF    # restrict to one
+     $ ams prep --force            # regenerate even when md5 matches
+     $ ams prep --clean            # wipe ~/.ams/pycode/
+     $ ams prep --where            # print the cache path
+
+  See :ref:`routine` for the rendered pipeline. Generated pycode is
+  per-user and never shipped in the wheel — analogous to ANDES's
+  ``andes prep`` / ``~/.andes/pycode/`` pattern.
+
+- ``Objective.add_term(fn)`` lets a mixin subclass extend a parent
+  objective with an extra cost term via callable rather than the
+  legacy ``self.obj.e_str += '...'`` string append. Used internally
+  by ``ESD1Base`` (charge/discharge cost) and ``RTEDVIS`` (virtual
+  inertia/damping cost); available to user-defined mixins too.
+
+- DPP-compliance diagnostic logged at ``OModel.finalize`` time. When
+  a routine has parameters but the resulting ``cp.Problem`` is not
+  DPP, an info-level log line warns that warm re-solves will
+  re-canonicalize. Helps catch accidental non-DPP terms early.
+
+- **Formulation-source introspection.** Three ways to see which
+  execution path an opt element runs through after ``init()``:
+
+  - per-item :py:attr:`ams.opt.OptzBase.formulation_source` →
+    ``'codegen' | 'sub_map' | 'manual' | 'pending'``;
+  - :py:meth:`ams.routines.routine.RoutineBase.formulation_summary`
+    prints a per-item table;
+  - an INFO log line on every ``init()``::
+
+       <DCOPF> formulation: codegen=14/17, sub_map(customized)=1, sub_map(added)=2
+
+  Useful for confirming a runtime customization
+  (``addConstrs``, ``obj.e_str += '...'``) actually reaches the
+  optimizer rather than being silently overwritten by the cached
+  callable.
+
+**Behavior changes:**
+
+- **Disk cache is always pristine.** The generated pycode at
+  ``~/.ams/pycode/<routine>.py`` is now guaranteed to reflect only
+  the routine source code, never per-instance customizations. Codegen
+  always runs against a fresh ``ams.System`` instance fetched from a
+  per-process singleton, never against the user's ``self``. A
+  ``pristine = True`` marker in the generated module's header
+  auto-invalidates caches written by older AMS versions on next read.
+  This means runtime mutations on one ``System`` (``sp.DCOPF.obj.e_str
+  += '...'``, ``sp.DCOPF.addConstrs(...)``) cannot leak into another
+  freshly-loaded ``System``. See ``examples/ex8.ipynb`` for a working
+  sp1 / sp2 / sp3 demonstration.
+
+- ``e_str`` is preserved on items after auto-prep wires their
+  ``e_fn`` from pycode. Lets users do
+  ``sp.DCOPF.obj.e_str += '+ ...'`` post-init — a documented
+  customization pattern that briefly broke when the ``_EFormDescriptor``
+  mutex cleared ``e_str`` on internal codegen wiring.
+
+- ``.e`` (the post-solve / debug numerical value of a constraint
+  LHS, expression, or objective) now works correctly even when the
+  solver bails or hasn't run yet. Resolves through a numeric proxy
+  that returns ``Var.v`` (zeros fallback) for unset variables — the
+  same semantics the legacy ``val_map``-eval path had.
+
+**Bug fixes:**
+
+- ``bench.harness.measure``: when warmup raises, the failure path now
+  preserves the structured tags (``routine``, ``case``, ``solver``,
+  ``phase``, ``metadata``) on the returned ``Measurement`` instead of
+  dropping them.
+- ``LazyImport.__maybe_import_complementary_imports__`` narrows the
+  swallowed exception from bare ``except Exception`` to
+  ``except ImportError`` and logs at DEBUG, so unexpected failures stop
+  being silently hidden.
+
+**Internal:**
+
+- Drop Codecov from CI in favor of Codacy as the single coverage
+  provider. Removes ``.codecov.yml``, the ``codecov/codecov-action``
+  + ``codecov/test-results-action`` upload steps, the duplicate
+  pytest run that produced ``junit.xml``, and the Codecov badge in
+  ``README.md``. Renames ``.github/workflows/codecov.yml`` to
+  ``coverage.yml`` to match its now-Codacy-only role. The
+  ``CODECOV_TOKEN`` repository secret can be deleted.
+- Silence Codacy's Bandit findings on the env-capture subprocess calls
+  in ``ams/bench/env.py`` via per-call ``# nosec B404``/``# nosec B603``
+  markers. Codacy's Bandit engine doesn't honor the
+  ``[tool.bandit] skips`` block in ``pyproject.toml`` (it only passes a
+  config file when the project's pattern set is empty), so the inline
+  markers are what actually apply on Codacy. Local ``bandit -c
+  pyproject.toml`` runs continue to honor the skips list.
+- ``ams.io.dump``: initialize ``ret`` defensively before the
+  format-dispatch ``if/elif`` to silence pylint's
+  ``possibly-used-before-assignment``. The earlier ``output_formats``
+  membership guard already ensures one branch fires at runtime, so
+  ``ret`` was never actually unbound — this is a static-analysis
+  cleanup, not a behavior change.
+- Add ``encoding='utf-8'`` to text-mode ``open()`` /
+  ``Path.read_text`` calls in ``ams.bench.env``, ``ams.bench.__main__``,
+  and ``ams.system`` (config-file write). Avoids the platform-default
+  encoding foot-gun on Windows.
+- ``link_ext_param(model=None)`` and ``Model.set(..., base=None)``:
+  document and explicitly drop the API-compat-only arguments so they
+  no longer surface as ``unused-argument`` lint findings.
+- Bulk-disable noisy pylint patterns in ``.prospector.yaml``
+  (``too-many-arguments`` / ``-locals`` / ``-branches``,
+  ``use-list-literal`` / ``use-dict-literal``, ``no-else-return``,
+  ``import-outside-toplevel``, ``eval-used``) with rationale; replaces
+  per-PR Codacy churn on long-standing code.
+
 v1.2.1 (2026-04-29)
 ----------------------
 

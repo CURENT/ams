@@ -3,7 +3,7 @@ Module for optimization ExpressionCalc.
 """
 import logging
 
-from typing import Optional
+from typing import Callable, Optional
 import re
 
 import numpy as np
@@ -16,6 +16,7 @@ from ams.utils import pretty_long_message
 from ams.shared import _prefix, _max_length
 
 from ams.opt import OptzBase, ensure_symbols, ensure_mats_and_parsed
+from ams.opt.optzbase import _EFormDescriptor
 
 logger = logging.getLogger(__name__)
 
@@ -29,19 +30,31 @@ class ExpressionCalc(OptzBase):
 
     Note: `ExpressionCalc` is not a CVXPY expression and should NOT be referenced
     in `e_str` by any other components, including other instances of `ExpressionCalc`.
+
+    Accepts ``e_fn`` (callable taking :class:`RoutineNS`) alongside the
+    legacy ``e_str`` form. The codegen emits ``_exprcalc_<name>``
+    callables; the descriptor mutex from ``OptzBase`` keeps the two
+    forms exclusive.
     """
+
+    e_str = _EFormDescriptor('e_str', 'e_fn')
+    e_fn = _EFormDescriptor('e_fn', 'e_str')
 
     def __init__(self,
                  name: Optional[str] = None,
                  info: Optional[str] = None,
                  unit: Optional[str] = None,
                  e_str: Optional[str] = None,
+                 e_fn: Optional[Callable] = None,
                  model: Optional[str] = None,
                  src: Optional[str] = None,
                  ):
         OptzBase.__init__(self, name=name, info=info, unit=unit, model=model)
         self.optz = None
+        self._e_str = None
+        self._e_fn = None
         self.e_str = e_str
+        self.e_fn = e_fn
         self.code = None
         self.src = src
 
@@ -50,6 +63,8 @@ class ExpressionCalc(OptzBase):
         """
         Parse the Expression.
         """
+        if self.e_fn is not None:
+            return True
         # parse the expression str
         sub_map = self.om.rtn.syms.sub_map
         code_expr = self.e_str
@@ -69,30 +84,22 @@ class ExpressionCalc(OptzBase):
         """
         Evaluate the expression.
         """
+        if self.e_fn is not None:
+            from ams.core.routine_ns import RoutineNS  # local: avoid circular import
+            try:
+                self.optz = self.e_fn(RoutineNS(self.om.rtn))
+            except Exception as e:
+                raise Exception(f"Error in evaluating ExpressionCalc <{self.name}> "
+                                f"via e_fn.\n{e}")
+            return True
         msg = f" - Expression <{self.name}>: {self.code}"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         try:
             local_vars = {'self': self, 'np': np, 'cp': cp, 'sps': sps}
-            self.optz = self._evaluate_expression(self.code, local_vars=local_vars)
+            self.optz = eval(self.code, {}, local_vars)
         except Exception as e:
             raise Exception(f"Error in evaluating ExpressionCalc <{self.name}>.\n{e}")
         return True
-
-    def _evaluate_expression(self, code, local_vars=None):
-        """
-        Helper method to evaluate the expression code.
-
-        Parameters
-        ----------
-        code : str
-            The code string representing the expression.
-
-        Returns
-        -------
-        cp.Expression
-            The evaluated cvxpy expression.
-        """
-        return eval(code, {}, local_vars)
 
     @property
     def v(self):
@@ -114,29 +121,3 @@ class ExpressionCalc(OptzBase):
         if not isinstance(value, (int, float, np.ndarray)):
             raise TypeError(f"Value must be a number or numpy array, got {type(value)}.")
         self.optz.value = value
-
-    @property
-    def e(self):
-        """
-        Return the calculated expression value.
-        """
-        if self.code is None:
-            logger.info(f"ExpressionCalc <{self.name}> is not parsed yet.")
-            return None
-
-        val_map = self.om.rtn.syms.val_map
-        code = self.code
-        for pattern, replacement in val_map.items():
-            try:
-                code = re.sub(pattern, replacement, code)
-            except TypeError as e:
-                raise TypeError(e)
-
-        try:
-            logger.debug(pretty_long_message(f"Value code: {code}",
-                                             _prefix, max_length=_max_length))
-            local_vars = {'self': self, 'np': np, 'cp': cp, 'val_map': val_map}
-            return self._evaluate_expression(code, local_vars)
-        except Exception as e:
-            logger.error(f"Error in calculating expr <{self.name}>.\n{e}")
-            return None

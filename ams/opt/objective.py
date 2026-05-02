@@ -3,17 +3,19 @@ Module for optimization Objective.
 """
 import logging
 
-from typing import Optional
+from typing import Callable, Optional
 import re
 
-import numpy as np
+import numpy as np  # noqa: F401  # used by routine `e_str` evaluation context
 
 import cvxpy as cp
 
 from ams.utils import pretty_long_message
 from ams.shared import _prefix, _max_length
 
+from ams.core.routine_ns import RoutineNS
 from ams.opt import OptzBase, ensure_symbols, ensure_mats_and_parsed
+from ams.opt.optzbase import _EFormDescriptor
 
 logger = logging.getLogger(__name__)
 
@@ -22,16 +24,20 @@ class Objective(OptzBase):
     """
     Base class for objective functions.
 
-    This class serves as a template for defining objective functions. Each
-    instance of this class represents a single objective function that can
-    be minimized or maximized depending on the sense ('min' or 'max').
+    Exactly one of ``e_str`` or ``e_fn`` should be provided. ``e_fn(r)``
+    is the Phase 4.1+ form: a callable that takes a :class:`RoutineNS`
+    and returns the inner CVXPY expression to be minimized/maximized
+    (the ``cp.Minimize``/``cp.Maximize`` wrapping is handled by
+    ``Objective.evaluate``).
 
     Parameters
     ----------
     name : str, optional
         A user-defined name for the objective function.
     e_str : str, optional
-        A mathematical expression representing the objective function.
+        A mathematical expression (legacy form).
+    e_fn : callable, optional
+        Callable ``e_fn(r) -> cp.Expression`` taking a :class:`RoutineNS`.
     info : str, optional
         Additional informational text about the objective function.
     sense : str, optional
@@ -49,50 +55,40 @@ class Objective(OptzBase):
         The code string for the objective function.
     """
 
+    e_str = _EFormDescriptor('e_str', 'e_fn')
+    e_fn = _EFormDescriptor('e_fn', 'e_str')
+
     def __init__(self,
                  name: Optional[str] = None,
                  e_str: Optional[str] = None,
+                 e_fn: Optional[Callable] = None,
                  info: Optional[str] = None,
                  unit: Optional[str] = None,
                  sense: Optional[str] = 'min'):
         OptzBase.__init__(self, name=name, info=info, unit=unit)
+        self._e_str = None
+        self._e_fn = None
         self.e_str = e_str
+        self.e_fn = e_fn
         self.sense = sense
         self.code = None
+        self._extra_terms = []
 
-    @property
-    def e(self):
+    def add_term(self, fn: Callable):
         """
-        Return the calculated objective value.
+        Register an extra cost term added to this objective at evaluate time.
 
-        Note that `v` should be used primarily as it is obtained
-        from the solver directly.
+        Used by mixin subclasses (e.g. :class:`ESD1Base`, :class:`RTEDVIS`)
+        that extend a parent's objective without rewriting it. ``fn(r)``
+        receives a :class:`RoutineNS` and returns a scalar CVXPY
+        expression; that expression is summed onto the base objective
+        before the ``cp.Minimize``/``cp.Maximize`` wrap.
 
-        `e` is for debugging purpose. For a successfully solved problem,
-        `e` should equal to `v`. However, when a problem is infeasible
-        or unbounded, `e` can be used to check the objective value.
+        Composes equally with ``e_str``-form and ``e_fn``-form parents,
+        so a parent can migrate from one to the other without breaking
+        any subclass that registered terms.
         """
-        if self.code is None:
-            logger.info(f"Objective <{self.name}> is not parsed yet.")
-            return None
-
-        val_map = self.om.rtn.syms.val_map
-        code = self.code
-        for pattern, replacement in val_map.items():
-            try:
-                code = re.sub(pattern, replacement, code)
-            except TypeError as e:
-                logger.error(f"Error in parsing value for obj <{self.name}>.")
-                raise e
-
-        try:
-            logger.debug(pretty_long_message(f"Value code: {code}",
-                                             _prefix, max_length=_max_length))
-            local_vars = {'self': self, 'np': np, 'cp': cp, 'val_map': val_map}
-            return self._evaluate_expression(code, local_vars)
-        except Exception as e:
-            logger.error(f"Error in calculating obj <{self.name}>.\n{e}")
-            return None
+        self._extra_terms.append(fn)
 
     @property
     def v(self):
@@ -118,7 +114,14 @@ class Objective(OptzBase):
         bool
             Returns True if the parsing is successful, False otherwise.
         """
-        # parse the expression str
+        if self.sense not in ['min', 'max']:
+            raise ValueError(f'Objective sense {self.sense} is not supported.')
+        if self.e_fn is not None:
+            return True
+        # parse the expression str. Note: ``self.code`` stores the *inner*
+        # expression only; the ``cp.Minimize``/``cp.Maximize`` wrap is
+        # applied in :meth:`evaluate` so extra cost terms can be summed
+        # onto the inner before wrapping.
         sub_map = self.om.rtn.syms.sub_map
         code_obj = self.e_str
         for pattern, replacement, in sub_map.items():
@@ -126,12 +129,7 @@ class Objective(OptzBase):
                 code_obj = re.sub(pattern, replacement, code_obj)
             except Exception as e:
                 raise Exception(f"Error in parsing obj <{self.name}>.\n{e}")
-        # store the parsed expression str code
         self.code = code_obj
-        if self.sense not in ['min', 'max']:
-            raise ValueError(f'Objective sense {self.sense} is not supported.')
-        sense = 'cp.Minimize' if self.sense == 'min' else 'cp.Maximize'
-        self.code = f"{sense}({code_obj})"
         msg = f" - Objective <{self.name}>: {self.code}"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         return True
@@ -141,34 +139,43 @@ class Objective(OptzBase):
         """
         Evaluate the objective function.
 
+        Composes ``base_inner + sum(extra_term(r) for ...)`` and wraps
+        with ``cp.Minimize`` / ``cp.Maximize`` per ``sense``.
+
         Returns
         -------
         bool
             Returns True if the evaluation is successful, False otherwise.
         """
-        logger.debug(f" - Objective <{self.name}>: {self.e_str}")
-        try:
-            local_vars = {'self': self, 'cp': cp}
-            self.optz = self._evaluate_expression(self.code, local_vars=local_vars)
-        except Exception as e:
-            raise Exception(f"Error in evaluating Objective <{self.name}>.\n{e}")
+        # 1) Compute the base inner expression.
+        if self.e_fn is not None:
+            try:
+                inner = self.e_fn(RoutineNS(self.om.rtn))
+            except Exception as e:
+                raise Exception(f"Error in evaluating Objective <{self.name}> "
+                                f"via e_fn.\n{e}")
+        else:
+            logger.debug(f" - Objective <{self.name}>: {self.e_str}")
+            try:
+                local_vars = {'self': self, 'cp': cp}
+                inner = eval(self.code, {}, local_vars)
+            except Exception as e:
+                raise Exception(f"Error in evaluating Objective <{self.name}>.\n{e}")
+
+        # 2) Add registered extra terms (from mixins).
+        if self._extra_terms:
+            ns = RoutineNS(self.om.rtn)
+            for term_fn in self._extra_terms:
+                try:
+                    inner = inner + term_fn(ns)
+                except Exception as e:
+                    raise Exception(f"Error composing extra cost term in "
+                                    f"Objective <{self.name}>.\n{e}")
+
+        # 3) Wrap with sense.
+        wrap = cp.Minimize if self.sense == 'min' else cp.Maximize
+        self.optz = wrap(inner)
         return True
-
-    def _evaluate_expression(self, code, local_vars=None):
-        """
-        Helper method to evaluate the expression code.
-
-        Parameters
-        ----------
-        code : str
-            The code string representing the expression.
-
-        Returns
-        -------
-        cp.Expression
-            The evaluated cvxpy expression.
-        """
-        return eval(code, {}, local_vars)
 
     def __repr__(self):
         return f"{self.class_name}: {self.name} [{self.sense.upper()}]"

@@ -178,28 +178,31 @@ class OModel(OModelBase):
 
         t, _ = elapsed()
         logger.warning(f'Parsing OModel for <{self.rtn.class_name}>')
-        # --- add expressions ---
+        # --- expressions ---
         for key, val in self.rtn.exprs.items():
-            val.parse()
+            try:
+                val.parse()
+            except Exception as e:
+                raise Exception(f"Failed to parse Expression <{key}>.\n{e}")
 
-        # --- add RParams and Services as parameters ---
+        # --- RParams and Services as parameters ---
         for key, val in self.rtn.params.items():
             if not val.no_parse:
                 val.parse()
 
-        # --- add decision variables ---
+        # --- decision variables ---
         for key, val in self.rtn.vars.items():
             val.parse()
 
-        # --- add constraints ---
+        # --- constraints ---
         for key, val in self.rtn.constrs.items():
             val.parse()
 
-        # --- add ExpressionCalcs ---
+        # --- ExpressionCalcs ---
         for key, val in self.rtn.exprcs.items():
             val.parse()
 
-        # --- parse objective functions ---
+        # --- objective ---
         if self.rtn.obj is not None:
             try:
                 self.rtn.obj.parse()
@@ -210,12 +213,6 @@ class OModel(OModelBase):
             self.parsed = False
             return self.parsed
 
-        # --- parse expressions ---
-        for key, val in self.rtn.exprs.items():
-            try:
-                val.parse()
-            except Exception as e:
-                raise Exception(f"Failed to parse ExpressionCalc <{key}>.\n{e}")
         _, s = elapsed(t)
         logger.debug(f"  -> Parsed in {s}")
 
@@ -355,7 +352,34 @@ class OModel(OModelBase):
         _, s = elapsed(t)
         logger.debug(f" -> Finalized in {s}")
         self.finalized = True
+        self._log_dpp_diagnostic()
         return self.finalized
+
+    def _log_dpp_diagnostic(self):
+        """
+        Log DPP-compliance for re-solve perf.
+
+        DPP compliance is a per-problem property — one non-DPP sub-term
+        spoils caching for every other parameter change. Logging this
+        at finalize lets routine authors spot when an accidental
+        non-DPP construct (e.g., ``c2 * pg ** 2`` with ``c2`` promoted
+        to ``cp.Parameter``) silently kills warm-resolve performance.
+        """
+        try:
+            is_dpp = self.prob.is_dcp(dpp=True)
+        except Exception as exc:
+            logger.debug(f"DPP check failed for <{self.rtn.class_name}>: {exc}")
+            return
+        n_param = len(self.prob.parameters())
+        logger.debug(
+            f"DPP diagnostic <{self.rtn.class_name}>: dpp={is_dpp}, "
+            f"params={n_param}, vars={len(self.prob.variables())}"
+        )
+        if not is_dpp and n_param > 0:
+            logger.info(
+                f"<{self.rtn.class_name}> has parameters but is not DPP — "
+                f"warm re-solves will re-canonicalize. Check non-DPP terms."
+            )
 
     def init(self, force=False):
         """
@@ -381,6 +405,14 @@ class OModel(OModelBase):
             return self.initialized
 
         t, _ = elapsed()
+
+        # Auto-prep: ensure pycode for this routine is up-to-date and
+        # wire generated e_fn callables before parse/evaluate. Idempotent
+        # — runs the cache-check on every init call but only regenerates
+        # when md5 / version markers change. ``_link_pycode`` is the
+        # routine's internal hook for the OModel lifecycle, intentionally
+        # underscore-prefixed because it's not a stable user-facing API.
+        self.rtn._link_pycode()  # pylint: disable=protected-access
 
         self.parse(force=force)
         self.evaluate(force=force)

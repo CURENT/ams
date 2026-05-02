@@ -11,7 +11,7 @@ import importlib.metadata as importlib_metadata
 import logging
 import os
 import platform
-import subprocess
+import subprocess  # nosec B404 — env-capture only; no untrusted input. See pyproject.toml [tool.bandit].
 import sys
 from pathlib import Path
 from typing import Iterable
@@ -93,14 +93,14 @@ def _cpu_brand() -> str:
     proc_cpuinfo = Path("/proc/cpuinfo")
     if proc_cpuinfo.exists():
         try:
-            for line in proc_cpuinfo.read_text().splitlines():
+            for line in proc_cpuinfo.read_text(encoding='utf-8').splitlines():
                 if line.startswith("model name"):
                     return line.split(":", 1)[1].strip()
         except Exception as exc:  # env capture must never raise
             logger.debug("bench env: /proc/cpuinfo read failed: %s", exc)
     # macOS: sysctl
     try:
-        out = subprocess.run(
+        out = subprocess.run(  # nosec B603 — literal argv, no shell, no user input
             ["sysctl", "-n", "machdep.cpu.brand_string"],
             capture_output=True, text=True, timeout=5,
         )
@@ -115,7 +115,7 @@ def _cpu_brand() -> str:
 def _git_info() -> tuple[str | None, bool | None]:
     """Return (short sha, dirty flag). Both ``None`` if not in a git repo."""
     try:
-        sha_res = subprocess.run(
+        sha_res = subprocess.run(  # nosec B603 — literal argv, no shell, no user input
             ["git", "rev-parse", "--short=10", "HEAD"],
             capture_output=True, text=True, timeout=5,
         )
@@ -123,7 +123,7 @@ def _git_info() -> tuple[str | None, bool | None]:
             return None, None
         sha = sha_res.stdout.strip()
 
-        dirty_res = subprocess.run(
+        dirty_res = subprocess.run(  # nosec B603 — literal argv, no shell, no user input
             ["git", "status", "--porcelain"],
             capture_output=True, text=True, timeout=5,
         )

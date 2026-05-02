@@ -1,3 +1,5 @@
+.. _routine:
+
 Routine
 ===========
 
@@ -88,18 +90,26 @@ like ``pg`` or ``Cft`` resolve to the underlying CVXPY ``Variable`` /
 Multiplication is the easiest place to introduce silent bugs because there are
 **three semantically distinct operations** that all read like "multiply":
 
-==================  ==========================  ==============================================
-Notation in e_str   Meaning                     When to use
-==================  ==========================  ==============================================
-``a @ b``           Matrix / matrix-vector mul  Topology matrix times a stacked vector, e.g.
-                                                ``Cft @ pl``, ``PTDF @ p``.
-``mul(a, b)``       Element-wise multiply       Per-device scaling, e.g. ``mul(ug, pg)`` to
-                    (alias for ``cp.multiply``) gate generator output by its commitment.
-                                                Broadcasts a scalar / 1-D parameter against a
-                                                vector variable.
-``2 * x``,          Scalar multiply             A literal number or a 0-D parameter scaling an
-``coeff * y``                                   expression. CVXPY accepts ``*`` here.
-==================  ==========================  ==============================================
+.. list-table::
+   :header-rows: 1
+   :widths: 20 25 55
+
+   * - Notation in ``e_str``
+     - Meaning
+     - When to use
+   * - ``a @ b``
+     - Matrix / matrix-vector multiply
+     - Topology matrix times a stacked vector, e.g. ``Cft @ pl``,
+       ``PTDF @ p``.
+   * - ``mul(a, b)``
+     - Element-wise multiply (alias for ``cp.multiply``)
+     - Per-device scaling, e.g. ``mul(ug, pg)`` to gate generator
+       output by its commitment. Broadcasts a scalar / 1-D parameter
+       against a vector variable.
+   * - ``2 * x``, ``coeff * y``
+     - Scalar multiply
+     - A literal number or a 0-D parameter scaling an expression.
+       CVXPY accepts ``*`` here.
 
 Two convenience aliases exist for readability:
 
@@ -128,6 +138,122 @@ Other ``e_str`` rewrites worth knowing:
 
 If in doubt, check an existing routine such as :py:mod:`ams.routines.dcopf`
 or :py:mod:`ams.routines.rted` for canonical patterns.
+
+How ``e_str`` becomes a CVXPY problem (codegen)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``e_str`` rewrites above are applied **once at prep time**, not on
+every routine init. The first time a routine is instantiated, AMS:
+
+1. Walks the constructed routine's ``constrs`` / ``exprs`` / ``exprcs``
+   / ``obj`` registries.
+2. Applies the ``sub_map`` rewrites to each ``e_str``.
+3. Emits a small Python module at ``~/.ams/pycode/<routine>.py`` with
+   one named callable per opt element — e.g.
+   ``def _constr_pglb(r): return -r.pg + r.pmine`` — plus the
+   pre-rendered LaTeX string for documentation.
+4. Wires those callables onto the routine's ``Constraint`` /
+   ``Expression`` / ``Objective`` instances via their ``e_fn``
+   attribute.
+
+Subsequent inits skip step 2-3 and just import. The cache is keyed by
+md5 of the routine source file; editing an ``e_str`` regenerates
+automatically. The whole cache can be refreshed or wiped via
+``ams prep`` (see :ref:`ReleaseNotes` v1.2.2).
+
+This is analogous to ANDES's ``andes prep`` / ``~/.andes/pycode/``
+pipeline. **Author-facing API is unchanged** — you keep writing
+``e_str``. The codegen is what runs underneath.
+
+Authors who prefer to skip the DSL and write a callable directly may
+pass ``e_fn=callable`` instead of ``e_str``; the runtime accepts both,
+and the codegen leaves manually-set ``e_fn`` alone.
+
+Two execution paths: codegen vs ``sub_map``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Internally, two execution paths from ``e_str`` to a CVXPY object live
+side by side:
+
+- **Codegen path** (fast, default for source-defined items). At
+  ``init()`` time, :py:meth:`ams.routines.routine.RoutineBase._link_pycode`
+  loads the per-class pycode and wires each item's ``e_fn`` from a
+  named callable in that module. ``parse()`` and ``evaluate()`` then
+  just invoke the callable with a :py:class:`ams.core.routine_ns.RoutineNS`
+  proxy; no regex, no ``eval``.
+
+- **``sub_map`` path** (legacy, used as a fall-through). At ``parse()``
+  time, :py:class:`ams.core.symprocessor.SymProcessor` regex-rewrites
+  the item's ``e_str`` into a Python source string (``mul(a, b)`` →
+  ``cp.multiply(a, b)``, ``pg`` → ``self.om.pg``, …) and stores it in
+  ``item.code``. ``evaluate()`` then ``eval``\ s ``item.code``.
+
+Both paths must produce the same CVXPY object given the same ``e_str``
+— the codegen is the AOT-compiled version of the ``sub_map`` rewrite
+pipeline.
+
+Which path runs is decided per-item by ``_link_pycode``:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 15 50
+
+   * - Item state
+     - Path
+     - Why
+   * - In source code, no runtime mutation
+     - codegen
+     - The pristine ``e_str`` matches what the cache was generated
+       from; ``e_fn`` is wired from the cache.
+   * - Added at runtime via ``addConstrs`` / ``addExpressions`` /
+       ``addExprcs``
+     - sub_map
+     - The cache (always generated against a pristine instance —
+       see :ref:`pycode-pristine-invariant` below) doesn't know
+       about runtime additions.
+   * - ``e_str`` reassigned post-construction (e.g.
+       ``obj.e_str += '+ ...'``)
+     - sub_map
+     - The descriptor mutex on ``e_str`` / ``e_fn`` marks the item
+       ``_e_dirty``; ``_link_pycode`` skips wiring so the user's new
+       ``e_str`` flows through ``parse()``.
+
+Authors and users can introspect which path is in effect:
+
+- :py:attr:`ams.opt.OptzBase.formulation_source` — per-item, returns
+  ``'codegen' | 'sub_map' | 'manual' | 'pending'``.
+- :py:meth:`ams.routines.routine.RoutineBase.formulation_summary` —
+  full table.
+- An INFO-level log line ``<RoutineName> formulation: codegen=X/Y, …``
+  is emitted on every ``init()``.
+
+.. _pycode-pristine-invariant:
+
+The pristine-source invariant
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``~/.ams/pycode/<routine>.py`` is **always** a faithful representation
+of the routine source code, never of any user customization. To
+guarantee this, ``_link_pycode`` runs codegen against a pristine
+routine instance fetched from a per-process singleton
+``ams.System(no_input=True)`` (see
+:py:func:`ams.prep._get_pristine_system`), never against the user's
+``self``. A ``pristine = True`` marker in the generated module's
+header acts as a cache-validation tripwire — caches written by older
+AMS versions (which codegen'd against the live instance) lack the
+marker and are auto-invalidated on next read.
+
+This means a user can do::
+
+    sp = ams.load(...)
+    sp.DCOPF.obj.e_str += '+ extra_term'
+    sp.DCOPF.run(...)                        # uses customization
+
+    sp0 = ams.load(...)                       # fresh instance
+    sp0.DCOPF.run(...)                        # uses original formulation
+
+without ``sp``'s mutation leaking into ``sp0``. See
+``examples/ex8.ipynb`` for a working sp1 / sp2 / sp3 walkthrough.
 
 Interoperation with ANDES
 -----------------------------------

@@ -3,17 +3,19 @@ Module for optimization Expression.
 """
 import logging
 
-from typing import Optional
+from typing import Callable, Optional
 import re
 
-import numpy as np
+import numpy as np  # noqa: F401  # used by routine `e_str` evaluation context
 
 import cvxpy as cp
 
 from ams.utils import pretty_long_message
 from ams.shared import _prefix, _max_length
 
+from ams.core.routine_ns import RoutineNS
 from ams.opt import OptzBase, ensure_symbols, ensure_mats_and_parsed
+from ams.opt.optzbase import _EFormDescriptor
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,12 @@ logger = logging.getLogger(__name__)
 class Expression(OptzBase):
     """
     Base class for expressions used in a routine.
+
+    Routines are authored with ``e_str`` strings; the codegen at
+    :func:`ams.prep.generate_for_routine` compiles each ``e_str`` into
+    a callable ``e_fn(r)`` taking a :class:`RoutineNS` proxy and
+    returning a CVXPY expression. The mutex descriptor on
+    ``e_str`` / ``e_fn`` keeps the two forms exclusive.
 
     Parameters
     ----------
@@ -35,7 +43,9 @@ class Expression(OptzBase):
     unit : str, optional
         Unit
     e_str : str, optional
-        Expression string
+        Expression string (legacy form).
+    e_fn : callable, optional
+        Callable ``e_fn(r) -> cp.Expression`` taking a :class:`RoutineNS`.
     model : str, optional
         Name of the owner model or group.
     src : str, optional
@@ -46,12 +56,16 @@ class Expression(OptzBase):
         Horizon
     """
 
+    e_str = _EFormDescriptor('e_str', 'e_fn')
+    e_fn = _EFormDescriptor('e_fn', 'e_str')
+
     def __init__(self,
                  name: Optional[str] = None,
                  tex_name: Optional[str] = None,
                  info: Optional[str] = None,
                  unit: Optional[str] = None,
                  e_str: Optional[str] = None,
+                 e_fn: Optional[Callable] = None,
                  model: Optional[str] = None,
                  src: Optional[str] = None,
                  vtype: Optional[str] = float,
@@ -59,7 +73,10 @@ class Expression(OptzBase):
                  ):
         OptzBase.__init__(self, name=name, info=info, unit=unit, model=model)
         self.tex_name = tex_name
+        self._e_str = None
+        self._e_fn = None
         self.e_str = e_str
+        self.e_fn = e_fn
         self.optz = None
         self.code = None
         self.src = src
@@ -75,6 +92,9 @@ class Expression(OptzBase):
         bool
             Returns True if the parsing is successful, False otherwise.
         """
+        if self.e_fn is not None:
+            # e_fn form: nothing to parse — defer everything to evaluate()
+            return True
         sub_map = self.om.rtn.syms.sub_map
         code_expr = self.e_str
         for pattern, replacement in sub_map.items():
@@ -97,30 +117,21 @@ class Expression(OptzBase):
         bool
             Returns True if the evaluation is successful, False otherwise.
         """
+        if self.e_fn is not None:
+            try:
+                self.optz = self.e_fn(RoutineNS(self.om.rtn))
+            except Exception as e:
+                raise Exception(f"Error in evaluating Expression <{self.name}> "
+                                f"via e_fn.\n{e}")
+            return True
         msg = f" - Expression <{self.name}>: {self.code}"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         try:
             local_vars = {'self': self, 'np': np, 'cp': cp, 'sub_map': self.om.rtn.syms.val_map}
-            self.optz = self._evaluate_expression(self.code, local_vars=local_vars)
+            self.optz = eval(self.code, {}, local_vars)
         except Exception as e:
             raise Exception(f"Error in evaluating Expression <{self.name}>.\n{e}")
         return True
-
-    def _evaluate_expression(self, code, local_vars=None):
-        """
-        Helper method to evaluate the expression code.
-
-        Parameters
-        ----------
-        code : str
-            The code string representing the expression.
-
-        Returns
-        -------
-        cp.Expression
-            The evaluated cvxpy expression.
-        """
-        return eval(code, {}, local_vars)
 
     @property
     def v(self):
@@ -138,51 +149,3 @@ class Expression(OptzBase):
         Set the value.
         """
         raise NotImplementedError('Cannot set value to an Expression.')
-
-    @property
-    def shape(self):
-        """
-        Return the shape.
-        """
-        try:
-            return self.om.__dict__[self.name].shape
-        except KeyError:
-            logger.warning('Shape info is not ready before initialization.')
-            return None
-
-    @property
-    def size(self):
-        """
-        Return the size.
-        """
-        if self.rtn.initialized:
-            return self.om.__dict__[self.name].size
-        else:
-            logger.warning(f'Routine <{self.rtn.class_name}> is not initialized yet.')
-            return None
-
-    @property
-    def e(self):
-        """
-        Return the calculated expression value.
-        """
-        if self.code is None:
-            logger.info(f"Expression <{self.name}> is not parsed yet.")
-            return None
-
-        val_map = self.om.rtn.syms.val_map
-        code = self.code
-        for pattern, replacement in val_map.items():
-            try:
-                code = re.sub(pattern, replacement, code)
-            except TypeError as e:
-                raise TypeError(e)
-
-        try:
-            logger.debug(pretty_long_message(f"Value code: {code}",
-                                             _prefix, max_length=_max_length))
-            local_vars = {'self': self, 'np': np, 'cp': cp, 'val_map': val_map}
-            return self._evaluate_expression(code, local_vars)
-        except Exception as e:
-            logger.error(f"Error in calculating expr <{self.name}>.\n{e}")
-            return None

@@ -80,7 +80,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.output == "-":
         print(payload)
     else:
-        with open(args.output, "w") as fh:
+        with open(args.output, "w", encoding="utf-8") as fh:
             fh.write(payload)
     return 0
 

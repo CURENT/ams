@@ -99,6 +99,19 @@ def create_parser():
 
     sub_parsers.add_parser('selftest', aliases=command_aliases['selftest'])  # NOQA
 
+    prep = sub_parsers.add_parser(
+        'prep',
+        help='Generate the per-routine pycode cache used by the opt layer.',
+    )
+    prep.add_argument('-r', '--routine', nargs='*', default=None,
+                      help='Routine class name(s) to prep. Defaults to all.')
+    prep.add_argument('-f', '--force', action='store_true',
+                      help='Regenerate even if cached md5 matches.')
+    prep.add_argument('-C', '--clean', action='store_true',
+                      help='Remove the entire pycode cache, then exit.')
+    prep.add_argument('--where', action='store_true',
+                      help='Print the pycode cache path and exit.')
+
     return parser
 
 
