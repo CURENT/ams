@@ -48,11 +48,45 @@ PYCODE_FORMAT_VERSION = 3
 # is the user's symbol, not ``cp.sum``. Reject the collision at
 # codegen / generate_symbols time so the trap surfaces at routine
 # definition, not as silent nonsense at solve time.
-RESERVED_CVXPY_ATOM_NAMES = frozenset({
+#
+# Static fallback: the closed set we know mattered when the guard
+# shipped (PR #244-#248, cvxpy-namespace passthrough). The runtime
+# set below is unioned with this — never narrower — so a CVXPY API
+# shape change (atoms moved/removed) can shrink derivation but
+# can't shrink the guarded set.
+_STATIC_RESERVED_CVXPY_ATOM_NAMES = frozenset({
     'sum', 'multiply', 'vstack', 'hstack', 'power', 'norm', 'pos', 'neg',
     'square', 'quad_form', 'sum_squares', 'diag', 'maximum', 'minimum',
     'abs', 'exp', 'log', 'sqrt', 'inv_pos',
 })
+
+
+def _derive_reserved_cvxpy_atom_names():
+    """Discover CVXPY atom-callable names exposed at the ``cp.`` top.
+
+    Walks ``cvxpy.atoms`` (the atoms package) and keeps each public
+    name that's also exposed as a callable on the top-level ``cvxpy``
+    namespace. The result tracks whatever atoms the installed CVXPY
+    version ships, so an atom added in a future release is guarded
+    automatically (the static fallback was a snapshot — this isn't).
+    Always unioned with :data:`_STATIC_RESERVED_CVXPY_ATOM_NAMES`,
+    so it's a strict superset.
+    """
+    derived = set()
+    try:
+        atoms_mod = cp.atoms
+    except AttributeError:
+        return _STATIC_RESERVED_CVXPY_ATOM_NAMES
+    for name in dir(atoms_mod):
+        if name.startswith('_'):
+            continue
+        attr = getattr(cp, name, None)
+        if attr is not None and callable(attr):
+            derived.add(name)
+    return frozenset(derived | _STATIC_RESERVED_CVXPY_ATOM_NAMES)
+
+
+RESERVED_CVXPY_ATOM_NAMES = _derive_reserved_cvxpy_atom_names()
 
 
 def _check_reserved_collisions(routine, names) -> None:

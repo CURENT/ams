@@ -9,6 +9,29 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.2
 ==========
 
+v1.2.3 (unreleased)
+----------------------
+
+**Tightening the eval-fallback path:**
+
+- :class:`ams.opt.Constraint` now validates at parse time that
+  ``e_str`` ends with the LHS-zero shape (``<= 0`` / ``== 0`` /
+  ``>= 0``). Authoring ``pg <= pmax`` instead of
+  ``pg - pmax <= 0`` previously solved correctly but produced a
+  silently-wrong :pyattr:`OptzBase.e` (numpy bool array instead of
+  the LHS slack); the new :func:`ams.opt._runtime_eval.assert_constraint_lhs_zero`
+  guard surfaces the mismatch immediately with an actionable error.
+- :func:`ams.opt._runtime_eval.eval_e_str` now logs a per-item
+  ``WARNING`` when an eval-fallback constraint/objective/expression
+  yields a non-DCP CVXPY object (e.g. ``cp.multiply(pg, pg)`` instead
+  of ``cp.square(pg)``). The codegen path is unaffected; this
+  closes the visibility gap on user customizations and ``addConstrs``
+  added by the cvxpy-namespace passthrough.
+- :data:`ams.prep.generator.RESERVED_CVXPY_ATOM_NAMES` is now
+  derived at import time from ``cvxpy.atoms`` (still a strict
+  superset of the static fallback). New atoms in future CVXPY
+  releases are guarded automatically.
+
 v1.2.2 (unreleased)
 ----------------------
 

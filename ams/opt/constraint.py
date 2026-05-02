@@ -15,7 +15,7 @@ from ams.shared import _prefix, _max_length
 from ams.core.routine_ns import RoutineNS
 from ams.opt import OptzBase, ensure_symbols, ensure_mats_and_parsed
 from ams.opt.optzbase import _EFormDescriptor
-from ams.opt._runtime_eval import eval_e_str
+from ams.opt._runtime_eval import eval_e_str, assert_constraint_lhs_zero
 
 logger = logging.getLogger(__name__)
 
@@ -94,14 +94,21 @@ class Constraint(OptzBase):
         """
         Parse the constraint.
 
-        Codegen-wired ``e_fn`` items have nothing to parse. For the
-        legacy ``e_str`` path, store the source verbatim — symbol
-        rewriting + eval happen together in
+        Validates the LHS-zero authoring shape on every constraint
+        carrying an ``e_str`` (covers both the codegen path —
+        ``e_str`` is preserved on the item — and the eval-fallback
+        path). See :func:`assert_constraint_lhs_zero` for why.
+
+        Codegen-wired ``e_fn`` items then short-circuit; nothing else
+        to parse here. For the legacy ``e_str`` path, store the
+        source verbatim — symbol rewriting + eval happen together in
         :func:`ams.opt._runtime_eval.eval_e_str` at evaluate time.
         ``self.code`` is preserved (as the unrewritten source) so
         :pyattr:`OptzBase.e` and :meth:`Routine.formulation_summary`
         still have something to read.
         """
+        if self.e_str is not None:
+            assert_constraint_lhs_zero(self, self.e_str)
         if self.e_fn is not None:
             return True
         self.code = self.e_str

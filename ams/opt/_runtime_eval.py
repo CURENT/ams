@@ -88,12 +88,18 @@ def eval_e_str(item, e_str):
         'cp': cp, 'np': np, 'sps': sps,
         'r': RoutineNS(rtn), 'self': item,
     }
-    # Trust boundary: e_str is repo-authored in ams/routines/ or
-    # comes from trusted downstream code (notebook authors, mixins).
-    # Same boundary as the codegen-emitted pycode — both run user-
-    # accessible source through Python. No untrusted-input ingestion.
+    # Trust boundary: e_str is Python source eval'd in a curated
+    # namespace (cp/np/sps + the routine's symbol proxy). Authors come
+    # from three places — repo source under ``ams/routines/``, mixin
+    # overrides, and downstream user code (notebook ``addConstrs``,
+    # ``item.e_str = ...`` assignments after cvxpy-namespace passthrough
+    # opened the full ``cp.*`` surface). All three ride the same path;
+    # treat them with the same trust as the codegen-emitted pycode —
+    # both run user-accessible source through Python. No untrusted-
+    # input ingestion contract here, so authors are responsible for
+    # what their ``e_str`` evaluates to.
     try:
-        return eval(code, {}, local_vars)  # nosec B307
+        result = eval(code, {}, local_vars)  # nosec B307
     except Exception as exc:
         raise Exception(
             f"Error evaluating {item.class_name} <{item.name}> via e_str.\n"
@@ -101,9 +107,59 @@ def eval_e_str(item, e_str):
             f"  rewritten: {code}\n"
             f"  error: {exc}"
         ) from exc
+    # Per-item DCP visibility for the eval-fallback path. The codegen
+    # path skips eval entirely, so non-DCP drift in built-in routines
+    # surfaces at the problem level via ``OModel._log_dpp_diagnostic``.
+    # User customizations / addConstrs / mixin overrides are the only
+    # things that hit eval_e_str at runtime, and they're exactly where
+    # silent DCP drift is most likely (e.g. ``cp.multiply(pg, pg)``
+    # instead of ``cp.square(pg)``). Log a warning here so the
+    # author sees the offending item by name, instead of a generic
+    # solve-time CVXPY DCPError that points at the whole problem.
+    is_dcp = getattr(result, 'is_dcp', None)
+    if callable(is_dcp):
+        try:
+            ok = is_dcp()
+        except Exception:  # noqa: BLE001 — DCP introspection must not block evaluation
+            ok = True
+        if not ok:
+            logger.warning(
+                f"{item.class_name} <{item.name}> e_str produced a "
+                f"non-DCP CVXPY object — solver will likely raise.\n"
+                f"  e_str: {e_str}"
+            )
+    return result
 
 
 _TRAILING_OP_RE = re.compile(r'\s*(==|<=|>=)\s*0\s*$')
+
+
+def assert_constraint_lhs_zero(item, e_str):
+    """Validate constraint ``e_str`` ends with ``<= 0`` / ``== 0`` / ``>= 0``.
+
+    The LHS-zero shape is the only authoring shape after the
+    ``is_eq`` retirement (PR #249) — every term goes on the LHS so
+    :pyattr:`OptzBase.e` can recover the slack-from-zero LHS by
+    stripping the trailing operator. Without the convention,
+    ``pg <= pmax`` survives ``Constraint.evaluate`` (CVXPY accepts
+    it), but :pyattr:`OptzBase.e` returns a numpy bool array
+    instead of the LHS slack — silently wrong post-solve diagnostics.
+
+    Raises
+    ------
+    ValueError
+        If ``e_str`` does not end with the required relational
+        operator + ``0`` form.
+    """
+    if _TRAILING_OP_RE.search(e_str) is None:
+        raise ValueError(
+            f"Constraint <{getattr(item, 'name', '?')}>: e_str must end "
+            f"with `<= 0`, `== 0`, or `>= 0` (LHS-zero authoring shape). "
+            f"Got: {e_str!r}. Move every term to the LHS — "
+            f"e.g. `pg - pmax <= 0` instead of `pg <= pmax`. "
+            f"Without the trailing-zero shape, `OptzBase.e` returns a "
+            f"numpy bool array instead of the LHS slack."
+        )
 
 
 def eval_e_str_numeric(item, e_str):
