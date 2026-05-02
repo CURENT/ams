@@ -26,7 +26,7 @@ mapped a small AMS DSL onto the CVXPY namespace:
 
 The DSL was inherited from AMS's ANDES-sympy ancestry, when the
 regex layer was the only path from a symbolic atom to runnable
-code. After the v1.2.0 codegen rewrite (PR #242), generated pycode
+code. After the v1.2.2 codegen rewrite (PR #242), generated pycode
 imports ``import cvxpy as cp`` directly, so a bare ``cp.multiply``
 already resolves correctly through Python's normal name lookup.
 The DSL became maintenance burden with no remaining payoff:
@@ -42,8 +42,8 @@ The DSL became maintenance burden with no remaining payoff:
 - ``mul`` saved three characters versus ``cp.multiply``. That was
   the entirety of its value.
 
-Removing the rewrite layer means every ``e_str`` reads as the
-canonical CVXPY a reader can pick up cold.
+Removing the rewrite layer means every ``e_str`` reads as canonical
+CVXPY code that any reader can pick up cold.
 
 Substitution table
 ------------------
@@ -117,7 +117,7 @@ Pulled directly from ``ams/routines/rted.py``:
    cost = 't**2 * cp.sum(cp.multiply(c2, pg**2)) + cp.sum(cp.multiply(ug, c0))'
    cost += f'+ t * cp.sum({_to_sum})'
 
-**ESD1 SOC balance** — from ``ams/routines/rted.py::ESD1PBase``:
+**ESD1 SOC balance** — from ``ESD1PBase`` in ``ams/routines/rted.py``:
 
 .. code-block:: python
 
