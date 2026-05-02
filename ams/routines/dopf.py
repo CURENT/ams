@@ -65,10 +65,10 @@ class DOPF(DCOPF):
                       model='StaticGen', src='q',)
         self.qglb = Constraint(name='qglb', is_eq=False,
                                info='qg min',
-                               e_str='-qg + mul(ug, qmin)',)
+                               e_str='-qg + cp.multiply(ug, qmin)',)
         self.qgub = Constraint(name='qgub', is_eq=False,
                                info='qg max',
-                               e_str='qg - mul(ug, qmax)',)
+                               e_str='qg - cp.multiply(ug, qmax)',)
         # --- bus ---
         self.v = Var(info='Bus voltage',
                      name='v', tex_name=r'v',
@@ -91,13 +91,13 @@ class DOPF(DCOPF):
                        unit='p.u.', model='Line',)
         self.lvd = Constraint(info='line voltage drop',
                               name='lvd', is_eq=True,
-                              e_str='CftT@vsq - (mul(r, plf) + mul(x, qlf))',)
+                              e_str='CftT@vsq - (cp.multiply(r, plf) + cp.multiply(x, qlf))',)
         # --- power balance ---
         # NOTE: following Eqn seems to be wrong, double check
         # g_Q(\Theta, V, Q_g) = B_{bus}V\Theta + Q_{bus,shift} + Q_d + B_{sh} - C_gQ_g = 0
         self.qb = Constraint(info='reactive power balance',
                              name='qb', is_eq=True,
-                             e_str='sum(qd) - sum(qg)',)
+                             e_str='cp.sum(qd) - cp.sum(qg)',)
 
         # --- objective ---
         # NOTE: no need to revise objective function
@@ -142,7 +142,7 @@ class DOPFVIS(DOPF):
         self.D = Var(info='Emulated damping coefficient from REGCV1',
                      name='D', tex_name=r'D', unit='p.u.',
                      model='VSG',)
-        obj = 'sum(c2 * pg**2 + c1 * pg + ug * c0 + cm * M + cd * D)'
+        obj = 'cp.sum(c2 * pg**2 + c1 * pg + ug * c0 + cm * M + cd * D)'
         self.obj = Objective(name='tc',
                              info='total cost', unit='$',
                              e_str=obj,

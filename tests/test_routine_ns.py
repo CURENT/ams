@@ -115,7 +115,7 @@ class TestRuntimeCustomization(unittest.TestCase):
     After ``routine.init()`` runs auto-prep, ``e_str`` must remain readable
     and writable so authors can do the documented customization pattern:
 
-        sp.DCOPF.obj.e_str += '+ sum(mul(ce, pg))'
+        sp.DCOPF.obj.e_str += '+ cp.sum(cp.multiply(ce, pg))'
 
     Fixed by routing ``_link_pycode`` through the raw ``_e_fn`` slot
     (preserves ``e_str``) and tracking ``_e_dirty`` on the descriptor so
@@ -172,7 +172,7 @@ class TestRuntimeCustomization(unittest.TestCase):
         original = ss.DCOPF.obj.e_str
         self.assertIsNotNone(original)
         # Append (the documented customization knob).
-        ss.DCOPF.obj.e_str = original + ' + 0 * sum(pg)'  # no-op term
+        ss.DCOPF.obj.e_str = original + ' + 0 * cp.sum(pg)'  # no-op term
         # Mutex must mark dirty so re-init doesn't restore the wired e_fn.
         self.assertTrue(getattr(ss.DCOPF.obj, '_e_dirty', False),
                         "appending to e_str must mark item dirty")
@@ -204,7 +204,7 @@ class TestRuntimeCustomization(unittest.TestCase):
             setup=True, no_output=True, default_config=True,
         )
         original = sp.DCOPF.obj.e_str
-        sp.DCOPF.obj.e_str = original + ' + 1e-6 * sum(pg)'  # tiny perturbation
+        sp.DCOPF.obj.e_str = original + ' + 1e-6 * cp.sum(pg)'  # tiny perturbation
         sp.DCOPF.run(solver='CLARABEL')
         self.assertEqual(sp.exit_code, 0)
         sp_obj = float(sp.DCOPF.obj.v)

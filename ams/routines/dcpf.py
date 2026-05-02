@@ -204,7 +204,7 @@ class DCPF(DCPFBase):
                              no_parse=True,)
 
         self.pvb = Constraint(name='pvb', info='PV generator',
-                              e_str='ipv @ (pg - mul(ug, pg0))',
+                              e_str='ipv @ (pg - cp.multiply(ug, pg0))',
                               is_eq=True,)
 
         self.obj = Objective(name='obj',

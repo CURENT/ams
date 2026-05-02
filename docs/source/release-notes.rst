@@ -9,8 +9,44 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.2
 ==========
 
-v1.2.2 (2026-05-01)
+v1.2.2 (unreleased)
 ----------------------
+
+**Migration — ``e_str`` authoring contract:**
+
+Routine ``e_str`` strings (built-in routines and any user customization
+via ``addConstrs`` / ``obj.e_str += '...'``) must now use the canonical
+CVXPY namespace explicitly. The historical function-name rewrite layer
+that translated ``mul(...)``, ``multiply(...)``, ``sum(...)``, and
+``a dot b`` into their ``cp.*`` / ``*`` equivalents has been removed.
+
+Update any user customizations:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 35 30
+
+   * - Old (now broken)
+     - New (canonical)
+     - Notes
+   * - ``mul(a, b)``
+     - ``cp.multiply(a, b)``
+     - Element-wise multiply.
+   * - ``multiply(a, b)``
+     - ``cp.multiply(a, b)``
+     - Same.
+   * - ``sum(x)``
+     - ``cp.sum(x)``
+     - Reduction over a vector.
+   * - ``a dot b``
+     - ``a * b``
+     - Scalar-times-expression. Was already a thin alias.
+
+Routine symbol names (``Var``, ``RParam``, ``Service``, ``Expression``,
+``Constraint``) may no longer match a CVXPY atom name (e.g. ``sum``,
+``multiply``, ``vstack``, ``power``). The codegen path raises an
+explanatory error if a collision is detected. This prevents a routine
+from silently shadowing ``cp.X`` in the eval-fallback rewrite.
 
 **New features:**
 

@@ -164,6 +164,7 @@ class RoutineBase:
             _get_pristine_system, generate_for_routine, pycode_dir,
             source_md5,
         )
+        from ams.prep.generator import PYCODE_FORMAT_VERSION
 
         # Use ``ams.prep.pycode_dir`` (instead of constructing the path
         # in-line) so tests can monkeypatch the cache location to a
@@ -189,6 +190,11 @@ class RoutineBase:
                 # Staleness conditions:
                 # - ``md5`` mismatch — routine source file changed.
                 # - ``cvxpy_version`` mismatch — bound CVXPY version differs.
+                # - ``pycode_format_version`` mismatch (or absent) — the
+                #   shape of generated pycode itself changed (header
+                #   fields, callable signatures, …). Caches written by
+                #   AMS versions that didn't carry this field are
+                #   rejected. Auto-heal pattern, mirrors ``pristine``.
                 # - ``pristine`` absent or False — cache was written from a
                 #   live (possibly customized) instance by an older AMS
                 #   version. Reject it so the regen path below produces a
@@ -200,6 +206,7 @@ class RoutineBase:
                 stale = (
                     getattr(gen, 'md5', None) != expected_md5
                     or getattr(gen, 'cvxpy_version', None) != _cp.__version__
+                    or getattr(gen, 'pycode_format_version', None) != PYCODE_FORMAT_VERSION
                     or not getattr(gen, 'pristine', False)
                 )
                 if stale:

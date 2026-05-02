@@ -50,6 +50,10 @@ class TestGeneratorContent(unittest.TestCase):
         self.assertIn('md5 = ', src)
         self.assertIn('ams_version = ', src)
         self.assertIn('cvxpy_version = ', src)
+        # pycode_format_version drives the auto-invalidation of caches
+        # whose layout predates the current generator. Its absence
+        # would silently re-enable use of stale caches.
+        self.assertIn('pycode_format_version = ', src)
 
     def test_compiles(self):
         for rname in ('DCOPF', 'RTED', 'UC', 'ED'):
@@ -75,6 +79,126 @@ class TestGeneratorContent(unittest.TestCase):
         src = generate_for_routine(ss.DCOPF)
         self.assertNotIn('def _constr_pglb', src,
                          "generator should skip items with manual e_fn")
+
+
+class TestStaleCacheRegen(unittest.TestCase):
+    """``pycode_format_version`` mismatch must trigger a fresh codegen.
+
+    Auto-invalidation is the entire point of bumping the version
+    constant when the generated layout changes; without coverage, a
+    future change that silently skips the staleness check would only
+    surface as production-time mismatches.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        from ams.prep import _get_pristine_system
+        _get_pristine_system()  # warm singleton before redirecting
+        cls._tmp = tempfile.TemporaryDirectory(prefix='ams-test-pycode-')
+        cls._tmp_path = Path(cls._tmp.name)
+        import ams.prep as _prep
+        cls._orig_pycode_dir = _prep.pycode_dir
+        _prep.pycode_dir = lambda: cls._tmp_path
+
+    @classmethod
+    def tearDownClass(cls):
+        import ams.prep as _prep
+        _prep.pycode_dir = cls._orig_pycode_dir
+        cls._tmp.cleanup()
+
+    @staticmethod
+    def _force_source_reload(target: Path) -> None:
+        """Defeat Python's bytecode cache between in-test rewrites.
+
+        ``write_text`` updates the source mtime, but Python's importer
+        caches by ``(size, mtime)`` at second precision; a write
+        followed by another write inside the same second leaves the
+        ``__pycache__/<name>.pyc`` shadow in place and the next
+        ``exec_module`` quietly returns the *old* content. Production
+        sees seconds between regen and reload, but tests don't.
+        Wipe the shadow and call ``importlib.invalidate_caches`` so
+        the next load re-compiles from disk.
+        """
+        import importlib
+        import shutil
+        cache_dir = target.parent / '__pycache__'
+        if cache_dir.exists():
+            shutil.rmtree(cache_dir)
+        importlib.invalidate_caches()
+
+    def test_stale_format_version_triggers_regen(self):
+        """A cache with a wrong pycode_format_version is rejected."""
+        from ams.prep.generator import PYCODE_FORMAT_VERSION
+
+        ss = ams.load(ams.get_case(CASE), setup=True,
+                      no_output=True, default_config=True)
+
+        # Generate a real cache once so the source layout is correct
+        # for everything except the version field.
+        ss.DCOPF.init()
+        target = self._tmp_path / 'dcopf.py'
+        self.assertTrue(target.exists(),
+                        "first init should produce the cached pycode")
+
+        # Tamper with the version field — simulate a cache produced by
+        # an older AMS whose generated layout differs from today's.
+        original = target.read_text()
+        stale = PYCODE_FORMAT_VERSION - 1
+        tampered = original.replace(
+            f"pycode_format_version = {PYCODE_FORMAT_VERSION!r}",
+            f"pycode_format_version = {stale!r}",
+        )
+        self.assertNotEqual(tampered, original,
+                            "expected pycode_format_version assignment "
+                            "in the generated header")
+        target.write_text(tampered)
+        self._force_source_reload(target)
+
+        # Re-init a fresh System so _link_pycode runs again. It must
+        # detect the stale version, regenerate, and overwrite back to
+        # the current version.
+        ss2 = ams.load(ams.get_case(CASE), setup=True,
+                       no_output=True, default_config=True)
+        ss2.DCOPF.init()
+
+        regenerated = target.read_text()
+        self.assertIn(
+            f"pycode_format_version = {PYCODE_FORMAT_VERSION!r}",
+            regenerated,
+            "stale pycode_format_version should have triggered a regen"
+        )
+
+    def test_absent_format_version_triggers_regen(self):
+        """A cache with no pycode_format_version field is rejected."""
+        from ams.prep.generator import PYCODE_FORMAT_VERSION
+
+        ss = ams.load(ams.get_case(CASE), setup=True,
+                      no_output=True, default_config=True)
+        ss.DCOPF.init()
+        target = self._tmp_path / 'dcopf.py'
+
+        # Strip the field entirely to simulate a cache from a pre-Step-2
+        # AMS that doesn't know about pycode_format_version.
+        import re
+        original = target.read_text()
+        without_field = re.sub(
+            r'^pycode_format_version = .*\n', '', original, flags=re.M
+        )
+        self.assertNotIn('pycode_format_version', without_field,
+                         "field should have been stripped for the test")
+        target.write_text(without_field)
+        self._force_source_reload(target)
+
+        ss2 = ams.load(ams.get_case(CASE), setup=True,
+                       no_output=True, default_config=True)
+        ss2.DCOPF.init()
+
+        regenerated = target.read_text()
+        self.assertIn(
+            f"pycode_format_version = {PYCODE_FORMAT_VERSION!r}",
+            regenerated,
+            "missing pycode_format_version should have triggered a regen"
+        )
 
 
 class TestGeneratorBuildsDPP(unittest.TestCase):

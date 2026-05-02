@@ -164,9 +164,9 @@ class DCPF1(RoutineBase):
                              sense='min',)
 
         # --- total cost ---
-        tcost = 'sum(mul(c2, pg**2))'
-        tcost += '+ sum(mul(c1, pg))'
-        tcost += '+ sum(mul(ug, c0))'
+        tcost = 'cp.sum(cp.multiply(c2, pg**2))'
+        tcost += '+ cp.sum(cp.multiply(c1, pg))'
+        tcost += '+ cp.sum(cp.multiply(ug, c0))'
         self.tcost = ExpressionCalc(info='Total cost', unit='$',
                                     model=None, src=None,
                                     e_str=tcost)
@@ -567,7 +567,8 @@ class DCOPF1(DCPF1):
                               scpdipm_red_it=r'o_{scpdipm\_red\_it}',
                               )
 
-        self.obj.e_str = 'sum(mul(c2, pg**2)) + sum(mul(c1, pg)) + sum(mul(ug, c0))'
+        self.obj.e_str = ('cp.sum(cp.multiply(c2, pg**2)) + cp.sum(cp.multiply(c1, pg))'
+                          ' + cp.sum(cp.multiply(ug, c0))')
 
         self.pi = Var(info='Lagrange multiplier on real power mismatch',
                       name='pi', unit='$/p.u.',

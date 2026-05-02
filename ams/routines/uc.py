@@ -148,10 +148,10 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
         self.ctrle.info = 'Reshaped controllability'
         self.nctrle.u2 = self.tlv
         self.nctrle.info = 'Reshaped non-controllability'
-        pmaxe = 'mul(mul(nctrl, pg0), ugd) + mul(mul(ctrl, pmax), ugd)'
+        pmaxe = 'cp.multiply(cp.multiply(nctrl, pg0), ugd) + cp.multiply(cp.multiply(ctrl, pmax), ugd)'
         self.pmaxe.e_str = pmaxe
         self.pmaxe.horizon = self.timeslot
-        pmine = 'mul(mul(ctrl, pmin), ugd) + mul(mul(nctrl, pg0), ugd)'
+        pmine = 'cp.multiply(cp.multiply(ctrl, pmin), ugd) + cp.multiply(cp.multiply(nctrl, pg0), ugd)'
         self.pmine.e_str = pmine
         self.pmine.horizon = self.timeslot
         self.pglb.e_str = '-pg + pmine'
@@ -197,12 +197,12 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
         self.prns.info = '2D Non-spinning reserve'
 
         # spinning reserve
-        self.prsb.e_str = 'mul(ugd, mul(pmax, tlv)) - zug - prs'
+        self.prsb.e_str = 'cp.multiply(ugd, cp.multiply(pmax, tlv)) - zug - prs'
         # spinning reserve requirement
         self.rsr.e_str = '-gs@prs + dsr'
 
         # non-spinning reserve
-        self.prnsb.e_str = 'mul(1-ugd, mul(pmax, tlv)) - prns'
+        self.prnsb.e_str = 'cp.multiply(1-ugd, cp.multiply(pmax, tlv)) - prns'
         # non-spinning reserve requirement
         self.rnsr.e_str = '-gs@prns + dnsr'
 
@@ -215,9 +215,9 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
         self.zuglb = Constraint(name='zuglb', info='zug lower bound',
                                 is_eq=False, e_str='- zug + pg')
         self.zugub = Constraint(name='zugub', info='zug upper bound',
-                                is_eq=False, e_str='zug - pg - Mzug dot (1 - ugd)')
+                                is_eq=False, e_str='zug - pg - Mzug * (1 - ugd)')
         self.zugub2 = Constraint(name='zugub2', info='zug upper bound',
-                                 is_eq=False, e_str='zug - Mzug dot ugd')
+                                 is_eq=False, e_str='zug - Mzug * ugd')
 
         # --- minimum ON/OFF duration ---
         self.Con = MinDur(u=self.pg, u2=self.td1,
@@ -225,19 +225,19 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
                           info='minimum ON coefficient',)
         self.don = Constraint(info='minimum online duration',
                               name='don', is_eq=False,
-                              e_str='multiply(Con, vgd) - ugd')
+                              e_str='cp.multiply(Con, vgd) - ugd')
         self.Coff = MinDur(u=self.pg, u2=self.td2,
                            name='Coff', tex_name=r'T_{off}',
                            info='minimum OFF coefficient',)
         self.doff = Constraint(info='minimum offline duration',
                                name='doff', is_eq=False,
-                               e_str='multiply(Coff, wgd) - (1 - ugd)')
+                               e_str='cp.multiply(Coff, wgd) - (1 - ugd)')
 
         # --- line ---
         self.plf.horizon = self.timeslot
         self.plf.info = '2D Line flow'
-        self.plflb.e_str = '-Bf@aBus - Pfinj - mul(rate_a, tlv)'
-        self.plfub.e_str = 'Bf@aBus + Pfinj - mul(rate_a, tlv)'
+        self.plflb.e_str = '-Bf@aBus - Pfinj - cp.multiply(rate_a, tlv)'
+        self.plfub.e_str = 'Bf@aBus + Pfinj - cp.multiply(rate_a, tlv)'
         self.alflb.e_str = '-CftT@aBus - amax@tlv'
         self.alfub.e_str = 'CftT@aBus - amax@tlv'
 
@@ -253,19 +253,19 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
                           name='pdsp', tex_name=r'p_{d,s}^{+}',)
         self.pdumax = Constraint(info='unserved demand upper bound',
                                  name='pdumax', is_eq=False,
-                                 e_str='pdu - mul(pdsp, dctrl@tlv)')
+                                 e_str='pdu - cp.multiply(pdsp, dctrl@tlv)')
         # --- power balance ---
         # NOTE: nodal balance is also contributed by unserved load
         pb = 'Bbus@aBus + Pbusinj@tlv + Cl@(pds-pdu) + Csh@gsh@tlv - Cg@pg'
         self.pb.e_str = pb
 
         # --- objective ---
-        cost = 't**2 dot sum(c2 @ pg**2)'
-        cost += '+ t dot sum(c1 @ pg)'
-        cost += '+ sum(mul(ug, c0) @ tlv)'
-        cost += '+ sum(csu @ vgd + csd @ wgd)'
+        cost = 't**2 * cp.sum(c2 @ pg**2)'
+        cost += '+ t * cp.sum(c1 @ pg)'
+        cost += '+ cp.sum(cp.multiply(ug, c0) @ tlv)'
+        cost += '+ cp.sum(csu @ vgd + csd @ wgd)'
         _to_sum = 'csr @ prs + cnsr @ prns + cdp @ pdu'
-        cost += f' + t dot sum({_to_sum})'
+        cost += f' + t * cp.sum({_to_sum})'
         self.obj.e_str = cost
 
     def _initial_guess(self):

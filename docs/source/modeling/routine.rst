@@ -28,7 +28,7 @@ A simplified code snippet for RTED is shown below as an example.
             ... ...
             self.rbu = Constraint(name='rbu', is_eq=True,
                                   info='RegUp reserve balance',
-                                  e_str = 'gs @ mul(ug, pru) - dud')
+                                  e_str = 'gs @ cp.multiply(ug, pru) - dud')
             ... ...
 
 Routine Parameter
@@ -82,17 +82,28 @@ Expression Notation in ``e_str``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Routine constraints, objectives, and expressions are written as Python source
-strings in the ``e_str`` argument. Before being passed to CVXPY, ``e_str`` is
-rewritten by :py:class:`ams.core.symprocessor.SymProcessor` so that bare names
-like ``pg`` or ``Cft`` resolve to the underlying CVXPY ``Variable`` /
-``Parameter`` / sparse-matrix objects of the host routine.
+strings in the ``e_str`` argument. ``e_str`` uses **canonical CVXPY syntax**:
+call ``cp.multiply(a, b)``, ``cp.sum(x)``, ``cp.power(x, n)`` etc. directly.
+Before evaluation, :py:class:`ams.core.symprocessor.SymProcessor` only
+resolves bare symbol names (``pg``, ``Cft``, ``rate_a``, …) to the
+underlying CVXPY ``Variable`` / ``Parameter`` / sparse-matrix objects of
+the host routine. It does **not** rewrite function names: ``cp.*`` calls
+must be written explicitly.
+
+.. note::
+   Prior to v1.2.2, AMS rewrote ``mul(...)`` → ``cp.multiply(...)``,
+   bare ``sum(...)`` → ``cp.sum(...)``, and ``a dot b`` → ``a * b``
+   automatically. That rewrite layer has been removed — see the v1.2.2
+   migration table in :ref:`ReleaseNotes`. User customizations
+   (``addConstrs(e_str=...)`` / ``obj.e_str += '...'``) that still use
+   the old vocabulary will raise ``NameError`` at eval time.
 
 Multiplication is the easiest place to introduce silent bugs because there are
 **three semantically distinct operations** that all read like "multiply":
 
 .. list-table::
    :header-rows: 1
-   :widths: 20 25 55
+   :widths: 22 28 50
 
    * - Notation in ``e_str``
      - Meaning
@@ -101,40 +112,43 @@ Multiplication is the easiest place to introduce silent bugs because there are
      - Matrix / matrix-vector multiply
      - Topology matrix times a stacked vector, e.g. ``Cft @ pl``,
        ``PTDF @ p``.
-   * - ``mul(a, b)``
-     - Element-wise multiply (alias for ``cp.multiply``)
-     - Per-device scaling, e.g. ``mul(ug, pg)`` to gate generator
-       output by its commitment. Broadcasts a scalar / 1-D parameter
-       against a vector variable.
+   * - ``cp.multiply(a, b)``
+     - Element-wise multiply
+     - Per-device scaling, e.g. ``cp.multiply(ug, pg)`` to gate
+       generator output by its commitment. Broadcasts a scalar / 1-D
+       parameter against a vector variable.
    * - ``2 * x``, ``coeff * y``
      - Scalar multiply
      - A literal number or a 0-D parameter scaling an expression.
        CVXPY accepts ``*`` here.
 
-Two convenience aliases exist for readability:
-
-* ``a dot b`` — rewritten to ``a * b`` (kept for legacy expressions; typically
-  used for scalar-times-expression forms such as ``t dot expr``). Note this
-  is *not* an alias for ``mul()`` / element-wise multiply.
-* ``multiply(a, b)`` — same as ``mul(a, b)``.
-
 **Bare ``a * b`` between two identifiers is not rewritten and will be passed
 to CVXPY as-is.** CVXPY will then either raise a shape error or, worse,
 emit a deprecation warning and silently perform matrix multiplication. Always
-write ``@`` or ``mul()`` explicitly. As of refactor step 1.4 the
-historical catch-all rewrite ``word * word`` → ``word @ word`` has been
-removed; existing routines were audited and the only affected expression
-(``dopf.lvd``) was migrated to ``mul()``.
+write ``@`` or ``cp.multiply()`` explicitly.
 
-Other ``e_str`` rewrites worth knowing:
+Other canonical-CVXPY constructs in ``e_str``:
 
-* ``sum(x)``, ``norm(x)``, ``pos(x)``, ``square(x)``, ``power(x, n)``,
-  ``vstack(...)``, ``maximum(...)``, ``minimum(...)``, ``quad_form(...)``,
-  ``sum_squares(...)``, ``diag(...)`` are forwarded to their ``cp.*``
-  equivalents.
+* Reductions and atoms — ``cp.sum(x)``, ``cp.norm(x)``,
+  ``cp.pos(x)``, ``cp.square(x)``, ``cp.power(x, n)``,
+  ``cp.vstack(...)``, ``cp.hstack(...)``, ``cp.maximum(...)``,
+  ``cp.minimum(...)``, ``cp.quad_form(...)``,
+  ``cp.sum_squares(...)``, ``cp.diag(...)`` — call directly.
 * Comparisons ``... == 0`` and ``... <= 0`` define equality and inequality
   constraints respectively (set via the ``is_eq`` flag on ``Constraint``).
 * Powers use ``**`` (e.g. ``vmax**2``).
+
+.. warning::
+   Routine symbol names (``Var``, ``RParam``, ``Service``,
+   ``Expression``, ``Constraint``) may not collide with CVXPY atom
+   names (``sum``, ``multiply``, ``vstack``, ``hstack``, ``power``,
+   ``norm``, ``pos``, ``neg``, ``square``, ``quad_form``,
+   ``sum_squares``, ``diag``, ``maximum``, ``minimum``, ``abs``,
+   ``exp``, ``log``, ``sqrt``, ``inv_pos``). The codegen raises an
+   explanatory error on collision. Without this guard, a routine that
+   declared a symbol named ``sum`` would have its eval-fallback path
+   silently rewrite a user-appended ``sum(...)`` into
+   ``self.om.sum(...)``.
 
 If in doubt, check an existing routine such as :py:mod:`ams.routines.dcopf`
 or :py:mod:`ams.routines.rted` for canonical patterns.
@@ -184,9 +198,12 @@ side by side:
 
 - **``sub_map`` path** (legacy, used as a fall-through). At ``parse()``
   time, :py:class:`ams.core.symprocessor.SymProcessor` regex-rewrites
-  the item's ``e_str`` into a Python source string (``mul(a, b)`` →
-  ``cp.multiply(a, b)``, ``pg`` → ``self.om.pg``, …) and stores it in
+  the item's ``e_str`` to resolve bare symbol names (``pg`` →
+  ``self.om.pg``, ``Cft`` → ``self.om.Cft``, …) and stores it in
   ``item.code``. ``evaluate()`` then ``eval``\ s ``item.code``.
+  Function names (``cp.sum``, ``cp.multiply``, …) are not rewritten
+  — author canonical CVXPY in ``e_str`` and the sub_map path passes
+  them through.
 
 Both paths must produce the same CVXPY object given the same ``e_str``
 — the codegen is the AOT-compiled version of the ``sub_map`` rewrite
