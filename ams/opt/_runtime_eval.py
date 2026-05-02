@@ -157,8 +157,11 @@ def assert_constraint_lhs_zero(item, e_str):
             f"with `<= 0`, `== 0`, or `>= 0` (LHS-zero authoring shape). "
             f"Got: {e_str!r}. Move every term to the LHS — "
             f"e.g. `pg - pmax <= 0` instead of `pg <= pmax`. "
-            f"Without the trailing-zero shape, `OptzBase.e` returns a "
-            f"numpy bool array instead of the LHS slack."
+            f"The trailing zero is matched literally (`0`, not `0.0` "
+            f"or `(0)`) so the same regex strips it cleanly inside "
+            f":func:`eval_e_str_numeric`. Without the trailing-zero "
+            f"shape, `OptzBase.e` returns a numpy bool array instead "
+            f"of the LHS slack."
         )
 
 
