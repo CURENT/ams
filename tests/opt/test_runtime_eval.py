@@ -20,12 +20,7 @@ import pytest
 
 import cvxpy as cp
 
-import ams
-from ams.opt import Constraint
-from ams.opt._runtime_eval import (
-    assert_constraint_lhs_zero,
-    eval_e_str,
-)
+from ams.opt._runtime_eval import assert_constraint_lhs_zero
 from ams.prep.generator import (
     RESERVED_CVXPY_ATOM_NAMES,
     _STATIC_RESERVED_CVXPY_ATOM_NAMES,
