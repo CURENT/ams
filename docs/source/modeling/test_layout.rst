@@ -70,20 +70,24 @@ Folder scope
     bridge carries the device", not a Jumper-internal property.
 
 ``tests/cli/``
-    CLI surface only: argv parsing, ``--version``, dispatch table.
-    Details of *what* the CLI invokes belong in the dedicated
-    subject test (e.g. ``ams report`` → ``tests/io/test_report.py``;
-    ``ams bench`` → ``tests/bench/test_bench.py``). Keep
-    ``tests/cli/`` focused on the trigger.
+    The CLI entry point and the ``ams.main`` glue it dispatches to:
+    argv parsing, ``--version``, the preamble, and the
+    ``main.doc`` / ``main.versioninfo`` / ``main.misc`` /
+    ``main.selftest`` / ``main.run(profile=True)`` paths. Subject-
+    matter tests for what those paths invoke belong in the
+    dedicated layer (e.g. ``ams report`` content →
+    ``tests/io/test_report.py``; ``ams bench`` numbers →
+    ``tests/bench/test_bench.py``). The split is *thin glue here,
+    deep behaviour there*.
 
 ``tests/bench/``
     Smoke tests for ``ams/bench/`` — the benchmark suite invocation,
     not the reported numbers.
 
 ``tests/codegen/``
-    Symbolic codegen + first-run pycode generation, plus
-    ``doc_all()``-style introspection that touches every model and
-    group.
+    Symbolic codegen and first-run pycode generation
+    (``test_generator.py``), plus ``doc_all()``-style introspection
+    that touches every model and group (``test_first_run_docs.py``).
 
 Shared fixtures (``tests/conftest.py``)
 ----------------------------------------
@@ -115,6 +119,10 @@ every subfolder inherits via pytest's normal discovery:
      - ``ieee39/ieee39_uced.xlsx``
    * - ``ieee39_uced_esd1``
      - ``ieee39/ieee39_uced_esd1.xlsx``
+
+A tenth fixture, ``benchmark_mpres``, lazily caches
+``matpower/benchmark.json`` for the known-good cross-check suite —
+read-only, so no deepcopy.
 
 Each fixture loads its case **once per worker process** (lazy
 module-level cache) and yields a ``copy.deepcopy`` per test.
