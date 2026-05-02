@@ -87,8 +87,23 @@ pjm5bus_json = _make_fresh_fixture("5bus/pjm5bus_demo.json", "pjm5bus_json")
 pjm5bus_xlsx = _make_fresh_fixture("5bus/pjm5bus_demo.xlsx", "pjm5bus_xlsx")
 case5 = _make_fresh_fixture("matpower/case5.m", "case5")
 case14 = _make_fresh_fixture("matpower/case14.m", "case14")
+case39 = _make_fresh_fixture("matpower/case39.m", "case39")
+case118 = _make_fresh_fixture("matpower/case118.m", "case118")
 ieee14_raw = _make_fresh_fixture("ieee14/ieee14.raw", "ieee14_raw")
 ieee39_uced = _make_fresh_fixture("ieee39/ieee39_uced.xlsx", "ieee39_uced")
 ieee39_uced_esd1 = _make_fresh_fixture(
     "ieee39/ieee39_uced_esd1.xlsx", "ieee39_uced_esd1"
 )
+
+
+_BENCHMARK_CACHE = {}
+
+
+@pytest.fixture
+def benchmark_mpres():
+    """Lazy session-cache of `matpower/benchmark.json`."""
+    import json
+    if 'mpres' not in _BENCHMARK_CACHE:
+        with open(ams.get_case('matpower/benchmark.json'), 'r') as f:
+            _BENCHMARK_CACHE['mpres'] = json.load(f)
+    return _BENCHMARK_CACHE['mpres']
