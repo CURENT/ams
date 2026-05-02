@@ -1,8 +1,8 @@
 import unittest
 import numpy as np
 
+import pytest
 
-import ams
 from ams.shared import pd
 
 
@@ -11,11 +11,9 @@ class TestRoutineMethods(unittest.TestCase):
     Test methods of `Routine`.
     """
 
-    def setUp(self) -> None:
-        self.ss = ams.load(ams.get_case("ieee39/ieee39_uced.xlsx"),
-                           default_config=True,
-                           no_output=True,
-                           )
+    @pytest.fixture(autouse=True)
+    def _attach_ss(self, request, ieee39_uced):
+        request.instance.ss = ieee39_uced
 
     def test_data_check(self):
         """
@@ -103,12 +101,9 @@ class TestSetOptzValueACOPF(unittest.TestCase):
     Test value settings of `OptzBase` series in `ACOPF`.
     """
 
-    def setUp(self) -> None:
-        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.json"),
-                           setup=True,
-                           default_config=True,
-                           no_output=True,
-                           )
+    @pytest.fixture(autouse=True)
+    def _attach_ss(self, request, pjm5bus_json):
+        request.instance.ss = pjm5bus_json
 
     def test_vset_before_init(self):
         """
@@ -143,12 +138,9 @@ class TestSetOptzValueDCOPF(unittest.TestCase):
     Test value settings of `OptzBase` series in `DCOPF`.
     """
 
-    def setUp(self) -> None:
-        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.json"),
-                           setup=True,
-                           default_config=True,
-                           no_output=True,
-                           )
+    @pytest.fixture(autouse=True)
+    def _attach_ss(self, request, pjm5bus_json):
+        request.instance.ss = pjm5bus_json
 
     def test_vset_before_init(self):
         """
