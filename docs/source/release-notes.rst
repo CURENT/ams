@@ -32,6 +32,14 @@ v1.2.3 (unreleased)
   superset of the static fallback). New atoms in future CVXPY
   releases are guarded automatically.
 
+**Internal:**
+
+- The ``collect_data`` and ``group_data`` helpers in
+  :mod:`ams.routines.routine` are merged into a single
+  :func:`ams.routines.routine.gather_results` with a keyword-only
+  ``group`` flag selecting the flat (CSV) vs nested (JSON) output
+  shape. Closes issue #195.
+
 v1.2.2 (unreleased)
 ----------------------
 
