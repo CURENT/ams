@@ -358,8 +358,7 @@ class DCPF1(RoutineBase):
     def addConstrs(self,
                    name: str,
                    e_str: str,
-                   info: Optional[str] = None,
-                   is_eq: Optional[str] = False,):
+                   info: Optional[str] = None,):
         raise NotImplementedError
 
     def addVars(self,

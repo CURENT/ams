@@ -37,18 +37,24 @@ class Constraint(OptzBase):
     name : str, optional
         A user-defined name for the constraint.
     e_str : str, optional
-        A mathematical expression representing the constraint (legacy form).
+        Mathematical expression in canonical CVXPY syntax with the
+        relational operator embedded — ``'<LHS> <= 0'``,
+        ``'<LHS> == 0'``, or ``'<LHS> >= 0'``. Authoring style is
+        LHS-zero: keep all terms on the left so ``.v`` reports
+        slack-from-zero (negative = respected, positive = violated)
+        uniformly across every constraint. CVXPY canonicalizes
+        every inequality to ``lhs - rhs <= 0`` internally regardless
+        of operator direction. Strict ``<`` / ``>`` are forbidden by
+        CVXPY (raises ``NotImplementedError``).
     e_fn : callable, optional
-        Callable ``e_fn(r) -> cp.Constraint`` taking a :class:`RoutineNS`.
+        Callable ``e_fn(r) -> cp.Constraint`` taking a
+        :class:`RoutineNS`. Must return a fully-formed
+        ``cp.constraints.Constraint`` (the codegen convention of
+        returning a bare LHS expression is no longer supported —
+        the routine source is now the single source of truth for
+        the relational shape).
     info : str, optional
         Additional informational text about the constraint.
-    is_eq : str, optional
-        Flag indicating if the constraint is an equality constraint. False indicates
-        an inequality constraint in the form of ``<= 0``. Honored for both the
-        ``e_str`` form and the codegen ``e_fn`` form (which returns only the LHS
-        — :meth:`evaluate` then applies ``== 0`` or ``<= 0`` based on this flag).
-        It is *only* ignored when an author manually passes an ``e_fn`` that
-        returns a fully-formed ``cp.Constraint``.
 
     Attributes
     ----------
@@ -56,8 +62,6 @@ class Constraint(OptzBase):
         Flag indicating if the constraint is disabled, False by default.
     rtn : ams.routines.Routine
         The owner routine instance.
-    is_disabled : bool, optional
-        Flag indicating if the constraint is disabled, False by default.
     code : str, optional
         The code string for the constraint
     """
@@ -70,14 +74,12 @@ class Constraint(OptzBase):
                  e_str: Optional[str] = None,
                  e_fn: Optional[Callable] = None,
                  info: Optional[str] = None,
-                 is_eq: Optional[bool] = False,
                  ):
         OptzBase.__init__(self, name=name, info=info)
         self._e_str = None
         self._e_fn = None
         self.e_str = e_str
         self.e_fn = e_fn
-        self.is_eq = is_eq
         self.is_disabled = False
         self.code = None
 
@@ -112,13 +114,14 @@ class Constraint(OptzBase):
         """
         Evaluate the constraint.
 
-        ``e_fn(r)`` may return either a fully-formed ``cp.Constraint``
-        (legacy convention; ``r.pg <= 0``) or just the LHS expression
-        (codegen convention; ``r.pg``). When it returns the LHS, the
-        relational op is applied here based on ``is_eq``. The LHS form
-        is required for ``.e`` to recover a numpy LHS during a failed
-        solve — see ``OptzBase.e``. The ``e_str`` path goes through
-        :func:`eval_e_str` and is wrapped the same way.
+        Both the ``e_fn`` (codegen) and ``e_str`` (eval-fallback)
+        paths must return a fully-formed ``cp.constraints.Constraint`` —
+        the relational operator lives in the source ``e_str`` (or in
+        the body of an author-supplied ``e_fn``), not in any
+        out-of-band flag. ``Constraint.v`` then reads
+        ``self.optz._expr.value`` which CVXPY canonicalizes to the
+        slack-from-zero LHS regardless of whether the author wrote
+        ``<=`` or ``>=``.
         """
         if self.e_fn is not None:
             try:
@@ -130,10 +133,19 @@ class Constraint(OptzBase):
             msg = f" - Constr <{self.name}>: {self.e_str}"
             logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
             result = eval_e_str(self, self.e_str)
-        if isinstance(result, cp.constraints.Constraint):
-            self.optz = result
-        else:
-            self.optz = (result == 0) if self.is_eq else (result <= 0)
+        if not isinstance(result, cp.constraints.Constraint):
+            source = f"e_str={self.e_str!r}" if self.e_str is not None else "e_fn"
+            raise TypeError(
+                f"Constraint <{self.name}>: {source} must produce a "
+                f"cp.constraints.Constraint (embed the relational "
+                f"operator: '<LHS> <= 0', '<LHS> == 0', or '<LHS> >= 0'). "
+                f"Got {type(result).__name__}. Stale "
+                f"~/.ams/pycode/ from before the v1.2.2 is_eq retirement "
+                f"is auto-invalidated by PYCODE_FORMAT_VERSION; if you see "
+                f"this from a freshly-regenerated cache, the underlying "
+                f"e_str is missing its trailing operator."
+            )
+        self.optz = result
         return True
 
     def __repr__(self):

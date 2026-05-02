@@ -63,12 +63,10 @@ class DOPF(DCOPF):
         self.qg = Var(info='Gen reactive power',
                       name='qg', tex_name=r'q_{g}', unit='p.u.',
                       model='StaticGen', src='q',)
-        self.qglb = Constraint(name='qglb', is_eq=False,
-                               info='qg min',
-                               e_str='-qg + cp.multiply(ug, qmin)',)
-        self.qgub = Constraint(name='qgub', is_eq=False,
-                               info='qg max',
-                               e_str='qg - cp.multiply(ug, qmax)',)
+        self.qglb = Constraint(name='qglb', info='qg min',
+                               e_str='-qg + cp.multiply(ug, qmin) <= 0',)
+        self.qgub = Constraint(name='qgub', info='qg max',
+                               e_str='qg - cp.multiply(ug, qmax) <= 0',)
         # --- bus ---
         self.v = Var(info='Bus voltage',
                      name='v', tex_name=r'v',
@@ -79,25 +77,23 @@ class DOPF(DCOPF):
                        model='Bus',)
         self.vu = Constraint(name='vu',
                              info='Voltage upper limit',
-                             e_str='vsq - vmax**2',
-                             is_eq=False,)
+                             e_str='vsq - vmax**2 <= 0',
+                             )
         self.vl = Constraint(name='vl',
                              info='Voltage lower limit',
-                             e_str='-vsq + vmin**2',
-                             is_eq=False,)
+                             e_str='-vsq + vmin**2 <= 0',
+                             )
         # --- line ---
         self.qlf = Var(info='line reactive power',
                        name='qlf', tex_name=r'q_{lf}',
                        unit='p.u.', model='Line',)
         self.lvd = Constraint(info='line voltage drop',
-                              name='lvd', is_eq=True,
-                              e_str='CftT@vsq - (cp.multiply(r, plf) + cp.multiply(x, qlf))',)
+                              name='lvd', e_str='CftT@vsq - (cp.multiply(r, plf) + cp.multiply(x, qlf)) == 0',)
         # --- power balance ---
         # NOTE: following Eqn seems to be wrong, double check
         # g_Q(\Theta, V, Q_g) = B_{bus}V\Theta + Q_{bus,shift} + Q_d + B_{sh} - C_gQ_g = 0
         self.qb = Constraint(info='reactive power balance',
-                             name='qb', is_eq=True,
-                             e_str='cp.sum(qd) - cp.sum(qg)',)
+                             name='qb', e_str='cp.sum(qd) - cp.sum(qg) == 0',)
 
         # --- objective ---
         # NOTE: no need to revise objective function

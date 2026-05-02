@@ -1240,27 +1240,28 @@ class RoutineBase:
     def addConstrs(self,
                    name: str,
                    e_str: str,
-                   info: Optional[str] = None,
-                   is_eq: Optional[str] = False,):
+                   info: Optional[str] = None,):
         """
         Add a `Constraint` to the routine at runtime.
 
         ``e_str`` must use canonical CVXPY syntax — call ``cp.multiply``,
-        ``cp.sum``, ``cp.power`` etc. directly. The historical AMS DSL
-        (``mul``, ``multiply``, ``sum``, ``a dot b``) was removed in
-        v1.2.2; see :ref:`migration_cvxpy_namespace`.
+        ``cp.sum``, ``cp.power`` etc. directly — and embed the
+        relational operator. Author every term on the left so the
+        suffix is one of ``' <= 0'``, ``' == 0'``, or ``' >= 0'``.
+        This LHS-zero discipline keeps ``constr.v`` reporting
+        slack-from-zero (negative = respected, positive = violated).
 
         Examples
         --------
         Append a hard generation cap::
 
             sp.RTED.addConstrs(name='pg_cap',
-                               e_str='pg - pmax')
+                               e_str='pg - pmax <= 0')
 
-        Equivalent with an embedded relational operator (post-v1.2.2)::
+        Force two variables equal::
 
-            sp.RTED.addConstrs(name='pg_cap',
-                               e_str='pg <= pmax')
+            sp.RTED.addConstrs(name='pg_match',
+                               e_str='pg - pset == 0')
 
         Parameters
         ----------
@@ -1269,14 +1270,12 @@ class RoutineBase:
             name used in expressions; pick a name that does not collide
             with a CVXPY atom (``sum``, ``multiply``, ``vstack``, …).
         e_str : str
-            Constraint expression string in canonical CVXPY syntax.
+            Constraint expression string in canonical CVXPY syntax,
+            with the relational operator embedded.
         info : str, optional
             Descriptive information
-        is_eq : str, optional
-            Flag indicating if the constraint is an equality constraint. False indicates
-            an inequality constraint in the form of `<= 0`.
         """
-        item = Constraint(name=name, e_str=e_str, info=info, is_eq=is_eq)
+        item = Constraint(name=name, e_str=e_str, info=info)
         # add the constraint as an routine attribute
         setattr(self, name, item)
 

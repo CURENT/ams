@@ -224,26 +224,56 @@ The ``inputs_dict``, ``services_dict``, ``tex_names``, and
 ``tex_map`` attributes on ``SymProcessor`` are unchanged — they
 still feed LaTeX rendering and downstream consumers.
 
-Constraint relational operators in ``e_str``
---------------------------------------------
+``Constraint.is_eq`` retired — embedded-operator LHS-zero ``e_str``
+-------------------------------------------------------------------
 
-A small behavior change rides with the eval-fallback unification:
-:py:class:`ams.opt.Constraint` ``e_str`` may now contain a
-relational operator directly:
+The ``is_eq`` parameter on :py:class:`ams.opt.Constraint` and
+:py:meth:`ams.routines.routine.RoutineBase.addConstrs` is removed.
+Every ``e_str`` must embed the relational operator and follow the
+LHS-zero authoring discipline — all terms on the left, ``<= 0``,
+``== 0``, or ``>= 0`` on the right:
 
 .. code-block:: python
 
-   sp.RTED.addConstrs(name='pg_cap', e_str='pg <= pmax')
+   # Before — operator implicit, polarity in is_eq flag
+   self.pglb = Constraint(name='pglb', e_str='-pg + pmine')
+   self.pb = Constraint(name='pb', e_str=pb, is_eq=True)
+   sp.RTED.addConstrs(name='cap', e_str='pg - pmax', is_eq=False)
 
-Previously ``Constraint.parse()`` appended ``' == 0'`` (or
-``' <= 0'``) unconditionally and an embedded operator would have
-been a syntax-level "double op" at evaluate time. The runtime
-now dispatches on whether the eval result is already a
-``cp.constraints.Constraint`` and skips the wrap when it is.
+   # After — operator embedded, single source of truth in e_str
+   self.pglb = Constraint(name='pglb', e_str='-pg + pmine <= 0')
+   self.pb = Constraint(name='pb', e_str=pb + ' == 0')
+   sp.RTED.addConstrs(name='cap', e_str='pg - pmax <= 0')
 
-The ``is_eq`` flag still works for the canonical ``... == 0`` /
-``... <= 0`` form — this is only an additional accepted shape, not
-a replacement.
+**Why LHS-zero rather than ``pg <= pmax``-style?** ``Constraint.v``
+returns ``optz._expr.value`` — the CVXPY-canonical LHS expression.
+With LHS-zero authoring, ``.v`` is the slack from zero (negative =
+respected, positive = violated, magnitude = by how much). Both
+authoring forms preserve the invariant since CVXPY normalizes
+``a <= b`` and ``b >= a`` to ``_expr = a - b`` internally — but
+the LHS-zero form makes the diagnostic intent explicit in the
+source text.
+
+Strict ``<`` and ``>`` are not accepted by CVXPY anywhere
+(``NotImplementedError``); only ``<=``, ``==``, ``>=`` may end an
+``e_str``.
+
+A ``Constraint`` whose ``e_str`` (or ``e_fn`` body) does not
+produce a ``cp.constraints.Constraint`` raises ``TypeError`` at
+evaluate time with a message naming the embedded-operator forms
+expected.
+
+**Custom callables.** Authors who supply their own ``e_fn`` (instead
+of ``e_str``) must now return a fully-formed
+``cp.constraints.Constraint`` — the codegen convention of returning
+a bare LHS expression and letting ``Constraint.evaluate`` apply
+``<= 0`` / ``== 0`` is gone.
+
+**Cached pycode is auto-invalidated.** ``PYCODE_FORMAT_VERSION`` is
+bumped in lockstep with this change, so any
+``~/.ams/pycode/<routine>.py`` written by a pre-retirement AMS is
+rejected on first read and regenerated. No manual
+``ams prep --force`` needed after upgrade.
 
 See also
 --------

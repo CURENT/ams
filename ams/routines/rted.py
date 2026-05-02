@@ -57,17 +57,17 @@ class SFRBase:
                        unit='p.u.', name='prd', tex_name=r'p_{r,d}',
                        model='StaticGen', nonneg=True,)
         # NOTE: define e_str in scheduling routine
-        self.rbu = Constraint(name='rbu', is_eq=True,
+        self.rbu = Constraint(name='rbu',
                               info='RegUp reserve balance',)
-        self.rbd = Constraint(name='rbd', is_eq=True,
+        self.rbd = Constraint(name='rbd',
                               info='RegDn reserve balance',)
-        self.rru = Constraint(name='rru', is_eq=False,
+        self.rru = Constraint(name='rru',
                               info='RegUp reserve source',)
-        self.rrd = Constraint(name='rrd', is_eq=False,
+        self.rrd = Constraint(name='rrd',
                               info='RegDn reserve source',)
-        self.rgu = Constraint(name='rgu', is_eq=False,
+        self.rgu = Constraint(name='rgu',
                               info='Gen ramping up',)
-        self.rgd = Constraint(name='rgd', is_eq=False,
+        self.rgd = Constraint(name='rgd',
                               info='Gen ramping down',)
 
 
@@ -157,14 +157,14 @@ class RTED(SFRBase, RTEDBase, DCOPF):
         # --- Model Section ---
         # --- SFR ---
         # RegUp/Dn reserve balance
-        self.rbu.e_str = 'gs @ cp.multiply(ug, pru) - dud'
-        self.rbd.e_str = 'gs @ cp.multiply(ug, prd) - ddd'
+        self.rbu.e_str = 'gs @ cp.multiply(ug, pru) - dud == 0'
+        self.rbd.e_str = 'gs @ cp.multiply(ug, prd) - ddd == 0'
         # RegUp/Dn reserve source
-        self.rru.e_str = 'cp.multiply(ug, (pg + pru)) - cp.multiply(ug, pmaxe)'
-        self.rrd.e_str = 'cp.multiply(ug, (-pg + prd)) + cp.multiply(ug, pmine)'
+        self.rru.e_str = 'cp.multiply(ug, (pg + pru)) - cp.multiply(ug, pmaxe) <= 0'
+        self.rrd.e_str = 'cp.multiply(ug, (-pg + prd)) + cp.multiply(ug, pmine) <= 0'
         # Gen ramping up/down
-        self.rgu.e_str = 'cp.multiply(ug, (pg-pg0-R10))'
-        self.rgd.e_str = 'cp.multiply(ug, (-pg+pg0-R10))'
+        self.rgu.e_str = 'cp.multiply(ug, (pg-pg0-R10)) <= 0'
+        self.rgd.e_str = 'cp.multiply(ug, (-pg+pg0-R10)) <= 0'
 
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
@@ -258,9 +258,8 @@ class DGBase:
                              info='Index DG power from pg',
                              gamma='gammapdg',
                              no_parse=True, sparse=True,)
-        self.cdgb = Constraint(name='cdgb', is_eq=True,
-                               info='Select DG power from pg',
-                               e_str='idg @ pg - pgdg',)
+        self.cdgb = Constraint(name='cdgb', info='Select DG power from pg',
+                               e_str='idg @ pg - pgdg == 0',)
 
 
 class RTEDDG(DGBase, RTED):
@@ -354,26 +353,22 @@ class ESD1PBase:
                              name='ies', tex_name=r'I_{ESD}',
                              info='Index ESD from StaticGen',
                              no_parse=True)
-        self.cesd = Constraint(name='cesd', is_eq=True,
-                               info='Select pce and pde from pg',
-                               e_str='ies @ pg + pce - pde',)
+        self.cesd = Constraint(name='cesd', info='Select pce and pde from pg',
+                               e_str='ies @ pg + pce - pde == 0',)
 
-        self.SOClb = Constraint(name='SOClb', is_eq=False,
-                                info='SOC lower bound',
-                                e_str='-SOC + SOCmin',)
-        self.SOCub = Constraint(name='SOCub', is_eq=False,
-                                info='SOC upper bound',
-                                e_str='SOC - SOCmax',)
+        self.SOClb = Constraint(name='SOClb', info='SOC lower bound',
+                                e_str='-SOC + SOCmin <= 0',)
+        self.SOCub = Constraint(name='SOCub', info='SOC upper bound',
+                                e_str='SOC - SOCmax <= 0',)
 
         SOCb = 'cp.multiply(En, (SOC - SOCinit)) - t * cp.multiply(EtaC, pce)'
-        SOCb += '+ t * cp.multiply(REtaD, pde)'
-        self.SOCb = Constraint(name='SOCb', is_eq=True,
+        SOCb += '+ t * cp.multiply(REtaD, pde) == 0'
+        self.SOCb = Constraint(name='SOCb',
                                info='ESD1 SOC balance',
                                e_str=SOCb,)
 
-        self.SOCr = Constraint(name='SOCr', is_eq=False,
-                               info='ESD1 final SOC requirement',
-                               e_str='SOCend - SOC',)
+        self.SOCr = Constraint(name='SOCr', info='ESD1 final SOC requirement',
+                               e_str='SOCend - SOC <= 0',)
 
         self.obj.e_str += '+ t * cp.sum(- cp.multiply(cesdc, pce) + cp.multiply(cesdd, pde))'
 
@@ -436,11 +431,11 @@ class RTEDESP(ESD1PBase, RTEDDG):
                           tex_name=r'u_{d,ESD}',
                           model='ESD1', no_parse=True,)
 
-        self.zce = Constraint(name='zce', is_eq=False, info='zce bound',
-                              e_str='cp.multiply(1-ucd, pce)',)
+        self.zce = Constraint(name='zce', info='zce bound',
+                              e_str='cp.multiply(1-ucd, pce) <= 0',)
 
-        self.zde = Constraint(name='zde', is_eq=False, info='zde bound',
-                              e_str='cp.multiply(1-udd, pde)',)
+        self.zde = Constraint(name='zde', info='zde bound',
+                              e_str='cp.multiply(1-udd, pde) <= 0',)
 
     def _preinit(self):
         """
@@ -513,33 +508,32 @@ class ESD1Base(DGBase, ESD1PBase):
         self.zde.info += ':math:`z_{d,ESD}=u_{d,ESD}*p_{d,ESD}`'
 
         # --- constraints ---
-        self.cdb = Constraint(name='cdb', is_eq=True,
-                              info='Charging decision bound',
-                              e_str='ucd + udd - 1',)
+        self.cdb = Constraint(name='cdb', info='Charging decision bound',
+                              e_str='ucd + udd - 1 == 0',)
 
-        self.zce1 = Constraint(name='zce1', is_eq=False, info='zce bound 1',
-                               e_str='-zce + pce',)
-        self.zce2 = Constraint(name='zce2', is_eq=False, info='zce bound 2',
-                               e_str='zce - pce - Mb * (1-ucd)',)
-        self.zce3 = Constraint(name='zce3', is_eq=False, info='zce bound 3',
-                               e_str='zce - Mb * ucd',)
+        self.zce1 = Constraint(name='zce1', info='zce bound 1',
+                               e_str='-zce + pce <= 0',)
+        self.zce2 = Constraint(name='zce2', info='zce bound 2',
+                               e_str='zce - pce - Mb * (1-ucd) <= 0',)
+        self.zce3 = Constraint(name='zce3', info='zce bound 3',
+                               e_str='zce - Mb * ucd <= 0',)
 
-        self.zde1 = Constraint(name='zde1', is_eq=False, info='zde bound 1',
-                               e_str='-zde + pde',)
-        self.zde2 = Constraint(name='zde2', is_eq=False, info='zde bound 2',
-                               e_str='zde - pde - Mb * (1-udd)',)
-        self.zde3 = Constraint(name='zde3', is_eq=False, info='zde bound 3',
-                               e_str='zde - Mb * udd',)
+        self.zde1 = Constraint(name='zde1', info='zde bound 1',
+                               e_str='-zde + pde <= 0',)
+        self.zde2 = Constraint(name='zde2', info='zde bound 2',
+                               e_str='zde - pde - Mb * (1-udd) <= 0',)
+        self.zde3 = Constraint(name='zde3', info='zde bound 3',
+                               e_str='zde - Mb * udd <= 0',)
 
         # force charging flag `fcd`: (tdc0 > 0) * (tdc > tdc0)
-        tcdr = '(tdc0 > 0) * (tdc > tdc0) - ucd'
-        self.tcdr = Constraint(name='tcdr', is_eq=False,
+        tcdr = '(tdc0 > 0) * (tdc > tdc0) - ucd <= 0'
+        self.tcdr = Constraint(name='tcdr',
                                info='Minimum charging duration',
                                e_str=tcdr,)
 
         # force discharging flag `fdd`: (tdd0 > 0) * (tdd > tdd0)
-        tddr = '(tdd0 > 0) * (tdd > tdd0) - udd'
-        self.tddr = Constraint(name='tddr', is_eq=False,
+        tddr = '(tdd0 > 0) * (tdd > tdd0) - udd <= 0'
+        self.tddr = Constraint(name='tddr',
                                info='Minimum discharging duration',
                                e_str=tddr,)
 
@@ -617,18 +611,14 @@ class VISBase:
                              name='gvsg', tex_name=r'S_{g}',
                              info='Sum VSG vars vector in shape of area',
                              no_parse=True)
-        self.Mub = Constraint(name='Mub', is_eq=False,
-                              info='M upper bound',
-                              e_str='M - Mmax',)
-        self.Dub = Constraint(name='Dub', is_eq=False,
-                              info='D upper bound',
-                              e_str='D - Dmax',)
-        self.Mreq = Constraint(name='Mreq', is_eq=True,
-                               info='Emulated inertia requirement',
-                               e_str='-gvsg@M + dvm',)
-        self.Dreq = Constraint(name='Dreq', is_eq=True,
-                               info='Emulated damping requirement',
-                               e_str='-gvsg@D + dvd',)
+        self.Mub = Constraint(name='Mub', info='M upper bound',
+                              e_str='M - Mmax <= 0',)
+        self.Dub = Constraint(name='Dub', info='D upper bound',
+                              e_str='D - Dmax <= 0',)
+        self.Mreq = Constraint(name='Mreq', info='Emulated inertia requirement',
+                               e_str='-gvsg@M + dvm == 0',)
+        self.Dreq = Constraint(name='Dreq', info='Emulated damping requirement',
+                               e_str='-gvsg@D + dvd == 0',)
 
         # NOTE: revise the objective function to include virtual inertia cost
 

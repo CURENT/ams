@@ -102,20 +102,20 @@ Model Section
                               name='aBus', tex_name=r'\theta_{bus}',
                               model='Bus', src='a',)
               # --- power balance ---
-              pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
+              pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg == 0'
               self.pb = Constraint(name='pb', info='power balance',
-                                   e_str=pb, is_eq=True,)
+                                   e_str=pb,)
               # --- line flow ---
               self.plf = Var(info='Line flow',
                              unit='p.u.',
                              name='plf', tex_name=r'p_{lf}',
                              model='Line',)
               self.plflb = Constraint(info='line flow lower bound',
-                                      name='plflb', type='uq',
-                                      e_str='-Bf@aBus - Pfinj - rate_a',)
+                                      name='plflb',
+                                      e_str='-Bf@aBus - Pfinj - rate_a <= 0',)
               self.plfub = Constraint(info='line flow upper bound',
-                                      name='plfub', type='uq',
-                                      e_str='Bf@aBus + Pfinj - rate_a',)
+                                      name='plfub',
+                                      e_str='Bf@aBus + Pfinj - rate_a <= 0',)
               # --- objective ---
               obj = 'cp.sum(cp.multiply(c2, pg**2))'
               obj += '+ cp.sum(cp.multiply(c1, pg))'

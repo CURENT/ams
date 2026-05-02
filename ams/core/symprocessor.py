@@ -74,6 +74,15 @@ class SymProcessor:
             (r'\bsum\b', 'SUM'),
             (r'power\((.*?),\s*(\d+)\)', r'\1^\2'),
             (r'(\w+).dual_variables\[0\]', r'\phi[\1]'),
+            # Relational operators in embedded-operator e_str (post
+            # `is_eq` retirement). Ordering within this trio doesn't
+            # matter (no overlap among `<=`, `>=`, `==`). Double
+            # backslash in the replacement so `re.sub` emits a
+            # literal `\leq` / `\geq` (Python 3.12+ raises
+            # re.PatternError on the single-backslash form).
+            (r'<=', r'\\leq'),
+            (r'>=', r'\\geq'),
+            (r'==', '='),
         ])
 
         self.status = {

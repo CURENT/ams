@@ -12,6 +12,40 @@ v1.2
 v1.2.2 (unreleased)
 ----------------------
 
+**Migration — ``Constraint.is_eq`` retired:**
+
+The ``is_eq`` parameter on :class:`ams.opt.Constraint` and
+:meth:`ams.routines.routine.RoutineBase.addConstrs` is removed.
+Every ``Constraint`` ``e_str`` must now embed the relational
+operator in the LHS-zero form: ``'<LHS> <= 0'``, ``'<LHS> == 0'``,
+or ``'<LHS> >= 0'``. The CVXPY canonicalization of every
+inequality to ``lhs - rhs <= 0`` (regardless of ``<=`` vs ``>=``
+direction) means ``Constraint.v`` keeps reporting slack-from-zero
+uniformly.
+
+Update any user routines or runtime customizations:
+
+.. code-block:: python
+
+   # Before
+   self.pglb = Constraint(name='pglb', e_str='-pg + pmine')
+   self.pb = Constraint(name='pb', e_str=pb, is_eq=True)
+   sp.RTED.addConstrs(name='cap', e_str='pg - pmax', is_eq=False)
+
+   # After
+   self.pglb = Constraint(name='pglb', e_str='-pg + pmine <= 0')
+   self.pb = Constraint(name='pb', e_str=pb + ' == 0')
+   sp.RTED.addConstrs(name='cap', e_str='pg - pmax <= 0')
+
+A ``Constraint`` whose ``e_str`` (or ``e_fn`` body) does not
+produce a ``cp.constraints.Constraint`` now raises ``TypeError``
+at evaluate time with a message naming the embedded-operator
+forms expected. The codegen and eval-fallback paths share this
+behavior.
+
+See :ref:`migration_cvxpy_namespace` for the full rationale and
+worked examples.
+
 **Migration — ``e_str`` authoring contract:**
 
 Routine ``e_str`` strings (built-in routines and any user customization

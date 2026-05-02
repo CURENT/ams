@@ -352,15 +352,15 @@ class RDocumenter:
             class_names.append(p.class_name)
             info.append(p.info if p.info else '')
 
-        # expressions based on output format
+        # expressions based on output format. The relational operator
+        # is now part of ``e_str`` itself (post `is_eq` retirement);
+        # ``_tex_pre`` translates ``<= 0`` / ``== 0`` / ``>= 0`` to
+        # the LaTeX form via the trio of rules at the tail of
+        # ``_TEX_TEMPLATES`` (and the parallel ``SymProcessor.tex_map``).
         expressions = []
         if export == 'rest':
             for p in self.parent.constrs.values():
                 expr = _tex_pre(self, p, self.parent.syms.tex_map)
-                if p.is_eq:
-                    expr = f'{expr} = 0'
-                else:
-                    expr = f'{expr} \\leq 0'
                 logger.debug(f'{p.name} math: {expr}')
                 expressions.append(expr)
 
