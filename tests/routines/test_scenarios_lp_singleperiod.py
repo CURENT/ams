@@ -3,15 +3,24 @@ Single-period DC LP routine scenarios — parametrized.
 
 Family A (this module): DCOPF, DCOPF2, RTED, RTEDDG, RTEDES, RTED2,
 RTED2DG, RTED2ES. All eight share the same scenario body modulo
-routine name. Differences captured by `_ROUTINES`:
+routine name. Per-routine differences live in `_ROUTINES`:
 
 - ``needs_ptdf``: 2nd-generation routines require ``ss.mats.build_ptdf()``
   before the first solve.
 - ``has_aBus``: 2nd-generation routines also expose ``aBus`` so the
   vBus scenario asserts both.
+- ``solver``: ``'SCIP'`` for the MISOCP storage variants
+  (RTEDES, RTED2ES); ``'CLARABEL'`` otherwise. Tests that call
+  ``.run(...)`` are skipped when the matching solver is unavailable;
+  ``test_init`` does not invoke a solver and is never skipped on this
+  axis.
+- ``set_load_pq1``: target PQ_1 ``p0`` value for ``test_set_load``.
+  ``0.05`` for storage variants — the larger load reduction of ``0.1``
+  is absorbed by ESD1 charging and weakens the ``pgs_pqt < pgs``
+  assertion.
 
 OPF is intentionally excluded — its ``_ac`` dual-mode shape doesn't
-fit Family A's body and is handled separately in Family B.
+fit Family A's body and is handled separately.
 
 Per-test isolation comes from ``conftest.pjm5bus_json`` (function-
 scoped deepcopy of a cached load), so trailing ``set(value=1)`` /
@@ -23,23 +32,23 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 
+from ams.shared import installed_solvers, misocp_solvers
+
 try:
     import pypower  # noqa: F401
     _HAS_PYPOWER = True
 except ImportError:
     _HAS_PYPOWER = False
 
-import cvxpy as cp
-
-_MISOCP_SOLVERS = {'MOSEK', 'CPLEX', 'GUROBI', 'XPRESS', 'SCIP'}
-_HAS_MISOCP = bool(_MISOCP_SOLVERS & set(cp.installed_solvers()))
+_HAS_MISOCP = bool(set(misocp_solvers) & set(installed_solvers))
 
 
 @dataclass(frozen=True)
 class _RoutineSpec:
     needs_ptdf: bool
     has_aBus: bool
-    solver: str  # 'CLARABEL' for LP, 'SCIP' for MISOCP storage variants
+    solver: str
+    set_load_pq1: float = 0.1
 
 
 _ROUTINES = {
@@ -47,129 +56,131 @@ _ROUTINES = {
     "DCOPF2":  _RoutineSpec(needs_ptdf=True,  has_aBus=True,  solver='CLARABEL'),
     "RTED":    _RoutineSpec(needs_ptdf=False, has_aBus=False, solver='CLARABEL'),
     "RTEDDG":  _RoutineSpec(needs_ptdf=False, has_aBus=False, solver='CLARABEL'),
-    "RTEDES":  _RoutineSpec(needs_ptdf=False, has_aBus=False, solver='SCIP'),
+    "RTEDES":  _RoutineSpec(needs_ptdf=False, has_aBus=False, solver='SCIP', set_load_pq1=0.05),
     "RTED2":   _RoutineSpec(needs_ptdf=True,  has_aBus=True,  solver='CLARABEL'),
     "RTED2DG": _RoutineSpec(needs_ptdf=True,  has_aBus=True,  solver='CLARABEL'),
-    "RTED2ES": _RoutineSpec(needs_ptdf=True,  has_aBus=True,  solver='SCIP'),
+    "RTED2ES": _RoutineSpec(needs_ptdf=True,  has_aBus=True,  solver='SCIP', set_load_pq1=0.05),
 }
 
 _ROUTINE_IDS = list(_ROUTINES)
 
 
+@dataclass(frozen=True)
+class _Ctx:
+    ss: object
+    routine_id: str
+    spec: _RoutineSpec
+    rtn: object
+
+
 @pytest.fixture
-def ss(pjm5bus_json, request):
-    """Fresh case5 system with the standard load decrease + PTDF if needed."""
-    spec = _ROUTINES[request.param]
-    if spec.solver == 'SCIP' and not _HAS_MISOCP:
-        pytest.skip("No MISOCP solver is available.")
+def ctx(pjm5bus_json, request):
+    """Family-A context: fresh case5 system + routine handle + spec."""
+    routine_id = request.param
+    spec = _ROUTINES[routine_id]
     ss = pjm5bus_json
     ss.PQ.set(src='p0', attr='v', idx=['PQ_1', 'PQ_2'], value=[0.3, 0.3])
     if spec.needs_ptdf:
         ss.mats.build_ptdf()
-    return ss
+    return _Ctx(ss=ss, routine_id=routine_id, spec=spec, rtn=getattr(ss, routine_id))
 
 
-def _resolve(request):
-    routine_id = request.node.callspec.params["ss"]
-    return routine_id, _ROUTINES[routine_id]
+def _skip_if_solver_missing(spec):
+    if spec.solver == 'SCIP' and not _HAS_MISOCP:
+        pytest.skip("No MISOCP solver is available.")
 
 
-def _routine(ss, routine_id):
-    return getattr(ss, routine_id)
+_PARAMETRIZE_ROUTINES = pytest.mark.parametrize(
+    "ctx", _ROUTINE_IDS, indirect=True, ids=_ROUTINE_IDS,
+)
 
 
-@pytest.mark.parametrize("ss", _ROUTINE_IDS, indirect=True, ids=_ROUTINE_IDS)
-def test_init(ss, request):
-    routine_id, _ = _resolve(request)
-    rtn = _routine(ss, routine_id)
-    rtn.init()
-    assert rtn.initialized, f"{routine_id} initialization failed!"
+@_PARAMETRIZE_ROUTINES
+def test_init(ctx):
+    # No solver invoked here — never skip on solver availability.
+    ctx.rtn.init()
+    assert ctx.rtn.initialized, f"{ctx.routine_id} initialization failed!"
 
 
-@pytest.mark.parametrize("ss", _ROUTINE_IDS, indirect=True, ids=_ROUTINE_IDS)
-def test_trip_gen(ss, request):
-    routine_id, spec = _resolve(request)
-    rtn = _routine(ss, routine_id)
+@_PARAMETRIZE_ROUTINES
+def test_trip_gen(ctx):
+    _skip_if_solver_missing(ctx.spec)
     stg = 'PV_1'
-    ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
+    ctx.ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
 
-    rtn.update()
-    rtn.run(solver=spec.solver)
-    assert rtn.converged, f"{routine_id} did not converge under generator trip!"
-    assert abs(rtn.get(src='pg', attr='v', idx=stg)) < 1e-6, \
+    ctx.rtn.update()
+    ctx.rtn.run(solver=ctx.spec.solver)
+    assert ctx.rtn.converged, f"{ctx.routine_id} did not converge under generator trip!"
+    assert abs(ctx.rtn.get(src='pg', attr='v', idx=stg)) < 1e-6, \
         "Generator trip does not take effect!"
 
 
-@pytest.mark.parametrize("ss", _ROUTINE_IDS, indirect=True, ids=_ROUTINE_IDS)
-def test_trip_line(ss, request):
-    routine_id, spec = _resolve(request)
-    rtn = _routine(ss, routine_id)
-    ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
+@_PARAMETRIZE_ROUTINES
+def test_trip_line(ctx):
+    _skip_if_solver_missing(ctx.spec)
+    ctx.ss.Line.set(src='u', attr='v', idx='Line_3', value=0)
 
-    rtn.update()
-    rtn.run(solver=spec.solver)
-    assert rtn.converged, f"{routine_id} did not converge under line trip!"
-    assert abs(rtn.get(src='plf', attr='v', idx='Line_3')) < 1e-6, \
+    ctx.rtn.update()
+    ctx.rtn.run(solver=ctx.spec.solver)
+    assert ctx.rtn.converged, f"{ctx.routine_id} did not converge under line trip!"
+    assert abs(ctx.rtn.get(src='plf', attr='v', idx='Line_3')) < 1e-6, \
         "Line trip does not take effect!"
 
 
-@pytest.mark.parametrize("ss", _ROUTINE_IDS, indirect=True, ids=_ROUTINE_IDS)
-def test_set_load(ss, request):
-    routine_id, spec = _resolve(request)
-    rtn = _routine(ss, routine_id)
+@_PARAMETRIZE_ROUTINES
+def test_set_load(ctx):
+    _skip_if_solver_missing(ctx.spec)
 
-    rtn.run(solver=spec.solver)
-    pgs = rtn.pg.v.sum()
+    ctx.rtn.run(solver=ctx.spec.solver)
+    pgs = ctx.rtn.pg.v.sum()
 
-    ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=0.1)
-    rtn.update()
-    rtn.run(solver=spec.solver)
-    pgs_pqt = rtn.pg.v.sum()
+    ctx.ss.PQ.set(src='p0', attr='v', idx='PQ_1', value=ctx.spec.set_load_pq1)
+    ctx.rtn.update()
+    ctx.rtn.run(solver=ctx.spec.solver)
+    pgs_pqt = ctx.rtn.pg.v.sum()
     assert pgs_pqt < pgs, "Load set does not take effect!"
 
-    ss.PQ.set(src='u', attr='v', idx='PQ_2', value=0)
-    rtn.update()
-    rtn.run(solver=spec.solver)
-    pgs_pqt2 = rtn.pg.v.sum()
+    ctx.ss.PQ.set(src='u', attr='v', idx='PQ_2', value=0)
+    ctx.rtn.update()
+    ctx.rtn.run(solver=ctx.spec.solver)
+    pgs_pqt2 = ctx.rtn.pg.v.sum()
     assert pgs_pqt2 < pgs_pqt, "Load trip does not take effect!"
 
 
-@pytest.mark.parametrize("ss", _ROUTINE_IDS, indirect=True, ids=_ROUTINE_IDS)
-def test_vBus(ss, request):
-    routine_id, spec = _resolve(request)
-    rtn = _routine(ss, routine_id)
-    rtn.run(solver=spec.solver)
-    assert rtn.converged, f"{routine_id} did not converge!"
-    assert np.any(rtn.vBus.v), "vBus is all zero!"
-    if spec.has_aBus:
-        assert np.any(rtn.aBus.v), "aBus is all zero!"
+@_PARAMETRIZE_ROUTINES
+def test_vBus(ctx):
+    _skip_if_solver_missing(ctx.spec)
+    ctx.rtn.run(solver=ctx.spec.solver)
+    assert ctx.rtn.converged, f"{ctx.routine_id} did not converge!"
+    assert np.any(ctx.rtn.vBus.v), "vBus is all zero!"
+    if ctx.spec.has_aBus:
+        assert np.any(ctx.rtn.aBus.v), "aBus is all zero!"
 
 
 @pytest.mark.skipif(not _HAS_PYPOWER, reason="PYPOWER is not available.")
-@pytest.mark.parametrize("ss", _ROUTINE_IDS, indirect=True, ids=_ROUTINE_IDS)
-def test_dc2ac(ss, request):
-    routine_id, spec = _resolve(request)
-    rtn = _routine(ss, routine_id)
-    rtn.run(solver=spec.solver)
-    rtn.dc2ac()
-    assert rtn.converted, "AC conversion failed!"
-    assert rtn.exec_time > 0, "Execution time is not greater than 0."
+@_PARAMETRIZE_ROUTINES
+def test_dc2ac(ctx):
+    _skip_if_solver_missing(ctx.spec)
+    ctx.rtn.run(solver=ctx.spec.solver)
+    ctx.rtn.dc2ac()
+    assert ctx.rtn.converted, "AC conversion failed!"
+    assert ctx.rtn.exec_time > 0, "Execution time is not greater than 0."
 
-    stg_idx = ss.StaticGen.get_all_idxes()
+    stg_idx = ctx.ss.StaticGen.get_all_idxes()
     np.testing.assert_almost_equal(
-        rtn.get(src='pg', attr='v', idx=stg_idx),
-        ss.ACOPF.get(src='pg', attr='v', idx=stg_idx),
+        ctx.rtn.get(src='pg', attr='v', idx=stg_idx),
+        ctx.ss.ACOPF.get(src='pg', attr='v', idx=stg_idx),
         decimal=3,
     )
 
-    bus_idx = ss.Bus.get_all_idxes()
+    bus_idx = ctx.ss.Bus.get_all_idxes()
     np.testing.assert_almost_equal(
-        rtn.get(src='vBus', attr='v', idx=bus_idx),
-        ss.ACOPF.get(src='vBus', attr='v', idx=bus_idx),
+        ctx.rtn.get(src='vBus', attr='v', idx=bus_idx),
+        ctx.ss.ACOPF.get(src='vBus', attr='v', idx=bus_idx),
         decimal=3,
     )
     np.testing.assert_almost_equal(
-        rtn.get(src='aBus', attr='v', idx=bus_idx),
-        ss.ACOPF.get(src='aBus', attr='v', idx=bus_idx),
+        ctx.rtn.get(src='aBus', attr='v', idx=bus_idx),
+        ctx.ss.ACOPF.get(src='aBus', attr='v', idx=bus_idx),
         decimal=3,
     )
