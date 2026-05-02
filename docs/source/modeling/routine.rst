@@ -161,7 +161,11 @@ every routine init. The first time a routine is instantiated, AMS:
 
 1. Walks the constructed routine's ``constrs`` / ``exprs`` / ``exprcs``
    / ``obj`` registries.
-2. Applies the ``sub_map`` rewrites to each ``e_str``.
+2. Resolves bare symbol names in each ``e_str`` (``pg`` →
+   ``r.pg``, …) via the same ``_build_symbol_regex`` /
+   ``_collect_symbol_names`` pass used by the eval-fallback helper.
+   Function names (``cp.sum``, ``cp.multiply``, …) are passed
+   through untouched.
 3. Emits a small Python module at ``~/.ams/pycode/<routine>.py`` with
    one named callable per opt element — e.g.
    ``def _constr_pglb(r): return -r.pg + r.pmine`` — plus the

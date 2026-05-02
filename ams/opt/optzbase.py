@@ -196,7 +196,7 @@ class OptzBase:
           (the fast AOT path); only happens for items that exactly match
           the pristine source.
         - ``'manual'`` — author/user code assigned ``item.e_fn = fn``
-          directly, bypassing both codegen and the sub_map regex.
+          directly, bypassing both codegen and the eval-fallback helper.
         - ``'eval'`` — eval-fallback path: ``e_str`` is resolved
           symbol-by-symbol via :func:`ams.opt._runtime_eval.eval_e_str`
           and ``eval``-ed at parse/evaluate time. This is what runs for
