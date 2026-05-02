@@ -13,7 +13,21 @@ BUILDDIR      = build
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: help Makefile
+.PHONY: help clean distclean Makefile
+
+# Wipe the Sphinx build tree only (fast).
+clean:
+	@$(SPHINXBUILD) -M clean "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+# Wipe the build tree AND the generated source artifacts:
+#   - source/_generated, source/modeling/_generated  (autosummary output)
+#   - source/_examples                               (nbsphinx notebook copies)
+# The next `make html` will be noticeably slower because notebooks re-execute.
+distclean: clean
+	@rm -rf "$(SOURCEDIR)/_generated" \
+	        "$(SOURCEDIR)/modeling/_generated" \
+	        "$(SOURCEDIR)/_examples"
+	@echo "Removed autosummary + nbsphinx artifacts."
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
