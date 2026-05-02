@@ -260,69 +260,65 @@ class OptzBase:
 
         Two paths:
 
-        - **e_fn form**: ``self.code`` is ``None`` because no string was
-          parsed; fall back to the cvxpy object's value (``self.optz._expr``
-          for constraints, ``self.optz`` otherwise). This is the
-          solver-returned value, not a re-canonicalization from current
-          parameter state — sufficient for the post-solve ``v == e`` check.
-        - **e_str form**: route through :func:`eval_e_str_numeric`,
-          which mirrors the symbol-resolution surface of the CVXPY-side
-          helper but resolves to numpy via :class:`NumericRoutineNS`.
+        - **e_str available** (codegen-wired or eval-fallback): defer
+          to :func:`eval_e_str_numeric`, which strips any embedded
+          relational operator so the result is always the LHS slack
+          (matches what ``.v`` reports via CVXPY canonicalization).
+          ``e_str`` is preserved on items even after codegen wires
+          ``e_fn`` — so this path is the canonical numeric route for
+          built-in routines.
+        - **e_fn-only** (rare; user-supplied callable with no
+          ``e_str``): re-evaluate against ``NumericRoutineNS`` and
+          extract the LHS depending on what the callable returns.
         """
-        if self.code is None:
-            # e_fn form: re-evaluate against the current numeric state
-            # via NumericRoutineNS. Resolves Vars to ``Var.v`` (which
-            # falls back to ``np.zeros`` when ``optz.value`` is None),
-            # so ``.e`` is informative even on a failed/incomplete
-            # solve — matching the legacy val_map+eval behavior.
-            #
-            # The e_fn may return: (a) a cp.Constraint (legacy form),
-            # (b) a cp.Expression (LHS or Objective inner), or (c) a
-            # pure numpy result when every operand is numpy and no
-            # cp.X wrapper is present. Handle all three.
-            from ams.core.routine_ns import NumericRoutineNS
-            e_fn = getattr(self, 'e_fn', None)
-            if e_fn is not None:
-                try:
-                    result = e_fn(NumericRoutineNS(self.om.rtn))
-                except Exception as exc:
-                    logger.error(
-                        f"Error in re-evaluating {self.class_name} "
-                        f"<{self.name}> via e_fn for `.e`.\n{exc}"
-                    )
-                    return None
-                # Constraint legacy form: extract LHS via _expr.value.
-                if isinstance(result, cp.constraints.Constraint):
-                    inner = getattr(result, '_expr', None)
-                    if inner is None:
-                        # Some constraint subclasses expose ``args[0]``
-                        inner = result.args[0] if result.args else None
-                    return getattr(inner, 'value', None)
-                # cp.Expression / cp.Constant: take .value.
-                if hasattr(result, 'value'):
-                    return result.value
-                # Pure numpy: that IS the value.
-                return result
-
-            # No e_fn either — fall back to cached optz.
-            optz = getattr(self, 'optz', None)
-            if optz is None:
-                logger.info(f"{self.class_name} <{self.name}> is not evaluated yet.")
+        if self.e_str is not None:
+            # e_str-driven numeric path. Operator-stripping happens
+            # inside ``eval_e_str_numeric``.
+            from ams.opt._runtime_eval import eval_e_str_numeric
+            try:
+                result = eval_e_str_numeric(self, self.e_str)
+            except Exception as exc:
+                logger.error(f"Error in calculating {self.class_name} <{self.name}>.\n{exc}")
                 return None
-            inner = getattr(optz, '_expr', optz)
-            return getattr(inner, 'value', None)
+            return getattr(result, 'value', result)
 
-        # e_str form: defer to the numeric helper. Same name-resolution
-        # surface as the CVXPY-side ``eval_e_str``, but values come from
-        # ``NumericRoutineNS`` so the result is a ``cp.Constant`` whose
-        # ``.value`` is the numpy LHS.
-        from ams.opt._runtime_eval import eval_e_str_numeric
-        try:
-            result = eval_e_str_numeric(self, self.code)
-        except Exception as exc:
-            logger.error(f"Error in calculating {self.class_name} <{self.name}>.\n{exc}")
+        # e_fn-only form: no e_str preserved on the item. Re-evaluate
+        # against the current numeric state via NumericRoutineNS.
+        # Resolves Vars to ``Var.v`` (which falls back to ``np.zeros``
+        # when ``optz.value`` is None), so ``.e`` is informative even
+        # on a failed/incomplete solve.
+        #
+        # The e_fn may return: (a) a cp.Constraint, (b) a cp.Expression
+        # (Objective inner), or (c) a pure numpy result when every
+        # operand is numpy and no cp.X wrapper is present.
+        from ams.core.routine_ns import NumericRoutineNS
+        e_fn = getattr(self, 'e_fn', None)
+        if e_fn is not None:
+            try:
+                result = e_fn(NumericRoutineNS(self.om.rtn))
+            except Exception as exc:
+                logger.error(
+                    f"Error in re-evaluating {self.class_name} "
+                    f"<{self.name}> via e_fn for `.e`.\n{exc}"
+                )
+                return None
+            # Constraint result: extract LHS via _expr.value.
+            if isinstance(result, cp.constraints.Constraint):
+                inner = getattr(result, '_expr', None)
+                if inner is None:
+                    inner = result.args[0] if result.args else None
+                return getattr(inner, 'value', None)
+            if hasattr(result, 'value'):
+                return result.value
+            return result
+
+        # No e_str, no e_fn — fall back to cached optz.
+        optz = getattr(self, 'optz', None)
+        if optz is None:
+            logger.info(f"{self.class_name} <{self.name}> is not evaluated yet.")
             return None
-        return getattr(result, 'value', result)
+        inner = getattr(optz, '_expr', optz)
+        return getattr(inner, 'value', None)
 
     def __repr__(self):
         return f'{self.__class__.__name__}: {self.name}'

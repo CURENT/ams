@@ -26,9 +26,9 @@ A simplified code snippet for RTED is shown below as an example.
                                info='Sum Gen vars vector in shape of zone',
                                no_parse=True, sparse=True)
             ... ...
-            self.rbu = Constraint(name='rbu', is_eq=True,
+            self.rbu = Constraint(name='rbu',
                                   info='RegUp reserve balance',
-                                  e_str = 'gs @ cp.multiply(ug, pru) - dud')
+                                  e_str = 'gs @ cp.multiply(ug, pru) - dud == 0')
             ... ...
 
 Routine Parameter
@@ -134,8 +134,11 @@ Other canonical-CVXPY constructs in ``e_str``:
   ``cp.vstack(...)``, ``cp.hstack(...)``, ``cp.maximum(...)``,
   ``cp.minimum(...)``, ``cp.quad_form(...)``,
   ``cp.sum_squares(...)``, ``cp.diag(...)`` — call directly.
-* Comparisons ``... == 0`` and ``... <= 0`` define equality and inequality
-  constraints respectively (set via the ``is_eq`` flag on ``Constraint``).
+* Comparisons ``... == 0`` / ``... <= 0`` / ``... >= 0`` are
+  embedded in the ``e_str`` itself; the LHS-zero authoring
+  convention keeps ``Constraint.v`` reporting slack-from-zero
+  uniformly. See :ref:`migration_cvxpy_namespace` for the v1.2.2
+  ``is_eq`` retirement.
 * Powers use ``**`` (e.g. ``vmax**2``).
 
 .. warning::

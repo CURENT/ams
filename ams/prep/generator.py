@@ -106,6 +106,15 @@ _TEX_TEMPLATES = OrderedDict([
     (r'\bsum\b', 'SUM'),
     (r'power\((.*?),\s*(\d+)\)', r'\1^\2'),
     (r'(\w+).dual_variables\[0\]', r'\phi[\1]'),
+    # Relational operators must come AFTER the `\bcp.X` stripper above
+    # but ordering within this trio doesn't matter (no overlap among
+    # `<=`, `>=`, `==`). `==` -> `=` because `\eq` would be ambiguous
+    # under math-mode rendering. Replacements use double-backslash so
+    # `re.sub` emits a literal `\leq` / `\geq` (single-backslash forms
+    # raise re.PatternError on Python 3.12+).
+    (r'<=', r'\\leq'),
+    (r'>=', r'\\geq'),
+    (r'==', '='),
 ])
 
 
@@ -319,11 +328,12 @@ def generate_for_routine(routine, *, header_extra: str = '') -> str:
         parts.append('\n')
 
     # --- Constraints ---
-    # Codegen convention: emit the LHS expression only. Constraint.evaluate
-    # applies ``<= 0`` / ``== 0`` based on ``is_eq``. This lets ``.e`` recover
-    # a numpy LHS during a failed/incomplete solve via ``NumericRoutineNS``;
-    # the legacy ``return <body> <= 0`` form short-circuits to a numpy bool
-    # when every operand is numpy, which loses the LHS.
+    # Codegen emits the rewritten ``e_str`` verbatim — relational operator
+    # included (post `is_eq` retirement). The wired callable returns a
+    # ``cp.constraints.Constraint``; ``Constraint.evaluate`` stores it
+    # directly. ``.e`` recovers the numpy LHS via ``optz._expr.value``,
+    # which CVXPY canonicalizes to ``lhs - rhs`` for any inequality
+    # direction — same diagnostic semantics as the prior LHS-only emit.
     for name, constr in routine.constrs.items():
         if constr.e_fn is not None or constr.e_str is None:
             continue

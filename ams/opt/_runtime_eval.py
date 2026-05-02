@@ -20,6 +20,7 @@ function-rewrite layer was deleted in PR #244):
 """
 
 import logging
+import re
 
 import cvxpy as cp
 import numpy as np
@@ -102,6 +103,9 @@ def eval_e_str(item, e_str):
         ) from exc
 
 
+_TRAILING_OP_RE = re.compile(r'\s*(==|<=|>=)\s*0\s*$')
+
+
 def eval_e_str_numeric(item, e_str):
     """Evaluate ``e_str`` numerically for :pyattr:`OptzBase.e`.
 
@@ -114,12 +118,16 @@ def eval_e_str_numeric(item, e_str):
     ``val_map`` + ``np.<atom>`` rewrite produced, but driven by the
     same name-resolution surface as the CVXPY-side helper.
 
-    For a ``cp.constraints.Constraint`` result (e.g. an ``e_str``
-    that already contains ``<= 0``), returns the constraint's LHS
-    expression so callers can ``.value`` it uniformly.
+    For an ``e_str`` carrying an embedded relational operator
+    (``... <= 0`` / ``... == 0`` / ``... >= 0``), strip the trailing
+    operator before evaluating so the returned object is the LHS
+    slack — what ``Constraint.v`` reports via CVXPY canonicalization
+    on the symbolic side. Without the strip, a numpy-only eval
+    short-circuits to a bool array.
     """
     rtn = item.om.rtn
-    code = _resolve(rtn, e_str)
+    body = _TRAILING_OP_RE.sub('', e_str)
+    code = _resolve(rtn, body)
     local_vars = {
         'cp': cp, 'np': np, 'sps': sps,
         'r': NumericRoutineNS(rtn), 'self': item,

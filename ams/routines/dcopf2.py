@@ -45,7 +45,7 @@ class PTDFBase:
 
         # --- rewrite Constraint pb: power balance ---
         # PTDF formulation uses system-wide balance instead of nodal balance
-        self.pb.e_str = "cp.sum(pg) - cp.sum(pd)"
+        self.pb.e_str = "cp.sum(pg) - cp.sum(pd) == 0"
 
         # --- rewrite Expression plf: line flow---
         # Use PTDF matrix instead of Bf@aBus
