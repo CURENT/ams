@@ -130,6 +130,11 @@ class SymProcessor:
             return True
         t, _ = elapsed()
 
+        # Invalidate the eval-helper symbol regex cache; the routine's
+        # symbol set may have changed since the last run (addRParam,
+        # addConstrs, etc.). See ams.opt._runtime_eval._get_symbol_regex.
+        self._eval_symbol_regex = None
+
         # Reject routine symbol names that collide with CVXPY atoms;
         # see RESERVED_CVXPY_ATOM_NAMES in ams.prep.generator. The
         # codegen path runs the same check via _collect_symbol_names,

@@ -4,19 +4,15 @@ Module for optimization ExpressionCalc.
 import logging
 
 from typing import Callable, Optional
-import re
 
 import numpy as np
-
-from ams.shared import sps  # NOQA
-
-import cvxpy as cp
 
 from ams.utils import pretty_long_message
 from ams.shared import _prefix, _max_length
 
 from ams.opt import OptzBase, ensure_symbols, ensure_mats_and_parsed
 from ams.opt.optzbase import _EFormDescriptor
+from ams.opt._runtime_eval import eval_e_str
 
 logger = logging.getLogger(__name__)
 
@@ -65,16 +61,10 @@ class ExpressionCalc(OptzBase):
         """
         if self.e_fn is not None:
             return True
-        # parse the expression str
-        sub_map = self.om.rtn.syms.sub_map
-        code_expr = self.e_str
-        for pattern, replacement in sub_map.items():
-            try:
-                code_expr = re.sub(pattern, replacement, code_expr)
-            except Exception as e:
-                raise Exception(f"Error in parsing expr <{self.name}>.\n{e}")
-        # store the parsed expression str code
-        self.code = code_expr
+        # Symbol resolution + eval are deferred to :func:`eval_e_str`
+        # at evaluate time. Keep ``self.code`` populated for
+        # :pyattr:`OptzBase.e` and :meth:`Routine.formulation_summary`.
+        self.code = self.e_str
         msg = f" - ExpressionCalc <{self.name}>: {self.e_str}"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         return True
@@ -92,13 +82,9 @@ class ExpressionCalc(OptzBase):
                 raise Exception(f"Error in evaluating ExpressionCalc <{self.name}> "
                                 f"via e_fn.\n{e}")
             return True
-        msg = f" - Expression <{self.name}>: {self.code}"
+        msg = f" - ExpressionCalc <{self.name}>: {self.e_str}"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
-        try:
-            local_vars = {'self': self, 'np': np, 'cp': cp, 'sps': sps}
-            self.optz = eval(self.code, {}, local_vars)
-        except Exception as e:
-            raise Exception(f"Error in evaluating ExpressionCalc <{self.name}>.\n{e}")
+        self.optz = eval_e_str(self, self.e_str)
         return True
 
     @property
