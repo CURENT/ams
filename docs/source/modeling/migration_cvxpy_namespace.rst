@@ -269,6 +269,12 @@ of ``e_str``) must now return a fully-formed
 a bare LHS expression and letting ``Constraint.evaluate`` apply
 ``<= 0`` / ``== 0`` is gone.
 
+**Cached pycode is auto-invalidated.** ``PYCODE_FORMAT_VERSION`` is
+bumped in lockstep with this change, so any
+``~/.ams/pycode/<routine>.py`` written by a pre-retirement AMS is
+rejected on first read and regenerated. No manual
+``ams prep --force`` needed after upgrade.
+
 See also
 --------
 

@@ -35,7 +35,7 @@ import ams
 # value, forcing a regen on the next run. Older caches that predate the
 # field (no attribute) are likewise rejected. Auto-heal pattern: same
 # as the ``pristine`` marker added in PR #242.
-PYCODE_FORMAT_VERSION = 2
+PYCODE_FORMAT_VERSION = 3
 
 
 # Routine symbol names that would silently shadow a CVXPY atom in the

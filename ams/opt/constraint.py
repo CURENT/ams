@@ -134,11 +134,16 @@ class Constraint(OptzBase):
             logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
             result = eval_e_str(self, self.e_str)
         if not isinstance(result, cp.constraints.Constraint):
+            source = f"e_str={self.e_str!r}" if self.e_str is not None else "e_fn"
             raise TypeError(
-                f"Constraint <{self.name}> e_str/e_fn must produce a "
+                f"Constraint <{self.name}>: {source} must produce a "
                 f"cp.constraints.Constraint (embed the relational "
                 f"operator: '<LHS> <= 0', '<LHS> == 0', or '<LHS> >= 0'). "
-                f"Got {type(result).__name__}."
+                f"Got {type(result).__name__}. Stale "
+                f"~/.ams/pycode/ from before the v1.2.2 is_eq retirement "
+                f"is auto-invalidated by PYCODE_FORMAT_VERSION; if you see "
+                f"this from a freshly-regenerated cache, the underlying "
+                f"e_str is missing its trailing operator."
             )
         self.optz = result
         return True
