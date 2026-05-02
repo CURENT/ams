@@ -4,7 +4,6 @@ Module for optimization Constraint.
 import logging
 
 from typing import Callable, Optional
-import re
 
 import numpy as np
 
@@ -16,6 +15,7 @@ from ams.shared import _prefix, _max_length
 from ams.core.routine_ns import RoutineNS
 from ams.opt import OptzBase, ensure_symbols, ensure_mats_and_parsed
 from ams.opt.optzbase import _EFormDescriptor
+from ams.opt._runtime_eval import eval_e_str
 
 logger = logging.getLogger(__name__)
 
@@ -91,21 +91,18 @@ class Constraint(OptzBase):
     def parse(self):
         """
         Parse the constraint.
+
+        Codegen-wired ``e_fn`` items have nothing to parse. For the
+        legacy ``e_str`` path, store the source verbatim — symbol
+        rewriting + eval happen together in
+        :func:`ams.opt._runtime_eval.eval_e_str` at evaluate time.
+        ``self.code`` is preserved (as the unrewritten source) so
+        :pyattr:`OptzBase.e` and :meth:`Routine.formulation_summary`
+        still have something to read.
         """
         if self.e_fn is not None:
             return True
-        # parse the expression str
-        sub_map = self.om.rtn.syms.sub_map
-        code_constr = self.e_str
-        for pattern, replacement in sub_map.items():
-            try:
-                code_constr = re.sub(pattern, replacement, code_constr)
-            except TypeError as e:
-                raise TypeError(f"Error in parsing constr <{self.name}>.\n{e}")
-        # parse the constraint type
-        code_constr += " == 0" if self.is_eq else " <= 0"
-        # store the parsed expression str code
-        self.code = code_constr
+        self.code = self.e_str
         msg = f" - Constr <{self.name}>: {self.e_str}"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         return True
@@ -120,7 +117,8 @@ class Constraint(OptzBase):
         (codegen convention; ``r.pg``). When it returns the LHS, the
         relational op is applied here based on ``is_eq``. The LHS form
         is required for ``.e`` to recover a numpy LHS during a failed
-        solve — see ``OptzBase.e``.
+        solve — see ``OptzBase.e``. The ``e_str`` path goes through
+        :func:`eval_e_str` and is wrapped the same way.
         """
         if self.e_fn is not None:
             try:
@@ -128,18 +126,15 @@ class Constraint(OptzBase):
             except Exception as e:
                 raise Exception(f"Error in evaluating Constraint <{self.name}> "
                                 f"via e_fn.\n{e}")
-            if isinstance(result, cp.constraints.Constraint):
-                self.optz = result
-            else:
-                self.optz = (result == 0) if self.is_eq else (result <= 0)
-            return True
-        msg = f" - Constr <{self.name}>: {self.code}"
-        logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
-        try:
-            local_vars = {'self': self, 'cp': cp, 'sub_map': self.om.rtn.syms.val_map}
-            self.optz = eval(self.code, {}, local_vars)
-        except Exception as e:
-            raise Exception(f"Error in evaluating Constraint <{self.name}>.\n{e}")
+        else:
+            msg = f" - Constr <{self.name}>: {self.e_str}"
+            logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
+            result = eval_e_str(self, self.e_str)
+        if isinstance(result, cp.constraints.Constraint):
+            self.optz = result
+        else:
+            self.optz = (result == 0) if self.is_eq else (result <= 0)
+        return True
 
     def __repr__(self):
         enabled = 'OFF' if self.is_disabled else 'ON'
