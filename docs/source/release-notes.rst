@@ -138,6 +138,15 @@ new name reflects the live implementation —
   :func:`ams.routines.routine.gather_results` with a keyword-only
   ``group`` flag selecting the flat (CSV) vs nested (JSON) output
   shape. Closes issue #195.
+- ``tests/`` reorganized into per-source-layer subfolders mirroring
+  ``ams/`` (``tests/io/``, ``tests/opt/``, ``tests/routines/``,
+  ``tests/system/``, ``tests/models/``, ``tests/core/``,
+  ``tests/interop/``, ``tests/cli/``). Shared case fixtures
+  (``case5``, ``case14``, ``case_pjm5bus_demo``, …) extracted to
+  ``tests/conftest.py``; Family-A and Family-B–E routine scenarios
+  consolidated into parametrized cross-checks; MATPOWER known-good
+  comparisons parametrized. New ``docs/source/modeling/test_layout.rst``
+  documents the layout. Net: -3 600 lines duplicated boilerplate.
 
 v1.2.2 (2026-05-01)
 ----------------------
