@@ -830,9 +830,9 @@ class RoutineBase:
         # insert objective value
         data_dict.update(OrderedDict(Objective=self.obj.v))
 
-        group_data(self, data_dict, self.vars, 'v')
-        group_data(self, data_dict, self.exprs, 'v')
-        group_data(self, data_dict, self.exprcs, 'v')
+        gather_results(self, data_dict, self.vars, 'v', group=True)
+        gather_results(self, data_dict, self.exprs, 'v', group=True)
+        gather_results(self, data_dict, self.exprcs, 'v', group=True)
 
         with open(path, 'w') as f:
             json.dump(data_dict, f, indent=4,
@@ -868,9 +868,9 @@ class RoutineBase:
 
         data_dict = initialize_data_dict(self)
 
-        collect_data(self, data_dict, self.vars, 'v')
-        collect_data(self, data_dict, self.exprs, 'v')
-        collect_data(self, data_dict, self.exprcs, 'v')
+        gather_results(self, data_dict, self.vars, 'v')
+        gather_results(self, data_dict, self.exprs, 'v')
+        gather_results(self, data_dict, self.exprcs, 'v')
 
         if 'T1' in data_dict['Time']:
             data_dict = OrderedDict([(k, [v]) for k, v in data_dict.items()])
@@ -1421,64 +1421,56 @@ def initialize_data_dict(rtn: RoutineBase):
         return OrderedDict([('Time', 'T1')])
 
 
-def collect_data(rtn: RoutineBase, data_dict: Dict, items: Dict, attr: str):
+def gather_results(rtn: RoutineBase, data_dict: Dict, items: Dict,
+                   attr: str, *, group: bool = False):
     """
-    Collect data for export.
+    Gather routine results into ``data_dict`` for export.
+
+    Two output shapes, selected by ``group``:
+
+    - ``group=False`` (flat): one entry per device, keyed
+      ``f'{key} {dev}'``, values rounded to 6 decimals. Used by
+      :meth:`RoutineBase.export_csv`.
+    - ``group=True`` (nested by owner): one section per
+      ``owner.class_name`` with a shared ``idx`` list and one entry
+      per ``key``. Used by :meth:`RoutineBase.export_json`.
 
     Parameters
     ----------
     rtn : ams.routines.routine.RoutineBase
-        The routine to collect data from.
-    data_dict : OrderedDict
-        The data dictionary to populate.
-    items : dict
-        Dictionary of items to collect data from.
-    attr : str
-        Attribute to collect data for.
-    """
-    for key, item in items.items():
-        if item.owner is None:
-            continue
-        idx_v = item.get_all_idxes()
-        try:
-            data_v = rtn.get(src=key, attr=attr, idx=idx_v,
-                             horizon=rtn.timeslot.v if hasattr(rtn, 'timeslot') else None).round(6)
-        except Exception as e:
-            logger.debug(f"Error with collecting data for '{key}': {e}")
-            data_v = [np.nan] * len(idx_v)
-        data_dict.update(OrderedDict(zip([f'{key} {dev}' for dev in idx_v], data_v)))
-
-
-def group_data(rtn: RoutineBase, data_dict: Dict, items: Dict, attr: str):
-    """
-    Collect data for export by groups, adding device idx in each group.
-    This is useful when exporting to dictionary formats like JSON.
-
-    Parameters
-    ----------
-    rtn : ams.routines.routine.RoutineBase
-        The routine to collect data from.
+        The routine to gather results from.
     data_dict : Dict
-        The data dictionary to populate.
+        The data dictionary to populate in place.
     items : dict
-        Dictionary of items to collect data from.
+        Items to gather (typically ``rtn.vars``, ``rtn.exprs``, or
+        ``rtn.exprcs``).
     attr : str
-        Attribute to collect data for.
-
-    .. versionadded:: 1.0.13
+        Attribute to read from each item via :meth:`rtn.get`.
+    group : bool, keyword-only
+        Output shape selector — see above.
     """
+    horizon = rtn.timeslot.v if hasattr(rtn, 'timeslot') else None
     for key, item in items.items():
         if item.owner is None:
             continue
-        if item.owner.class_name not in data_dict.keys():
-            idx_v = item.get_all_idxes()
-            data_dict[item.owner.class_name] = dict(idx=idx_v)
+        if group:
+            cname = item.owner.class_name
+            if cname not in data_dict:
+                idx_v = item.get_all_idxes()
+                data_dict[cname] = dict(idx=idx_v)
+            else:
+                idx_v = data_dict[cname]['idx']
         else:
-            idx_v = data_dict[item.owner.class_name]['idx']
+            idx_v = item.get_all_idxes()
         try:
-            data_v = rtn.get(src=key, attr=attr, idx=idx_v,
-                             horizon=rtn.timeslot.v if hasattr(rtn, 'timeslot') else None)
+            data_v = rtn.get(src=key, attr=attr, idx=idx_v, horizon=horizon)
+            if not group:
+                data_v = data_v.round(6)
         except Exception as e:
-            logger.warning(f"Error with collecting data for '{key}': {e}")
-            data_v = [np.nan] * item.owner.n
-        data_dict[item.owner.class_name][key] = data_v
+            logger.debug(f"Error gathering data for '{key}': {e}")
+            data_v = [np.nan] * len(idx_v)
+        if group:
+            data_dict[cname][key] = data_v
+        else:
+            data_dict.update(OrderedDict(zip(
+                [f'{key} {dev}' for dev in idx_v], data_v)))
