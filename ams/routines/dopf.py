@@ -142,7 +142,11 @@ class DOPFVIS(DOPF):
         self.D = Var(info='Emulated damping coefficient from REGCV1',
                      name='D', tex_name=r'D', unit='p.u.',
                      model='VSG',)
-        obj = 'cp.sum(c2 * pg**2 + c1 * pg + ug * c0 + cm * M + cd * D)'
+        obj = 'cp.sum(cp.multiply(c2, pg**2))'
+        obj += '+ cp.sum(cp.multiply(c1, pg))'
+        obj += '+ cp.sum(cp.multiply(ug, c0))'
+        obj += '+ cp.sum(cp.multiply(cm, M))'
+        obj += '+ cp.sum(cp.multiply(cd, D))'
         self.obj = Objective(name='tc',
                              info='total cost', unit='$',
                              e_str=obj,
