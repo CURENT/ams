@@ -26,7 +26,6 @@ class TestDCOPF2(unittest.TestCase):
         Test if results align with DCOPF.
         """
         self.ss.DCOPF.run(solver='CLARABEL')
-        self.ss.mats.build_ptdf()
         self.ss.DCOPF2.run(solver='CLARABEL')
 
         pg_idx = self.ss.StaticGen.get_all_idxes()
