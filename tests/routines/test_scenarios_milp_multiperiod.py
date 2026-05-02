@@ -15,6 +15,9 @@ Per-routine differences live in `_ROUTINES`:
 - ``align_full``: ``False`` for UC2ES — generation allocation
   diverges from UCES while the objective matches, so only obj+ugd
   are compared. Other 2nd-gen routines compare obj/ugd/pg/aBus/plf.
+- ``align_ref_first``: ``True`` for UC2 — the legacy
+  ``test_align_uc`` runs ``UC`` before ``UC2``, while
+  ``UC2DG``/``UC2ES`` run the 2nd-gen first. Preserved verbatim.
 
 ``test_init``, ``test_initial_guess``, and ``test_pb_formula`` do
 not invoke the SCIP backend and are not skipped on solver
@@ -26,9 +29,7 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 
-from ams.shared import installed_solvers, misocp_solvers
-
-_HAS_MISOCP = bool(set(misocp_solvers) & set(installed_solvers))
+from tests.conftest import HAS_MISOCP
 
 
 @dataclass(frozen=True)
@@ -36,13 +37,14 @@ class _RoutineSpec:
     has_aBus: bool
     align_ref: object  # str or None
     align_full: bool = True
+    align_ref_first: bool = False
 
 
 _ROUTINES = {
     "UC":     _RoutineSpec(has_aBus=False, align_ref=None),
     "UCDG":   _RoutineSpec(has_aBus=False, align_ref=None),
     "UCES":   _RoutineSpec(has_aBus=False, align_ref=None),
-    "UC2":    _RoutineSpec(has_aBus=True,  align_ref='UC'),
+    "UC2":    _RoutineSpec(has_aBus=True,  align_ref='UC', align_ref_first=True),
     "UC2DG":  _RoutineSpec(has_aBus=True,  align_ref='UCDG'),
     "UC2ES":  _RoutineSpec(has_aBus=True,  align_ref='UCES', align_full=False),
 }
@@ -68,12 +70,15 @@ def ctx(pjm5bus_json, request):
     ss = pjm5bus_json
     ss.PQ.set(src='p0', attr='v', idx=['PQ_1', 'PQ_2'], value=[0.3, 0.3])
     rtn = getattr(ss, routine_id)
+    # _initial_guess() is idempotent and solver-free; legacy setUp
+    # called it for every test method including test_init, so do
+    # the same here.
     off_gen = rtn._initial_guess()
     return _Ctx(ss=ss, routine_id=routine_id, spec=spec, rtn=rtn, off_gen=off_gen)
 
 
 def _skip_if_solver_missing():
-    if not _HAS_MISOCP:
+    if not HAS_MISOCP:
         pytest.skip("No MISOCP solver is available.")
 
 
@@ -157,8 +162,12 @@ def test_align(ctx):
     """2nd-gen routines must match their 1st-gen counterpart."""
     _skip_if_solver_missing()
     ref = getattr(ctx.ss, ctx.spec.align_ref)
-    ctx.rtn.run(solver=_SOLVER)
-    ref.run(solver=_SOLVER)
+    if ctx.spec.align_ref_first:
+        ref.run(solver=_SOLVER)
+        ctx.rtn.run(solver=_SOLVER)
+    else:
+        ctx.rtn.run(solver=_SOLVER)
+        ref.run(solver=_SOLVER)
 
     pg_idx = ctx.ss.StaticGen.get_all_idxes()
     bus_idx = ctx.ss.Bus.idx.v

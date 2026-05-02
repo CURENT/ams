@@ -28,11 +28,7 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 
-try:
-    import pypower  # noqa: F401
-    _HAS_PYPOWER = True
-except ImportError:
-    _HAS_PYPOWER = False
+from tests.conftest import HAS_PYPOWER
 
 
 @dataclass(frozen=True)
@@ -90,7 +86,7 @@ def ctx(request):
 
 
 def _skip_if_pypower_missing(spec):
-    if spec.needs_pypower and not _HAS_PYPOWER:
+    if spec.needs_pypower and not HAS_PYPOWER:
         pytest.skip("PYPOWER is not available.")
 
 

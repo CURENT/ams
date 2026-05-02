@@ -15,6 +15,9 @@ results are 2-D over (gen, slot). Per-routine differences live in
   ``None`` for 1st-generation routines.
 - ``align_decimals``: precision for the alignment comparisons.
   Tighter (4) for non-storage; looser (3) for ED2ES.
+- ``loc_offtime``: tuple of EDTSlot rows used by ``test_trip_gen``
+  to force the gen off. ``(0, 2, 4)`` for everything except EDES
+  (``(0, 2)``) — preserved verbatim from the legacy bodies.
 
 ``test_init`` does not invoke a solver and is never skipped on
 solver availability; ``test_pb_formula`` is a static-string check
@@ -26,9 +29,7 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 
-from ams.shared import installed_solvers, misocp_solvers
-
-_HAS_MISOCP = bool(set(misocp_solvers) & set(installed_solvers))
+from tests.conftest import HAS_MISOCP
 
 
 @dataclass(frozen=True)
@@ -37,12 +38,14 @@ class _RoutineSpec:
     has_aBus: bool
     align_ref: object  # str or None
     align_decimals: int = 4
+    loc_offtime: tuple = (0, 2, 4)
 
 
 _ROUTINES = {
     "ED":     _RoutineSpec(solver='CLARABEL', has_aBus=False, align_ref=None),
     "EDDG":   _RoutineSpec(solver='CLARABEL', has_aBus=False, align_ref=None),
-    "EDES":   _RoutineSpec(solver='SCIP',     has_aBus=False, align_ref=None),
+    "EDES":   _RoutineSpec(solver='SCIP',     has_aBus=False, align_ref=None,
+                           loc_offtime=(0, 2)),
     "ED2":    _RoutineSpec(solver='CLARABEL', has_aBus=True,  align_ref='ED'),
     "ED2DG":  _RoutineSpec(solver='CLARABEL', has_aBus=True,  align_ref='EDDG'),
     "ED2ES":  _RoutineSpec(solver='SCIP',     has_aBus=True,  align_ref='EDES',
@@ -70,7 +73,7 @@ def ctx(pjm5bus_json, request):
 
 
 def _skip_if_solver_missing(spec):
-    if spec.solver == 'SCIP' and not _HAS_MISOCP:
+    if spec.solver == 'SCIP' and not HAS_MISOCP:
         pytest.skip("No MISOCP solver is available.")
 
 
@@ -93,7 +96,7 @@ def test_trip_gen(ctx):
     # a) EDTSlot.ug.v drives per-slot generator status
     stg = 'PV_1'
     stg_uid = ctx.ss.StaticGen.get_all_idxes().index(stg)
-    loc_offtime = np.array([0, 2, 4]) if ctx.spec.solver == 'CLARABEL' else np.array([0, 2])
+    loc_offtime = np.array(ctx.spec.loc_offtime)
     ctx.ss.EDTSlot.ug.v[loc_offtime, stg_uid] = 0
 
     ctx.rtn.run(solver=ctx.spec.solver)
