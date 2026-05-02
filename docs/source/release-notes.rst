@@ -48,6 +48,14 @@ Routine symbol names (``Var``, ``RParam``, ``Service``, ``Expression``,
 explanatory error if a collision is detected. This prevents a routine
 from silently shadowing ``cp.X`` in the eval-fallback rewrite.
 
+A small behavior change rides with the eval-fallback unification:
+``Constraint.e_str`` may now contain a relational operator
+(``pg <= pmax`` etc.). Previously ``Constraint.parse()`` appended
+``' == 0'`` / ``' <= 0'`` unconditionally and an embedded operator
+would have been a syntax-level "double op" at evaluate time. The
+runtime now dispatches on whether the eval result is already a
+``cp.constraints.Constraint`` and skips the wrap when it is.
+
 **New features:**
 
 - **Opt-layer codegen.** Routine constraints, expressions, and

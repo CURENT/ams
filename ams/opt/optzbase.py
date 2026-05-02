@@ -2,16 +2,12 @@
 Module for optimization base classes.
 """
 import logging
-import re
 
 from typing import Optional
 
-import numpy as np
 import cvxpy as cp
 
 from ams.utils.misc import deprec_get_idx
-from ams.utils import pretty_long_message
-from ams.shared import _prefix, _max_length
 
 
 logger = logging.getLogger(__name__)
@@ -266,8 +262,9 @@ class OptzBase:
           for constraints, ``self.optz`` otherwise). This is the
           solver-returned value, not a re-canonicalization from current
           parameter state — sufficient for the post-solve ``v == e`` check.
-        - **e_str form**: rewrite ``self.code`` via ``val_map`` and ``eval``
-          it; the legacy regex pipeline.
+        - **e_str form**: route through :func:`eval_e_str_numeric`,
+          which mirrors the symbol-resolution surface of the CVXPY-side
+          helper but resolves to numpy via :class:`NumericRoutineNS`.
         """
         if self.code is None:
             # e_fn form: re-evaluate against the current numeric state
@@ -312,22 +309,17 @@ class OptzBase:
             inner = getattr(optz, '_expr', optz)
             return getattr(inner, 'value', None)
 
-        val_map = self.om.rtn.syms.val_map
-        code = self.code
-        for pattern, replacement in val_map.items():
-            try:
-                code = re.sub(pattern, replacement, code)
-            except TypeError as exc:
-                raise TypeError(exc)
-
+        # e_str form: defer to the numeric helper. Same name-resolution
+        # surface as the CVXPY-side ``eval_e_str``, but values come from
+        # ``NumericRoutineNS`` so the result is a ``cp.Constant`` whose
+        # ``.value`` is the numpy LHS.
+        from ams.opt._runtime_eval import eval_e_str_numeric
         try:
-            logger.debug(pretty_long_message(f"Value code: {code}",
-                                             _prefix, max_length=_max_length))
-            local_vars = {'self': self, 'np': np, 'cp': cp, 'val_map': val_map}
-            return eval(code, {}, local_vars)
+            result = eval_e_str_numeric(self, self.code)
         except Exception as exc:
             logger.error(f"Error in calculating {self.class_name} <{self.name}>.\n{exc}")
             return None
+        return getattr(result, 'value', result)
 
     def __repr__(self):
         return f'{self.__class__.__name__}: {self.name}'

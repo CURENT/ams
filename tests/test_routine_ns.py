@@ -182,6 +182,20 @@ class TestRuntimeCustomization(unittest.TestCase):
         ss.DCOPF.init()
         ss.DCOPF.run(solver='CLARABEL')
         self.assertEqual(ss.DCOPF.exit_code, 0)
+        # ``.e`` (post-solve numpy LHS readout) must work for items
+        # routed through the eval-fallback path. Catches regressions in
+        # ``OptzBase.e``'s symbol resolution against ``self.code`` —
+        # which changed shape in the eval_e_str refactor (now stores
+        # the unrewritten e_str rather than the post-rewrite source).
+        # Reviewer-driven assertion (PR #245).
+        obj_e = ss.DCOPF.obj.e
+        self.assertIsNotNone(obj_e,
+                             "obj.e returned None on the eval-fallback "
+                             "path — OptzBase.e is mis-resolving symbols")
+        self.assertAlmostEqual(float(obj_e), float(ss.DCOPF.obj.v),
+                               places=6,
+                               msg="obj.e should equal obj.v after a "
+                                   "successful solve")
 
     def test_customization_does_not_pollute_other_instances(self):
         """One System's customization must not leak into another's cache.
