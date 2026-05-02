@@ -117,9 +117,9 @@ Model Section
                                       name='plfub', type='uq',
                                       e_str='Bf@aBus + Pfinj - rate_a',)
               # --- objective ---
-              obj = 'sum(mul(c2, power(pg, 2)))'
-              obj += '+ sum(mul(c1, pg))'
-              obj += '+ sum(mul(ug, c0))'
+              obj = 'cp.sum(cp.multiply(c2, pg**2))'
+              obj += '+ cp.sum(cp.multiply(c1, pg))'
+              obj += '+ cp.sum(cp.multiply(ug, c0))'
               self.obj = Objective(name='obj',
                                    info='total cost', unit='$',
                                    sense='min', e_str=obj,)

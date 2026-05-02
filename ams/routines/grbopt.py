@@ -49,7 +49,8 @@ class OPF(DCPF1):
                              info='total cost, placeholder',
                              unit='$',
                              sense='min',)
-        self.obj.e_str = 'sum(mul(c2, pg**2)) + sum(mul(c1, pg)) + sum(mul(ug, c0))'
+        self.obj.e_str = ('cp.sum(cp.multiply(c2, pg**2)) + cp.sum(cp.multiply(c1, pg))'
+                          ' + cp.sum(cp.multiply(ug, c0))')
 
         self.pi = Var(info='Lagrange multiplier on real power mismatch',
                       name='pi', unit='$/p.u.',

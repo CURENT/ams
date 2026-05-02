@@ -114,11 +114,11 @@ class DCOPF(DCPFBase):
         # --- Model Section ---
         self.pmaxe = Expression(info='Effective pmax',
                                 name='pmaxe', tex_name=r'p_{g, max, e}',
-                                e_str='mul(nctrle, pg0) + mul(ctrle, pmax)',
+                                e_str='cp.multiply(nctrle, pg0) + cp.multiply(ctrle, pmax)',
                                 model='StaticGen', src=None, unit='p.u.',)
         self.pmine = Expression(info='Effective pmin',
                                 name='pmine', tex_name=r'p_{g, min, e}',
-                                e_str='mul(nctrle, pg0) + mul(ctrle, pmin)',
+                                e_str='cp.multiply(nctrle, pg0) + cp.multiply(ctrle, pmin)',
                                 model='StaticGen', src=None, unit='p.u.',)
         self.pglb = Constraint(name='pglb', info='pg min',
                                e_str='-pg + pmine', is_eq=False,)
@@ -128,10 +128,10 @@ class DCOPF(DCPFBase):
         # --- line flow ---
         self.plflb = Constraint(info='line flow lower bound',
                                 name='plflb', is_eq=False,
-                                e_str='-plf - mul(ul, rate_a)',)
+                                e_str='-plf - cp.multiply(ul, rate_a)',)
         self.plfub = Constraint(info='line flow upper bound',
                                 name='plfub', is_eq=False,
-                                e_str='plf - mul(ul, rate_a)',)
+                                e_str='plf - cp.multiply(ul, rate_a)',)
         self.alflb = Constraint(info='line angle difference lower bound',
                                 name='alflb', is_eq=False,
                                 e_str='-CftT@aBus + amin',)
@@ -153,9 +153,9 @@ class DCOPF(DCPFBase):
                                   e_str='plfub.dual_variables[0]')
 
         # --- objective ---
-        obj = 'sum(mul(c2, pg**2))'
-        obj += '+ sum(mul(c1, pg))'
-        obj += '+ sum(mul(ug, c0))'
+        obj = 'cp.sum(cp.multiply(c2, pg**2))'
+        obj += '+ cp.sum(cp.multiply(c1, pg))'
+        obj += '+ cp.sum(cp.multiply(ug, c0))'
         self.obj = Objective(name='obj',
                              info='total cost', unit='$',
                              sense='min', e_str=obj,)

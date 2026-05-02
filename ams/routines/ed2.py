@@ -19,7 +19,7 @@ class PTDFMPBase(PTDFBase):
         super().__init__(system, config, **kwargs)
 
         # rewrite pb to ensure power balance for each period
-        self.pb.e_str = "sum(pg, axis=0) - sum(pds, axis=0)"
+        self.pb.e_str = "cp.sum(pg, axis=0) - cp.sum(pds, axis=0)"
 
         # --- rewrite Expression plf: line flow---
         self.plf.e_str = "PTDF @ (Cg@pg - Cl@pds - Csh@gsh@tlv - Pbusinj@tlv)"

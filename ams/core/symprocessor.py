@@ -49,41 +49,42 @@ class SymProcessor:
         self.tex_names = OrderedDict()
         self.tex_map = OrderedDict()
 
-        # CVXPY is the sole modeling language.
-        # NOTE: e_str must use explicit notation: `@` for matrix-multiply,
-        # `mul(a, b)` for element-wise. Bare `*` between identifiers is no
-        # longer rewritten to `@` — see refactor step 1.4.
-        self.sub_map = OrderedDict([
-            (r'\b(\w+)\s+dot\s+(\w+)\b', r'\1 * \2'),
-            (r' dot ', r' * '),
-            (r'\bsum\b', 'cp.sum'),
-            (r'\bvar\b', 'cp.Variable'),
-            (r'\bparam\b', 'cp.Parameter'),
-            (r'\bconst\b', 'cp.Constant'),
-            (r'\bproblem\b', 'cp.Problem'),
-            (r'\bmultiply\b', 'cp.multiply'),
-            (r'\bmul\b', 'cp.multiply'),  # alias for multiply
-            (r'\bvstack\b', 'cp.vstack'),
-            (r'\bnorm\b', 'cp.norm'),
-            (r'\bpos\b', 'cp.pos'),
-            (r'\bpower\b', 'cp.power'),
-            (r'\bsign\b', 'cp.sign'),
-            (r'\bmaximum\b', 'cp.maximum'),
-            (r'\bminimum\b', 'cp.minimum'),
-            (r'\bsquare\b', 'cp.square'),
-            (r'\bquad_over_lin\b', 'cp.quad_over_lin'),
-            (r'\bdiag\b', 'cp.diag'),
-            (r'\bquad_form\b', 'cp.quad_form'),
-            (r'\bsum_squares\b', 'cp.sum_squares'),
-        ])
+        # CVXPY is the sole modeling language. As of the
+        # cvxpy-namespace passthrough (Step 2), routines author
+        # canonical CVXPY directly (``cp.sum(...)``, ``cp.multiply(...)``,
+        # ``*`` for element-wise). The function-name rewrite block
+        # that previously lived here (``mul → cp.multiply``,
+        # ``dot → *`` etc.) is gone; ``sub_map`` now carries only the
+        # per-symbol substitutions populated by ``generate_symbols``.
+        # The legacy eval-fallback path in
+        # ``opt/{constraint,objective,expression,exprcalc}.py`` therefore
+        # requires its inputs to already be in canonical CVXPY form.
+        self.sub_map = OrderedDict()
 
+        # First rule strips the ``cp.`` Python-module prefix from
+        # canonical-CVXPY e_str (added in the namespace-passthrough
+        # migration). Without it, ``cp.sum(cp.multiply(...))`` would
+        # render as ``cp.\sum(cp.c_{...} ...)`` — the ``cp.`` is Python
+        # plumbing, never math. Mirrors
+        # :data:`ams.prep.generator._TEX_TEMPLATES`; both must agree.
+        # ``\*\*`` MUST come before the ``cp.`` stripper —
+        # ``_tex_pre`` runs ``expr.replace('*', ' ')`` after every
+        # substitution, shredding any unconverted ``**`` into two
+        # spaces.
         self.tex_map = OrderedDict([
             (r'\*\*(\d+)', '^{\\1}'),
+            (r'\bcp\.(\w+)', r'\1'),
             (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 \2'),
             (r'\@', r' '),
             (r'dot', r' '),
             (r'sum_squares\((.*?)\)', r"SUM((\1))^2"),
+            # ``multiply\(...\)`` runs twice (second key is the
+            # ``\b`` form to bypass OrderedDict key dedup) to catch
+            # nested ``multiply(multiply(...))``. Same trick as the
+            # ``mul``/``\bmul\b`` pair below; see
+            # :data:`ams.prep.generator._TEX_TEMPLATES`.
             (r'multiply\(([^,]+), ([^)]+)\)', r'\1 \2'),
+            (r'\bmultiply\b\(([^,]+), ([^)]+)\)', r'\1 \2'),
             (r'\bnp.linalg.pinv(\d+)', r'\1^{\-1}'),
             (r'\bpos\b', 'F^{+}'),
             (r'mul\((.*?),\s*(.*?)\)', r'\1 \2'),
@@ -129,15 +130,34 @@ class SymProcessor:
             return True
         t, _ = elapsed()
 
+        # Reject routine symbol names that collide with CVXPY atoms;
+        # see RESERVED_CVXPY_ATOM_NAMES in ams.prep.generator. The
+        # codegen path runs the same check via _collect_symbol_names,
+        # but routines can hit sub_map without ever going through
+        # codegen (e.g. addConstrs at runtime), so this side enforces
+        # the contract independently.
+        from ams.prep.generator import _check_reserved_collisions
+        _sym_names = set()
+        for _category in (self.parent.vars, self.parent.rparams,
+                          self.parent.services, self.parent.exprs,
+                          self.parent.constrs):
+            _sym_names.update(_category.keys())
+        _check_reserved_collisions(self.parent, _sym_names)
+
         # process tex_names defined in routines
         # -----------------------------------------------------------
         for key in self.parent.tex_names.keys():
             self.tex_names[key] = sp.symbols(self.parent.tex_names[key])
 
+        # ``(?<!\.)`` lookbehind on every sub_map pattern: skip
+        # identifiers preceded by a dot, so canonical ``cp.X(...)`` /
+        # ``r.X`` survives the eval-fallback rewrite even if a routine
+        # symbol happens to share a CVXPY atom name. Mirrors the same
+        # lookbehind in :func:`ams.prep.generator._build_symbol_regex`.
         # Vars
         for vname, var in self.parent.vars.items():
             self.inputs_dict[vname] = sp.symbols(f'{vname}')
-            self.sub_map[rf"\b{vname}\b"] = f"self.om.{vname}"
+            self.sub_map[rf"(?<!\.)\b{vname}\b"] = f"self.om.{vname}"
             self.tex_map[rf"\b{vname}\b"] = rf'{var.tex_name}'
             self.val_map[rf"\b{vname}\b"] = f"rtn.{vname}.v"
 
@@ -157,7 +177,7 @@ class SymProcessor:
                 sub_name = f'self.rtn.{rpname}.v'
             else:
                 sub_name = f'self.om.{rpname}'
-            self.sub_map[rf"\b{rpname}\b"] = sub_name
+            self.sub_map[rf"(?<!\.)\b{rpname}\b"] = sub_name
             self.tex_map[rf"\b{rpname}\b"] = f'{rparam.tex_name}'
             if not rparam.no_parse:
                 self.val_map[rf"\b{rpname}\b"] = f"rtn.{rpname}.v"
@@ -168,7 +188,7 @@ class SymProcessor:
             self.services_dict[sname] = tmp
             self.inputs_dict[sname] = tmp
             sub_name = f'self.rtn.{sname}.v' if service.no_parse else f'self.om.{sname}'
-            self.sub_map[rf"\b{sname}\b"] = sub_name
+            self.sub_map[rf"(?<!\.)\b{sname}\b"] = sub_name
             self.tex_map[rf"\b{sname}\b"] = f'{service.tex_name}'
             if not service.no_parse:
                 self.val_map[rf"\b{sname}\b"] = f"rtn.{sname}.v"
@@ -176,7 +196,7 @@ class SymProcessor:
         # Expressions
         for ename, expr in self.parent.exprs.items():
             self.inputs_dict[ename] = sp.symbols(f'{ename}')
-            self.sub_map[rf"\b{ename}\b"] = f"self.om.{ename}"
+            self.sub_map[rf"(?<!\.)\b{ename}\b"] = f"self.om.{ename}"
             self.val_map[rf"\b{ename}\b"] = f"rtn.{ename}.v"
             self.tex_map[rf"\b{ename}\b"] = f'{expr.tex_name}'
 
@@ -184,12 +204,12 @@ class SymProcessor:
         # NOTE: constraints are included in sub_map for ExpressionCalc
         # thus, they don't have the suffix `.v`
         for cname, _ in self.parent.constrs.items():
-            self.sub_map[rf"\b{cname}\b"] = f'self.rtn.{cname}.optz'
+            self.sub_map[rf"(?<!\.)\b{cname}\b"] = f'self.rtn.{cname}.optz'
 
         # store tex names defined in `self.config`
         for key in self.config.as_dict():
             tmp = sp.symbols(key)
-            self.sub_map[rf"\b{key}\b"] = f'self.rtn.config.{key}'
+            self.sub_map[rf"(?<!\.)\b{key}\b"] = f'self.rtn.config.{key}'
             if key not in self.config.tex_names.keys():
                 logger.debug(f'No tex name for config.{key}')
                 self.tex_map[rf"\b{key}\b"] = key

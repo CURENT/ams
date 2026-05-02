@@ -157,21 +157,20 @@ class RTED(SFRBase, RTEDBase, DCOPF):
         # --- Model Section ---
         # --- SFR ---
         # RegUp/Dn reserve balance
-        self.rbu.e_str = 'gs @ mul(ug, pru) - dud'
-        self.rbd.e_str = 'gs @ mul(ug, prd) - ddd'
+        self.rbu.e_str = 'gs @ cp.multiply(ug, pru) - dud'
+        self.rbd.e_str = 'gs @ cp.multiply(ug, prd) - ddd'
         # RegUp/Dn reserve source
-        self.rru.e_str = 'mul(ug, (pg + pru)) - mul(ug, pmaxe)'
-        self.rrd.e_str = 'mul(ug, (-pg + prd)) + mul(ug, pmine)'
+        self.rru.e_str = 'cp.multiply(ug, (pg + pru)) - cp.multiply(ug, pmaxe)'
+        self.rrd.e_str = 'cp.multiply(ug, (-pg + prd)) + cp.multiply(ug, pmine)'
         # Gen ramping up/down
-        self.rgu.e_str = 'mul(ug, (pg-pg0-R10))'
-        self.rgd.e_str = 'mul(ug, (-pg+pg0-R10))'
+        self.rgu.e_str = 'cp.multiply(ug, (pg-pg0-R10))'
+        self.rgd.e_str = 'cp.multiply(ug, (-pg+pg0-R10))'
 
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
-        # NOTE: the product involved t should use ``dot``
-        cost = 't**2 dot sum(mul(c2, pg**2)) + sum(mul(ug, c0))'
+        cost = 't**2 * cp.sum(cp.multiply(c2, pg**2)) + cp.sum(cp.multiply(ug, c0))'
         _to_sum = 'c1 @ pg + cru @ pru + crd @ prd'
-        cost += f'+ t dot sum({_to_sum})'
+        cost += f'+ t * cp.sum({_to_sum})'
         self.obj.e_str = cost
 
     def dc2ac(self, kloss=1.0, **kwargs):
@@ -366,8 +365,8 @@ class ESD1PBase:
                                 info='SOC upper bound',
                                 e_str='SOC - SOCmax',)
 
-        SOCb = 'mul(En, (SOC - SOCinit)) - t dot mul(EtaC, pce)'
-        SOCb += '+ t dot mul(REtaD, pde)'
+        SOCb = 'cp.multiply(En, (SOC - SOCinit)) - t * cp.multiply(EtaC, pce)'
+        SOCb += '+ t * cp.multiply(REtaD, pde)'
         self.SOCb = Constraint(name='SOCb', is_eq=True,
                                info='ESD1 SOC balance',
                                e_str=SOCb,)
@@ -376,7 +375,7 @@ class ESD1PBase:
                                info='ESD1 final SOC requirement',
                                e_str='SOCend - SOC',)
 
-        self.obj.e_str += '+ t dot sum(- mul(cesdc, pce) + mul(cesdd, pde))'
+        self.obj.e_str += '+ t * cp.sum(- cp.multiply(cesdc, pce) + cp.multiply(cesdd, pde))'
 
     def _data_check(self):
         """
@@ -438,10 +437,10 @@ class RTEDESP(ESD1PBase, RTEDDG):
                           model='ESD1', no_parse=True,)
 
         self.zce = Constraint(name='zce', is_eq=False, info='zce bound',
-                              e_str='mul(1-ucd, pce)',)
+                              e_str='cp.multiply(1-ucd, pce)',)
 
         self.zde = Constraint(name='zde', is_eq=False, info='zde bound',
-                              e_str='mul(1-udd, pde)',)
+                              e_str='cp.multiply(1-udd, pde)',)
 
     def _preinit(self):
         """
@@ -521,16 +520,16 @@ class ESD1Base(DGBase, ESD1PBase):
         self.zce1 = Constraint(name='zce1', is_eq=False, info='zce bound 1',
                                e_str='-zce + pce',)
         self.zce2 = Constraint(name='zce2', is_eq=False, info='zce bound 2',
-                               e_str='zce - pce - Mb dot (1-ucd)',)
+                               e_str='zce - pce - Mb * (1-ucd)',)
         self.zce3 = Constraint(name='zce3', is_eq=False, info='zce bound 3',
-                               e_str='zce - Mb dot ucd',)
+                               e_str='zce - Mb * ucd',)
 
         self.zde1 = Constraint(name='zde1', is_eq=False, info='zde bound 1',
                                e_str='-zde + pde',)
         self.zde2 = Constraint(name='zde2', is_eq=False, info='zde bound 2',
-                               e_str='zde - pde - Mb dot (1-udd)',)
+                               e_str='zde - pde - Mb * (1-udd)',)
         self.zde3 = Constraint(name='zde3', is_eq=False, info='zde bound 3',
-                               e_str='zde - Mb dot udd',)
+                               e_str='zde - Mb * udd',)
 
         # force charging flag `fcd`: (tdc0 > 0) * (tdc > tdc0)
         tcdr = '(tdc0 > 0) * (tdc > tdc0) - ucd'
@@ -653,7 +652,7 @@ class RTEDVIS(VISBase, RTED):
 
         # --- objective ---
         self.obj.info = 'total generation and reserve cost'
-        vsgcost = '+ t dot sum(cm * M + cd * D)'
+        vsgcost = '+ t * cp.sum(cm * M + cd * D)'
         self.obj.e_str += vsgcost
 
         self.map2.update({

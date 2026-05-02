@@ -109,15 +109,21 @@ def prep_all(routines: Optional[Iterable[str]] = None,
                 continue
             target = pycode_dir() / f'{name.lower()}.py'
             if not force and target.exists():
-                # Mirror the staleness check in _link_pycode: both md5 AND
-                # cvxpy_version must match, otherwise regen.
+                # Mirror the staleness check in _link_pycode: md5,
+                # cvxpy_version, pycode_format_version, and pristine must
+                # all match — otherwise regen.
+                from ams.prep.generator import PYCODE_FORMAT_VERSION
                 expected = source_md5(type(rtn))
                 try:
                     txt = target.read_text()
                     md5_ok = f"md5 = {expected!r}" in txt
                     cvx_ok = f"cvxpy_version = {_cp.__version__!r}" in txt
+                    fmt_ok = (
+                        f"pycode_format_version = {PYCODE_FORMAT_VERSION!r}"
+                        in txt
+                    )
                     pristine_ok = "pristine = True" in txt
-                    if md5_ok and cvx_ok and pristine_ok:
+                    if md5_ok and cvx_ok and fmt_ok and pristine_ok:
                         if verbose:
                             logger.debug("  %s: up-to-date", name)
                         continue
