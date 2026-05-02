@@ -156,7 +156,7 @@ class OptzBase:
         # Provenance of the live ``e_fn`` (when one is set). Values:
         #   - 'codegen' : wired from ``~/.ams/pycode/`` by ``_link_pycode``
         #   - 'manual'  : assigned directly via ``item.e_fn = fn``
-        #   - None      : no e_fn (uses sub_map+eval path)
+        #   - None      : no e_fn (uses the eval-fallback helper)
         # Read via :pyattr:`formulation_source` — this raw attribute is
         # written by ``_link_pycode`` and reset whenever ``e_str`` is
         # reassigned (descriptor mutex side-effect).
@@ -196,11 +196,14 @@ class OptzBase:
           (the fast AOT path); only happens for items that exactly match
           the pristine source.
         - ``'manual'`` — author/user code assigned ``item.e_fn = fn``
-          directly, bypassing both codegen and the sub_map regex.
-        - ``'sub_map'`` — legacy path: ``e_str`` was rewritten by
-          :class:`SymProcessor` and ``eval``-ed at parse/evaluate time.
-          This is what runs for items the user customized via
-          ``e_str = '...'`` or ``addConstrs(...)``.
+          directly, bypassing both codegen and the eval-fallback helper.
+        - ``'eval'`` — eval-fallback path: ``e_str`` is resolved
+          symbol-by-symbol via :func:`ams.opt._runtime_eval.eval_e_str`
+          and ``eval``-ed at parse/evaluate time. This is what runs for
+          items the user customized via ``e_str = '...'`` or
+          ``addConstrs(...)``. (Renamed from ``'sub_map'`` in v1.2.2;
+          the legacy regex+eval pipeline that name referenced was
+          retired in PR #246.)
         """
         if getattr(self, 'optz', None) is None:
             return 'pending'
@@ -212,7 +215,7 @@ class OptzBase:
             # e_fn set but provenance lost — defensive fallback. Shouldn't
             # happen in normal flow.
             return 'manual'
-        return 'sub_map'
+        return 'eval'
 
     @property
     def n(self):

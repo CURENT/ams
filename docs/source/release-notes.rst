@@ -66,6 +66,17 @@ should switch to ``formulation_source`` plus the routine's
 ``vars`` / ``rparams`` / ``services`` / ``exprs`` / ``constrs``
 registries.
 
+The :py:attr:`ams.opt.OptzBase.formulation_source` value
+``'sub_map'`` is renamed to ``'eval'``. The string referred to
+the (now-deleted) ``SymProcessor.sub_map`` regex pipeline; the
+new name reflects the live implementation —
+``ams.opt._runtime_eval.eval_e_str`` /
+``eval_e_str_numeric``. Code that compared
+``item.formulation_source == 'sub_map'`` must update to
+``'eval'``. The corresponding INFO log keys (formerly
+``sub_map(customized)`` / ``sub_map(added)``) and
+``formulation_summary`` print bucket are renamed in lockstep.
+
 **New features:**
 
 - **Opt-layer codegen.** Routine constraints, expressions, and
@@ -106,12 +117,12 @@ registries.
   execution path an opt element runs through after ``init()``:
 
   - per-item :py:attr:`ams.opt.OptzBase.formulation_source` →
-    ``'codegen' | 'sub_map' | 'manual' | 'pending'``;
+    ``'codegen' | 'eval' | 'manual' | 'pending'``;
   - :py:meth:`ams.routines.routine.RoutineBase.formulation_summary`
     prints a per-item table;
   - an INFO log line on every ``init()``::
 
-       <DCOPF> formulation: codegen=14/17, sub_map(customized)=1, sub_map(added)=2
+       <DCOPF> formulation: codegen=14/17, eval(customized)=1, eval(added)=2
 
   Useful for confirming a runtime customization
   (``addConstrs``, ``obj.e_str += '...'``) actually reaches the

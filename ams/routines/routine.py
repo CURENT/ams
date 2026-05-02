@@ -286,7 +286,7 @@ class RoutineBase:
         # the runtime path it will take, which mirrors the per-item
         # ``formulation_source`` property.
         tally = {'codegen': 0, 'manual': 0,
-                 'sub_map_dirty': 0, 'sub_map_added': 0}
+                 'eval_dirty': 0, 'eval_added': 0}
 
         # ``_link_pycode`` is the one place that legitimately reaches
         # into ``_e_fn`` / ``_e_dirty`` / ``_e_fn_source`` on opt items —
@@ -299,17 +299,17 @@ class RoutineBase:
             if getattr(item, '_e_dirty', False):
                 # User modified this item; we leave it alone. The runtime
                 # path is 'manual' if a callable is now in place,
-                # otherwise the legacy 'sub_map' regex pipeline.
+                # otherwise the eval-fallback helper.
                 if getattr(item, '_e_fn', None) is not None:
                     tally['manual'] += 1
                 else:
-                    tally['sub_map_dirty'] += 1
+                    tally['eval_dirty'] += 1
                 return
             pristine_str = _pristine_e_str(prefix, name)
             if (pristine_str is not None
                     and getattr(item, '_e_str', None) != pristine_str):
                 item._e_dirty = True
-                tally['sub_map_dirty'] += 1
+                tally['eval_dirty'] += 1
                 return
             fn = getattr(gen, f'_{prefix}_{name}', None)
             if fn is not None:
@@ -323,9 +323,9 @@ class RoutineBase:
                 tally['codegen'] += 1
             else:
                 # Item has no entry in pycode (e.g. added at runtime via
-                # ``addConstrs``). It will fall through to the sub_map
-                # path at parse/evaluate time.
-                tally['sub_map_added'] += 1
+                # ``addConstrs``). It will fall through to the eval-fallback
+                # helper (ams.opt._runtime_eval) at parse/evaluate time.
+                tally['eval_added'] += 1
             tex = getattr(gen, f'_{prefix}_{name}_tex', None)
             if tex is not None and getattr(item, 'e_tex', None) is None:
                 item.e_tex = tex
@@ -350,10 +350,10 @@ class RoutineBase:
             parts = [f"codegen={tally['codegen']}/{total}"]
             if tally['manual']:
                 parts.append(f"manual={tally['manual']}")
-            if tally['sub_map_dirty']:
-                parts.append(f"sub_map(customized)={tally['sub_map_dirty']}")
-            if tally['sub_map_added']:
-                parts.append(f"sub_map(added)={tally['sub_map_added']}")
+            if tally['eval_dirty']:
+                parts.append(f"eval(customized)={tally['eval_dirty']}")
+            if tally['eval_added']:
+                parts.append(f"eval(added)={tally['eval_added']}")
             logger.info(
                 "<%s> formulation: %s", self.class_name, ", ".join(parts)
             )
@@ -364,7 +364,7 @@ class RoutineBase:
 
         Useful for verifying which path each opt element runs through after
         custom edits — e.g. ``addConstrs`` and ``obj.e_str += '...'``
-        should show ``sub_map``, while untouched items show ``codegen``.
+        should show ``eval``, while untouched items show ``codegen``.
 
         Parameters
         ----------
@@ -401,7 +401,7 @@ class RoutineBase:
         sw = max(len(r[2]) for r in rows)
         print(f"<{self.class_name}> formulation summary "
               f"({sum(1 for r in rows if r[2] == 'codegen')} codegen / "
-              f"{sum(1 for r in rows if r[2] == 'sub_map')} sub_map / "
+              f"{sum(1 for r in rows if r[2] == 'eval')} eval / "
               f"{sum(1 for r in rows if r[2] == 'manual')} manual / "
               f"{sum(1 for r in rows if r[2] == 'pending')} pending)")
         print(f"  {'kind':<{kw}}  {'name':<{nw}}  {'source':<{sw}}  e_str")

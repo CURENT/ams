@@ -161,7 +161,11 @@ every routine init. The first time a routine is instantiated, AMS:
 
 1. Walks the constructed routine's ``constrs`` / ``exprs`` / ``exprcs``
    / ``obj`` registries.
-2. Applies the ``sub_map`` rewrites to each ``e_str``.
+2. Resolves bare symbol names in each ``e_str`` (``pg`` →
+   ``r.pg``, …) via the same ``_build_symbol_regex`` /
+   ``_collect_symbol_names`` pass used by the eval-fallback helper.
+   Function names (``cp.sum``, ``cp.multiply``, …) are passed
+   through untouched.
 3. Emits a small Python module at ``~/.ams/pycode/<routine>.py`` with
    one named callable per opt element — e.g.
    ``def _constr_pglb(r): return -r.pg + r.pmine`` — plus the
@@ -183,8 +187,8 @@ Authors who prefer to skip the DSL and write a callable directly may
 pass ``e_fn=callable`` instead of ``e_str``; the runtime accepts both,
 and the codegen leaves manually-set ``e_fn`` alone.
 
-Two execution paths: codegen vs ``sub_map``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Two execution paths: codegen vs ``eval``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Internally, two execution paths from ``e_str`` to a CVXPY object live
 side by side:
@@ -196,18 +200,16 @@ side by side:
   just invoke the callable with a :py:class:`ams.core.routine_ns.RoutineNS`
   proxy; no regex, no ``eval``.
 
-- **``sub_map`` path** (legacy, used as a fall-through). At ``parse()``
-  time, :py:class:`ams.core.symprocessor.SymProcessor` regex-rewrites
-  the item's ``e_str`` to resolve bare symbol names (``pg`` →
-  ``self.om.pg``, ``Cft`` → ``self.om.Cft``, …) and stores it in
-  ``item.code``. ``evaluate()`` then ``eval``\ s ``item.code``.
-  Function names (``cp.sum``, ``cp.multiply``, …) are not rewritten
-  — author canonical CVXPY in ``e_str`` and the sub_map path passes
-  them through.
+- **Eval-fallback path** (used for items the codegen doesn't cover).
+  At ``parse()`` time, :py:func:`ams.opt._runtime_eval.eval_e_str`
+  resolves bare symbol names (``pg`` → ``r.pg``, ``Cft`` → ``r.Cft``,
+  …) via a single regex pass and ``eval``\ s the result against a
+  ``RoutineNS`` proxy. Function names (``cp.sum``, ``cp.multiply``,
+  …) are not rewritten — author canonical CVXPY in ``e_str`` and the
+  helper passes them through.
 
 Both paths must produce the same CVXPY object given the same ``e_str``
-— the codegen is the AOT-compiled version of the ``sub_map`` rewrite
-pipeline.
+— the codegen is the AOT-compiled version of the eval-fallback pipeline.
 
 Which path runs is decided per-item by ``_link_pycode``:
 
@@ -224,13 +226,13 @@ Which path runs is decided per-item by ``_link_pycode``:
        from; ``e_fn`` is wired from the cache.
    * - Added at runtime via ``addConstrs`` / ``addExpressions`` /
        ``addExprcs``
-     - sub_map
+     - eval
      - The cache (always generated against a pristine instance —
        see :ref:`pycode-pristine-invariant` below) doesn't know
        about runtime additions.
    * - ``e_str`` reassigned post-construction (e.g.
        ``obj.e_str += '+ ...'``)
-     - sub_map
+     - eval
      - The descriptor mutex on ``e_str`` / ``e_fn`` marks the item
        ``_e_dirty``; ``_link_pycode`` skips wiring so the user's new
        ``e_str`` flows through ``parse()``.
@@ -238,7 +240,7 @@ Which path runs is decided per-item by ``_link_pycode``:
 Authors and users can introspect which path is in effect:
 
 - :py:attr:`ams.opt.OptzBase.formulation_source` — per-item, returns
-  ``'codegen' | 'sub_map' | 'manual' | 'pending'``.
+  ``'codegen' | 'eval' | 'manual' | 'pending'``.
 - :py:meth:`ams.routines.routine.RoutineBase.formulation_summary` —
   full table.
 - An INFO-level log line ``<RoutineName> formulation: codegen=X/Y, …``
