@@ -41,12 +41,13 @@ PYCODE_FORMAT_VERSION = 2
 # Routine symbol names that would silently shadow a CVXPY atom in the
 # eval-fallback rewrite path. The codegen path is safe (the ``(?<!\.)``
 # lookbehind protects ``cp.<name>`` attribute access), but
-# :class:`SymProcessor` writes a ``sub_map`` rule like
-# ``r"(?<!\.)\bsum\b" -> "self.om.sum"`` — and a user who appends a bare
-# ``sum(pg)`` to ``obj.e_str`` would get ``self.om.sum(self.om.pg)``,
-# which is the user's symbol, not the Python builtin. Reject the
-# collision at codegen / sub_map build time so the trap surfaces at
-# routine definition, not as silent nonsense at solve time.
+# :func:`ams.opt._runtime_eval._resolve` rewrites bare names via
+# ``_build_symbol_regex`` against the routine's symbol registries — so
+# a routine declaring a symbol named ``sum`` plus a user appending a
+# bare ``sum(pg)`` to ``obj.e_str`` would yield ``r.sum(r.pg)``, which
+# is the user's symbol, not ``cp.sum``. Reject the collision at
+# codegen / generate_symbols time so the trap surfaces at routine
+# definition, not as silent nonsense at solve time.
 RESERVED_CVXPY_ATOM_NAMES = frozenset({
     'sum', 'multiply', 'vstack', 'hstack', 'power', 'norm', 'pos', 'neg',
     'square', 'quad_form', 'sum_squares', 'diag', 'maximum', 'minimum',
@@ -61,10 +62,10 @@ def _check_reserved_collisions(routine, names) -> None:
         raise ValueError(
             f"Routine <{routine.class_name}> declares symbol(s) "
             f"{bad} that collide with CVXPY atom names. The "
-            "eval-fallback ``sub_map`` would silently rewrite a bare "
-            "``<name>(...)`` in a user customization to "
-            "``self.om.<name>(...)``, shadowing ``cp.<name>``. Rename "
-            "the routine symbol(s) — see "
+            "eval-fallback helper (ams.opt._runtime_eval) would "
+            "silently rewrite a bare ``<name>(...)`` in a user "
+            "customization to ``r.<name>(...)``, shadowing "
+            "``cp.<name>``. Rename the routine symbol(s) — see "
             "RESERVED_CVXPY_ATOM_NAMES in ams/prep/generator.py."
         )
 
