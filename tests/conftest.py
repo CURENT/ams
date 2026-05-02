@@ -1,26 +1,31 @@
 """
 Shared pytest fixtures for the AMS test suite.
 
-Each fixture loads its case once per pytest session (lazy, on first
-request) and yields a fresh deepcopy on every test invocation, so
-tests that mutate ``ss`` (parameters, routine state, ``StaticGen.u``)
-stay isolated. ``ss.reset()`` is *not* sufficient — it does not undo
-parameter mutations or ``routine.initialized``.
+Each fixture loads its case **once per worker process** (lazy, on
+first request, cached in module-level state) and yields a fresh
+``copy.deepcopy`` on every test invocation, so tests that mutate
+``ss`` (parameters, routine state, ``StaticGen.u``) stay isolated.
+``System.reset()`` is *not* sufficient — it does not undo parameter
+mutations or ``routine.initialized``.
 
 Usage from an existing ``unittest.TestCase``::
 
     class TestFoo(unittest.TestCase):
         @pytest.fixture(autouse=True)
-        def _attach_ss(self, pjm5bus_json):
-            self.ss = pjm5bus_json
+        def _attach_ss(self, request, pjm5bus_json):
+            request.instance.ss = pjm5bus_json
 
 Or directly from a pytest-style function::
 
     def test_bar(pjm5bus_json):
         assert pjm5bus_json.DCOPF is not None
 
-The session-scoped raw-load fixtures (``*_loaded``) are exposed for
-read-only consumers that want to skip the deepcopy cost.
+The underlying raw-loaded ``ss`` is intentionally **not** exposed as
+a public fixture: a session-scoped mutable object accessed without a
+deepcopy guard is order-dependent flakiness waiting to happen. If a
+future read-only consumer needs to skip the deepcopy cost, add a
+purpose-built fixture then — with the share-rules documented at the
+call site, not here.
 """
 
 import copy
@@ -30,38 +35,47 @@ import pytest
 import ams
 
 
-def _make_loaded_fixture(case_path):
-    @pytest.fixture(scope="session")
-    def _loaded():
-        return ams.load(
+# Load kwargs match the original setUp() blocks across the suite:
+# `setup=True` builds the System (default for ams.load),
+# `default_config=True` skips ~/.ams.rc reads (test isolation),
+# `no_output=True` silences write-to-disk side effects.
+_LOAD_KWARGS = dict(setup=True, default_config=True, no_output=True)
+
+_LOADED_CACHE = {}
+
+
+def _load_cached(case_path):
+    """Lazy per-process cache of `ams.load(case_path, **_LOAD_KWARGS)`.
+
+    Module-level dict means each pytest worker (e.g. xdist process)
+    keeps its own cache — the same lifetime as a `scope="session"`
+    fixture, but without a publicly-bound name a consumer could grab
+    by mistake and mutate.
+    """
+    if case_path not in _LOADED_CACHE:
+        _LOADED_CACHE[case_path] = ams.load(
             ams.get_case(case_path),
-            setup=True,
-            default_config=True,
-            no_output=True,
+            **_LOAD_KWARGS,
         )
-    return _loaded
+    return _LOADED_CACHE[case_path]
 
 
-def _make_fresh_fixture(loaded_name):
+def _make_fresh_fixture(case_path, fixture_name):
     @pytest.fixture
-    def _fresh(request):
-        return copy.deepcopy(request.getfixturevalue(loaded_name))
+    def _fresh():
+        return copy.deepcopy(_load_cached(case_path))
+
+    _fresh.__name__ = fixture_name
+    _fresh.__doc__ = f"Fresh deepcopy of `ams.load({case_path!r})`."
     return _fresh
 
 
-pjm5bus_json_loaded = _make_loaded_fixture("5bus/pjm5bus_demo.json")
-pjm5bus_xlsx_loaded = _make_loaded_fixture("5bus/pjm5bus_demo.xlsx")
-case5_loaded = _make_loaded_fixture("matpower/case5.m")
-case14_loaded = _make_loaded_fixture("matpower/case14.m")
-ieee14_raw_loaded = _make_loaded_fixture("ieee14/ieee14.raw")
-ieee39_uced_loaded = _make_loaded_fixture("ieee39/ieee39_uced.xlsx")
-ieee39_uced_esd1_loaded = _make_loaded_fixture("ieee39/ieee39_uced_esd1.xlsx")
-
-
-pjm5bus_json = _make_fresh_fixture("pjm5bus_json_loaded")
-pjm5bus_xlsx = _make_fresh_fixture("pjm5bus_xlsx_loaded")
-case5 = _make_fresh_fixture("case5_loaded")
-case14 = _make_fresh_fixture("case14_loaded")
-ieee14_raw = _make_fresh_fixture("ieee14_raw_loaded")
-ieee39_uced = _make_fresh_fixture("ieee39_uced_loaded")
-ieee39_uced_esd1 = _make_fresh_fixture("ieee39_uced_esd1_loaded")
+pjm5bus_json = _make_fresh_fixture("5bus/pjm5bus_demo.json", "pjm5bus_json")
+pjm5bus_xlsx = _make_fresh_fixture("5bus/pjm5bus_demo.xlsx", "pjm5bus_xlsx")
+case5 = _make_fresh_fixture("matpower/case5.m", "case5")
+case14 = _make_fresh_fixture("matpower/case14.m", "case14")
+ieee14_raw = _make_fresh_fixture("ieee14/ieee14.raw", "ieee14_raw")
+ieee39_uced = _make_fresh_fixture("ieee39/ieee39_uced.xlsx", "ieee39_uced")
+ieee39_uced_esd1 = _make_fresh_fixture(
+    "ieee39/ieee39_uced_esd1.xlsx", "ieee39_uced_esd1"
+)

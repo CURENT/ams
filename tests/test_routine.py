@@ -1,6 +1,6 @@
 import unittest
-import numpy as np
 
+import numpy as np
 import pytest
 
 from ams.shared import pd
