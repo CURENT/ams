@@ -56,6 +56,16 @@ would have been a syntax-level "double op" at evaluate time. The
 runtime now dispatches on whether the eval result is already a
 ``cp.constraints.Constraint`` and skips the wrap when it is.
 
+The ``SymProcessor.sub_map`` and ``SymProcessor.val_map``
+attributes are removed. Both fed the legacy regex-rewrite +
+``eval`` pipeline that the cvxpy-namespace passthrough has fully
+replaced — symbol resolution now goes through
+``ams.opt._runtime_eval`` plus :class:`RoutineNS` /
+:class:`NumericRoutineNS`. Anyone introspecting those dicts
+should switch to ``formulation_source`` plus the routine's
+``vars`` / ``rparams`` / ``services`` / ``exprs`` / ``constrs``
+registries.
+
 **New features:**
 
 - **Opt-layer codegen.** Routine constraints, expressions, and

@@ -46,8 +46,9 @@ class RoutineNS:
     Attribute proxy passed as ``r`` to ``e_fn(r)`` callables.
 
     Holds a reference to the owning routine and resolves attribute
-    access by walking the same five symbol buckets the legacy
-    ``sub_map`` regex used. Read-only — there is no setter.
+    access by walking the five routine symbol buckets (vars, rparams,
+    services, exprs, constrs) plus config and a couple of
+    BaseRoutine conventions. Read-only — there is no setter.
     """
 
     __slots__ = ('_rtn',)

@@ -2,9 +2,9 @@
 Tests for :class:`ams.core.routine_ns.RoutineNS` and the ``e_fn``
 plumbing on Constraint / Expression / Objective.
 
-Validates that every symbol the legacy ``sub_map`` regex resolves on a
-real routine also resolves via ``RoutineNS`` attribute access, and to
-an object of the same type / identity where possible — the R2 (silent
+Validates that every symbol that an ``e_str`` can reference on a real
+routine also resolves via ``RoutineNS`` attribute access, and to an
+object of the same type / identity where possible — the R2 (silent
 wrong-symbol resolution) safeguard for the codegen path.
 """
 
@@ -21,7 +21,7 @@ from ams.opt.objective import Objective
 
 
 class TestRoutineNSResolution(unittest.TestCase):
-    """RoutineNS must resolve every sub_map symbol on DCOPF / RTED."""
+    """RoutineNS must resolve every routine symbol on DCOPF / RTED."""
 
     @classmethod
     def setUpClass(cls):
