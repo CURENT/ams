@@ -1243,16 +1243,33 @@ class RoutineBase:
                    info: Optional[str] = None,
                    is_eq: Optional[str] = False,):
         """
-        Add `Constraint` to the routine. to the routine.
+        Add a `Constraint` to the routine at runtime.
+
+        ``e_str`` must use canonical CVXPY syntax — call ``cp.multiply``,
+        ``cp.sum``, ``cp.power`` etc. directly. The historical AMS DSL
+        (``mul``, ``multiply``, ``sum``, ``a dot b``) was removed in
+        v1.2.2; see :ref:`migration_cvxpy_namespace`.
+
+        Examples
+        --------
+        Append a hard generation cap::
+
+            sp.RTED.addConstrs(name='pg_cap',
+                               e_str='pg - pmax')
+
+        Equivalent with an embedded relational operator (post-v1.2.2)::
+
+            sp.RTED.addConstrs(name='pg_cap',
+                               e_str='pg <= pmax')
 
         Parameters
         ----------
         name : str
-            Constraint name. One should typically assigning the name directly because
-            it will be automatically assigned by the model. The value of ``name``
-            will be the symbol name to be used in expressions.
+            Constraint name. The value of ``name`` becomes the symbol
+            name used in expressions; pick a name that does not collide
+            with a CVXPY atom (``sum``, ``multiply``, ``vstack``, …).
         e_str : str
-            Constraint expression string.
+            Constraint expression string in canonical CVXPY syntax.
         info : str, optional
             Descriptive information
         is_eq : str, optional

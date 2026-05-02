@@ -15,3 +15,4 @@ framework and the interoperation with dynamic simulation.
     model
     routine
     example
+    migration_cvxpy_namespace
