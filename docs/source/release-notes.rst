@@ -9,7 +9,7 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.2
 ==========
 
-v1.2.2 (unreleased)
+v1.2.2 (2026-05-01)
 ----------------------
 
 **New features:**
