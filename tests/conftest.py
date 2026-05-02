@@ -33,6 +33,19 @@ import copy
 import pytest
 
 import ams
+from ams.shared import installed_solvers, misocp_solvers
+
+
+# Solver-availability flags for tests that gate per-id via
+# pytest.mark.skipif. Hoisted here so the parametrized scenario
+# modules under tests/routines/ share a single source of truth.
+HAS_MISOCP = bool(set(misocp_solvers) & set(installed_solvers))
+
+try:
+    import pypower  # noqa: F401
+    HAS_PYPOWER = True
+except ImportError:
+    HAS_PYPOWER = False
 
 
 # Load kwargs match the original setUp() blocks across the suite:

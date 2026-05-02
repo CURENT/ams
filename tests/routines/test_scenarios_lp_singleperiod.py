@@ -32,15 +32,7 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 
-from ams.shared import installed_solvers, misocp_solvers
-
-try:
-    import pypower  # noqa: F401
-    _HAS_PYPOWER = True
-except ImportError:
-    _HAS_PYPOWER = False
-
-_HAS_MISOCP = bool(set(misocp_solvers) & set(installed_solvers))
+from tests.conftest import HAS_MISOCP, HAS_PYPOWER
 
 
 @dataclass(frozen=True)
@@ -86,7 +78,7 @@ def ctx(pjm5bus_json, request):
 
 
 def _skip_if_solver_missing(spec):
-    if spec.solver == 'SCIP' and not _HAS_MISOCP:
+    if spec.solver == 'SCIP' and not HAS_MISOCP:
         pytest.skip("No MISOCP solver is available.")
 
 
@@ -157,7 +149,7 @@ def test_vBus(ctx):
         assert np.any(ctx.rtn.aBus.v), "aBus is all zero!"
 
 
-@pytest.mark.skipif(not _HAS_PYPOWER, reason="PYPOWER is not available.")
+@pytest.mark.skipif(not HAS_PYPOWER, reason="PYPOWER is not available.")
 @_PARAMETRIZE_ROUTINES
 def test_dc2ac(ctx):
     _skip_if_solver_missing(ctx.spec)
