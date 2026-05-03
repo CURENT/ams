@@ -9,6 +9,48 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.2
 ==========
 
+v1.2.4 (date TBD)
+----------------------
+
+**New — per-call output path for ``System.report``:**
+
+:meth:`ams.system.System.report` and the underlying
+:meth:`ams.report.Report.write` now accept a ``path`` keyword.
+``path`` may be a directory (the report file name is generated as
+``<case>_report.txt``) or a full file path. An explicit ``path``
+overrides the system-level ``no_output`` flag — useful for one-off
+inspection without flipping the global flag. Resolves
+`#186 <https://github.com/CURENT/ams/issues/186>`_.
+
+**Default output path now honors ``system.files.output_path``:**
+
+When called with ``path=None``,
+:meth:`~ams.routines.routine.RoutineBase.export_csv` and
+:meth:`~ams.routines.routine.RoutineBase.export_json` now write to
+``system.files.output_path`` (when set) instead of the current
+working directory. This aligns export defaults with
+:meth:`~ams.system.System.report`, which already used
+``output_path``. CWD remains the fallback when ``output_path`` is
+empty (the ``FileMan`` default).
+
+**New — ``RoutineBase.load_csv``:**
+
+Inverse of :meth:`~ams.routines.routine.RoutineBase.export_csv`.
+Reads a routine's CSV results back into the matching
+:class:`Var` / :class:`ExpressionCalc` storage so users can inspect
+prior solutions without rerunning the optimization. Single-period
+and multi-period (``EDTSlot`` / ``UCTSlot``) shapes are both
+supported.
+
+**Behavior change — ``load_json`` / ``load_csv`` mark converged:**
+
+A successful :meth:`~ams.routines.routine.RoutineBase.load_json` or
+:meth:`~ams.routines.routine.RoutineBase.load_csv` now sets
+``self.converged = True`` and ``self.exit_code = 0`` so subsequent
+:meth:`~ams.routines.routine.RoutineBase.get` and
+:meth:`~ams.system.System.report` calls behave as if the routine
+just solved. Previously, ``load_json`` left ``converged`` untouched.
+
 v1.2.3 (2026-05-02)
 ----------------------
 

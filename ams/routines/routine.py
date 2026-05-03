@@ -757,7 +757,21 @@ class RoutineBase:
         bool
             True if the loading is successful, False otherwise.
 
+        Notes
+        -----
+        Differences from ANDES: ANDES has no per-routine ``load_json``;
+        the closest analog is :meth:`andes.routines.tds.TDS.run` with
+        ``from_csv=`` for time-series replay. AMS reads scheduling
+        results back into existing :class:`Var` / :class:`ExpressionCalc`
+        storage and marks the routine as converged so subsequent
+        :meth:`get` and :meth:`ams.system.System.report` calls behave
+        as if the routine just solved.
+
         .. versionadded:: 1.0.13
+
+        .. versionchanged:: 1.2.4
+           A successful load now sets ``self.converged = True`` and
+           ``self.exit_code = 0``.
         """
         try:
             with open(path, 'r') as f:
@@ -793,6 +807,113 @@ class RoutineBase:
                         exprc.v = np.array(values)
                     except Exception as e:
                         logger.warning(f"Failed to assign values to exprc '{key}': {e}")
+
+        self.converged = True
+        self.exit_code = 0
+        logger.info(f"Loaded results from {path}")
+        return True
+
+    def load_csv(self, path):
+        """
+        Load scheduling results from a csv file produced by
+        :meth:`export_csv`.
+
+        For multi-period routines the ``Time`` column is used to
+        re-align rows to ``self.timeslot.v``. For single-period
+        routines, the ``Time`` column carries the literal sentinel
+        ``"T1"`` and a single row is expected.
+
+        Parameters
+        ----------
+        path : str
+            Path of the csv file to load.
+
+        Returns
+        -------
+        bool
+            ``True`` if the loading is successful, ``False`` otherwise.
+
+        Notes
+        -----
+        Round-trip values are clipped to 6 decimals on export (see
+        :func:`gather_results`) — reload is lossy at the 1e-6 level,
+        which is fine for inspection but not for bit-exact replay.
+
+        Differences from ANDES: ANDES has no per-routine ``load_csv``;
+        the closest analog is :meth:`andes.routines.tds.TDS.run` with
+        ``from_csv=`` for time-domain replay. AMS reads scheduling
+        results back into existing :class:`Var` / :class:`ExpressionCalc`
+        storage and marks the routine as converged so subsequent
+        :meth:`get` and :meth:`ams.system.System.report` calls behave
+        as if the routine just solved.
+
+        .. versionadded:: 1.2.4
+        """
+        try:
+            df = pd.read_csv(path)
+        except Exception as e:
+            logger.error(f"Failed to load CSV file: {e}")
+            return False
+
+        if 'Time' not in df.columns:
+            logger.error(f"CSV file '{path}' missing required 'Time' column.")
+            return False
+
+        if not self.initialized:
+            self.init()
+
+        # Single-period CSVs use the literal 'T1' sentinel from
+        # ``initialize_data_dict`` (a single row); multi-period CSVs
+        # carry timeslot idx strings (e.g. 'EDT1', 'EDT2', ...).
+        time_vals = df['Time'].astype(str).values
+        single_period = len(time_vals) == 1 and time_vals[0] == 'T1'
+
+        if not single_period:
+            if not hasattr(self, 'timeslot'):
+                logger.error(
+                    f"CSV at '{path}' has multi-period rows but routine "
+                    f"<{self.class_name}> has no 'timeslot'.")
+                return False
+            slots = list(self.timeslot.v)
+            df = df.set_index('Time').reindex(slots)
+            missing = df.index[df.isna().all(axis=1)].tolist()
+            if missing:
+                logger.warning(
+                    f"CSV missing rows for timeslots {missing}; "
+                    f"loaded values for those slots will be NaN.")
+
+        for items in (self.vars, self.exprcs):
+            for key, item in items.items():
+                if item.owner is None:
+                    continue
+                idxes = item.get_all_idxes()
+                cols = [f'{key} {dev}' for dev in idxes]
+                present = [c for c in cols if c in df.columns]
+                if not present:
+                    logger.debug(f"CSV has no columns for '{key}'; skipping.")
+                    continue
+                if len(present) < len(cols):
+                    missing_devs = [d for d, c in zip(idxes, cols)
+                                    if c not in df.columns]
+                    logger.warning(
+                        f"CSV missing devices {missing_devs} for '{key}'; "
+                        f"those entries will be NaN.")
+                # Build a (n_dev,) or (n_slot, n_dev) frame, reindex to
+                # full device list to get NaN columns for absent devices.
+                sub = df[present].reindex(columns=cols)
+                try:
+                    if single_period:
+                        item.v = sub.iloc[0].to_numpy(dtype=float)
+                    else:
+                        # CSV is one row per slot, columns per device;
+                        # var.v shape is (n_dev, n_slot) → transpose.
+                        item.v = sub.to_numpy(dtype=float).T
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to assign values to '{key}': {e}")
+
+        self.converged = True
+        self.exit_code = 0
         logger.info(f"Loaded results from {path}")
         return True
 

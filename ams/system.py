@@ -958,21 +958,43 @@ class System:
         out_str = '\n'.join(out)
         logger.info(out_str)
 
-    def report(self):
+    def report(self, path=None):
         """
         Write system routine reports to a plain-text file.
+
+        Parameters
+        ----------
+        path : str, optional
+            Output file path or directory. When given, the report is
+            written to the resolved path and the system-level
+            ``no_output`` flag is bypassed. When ``None``, the report
+            is written to ``self.files.txt`` only if
+            ``self.files.no_output`` is ``False``.
 
         Returns
         -------
         bool
-            True if the report is written successfully.
-        """
-        if self.files.no_output is False:
-            r = Report(self)
-            r.write()
-            return True
+            ``True`` if the report was written, ``False`` otherwise.
 
-        return False
+        Notes
+        -----
+        Differences from ANDES:
+
+        - ANDES has no ``System.report()``; the equivalent is
+          per-routine (e.g. ``system.PFlow.report()``) and takes no
+          ``path`` argument.
+        - In AMS, an explicit ``path`` overrides ``no_output=True`` so
+          users can produce a one-off report without flipping the
+          system flag.
+
+        .. versionchanged:: 1.2.4
+           Added ``path`` parameter.
+        """
+        if path is None and self.files.no_output is True:
+            return False
+
+        Report(self).write(path=path)
+        return True
 
     def to_mpc(self):
         """
