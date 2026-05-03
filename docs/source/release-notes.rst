@@ -64,11 +64,20 @@ indexer = ``horizon``.
 **Internal — drops ``NumOp(np.transpose)`` workarounds:**
 
 The ``ED.ugt = NumOp(u=ug, fun=np.transpose, ...)`` shim is
-retired — the new ``EDSlotGen`` shape produces ``(ngen, nslot)``
-directly. Likewise, the ``MPBase.sdT`` shim was eliminated by
-flipping :meth:`ams.core.service.LoadScale.v` to consume sd as
+retired — the ``RParam(model='EDSlotGen', horizon=…, hindexer=…)``
+shape returns ``(ngen, nslot)`` directly when materialized,
+matching the e_str expectations. Likewise, the ``MPBase.sdT``
+shim was eliminated by flipping
+:meth:`ams.core.service.LoadScale.v` to consume sd as
 ``(narea, nslot)`` and routing the SRBase / NSRBase reserve chain
 through a small :func:`ams.utils.func.multiply_left_t` helper.
+
+Note that this is a behavior change for any user code calling
+:class:`ams.core.service.LoadScale` directly with a custom ``sd``
+RParam: the expected input shape is now ``(narea, nslot)``, not
+``(nslot, narea)``. Likewise, ``EDSlot`` / ``UCSlot`` no longer
+carry ``sd`` / ``ug`` columns — read from the new
+``EDSlotLoad.sd`` / ``EDSlotGen.ug`` / ``UCSlotLoad.sd`` tables.
 
 **New — per-call output path for ``System.report``:**
 

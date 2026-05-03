@@ -194,10 +194,12 @@ class RParam(Param):
         if self.sparse and self.expand_dims is not None:
             msg = 'Sparse matrix does not support expand_dims.'
             raise NotImplementedError(msg)
-        if self.indexer is None:
-            if self.is_ext:
-                out = self._v
-            elif self.is_group:
+        if self.is_ext:
+            # User-supplied override always wins, regardless of
+            # indexer / horizon kwargs.
+            out = self._v
+        elif self.indexer is None:
+            if self.is_group:
                 out = self.owner.get(src=self.src, attr='v',
                                      idx=self.owner.get_all_idxes())
             else:
@@ -286,13 +288,18 @@ class RParam(Param):
     def shape(self):
         """
         Return the shape of the parameter.
+
+        ``no_parse=True`` short-circuits to ``None`` only when the
+        param has no resolvable value yet — for parsed-but-unwired
+        2D params (e.g. ``ED.ug`` after the late-bind to
+        ``EDSlotGen``), defer to ``np.shape(self.v)`` so the true
+        shape is reported.
         """
         if self.is_ext:
             return np.shape(self._v)
-        elif self.no_parse:
+        if self.no_parse and self.horizon is None:
             return None
-        else:
-            return np.shape(self.v)
+        return np.shape(self.v)
 
     @property
     def dtype(self):

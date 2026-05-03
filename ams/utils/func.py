@@ -103,5 +103,4 @@ def multiply_left_t(a, b):
     ``(narea, nslot)`` flows through without a NumOp(transpose) shim
     on the source side.
     """
-    import numpy as np
     return np.multiply(np.transpose(a), b)

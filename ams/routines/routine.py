@@ -2,6 +2,7 @@
 Module for routine data.
 """
 
+import difflib
 import logging
 import json
 from collections import OrderedDict
@@ -556,8 +557,6 @@ class RoutineBase:
         are listed in the message body so the user gets the full
         picture in a single error.
         """
-        import difflib
-
         sys = self.system
         # Mirror the whitelist used at owner-binding time
         # (`ams/system.py: link_ext_param`): models, groups, plus the

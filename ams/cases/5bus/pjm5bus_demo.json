@@ -9,7 +9,7 @@
     },
     {
       "field": "Load",
-      "comment": "Load factor in EDTSlot and UCTSlot sourced from PJM 5-minutes load on August 30, 2023",
+      "comment": "Load factor in EDSlotLoad and UCSlotLoad sourced from PJM 5-minutes load on August 30, 2023",
       "comment2": null,
       "comment3": null,
       "comment4": null

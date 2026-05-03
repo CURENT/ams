@@ -53,6 +53,10 @@ class Test5Bus(unittest.TestCase):
         self.assertEqual(self.ss.NSRCost.n, nGen)
         self.assertEqual(self.ss.EDSlot.n, nDT)
         self.assertEqual(self.ss.UCSlot.n, nDT)
+        # post-v1.3.0 per-axis tables: one row per (device, slot)
+        self.assertEqual(self.ss.EDSlotLoad.n, nDT * nArea)
+        self.assertEqual(self.ss.EDSlotGen.n, nDT * nGen)
+        self.assertEqual(self.ss.UCSlotLoad.n, nDT * nArea)
 
         # test idx values
         self.assertSequenceEqual(self.ss.Bus.idx.v, [0, 1, 2, 3, 4])

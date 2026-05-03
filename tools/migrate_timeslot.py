@@ -239,12 +239,29 @@ def migrate_data(data: dict) -> tuple[dict, dict]:
     # Inject in dict-order: keep the existing key order and append
     # the new keys near their definition counterparts. JSON dicts
     # preserve insertion order in Py3.7+.
-    if ed_load and 'EDSlotLoad' not in out:
+    #
+    # Raise on partly-migrated input — a case file with both legacy
+    # CSV-list cells AND a pre-existing per-axis table is ambiguous:
+    # silently overwriting risks losing the existing rows; silently
+    # appending risks duplicate (device, slot) keys. Better to fail
+    # loud and let the user manually resolve.
+    for key, new_rows in (('EDSlotLoad', ed_load),
+                          ('EDSlotGen', ed_gen),
+                          ('UCSlotLoad', uc_load)):
+        if new_rows and out.get(key):
+            raise ValueError(
+                f"{key} already exists in the input case "
+                f"(rows={len(out[key])}) AND legacy CSV-list cells "
+                f"would emit {len(new_rows)} new row(s). The case is "
+                f"in a partly-migrated state — manually drop one of "
+                f"the two encodings before re-running the migrator."
+            )
+    if ed_load:
         out = _insert_after(out, 'EDSlot', 'EDSlotLoad', ed_load)
-    if ed_gen and 'EDSlotGen' not in out:
+    if ed_gen:
         out = _insert_after(out, 'EDSlotLoad' if ed_load else 'EDSlot',
                             'EDSlotGen', ed_gen)
-    if uc_load and 'UCSlotLoad' not in out:
+    if uc_load:
         out = _insert_after(out, 'UCSlot', 'UCSlotLoad', uc_load)
 
     return out, {'ed_load': len(ed_load), 'ed_gen': len(ed_gen),
