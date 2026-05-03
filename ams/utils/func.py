@@ -86,3 +86,21 @@ def str_list_iconv(x):
         x = x.split(',')
         return [item.strip() for item in x]
     raise NotImplementedError
+
+
+# ---------------------------------------------------------------------------
+# Numpy operator helpers
+# ---------------------------------------------------------------------------
+
+def multiply_left_t(a, b):
+    """
+    Return ``np.multiply(np.transpose(a), b)``.
+
+    Composes a small left-transpose with an element-wise multiply,
+    for cases where the natural shape of ``a`` is the transpose of
+    what numpy's broadcast rule needs against ``b``. Used by the
+    per-(area, slot) reserve chain in :class:`SRBase` /
+    :class:`NSRBase` so the v1.3.0 ``sd`` shape ``(narea, nslot)``
+    flows through without a NumOp(transpose) shim on the source side.
+    """
+    return np.multiply(np.transpose(a), b)

@@ -51,8 +51,12 @@ class Test5Bus(unittest.TestCase):
         self.assertEqual(self.ss.SFRCost.n, nGen)
         self.assertEqual(self.ss.SRCost.n, nGen)
         self.assertEqual(self.ss.NSRCost.n, nGen)
-        self.assertEqual(self.ss.EDTSlot.n, nDT)
-        self.assertEqual(self.ss.UCTSlot.n, nDT)
+        self.assertEqual(self.ss.EDSlot.n, nDT)
+        self.assertEqual(self.ss.UCSlot.n, nDT)
+        # post-v1.3.0 per-axis tables: one row per (device, slot)
+        self.assertEqual(self.ss.EDSlotLoad.n, nDT * nArea)
+        self.assertEqual(self.ss.EDSlotGen.n, nDT * nGen)
+        self.assertEqual(self.ss.UCSlotLoad.n, nDT * nArea)
 
         # test idx values
         self.assertSequenceEqual(self.ss.Bus.idx.v, [0, 1, 2, 3, 4])
@@ -66,11 +70,11 @@ class Test5Bus(unittest.TestCase):
         self.ss.Bus.as_df(vin=True)
 
         # test conversion to dataframe of ``Horizon`` model
-        self.ss.EDTSlot.as_df()
-        self.ss.EDTSlot.as_df(vin=True)
+        self.ss.EDSlot.as_df()
+        self.ss.EDSlot.as_df(vin=True)
 
-        self.ss.UCTSlot.as_df()
-        self.ss.UCTSlot.as_df(vin=True)
+        self.ss.UCSlot.as_df()
+        self.ss.UCSlot.as_df(vin=True)
 
     def test_summary(self) -> None:
         self.ss.summary()

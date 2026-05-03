@@ -987,7 +987,7 @@ class System:
           users can produce a one-off report without flipping the
           system flag.
 
-        .. versionchanged:: 1.2.4
+        .. versionchanged:: 1.3.0
            Added ``path`` parameter.
         """
         if path is None and self.files.no_output is True:

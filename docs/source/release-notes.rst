@@ -6,11 +6,93 @@ Release notes
 
 The APIs before v3.0.0 are in beta and may change without prior notice.
 
-v1.2
+v1.3
 ==========
 
-v1.2.4 (date TBD)
+v1.3.0 (date TBD)
 ----------------------
+
+**Breaking — TimeSlot paired-key data model:**
+
+The pre-v1.3.0 single-table TimeSlot encoding — where ``EDTSlot``
+and ``UCTSlot`` each carried per-(area, slot) load scaling and
+per-(gen, slot) commitment as comma-separated string cells whose
+list position implicitly aligned with ``Area.get_all_idxes()`` /
+``StaticGen.get_all_idxes()`` — has been replaced with explicit
+paired keying.
+
+* Models renamed to drop the redundant "T":
+  ``EDTSlot`` → :class:`ams.models.timeslot.EDSlot`,
+  ``UCTSlot`` → :class:`ams.models.timeslot.UCSlot`. Both are now
+  slot-definition tables (``idx``, ``name``, ``u``).
+* **``EDSlot`` / ``UCSlot`` no longer carry ``sd`` or ``ug``
+  attributes.** Code that accessed ``ss.EDTSlot.sd.v`` /
+  ``ss.EDTSlot.ug.v`` / ``ss.UCTSlot.sd.v`` directly will now
+  ``AttributeError``. Read instead from the new per-axis tables
+  below (or from the routine via ``rtn.sd.v`` / ``rtn.ug.v``,
+  which now return 2D ``(narea, nslot)`` / ``(ngen, nslot)``
+  matrices).
+* Three new per-axis tables hold the actual data:
+  :class:`~ams.models.timeslot.EDSlotLoad`
+  (per-(area, slot) ``sd``),
+  :class:`~ams.models.timeslot.EDSlotGen`
+  (per-(gen, slot) ``ug``), and
+  :class:`~ams.models.timeslot.UCSlotLoad`
+  (per-(area, slot) ``sd`` for UC).
+* The ``GCommit`` model stub (never wired up) was removed.
+* :meth:`~ams.routines.routine.RoutineBase._data_check` now
+  resolves every ``RParam`` / ``Var`` ``model`` and ``imodel``
+  reference against the system at the start of ``init()`` and
+  raises ``ValueError`` (with a difflib-suggested correction) on
+  any unresolved reference. User-defined routine subclasses with
+  a typo'd ``model='Bbus'``-style reference that previously skated
+  by as a silent ``rparam.owner is None`` now hard-error during
+  initialization.
+
+A migration helper at ``tools/migrate_timeslot.py`` rewrites legacy
+case files in place — both JSON and XLSX. Detection is by cell
+content (comma-string ⇒ legacy); no version stamp needed. The nine
+case files shipped in ``ams/cases/`` have been migrated.
+
+**Migrating a custom case file:**
+
+.. code-block:: shell
+
+   python tools/migrate_timeslot.py path/to/case.json --in-place
+
+**New — ``RParam.horizon`` (2D pivot for input parameters):**
+
+:class:`~ams.core.param.RParam` now accepts ``horizon=`` (an
+``RParam`` handle to the secondary axis) plus ``hindexer=`` (the
+column on the row-owner model carrying the secondary key). When
+both are set together with ``indexer`` / ``imodel``, ``RParam.v``
+returns a 2D ``(primary.n, secondary.n)`` matrix pivoted from the
+underlying long-format rows. Cells with no matching row default to
+the source ``NumParam.default``; duplicate ``(primary, secondary)``
+rows raise.
+
+This mirrors the long-standing :attr:`ams.opt.var.Var.horizon`
+convention used on the output side, so the input and output 2D
+shapes share one pattern: primary indexer = ``model``, secondary
+indexer = ``horizon``.
+
+**Behavior change — drops ``NumOp(np.transpose)`` workarounds:**
+
+The ``ED.ugt = NumOp(u=ug, fun=np.transpose, ...)`` shim is
+retired — the ``RParam(model='EDSlotGen', horizon=…, hindexer=…)``
+shape returns ``(ngen, nslot)`` directly when materialized,
+matching the e_str expectations. Likewise, the ``MPBase.sdT``
+shim was eliminated by flipping
+:meth:`ams.core.service.LoadScale.v` to consume sd as
+``(narea, nslot)`` and routing the SRBase / NSRBase reserve chain
+through a small :func:`ams.utils.func.multiply_left_t` helper.
+
+Note that this is a behavior change for any user code calling
+:class:`ams.core.service.LoadScale` directly with a custom ``sd``
+RParam: the expected input shape is now ``(narea, nslot)``, not
+``(nslot, narea)``. Likewise, ``EDSlot`` / ``UCSlot`` no longer
+carry ``sd`` / ``ug`` columns — read from the new
+``EDSlotLoad.sd`` / ``EDSlotGen.ug`` / ``UCSlotLoad.sd`` tables.
 
 **New — per-call output path for ``System.report``:**
 
@@ -47,7 +129,7 @@ Inverse of :meth:`~ams.routines.routine.RoutineBase.export_csv`.
 Reads a routine's CSV results back into the matching
 :class:`Var` / :class:`ExpressionCalc` storage so users can inspect
 prior solutions without rerunning the optimization. Single-period
-and multi-period (``EDTSlot`` / ``UCTSlot``) shapes are both
+and multi-period (``EDSlot`` / ``UCSlot``) shapes are both
 supported.
 
 **Behavior change — ``load_json`` / ``load_csv`` mark converged:**
@@ -67,6 +149,9 @@ later resolve), reset the flag explicitly after the load:
 
    ss.DCOPF.load_json(path)
    ss.DCOPF.converged = False  # opt out of the new behavior
+
+v1.2
+==========
 
 v1.2.3 (2026-05-02)
 ----------------------
@@ -176,7 +261,7 @@ new name reflects the live implementation —
   ``e_str`` ends with the LHS-zero shape (``<= 0`` / ``== 0`` /
   ``>= 0``). Authoring ``pg <= pmax`` instead of
   ``pg - pmax <= 0`` previously solved correctly but produced a
-  silently-wrong :pyattr:`OptzBase.e` (numpy bool array instead of
+  silently-wrong :py:attr:`OptzBase.e` (numpy bool array instead of
   the LHS slack); the new :func:`ams.opt._runtime_eval.assert_constraint_lhs_zero`
   guard surfaces the mismatch immediately with an actionable error.
 - :func:`ams.opt._runtime_eval.eval_e_str` now logs a per-item

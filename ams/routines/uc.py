@@ -8,6 +8,7 @@ import pandas as pd
 
 from ams.core.param import RParam
 from ams.core.service import (NumOp, NumOpDual, MinDur)
+from ams.utils.func import multiply_left_t
 from ams.routines.dcopf import DCOPF
 from ams.routines.rted import RTEDBase
 from ams.routines.ed import SRBase, MPBase, ESD1MPBase, DGMPBase
@@ -41,8 +42,8 @@ class NSRBase:
         self.dnsrpz = NumOpDual(u=self.pdz, u2=self.dnsrp, fun=np.multiply,
                                 name='dnsrpz', tex_name=r'd_{nsr, p, z}',
                                 info='zonal non-spinning reserve requirement in percentage',)
-        self.dnsr = NumOpDual(u=self.dnsrpz, u2=self.sd, fun=np.multiply,
-                              rfun=np.transpose,
+        self.dnsr = NumOpDual(u=self.dnsrpz, u2=self.sd,
+                              fun=multiply_left_t,
                               name='dnsr', tex_name=r'd_{nsr}',
                               info='zonal non-spinning reserve requirement',
                               no_parse=True,)
@@ -98,9 +99,9 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
         self.type = 'DCUC'
 
         # --- Data Section ---
-        # update timeslot model to UCTSlot
+        # update timeslot model to UCSlot
         self.timeslot.info = 'Time slot for multi-period UC'
-        self.timeslot.model = 'UCTSlot'
+        self.timeslot.model = 'UCSlot'
         # --- reserve cost ---
         self.csu = RParam(info='startup cost',
                           name='csu', tex_name=r'c_{su}',
@@ -131,8 +132,8 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
                           model='StaticGen', src='td2',
                           unit='h',)
 
-        self.sd.info = 'zonal load factor for UC'
-        self.sd.model = 'UCTSlot'
+        self.sd.info = 'area load scaling factor for UC'
+        self.sd.model = 'UCSlotLoad'
 
         self.ug.expand_dims = 1
         self.amin.expand_dims = 1
