@@ -388,13 +388,18 @@ def _xlsx_sheet_to_rows(ws) -> list[dict]:
 def _xlsx_load(path: Path) -> tuple[dict, list]:
     """Read an xlsx case into a {sheet: [rows]} dict + sheet order."""
     import openpyxl
+    # ``read_only=True`` keeps an OS file handle open until close();
+    # on Windows that blocks any later in-place rewrite of ``path``.
     wb = openpyxl.load_workbook(str(path), read_only=True, data_only=True)
-    data = {}
-    sheet_order = []
-    for sname in wb.sheetnames:
-        sheet_order.append(sname)
-        data[sname] = _xlsx_sheet_to_rows(wb[sname])
-    return data, sheet_order
+    try:
+        data = {}
+        sheet_order = []
+        for sname in wb.sheetnames:
+            sheet_order.append(sname)
+            data[sname] = _xlsx_sheet_to_rows(wb[sname])
+        return data, sheet_order
+    finally:
+        wb.close()
 
 
 def _xlsx_dump(path: Path, data: dict, sheet_order: list) -> None:
