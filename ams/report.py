@@ -2,12 +2,14 @@
 Module for report generation.
 """
 import logging
+import os
 from collections import OrderedDict
 from typing import List, Dict, Optional
 
 from andes.io.txt import dump_data
 import numpy as np
 from ams.utils.misc import elapsed
+from ams.utils.paths import get_export_path
 
 from ams import __version__ as version
 from ams.shared import copyright_msg, nowarranty_msg, report_time
@@ -86,13 +88,56 @@ class Report:
 
         return text, header, row_name, data
 
-    def write(self):
+    def write(self, path=None):
         """
         Write report to file.
+
+        Parameters
+        ----------
+        path : str, optional
+            Output file path or directory. When given, the report is
+            written to the resolved path (via
+            :func:`ams.utils.paths.get_export_path`) and ``no_output``
+            on the system is bypassed. When ``None``, the report is
+            written to ``system.files.txt`` and the system-level
+            ``no_output`` flag is honored.
+
+        Returns
+        -------
+        str or None
+            Absolute path the report was written to, or ``None`` if
+            writing was skipped (``no_output=True`` and no explicit
+            ``path``).
+
+        Notes
+        -----
+        Adapted from ``andes.variables.report.Report.write``.
+        Original author: Hantao Cui. License: GPL-3.0.
+
+        Differences from ANDES:
+
+        - The ``path`` keyword is AMS-only; ANDES always writes to
+          ``system.files.txt``.
+        - An explicit ``path`` overrides the system-level
+          ``no_output=True`` flag (per-call intent wins).
+
+        .. versionchanged:: 1.2.4
+           Added ``path`` parameter and changed the return type from
+           ``None`` to the absolute output path (or ``None`` when
+           skipped).
         """
         system = self.system
-        if system.files.no_output is True:
-            return
+        if path is None and system.files.no_output is True:
+            return None
+
+        if path is not None:
+            target, _ = get_export_path(system, 'report', path=path, fmt='txt')
+        else:
+            # ``system.files.txt`` is built from ``output_path`` which can
+            # be relative when no ``output_path`` was provided at load
+            # time. Resolve to absolute so the return/log are consistent
+            # with the explicit-path branch above.
+            target = os.path.abspath(system.files.txt)
 
         text = list()
         header = list()
@@ -171,10 +216,11 @@ class Report:
                 header.extend(header_sum)
                 row_name.extend(row_name_sum)
                 data.extend(data_sum)
-        dump_data(text, header, row_name, data, system.files.txt)
+        dump_data(text, header, row_name, data, target)
 
         _, s = elapsed(t)
-        logger.info(f'Report saved to "{system.files.txt}" in {s}.')
+        logger.info(f'Report saved to "{target}" in {s}.')
+        return target
 
 
 def dump_collected_data(owners: dict, text: List, header: List, row_name: List, data: List) -> None:

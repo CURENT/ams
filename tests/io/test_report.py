@@ -3,6 +3,7 @@ Test system report.
 """
 import unittest
 import os
+import tempfile
 
 import ams
 from ams.shared import skip_unittest_without_MISOCP
@@ -32,6 +33,26 @@ class TestReport(unittest.TestCase):
         """
         self.assertTrue(self.ss.files.no_output)
         self.assertFalse(self.ss.report())
+
+    def test_report_path_dir(self):
+        """
+        ``report(path=<dir>)`` writes ``<dir>/<case>_report.txt`` even
+        when ``no_output=True``.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertTrue(self.ss.files.no_output)
+            self.assertTrue(self.ss.report(path=tmp))
+            self.assertTrue(os.path.exists(
+                os.path.join(tmp, 'pjm5bus_demo_report.txt')))
+
+    def test_report_path_file(self):
+        """
+        ``report(path=<file.txt>)`` writes to that exact location.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            target = os.path.join(tmp, 'custom.txt')
+            self.assertTrue(self.ss.report(path=target))
+            self.assertTrue(os.path.exists(target))
 
     def test_no_report(self):
         """

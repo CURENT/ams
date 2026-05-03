@@ -58,12 +58,17 @@ class TestExportJSON(unittest.TestCase):
             no_output=True,
         )
         ss.DCOPF.init()
+        self.assertFalse(ss.DCOPF.converged)
         ss.DCOPF.load_json(self.expected_json_DCOPF)
 
         self.assertIsNotNone(ss.DCOPF.pg.v)
         self.assertIsNotNone(ss.DCOPF.plfub.v)
         self.assertIsNotNone(ss.DCOPF.pmaxe.v)
         self.assertIsNotNone(ss.DCOPF.mu1.v)
+        # As of v1.2.4, a successful load marks the routine as
+        # converged so report() / get() behave as if just solved.
+        self.assertTrue(ss.DCOPF.converged)
+        self.assertEqual(ss.DCOPF.exit_code, 0)
 
         os.remove(self.expected_json_DCOPF)
 
@@ -106,5 +111,9 @@ class TestExportJSON(unittest.TestCase):
         self.assertIsNotNone(ss.ED.mu1.v)
         np.testing.assert_array_equal(ss.ED.mu1.v.shape,
                                       (ss.Line.n, ss.EDTSlot.n))
+        # As of v1.2.4, a successful load marks the routine as
+        # converged.
+        self.assertTrue(ss.ED.converged)
+        self.assertEqual(ss.ED.exit_code, 0)
 
         os.remove(self.expected_json_ED)
