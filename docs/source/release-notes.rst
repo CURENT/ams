@@ -169,10 +169,10 @@ domain-specific → backward-compat aliases). No public API changes.
 v1.4.0. Both have zero call sites in :mod:`ams.routines` and
 :mod:`ams.core`. Replacements:
 
-* ``NumExpandDim(u=…, axis=N)`` →
-  ``NumOp(u=…, fun=np.expand_dims, expand_dims=N)`` (the
+* ``NumExpandDim(u=..., axis=N)`` →
+  ``NumOp(u=..., fun=np.expand_dims, expand_dims=N)`` (the
   ``expand_dims`` kwarg already exists on :class:`~ams.core.service.NumOp`).
-* ``VarReduction(u=…, fun=np.ones)`` → build the shape-only
+* ``VarReduction(u=..., fun=np.ones)`` → build the shape-only
   reduction matrix inline, e.g. ``np.ones((1, u.n))``.
 
 **Internal — shared scalar-wrap helper:**

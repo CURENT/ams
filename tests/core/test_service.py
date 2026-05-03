@@ -112,12 +112,19 @@ class TestServiceDeprecations(unittest.TestCase):
     def test_NumExpandDim_warns_on_init(self):
         rp = RParam(v=np.array([1.0, 2.0, 3.0]))
         with pytest.warns(DeprecationWarning, match="NumExpandDim"):
-            NumExpandDim(u=rp, axis=0)
+            svc = NumExpandDim(u=rp, axis=0)
+        # users who silence the warning still depend on .v correctness
+        # — pin output equality with the documented replacement so the
+        # v1.4.0 removal can verify migration parity
+        np.testing.assert_array_equal(
+            svc.v, np.expand_dims(rp.v, axis=0))
 
     def test_VarReduction_warns_on_init(self):
         rp = RParam(v=np.array([1.0, 2.0, 3.0]))
         with pytest.warns(DeprecationWarning, match="VarReduction"):
-            VarReduction(u=rp, fun=np.ones)
+            svc = VarReduction(u=rp, fun=np.ones)
+        # output parity with the documented inline replacement
+        np.testing.assert_array_equal(svc.v0, np.ones((1, rp.n)))
 
     def test_module_import_does_not_warn(self):
         """Importing ``ams.core.service`` must not raise the deprecation

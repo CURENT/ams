@@ -17,7 +17,7 @@ Repeat ``u`` across columns   :class:`NumHstack`       (broadcast)
 Pick gen subset by indexer    :class:`VarSelect`
 Sum into zones / areas        :class:`ZonalSum`
 Ramp difference matrix        :class:`RampSub`
-Shape-only reduction matrix   :class:`VarReduction`
+Shape-only reduction matrix   inline (e.g. ``np.ones((1, u.n))``)
 Zonal load scaling            :class:`LoadScale`       (load-status aware)
 UC min on/off duration        :class:`MinDur`          (UC routines only)
 ============================  ==========================================
@@ -45,7 +45,8 @@ File layout
 5. Subset / aggregation (``VarSelect``, ``ZonalSum``)
 6. Reduction / difference (``RampSub``, ``VarReduction``)
 7. Domain-specific (``LoadScale``, ``MinDur``)
-8. Backward-compat alias (``NumExpandDim``)
+8. Deprecated, slated for removal in v1.4.0 (``NumExpandDim``,
+   ``VarReduction``)
 """
 
 import logging
@@ -989,7 +990,7 @@ class MinDur(NumOpDual):
 
 
 # ---------------------------------------------------------------------------
-# 8. Backward-compat aliases — prefer the parent class for new code
+# 8. Deprecated — slated for removal in v1.4.0
 # ---------------------------------------------------------------------------
 
 
