@@ -1028,316 +1028,1570 @@
     {
       "idx": "EDT1",
       "u": 1.0,
-      "name": "EDT1",
-      "sd": "0.793,0.793,0.793",
-      "ug": "1,1,1,1,1"
+      "name": "EDT1"
     },
     {
       "idx": "EDT2",
       "u": 1.0,
-      "name": "EDT2",
-      "sd": "0.756,0.756,0.756",
-      "ug": "1,1,1,1,1"
+      "name": "EDT2"
     },
     {
       "idx": "EDT3",
       "u": 1.0,
-      "name": "EDT3",
-      "sd": "0.723,0.723,0.723",
-      "ug": "1,1,1,1,1"
+      "name": "EDT3"
     },
     {
       "idx": "EDT4",
       "u": 1.0,
-      "name": "EDT4",
-      "sd": "0.708,0.708,0.708",
-      "ug": "1,1,1,1,1"
+      "name": "EDT4"
     },
     {
       "idx": "EDT5",
       "u": 1.0,
-      "name": "EDT5",
-      "sd": "0.7,0.7,0.7",
-      "ug": "1,1,1,1,1"
+      "name": "EDT5"
     },
     {
       "idx": "EDT6",
       "u": 1.0,
-      "name": "EDT6",
-      "sd": "0.706,0.706,0.706",
-      "ug": "1,1,1,1,1"
+      "name": "EDT6"
     },
     {
       "idx": "EDT7",
       "u": 1.0,
-      "name": "EDT7",
-      "sd": "0.75,0.75,0.75",
-      "ug": "1,1,1,1,1"
+      "name": "EDT7"
     },
     {
       "idx": "EDT8",
       "u": 1.0,
-      "name": "EDT8",
-      "sd": "0.802,0.802,0.802",
-      "ug": "1,1,1,1,1"
+      "name": "EDT8"
     },
     {
       "idx": "EDT9",
       "u": 1.0,
-      "name": "EDT9",
-      "sd": "0.828,0.828,0.828",
-      "ug": "1,1,1,1,1"
+      "name": "EDT9"
     },
     {
       "idx": "EDT10",
       "u": 1.0,
-      "name": "EDT10",
-      "sd": "0.851,0.851,0.851",
-      "ug": "1,1,1,1,1"
+      "name": "EDT10"
     },
     {
       "idx": "EDT11",
       "u": 1.0,
-      "name": "EDT11",
-      "sd": "0.874,0.874,0.874",
-      "ug": "1,1,1,1,1"
+      "name": "EDT11"
     },
     {
       "idx": "EDT12",
       "u": 1.0,
-      "name": "EDT12",
-      "sd": "0.898,0.898,0.898",
-      "ug": "1,1,1,1,1"
+      "name": "EDT12"
     },
     {
       "idx": "EDT13",
       "u": 1.0,
-      "name": "EDT13",
-      "sd": "0.919,0.919,0.919",
-      "ug": "1,1,1,1,1"
+      "name": "EDT13"
     },
     {
       "idx": "EDT14",
       "u": 1.0,
-      "name": "EDT14",
-      "sd": "0.947,0.947,0.947",
-      "ug": "1,1,1,1,1"
+      "name": "EDT14"
     },
     {
       "idx": "EDT15",
       "u": 1.0,
-      "name": "EDT15",
-      "sd": "0.97,0.97,0.97",
-      "ug": "1,1,1,1,1"
+      "name": "EDT15"
     },
     {
       "idx": "EDT16",
       "u": 1.0,
-      "name": "EDT16",
-      "sd": "0.987,0.987,0.987",
-      "ug": "1,1,1,1,1"
+      "name": "EDT16"
     },
     {
       "idx": "EDT17",
       "u": 1.0,
-      "name": "EDT17",
-      "sd": "1.0,1.0,1.0",
-      "ug": "1,1,1,1,1"
+      "name": "EDT17"
     },
     {
       "idx": "EDT18",
       "u": 1.0,
-      "name": "EDT18",
-      "sd": "1.0,1.0,1.0",
-      "ug": "1,1,1,1,1"
+      "name": "EDT18"
     },
     {
       "idx": "EDT19",
       "u": 1.0,
-      "name": "EDT19",
-      "sd": "0.991,0.991,0.991",
-      "ug": "1,1,1,1,1"
+      "name": "EDT19"
     },
     {
       "idx": "EDT20",
       "u": 1.0,
-      "name": "EDT20",
-      "sd": "0.956,0.956,0.956",
-      "ug": "1,1,1,1,1"
+      "name": "EDT20"
     },
     {
       "idx": "EDT21",
       "u": 1.0,
-      "name": "EDT21",
-      "sd": "0.93,0.93,0.93",
-      "ug": "1,1,1,1,1"
+      "name": "EDT21"
     },
     {
       "idx": "EDT22",
       "u": 1.0,
-      "name": "EDT22",
-      "sd": "0.905,0.905,0.905",
-      "ug": "1,1,1,1,1"
+      "name": "EDT22"
     },
     {
       "idx": "EDT23",
       "u": 1.0,
-      "name": "EDT23",
-      "sd": "0.849,0.849,0.849",
-      "ug": "1,1,1,1,1"
+      "name": "EDT23"
     },
     {
       "idx": "EDT24",
       "u": 1.0,
-      "name": "EDT24",
-      "sd": "0.784,0.784,0.784",
-      "ug": "1,1,1,1,1"
+      "name": "EDT24"
+    }
+  ],
+  "EDSlotLoad": [
+    {
+      "area": 1,
+      "slot": "EDT1",
+      "sd": 0.793
+    },
+    {
+      "area": 2,
+      "slot": "EDT1",
+      "sd": 0.793
+    },
+    {
+      "area": 3,
+      "slot": "EDT1",
+      "sd": 0.793
+    },
+    {
+      "area": 1,
+      "slot": "EDT2",
+      "sd": 0.756
+    },
+    {
+      "area": 2,
+      "slot": "EDT2",
+      "sd": 0.756
+    },
+    {
+      "area": 3,
+      "slot": "EDT2",
+      "sd": 0.756
+    },
+    {
+      "area": 1,
+      "slot": "EDT3",
+      "sd": 0.723
+    },
+    {
+      "area": 2,
+      "slot": "EDT3",
+      "sd": 0.723
+    },
+    {
+      "area": 3,
+      "slot": "EDT3",
+      "sd": 0.723
+    },
+    {
+      "area": 1,
+      "slot": "EDT4",
+      "sd": 0.708
+    },
+    {
+      "area": 2,
+      "slot": "EDT4",
+      "sd": 0.708
+    },
+    {
+      "area": 3,
+      "slot": "EDT4",
+      "sd": 0.708
+    },
+    {
+      "area": 1,
+      "slot": "EDT5",
+      "sd": 0.7
+    },
+    {
+      "area": 2,
+      "slot": "EDT5",
+      "sd": 0.7
+    },
+    {
+      "area": 3,
+      "slot": "EDT5",
+      "sd": 0.7
+    },
+    {
+      "area": 1,
+      "slot": "EDT6",
+      "sd": 0.706
+    },
+    {
+      "area": 2,
+      "slot": "EDT6",
+      "sd": 0.706
+    },
+    {
+      "area": 3,
+      "slot": "EDT6",
+      "sd": 0.706
+    },
+    {
+      "area": 1,
+      "slot": "EDT7",
+      "sd": 0.75
+    },
+    {
+      "area": 2,
+      "slot": "EDT7",
+      "sd": 0.75
+    },
+    {
+      "area": 3,
+      "slot": "EDT7",
+      "sd": 0.75
+    },
+    {
+      "area": 1,
+      "slot": "EDT8",
+      "sd": 0.802
+    },
+    {
+      "area": 2,
+      "slot": "EDT8",
+      "sd": 0.802
+    },
+    {
+      "area": 3,
+      "slot": "EDT8",
+      "sd": 0.802
+    },
+    {
+      "area": 1,
+      "slot": "EDT9",
+      "sd": 0.828
+    },
+    {
+      "area": 2,
+      "slot": "EDT9",
+      "sd": 0.828
+    },
+    {
+      "area": 3,
+      "slot": "EDT9",
+      "sd": 0.828
+    },
+    {
+      "area": 1,
+      "slot": "EDT10",
+      "sd": 0.851
+    },
+    {
+      "area": 2,
+      "slot": "EDT10",
+      "sd": 0.851
+    },
+    {
+      "area": 3,
+      "slot": "EDT10",
+      "sd": 0.851
+    },
+    {
+      "area": 1,
+      "slot": "EDT11",
+      "sd": 0.874
+    },
+    {
+      "area": 2,
+      "slot": "EDT11",
+      "sd": 0.874
+    },
+    {
+      "area": 3,
+      "slot": "EDT11",
+      "sd": 0.874
+    },
+    {
+      "area": 1,
+      "slot": "EDT12",
+      "sd": 0.898
+    },
+    {
+      "area": 2,
+      "slot": "EDT12",
+      "sd": 0.898
+    },
+    {
+      "area": 3,
+      "slot": "EDT12",
+      "sd": 0.898
+    },
+    {
+      "area": 1,
+      "slot": "EDT13",
+      "sd": 0.919
+    },
+    {
+      "area": 2,
+      "slot": "EDT13",
+      "sd": 0.919
+    },
+    {
+      "area": 3,
+      "slot": "EDT13",
+      "sd": 0.919
+    },
+    {
+      "area": 1,
+      "slot": "EDT14",
+      "sd": 0.947
+    },
+    {
+      "area": 2,
+      "slot": "EDT14",
+      "sd": 0.947
+    },
+    {
+      "area": 3,
+      "slot": "EDT14",
+      "sd": 0.947
+    },
+    {
+      "area": 1,
+      "slot": "EDT15",
+      "sd": 0.97
+    },
+    {
+      "area": 2,
+      "slot": "EDT15",
+      "sd": 0.97
+    },
+    {
+      "area": 3,
+      "slot": "EDT15",
+      "sd": 0.97
+    },
+    {
+      "area": 1,
+      "slot": "EDT16",
+      "sd": 0.987
+    },
+    {
+      "area": 2,
+      "slot": "EDT16",
+      "sd": 0.987
+    },
+    {
+      "area": 3,
+      "slot": "EDT16",
+      "sd": 0.987
+    },
+    {
+      "area": 1,
+      "slot": "EDT17",
+      "sd": 1.0
+    },
+    {
+      "area": 2,
+      "slot": "EDT17",
+      "sd": 1.0
+    },
+    {
+      "area": 3,
+      "slot": "EDT17",
+      "sd": 1.0
+    },
+    {
+      "area": 1,
+      "slot": "EDT18",
+      "sd": 1.0
+    },
+    {
+      "area": 2,
+      "slot": "EDT18",
+      "sd": 1.0
+    },
+    {
+      "area": 3,
+      "slot": "EDT18",
+      "sd": 1.0
+    },
+    {
+      "area": 1,
+      "slot": "EDT19",
+      "sd": 0.991
+    },
+    {
+      "area": 2,
+      "slot": "EDT19",
+      "sd": 0.991
+    },
+    {
+      "area": 3,
+      "slot": "EDT19",
+      "sd": 0.991
+    },
+    {
+      "area": 1,
+      "slot": "EDT20",
+      "sd": 0.956
+    },
+    {
+      "area": 2,
+      "slot": "EDT20",
+      "sd": 0.956
+    },
+    {
+      "area": 3,
+      "slot": "EDT20",
+      "sd": 0.956
+    },
+    {
+      "area": 1,
+      "slot": "EDT21",
+      "sd": 0.93
+    },
+    {
+      "area": 2,
+      "slot": "EDT21",
+      "sd": 0.93
+    },
+    {
+      "area": 3,
+      "slot": "EDT21",
+      "sd": 0.93
+    },
+    {
+      "area": 1,
+      "slot": "EDT22",
+      "sd": 0.905
+    },
+    {
+      "area": 2,
+      "slot": "EDT22",
+      "sd": 0.905
+    },
+    {
+      "area": 3,
+      "slot": "EDT22",
+      "sd": 0.905
+    },
+    {
+      "area": 1,
+      "slot": "EDT23",
+      "sd": 0.849
+    },
+    {
+      "area": 2,
+      "slot": "EDT23",
+      "sd": 0.849
+    },
+    {
+      "area": 3,
+      "slot": "EDT23",
+      "sd": 0.849
+    },
+    {
+      "area": 1,
+      "slot": "EDT24",
+      "sd": 0.784
+    },
+    {
+      "area": 2,
+      "slot": "EDT24",
+      "sd": 0.784
+    },
+    {
+      "area": 3,
+      "slot": "EDT24",
+      "sd": 0.784
+    }
+  ],
+  "EDSlotGen": [
+    {
+      "gen": "Slack_4",
+      "slot": "EDT1",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT1",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT1",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT1",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT1",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT2",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT2",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT2",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT2",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT2",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT3",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT3",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT3",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT3",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT3",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT4",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT4",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT4",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT4",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT4",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT5",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT5",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT5",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT5",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT5",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT6",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT6",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT6",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT6",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT6",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT7",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT7",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT7",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT7",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT7",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT8",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT8",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT8",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT8",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT8",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT9",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT9",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT9",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT9",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT9",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT10",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT10",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT10",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT10",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT10",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT11",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT11",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT11",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT11",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT11",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT12",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT12",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT12",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT12",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT12",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT13",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT13",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT13",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT13",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT13",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT14",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT14",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT14",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT14",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT14",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT15",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT15",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT15",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT15",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT15",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT16",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT16",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT16",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT16",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT16",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT17",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT17",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT17",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT17",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT17",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT18",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT18",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT18",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT18",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT18",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT19",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT19",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT19",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT19",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT19",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT20",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT20",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT20",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT20",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT20",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT21",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT21",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT21",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT21",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT21",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT22",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT22",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT22",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT22",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT22",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT23",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT23",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT23",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT23",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT23",
+      "ug": 1
+    },
+    {
+      "gen": "Slack_4",
+      "slot": "EDT24",
+      "ug": 1
+    },
+    {
+      "gen": "PV_1",
+      "slot": "EDT24",
+      "ug": 1
+    },
+    {
+      "gen": "PV_3",
+      "slot": "EDT24",
+      "ug": 1
+    },
+    {
+      "gen": "PV_5",
+      "slot": "EDT24",
+      "ug": 1
+    },
+    {
+      "gen": "PV_2",
+      "slot": "EDT24",
+      "ug": 1
     }
   ],
   "UCTSlot": [
     {
       "idx": "UCT1",
       "u": 1.0,
-      "name": "UCT1",
-      "sd": "0.793,0.793,0.793"
+      "name": "UCT1"
     },
     {
       "idx": "UCT2",
       "u": 1.0,
-      "name": "UCT2",
-      "sd": "0.756,0.756,0.756"
+      "name": "UCT2"
     },
     {
       "idx": "UCT3",
       "u": 1.0,
-      "name": "UCT3",
-      "sd": "0.723,0.723,0.723"
+      "name": "UCT3"
     },
     {
       "idx": "UCT4",
       "u": 1.0,
-      "name": "UCT4",
-      "sd": "0.708,0.708,0.708"
+      "name": "UCT4"
     },
     {
       "idx": "UCT5",
       "u": 1.0,
-      "name": "UCT5",
-      "sd": "0.7,0.7,0.7"
+      "name": "UCT5"
     },
     {
       "idx": "UCT6",
       "u": 1.0,
-      "name": "UCT6",
-      "sd": "0.706,0.706,0.706"
+      "name": "UCT6"
     },
     {
       "idx": "UCT7",
       "u": 1.0,
-      "name": "UCT7",
-      "sd": "0.75,0.75,0.75"
+      "name": "UCT7"
     },
     {
       "idx": "UCT8",
       "u": 1.0,
-      "name": "UCT8",
-      "sd": "0.802,0.802,0.802"
+      "name": "UCT8"
     },
     {
       "idx": "UCT9",
       "u": 1.0,
-      "name": "UCT9",
-      "sd": "0.828,0.828,0.828"
+      "name": "UCT9"
     },
     {
       "idx": "UCT10",
       "u": 1.0,
-      "name": "UCT10",
-      "sd": "0.851,0.851,0.851"
+      "name": "UCT10"
     },
     {
       "idx": "UCT11",
       "u": 1.0,
-      "name": "UCT11",
-      "sd": "0.874,0.874,0.874"
+      "name": "UCT11"
     },
     {
       "idx": "UCT12",
       "u": 1.0,
-      "name": "UCT12",
-      "sd": "0.898,0.898,0.898"
+      "name": "UCT12"
     },
     {
       "idx": "UCT13",
       "u": 1.0,
-      "name": "UCT13",
-      "sd": "0.919,0.919,0.919"
+      "name": "UCT13"
     },
     {
       "idx": "UCT14",
       "u": 1.0,
-      "name": "UCT14",
-      "sd": "0.947,0.947,0.947"
+      "name": "UCT14"
     },
     {
       "idx": "UCT15",
       "u": 1.0,
-      "name": "UCT15",
-      "sd": "0.97,0.97,0.97"
+      "name": "UCT15"
     },
     {
       "idx": "UCT16",
       "u": 1.0,
-      "name": "UCT16",
-      "sd": "0.987,0.987,0.987"
+      "name": "UCT16"
     },
     {
       "idx": "UCT17",
       "u": 1.0,
-      "name": "UCT17",
-      "sd": "1.0,1.0,1.0"
+      "name": "UCT17"
     },
     {
       "idx": "UCT18",
       "u": 1.0,
-      "name": "UCT18",
-      "sd": "1.0,1.0,1.0"
+      "name": "UCT18"
     },
     {
       "idx": "UCT19",
       "u": 1.0,
-      "name": "UCT19",
-      "sd": "0.991,0.991,0.991"
+      "name": "UCT19"
     },
     {
       "idx": "UCT20",
       "u": 1.0,
-      "name": "UCT20",
-      "sd": "0.956,0.956,0.956"
+      "name": "UCT20"
     },
     {
       "idx": "UCT21",
       "u": 1.0,
-      "name": "UCT21",
-      "sd": "0.93,0.93,0.93"
+      "name": "UCT21"
     },
     {
       "idx": "UCT22",
       "u": 1.0,
-      "name": "UCT22",
-      "sd": "0.905,0.905,0.905"
+      "name": "UCT22"
     },
     {
       "idx": "UCT23",
       "u": 1.0,
-      "name": "UCT23",
-      "sd": "0.849,0.849,0.849"
+      "name": "UCT23"
     },
     {
       "idx": "UCT24",
       "u": 1.0,
-      "name": "UCT24",
-      "sd": "0.784,0.784,0.784"
+      "name": "UCT24"
+    }
+  ],
+  "UCSlotLoad": [
+    {
+      "area": 1,
+      "slot": "UCT1",
+      "sd": 0.793
+    },
+    {
+      "area": 2,
+      "slot": "UCT1",
+      "sd": 0.793
+    },
+    {
+      "area": 3,
+      "slot": "UCT1",
+      "sd": 0.793
+    },
+    {
+      "area": 1,
+      "slot": "UCT2",
+      "sd": 0.756
+    },
+    {
+      "area": 2,
+      "slot": "UCT2",
+      "sd": 0.756
+    },
+    {
+      "area": 3,
+      "slot": "UCT2",
+      "sd": 0.756
+    },
+    {
+      "area": 1,
+      "slot": "UCT3",
+      "sd": 0.723
+    },
+    {
+      "area": 2,
+      "slot": "UCT3",
+      "sd": 0.723
+    },
+    {
+      "area": 3,
+      "slot": "UCT3",
+      "sd": 0.723
+    },
+    {
+      "area": 1,
+      "slot": "UCT4",
+      "sd": 0.708
+    },
+    {
+      "area": 2,
+      "slot": "UCT4",
+      "sd": 0.708
+    },
+    {
+      "area": 3,
+      "slot": "UCT4",
+      "sd": 0.708
+    },
+    {
+      "area": 1,
+      "slot": "UCT5",
+      "sd": 0.7
+    },
+    {
+      "area": 2,
+      "slot": "UCT5",
+      "sd": 0.7
+    },
+    {
+      "area": 3,
+      "slot": "UCT5",
+      "sd": 0.7
+    },
+    {
+      "area": 1,
+      "slot": "UCT6",
+      "sd": 0.706
+    },
+    {
+      "area": 2,
+      "slot": "UCT6",
+      "sd": 0.706
+    },
+    {
+      "area": 3,
+      "slot": "UCT6",
+      "sd": 0.706
+    },
+    {
+      "area": 1,
+      "slot": "UCT7",
+      "sd": 0.75
+    },
+    {
+      "area": 2,
+      "slot": "UCT7",
+      "sd": 0.75
+    },
+    {
+      "area": 3,
+      "slot": "UCT7",
+      "sd": 0.75
+    },
+    {
+      "area": 1,
+      "slot": "UCT8",
+      "sd": 0.802
+    },
+    {
+      "area": 2,
+      "slot": "UCT8",
+      "sd": 0.802
+    },
+    {
+      "area": 3,
+      "slot": "UCT8",
+      "sd": 0.802
+    },
+    {
+      "area": 1,
+      "slot": "UCT9",
+      "sd": 0.828
+    },
+    {
+      "area": 2,
+      "slot": "UCT9",
+      "sd": 0.828
+    },
+    {
+      "area": 3,
+      "slot": "UCT9",
+      "sd": 0.828
+    },
+    {
+      "area": 1,
+      "slot": "UCT10",
+      "sd": 0.851
+    },
+    {
+      "area": 2,
+      "slot": "UCT10",
+      "sd": 0.851
+    },
+    {
+      "area": 3,
+      "slot": "UCT10",
+      "sd": 0.851
+    },
+    {
+      "area": 1,
+      "slot": "UCT11",
+      "sd": 0.874
+    },
+    {
+      "area": 2,
+      "slot": "UCT11",
+      "sd": 0.874
+    },
+    {
+      "area": 3,
+      "slot": "UCT11",
+      "sd": 0.874
+    },
+    {
+      "area": 1,
+      "slot": "UCT12",
+      "sd": 0.898
+    },
+    {
+      "area": 2,
+      "slot": "UCT12",
+      "sd": 0.898
+    },
+    {
+      "area": 3,
+      "slot": "UCT12",
+      "sd": 0.898
+    },
+    {
+      "area": 1,
+      "slot": "UCT13",
+      "sd": 0.919
+    },
+    {
+      "area": 2,
+      "slot": "UCT13",
+      "sd": 0.919
+    },
+    {
+      "area": 3,
+      "slot": "UCT13",
+      "sd": 0.919
+    },
+    {
+      "area": 1,
+      "slot": "UCT14",
+      "sd": 0.947
+    },
+    {
+      "area": 2,
+      "slot": "UCT14",
+      "sd": 0.947
+    },
+    {
+      "area": 3,
+      "slot": "UCT14",
+      "sd": 0.947
+    },
+    {
+      "area": 1,
+      "slot": "UCT15",
+      "sd": 0.97
+    },
+    {
+      "area": 2,
+      "slot": "UCT15",
+      "sd": 0.97
+    },
+    {
+      "area": 3,
+      "slot": "UCT15",
+      "sd": 0.97
+    },
+    {
+      "area": 1,
+      "slot": "UCT16",
+      "sd": 0.987
+    },
+    {
+      "area": 2,
+      "slot": "UCT16",
+      "sd": 0.987
+    },
+    {
+      "area": 3,
+      "slot": "UCT16",
+      "sd": 0.987
+    },
+    {
+      "area": 1,
+      "slot": "UCT17",
+      "sd": 1.0
+    },
+    {
+      "area": 2,
+      "slot": "UCT17",
+      "sd": 1.0
+    },
+    {
+      "area": 3,
+      "slot": "UCT17",
+      "sd": 1.0
+    },
+    {
+      "area": 1,
+      "slot": "UCT18",
+      "sd": 1.0
+    },
+    {
+      "area": 2,
+      "slot": "UCT18",
+      "sd": 1.0
+    },
+    {
+      "area": 3,
+      "slot": "UCT18",
+      "sd": 1.0
+    },
+    {
+      "area": 1,
+      "slot": "UCT19",
+      "sd": 0.991
+    },
+    {
+      "area": 2,
+      "slot": "UCT19",
+      "sd": 0.991
+    },
+    {
+      "area": 3,
+      "slot": "UCT19",
+      "sd": 0.991
+    },
+    {
+      "area": 1,
+      "slot": "UCT20",
+      "sd": 0.956
+    },
+    {
+      "area": 2,
+      "slot": "UCT20",
+      "sd": 0.956
+    },
+    {
+      "area": 3,
+      "slot": "UCT20",
+      "sd": 0.956
+    },
+    {
+      "area": 1,
+      "slot": "UCT21",
+      "sd": 0.93
+    },
+    {
+      "area": 2,
+      "slot": "UCT21",
+      "sd": 0.93
+    },
+    {
+      "area": 3,
+      "slot": "UCT21",
+      "sd": 0.93
+    },
+    {
+      "area": 1,
+      "slot": "UCT22",
+      "sd": 0.905
+    },
+    {
+      "area": 2,
+      "slot": "UCT22",
+      "sd": 0.905
+    },
+    {
+      "area": 3,
+      "slot": "UCT22",
+      "sd": 0.905
+    },
+    {
+      "area": 1,
+      "slot": "UCT23",
+      "sd": 0.849
+    },
+    {
+      "area": 2,
+      "slot": "UCT23",
+      "sd": 0.849
+    },
+    {
+      "area": 3,
+      "slot": "UCT23",
+      "sd": 0.849
+    },
+    {
+      "area": 1,
+      "slot": "UCT24",
+      "sd": 0.784
+    },
+    {
+      "area": 2,
+      "slot": "UCT24",
+      "sd": 0.784
+    },
+    {
+      "area": 3,
+      "slot": "UCT24",
+      "sd": 0.784
     }
   ]
 }
