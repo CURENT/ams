@@ -201,7 +201,7 @@ class OptzBase:
           symbol-by-symbol via :func:`ams.opt._runtime_eval.eval_e_str`
           and ``eval``-ed at parse/evaluate time. This is what runs for
           items the user customized via ``e_str = '...'`` or
-          ``addConstrs(...)``. (Renamed from ``'sub_map'`` in v1.2.2;
+          ``addConstrs(...)``. (Renamed from ``'sub_map'`` in v1.2.3;
           the legacy regex+eval pipeline that name referenced was
           retired in PR #246.)
         """

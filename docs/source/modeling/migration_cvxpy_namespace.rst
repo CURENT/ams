@@ -1,9 +1,9 @@
 .. _migration_cvxpy_namespace:
 
-Migration: canonical CVXPY in ``e_str`` (v1.2.2)
+Migration: canonical CVXPY in ``e_str`` (v1.2.3)
 ==================================================
 
-v1.2.2 removes AMS's historical function-name rewrite layer for
+v1.2.3 removes AMS's historical function-name rewrite layer for
 ``e_str`` strings. ``mul``, ``multiply``, ``sum``, and the ``a dot b``
 binary syntax are no longer translated into their ``cp.*`` / ``*``
 equivalents — author canonical CVXPY directly. This page is a
@@ -282,5 +282,5 @@ See also
   covers canonical CVXPY syntax in depth.
 - ``examples/ex8.ipynb`` — sp1 / sp2 / sp3 walkthrough of post-init
   customization patterns under the canonical rules.
-- :ref:`ReleaseNotes` — v1.2.2 entry, "Migration — ``e_str``
+- :ref:`ReleaseNotes` — v1.2.3 entry, "Migration — ``e_str``
   authoring contract".

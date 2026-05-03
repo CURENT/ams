@@ -91,9 +91,9 @@ the host routine. It does **not** rewrite function names: ``cp.*`` calls
 must be written explicitly.
 
 .. note::
-   Prior to v1.2.2, AMS rewrote ``mul(...)`` → ``cp.multiply(...)``,
+   Prior to v1.2.3, AMS rewrote ``mul(...)`` → ``cp.multiply(...)``,
    bare ``sum(...)`` → ``cp.sum(...)``, and ``a dot b`` → ``a * b``
-   automatically. That rewrite layer has been removed — see the v1.2.2
+   automatically. That rewrite layer has been removed — see the v1.2.3
    migration table in :ref:`ReleaseNotes`. User customizations
    (``addConstrs(e_str=...)`` / ``obj.e_str += '...'``) that still use
    the old vocabulary will raise ``NameError`` at eval time.
@@ -137,7 +137,7 @@ Other canonical-CVXPY constructs in ``e_str``:
 * Comparisons ``... == 0`` / ``... <= 0`` / ``... >= 0`` are
   embedded in the ``e_str`` itself; the LHS-zero authoring
   convention keeps ``Constraint.v`` reporting slack-from-zero
-  uniformly. See :ref:`migration_cvxpy_namespace` for the v1.2.2
+  uniformly. See :ref:`migration_cvxpy_namespace` for the v1.2.3
   ``is_eq`` retirement.
 * Powers use ``**`` (e.g. ``vmax**2``).
 

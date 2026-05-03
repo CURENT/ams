@@ -147,7 +147,7 @@ class Constraint(OptzBase):
                 f"cp.constraints.Constraint (embed the relational "
                 f"operator: '<LHS> <= 0', '<LHS> == 0', or '<LHS> >= 0'). "
                 f"Got {type(result).__name__}. Stale "
-                f"~/.ams/pycode/ from before the v1.2.2 is_eq retirement "
+                f"~/.ams/pycode/ from before the v1.2.3 is_eq retirement "
                 f"is auto-invalidated by PYCODE_FORMAT_VERSION; if you see "
                 f"this from a freshly-regenerated cache, the underlying "
                 f"e_str is missing its trailing operator."
