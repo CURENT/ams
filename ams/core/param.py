@@ -259,7 +259,7 @@ class RParam(Param):
         row_values = np.asarray(getattr(row_model, self.src).v)
 
         src_param = getattr(row_model, self.src)
-        default = getattr(src_param, 'default', 0)
+        default = src_param.default
         dtype = row_values.dtype if row_values.size else np.float64
         out = np.full((nr, nc), default, dtype=dtype)
 

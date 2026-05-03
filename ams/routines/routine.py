@@ -582,8 +582,9 @@ class RoutineBase:
         if not unresolved:
             return
 
-        lines = [f"<{self.class_name}> has unresolved model "
-                 f"references on {len(unresolved)} attribute(s):"]
+        lines = [f"RoutineModelRefError: <{self.class_name}> has "
+                 f"unresolved model references on "
+                 f"{len(unresolved)} attribute(s):"]
         for registry_name, name, attr, target, suggestion in unresolved:
             hint = (f"; did you mean '{suggestion[0]}'?"
                     if suggestion else "")

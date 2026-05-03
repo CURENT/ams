@@ -25,6 +25,13 @@ paired keying.
   ``EDTSlot`` → :class:`ams.models.timeslot.EDSlot`,
   ``UCTSlot`` → :class:`ams.models.timeslot.UCSlot`. Both are now
   slot-definition tables (``idx``, ``name``, ``u``).
+* **``EDSlot`` / ``UCSlot`` no longer carry ``sd`` or ``ug``
+  attributes.** Code that accessed ``ss.EDTSlot.sd.v`` /
+  ``ss.EDTSlot.ug.v`` / ``ss.UCTSlot.sd.v`` directly will now
+  ``AttributeError``. Read instead from the new per-axis tables
+  below (or from the routine via ``rtn.sd.v`` / ``rtn.ug.v``,
+  which now return 2D ``(narea, nslot)`` / ``(ngen, nslot)``
+  matrices).
 * Three new per-axis tables hold the actual data:
   :class:`~ams.models.timeslot.EDSlotLoad`
   (per-(area, slot) ``sd``),
@@ -33,6 +40,14 @@ paired keying.
   :class:`~ams.models.timeslot.UCSlotLoad`
   (per-(area, slot) ``sd`` for UC).
 * The ``GCommit`` model stub (never wired up) was removed.
+* :meth:`~ams.routines.routine.RoutineBase._data_check` now
+  resolves every ``RParam`` / ``Var`` ``model`` and ``imodel``
+  reference against the system at the start of ``init()`` and
+  raises ``ValueError`` (with a difflib-suggested correction) on
+  any unresolved reference. User-defined routine subclasses with
+  a typo'd ``model='Bbus'``-style reference that previously skated
+  by as a silent ``rparam.owner is None`` now hard-error during
+  initialization.
 
 A migration helper at ``tools/migrate_timeslot.py`` rewrites legacy
 case files in place — both JSON and XLSX. Detection is by cell
@@ -61,7 +76,7 @@ convention used on the output side, so the input and output 2D
 shapes share one pattern: primary indexer = ``model``, secondary
 indexer = ``horizon``.
 
-**Internal — drops ``NumOp(np.transpose)`` workarounds:**
+**Behavior change — drops ``NumOp(np.transpose)`` workarounds:**
 
 The ``ED.ugt = NumOp(u=ug, fun=np.transpose, ...)`` shim is
 retired — the ``RParam(model='EDSlotGen', horizon=…, hindexer=…)``

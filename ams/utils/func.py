@@ -94,13 +94,13 @@ def str_list_iconv(x):
 
 def multiply_left_t(a, b):
     """
-    Element-wise multiply ``a.T * b``.
+    Return ``np.multiply(np.transpose(a), b)``.
 
-    Lets callers compose a small left-transpose with a multiply when the
-    natural shape of ``a`` is the transpose of what the broadcast rule
-    needs against ``b`` — used by the per-(area, slot) reserve chain in
-    :class:`SRBase` / :class:`NSRBase` so the v1.3.0 ``sd`` shape
-    ``(narea, nslot)`` flows through without a NumOp(transpose) shim
-    on the source side.
+    Composes a small left-transpose with an element-wise multiply,
+    for cases where the natural shape of ``a`` is the transpose of
+    what numpy's broadcast rule needs against ``b``. Used by the
+    per-(area, slot) reserve chain in :class:`SRBase` /
+    :class:`NSRBase` so the v1.3.0 ``sd`` shape ``(narea, nslot)``
+    flows through without a NumOp(transpose) shim on the source side.
     """
     return np.multiply(np.transpose(a), b)

@@ -34,8 +34,13 @@ class TestRoutineMethods(unittest.TestCase):
         original = self.ss.ED.sd.model
         self.ss.ED.sd.model = 'EDSlotLooad'  # typo (extra 'o')
         try:
-            with pytest.raises(ValueError, match="EDSlotLoad"):
+            with pytest.raises(ValueError) as exc_info:
                 self.ss.ED._validate_model_refs()
+            msg = str(exc_info.value)
+            # Identifies the offending attribute and suggests fix.
+            self.assertIn("rparams.sd.model", msg)
+            self.assertIn("'EDSlotLooad'", msg)
+            self.assertIn("did you mean 'EDSlotLoad'?", msg)
         finally:
             self.ss.ED.sd.model = original
 

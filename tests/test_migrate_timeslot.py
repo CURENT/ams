@@ -4,7 +4,9 @@ migrator that splits legacy ``EDTSlot`` / ``UCTSlot`` CSV-list
 cells into the new per-axis tables and renames the top-level keys.
 """
 
+import json
 import sys
+import tempfile
 import unittest
 from copy import deepcopy
 from pathlib import Path
@@ -15,7 +17,9 @@ import pytest
 _TOOLS = Path(__file__).resolve().parent.parent / 'tools'
 sys.path.insert(0, str(_TOOLS))
 
-from migrate_timeslot import migrate_data, _rename_legacy_keys  # noqa: E402
+from migrate_timeslot import (  # noqa: E402
+    migrate_data, migrate_json, migrate_xlsx, _rename_legacy_keys,
+)
 
 
 def _legacy_case():
@@ -119,6 +123,132 @@ class TestMigrate(unittest.TestCase):
         self.assertEqual(summary['ed_load'], 0)
         self.assertIn('EDSlot', out)
         self.assertEqual(len(out['EDSlotLoad']), 1)
+
+
+class TestDuplicateSlotGuard(unittest.TestCase):
+
+    def test_duplicate_slot_idx_raises(self):
+        """Two ``EDTSlot`` rows with the same idx fail at file
+        context, not silently downstream at solve time."""
+        data = _legacy_case()
+        data['EDTSlot'].append({'idx': 'EDT1', 'u': 1.0, 'name': 'EDT1',
+                                'sd': '0.5,0.7', 'ug': '1,1'})
+        with pytest.raises(ValueError, match="duplicate slot idx 'EDT1'"):
+            migrate_data(data)
+
+
+class TestSingleAreaCell(unittest.TestCase):
+
+    def test_single_area_no_comma_still_migrated(self):
+        """A 1-area case has bare-numeric ``sd`` cells with no
+        comma. The renamed-table path still recognizes them as
+        legacy."""
+        data = {
+            'Area': [{'idx': 1, 'u': 1.0, 'name': '1'}],
+            'EDTSlot': [
+                {'idx': 'EDT1', 'u': 1.0, 'name': 'EDT1', 'sd': '0.5'},
+            ],
+        }
+        out, summary = migrate_data(data)
+        self.assertEqual(summary['ed_load'], 1)
+        self.assertEqual(out['EDSlotLoad'][0],
+                         {'area': 1, 'slot': 'EDT1', 'sd': 0.5})
+        # And the renamed definition row is slimmed.
+        self.assertNotIn('sd', out['EDSlot'][0])
+
+
+class TestEmptyStaticGenWithUg(unittest.TestCase):
+
+    def test_no_staticgen_with_ug_data_raises(self):
+        """``ug`` data on a case with no Slack/PV is a modeling bug."""
+        data = {
+            'Area': [{'idx': 1, 'u': 1.0, 'name': '1'}],
+            'EDTSlot': [
+                {'idx': 'EDT1', 'u': 1.0, 'name': 'EDT1',
+                 'sd': '0.5', 'ug': '1,1,1'},
+            ],
+        }
+        with pytest.raises(ValueError, match="no StaticGen entries"):
+            migrate_data(data)
+
+
+class TestJsonAdapter(unittest.TestCase):
+
+    def test_disk_round_trip_idempotent(self):
+        """Run the JSON adapter against an on-disk file twice; second
+        invocation is a no-op."""
+        data = _legacy_case()
+        with tempfile.TemporaryDirectory() as td:
+            src = Path(td) / 'case.json'
+            src.write_text(json.dumps(data, indent=2) + '\n')
+
+            # First pass: legacy split + rename.
+            summary_a = migrate_json(src, src)
+            self.assertFalse(summary_a.get('no_op', False))
+            self.assertEqual(summary_a['ed_load'], 4)
+
+            # Capture intermediate state.
+            after_a = src.read_text()
+
+            # Second pass: should be a no-op.
+            summary_b = migrate_json(src, src)
+            self.assertTrue(summary_b.get('no_op', False))
+            self.assertEqual(src.read_text(), after_a)
+
+
+class TestXlsxAdapter(unittest.TestCase):
+
+    def test_xlsx_round_trip_renames_sheets_and_emits_tables(self):
+        """End-to-end XLSX adapter: legacy sheets → migrated workbook
+        with the new sheet names and per-axis tables, re-readable by
+        openpyxl."""
+        try:
+            import openpyxl
+        except ImportError:
+            self.skipTest("openpyxl not installed")
+
+        with tempfile.TemporaryDirectory() as td:
+            src = Path(td) / 'case.xlsx'
+            wb = openpyxl.Workbook()
+            wb.remove(wb.active)
+            # Area sheet.
+            area_ws = wb.create_sheet('Area')
+            area_ws.append(['idx', 'u', 'name'])
+            area_ws.append([1, 1.0, '1'])
+            area_ws.append([2, 1.0, '2'])
+            # Slack sheet (one StaticGen).
+            slack_ws = wb.create_sheet('Slack')
+            slack_ws.append(['idx', 'u', 'name', 'bus'])
+            slack_ws.append(['S1', 1.0, 'S1', 0])
+            # Legacy EDTSlot + UCTSlot sheets with CSV cells.
+            edt_ws = wb.create_sheet('EDTSlot')
+            edt_ws.append(['idx', 'u', 'name', 'sd', 'ug'])
+            edt_ws.append(['EDT1', 1.0, 'EDT1', '0.5,0.7', '1'])
+            uct_ws = wb.create_sheet('UCTSlot')
+            uct_ws.append(['idx', 'u', 'name', 'sd'])
+            uct_ws.append(['UCT1', 1.0, 'UCT1', '0.5,0.7'])
+            wb.save(str(src))
+
+            summary = migrate_xlsx(src, src)
+            self.assertEqual(summary['ed_load'], 2)
+            self.assertEqual(summary['ed_gen'], 1)
+            self.assertEqual(summary['uc_load'], 2)
+            self.assertTrue(summary['renamed'])
+
+            # Re-load and verify sheet names + content.
+            wb2 = openpyxl.load_workbook(str(src), read_only=True)
+            self.assertIn('EDSlot', wb2.sheetnames)
+            self.assertIn('UCSlot', wb2.sheetnames)
+            self.assertIn('EDSlotLoad', wb2.sheetnames)
+            self.assertIn('EDSlotGen', wb2.sheetnames)
+            self.assertIn('UCSlotLoad', wb2.sheetnames)
+            self.assertNotIn('EDTSlot', wb2.sheetnames)
+            self.assertNotIn('UCTSlot', wb2.sheetnames)
+
+            edload_rows = list(wb2['EDSlotLoad'].iter_rows(values_only=True))
+            self.assertEqual(edload_rows[0], ('area', 'slot', 'sd'))
+            # 2 areas * 1 slot = 2 data rows.
+            self.assertEqual(len(edload_rows), 3)
 
 
 class TestRenameLegacyKeys(unittest.TestCase):

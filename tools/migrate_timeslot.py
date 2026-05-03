@@ -45,8 +45,17 @@ from typing import Iterable
 logger = logging.getLogger(__name__)
 
 
-def _is_legacy_cell(value) -> bool:
-    """Return True if ``value`` looks like a CSV-list legacy cell."""
+def _is_legacy_cell(value, *, force: bool = False) -> bool:
+    """
+    Return True if ``value`` looks like a CSV-list legacy cell.
+
+    With ``force=True`` (used when the row is known to come from a
+    legacy ``EDTSlot`` / ``UCTSlot`` table that the migrator just
+    renamed), any non-None value qualifies — this catches single-area
+    cases whose ``sd`` cell is a bare numeric/string with no comma.
+    """
+    if force and value is not None and value != '':
+        return True
     if isinstance(value, str) and ',' in value:
         return True
     if isinstance(value, list):
@@ -88,16 +97,25 @@ def _slim_definition_row(row: dict) -> dict:
     return {k: v for k, v in row.items() if k not in ('sd', 'ug')}
 
 
-def _emit_load_rows(slot_rows: Iterable[dict], areas: list, table_name: str
-                    ) -> list[dict]:
-    """Emit ``EDSlotLoad`` / ``UCSlotLoad`` rows from legacy slot rows."""
+def _emit_load_rows(slot_rows: Iterable[dict], areas: list, table_name: str,
+                    *, from_legacy_table: bool = False) -> list[dict]:
+    """
+    Emit ``EDSlotLoad`` / ``UCSlotLoad`` rows from legacy slot rows.
+
+    ``from_legacy_table=True`` indicates the caller renamed the
+    source key from ``EDTSlot`` / ``UCTSlot`` — every non-None
+    ``sd`` cell on those rows is treated as legacy regardless of
+    whether the cell is a comma-string. Catches single-area cases
+    whose ``sd`` cell is just ``"0.5"``.
+    """
     if not areas:
         # Cases with no Area block (npcc, wecc) carried legacy ``sd``
         # cells that were never consumed at solve time — LoadScale.v
         # indexes Area and would have failed before this code ran.
         # Drop the legacy data rather than emit unloadable rows.
         legacy = [s.get('idx') for s in slot_rows
-                  if _is_legacy_cell(s.get('sd'))]
+                  if _is_legacy_cell(s.get('sd'),
+                                     force=from_legacy_table)]
         if legacy:
             head = legacy[:3] + (['...'] if len(legacy) > 3 else [])
             logger.warning(
@@ -110,7 +128,7 @@ def _emit_load_rows(slot_rows: Iterable[dict], areas: list, table_name: str
     for slot in slot_rows:
         if 'sd' not in slot:
             continue
-        if not _is_legacy_cell(slot['sd']):
+        if not _is_legacy_cell(slot['sd'], force=from_legacy_table):
             continue
         parsed = _parse_csv_list(slot['sd'])
         if len(parsed) != len(areas):
@@ -127,23 +145,36 @@ def _emit_load_rows(slot_rows: Iterable[dict], areas: list, table_name: str
     return out
 
 
-def _emit_gen_rows(slot_rows: Iterable[dict], gens: list) -> list[dict]:
-    """Emit ``EDSlotGen`` rows from legacy ``EDSlot`` rows."""
+def _emit_gen_rows(slot_rows: Iterable[dict], gens: list,
+                   *, from_legacy_table: bool = False) -> list[dict]:
+    """
+    Emit ``EDSlotGen`` rows from legacy ``EDSlot`` rows.
+
+    Unlike the load path, an empty ``StaticGen`` list combined with
+    non-empty ``ug`` data is almost always a modeling bug rather than
+    a defensible quirk (whereas ``Area``-less cases were known to
+    exist pre-v1.3.0 with unconsumed ``sd``). Raise instead of
+    silently dropping the data.
+    """
     if not gens:
         legacy = [s.get('idx') for s in slot_rows
-                  if _is_legacy_cell(s.get('ug'))]
+                  if _is_legacy_cell(s.get('ug'),
+                                     force=from_legacy_table)]
         if legacy:
             head = legacy[:3] + (['...'] if len(legacy) > 3 else [])
-            logger.warning(
-                "EDSlot: no StaticGen entries — dropping legacy ug "
-                "from %d slots. Slots affected: %s",
-                len(legacy), head)
+            raise ValueError(
+                f"EDSlot: {len(legacy)} slot(s) carry legacy ug data "
+                f"but no StaticGen entries (Slack + PV) found in the "
+                f"case. Empty StaticGen + non-empty ug is almost "
+                f"certainly a bug — add the gen entries before "
+                f"re-running. Slots affected: {head}"
+            )
         return []
     out = []
     for slot in slot_rows:
         if 'ug' not in slot:
             continue
-        if not _is_legacy_cell(slot['ug']):
+        if not _is_legacy_cell(slot['ug'], force=from_legacy_table):
             continue
         parsed = _parse_csv_list(slot['ug'])
         if len(parsed) != len(gens):
@@ -210,31 +241,57 @@ def migrate_data(data: dict) -> tuple[dict, dict]:
     edt_legacy = out.get('EDSlot', [])
     uct_legacy = out.get('UCSlot', [])
 
+    # Duplicate-slot guard: failing here at file-line context beats
+    # failing later inside RParam._materialize_2d with no source hint.
+    for table_name, rows in (('EDSlot', edt_legacy),
+                             ('UCSlot', uct_legacy)):
+        seen_idxes = {}
+        for pos, row in enumerate(rows):
+            idx = row.get('idx')
+            if idx in seen_idxes:
+                raise ValueError(
+                    f"{table_name}: duplicate slot idx {idx!r} "
+                    f"at row positions {seen_idxes[idx]} and {pos}. "
+                    f"Each slot idx must be unique within its table."
+                )
+            seen_idxes[idx] = pos
+
+    # When the source key was renamed (legacy EDTSlot/UCTSlot block),
+    # ANY non-None sd/ug cell on those rows is legacy data — including
+    # bare-numeric cells from single-area cases. See _is_legacy_cell.
     has_legacy_cells = (
-        any(_is_legacy_cell(r.get('sd')) or _is_legacy_cell(r.get('ug'))
+        any(_is_legacy_cell(r.get('sd'), force=renamed)
+            or _is_legacy_cell(r.get('ug'), force=renamed)
             for r in edt_legacy)
-        or any(_is_legacy_cell(r.get('sd')) for r in uct_legacy)
+        or any(_is_legacy_cell(r.get('sd'), force=renamed)
+               for r in uct_legacy)
     )
     no_op = not (renamed or has_legacy_cells)
     if no_op:
         return out, {'ed_load': 0, 'ed_gen': 0, 'uc_load': 0,
                      'renamed': False, 'no_op': True}
 
-    if not has_legacy_cells:
-        return out, {'ed_load': 0, 'ed_gen': 0, 'uc_load': 0,
-                     'renamed': renamed, 'no_op': False}
-
-    # Slim definition tables.
+    # Slim definition tables unconditionally — even when there are no
+    # legacy CSV cells, a renamed table may carry vestigial empty
+    # ``sd`` / ``ug`` columns from a hand-edited case that the new
+    # schema doesn't define.
     if edt_legacy:
         out['EDSlot'] = [_slim_definition_row(r) for r in edt_legacy]
     if uct_legacy:
         out['UCSlot'] = [_slim_definition_row(r) for r in uct_legacy]
 
+    if not has_legacy_cells:
+        return out, {'ed_load': 0, 'ed_gen': 0, 'uc_load': 0,
+                     'renamed': renamed, 'no_op': False}
+
     # Emit per-axis tables. Insert them adjacent to the slot
     # definitions for readability.
-    ed_load = _emit_load_rows(edt_legacy, areas, 'EDSlot')
-    ed_gen = _emit_gen_rows(edt_legacy, gens)
-    uc_load = _emit_load_rows(uct_legacy, areas, 'UCSlot')
+    ed_load = _emit_load_rows(edt_legacy, areas, 'EDSlot',
+                              from_legacy_table=renamed)
+    ed_gen = _emit_gen_rows(edt_legacy, gens,
+                            from_legacy_table=renamed)
+    uc_load = _emit_load_rows(uct_legacy, areas, 'UCSlot',
+                              from_legacy_table=renamed)
 
     # Inject in dict-order: keep the existing key order and append
     # the new keys near their definition counterparts. JSON dicts
