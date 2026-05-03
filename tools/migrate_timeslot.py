@@ -404,7 +404,8 @@ def migrate_xlsx(path: Path, out_path: Path) -> dict:
 # ---------------------------------------------------------------------------
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    p = argparse.ArgumentParser(description=__doc__.strip().split('\n')[0])
+    p = argparse.ArgumentParser(
+        description=__doc__.strip().split('\n', maxsplit=1)[0])
     p.add_argument('case', type=Path, help='Case file path (.json or .xlsx).')
     g = p.add_mutually_exclusive_group()
     g.add_argument('--out', type=Path, default=None,
