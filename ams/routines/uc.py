@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from ams.core.param import RParam
-from ams.core.service import (NumOp, NumOpDual, MinDur)
+from ams.core.service import (NumOp, NumOpDual, MinDur, MinDurInit)
 from ams.utils.func import multiply_left_t
 from ams.routines.dcopf import DCOPF
 from ams.routines.rted import RTEDBase
@@ -131,6 +131,14 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
                           name='td2', tex_name=r't_{d2}',
                           model='StaticGen', src='td2',
                           unit='h',)
+        self.ton0 = RParam(info='initial elapsed ON time',
+                           name='ton0', tex_name=r't_{on,0}',
+                           model='StaticGen', src='ton0',
+                           unit='h',)
+        self.toff0 = RParam(info='initial elapsed OFF time',
+                            name='toff0', tex_name=r't_{off,0}',
+                            model='StaticGen', src='toff0',
+                            unit='h',)
 
         self.sd.info = 'area load scaling factor for UC'
         self.sd.model = 'UCSlotLoad'
@@ -224,6 +232,9 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
                                  e_str='zug - Mzug * ugd <= 0')
 
         # --- minimum ON/OFF duration ---
+        # Interior window (Phase 3 of uc_min_on_off will replace
+        # MinDur with a Rajan-Takriti window-sum builder; today the
+        # don/doff cells reduce to v <= u, already implied by S1).
         self.Con = MinDur(u=self.pg, u2=self.td1,
                           name='Con', tex_name=r'T_{on}',
                           info='minimum ON coefficient',)
@@ -234,6 +245,27 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
                            info='minimum OFF coefficient',)
         self.doff = Constraint(info='minimum offline duration',
                                name='doff', e_str='cp.multiply(Coff, wgd) - (1 - ugd) <= 0')
+
+        # Initial-state min-up/down: lock leading periods based on
+        # how long each unit has already been in its current state
+        # entering the horizon (`ton0`/`toff0`).
+        #   L_up[g]  = max(0, ceil((td1 - ton0)/Δt))   if ug0 == 1 else 0
+        #   L_dn[g]  = max(0, ceil((td2 - toff0)/Δt))  if ug0 == 0 else 0
+        # Defaults `ton0=toff0=0` make these masks all-zero -> no-op.
+        self.Conin = MinDurInit(u=self.pg, td=self.td1,
+                                tau0=self.ton0, ug0=self.ug, match=1,
+                                name='Conin', tex_name=r'T_{on,0}',
+                                info='initial-state min-ON coefficient',)
+        self.don0 = Constraint(info='initial-state minimum ON duration',
+                               name='don0',
+                               e_str='cp.multiply(Conin, 1 - ugd) <= 0')
+        self.Coffin = MinDurInit(u=self.pg, td=self.td2,
+                                 tau0=self.toff0, ug0=self.ug, match=0,
+                                 name='Coffin', tex_name=r'T_{off,0}',
+                                 info='initial-state min-OFF coefficient',)
+        self.doff0 = Constraint(info='initial-state minimum OFF duration',
+                                name='doff0',
+                                e_str='cp.multiply(Coffin, ugd) <= 0')
 
         # --- line ---
         self.plf.horizon = self.timeslot

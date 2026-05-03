@@ -20,6 +20,7 @@ Ramp difference matrix        :class:`RampSub`
 Shape-only reduction matrix   inline (e.g. ``np.ones((1, u.n))``)
 Zonal load scaling            :class:`LoadScale`       (load-status aware)
 UC min on/off duration        :class:`MinDur`          (UC routines only)
+UC initial-state min on/off   :class:`MinDurInit`      (UC routines only)
 ============================  ==========================================
 
 Notes
@@ -44,7 +45,7 @@ File layout
 4. Generic dual-input ops (``NumOpDual``)
 5. Subset / aggregation (``VarSelect``, ``ZonalSum``)
 6. Reduction / difference (``RampSub``, ``VarReduction``)
-7. Domain-specific (``LoadScale``, ``MinDur``)
+7. Domain-specific (``LoadScale``, ``MinDur``, ``MinDurInit``)
 8. Deprecated, slated for removal in v1.4.0 (``NumExpandDim``,
    ``VarReduction``)
 """
@@ -987,6 +988,90 @@ class MinDur(NumOpDual):
         if self.sparse:
             return spr.csr_matrix(tout)
         return tout
+
+
+class MinDurInit(MinDur):
+    """
+    Build the initial-state coefficient matrix for UC minimum on/off
+    duration. Pairs with :class:`MinDur` to close the boundary the
+    interior window-sum cannot reach: a unit's history before t=1
+    decides how many leading periods are locked.
+
+    Returns ``M[g, t] = 1`` iff ``t < L[g]`` and ``ug0[g] == match``
+    (else 0), where::
+
+        L[g] = max(0, ceil((td[g] - tau0[g]) / Δt))
+
+    Concrete usage in UC:
+
+    - on-side  (must stay ON from history):
+      ``td=td1``, ``tau0=ton0``, ``match=1``;
+      paired with constraint ``M * (1 - ugd) <= 0``.
+    - off-side (must stay OFF from history):
+      ``td=td2``, ``tau0=toff0``, ``match=0``;
+      paired with constraint ``M * ugd <= 0``.
+
+    Note: like :class:`MinDur`, inherits the parameter-plumbing of
+    :class:`NumOpDual` only; ``fun``/``rfun`` are unused. Extra
+    inputs (``tau0``, ``ug0``, ``match``) are stored as plain
+    attributes and consulted by ``.v``.
+
+    Parameters
+    ----------
+    u : Callable
+        Var with horizon — used for shape ``(n_gen, n_ts)`` only.
+    td : Callable
+        RParam — minimum on/off duration (``td1`` or ``td2``).
+    tau0 : Callable
+        RParam — initial elapsed on/off time (``ton0`` or ``toff0``).
+    ug0 : Callable
+        RParam — initial commit status (``ug``); flattened to 1D
+        before comparison.
+    match : int
+        Gate value: ``1`` for on-side, ``0`` for off-side.
+    name, tex_name, unit, info, vtype, no_parse, sparse : optional
+        Forwarded to :class:`MinDur` / :class:`NumOpDual`.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 td: Callable,
+                 tau0: Callable,
+                 ug0: Callable,
+                 match: int,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 no_parse: bool = False,
+                 sparse: bool = False,):
+        super().__init__(u=u, u2=td, name=name, tex_name=tex_name,
+                         unit=unit, info=info, vtype=vtype,
+                         no_parse=no_parse, sparse=sparse)
+        self.tau0 = tau0
+        self.ug0 = ug0
+        self.match = int(match)
+
+    @property
+    def v(self):
+        n_gen = self.u.n
+        n_ts = self.u.horizon.n
+        dt = self.rtn.config.t
+
+        tdv = np.asarray(self.u2.v).reshape(-1)
+        tau0v = np.asarray(self.tau0.v).reshape(-1)
+        ug0v = np.asarray(self.ug0.v).reshape(-1)
+
+        L = np.maximum(0, np.ceil((tdv - tau0v) / dt)).astype(int)
+        L = np.where(np.isclose(ug0v, self.match), L, 0)
+        L = np.minimum(L, n_ts)
+
+        i, t = np.meshgrid(np.arange(n_gen), np.arange(n_ts), indexing='ij')
+        out = (t < L[i]).astype(float)
+        if self.sparse:
+            return spr.csr_matrix(out)
+        return out
 
 
 # ---------------------------------------------------------------------------
