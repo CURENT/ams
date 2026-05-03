@@ -321,7 +321,8 @@ def get_export_path(system, fname, path=None, fmt='csv'):
     path : str, optional
         The desired output path. For a directory, the file name will be generated;
         For a full file path, the base name will be used with the specified format;
-        For None, the current working directory will be used.
+        For ``None``, falls back to ``system.files.output_path`` when set,
+        otherwise the current working directory.
     fmt : str, optional
         The file format to export, e.g., 'csv', 'json'. Default is 'csv'.
 
@@ -330,6 +331,17 @@ def get_export_path(system, fname, path=None, fmt='csv'):
     tuple : (str, str)
         - The absolute export path (e.g., '/home/user/project/data_Routine.csv').
         - The export file name (e.g., 'data_Routine.csv'), including the format extension.
+
+    Notes
+    -----
+    Default-path precedence (when ``path is None``):
+    explicit ``path`` arg > ``system.files.output_path`` > current working
+    directory. An empty-string ``output_path`` (the ``FileMan`` default
+    when no output dir is specified) is treated as "not set".
+
+    .. versionchanged:: 1.3.0
+       ``system.files.output_path`` is now used as the default fallback,
+       previously the current working directory was always used.
     """
     # Determine the base name from system.files.fullname or default to "Untitled"
     if system.files.fullname is None:
@@ -357,8 +369,9 @@ def get_export_path(system, fname, path=None, fmt='csv'):
             final_file_name = f"{provided_base_filename}.{target_extension}"
             full_export_path = os.path.join(dir_path, final_file_name)
     else:
-        # No path provided, use current working directory
-        dir_path = os.getcwd()
+        # No path provided. Prefer system.files.output_path when set, else CWD.
+        output_path = getattr(system.files, 'output_path', None)
+        dir_path = os.path.abspath(output_path) if output_path else os.getcwd()
         final_file_name = f"{base_name_prefix}.{target_extension}"
         full_export_path = os.path.join(dir_path, final_file_name)
 

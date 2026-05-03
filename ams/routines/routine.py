@@ -2,6 +2,7 @@
 Module for routine data.
 """
 
+import difflib
 import logging
 import json
 from collections import OrderedDict
@@ -540,10 +541,63 @@ class RoutineBase:
             logger.warning(msg)
         return disabled
 
+    def _validate_model_refs(self):
+        """
+        Verify every ``model`` / ``imodel`` string on this routine's
+        RParams and Vars resolves to a real model or group on the
+        bound system. Catches typos like ``model='Bbus'`` (would
+        otherwise surface only as ``rparam.owner is None``, silently
+        skipped by the rest of ``_data_check``) and re-validates the
+        late-binding mutation pattern (e.g. ``self.sd.model =
+        'UCSlotLoad'`` in :class:`UC`) that bypasses the
+        :meth:`addRParam` / :meth:`addVar` check.
+
+        Raises ``ValueError`` with a difflib-suggested correction on
+        the first unresolved reference; subsequent unresolved refs
+        are listed in the message body so the user gets the full
+        picture in a single error.
+        """
+        sys = self.system
+        # Mirror the whitelist used at owner-binding time
+        # (`ams/system.py: link_ext_param`): models, groups, plus the
+        # special `'mats'` shorthand that resolves to `system.mats`
+        # (the MatProcessor instance).
+        valid = set(sys.models.keys()) | set(sys.groups.keys()) | {'mats'}
+
+        unresolved = []
+        for registry_name, registry in (('rparams', self.rparams),
+                                        ('vars', self.vars)):
+            for name, item in registry.items():
+                for attr in ('model', 'imodel'):
+                    target = getattr(item, attr, None)
+                    if target is None:
+                        continue
+                    if target in valid:
+                        continue
+                    suggestion = difflib.get_close_matches(
+                        target, valid, n=1, cutoff=0.6)
+                    unresolved.append((registry_name, name, attr,
+                                       target, suggestion))
+
+        if not unresolved:
+            return
+
+        lines = [f"RoutineModelRefError: <{self.class_name}> has "
+                 f"unresolved model references on "
+                 f"{len(unresolved)} attribute(s):"]
+        for registry_name, name, attr, target, suggestion in unresolved:
+            hint = (f"; did you mean '{suggestion[0]}'?"
+                    if suggestion else "")
+            lines.append(
+                f"  - {registry_name}.{name}.{attr} = '{target}'{hint}"
+            )
+        raise ValueError("\n".join(lines))
+
     def _data_check(self):
         """
         Check if data is valid for a routine.
         """
+        self._validate_model_refs()
         logger.info(f"Entering data check for <{self.class_name}>")
         no_input = []
         owner_list = []
@@ -757,7 +811,27 @@ class RoutineBase:
         bool
             True if the loading is successful, False otherwise.
 
+        Notes
+        -----
+        Differences from ANDES: ANDES has no direct analog for
+        post-solve result rehydration. The closest related facility is
+        :meth:`andes.routines.tds.TDS.run` with ``from_csv=``, but
+        that *replays* a time-domain trajectory through the integrator
+        rather than restoring solved values into post-solve storage.
+        AMS reads scheduling results back into existing :class:`Var`
+        and :class:`ExpressionCalc` storage and marks the routine as
+        converged so subsequent :meth:`get` and
+        :meth:`ams.system.System.report` calls behave as if the
+        routine just solved.
+
         .. versionadded:: 1.0.13
+
+        .. versionchanged:: 1.3.0
+           A successful load now sets ``self.converged = True`` and
+           ``self.exit_code = 0``. Callers that loaded "candidate"
+           results into a scratch system and relied on
+           ``converged == False`` should reset the flag explicitly
+           after the load.
         """
         try:
             with open(path, 'r') as f:
@@ -793,8 +867,173 @@ class RoutineBase:
                         exprc.v = np.array(values)
                     except Exception as e:
                         logger.warning(f"Failed to assign values to exprc '{key}': {e}")
+
+        self.converged = True
+        self.exit_code = 0
         logger.info(f"Loaded results from {path}")
         return True
+
+    def load_csv(self, path):
+        """
+        Load scheduling results from a csv file produced by
+        :meth:`export_csv`.
+
+        For multi-period routines the ``Time`` column is used to
+        re-align rows to ``self.timeslot.v``. For single-period
+        routines, the ``Time`` column carries the literal sentinel
+        ``"T1"`` and a single row is expected.
+
+        The export/load contract is a single-space join between key
+        and device idx (``f'{key} {dev}'``) with no quoting. Device
+        idxes are assumed not to collide with this convention; if a
+        future case file uses idxes that contain spaces, the
+        export-side header generation needs revisiting too.
+
+        Parameters
+        ----------
+        path : str
+            Path of the csv file to load.
+
+        Returns
+        -------
+        bool
+            ``True`` if the loading is successful, ``False`` otherwise.
+            On failure the routine's ``converged`` / ``exit_code``
+            flags are not modified.
+
+        Notes
+        -----
+        Round-trip values are clipped to 6 decimals on export (see
+        :func:`gather_results`) — reload is lossy at the 1e-6 level,
+        which is fine for inspection but not for bit-exact replay.
+
+        Differences from ANDES: ANDES has no direct analog. The closest
+        related facility is :meth:`andes.routines.tds.TDS.run` with
+        ``from_csv=``, but that *replays* a time-domain trajectory
+        through the integrator — it is not a post-solve rehydrator.
+        AMS reads scheduling results back into existing :class:`Var`
+        and :class:`ExpressionCalc` storage and marks the routine as
+        converged so subsequent :meth:`get` and
+        :meth:`ams.system.System.report` calls behave as if the
+        routine just solved.
+
+        .. versionadded:: 1.3.0
+        """
+        try:
+            df = pd.read_csv(path)
+        except Exception as e:
+            logger.error("Failed to load CSV file: %s", e)
+            return False
+
+        if 'Time' not in df.columns:
+            logger.error("CSV file '%s' missing required 'Time' column.",
+                         path)
+            return False
+
+        if not self.initialized:
+            self.init()
+
+        df, single_period = self._load_csv_align_period(df, path)
+        if df is None:
+            return False
+
+        self._load_csv_assign(df, single_period)
+
+        self.converged = True
+        self.exit_code = 0
+        logger.info("Loaded results from %s", path)
+        return True
+
+    def _load_csv_align_period(self, df, path):
+        """
+        Detect single-vs-multi period mode and align the CSV to
+        ``self.timeslot.v`` for multi-period routines.
+
+        Returns
+        -------
+        tuple
+            ``(df_aligned, single_period)`` on success, or
+            ``(None, None)`` on a fail-fast period mismatch (caller
+            should propagate ``False``).
+        """
+        # Single-period CSVs use the literal 'T1' sentinel from
+        # ``initialize_data_dict`` (a single row); multi-period CSVs
+        # carry timeslot idx strings (e.g. 'EDT1', 'EDT2', ...).
+        time_vals = df['Time'].astype(str).values
+        single_period = len(time_vals) == 1 and time_vals[0] == 'T1'
+
+        has_timeslot = hasattr(self, 'timeslot')
+
+        if single_period and has_timeslot:
+            logger.error(
+                "CSV at '%s' is single-period (Time='T1') but routine "
+                "<%s> is multi-period. Period mismatch — aborting load.",
+                path, self.class_name)
+            return None, None
+
+        if not single_period and not has_timeslot:
+            logger.error(
+                "CSV at '%s' has multi-period rows but routine <%s> "
+                "has no 'timeslot'.", path, self.class_name)
+            return None, None
+
+        if single_period:
+            return df, True
+
+        # Multi-period: dedupe Time then reindex to routine's slot order.
+        if df['Time'].duplicated().any():
+            dups = df['Time'][df['Time'].duplicated()].unique().tolist()
+            logger.error(
+                "CSV at '%s' has duplicate Time entries %s — aborting "
+                "load.", path, dups)
+            return None, None
+
+        slots = list(self.timeslot.v)
+        df = df.set_index('Time').reindex(slots)
+        missing = df.index[df.isna().all(axis=1)].tolist()
+        if missing:
+            logger.warning(
+                "CSV missing rows for timeslots %s; loaded values for "
+                "those slots will be NaN.", missing)
+        return df, False
+
+    def _load_csv_assign(self, df, single_period):
+        """
+        Assign each var/exprc's column block from ``df`` into
+        ``item.v``. ``df`` is expected to have its index already
+        aligned by :meth:`_load_csv_align_period` (Time as index for
+        multi-period; default RangeIndex for single-period).
+        """
+        for items in (self.vars, self.exprcs):
+            for key, item in items.items():
+                if item.owner is None:
+                    continue
+                idxes = item.get_all_idxes()
+                cols = [f'{key} {dev}' for dev in idxes]
+                present = [c for c in cols if c in df.columns]
+                if not present:
+                    logger.debug("CSV has no columns for '%s'; skipping.",
+                                 key)
+                    continue
+                if len(present) < len(cols):
+                    missing_devs = [d for d, c in zip(idxes, cols)
+                                    if c not in df.columns]
+                    logger.warning(
+                        "CSV missing devices %s for '%s'; those entries "
+                        "will be NaN.", missing_devs, key)
+                # Reindex columns to the full device list so absent
+                # devices appear as all-NaN columns.
+                sub = df[present].reindex(columns=cols)
+                try:
+                    if single_period:
+                        item.v = sub.iloc[0].to_numpy(dtype=float)
+                    else:
+                        # CSV is one row per slot, columns per device;
+                        # var.v shape is (n_dev, n_slot) → transpose.
+                        item.v = sub.to_numpy(dtype=float).T
+                except Exception as e:
+                    logger.warning("Failed to assign values to '%s': %s",
+                                   key, e)
 
     def export_json(self, path=None):
         """
@@ -844,10 +1083,15 @@ class RoutineBase:
         """
         Export scheduling results to a csv file.
         For multi-period routines, the column "Time" is the time index of
-        ``timeslot.v``, which usually comes from ``EDTSlot`` or ``UCTSlot``.
+        ``timeslot.v``, which usually comes from ``EDSlot`` or ``UCSlot``.
         The rest columns are the variables registered in ``vars``.
 
         For single-period routines, the column "Time" have a pseduo value of "T1".
+
+        Values are clipped to 6 decimals on export by
+        :func:`gather_results` — round-trips through :meth:`load_csv`
+        are accurate at the 1e-6 level, fine for inspection but not
+        for bit-exact replay.
 
         Parameters
         ----------

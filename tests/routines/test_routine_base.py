@@ -23,6 +23,34 @@ class TestRoutineMethods(unittest.TestCase):
         self.assertTrue(self.ss.DCOPF._data_check())
         self.assertFalse(self.ss.RTEDES._data_check())
 
+    def test_validate_model_refs_typo_raises(self):
+        """
+        A typo on ``RParam.model`` (whether at construction or via the
+        late-binding mutation pattern) must surface as a clear
+        ValueError with a difflib-suggested correction, not a silent
+        ``rparam.owner is None`` skip.
+        """
+        # late-bind a typo onto a real RParam
+        original = self.ss.ED.sd.model
+        self.ss.ED.sd.model = 'EDSlotLooad'  # typo (extra 'o')
+        try:
+            with pytest.raises(ValueError) as exc_info:
+                self.ss.ED._validate_model_refs()
+            msg = str(exc_info.value)
+            # Identifies the offending attribute and suggests fix.
+            self.assertIn("rparams.sd.model", msg)
+            self.assertIn("'EDSlotLooad'", msg)
+            self.assertIn("did you mean 'EDSlotLoad'?", msg)
+        finally:
+            self.ss.ED.sd.model = original
+
+    def test_validate_model_refs_mats_whitelist(self):
+        """``model='mats'`` must be accepted (MatProcessor shorthand
+        bound by ``ams/system.py``)."""
+        # DCOPF has multiple model='mats' RParams (Cg, Cl, Bbus, ...).
+        # Validator should pass without raising.
+        self.ss.DCOPF._validate_model_refs()
+
     def test_get_off_constrs(self):
         """
         Test `Routine._get_off_constrs()` method.
