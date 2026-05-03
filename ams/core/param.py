@@ -48,9 +48,24 @@ class RParam(Param):
     v : np.ndarray, optional
         External value of the parameter.
     indexer : str, optional
-        Indexer of the parameter.
+        Primary-axis indexer of the parameter — name of an
+        ``IdxParam`` on the row-owner model whose values get matched
+        against ``imodel.get_all_idxes()`` to sort / position rows.
     imodel : str, optional
-        Name of the owner model or group of the indexer.
+        Name of the owner model or group of the (primary) indexer.
+    horizon : ams.core.param.RParam, optional
+        Secondary-axis indexer. Mirrors the
+        :attr:`ams.opt.var.Var.horizon` convention used for output
+        Vars: when set together with ``indexer`` / ``imodel``, the
+        param's :attr:`v` returns a 2D matrix shaped
+        ``(imodel.n, horizon.n)`` built by pivoting the long-format
+        rows on ``hindexer`` (secondary) and ``indexer`` (primary).
+        Cells with no matching row fall back to the source
+        ``NumParam.default``.
+    hindexer : str, optional
+        Name of the ``IdxParam`` on the row-owner model that carries
+        the secondary key, matched against ``horizon.v``. Required
+        when ``horizon`` is set; ignored otherwise.
     no_parse: bool, optional
         True to skip parsing the parameter.
     nonneg: bool, optional
@@ -118,6 +133,8 @@ class RParam(Param):
                  v: Optional[np.ndarray] = None,
                  indexer: Optional[str] = None,
                  imodel: Optional[str] = None,
+                 horizon: Optional['RParam'] = None,
+                 hindexer: Optional[str] = None,
                  expand_dims: Optional[int] = None,
                  no_parse: Optional[bool] = False,
                  nonneg: Optional[bool] = False,
@@ -146,6 +163,13 @@ class RParam(Param):
         self.model = model  # name of a group or model
         self.indexer = indexer  # name of the indexer
         self.imodel = imodel  # name of a group or model of the indexer
+        self.horizon = horizon  # secondary-axis RParam (mirrors Var.horizon)
+        self.hindexer = hindexer  # secondary indexer column on row-owner model
+        if horizon is not None and hindexer is None:
+            raise ValueError(
+                f"RParam <{name}>: 'hindexer' is required when "
+                f"'horizon' is set (mirrors the Var.horizon pattern)."
+            )
         self.expand_dims = expand_dims
         self.no_parse = no_parse
         self.owner = None  # instance of the owner model or group
@@ -179,6 +203,8 @@ class RParam(Param):
             else:
                 src_param = getattr(self.owner, self.src)
                 out = getattr(src_param, 'v')
+        elif self.horizon is not None:
+            out = self._materialize_2d()
         else:
             try:
                 imodel = getattr(self.rtn.system, self.imodel)
@@ -196,6 +222,58 @@ class RParam(Param):
             out = model.get(src=self.src, attr='v', idx=sorted_idx)
         if self.expand_dims is not None:
             out = np.expand_dims(out, axis=self.expand_dims)
+        return out
+
+    def _materialize_2d(self):
+        """
+        Pivot a long-format row-set into a 2D ``(primary, secondary)``
+        matrix.
+
+        Used when ``horizon`` is set — see the class docstring for the
+        ``indexer`` / ``imodel`` / ``horizon`` / ``hindexer`` contract.
+        Cells with no matching row default to ``NumParam.default``;
+        duplicate ``(primary, secondary)`` rows raise.
+        """
+        try:
+            primary_imodel = getattr(self.rtn.system, self.imodel)
+        except AttributeError:
+            msg = (f"RParam <{self.name}>: primary indexer source model "
+                   f"<{self.imodel}> not found, likely a modeling error.")
+            raise AttributeError(msg)
+
+        primary_keys = list(primary_imodel.get_all_idxes())
+        secondary_keys = list(np.asarray(self.horizon.v).tolist())
+        nr, nc = len(primary_keys), len(secondary_keys)
+
+        row_model = getattr(self.rtn.system, self.model)
+        row_primary = list(getattr(row_model, self.indexer).v)
+        row_secondary = list(getattr(row_model, self.hindexer).v)
+        row_values = np.asarray(getattr(row_model, self.src).v)
+
+        src_param = getattr(row_model, self.src)
+        default = getattr(src_param, 'default', 0)
+        dtype = row_values.dtype if row_values.size else np.float64
+        out = np.full((nr, nc), default, dtype=dtype)
+
+        seen = {}
+        for i, (p, s) in enumerate(zip(row_primary, row_secondary)):
+            key = (p, s)
+            if key in seen:
+                msg = (f"RParam <{self.name}>: duplicate row in "
+                       f"<{self.model}> at (primary={p!r}, "
+                       f"secondary={s!r}); each (primary, secondary) "
+                       f"pair must appear at most once.")
+                raise ValueError(msg)
+            seen[key] = i
+
+        primary_uid = {k: u for u, k in enumerate(primary_keys)}
+        secondary_uid = {k: u for u, k in enumerate(secondary_keys)}
+        for (p, s), i in seen.items():
+            pu = primary_uid.get(p)
+            su = secondary_uid.get(s)
+            if pu is None or su is None:
+                continue
+            out[pu, su] = row_values[i]
         return out
 
     @property

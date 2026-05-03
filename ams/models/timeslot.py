@@ -1,55 +1,37 @@
 """
 Models for multi-period scheduling.
+
+The TimeSlot family is split into two layers:
+
+1. **Slot definitions** — :class:`EDTSlot` and :class:`UCTSlot` carry
+   one row per time slot (``idx``, ``name``, ``u``). They define the
+   horizon used by routine Vars (e.g. ``self.pg.horizon =
+   self.timeslot``).
+
+2. **Per-slot data tables** — :class:`EDSlotLoad`, :class:`EDSlotGen`,
+   :class:`UCSlotLoad` carry one row per ``(device, slot)`` pair with
+   a scalar value column. Routines pivot these into 2D matrices via
+   :class:`ams.core.param.RParam` with ``horizon=`` (mirroring the
+   :attr:`ams.opt.var.Var.horizon` pattern used on the output side).
+
+This shape replaces the pre-v1.3.0 single-table design where
+``EDTSlot`` carried CSV-list cells whose positional ordering
+implicitly aligned with ``StaticGen.get_all_idxes()`` /
+``Area.get_all_idxes()``. The implicit contract is now explicit
+through ``IdxParam`` columns.
 """
 
-from andes.core import ModelData, NumParam
-from ams.utils.func import str_list_iconv
+from andes.core import ModelData, NumParam, IdxParam
+
 from ams.core.model import Model
 
 
-def str_list_oconv(x):
+class EDTSlot(ModelData, Model):
     """
-    Convert list into a list literal.
+    Time slot definitions for multi-period ED.
 
-    Revised from `andes.models.timeseries.str_list_oconv`, where
-    the output type is converted to a list of strings.
-    """
-    # NOTE: convert elements to string from number first, then join them
-    str_x = [str(i) for i in x]
-    return ','.join(str_x)
-
-
-class GCommit(ModelData, Model):
-    """
-    UNDER DEVELOPMENT!
-    Time slot model for generator commitment decisions.
-
-    This class holds commitment decisions for generators,
-    and should be used in multi-period scheduling routines that need
-    generator commitment decisions.
-
-    For example, in Unit Commitment (UC) problems, there is a variable
-    `ugd` representing the unit commitment decisions for each generator.
-    After solving the UC problem, the `ugd` values can be used for
-    Economic Dispatch (ED) as a parameter.
-    """
-
-    # TODO: .. versionadded:: 1.0.13
-    def __init__(self, system=None, config=None):
-        ModelData.__init__(self)
-        Model.__init__(self, system, config)
-
-        # TODO: add IdxParam of generator
-        self.ug = NumParam(info='unit commitment decisions',
-                           tex_name=r'u_{g}',
-                           iconvert=str_list_iconv,
-                           oconvert=str_list_oconv,
-                           vtype=int)
-
-
-class TimeSlot(ModelData, Model):
-    """
-    Base model for time slot data used in multi-interval scheduling.
+    One row per slot. Per-slot data lives on :class:`EDSlotLoad` (load
+    scaling) and :class:`EDSlotGen` (generator commitment).
     """
 
     def __init__(self, system=None, config=None):
@@ -57,58 +39,104 @@ class TimeSlot(ModelData, Model):
         Model.__init__(self, system, config)
         self.group = 'Horizon'
 
-        self.sd = NumParam(info='zonal load scaling factor',
+
+class UCTSlot(ModelData, Model):
+    """
+    Time slot definitions for multi-period UC.
+
+    One row per slot. Per-slot load-scaling data lives on
+    :class:`UCSlotLoad`. UC solves for generator commitment, so no
+    per-slot ``ug`` table is needed.
+    """
+
+    def __init__(self, system=None, config=None):
+        ModelData.__init__(self)
+        Model.__init__(self, system, config)
+        self.group = 'Horizon'
+
+
+class EDSlotLoad(ModelData, Model):
+    """
+    Per-(area, slot) area load scaling factor for ED.
+
+    .. versionadded:: 1.3.0
+       Replaces the CSV-list ``EDTSlot.sd`` cell. Each row carries one
+       scalar ``sd`` keyed by ``(area, slot)``.
+    """
+
+    def __init__(self, system=None, config=None):
+        ModelData.__init__(self)
+        Model.__init__(self, system, config)
+        self.group = 'Horizon'
+
+        self.area = IdxParam(model='Area',
+                             info='area idx (primary key)',
+                             mandatory=True,
+                             )
+        self.slot = IdxParam(model='EDTSlot',
+                             info='time slot idx (secondary key)',
+                             mandatory=True,
+                             )
+        self.sd = NumParam(default=1.0,
+                           info='area load scaling factor',
                            tex_name=r's_{d}',
-                           iconvert=str_list_iconv,
-                           oconvert=str_list_oconv,
-                           vtype=float)
+                           vtype=float,
+                           )
 
 
-class EDTSlot(TimeSlot):
+class EDSlotGen(ModelData, Model):
     """
-    Time slot model for ED.
+    Per-(gen, slot) generator commitment decision for ED.
 
-    `sd` is the zonal load scaling factor.
-    Cells in `sd` should have `nz` values seperated by comma,
-    where `nz` is the number of `Zone` in the system.
-
-    `ug` is the unit commitment decisions.
-    Cells in `ug` should have `ng` values seperated by comma,
-    where `ng` is the number of `StaticGen` in the system.
-
-    Warnings
-    --------
-    The order of generators in `ug` is determined by the input
-    file, not by explicit mapping. This may cause misinterpretation
-    if the loaded data order changes.
-    Involved routines include: `ED` `UC` and their derivatives.
+    .. versionadded:: 1.3.0
+       Replaces the CSV-list ``EDTSlot.ug`` cell. Each row carries one
+       scalar ``ug`` keyed by ``(gen, slot)``.
     """
 
     def __init__(self, system=None, config=None):
-        TimeSlot.__init__(self, system, config)
+        ModelData.__init__(self)
+        Model.__init__(self, system, config)
+        self.group = 'Horizon'
 
-        self.ug = NumParam(info='unit commitment decisions',
+        self.gen = IdxParam(model='StaticGen',
+                            info='generator idx (primary key)',
+                            mandatory=True,
+                            )
+        self.slot = IdxParam(model='EDTSlot',
+                             info='time slot idx (secondary key)',
+                             mandatory=True,
+                             )
+        self.ug = NumParam(default=1,
+                           info='unit commitment decision',
                            tex_name=r'u_{g}',
-                           iconvert=str_list_iconv,
-                           oconvert=str_list_oconv,
-                           vtype=int)
+                           vtype=int,
+                           )
 
 
-class UCTSlot(TimeSlot):
+class UCSlotLoad(ModelData, Model):
     """
-    Time slot model for UC.
+    Per-(area, slot) area load scaling factor for UC.
 
-    `sd` is the zonal load scaling factor.
-    Cells in `sd` should have `nz` values seperated by comma,
-    where `nz` is the number of `Zone` in the system.
-
-    Warnings
-    --------
-    The order of generators in `ug` is determined by the input
-    file, not by explicit mapping. This may cause misinterpretation
-    if the loaded data order changes.
-    Involved routines include: `ED` `UC` and their derivatives.
+    .. versionadded:: 1.3.0
+       Replaces the CSV-list ``UCTSlot.sd`` cell. Each row carries one
+       scalar ``sd`` keyed by ``(area, slot)``.
     """
 
     def __init__(self, system=None, config=None):
-        TimeSlot.__init__(self, system, config)
+        ModelData.__init__(self)
+        Model.__init__(self, system, config)
+        self.group = 'Horizon'
+
+        self.area = IdxParam(model='Area',
+                             info='area idx (primary key)',
+                             mandatory=True,
+                             )
+        self.slot = IdxParam(model='UCTSlot',
+                             info='time slot idx (secondary key)',
+                             mandatory=True,
+                             )
+        self.sd = NumParam(default=1.0,
+                           info='area load scaling factor',
+                           tex_name=r's_{d}',
+                           vtype=float,
+                           )
