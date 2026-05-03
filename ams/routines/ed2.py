@@ -46,13 +46,13 @@ class ED2(PTDFMPBase, ED):
 
     - Vars ``pg``, ``pru``, ``prd`` are extended to 2D
     - 2D Vars ``rgu`` and ``rgd`` are introduced
-    - Param ``ug`` is sourced from ``EDTSlot.ug`` as generator commitment
+    - Param ``ug`` is sourced from ``EDSlotGen.ug`` as generator commitment
 
     Notes
     -----
     - Formulations have been adjusted with interval ``config.t``
     - The tie-line flow is not implemented in this model.
-    - ``EDTSlot.ug`` is used instead of ``StaticGen.u`` for generator commitment.
+    - ``EDSlotGen.ug`` is used instead of ``StaticGen.u`` for generator commitment.
     - Following reserves are balanced for each "Area": RegUp reserve ``rbu``,
       RegDn reserve ``rbd``, and Spinning reserve ``rsr``.
     """

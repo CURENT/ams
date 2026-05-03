@@ -41,7 +41,7 @@ class NSRBase:
         self.dnsrpz = NumOpDual(u=self.pdz, u2=self.dnsrp, fun=np.multiply,
                                 name='dnsrpz', tex_name=r'd_{nsr, p, z}',
                                 info='zonal non-spinning reserve requirement in percentage',)
-        self.dnsr = NumOpDual(u=self.dnsrpz, u2=self.sd, fun=np.multiply,
+        self.dnsr = NumOpDual(u=self.dnsrpz, u2=self.sdT, fun=np.multiply,
                               rfun=np.transpose,
                               name='dnsr', tex_name=r'd_{nsr}',
                               info='zonal non-spinning reserve requirement',
@@ -131,8 +131,8 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
                           model='StaticGen', src='td2',
                           unit='h',)
 
-        self.sd.info = 'zonal load factor for UC'
-        self.sd.model = 'UCTSlot'
+        self.sd.info = 'area load scaling factor for UC'
+        self.sd.model = 'UCSlotLoad'
 
         self.ug.expand_dims = 1
         self.amin.expand_dims = 1

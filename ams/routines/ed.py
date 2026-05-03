@@ -39,7 +39,7 @@ class SRBase:
         self.dsrpz = NumOpDual(u=self.pdz, u2=self.dsrp, fun=np.multiply,
                                name='dsrpz', tex_name=r'd_{s,r, p, z}',
                                info='zonal spinning reserve requirement in percentage',)
-        self.dsr = NumOpDual(u=self.dsrpz, u2=self.sd, fun=np.multiply,
+        self.dsr = NumOpDual(u=self.dsrpz, u2=self.sdT, fun=np.multiply,
                              rfun=np.transpose,
                              name='dsr', tex_name=r'd_{s,r,z}',
                              info='zonal spinning reserve requirement',)
@@ -58,18 +58,30 @@ class MPBase:
 
     def __init__(self, system, config, **kwargs) -> None:
         super().__init__(system, config, **kwargs)
-        # NOTE: Setting `ED.scale.owner` to `Horizon` will cause an error when calling `ED.scale.v`.
-        # This is because `Horizon` is a group that only contains the model `TimeSlot`.
-        # The `get` method of `Horizon` calls `andes.models.group.GroupBase.get` and results in an error.
-        self.sd = RParam(info='zonal load factor for ED',
-                         name='sd', tex_name=r's_{d}',
-                         src='sd', model='EDTSlot')
 
         # NOTE: update timeslot.model in dispatch model if necessary
         self.timeslot = RParam(info='Time slot for multi-period ED',
                                name='timeslot', tex_name=r't_{s,idx}',
                                src='idx', model='EDTSlot',
                                no_parse=True)
+
+        # 2D area-load-scaling param sourced from EDSlotLoad
+        # (one row per (area, slot)). Routines override `model` to
+        # `UCSlotLoad` for UC.
+        self.sd = RParam(info='area load scaling factor',
+                         name='sd', tex_name=r's_{d}',
+                         src='sd', model='EDSlotLoad',
+                         indexer='area', imodel='Area',
+                         horizon=self.timeslot, hindexer='slot')
+
+        # Transposed (nslot, narea) view of sd, used by LoadScale and
+        # the SRBase/NSRBase reserve-requirement chain whose downstream
+        # NumOps were authored against the pre-v1.3.0 (nslot, narea)
+        # shape. Lets those untouched.
+        self.sdT = NumOp(u=self.sd, fun=np.transpose,
+                         name='sdT', tex_name=r's_{d}^{T}',
+                         info='sd transposed to (nslot, narea)',
+                         no_parse=True)
 
         self.tlv = NumOp(u=self.timeslot, fun=np.ones_like,
                          args=dict(dtype=float),
@@ -78,7 +90,7 @@ class MPBase:
                          info='time length vector',
                          no_parse=True)
 
-        self.pds = LoadScale(u=self.pd0, sd=self.sd,
+        self.pds = LoadScale(u=self.pd0, sd=self.sdT,
                              name='pds', tex_name=r'p_{d,s}',
                              info='Scaled load',)
 
@@ -118,13 +130,13 @@ class ED(SRBase, MPBase, RTED):
 
     - Vars ``pg``, ``pru``, ``prd`` are extended to 2D
     - 2D Vars ``rgu`` and ``rgd`` are introduced
-    - Param ``ug`` is sourced from ``EDTSlot.ug`` as generator commitment
+    - Param ``ug`` is sourced from ``EDSlotGen.ug`` as generator commitment
 
     Notes
     -----
     - Formulations have been adjusted with interval ``config.t``
     - The tie-line flow is not implemented in this model.
-    - ``EDTSlot.ug`` is used instead of ``StaticGen.u`` for generator commitment.
+    - ``EDSlotGen.ug`` is used instead of ``StaticGen.u`` for generator commitment.
     - Following reserves are balanced for each "Area": RegUp reserve ``rbu``,
       RegDn reserve ``rbd``, and Spinning reserve ``rsr``.
     """
@@ -137,26 +149,29 @@ class ED(SRBase, MPBase, RTED):
                               t="time interval in hours",
                               )
 
+        # Re-source ug from EDSlotGen as a 2D (ngen, nslot) param.
+        # The inherited self.ug from DCPF was a 1D StaticGen.u; we
+        # mutate in place (rather than re-binding) so the routine's
+        # rparams registry doesn't see a double-registration. With
+        # the new RParam.horizon shape, the previous NumOp(transpose)
+        # ugt workaround disappears.
         self.ug.info = 'unit commitment decisions'
-        self.ug.model = 'EDTSlot'
+        self.ug.model = 'EDSlotGen'
         self.ug.src = 'ug'
-        # self.ug.tex_name = r'u_{g}',
+        self.ug.indexer = 'gen'
+        self.ug.imodel = 'StaticGen'
+        self.ug.horizon = self.timeslot
+        self.ug.hindexer = 'slot'
 
         self.dud.expand_dims = 1
         self.ddd.expand_dims = 1
         self.amin.expand_dims = 1
         self.amax.expand_dims = 1
 
-        # --- Data Section ---
-        self.ugt = NumOp(u=self.ug, fun=np.transpose,
-                         name='ugt', tex_name=r'u_{g}',
-                         info='input ug transpose',
-                         no_parse=True)
-
         # --- Model Section ---
         # --- gen ---
-        self.ctrle.u2 = self.ugt
-        self.nctrle.u2 = self.ugt
+        self.ctrle.u2 = self.ug
+        self.nctrle.u2 = self.ug
         pmaxe = 'cp.multiply(cp.multiply(nctrle, pg0), tlv) + cp.multiply(cp.multiply(ctrle, tlv), pmax)'
         self.pmaxe.e_str = pmaxe
         self.pmaxe.horizon = self.timeslot
@@ -172,7 +187,7 @@ class ED(SRBase, MPBase, RTED):
         self.prd.info = '2D RegDn power'
 
         self.prs.horizon = self.timeslot
-        self.prsb.e_str = 'cp.multiply(ugt, pmax@tlv - pg) - prs == 0'
+        self.prsb.e_str = 'cp.multiply(ug, pmax@tlv - pg) - prs == 0'
         self.rsr.e_str = '-gs@prs + dsr <= 0'
 
         # --- line ---
@@ -189,28 +204,28 @@ class ED(SRBase, MPBase, RTED):
         self.pb.e_str = 'Bbus@aBus + Pbusinj@tlv + Cl@pds + Csh@gsh@tlv - Cg@pg == 0'
 
         # --- ramping ---
-        self.rbu.e_str = 'gs@cp.multiply(ugt, pru) - cp.multiply(dud, tlv) == 0'
-        self.rbd.e_str = 'gs@cp.multiply(ugt, prd) - cp.multiply(ddd, tlv) == 0'
+        self.rbu.e_str = 'gs@cp.multiply(ug, pru) - cp.multiply(dud, tlv) == 0'
+        self.rbd.e_str = 'gs@cp.multiply(ug, prd) - cp.multiply(ddd, tlv) == 0'
 
-        self.rru.e_str = 'pg + pru - cp.multiply(cp.multiply(ugt, pmax), tlv) <= 0'
-        self.rrd.e_str = '-pg + prd + cp.multiply(cp.multiply(ugt, pmin), tlv) <= 0'
+        self.rru.e_str = 'pg + pru - cp.multiply(cp.multiply(ug, pmax), tlv) <= 0'
+        self.rrd.e_str = '-pg + prd + cp.multiply(cp.multiply(ug, pmin), tlv) <= 0'
 
         self.rgu.e_str = 'pg @ Mr - t * RR30 <= 0'
         self.rgd.e_str = '-pg @ Mr - t * RR30 <= 0'
 
         self.rgu0 = Constraint(name='rgu0',
                                info='Initial gen ramping up',
-                               e_str='cp.multiply(ugt[:, 0], pg[:, 0] - pg0[:, 0] - R30) <= 0',
+                               e_str='cp.multiply(ug[:, 0], pg[:, 0] - pg0[:, 0] - R30) <= 0',
                                )
         self.rgd0 = Constraint(name='rgd0',
                                info='Initial gen ramping down',
-                               e_str='cp.multiply(ugt[:, 0], -pg[:, 0] + pg0[:, 0] - R30) <= 0',
+                               e_str='cp.multiply(ug[:, 0], -pg[:, 0] + pg0[:, 0] - R30) <= 0',
                                )
 
         # --- objective ---
         cost = 'cp.sum(t**2 * c2 @ pg**2)'
         cost += '+ t * cp.sum(c1 @ pg + csr @ prs)'
-        cost += '+ cp.sum(cp.multiply(ugt, cp.multiply(c0, tlv)))'
+        cost += '+ cp.sum(cp.multiply(ug, cp.multiply(c0, tlv)))'
         self.obj.e_str = cost
 
     def dc2ac(self, kloss=1.0, **kwargs):
