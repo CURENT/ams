@@ -9,7 +9,7 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.3
 ==========
 
-v1.3.0 (date TBD)
+v1.3.0 (2026-05-03)
 ----------------------
 
 **Breaking — TimeSlot paired-key data model:**
