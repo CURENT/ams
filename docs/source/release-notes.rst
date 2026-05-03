@@ -161,6 +161,27 @@ a stored value). Class definitions are regrouped by category
 (generic ops → subset/aggregation → reduction/difference →
 domain-specific → backward-compat aliases). No public API changes.
 
+**Deprecation — service classes with no production users:**
+
+:class:`~ams.core.service.NumExpandDim` and
+:class:`~ams.core.service.VarReduction` now emit
+``DeprecationWarning`` on instantiation and will be removed in
+v1.4.0. Both have zero call sites in :mod:`ams.routines` and
+:mod:`ams.core`. Replacements:
+
+* ``NumExpandDim(u=..., axis=N)`` →
+  ``NumOp(u=..., fun=np.expand_dims, expand_dims=N)`` (the
+  ``expand_dims`` kwarg already exists on :class:`~ams.core.service.NumOp`).
+* ``VarReduction(u=..., fun=np.ones)`` → build the shape-only
+  reduction matrix inline, e.g. ``np.ones((1, u.n))``.
+
+**Internal — shared scalar-wrap helper:**
+
+:class:`~ams.core.service.NumOp` and
+:class:`~ams.core.service.NumOpDual` ``v0`` properties now share a
+module-level ``_ensure_array`` helper rather than carrying
+near-identical scalar-to-ndarray wrap blocks. Behavior unchanged.
+
 v1.2
 ==========
 

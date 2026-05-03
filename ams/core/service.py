@@ -17,7 +17,7 @@ Repeat ``u`` across columns   :class:`NumHstack`       (broadcast)
 Pick gen subset by indexer    :class:`VarSelect`
 Sum into zones / areas        :class:`ZonalSum`
 Ramp difference matrix        :class:`RampSub`
-Shape-only reduction matrix   :class:`VarReduction`
+Shape-only reduction matrix   inline (e.g. ``np.ones((1, u.n))``)
 Zonal load scaling            :class:`LoadScale`       (load-status aware)
 UC min on/off duration        :class:`MinDur`          (UC routines only)
 ============================  ==========================================
@@ -25,8 +25,10 @@ UC min on/off duration        :class:`MinDur`          (UC routines only)
 Notes
 -----
 - The ``expand_dims=axis`` kwarg on :class:`NumOp` covers the
-  :class:`NumExpandDim` use case; ``NumExpandDim`` is retained as a
-  thin alias for backward compatibility — prefer ``NumOp`` directly.
+  :class:`NumExpandDim` use case. ``NumExpandDim`` is **deprecated
+  in v1.3.0** and slated for removal in v1.4.0 — use ``NumOp``
+  directly. :class:`VarReduction` is likewise deprecated (no
+  production users); inline the reduction matrix instead.
 - :class:`MinDur` inherits from :class:`NumOpDual` for parameter
   plumbing only; the inherited ``fun``/``rfun`` machinery is unused.
 - ``.v`` caching: subclasses recompute fresh on every access — there
@@ -43,10 +45,12 @@ File layout
 5. Subset / aggregation (``VarSelect``, ``ZonalSum``)
 6. Reduction / difference (``RampSub``, ``VarReduction``)
 7. Domain-specific (``LoadScale``, ``MinDur``)
-8. Backward-compat alias (``NumExpandDim``)
+8. Deprecated, slated for removal in v1.4.0 (``NumExpandDim``,
+   ``VarReduction``)
 """
 
 import logging
+import warnings
 from typing import Callable, Type
 
 import numpy as np
@@ -58,6 +62,22 @@ from ams.opt import Param
 
 
 logger = logging.getLogger(__name__)
+
+
+def _ensure_array(out):
+    """
+    Coerce a service output to an ndarray-like for downstream parsing.
+
+    Genuine Python scalars become 1-element ndarrays; ``ndarray`` and
+    ``scipy.sparse`` matrices pass through untouched; other array-likes
+    (list, tuple, ...) go through :func:`numpy.asarray`. Used by
+    :class:`NumOp` / :class:`NumOpDual` ``v0`` when ``array_out=True``.
+    """
+    if isinstance(out, np.ndarray) or spr.issparse(out):
+        return out
+    if np.isscalar(out):
+        return np.array([out])
+    return np.asarray(out)
 
 
 # ---------------------------------------------------------------------------
@@ -306,14 +326,7 @@ class NumOp(ROperationService):
     def v0(self):
         out = self.fun(self.u.v, **self.args)
         if self.array_out:
-            # wrap genuine Python scalars in a 1-element ndarray; pass
-            # ndarrays and scipy.sparse matrices through untouched;
-            # convert other array-likes (lists/tuples) via np.asarray
-            if not isinstance(out, np.ndarray) and not spr.issparse(out):
-                if np.isscalar(out):
-                    out = np.array([out])
-                else:
-                    out = np.asarray(out)
+            out = _ensure_array(out)
         return out
 
     @property
@@ -475,14 +488,7 @@ class NumOpDual(NumOp):
     def v0(self):
         out = self.fun(self.u.v, self.u2.v, **self.args)
         if self.array_out:
-            # wrap genuine Python scalars in a 1-element ndarray; pass
-            # ndarrays and scipy.sparse matrices through untouched;
-            # convert other array-likes (lists/tuples) via np.asarray
-            if not isinstance(out, np.ndarray) and not spr.issparse(out):
-                if np.isscalar(out):
-                    out = np.array([out])
-                else:
-                    out = np.asarray(out)
+            out = _ensure_array(out)
         if self.sparse:
             return spr.csr_matrix(out)
         return out
@@ -783,6 +789,11 @@ class VarReduction(NumOp):
     A numerical matrix to reduce a 2D variable to 1D,
     ``np.fun(shape=(1, u.n))``.
 
+    .. deprecated:: 1.3.0
+       ``VarReduction`` has no production users in AMS and will be
+       removed in v1.4.0. If you need a fixed shape-only reduction
+       matrix, build it inline (e.g. ``np.ones((1, u.n))``).
+
     Parameters
     ----------
     u : Callable
@@ -821,6 +832,12 @@ class VarReduction(NumOp):
                  rargs: dict = None,
                  no_parse: bool = False,
                  sparse: bool = False,):
+        warnings.warn(
+            "VarReduction is deprecated and will be removed in v1.4.0; "
+            "build the shape-only reduction matrix inline instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=None, rfun=rfun, rargs=rargs,
@@ -973,7 +990,7 @@ class MinDur(NumOpDual):
 
 
 # ---------------------------------------------------------------------------
-# 8. Backward-compat aliases — prefer the parent class for new code
+# 8. Deprecated — slated for removal in v1.4.0
 # ---------------------------------------------------------------------------
 
 
@@ -982,9 +999,9 @@ class NumExpandDim(NumOp):
     Expand the dimensions of the input array along a specified axis
     using NumPy's ``np.expand_dims(u.v, axis=axis)``.
 
-    .. note::
-       Prefer ``NumOp(..., expand_dims=axis)`` for new code; this class
-       is retained for backward compatibility and may be deprecated.
+    .. deprecated:: 1.3.0
+       Use ``NumOp(..., expand_dims=axis)`` instead. ``NumExpandDim``
+       has no production users in AMS and will be removed in v1.4.0.
 
     Parameters
     ----------
@@ -1020,6 +1037,12 @@ class NumExpandDim(NumOp):
                  array_out: bool = True,
                  no_parse: bool = False,
                  sparse: bool = False,):
+        warnings.warn(
+            "NumExpandDim is deprecated and will be removed in v1.4.0; "
+            "use NumOp(..., expand_dims=axis) instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__(name=name, tex_name=tex_name, unit=unit,
                          info=info, vtype=vtype,
                          u=u, fun=np.expand_dims, args=args,

@@ -1,11 +1,15 @@
 import unittest
+import warnings
+
 import numpy as np
+import pytest
 import scipy.sparse as sps
 
 import ams
 from ams.core.matprocessor import MParam
 from ams.core.param import RParam
-from ams.core.service import NumOp, NumOpDual, ZonalSum
+from ams.core.service import (NumExpandDim, NumOp, NumOpDual, VarReduction,
+                              ZonalSum)
 
 
 def _as_dense(x):
@@ -96,6 +100,40 @@ class TestService(unittest.TestCase):
         np.testing.assert_array_equal(ds.v.shape, (self.nR, self.nD))
         # check if the values are correct
         self.assertTrue(np.all(ds.v.sum(axis=1) <= np.array([self.nB, self.nB])))
+
+
+class TestServiceDeprecations(unittest.TestCase):
+    """
+    Pinned deprecation contracts for v1.3.0 service-module cleanup.
+    Both classes have zero production users in AMS; ``__init__`` must
+    emit ``DeprecationWarning`` and removal is slated for v1.4.0.
+    """
+
+    def test_NumExpandDim_warns_on_init(self):
+        rp = RParam(v=np.array([1.0, 2.0, 3.0]))
+        with pytest.warns(DeprecationWarning, match="NumExpandDim"):
+            svc = NumExpandDim(u=rp, axis=0)
+        # users who silence the warning still depend on .v correctness
+        # — pin output equality with the documented replacement so the
+        # v1.4.0 removal can verify migration parity
+        np.testing.assert_array_equal(
+            svc.v, np.expand_dims(rp.v, axis=0))
+
+    def test_VarReduction_warns_on_init(self):
+        rp = RParam(v=np.array([1.0, 2.0, 3.0]))
+        with pytest.warns(DeprecationWarning, match="VarReduction"):
+            svc = VarReduction(u=rp, fun=np.ones)
+        # output parity with the documented inline replacement
+        np.testing.assert_array_equal(svc.v0, np.ones((1, rp.n)))
+
+    def test_module_import_does_not_warn(self):
+        """Importing ``ams.core.service`` must not raise the deprecation
+        warning — only instantiation does."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            import importlib
+            import ams.core.service as svc
+            importlib.reload(svc)
 
 
 class TestRParam(unittest.TestCase):
