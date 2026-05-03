@@ -163,29 +163,36 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
                        name='ugd', tex_name=r'u_{g,d}',
                        model='StaticGen', src='u',
                        boolean=True,)
+        # NOTE: vgd/wgd are continuous in [0, 1]: with the state
+        # equation `u[t] - u[t-1] = v[t] - w[t]`, exclusivity
+        # `v + w <= 1`, nonneg costs `csu, csd` in the objective, and
+        # `ugd` binary, the optimum has `v = max(Δu, 0)`,
+        # `w = max(-Δu, 0)` automatically. Declaring them binary is
+        # redundant and only enlarges the branching space.
         self.vgd = Var(info='startup action',
                        horizon=self.timeslot,
                        name='vgd', tex_name=r'v_{g,d}',
                        model='StaticGen', src='u',
-                       boolean=True,)
+                       nonneg=True,)
         self.wgd = Var(info='shutdown action',
                        horizon=self.timeslot,
                        name='wgd', tex_name=r'w_{g,d}',
                        model='StaticGen', src='u',
-                       boolean=True,)
+                       nonneg=True,)
         self.zug = Var(info='Aux var, :math:`z_{ug} = u_{g,d} * p_g`',
                        horizon=self.timeslot,
                        name='zug', tex_name=r'z_{ug}',
                        model='StaticGen', pos=True,)
-        # NOTE: actions have two parts: initial status and the rest
-        self.actv = Constraint(name='actv', info='startup action',
-                               e_str='ugd @ Mr - vgd[:, 1:] == 0',)
-        self.actv0 = Constraint(name='actv0', info='initial startup action',
-                                e_str='ugd[:, 0] - ug[:, 0]  - vgd[:, 0] == 0',)
-        self.actw = Constraint(name='actw', info='shutdown action',
-                               e_str='-ugd @ Mr - wgd[:, 1:] == 0',)
-        self.actw0 = Constraint(name='actw0', info='initial shutdown action',
-                                e_str='-ugd[:, 0] + ug[:, 0] - wgd[:, 0] == 0',)
+        # State equation `u[t] - u[t-1] = v[t] - w[t]` (Rajan-Takriti
+        # 3-bin coupling, S1) plus initial-period anchor (S0) and
+        # exclusivity (X). Replaces the prior pair of signed
+        # equalities, which under boolean v/w forced ugd constant.
+        self.state = Constraint(name='state', info='commit state equation',
+                                e_str='ugd @ Mr - vgd[:, 1:] + wgd[:, 1:] == 0',)
+        self.state0 = Constraint(name='state0', info='initial commit state equation',
+                                 e_str='ugd[:, 0] - ug[:, 0] - vgd[:, 0] + wgd[:, 0] == 0',)
+        self.vwexcl = Constraint(name='vwexcl', info='startup/shutdown exclusivity',
+                                 e_str='vgd + wgd - 1 <= 0',)
 
         self.prs.horizon = self.timeslot
         self.prs.info = '2D Spinning reserve'
