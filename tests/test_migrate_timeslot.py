@@ -235,20 +235,25 @@ class TestXlsxAdapter(unittest.TestCase):
             self.assertEqual(summary['uc_load'], 2)
             self.assertTrue(summary['renamed'])
 
-            # Re-load and verify sheet names + content.
+            # Re-load and verify sheet names + content. ``read_only=True``
+            # holds an open file handle on Windows, so close explicitly
+            # before TemporaryDirectory cleanup tries to unlink the file.
             wb2 = openpyxl.load_workbook(str(src), read_only=True)
-            self.assertIn('EDSlot', wb2.sheetnames)
-            self.assertIn('UCSlot', wb2.sheetnames)
-            self.assertIn('EDSlotLoad', wb2.sheetnames)
-            self.assertIn('EDSlotGen', wb2.sheetnames)
-            self.assertIn('UCSlotLoad', wb2.sheetnames)
-            self.assertNotIn('EDTSlot', wb2.sheetnames)
-            self.assertNotIn('UCTSlot', wb2.sheetnames)
+            try:
+                self.assertIn('EDSlot', wb2.sheetnames)
+                self.assertIn('UCSlot', wb2.sheetnames)
+                self.assertIn('EDSlotLoad', wb2.sheetnames)
+                self.assertIn('EDSlotGen', wb2.sheetnames)
+                self.assertIn('UCSlotLoad', wb2.sheetnames)
+                self.assertNotIn('EDTSlot', wb2.sheetnames)
+                self.assertNotIn('UCTSlot', wb2.sheetnames)
 
-            edload_rows = list(wb2['EDSlotLoad'].iter_rows(values_only=True))
-            self.assertEqual(edload_rows[0], ('area', 'slot', 'sd'))
-            # 2 areas * 1 slot = 2 data rows.
-            self.assertEqual(len(edload_rows), 3)
+                edload_rows = list(wb2['EDSlotLoad'].iter_rows(values_only=True))
+                self.assertEqual(edload_rows[0], ('area', 'slot', 'sd'))
+                # 2 areas * 1 slot = 2 data rows.
+                self.assertEqual(len(edload_rows), 3)
+            finally:
+                wb2.close()
 
 
 class TestRenameLegacyKeys(unittest.TestCase):
