@@ -772,7 +772,7 @@ class RoutineBase:
 
         .. versionadded:: 1.0.13
 
-        .. versionchanged:: 1.2.4
+        .. versionchanged:: 1.3.0
            A successful load now sets ``self.converged = True`` and
            ``self.exit_code = 0``. Callers that loaded "candidate"
            results into a scratch system and relied on
@@ -863,7 +863,7 @@ class RoutineBase:
         :meth:`ams.system.System.report` calls behave as if the
         routine just solved.
 
-        .. versionadded:: 1.2.4
+        .. versionadded:: 1.3.0
         """
         try:
             df = pd.read_csv(path)

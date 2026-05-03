@@ -339,7 +339,7 @@ def get_export_path(system, fname, path=None, fmt='csv'):
     directory. An empty-string ``output_path`` (the ``FileMan`` default
     when no output dir is specified) is treated as "not set".
 
-    .. versionchanged:: 1.2.4
+    .. versionchanged:: 1.3.0
        ``system.files.output_path`` is now used as the default fallback,
        previously the current working directory was always used.
     """

@@ -121,7 +121,7 @@ class Report:
         - An explicit ``path`` overrides the system-level
           ``no_output=True`` flag (per-call intent wins).
 
-        .. versionchanged:: 1.2.4
+        .. versionchanged:: 1.3.0
            Added ``path`` parameter and changed the return type from
            ``None`` to the absolute output path (or ``None`` when
            skipped).

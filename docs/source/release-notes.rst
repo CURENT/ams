@@ -6,10 +6,10 @@ Release notes
 
 The APIs before v3.0.0 are in beta and may change without prior notice.
 
-v1.2
+v1.3
 ==========
 
-v1.2.4 (date TBD)
+v1.3.0 (date TBD)
 ----------------------
 
 **New — per-call output path for ``System.report``:**
@@ -67,6 +67,9 @@ later resolve), reset the flag explicitly after the load:
 
    ss.DCOPF.load_json(path)
    ss.DCOPF.converged = False  # opt out of the new behavior
+
+v1.2
+==========
 
 v1.2.3 (2026-05-02)
 ----------------------
