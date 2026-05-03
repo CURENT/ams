@@ -540,10 +540,64 @@ class RoutineBase:
             logger.warning(msg)
         return disabled
 
+    def _validate_model_refs(self):
+        """
+        Verify every ``model`` / ``imodel`` string on this routine's
+        RParams and Vars resolves to a real model or group on the
+        bound system. Catches typos like ``model='Bbus'`` (would
+        otherwise surface only as ``rparam.owner is None``, silently
+        skipped by the rest of ``_data_check``) and re-validates the
+        late-binding mutation pattern (e.g. ``self.sd.model =
+        'UCSlotLoad'`` in :class:`UC`) that bypasses the
+        :meth:`addRParam` / :meth:`addVar` check.
+
+        Raises ``ValueError`` with a difflib-suggested correction on
+        the first unresolved reference; subsequent unresolved refs
+        are listed in the message body so the user gets the full
+        picture in a single error.
+        """
+        import difflib
+
+        sys = self.system
+        # Mirror the whitelist used at owner-binding time
+        # (`ams/system.py: link_ext_param`): models, groups, plus the
+        # special `'mats'` shorthand that resolves to `system.mats`
+        # (the MatProcessor instance).
+        valid = set(sys.models.keys()) | set(sys.groups.keys()) | {'mats'}
+
+        unresolved = []
+        for registry_name, registry in (('rparams', self.rparams),
+                                        ('vars', self.vars)):
+            for name, item in registry.items():
+                for attr in ('model', 'imodel'):
+                    target = getattr(item, attr, None)
+                    if target is None:
+                        continue
+                    if target in valid:
+                        continue
+                    suggestion = difflib.get_close_matches(
+                        target, valid, n=1, cutoff=0.6)
+                    unresolved.append((registry_name, name, attr,
+                                       target, suggestion))
+
+        if not unresolved:
+            return
+
+        lines = [f"<{self.class_name}> has unresolved model "
+                 f"references on {len(unresolved)} attribute(s):"]
+        for registry_name, name, attr, target, suggestion in unresolved:
+            hint = (f"; did you mean '{suggestion[0]}'?"
+                    if suggestion else "")
+            lines.append(
+                f"  - {registry_name}.{name}.{attr} = '{target}'{hint}"
+            )
+        raise ValueError("\n".join(lines))
+
     def _data_check(self):
         """
         Check if data is valid for a routine.
         """
+        self._validate_model_refs()
         logger.info(f"Entering data check for <{self.class_name}>")
         no_input = []
         owner_list = []
