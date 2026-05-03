@@ -5,11 +5,12 @@ Walks a routine instance, rewrites each ``e_str`` into Python source
 referencing a :class:`ams.core.routine_ns.RoutineNS` (``r.<name>``),
 and produces a self-contained module of named callables.
 
-Translation pipeline mirrors :class:`ams.core.symprocessor.SymProcessor`'s
-``sub_map`` for the function-name part (``mul`` → ``cp.multiply``,
-``dot`` → ``*``, etc.); the symbol-resolution part is replaced with
-the simpler ``\\b<name>\\b → r.<name>`` so the generated code is
-runtime-independent of OModel internals.
+Routines author canonical CVXPY (``cp.sum(...)``, ``cp.multiply(...)``)
+directly. Codegen does only symbol resolution
+(``\\b<name>\\b → r.<name>``); there is no operator-name rewrite stage.
+The negative lookbehind on the symbol regex skips the ``name`` part of
+``cp.name`` attribute access, so ``cp.sum(r.pg)`` survives the pass even
+if a routine declares a symbol called ``sum``.
 
 Errors are intentionally hard: a malformed ``e_str`` must surface at
 prep time, not silently fall back to a slow regex+eval path.
@@ -28,52 +29,110 @@ import cvxpy as cp
 import ams
 
 
-_FUNCTION_REWRITES = OrderedDict([
-    (r'\b(\w+)\s+dot\s+(\w+)\b', r'\1 * \2'),
-    (r' dot ', r' * '),
-    (r'\bsum\b', 'cp.sum'),
-    (r'\bvar\b', 'cp.Variable'),
-    (r'\bparam\b', 'cp.Parameter'),
-    (r'\bconst\b', 'cp.Constant'),
-    (r'\bproblem\b', 'cp.Problem'),
-    (r'\bmultiply\b', 'cp.multiply'),
-    (r'\bmul\b', 'cp.multiply'),
-    (r'\bvstack\b', 'cp.vstack'),
-    (r'\bnorm\b', 'cp.norm'),
-    (r'\bpos\b', 'cp.pos'),
-    (r'\bpower\b', 'cp.power'),
-    (r'\bsign\b', 'cp.sign'),
-    (r'\bmaximum\b', 'cp.maximum'),
-    (r'\bminimum\b', 'cp.minimum'),
-    (r'\bsquare\b', 'cp.square'),
-    (r'\bquad_over_lin\b', 'cp.quad_over_lin'),
-    (r'\bdiag\b', 'cp.diag'),
-    (r'\bquad_form\b', 'cp.quad_form'),
-    (r'\bsum_squares\b', 'cp.sum_squares'),
-])
+# Bumped whenever the shape of generated pycode changes (new header
+# field, signature change on emitted callables, etc.). ``_link_pycode``
+# rejects any cache whose ``pycode_format_version`` doesn't match this
+# value, forcing a regen on the next run. Older caches that predate the
+# field (no attribute) are likewise rejected. Auto-heal pattern: same
+# as the ``pristine`` marker added in PR #242.
+PYCODE_FORMAT_VERSION = 3
 
-# Bare identifiers above that, if used as a routine symbol name, would be
-# silently consumed by the function-rewrite pass before symbol resolution
-# runs. ``dot`` is also reserved (the two top-of-list patterns rewrite it
-# to ``*``). Hard-fail at codegen rather than emit subtly broken code.
-_RESERVED_SYMBOL_NAMES = frozenset({
-    'sum', 'var', 'param', 'const', 'problem', 'multiply', 'mul',
-    'vstack', 'norm', 'pos', 'power', 'sign', 'maximum', 'minimum',
-    'square', 'quad_over_lin', 'diag', 'quad_form', 'sum_squares', 'dot',
+
+# Routine symbol names that would silently shadow a CVXPY atom in the
+# eval-fallback rewrite path. The codegen path is safe (the ``(?<!\.)``
+# lookbehind protects ``cp.<name>`` attribute access), but
+# :func:`ams.opt._runtime_eval._resolve` rewrites bare names via
+# ``_build_symbol_regex`` against the routine's symbol registries — so
+# a routine declaring a symbol named ``sum`` plus a user appending a
+# bare ``sum(pg)`` to ``obj.e_str`` would yield ``r.sum(r.pg)``, which
+# is the user's symbol, not ``cp.sum``. Reject the collision at
+# codegen / generate_symbols time so the trap surfaces at routine
+# definition, not as silent nonsense at solve time.
+#
+# Static fallback: the closed set we know mattered when the guard
+# shipped (PR #244-#248, cvxpy-namespace passthrough). The runtime
+# set below is unioned with this — never narrower — so a CVXPY API
+# shape change (atoms moved/removed) can shrink derivation but
+# can't shrink the guarded set.
+_STATIC_RESERVED_CVXPY_ATOM_NAMES = frozenset({
+    'sum', 'multiply', 'vstack', 'hstack', 'power', 'norm', 'pos', 'neg',
+    'square', 'quad_form', 'sum_squares', 'diag', 'maximum', 'minimum',
+    'abs', 'exp', 'log', 'sqrt', 'inv_pos',
 })
+
+
+def _derive_reserved_cvxpy_atom_names():
+    """Discover CVXPY atom-callable names exposed at the ``cp.`` top.
+
+    Walks ``cvxpy.atoms`` (the atoms package) and keeps each public
+    name that's also exposed as a callable on the top-level ``cvxpy``
+    namespace. The result tracks whatever atoms the installed CVXPY
+    version ships, so an atom added in a future release is guarded
+    automatically (the static fallback was a snapshot — this isn't).
+    Always unioned with :data:`_STATIC_RESERVED_CVXPY_ATOM_NAMES`,
+    so it's a strict superset.
+    """
+    derived = set()
+    try:
+        atoms_mod = cp.atoms
+    except AttributeError:
+        return _STATIC_RESERVED_CVXPY_ATOM_NAMES
+    for name in dir(atoms_mod):
+        if name.startswith('_'):
+            continue
+        attr = getattr(cp, name, None)
+        if attr is not None and callable(attr):
+            derived.add(name)
+    return frozenset(derived | _STATIC_RESERVED_CVXPY_ATOM_NAMES)
+
+
+RESERVED_CVXPY_ATOM_NAMES = _derive_reserved_cvxpy_atom_names()
+
+
+def _check_reserved_collisions(routine, names) -> None:
+    """Raise if any routine symbol collides with a CVXPY atom name."""
+    bad = sorted(set(names) & RESERVED_CVXPY_ATOM_NAMES)
+    if bad:
+        raise ValueError(
+            f"Routine <{routine.class_name}> declares symbol(s) "
+            f"{bad} that collide with CVXPY atom names. The "
+            "eval-fallback helper (ams.opt._runtime_eval) would "
+            "silently rewrite a bare ``<name>(...)`` in a user "
+            "customization to ``r.<name>(...)``, shadowing "
+            "``cp.<name>``. Rename the routine symbol(s) — see "
+            "RESERVED_CVXPY_ATOM_NAMES in ams/prep/generator.py."
+        )
 
 
 # Static tex_map templates — mirror those built in
 # :class:`ams.core.symprocessor.SymProcessor.__init__`. The codegen
 # needs the same templates plus the per-symbol ``\b<name>\b → tex_name``
 # rules (added in :func:`_build_tex_map`).
+#
+# The first rule strips the ``cp.`` Python-module prefix from
+# canonical-CVXPY e_str (added in the namespace-passthrough migration).
+# Without it, ``cp.sum(cp.multiply(...))`` would render as
+# ``cp.\sum(cp.c_{...} ...)`` — the ``cp.`` is Python plumbing, never
+# math. Mirrors the same first-rule in
+# :attr:`SymProcessor.tex_map`; both must agree.
 _TEX_TEMPLATES = OrderedDict([
+    # ``\*\*`` MUST come before the ``cp.`` stripper. ``_tex_pre`` runs
+    # ``expr.replace('*', ' ')`` after every substitution, so any rule that
+    # leaves a ``**`` unconverted will see it shredded into two spaces.
     (r'\*\*(\d+)', '^{\\1}'),
+    (r'\bcp\.(\w+)', r'\1'),
     (r'\b(\w+)\s*\*\s*(\w+)\b', r'\1 \2'),
     (r'\@', r' '),
     (r'dot', r' '),
     (r'sum_squares\((.*?)\)', r"SUM((\1))^2"),
+    # ``multiply\(...\)`` runs twice — the first pass only flattens
+    # non-overlapping matches, so a nested ``multiply(multiply(a, b), c)``
+    # leaves the outer call intact after one pass. The second pass uses
+    # the ``\b`` form so its dict key differs (OrderedDict dedupes
+    # identical keys); behavior is identical. Mirrors the two-rule
+    # ``mul``/``\bmul\b`` chain below.
     (r'multiply\(([^,]+), ([^)]+)\)', r'\1 \2'),
+    (r'\bmultiply\b\(([^,]+), ([^)]+)\)', r'\1 \2'),
     (r'\bnp.linalg.pinv(\d+)', r'\1^{\-1}'),
     (r'\bpos\b', 'F^{+}'),
     (r'mul\((.*?),\s*(.*?)\)', r'\1 \2'),
@@ -81,6 +140,15 @@ _TEX_TEMPLATES = OrderedDict([
     (r'\bsum\b', 'SUM'),
     (r'power\((.*?),\s*(\d+)\)', r'\1^\2'),
     (r'(\w+).dual_variables\[0\]', r'\phi[\1]'),
+    # Relational operators must come AFTER the `\bcp.X` stripper above
+    # but ordering within this trio doesn't matter (no overlap among
+    # `<=`, `>=`, `==`). `==` -> `=` because `\eq` would be ambiguous
+    # under math-mode rendering. Replacements use double-backslash so
+    # `re.sub` emits a literal `\leq` / `\geq` (single-backslash forms
+    # raise re.PatternError on Python 3.12+).
+    (r'<=', r'\\leq'),
+    (r'>=', r'\\geq'),
+    (r'==', '='),
 ])
 
 
@@ -117,16 +185,9 @@ def _collect_symbol_names(routine) -> list:
     names.update(routine.config.as_dict().keys())
     names.add('sys_f')
     names.add('sys_mva')
-    collisions = names & _RESERVED_SYMBOL_NAMES
-    if collisions:
-        raise ValueError(
-            f"codegen: routine <{type(routine).__name__}> has symbol(s) "
-            f"{sorted(collisions)} that collide with the function-rewrite "
-            f"vocabulary ({sorted(_RESERVED_SYMBOL_NAMES)}). Rename the "
-            f"symbol(s) — they would be silently consumed before symbol "
-            f"resolution runs."
-        )
-    return sorted(names)
+    sorted_names = sorted(names)
+    _check_reserved_collisions(routine, sorted_names)
+    return sorted_names
 
 
 def _build_symbol_regex(names: list):
@@ -135,39 +196,36 @@ def _build_symbol_regex(names: list):
     Sort by length descending so a longer name takes precedence over a
     shorter prefix when both are in the alternation (e.g. ``pmax`` over
     ``p`` if both existed).
+
+    The ``(?<!\\.)`` lookbehind skips identifiers preceded by a dot —
+    so ``cp.sum(r.pg)`` is left alone even when ``sum`` happens to be a
+    routine symbol name. This is what makes the function-rewrite layer
+    safe to delete: routines are now expected to author canonical
+    ``cp.X(...)`` directly, and the symbol-resolution pass must not
+    touch the ``X`` part of attribute access.
     """
     if not names:
         return None
     sorted_names = sorted(names, key=lambda n: (-len(n), n))
-    return re.compile(r'\b(' + '|'.join(re.escape(n) for n in sorted_names) + r')\b')
+    return re.compile(
+        r'(?<!\.)\b(' + '|'.join(re.escape(n) for n in sorted_names) + r')\b'
+    )
 
 
-def _rewrite(e_str: str, function_rewrites, symbol_regex) -> str:
-    """Apply the codegen rewrites in two passes.
+def _rewrite(e_str: str, symbol_regex) -> str:
+    """Resolve symbol names to ``r.<name>`` in one pass.
 
-    Pass 1: function-name rewrites (``mul → cp.multiply``, ``dot → *``,
-    ``sum → cp.sum``, etc.). These can run sequentially because their
-    outputs (``cp.multiply``, ``*``) never match a later input pattern.
-
-    Pass 2: a *single* substitution that resolves every symbol name at
-    once, ``r.<name>``. Sequential per-name substitutions cascade —
-    e.g. when a routine has a symbol named ``r`` (DOPF.r = line
-    resistance), substituting ``\\br\\b → r.r`` first, then later
-    seeing the already-emitted ``r.Bf`` and matching ``r`` again yields
-    ``r.r.Bf``. Single-pass alternation prevents that.
+    A *single* alternation substitution covers every symbol; sequential
+    per-name substitutions would cascade — e.g. when a routine has a
+    symbol named ``r`` (DOPF.r = line resistance), substituting
+    ``\\br\\b → r.r`` first and then seeing the already-emitted
+    ``r.Bf`` would match ``r`` again and yield ``r.r.Bf``. Single-pass
+    alternation prevents that, and the regex's ``(?<!\\.)`` lookbehind
+    leaves attribute access (``cp.sum``, ``r.pg``) untouched.
     """
-    code = e_str
-    for pattern, replacement in function_rewrites.items():
-        try:
-            code = re.sub(pattern, replacement, code)
-        except re.error as exc:
-            raise ValueError(
-                f"codegen: regex failure on pattern {pattern!r} "
-                f"applying to {e_str!r}: {exc}"
-            )
-    if symbol_regex is not None:
-        code = symbol_regex.sub(r'r.\1', code)
-    return code
+    if symbol_regex is None:
+        return e_str
+    return symbol_regex.sub(r'r.\1', e_str)
 
 
 def _validate_python(source: str, where: str) -> None:
@@ -262,7 +320,6 @@ def generate_for_routine(routine, *, header_extra: str = '') -> str:
     ValueError
         On regex failure.
     """
-    function_rewrites = _FUNCTION_REWRITES
     symbol_regex = _build_symbol_regex(_collect_symbol_names(routine))
     tex_map = _build_tex_map(routine)
     cls = type(routine)
@@ -285,6 +342,7 @@ def generate_for_routine(routine, *, header_extra: str = '') -> str:
     parts.append(f'md5 = {source_md5(cls)!r}\n')
     parts.append(f'ams_version = {ams.__version__!r}\n')
     parts.append(f'cvxpy_version = {cp.__version__!r}\n')
+    parts.append(f'pycode_format_version = {PYCODE_FORMAT_VERSION!r}\n')
     # ``pristine`` asserts the cache was generated from a routine instance
     # untouched by user customizations (a fresh ``ams.System`` constructed
     # inside ``_link_pycode``, not the user's ``sp.DCOPF`` which may carry
@@ -298,21 +356,22 @@ def generate_for_routine(routine, *, header_extra: str = '') -> str:
     for name, expr in routine.exprs.items():
         if expr.e_fn is not None or expr.e_str is None:
             continue
-        body = _rewrite(expr.e_str, function_rewrites, symbol_regex)
+        body = _rewrite(expr.e_str, symbol_regex)
         parts.extend(_emit_callable('expr', name, body))
         parts.extend(_emit_tex_string('expr', name, _render_tex(expr, tex_map)))
         parts.append('\n')
 
     # --- Constraints ---
-    # Codegen convention: emit the LHS expression only. Constraint.evaluate
-    # applies ``<= 0`` / ``== 0`` based on ``is_eq``. This lets ``.e`` recover
-    # a numpy LHS during a failed/incomplete solve via ``NumericRoutineNS``;
-    # the legacy ``return <body> <= 0`` form short-circuits to a numpy bool
-    # when every operand is numpy, which loses the LHS.
+    # Codegen emits the rewritten ``e_str`` verbatim — relational operator
+    # included (post `is_eq` retirement). The wired callable returns a
+    # ``cp.constraints.Constraint``; ``Constraint.evaluate`` stores it
+    # directly. ``.e`` recovers the numpy LHS via ``optz._expr.value``,
+    # which CVXPY canonicalizes to ``lhs - rhs`` for any inequality
+    # direction — same diagnostic semantics as the prior LHS-only emit.
     for name, constr in routine.constrs.items():
         if constr.e_fn is not None or constr.e_str is None:
             continue
-        body = _rewrite(constr.e_str, function_rewrites, symbol_regex)
+        body = _rewrite(constr.e_str, symbol_regex)
         parts.extend(_emit_callable('constr', name, body))
         parts.extend(_emit_tex_string('constr', name, _render_tex(constr, tex_map)))
         parts.append('\n')
@@ -321,14 +380,14 @@ def generate_for_routine(routine, *, header_extra: str = '') -> str:
     for name, exprc in routine.exprcs.items():
         if exprc.e_str is None:
             continue
-        body = _rewrite(exprc.e_str, function_rewrites, symbol_regex)
+        body = _rewrite(exprc.e_str, symbol_regex)
         parts.extend(_emit_callable('exprcalc', name, body))
         parts.extend(_emit_tex_string('exprcalc', name, _render_tex(exprc, tex_map)))
         parts.append('\n')
 
     # --- Objective ---
     if routine.obj is not None and routine.obj.e_fn is None and routine.obj.e_str is not None:
-        body = _rewrite(routine.obj.e_str, function_rewrites, symbol_regex)
+        body = _rewrite(routine.obj.e_str, symbol_regex)
         parts.extend(_emit_callable('obj', routine.obj.name, body))
         parts.extend(_emit_tex_string('obj', routine.obj.name, _render_tex(routine.obj, tex_map)))
         parts.append('\n')

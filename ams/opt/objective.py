@@ -4,9 +4,6 @@ Module for optimization Objective.
 import logging
 
 from typing import Callable, Optional
-import re
-
-import numpy as np  # noqa: F401  # used by routine `e_str` evaluation context
 
 import cvxpy as cp
 
@@ -16,6 +13,7 @@ from ams.shared import _prefix, _max_length
 from ams.core.routine_ns import RoutineNS
 from ams.opt import OptzBase, ensure_symbols, ensure_mats_and_parsed
 from ams.opt.optzbase import _EFormDescriptor
+from ams.opt._runtime_eval import eval_e_str
 
 logger = logging.getLogger(__name__)
 
@@ -118,19 +116,13 @@ class Objective(OptzBase):
             raise ValueError(f'Objective sense {self.sense} is not supported.')
         if self.e_fn is not None:
             return True
-        # parse the expression str. Note: ``self.code`` stores the *inner*
-        # expression only; the ``cp.Minimize``/``cp.Maximize`` wrap is
-        # applied in :meth:`evaluate` so extra cost terms can be summed
-        # onto the inner before wrapping.
-        sub_map = self.om.rtn.syms.sub_map
-        code_obj = self.e_str
-        for pattern, replacement, in sub_map.items():
-            try:
-                code_obj = re.sub(pattern, replacement, code_obj)
-            except Exception as e:
-                raise Exception(f"Error in parsing obj <{self.name}>.\n{e}")
-        self.code = code_obj
-        msg = f" - Objective <{self.name}>: {self.code}"
+        # ``self.code`` stores the source verbatim; symbol resolution +
+        # eval are deferred to :func:`eval_e_str` at evaluate time. The
+        # ``cp.Minimize``/``cp.Maximize`` wrap is still applied in
+        # :meth:`evaluate` so extra cost terms can be summed onto the
+        # inner before wrapping.
+        self.code = self.e_str
+        msg = f" - Objective <{self.name}>: {self.e_str}"
         logger.debug(pretty_long_message(msg, _prefix, max_length=_max_length))
         return True
 
@@ -156,11 +148,7 @@ class Objective(OptzBase):
                                 f"via e_fn.\n{e}")
         else:
             logger.debug(f" - Objective <{self.name}>: {self.e_str}")
-            try:
-                local_vars = {'self': self, 'cp': cp}
-                inner = eval(self.code, {}, local_vars)
-            except Exception as e:
-                raise Exception(f"Error in evaluating Objective <{self.name}>.\n{e}")
+            inner = eval_e_str(self, self.e_str)
 
         # 2) Add registered extra terms (from mixins).
         if self._extra_terms:

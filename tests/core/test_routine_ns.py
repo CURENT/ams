@@ -2,9 +2,9 @@
 Tests for :class:`ams.core.routine_ns.RoutineNS` and the ``e_fn``
 plumbing on Constraint / Expression / Objective.
 
-Validates that every symbol the legacy ``sub_map`` regex resolves on a
-real routine also resolves via ``RoutineNS`` attribute access, and to
-an object of the same type / identity where possible — the R2 (silent
+Validates that every symbol that an ``e_str`` can reference on a real
+routine also resolves via ``RoutineNS`` attribute access, and to an
+object of the same type / identity where possible — the R2 (silent
 wrong-symbol resolution) safeguard for the codegen path.
 """
 
@@ -21,7 +21,7 @@ from ams.opt.objective import Objective
 
 
 class TestRoutineNSResolution(unittest.TestCase):
-    """RoutineNS must resolve every sub_map symbol on DCOPF / RTED."""
+    """RoutineNS must resolve every routine symbol on DCOPF / RTED."""
 
     @classmethod
     def setUpClass(cls):
@@ -115,7 +115,7 @@ class TestRuntimeCustomization(unittest.TestCase):
     After ``routine.init()`` runs auto-prep, ``e_str`` must remain readable
     and writable so authors can do the documented customization pattern:
 
-        sp.DCOPF.obj.e_str += '+ sum(mul(ce, pg))'
+        sp.DCOPF.obj.e_str += '+ cp.sum(cp.multiply(ce, pg))'
 
     Fixed by routing ``_link_pycode`` through the raw ``_e_fn`` slot
     (preserves ``e_str``) and tracking ``_e_dirty`` on the descriptor so
@@ -172,7 +172,7 @@ class TestRuntimeCustomization(unittest.TestCase):
         original = ss.DCOPF.obj.e_str
         self.assertIsNotNone(original)
         # Append (the documented customization knob).
-        ss.DCOPF.obj.e_str = original + ' + 0 * sum(pg)'  # no-op term
+        ss.DCOPF.obj.e_str = original + ' + 0 * cp.sum(pg)'  # no-op term
         # Mutex must mark dirty so re-init doesn't restore the wired e_fn.
         self.assertTrue(getattr(ss.DCOPF.obj, '_e_dirty', False),
                         "appending to e_str must mark item dirty")
@@ -182,6 +182,20 @@ class TestRuntimeCustomization(unittest.TestCase):
         ss.DCOPF.init()
         ss.DCOPF.run(solver='CLARABEL')
         self.assertEqual(ss.DCOPF.exit_code, 0)
+        # ``.e`` (post-solve numpy LHS readout) must work for items
+        # routed through the eval-fallback path. Catches regressions in
+        # ``OptzBase.e``'s symbol resolution against ``self.code`` —
+        # which changed shape in the eval_e_str refactor (now stores
+        # the unrewritten e_str rather than the post-rewrite source).
+        # Reviewer-driven assertion (PR #245).
+        obj_e = ss.DCOPF.obj.e
+        self.assertIsNotNone(obj_e,
+                             "obj.e returned None on the eval-fallback "
+                             "path — OptzBase.e is mis-resolving symbols")
+        self.assertAlmostEqual(float(obj_e), float(ss.DCOPF.obj.v),
+                               places=6,
+                               msg="obj.e should equal obj.v after a "
+                                   "successful solve")
 
     def test_customization_does_not_pollute_other_instances(self):
         """One System's customization must not leak into another's cache.
@@ -204,7 +218,7 @@ class TestRuntimeCustomization(unittest.TestCase):
             setup=True, no_output=True, default_config=True,
         )
         original = sp.DCOPF.obj.e_str
-        sp.DCOPF.obj.e_str = original + ' + 1e-6 * sum(pg)'  # tiny perturbation
+        sp.DCOPF.obj.e_str = original + ' + 1e-6 * cp.sum(pg)'  # tiny perturbation
         sp.DCOPF.run(solver='CLARABEL')
         self.assertEqual(sp.exit_code, 0)
         sp_obj = float(sp.DCOPF.obj.v)

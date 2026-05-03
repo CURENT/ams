@@ -1,3 +1,15 @@
+"""
+Smoke tests that exercise the documentation/codegen entry points
+on a freshly-built System and a freshly-initialized routine — the
+``doc_all`` walk over types/groups, and the ``Documenter._*_doc``
+formatters on a routine's constraints/expressions/vars/services/params.
+
+Lives under ``tests/codegen/`` because the assertions are about
+*generated documentation strings producing without error*, not
+about System bring-up itself. Originally lived in
+``tests/test_1st_system.py::TestCodegen``.
+"""
+
 import unittest
 
 import ams
@@ -31,34 +43,3 @@ class TestCodegen(unittest.TestCase):
             docum._service_doc(max_width=78, export=export)
             docum._param_doc(max_width=78, export=export)
             docum.parent.config.doc(max_width=78, export=export)
-
-
-class TestParamCorrection(unittest.TestCase):
-    """
-    Test parameter correction.
-    """
-
-    def setUp(self) -> None:
-        """
-        Test setup.
-        """
-        self.ss = ams.load(ams.get_case('matpower/case14.m'),
-                           setup=False, no_output=True, default_config=True,)
-
-    def test_line_correction(self):
-        """
-        Test line correction.
-        """
-        self.ss.Line.rate_a.v[5] = 0.0
-        self.ss.Line.rate_b.v[6] = 0.0
-        self.ss.Line.rate_c.v[7] = 0.0
-        self.ss.Line.amax.v[8] = 0.0
-        self.ss.Line.amin.v[9] = 0.0
-
-        self.ss.setup()
-
-        self.assertIsNot(self.ss.Line.rate_a.v[5], 0.0)
-        self.assertIsNot(self.ss.Line.rate_b.v[6], 0.0)
-        self.assertIsNot(self.ss.Line.rate_c.v[7], 0.0)
-        self.assertIsNot(self.ss.Line.amax.v[8], 0.0)
-        self.assertIsNot(self.ss.Line.amin.v[9], 0.0)

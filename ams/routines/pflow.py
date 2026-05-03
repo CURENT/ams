@@ -212,8 +212,7 @@ class PFlow(RoutineBase):
     def addConstrs(self,
                    name: str,
                    e_str: str,
-                   info: Optional[str] = None,
-                   is_eq: Optional[str] = False,):
+                   info: Optional[str] = None,):
         """
         Not supported!
         """

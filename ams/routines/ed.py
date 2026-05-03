@@ -46,9 +46,9 @@ class SRBase:
 
         # NOTE: define e_str in the scheduling model
         self.prsb = Constraint(info='spinning reserve balance',
-                               name='prsb', is_eq=True,)
+                               name='prsb',)
         self.rsr = Constraint(info='spinning reserve requirement',
-                              name='rsr', is_eq=False,)
+                              name='rsr',)
 
 
 class MPBase:
@@ -157,14 +157,14 @@ class ED(SRBase, MPBase, RTED):
         # --- gen ---
         self.ctrle.u2 = self.ugt
         self.nctrle.u2 = self.ugt
-        pmaxe = 'mul(mul(nctrle, pg0), tlv) + mul(mul(ctrle, tlv), pmax)'
+        pmaxe = 'cp.multiply(cp.multiply(nctrle, pg0), tlv) + cp.multiply(cp.multiply(ctrle, tlv), pmax)'
         self.pmaxe.e_str = pmaxe
         self.pmaxe.horizon = self.timeslot
-        pmine = 'mul(mul(nctrle, pg0), tlv) + mul(mul(ctrle, tlv), pmin)'
+        pmine = 'cp.multiply(cp.multiply(nctrle, pg0), tlv) + cp.multiply(cp.multiply(ctrle, tlv), pmin)'
         self.pmine.e_str = pmine
         self.pmine.horizon = self.timeslot
-        self.pglb.e_str = '-pg + pmine'
-        self.pgub.e_str = 'pg - pmaxe'
+        self.pglb.e_str = '-pg + pmine <= 0'
+        self.pgub.e_str = 'pg - pmaxe <= 0'
 
         self.pru.horizon = self.timeslot
         self.pru.info = '2D RegUp power'
@@ -172,45 +172,45 @@ class ED(SRBase, MPBase, RTED):
         self.prd.info = '2D RegDn power'
 
         self.prs.horizon = self.timeslot
-        self.prsb.e_str = 'mul(ugt, pmax@tlv - pg) - prs'
-        self.rsr.e_str = '-gs@prs + dsr'
+        self.prsb.e_str = 'cp.multiply(ugt, pmax@tlv - pg) - prs == 0'
+        self.rsr.e_str = '-gs@prs + dsr <= 0'
 
         # --- line ---
         self.plf.horizon = self.timeslot
         self.plf.info = '2D Line flow'
-        self.plflb.e_str = '-Bf@aBus - Pfinj@tlv - mul(ul, rate_a)@tlv'
-        self.plfub.e_str = 'Bf@aBus + Pfinj@tlv - mul(ul, rate_a)@tlv'
-        self.alflb.e_str = '-CftT@aBus + amin@tlv'
-        self.alfub.e_str = 'CftT@aBus - amax@tlv'
+        self.plflb.e_str = '-Bf@aBus - Pfinj@tlv - cp.multiply(ul, rate_a)@tlv <= 0'
+        self.plfub.e_str = 'Bf@aBus + Pfinj@tlv - cp.multiply(ul, rate_a)@tlv <= 0'
+        self.alflb.e_str = '-CftT@aBus + amin@tlv <= 0'
+        self.alfub.e_str = 'CftT@aBus - amax@tlv <= 0'
 
         self.plf.e_str = 'Bf@aBus + Pfinj@tlv'
 
         # --- power balance ---
-        self.pb.e_str = 'Bbus@aBus + Pbusinj@tlv + Cl@pds + Csh@gsh@tlv - Cg@pg'
+        self.pb.e_str = 'Bbus@aBus + Pbusinj@tlv + Cl@pds + Csh@gsh@tlv - Cg@pg == 0'
 
         # --- ramping ---
-        self.rbu.e_str = 'gs@mul(ugt, pru) - mul(dud, tlv)'
-        self.rbd.e_str = 'gs@mul(ugt, prd) - mul(ddd, tlv)'
+        self.rbu.e_str = 'gs@cp.multiply(ugt, pru) - cp.multiply(dud, tlv) == 0'
+        self.rbd.e_str = 'gs@cp.multiply(ugt, prd) - cp.multiply(ddd, tlv) == 0'
 
-        self.rru.e_str = 'pg + pru - mul(mul(ugt, pmax), tlv)'
-        self.rrd.e_str = '-pg + prd + mul(mul(ugt, pmin), tlv)'
+        self.rru.e_str = 'pg + pru - cp.multiply(cp.multiply(ugt, pmax), tlv) <= 0'
+        self.rrd.e_str = '-pg + prd + cp.multiply(cp.multiply(ugt, pmin), tlv) <= 0'
 
-        self.rgu.e_str = 'pg @ Mr - t dot RR30'
-        self.rgd.e_str = '-pg @ Mr - t dot RR30'
+        self.rgu.e_str = 'pg @ Mr - t * RR30 <= 0'
+        self.rgd.e_str = '-pg @ Mr - t * RR30 <= 0'
 
         self.rgu0 = Constraint(name='rgu0',
                                info='Initial gen ramping up',
-                               e_str='mul(ugt[:, 0], pg[:, 0] - pg0[:, 0] - R30)',
-                               is_eq=False,)
+                               e_str='cp.multiply(ugt[:, 0], pg[:, 0] - pg0[:, 0] - R30) <= 0',
+                               )
         self.rgd0 = Constraint(name='rgd0',
                                info='Initial gen ramping down',
-                               e_str='mul(ugt[:, 0], -pg[:, 0] + pg0[:, 0] - R30)',
-                               is_eq=False,)
+                               e_str='cp.multiply(ugt[:, 0], -pg[:, 0] + pg0[:, 0] - R30) <= 0',
+                               )
 
         # --- objective ---
-        cost = 'sum(t**2 dot c2 @ pg**2)'
-        cost += '+ t dot sum(c1 @ pg + csr @ prs)'
-        cost += '+ sum(mul(ugt, mul(c0, tlv)))'
+        cost = 'cp.sum(t**2 * c2 @ pg**2)'
+        cost += '+ t * cp.sum(c1 @ pg + csr @ prs)'
+        cost += '+ cp.sum(cp.multiply(ugt, cp.multiply(c0, tlv)))'
         self.obj.e_str = cost
 
     def dc2ac(self, kloss=1.0, **kwargs):
@@ -275,17 +275,17 @@ class ESD1MPBase(ESD1Base):
         self.REtaDR = NumHstack(u=self.REtaD, ref=self.Mre,
                                 name='REtaDR', tex_name=r'R_{\eta_d,R}',
                                 info='Repeated REtaD as 2D matrix, (ng, ng-1)')
-        SOCb = 'mul(EnR, SOC @ Mre) - t dot mul(EtaCR, pce[:, 1:])'
-        SOCb += ' + t dot mul(REtaDR, pde[:, 1:])'
+        SOCb = 'cp.multiply(EnR, SOC @ Mre) - t * cp.multiply(EtaCR, pce[:, 1:])'
+        SOCb += ' + t * cp.multiply(REtaDR, pde[:, 1:]) == 0'
         self.SOCb.e_str = SOCb
 
-        SOCb0 = 'mul(En, SOC[:, 0] - SOCinit) - t dot mul(EtaC, pce[:, 0])'
-        SOCb0 += ' + t dot mul(REtaD, pde[:, 0])'
-        self.SOCb0 = Constraint(name='SOCb0', is_eq=True,
+        SOCb0 = 'cp.multiply(En, SOC[:, 0] - SOCinit) - t * cp.multiply(EtaC, pce[:, 0])'
+        SOCb0 += ' + t * cp.multiply(REtaD, pde[:, 0]) == 0'
+        self.SOCb0 = Constraint(name='SOCb0',
                                 info='ESD1 SOC initial balance',
                                 e_str=SOCb0,)
 
-        self.SOCr.e_str = 'SOCend - SOC[:, -1]'
+        self.SOCr.e_str = 'SOCend - SOC[:, -1] <= 0'
 
         # NOTE: extend vars to 2D
         self.pgdg.horizon = self.timeslot

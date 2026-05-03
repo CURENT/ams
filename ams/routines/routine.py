@@ -164,6 +164,7 @@ class RoutineBase:
             _get_pristine_system, generate_for_routine, pycode_dir,
             source_md5,
         )
+        from ams.prep.generator import PYCODE_FORMAT_VERSION
 
         # Use ``ams.prep.pycode_dir`` (instead of constructing the path
         # in-line) so tests can monkeypatch the cache location to a
@@ -189,6 +190,11 @@ class RoutineBase:
                 # Staleness conditions:
                 # - ``md5`` mismatch — routine source file changed.
                 # - ``cvxpy_version`` mismatch — bound CVXPY version differs.
+                # - ``pycode_format_version`` mismatch (or absent) — the
+                #   shape of generated pycode itself changed (header
+                #   fields, callable signatures, …). Caches written by
+                #   AMS versions that didn't carry this field are
+                #   rejected. Auto-heal pattern, mirrors ``pristine``.
                 # - ``pristine`` absent or False — cache was written from a
                 #   live (possibly customized) instance by an older AMS
                 #   version. Reject it so the regen path below produces a
@@ -200,6 +206,7 @@ class RoutineBase:
                 stale = (
                     getattr(gen, 'md5', None) != expected_md5
                     or getattr(gen, 'cvxpy_version', None) != _cp.__version__
+                    or getattr(gen, 'pycode_format_version', None) != PYCODE_FORMAT_VERSION
                     or not getattr(gen, 'pristine', False)
                 )
                 if stale:
@@ -279,7 +286,7 @@ class RoutineBase:
         # the runtime path it will take, which mirrors the per-item
         # ``formulation_source`` property.
         tally = {'codegen': 0, 'manual': 0,
-                 'sub_map_dirty': 0, 'sub_map_added': 0}
+                 'eval_dirty': 0, 'eval_added': 0}
 
         # ``_link_pycode`` is the one place that legitimately reaches
         # into ``_e_fn`` / ``_e_dirty`` / ``_e_fn_source`` on opt items —
@@ -292,17 +299,17 @@ class RoutineBase:
             if getattr(item, '_e_dirty', False):
                 # User modified this item; we leave it alone. The runtime
                 # path is 'manual' if a callable is now in place,
-                # otherwise the legacy 'sub_map' regex pipeline.
+                # otherwise the eval-fallback helper.
                 if getattr(item, '_e_fn', None) is not None:
                     tally['manual'] += 1
                 else:
-                    tally['sub_map_dirty'] += 1
+                    tally['eval_dirty'] += 1
                 return
             pristine_str = _pristine_e_str(prefix, name)
             if (pristine_str is not None
                     and getattr(item, '_e_str', None) != pristine_str):
                 item._e_dirty = True
-                tally['sub_map_dirty'] += 1
+                tally['eval_dirty'] += 1
                 return
             fn = getattr(gen, f'_{prefix}_{name}', None)
             if fn is not None:
@@ -316,9 +323,9 @@ class RoutineBase:
                 tally['codegen'] += 1
             else:
                 # Item has no entry in pycode (e.g. added at runtime via
-                # ``addConstrs``). It will fall through to the sub_map
-                # path at parse/evaluate time.
-                tally['sub_map_added'] += 1
+                # ``addConstrs``). It will fall through to the eval-fallback
+                # helper (ams.opt._runtime_eval) at parse/evaluate time.
+                tally['eval_added'] += 1
             tex = getattr(gen, f'_{prefix}_{name}_tex', None)
             if tex is not None and getattr(item, 'e_tex', None) is None:
                 item.e_tex = tex
@@ -343,10 +350,10 @@ class RoutineBase:
             parts = [f"codegen={tally['codegen']}/{total}"]
             if tally['manual']:
                 parts.append(f"manual={tally['manual']}")
-            if tally['sub_map_dirty']:
-                parts.append(f"sub_map(customized)={tally['sub_map_dirty']}")
-            if tally['sub_map_added']:
-                parts.append(f"sub_map(added)={tally['sub_map_added']}")
+            if tally['eval_dirty']:
+                parts.append(f"eval(customized)={tally['eval_dirty']}")
+            if tally['eval_added']:
+                parts.append(f"eval(added)={tally['eval_added']}")
             logger.info(
                 "<%s> formulation: %s", self.class_name, ", ".join(parts)
             )
@@ -357,7 +364,7 @@ class RoutineBase:
 
         Useful for verifying which path each opt element runs through after
         custom edits — e.g. ``addConstrs`` and ``obj.e_str += '...'``
-        should show ``sub_map``, while untouched items show ``codegen``.
+        should show ``eval``, while untouched items show ``codegen``.
 
         Parameters
         ----------
@@ -394,7 +401,7 @@ class RoutineBase:
         sw = max(len(r[2]) for r in rows)
         print(f"<{self.class_name}> formulation summary "
               f"({sum(1 for r in rows if r[2] == 'codegen')} codegen / "
-              f"{sum(1 for r in rows if r[2] == 'sub_map')} sub_map / "
+              f"{sum(1 for r in rows if r[2] == 'eval')} eval / "
               f"{sum(1 for r in rows if r[2] == 'manual')} manual / "
               f"{sum(1 for r in rows if r[2] == 'pending')} pending)")
         print(f"  {'kind':<{kw}}  {'name':<{nw}}  {'source':<{sw}}  e_str")
@@ -823,9 +830,9 @@ class RoutineBase:
         # insert objective value
         data_dict.update(OrderedDict(Objective=self.obj.v))
 
-        group_data(self, data_dict, self.vars, 'v')
-        group_data(self, data_dict, self.exprs, 'v')
-        group_data(self, data_dict, self.exprcs, 'v')
+        gather_results(self, data_dict, self.vars, 'v', group=True)
+        gather_results(self, data_dict, self.exprs, 'v', group=True)
+        gather_results(self, data_dict, self.exprcs, 'v', group=True)
 
         with open(path, 'w') as f:
             json.dump(data_dict, f, indent=4,
@@ -861,9 +868,9 @@ class RoutineBase:
 
         data_dict = initialize_data_dict(self)
 
-        collect_data(self, data_dict, self.vars, 'v')
-        collect_data(self, data_dict, self.exprs, 'v')
-        collect_data(self, data_dict, self.exprcs, 'v')
+        gather_results(self, data_dict, self.vars, 'v')
+        gather_results(self, data_dict, self.exprs, 'v')
+        gather_results(self, data_dict, self.exprcs, 'v')
 
         if 'T1' in data_dict['Time']:
             data_dict = OrderedDict([(k, [v]) for k, v in data_dict.items()])
@@ -1233,26 +1240,42 @@ class RoutineBase:
     def addConstrs(self,
                    name: str,
                    e_str: str,
-                   info: Optional[str] = None,
-                   is_eq: Optional[str] = False,):
+                   info: Optional[str] = None,):
         """
-        Add `Constraint` to the routine. to the routine.
+        Add a `Constraint` to the routine at runtime.
+
+        ``e_str`` must use canonical CVXPY syntax — call ``cp.multiply``,
+        ``cp.sum``, ``cp.power`` etc. directly — and embed the
+        relational operator. Author every term on the left so the
+        suffix is one of ``' <= 0'``, ``' == 0'``, or ``' >= 0'``.
+        This LHS-zero discipline keeps ``constr.v`` reporting
+        slack-from-zero (negative = respected, positive = violated).
+
+        Examples
+        --------
+        Append a hard generation cap::
+
+            sp.RTED.addConstrs(name='pg_cap',
+                               e_str='pg - pmax <= 0')
+
+        Force two variables equal::
+
+            sp.RTED.addConstrs(name='pg_match',
+                               e_str='pg - pset == 0')
 
         Parameters
         ----------
         name : str
-            Constraint name. One should typically assigning the name directly because
-            it will be automatically assigned by the model. The value of ``name``
-            will be the symbol name to be used in expressions.
+            Constraint name. The value of ``name`` becomes the symbol
+            name used in expressions; pick a name that does not collide
+            with a CVXPY atom (``sum``, ``multiply``, ``vstack``, …).
         e_str : str
-            Constraint expression string.
+            Constraint expression string in canonical CVXPY syntax,
+            with the relational operator embedded.
         info : str, optional
             Descriptive information
-        is_eq : str, optional
-            Flag indicating if the constraint is an equality constraint. False indicates
-            an inequality constraint in the form of `<= 0`.
         """
-        item = Constraint(name=name, e_str=e_str, info=info, is_eq=is_eq)
+        item = Constraint(name=name, e_str=e_str, info=info)
         # add the constraint as an routine attribute
         setattr(self, name, item)
 
@@ -1398,64 +1421,56 @@ def initialize_data_dict(rtn: RoutineBase):
         return OrderedDict([('Time', 'T1')])
 
 
-def collect_data(rtn: RoutineBase, data_dict: Dict, items: Dict, attr: str):
+def gather_results(rtn: RoutineBase, data_dict: Dict, items: Dict,
+                   attr: str, *, group: bool = False):
     """
-    Collect data for export.
+    Gather routine results into ``data_dict`` for export.
+
+    Two output shapes, selected by ``group``:
+
+    - ``group=False`` (flat): one entry per device, keyed
+      ``f'{key} {dev}'``, values rounded to 6 decimals. Used by
+      :meth:`RoutineBase.export_csv`.
+    - ``group=True`` (nested by owner): one section per
+      ``owner.class_name`` with a shared ``idx`` list and one entry
+      per ``key``. Used by :meth:`RoutineBase.export_json`.
 
     Parameters
     ----------
     rtn : ams.routines.routine.RoutineBase
-        The routine to collect data from.
-    data_dict : OrderedDict
-        The data dictionary to populate.
-    items : dict
-        Dictionary of items to collect data from.
-    attr : str
-        Attribute to collect data for.
-    """
-    for key, item in items.items():
-        if item.owner is None:
-            continue
-        idx_v = item.get_all_idxes()
-        try:
-            data_v = rtn.get(src=key, attr=attr, idx=idx_v,
-                             horizon=rtn.timeslot.v if hasattr(rtn, 'timeslot') else None).round(6)
-        except Exception as e:
-            logger.debug(f"Error with collecting data for '{key}': {e}")
-            data_v = [np.nan] * len(idx_v)
-        data_dict.update(OrderedDict(zip([f'{key} {dev}' for dev in idx_v], data_v)))
-
-
-def group_data(rtn: RoutineBase, data_dict: Dict, items: Dict, attr: str):
-    """
-    Collect data for export by groups, adding device idx in each group.
-    This is useful when exporting to dictionary formats like JSON.
-
-    Parameters
-    ----------
-    rtn : ams.routines.routine.RoutineBase
-        The routine to collect data from.
+        The routine to gather results from.
     data_dict : Dict
-        The data dictionary to populate.
+        The data dictionary to populate in place.
     items : dict
-        Dictionary of items to collect data from.
+        Items to gather (typically ``rtn.vars``, ``rtn.exprs``, or
+        ``rtn.exprcs``).
     attr : str
-        Attribute to collect data for.
-
-    .. versionadded:: 1.0.13
+        Attribute to read from each item via :meth:`rtn.get`.
+    group : bool, keyword-only
+        Output shape selector — see above.
     """
+    horizon = rtn.timeslot.v if hasattr(rtn, 'timeslot') else None
     for key, item in items.items():
         if item.owner is None:
             continue
-        if item.owner.class_name not in data_dict.keys():
-            idx_v = item.get_all_idxes()
-            data_dict[item.owner.class_name] = dict(idx=idx_v)
+        if group:
+            cname = item.owner.class_name
+            if cname not in data_dict:
+                idx_v = item.get_all_idxes()
+                data_dict[cname] = dict(idx=idx_v)
+            else:
+                idx_v = data_dict[cname]['idx']
         else:
-            idx_v = data_dict[item.owner.class_name]['idx']
+            idx_v = item.get_all_idxes()
         try:
-            data_v = rtn.get(src=key, attr=attr, idx=idx_v,
-                             horizon=rtn.timeslot.v if hasattr(rtn, 'timeslot') else None)
+            data_v = rtn.get(src=key, attr=attr, idx=idx_v, horizon=horizon)
+            if not group:
+                data_v = data_v.round(6)
         except Exception as e:
-            logger.warning(f"Error with collecting data for '{key}': {e}")
-            data_v = [np.nan] * item.owner.n
-        data_dict[item.owner.class_name][key] = data_v
+            logger.debug(f"Error gathering data for '{key}': {e}")
+            data_v = [np.nan] * len(idx_v)
+        if group:
+            data_dict[cname][key] = data_v
+        else:
+            data_dict.update(OrderedDict(zip(
+                [f'{key} {dev}' for dev in idx_v], data_v)))

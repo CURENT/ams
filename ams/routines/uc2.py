@@ -43,7 +43,7 @@ class UC2(PTDFMPBase, UC):
         super().__init__(system, config, **kwargs)
 
         # rewrite power balance to include unserved load `pdu`
-        self.pb.e_str = "sum(pg, axis=0) - sum(pds - pdu, axis=0)"
+        self.pb.e_str = "cp.sum(pg, axis=0) - cp.sum(pds - pdu, axis=0) == 0"
 
         # rewrite Expression plf to include unserved load `pdu`
         self.plf.e_str = "PTDF @ (Cg@pg - Cl@(pds - pdu) - Csh@gsh@tlv - Pbusinj@tlv)"

@@ -79,6 +79,12 @@ set up your fork for local development::
     $ flake8 ams tests
     $ ams selftest
 
+   The test suite is organized to mirror the ``ams/`` source layout
+   (``tests/<layer>/`` exercises ``ams/<layer>/``). See
+   ``docs/source/modeling/test_layout.rst`` for the per-folder scope,
+   shared fixtures in ``tests/conftest.py``, and how to add a new
+   routine variant via parametrization.
+
 
 6. Commit your changes and push your branch to GitHub::
 

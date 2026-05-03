@@ -1,6 +1,6 @@
 import unittest
 
-import ams
+import pytest
 
 
 class TestOModelWrappers(unittest.TestCase):
@@ -8,12 +8,9 @@ class TestOModelWrappers(unittest.TestCase):
     Test wrappers in module `omodel`.
     """
 
-    def setUp(self) -> None:
-        self.ss = ams.load(ams.get_case("matpower/case5.m"),
-                           setup=True,
-                           default_config=True,
-                           no_output=True,
-                           )
+    @pytest.fixture(autouse=True)
+    def _attach_ss(self, request, case5):
+        request.instance.ss = case5
 
     def test_ensure_symbols(self):
         """
@@ -39,12 +36,9 @@ class TestOModel(unittest.TestCase):
     Test class `OModel`.
     """
 
-    def setUp(self) -> None:
-        self.ss = ams.load(ams.get_case("matpower/case5.m"),
-                           setup=True,
-                           default_config=True,
-                           no_output=True,
-                           )
+    @pytest.fixture(autouse=True)
+    def _attach_ss(self, request, case5):
+        request.instance.ss = case5
 
     def test_initialized(self):
         """
@@ -69,12 +63,9 @@ class TestOModelrepr(unittest.TestCase):
     Test __repr__ in module `omodel`.
     """
 
-    def setUp(self) -> None:
-        self.ss = ams.load(ams.get_case("5bus/pjm5bus_demo.json"),
-                           setup=True,
-                           default_config=True,
-                           no_output=True,
-                           )
+    @pytest.fixture(autouse=True)
+    def _attach_ss(self, request, pjm5bus_json):
+        request.instance.ss = pjm5bus_json
 
     def test_dcopf(self):
         """

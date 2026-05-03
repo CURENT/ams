@@ -108,9 +108,9 @@ class DCPFBase(RoutineBase):
                         model='Bus', src='a',)
 
         # --- power balance ---
-        pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
+        pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg == 0'
         self.pb = Constraint(name='pb', info='power balance',
-                             e_str=pb, is_eq=True,)
+                             e_str=pb,)
 
         # --- bus ---
         self.isb = VarSelect(info='Index slack bus from all buses',
@@ -118,8 +118,7 @@ class DCPFBase(RoutineBase):
                              u=self.aBus, indexer='buss',
                              no_parse=True,)
         self.sba = Constraint(info='align slack bus angle',
-                              name='sbus', is_eq=True,
-                              e_str='isb@aBus',)
+                              name='sbus', e_str='isb@aBus == 0',)
 
         # --- line flow ---
         self.plf = Expression(info='Line flow',
@@ -204,8 +203,8 @@ class DCPF(DCPFBase):
                              no_parse=True,)
 
         self.pvb = Constraint(name='pvb', info='PV generator',
-                              e_str='ipv @ (pg - mul(ug, pg0))',
-                              is_eq=True,)
+                              e_str='ipv @ (pg - cp.multiply(ug, pg0)) == 0',
+                              )
 
         self.obj = Objective(name='obj',
                              info='place holder', unit='$',

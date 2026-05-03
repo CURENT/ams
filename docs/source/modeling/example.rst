@@ -102,24 +102,24 @@ Model Section
                               name='aBus', tex_name=r'\theta_{bus}',
                               model='Bus', src='a',)
               # --- power balance ---
-              pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg'
+              pb = 'Bbus@aBus + Pbusinj + Cl@pd + Csh@gsh - Cg@pg == 0'
               self.pb = Constraint(name='pb', info='power balance',
-                                   e_str=pb, is_eq=True,)
+                                   e_str=pb,)
               # --- line flow ---
               self.plf = Var(info='Line flow',
                              unit='p.u.',
                              name='plf', tex_name=r'p_{lf}',
                              model='Line',)
               self.plflb = Constraint(info='line flow lower bound',
-                                      name='plflb', type='uq',
-                                      e_str='-Bf@aBus - Pfinj - rate_a',)
+                                      name='plflb',
+                                      e_str='-Bf@aBus - Pfinj - rate_a <= 0',)
               self.plfub = Constraint(info='line flow upper bound',
-                                      name='plfub', type='uq',
-                                      e_str='Bf@aBus + Pfinj - rate_a',)
+                                      name='plfub',
+                                      e_str='Bf@aBus + Pfinj - rate_a <= 0',)
               # --- objective ---
-              obj = 'sum(mul(c2, power(pg, 2)))'
-              obj += '+ sum(mul(c1, pg))'
-              obj += '+ sum(mul(ug, c0))'
+              obj = 'cp.sum(cp.multiply(c2, pg**2))'
+              obj += '+ cp.sum(cp.multiply(c1, pg))'
+              obj += '+ cp.sum(cp.multiply(ug, c0))'
               self.obj = Objective(name='obj',
                                    info='total cost', unit='$',
                                    sense='min', e_str=obj,)
@@ -155,5 +155,9 @@ where 'rted' is the file name, and 'RTED' is the routine name.
       ])
 
 .. note::
-      Refer to the documentation "Example - Customize Formulation"
-      for API customization that does not require modification of the source code.
+      See ``examples/ex8.ipynb`` (rendered under :ref:`scripting_examples`)
+      for post-init customization patterns —
+      ``sp.DCOPF.obj.e_str += '+ ...'`` and
+      :py:meth:`ams.routines.routine.RoutineBase.addConstrs` — that do
+      not require modification of the source code. Customizations must
+      use canonical CVXPY syntax; see :ref:`migration_cvxpy_namespace`.

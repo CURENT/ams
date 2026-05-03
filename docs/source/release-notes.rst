@@ -9,6 +9,145 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.2
 ==========
 
+v1.2.3 (2026-05-02)
+----------------------
+
+**Migration — ``Constraint.is_eq`` retired:**
+
+The ``is_eq`` parameter on :class:`ams.opt.Constraint` and
+:meth:`ams.routines.routine.RoutineBase.addConstrs` is removed.
+Every ``Constraint`` ``e_str`` must now embed the relational
+operator in the LHS-zero form: ``'<LHS> <= 0'``, ``'<LHS> == 0'``,
+or ``'<LHS> >= 0'``. The CVXPY canonicalization of every
+inequality to ``lhs - rhs <= 0`` (regardless of ``<=`` vs ``>=``
+direction) means ``Constraint.v`` keeps reporting slack-from-zero
+uniformly.
+
+Update any user routines or runtime customizations:
+
+.. code-block:: python
+
+   # Before
+   self.pglb = Constraint(name='pglb', e_str='-pg + pmine')
+   self.pb = Constraint(name='pb', e_str=pb, is_eq=True)
+   sp.RTED.addConstrs(name='cap', e_str='pg - pmax', is_eq=False)
+
+   # After
+   self.pglb = Constraint(name='pglb', e_str='-pg + pmine <= 0')
+   self.pb = Constraint(name='pb', e_str=pb + ' == 0')
+   sp.RTED.addConstrs(name='cap', e_str='pg - pmax <= 0')
+
+A ``Constraint`` whose ``e_str`` (or ``e_fn`` body) does not
+produce a ``cp.constraints.Constraint`` now raises ``TypeError``
+at evaluate time with a message naming the embedded-operator
+forms expected. The codegen and eval-fallback paths share this
+behavior.
+
+See :ref:`migration_cvxpy_namespace` for the full rationale and
+worked examples.
+
+**Migration — ``e_str`` authoring contract:**
+
+Routine ``e_str`` strings (built-in routines and any user customization
+via ``addConstrs`` / ``obj.e_str += '...'``) must now use the canonical
+CVXPY namespace explicitly. The historical function-name rewrite layer
+that translated ``mul(...)``, ``multiply(...)``, ``sum(...)``, and
+``a dot b`` into their ``cp.*`` / ``*`` equivalents has been removed.
+
+Update any user customizations:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 35 30
+
+   * - Old (now broken)
+     - New (canonical)
+     - Notes
+   * - ``mul(a, b)``
+     - ``cp.multiply(a, b)``
+     - Element-wise multiply.
+   * - ``multiply(a, b)``
+     - ``cp.multiply(a, b)``
+     - Same.
+   * - ``sum(x)``
+     - ``cp.sum(x)``
+     - Reduction over a vector.
+   * - ``a dot b``
+     - ``a * b``
+     - Scalar-times-expression. Was already a thin alias.
+
+Routine symbol names (``Var``, ``RParam``, ``Service``, ``Expression``,
+``Constraint``) may no longer match a CVXPY atom name (e.g. ``sum``,
+``multiply``, ``vstack``, ``power``). The codegen path raises an
+explanatory error if a collision is detected. This prevents a routine
+from silently shadowing ``cp.X`` in the eval-fallback rewrite.
+
+A small behavior change rides with the eval-fallback unification:
+``Constraint.e_str`` may now contain a relational operator
+(``pg <= pmax`` etc.). Previously ``Constraint.parse()`` appended
+``' == 0'`` / ``' <= 0'`` unconditionally and an embedded operator
+would have been a syntax-level "double op" at evaluate time. The
+runtime now dispatches on whether the eval result is already a
+``cp.constraints.Constraint`` and skips the wrap when it is.
+
+The ``SymProcessor.sub_map`` and ``SymProcessor.val_map``
+attributes are removed. Both fed the legacy regex-rewrite +
+``eval`` pipeline that the cvxpy-namespace passthrough has fully
+replaced — symbol resolution now goes through
+``ams.opt._runtime_eval`` plus :class:`RoutineNS` /
+:class:`NumericRoutineNS`. Anyone introspecting those dicts
+should switch to ``formulation_source`` plus the routine's
+``vars`` / ``rparams`` / ``services`` / ``exprs`` / ``constrs``
+registries.
+
+The :py:attr:`ams.opt.OptzBase.formulation_source` value
+``'sub_map'`` is renamed to ``'eval'``. The string referred to
+the (now-deleted) ``SymProcessor.sub_map`` regex pipeline; the
+new name reflects the live implementation —
+``ams.opt._runtime_eval.eval_e_str`` /
+``eval_e_str_numeric``. Code that compared
+``item.formulation_source == 'sub_map'`` must update to
+``'eval'``. The corresponding INFO log keys (formerly
+``sub_map(customized)`` / ``sub_map(added)``) and
+``formulation_summary`` print bucket are renamed in lockstep.
+
+**Tightening the eval-fallback path:**
+
+- :class:`ams.opt.Constraint` now validates at parse time that
+  ``e_str`` ends with the LHS-zero shape (``<= 0`` / ``== 0`` /
+  ``>= 0``). Authoring ``pg <= pmax`` instead of
+  ``pg - pmax <= 0`` previously solved correctly but produced a
+  silently-wrong :pyattr:`OptzBase.e` (numpy bool array instead of
+  the LHS slack); the new :func:`ams.opt._runtime_eval.assert_constraint_lhs_zero`
+  guard surfaces the mismatch immediately with an actionable error.
+- :func:`ams.opt._runtime_eval.eval_e_str` now logs a per-item
+  ``WARNING`` when an eval-fallback constraint/objective/expression
+  yields a non-DCP CVXPY object (e.g. ``cp.multiply(pg, pg)`` instead
+  of ``cp.square(pg)``). The codegen path is unaffected; this
+  closes the visibility gap on user customizations and ``addConstrs``
+  added by the cvxpy-namespace passthrough.
+- :data:`ams.prep.generator.RESERVED_CVXPY_ATOM_NAMES` is now
+  derived at import time from ``cvxpy.atoms`` (still a strict
+  superset of the static fallback). New atoms in future CVXPY
+  releases are guarded automatically.
+
+**Internal:**
+
+- The ``collect_data`` and ``group_data`` helpers in
+  :mod:`ams.routines.routine` are merged into a single
+  :func:`ams.routines.routine.gather_results` with a keyword-only
+  ``group`` flag selecting the flat (CSV) vs nested (JSON) output
+  shape. Closes issue #195.
+- ``tests/`` reorganized into per-source-layer subfolders mirroring
+  ``ams/`` (``tests/io/``, ``tests/opt/``, ``tests/routines/``,
+  ``tests/system/``, ``tests/models/``, ``tests/core/``,
+  ``tests/interop/``, ``tests/cli/``). Shared case fixtures
+  (``case5``, ``case14``, ``case_pjm5bus_demo``, …) extracted to
+  ``tests/conftest.py``; Family-A and Family-B–E routine scenarios
+  consolidated into parametrized cross-checks; MATPOWER known-good
+  comparisons parametrized. New ``docs/source/modeling/test_layout.rst``
+  documents the layout. Net: -3 600 lines duplicated boilerplate.
+
 v1.2.2 (2026-05-01)
 ----------------------
 

@@ -2,16 +2,12 @@
 Module for optimization base classes.
 """
 import logging
-import re
 
 from typing import Optional
 
-import numpy as np
 import cvxpy as cp
 
 from ams.utils.misc import deprec_get_idx
-from ams.utils import pretty_long_message
-from ams.shared import _prefix, _max_length
 
 
 logger = logging.getLogger(__name__)
@@ -160,7 +156,7 @@ class OptzBase:
         # Provenance of the live ``e_fn`` (when one is set). Values:
         #   - 'codegen' : wired from ``~/.ams/pycode/`` by ``_link_pycode``
         #   - 'manual'  : assigned directly via ``item.e_fn = fn``
-        #   - None      : no e_fn (uses sub_map+eval path)
+        #   - None      : no e_fn (uses the eval-fallback helper)
         # Read via :pyattr:`formulation_source` — this raw attribute is
         # written by ``_link_pycode`` and reset whenever ``e_str`` is
         # reassigned (descriptor mutex side-effect).
@@ -200,11 +196,14 @@ class OptzBase:
           (the fast AOT path); only happens for items that exactly match
           the pristine source.
         - ``'manual'`` — author/user code assigned ``item.e_fn = fn``
-          directly, bypassing both codegen and the sub_map regex.
-        - ``'sub_map'`` — legacy path: ``e_str`` was rewritten by
-          :class:`SymProcessor` and ``eval``-ed at parse/evaluate time.
-          This is what runs for items the user customized via
-          ``e_str = '...'`` or ``addConstrs(...)``.
+          directly, bypassing both codegen and the eval-fallback helper.
+        - ``'eval'`` — eval-fallback path: ``e_str`` is resolved
+          symbol-by-symbol via :func:`ams.opt._runtime_eval.eval_e_str`
+          and ``eval``-ed at parse/evaluate time. This is what runs for
+          items the user customized via ``e_str = '...'`` or
+          ``addConstrs(...)``. (Renamed from ``'sub_map'`` in v1.2.3;
+          the legacy regex+eval pipeline that name referenced was
+          retired in PR #246.)
         """
         if getattr(self, 'optz', None) is None:
             return 'pending'
@@ -216,7 +215,7 @@ class OptzBase:
             # e_fn set but provenance lost — defensive fallback. Shouldn't
             # happen in normal flow.
             return 'manual'
-        return 'sub_map'
+        return 'eval'
 
     @property
     def n(self):
@@ -261,73 +260,65 @@ class OptzBase:
 
         Two paths:
 
-        - **e_fn form**: ``self.code`` is ``None`` because no string was
-          parsed; fall back to the cvxpy object's value (``self.optz._expr``
-          for constraints, ``self.optz`` otherwise). This is the
-          solver-returned value, not a re-canonicalization from current
-          parameter state — sufficient for the post-solve ``v == e`` check.
-        - **e_str form**: rewrite ``self.code`` via ``val_map`` and ``eval``
-          it; the legacy regex pipeline.
+        - **e_str available** (codegen-wired or eval-fallback): defer
+          to :func:`eval_e_str_numeric`, which strips any embedded
+          relational operator so the result is always the LHS slack
+          (matches what ``.v`` reports via CVXPY canonicalization).
+          ``e_str`` is preserved on items even after codegen wires
+          ``e_fn`` — so this path is the canonical numeric route for
+          built-in routines.
+        - **e_fn-only** (rare; user-supplied callable with no
+          ``e_str``): re-evaluate against ``NumericRoutineNS`` and
+          extract the LHS depending on what the callable returns.
         """
-        if self.code is None:
-            # e_fn form: re-evaluate against the current numeric state
-            # via NumericRoutineNS. Resolves Vars to ``Var.v`` (which
-            # falls back to ``np.zeros`` when ``optz.value`` is None),
-            # so ``.e`` is informative even on a failed/incomplete
-            # solve — matching the legacy val_map+eval behavior.
-            #
-            # The e_fn may return: (a) a cp.Constraint (legacy form),
-            # (b) a cp.Expression (LHS or Objective inner), or (c) a
-            # pure numpy result when every operand is numpy and no
-            # cp.X wrapper is present. Handle all three.
-            from ams.core.routine_ns import NumericRoutineNS
-            e_fn = getattr(self, 'e_fn', None)
-            if e_fn is not None:
-                try:
-                    result = e_fn(NumericRoutineNS(self.om.rtn))
-                except Exception as exc:
-                    logger.error(
-                        f"Error in re-evaluating {self.class_name} "
-                        f"<{self.name}> via e_fn for `.e`.\n{exc}"
-                    )
-                    return None
-                # Constraint legacy form: extract LHS via _expr.value.
-                if isinstance(result, cp.constraints.Constraint):
-                    inner = getattr(result, '_expr', None)
-                    if inner is None:
-                        # Some constraint subclasses expose ``args[0]``
-                        inner = result.args[0] if result.args else None
-                    return getattr(inner, 'value', None)
-                # cp.Expression / cp.Constant: take .value.
-                if hasattr(result, 'value'):
-                    return result.value
-                # Pure numpy: that IS the value.
-                return result
-
-            # No e_fn either — fall back to cached optz.
-            optz = getattr(self, 'optz', None)
-            if optz is None:
-                logger.info(f"{self.class_name} <{self.name}> is not evaluated yet.")
-                return None
-            inner = getattr(optz, '_expr', optz)
-            return getattr(inner, 'value', None)
-
-        val_map = self.om.rtn.syms.val_map
-        code = self.code
-        for pattern, replacement in val_map.items():
+        if self.e_str is not None:
+            # e_str-driven numeric path. Operator-stripping happens
+            # inside ``eval_e_str_numeric``.
+            from ams.opt._runtime_eval import eval_e_str_numeric
             try:
-                code = re.sub(pattern, replacement, code)
-            except TypeError as exc:
-                raise TypeError(exc)
+                result = eval_e_str_numeric(self, self.e_str)
+            except Exception as exc:
+                logger.error(f"Error in calculating {self.class_name} <{self.name}>.\n{exc}")
+                return None
+            return getattr(result, 'value', result)
 
-        try:
-            logger.debug(pretty_long_message(f"Value code: {code}",
-                                             _prefix, max_length=_max_length))
-            local_vars = {'self': self, 'np': np, 'cp': cp, 'val_map': val_map}
-            return eval(code, {}, local_vars)
-        except Exception as exc:
-            logger.error(f"Error in calculating {self.class_name} <{self.name}>.\n{exc}")
+        # e_fn-only form: no e_str preserved on the item. Re-evaluate
+        # against the current numeric state via NumericRoutineNS.
+        # Resolves Vars to ``Var.v`` (which falls back to ``np.zeros``
+        # when ``optz.value`` is None), so ``.e`` is informative even
+        # on a failed/incomplete solve.
+        #
+        # The e_fn may return: (a) a cp.Constraint, (b) a cp.Expression
+        # (Objective inner), or (c) a pure numpy result when every
+        # operand is numpy and no cp.X wrapper is present.
+        from ams.core.routine_ns import NumericRoutineNS
+        e_fn = getattr(self, 'e_fn', None)
+        if e_fn is not None:
+            try:
+                result = e_fn(NumericRoutineNS(self.om.rtn))
+            except Exception as exc:
+                logger.error(
+                    f"Error in re-evaluating {self.class_name} "
+                    f"<{self.name}> via e_fn for `.e`.\n{exc}"
+                )
+                return None
+            # Constraint result: extract LHS via _expr.value.
+            if isinstance(result, cp.constraints.Constraint):
+                inner = getattr(result, '_expr', None)
+                if inner is None:
+                    inner = result.args[0] if result.args else None
+                return getattr(inner, 'value', None)
+            if hasattr(result, 'value'):
+                return result.value
+            return result
+
+        # No e_str, no e_fn — fall back to cached optz.
+        optz = getattr(self, 'optz', None)
+        if optz is None:
+            logger.info(f"{self.class_name} <{self.name}> is not evaluated yet.")
             return None
+        inner = getattr(optz, '_expr', optz)
+        return getattr(inner, 'value', None)
 
     def __repr__(self):
         return f'{self.__class__.__name__}: {self.name}'
