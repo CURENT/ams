@@ -25,13 +25,21 @@ inspection without flipping the global flag. Resolves
 **Default output path now honors ``system.files.output_path``:**
 
 When called with ``path=None``,
-:meth:`~ams.routines.routine.RoutineBase.export_csv` and
-:meth:`~ams.routines.routine.RoutineBase.export_json` now write to
-``system.files.output_path`` (when set) instead of the current
+:meth:`~ams.routines.routine.RoutineBase.export_csv`,
+:meth:`~ams.routines.routine.RoutineBase.export_json`, and the
+underlying :func:`ams.utils.paths.get_export_path` helper now write
+to ``system.files.output_path`` (when set) instead of the current
 working directory. This aligns export defaults with
 :meth:`~ams.system.System.report`, which already used
 ``output_path``. CWD remains the fallback when ``output_path`` is
 empty (the ``FileMan`` default).
+
+The change also reaches
+:meth:`ams.core.matprocessor.MParam.export_csv` /
+:meth:`~ams.core.matprocessor.MParam.export_npz` since they share
+the same helper — ``mats.PTDF.export_csv()`` on a system loaded
+with a non-empty ``output_path`` will now land there instead of
+CWD.
 
 **New — ``RoutineBase.load_csv``:**
 
@@ -50,6 +58,15 @@ A successful :meth:`~ams.routines.routine.RoutineBase.load_json` or
 :meth:`~ams.routines.routine.RoutineBase.get` and
 :meth:`~ams.system.System.report` calls behave as if the routine
 just solved. Previously, ``load_json`` left ``converged`` untouched.
+
+If you previously relied on ``converged == False`` after loading
+"candidate" results into a scratch system (for example, to gate a
+later resolve), reset the flag explicitly after the load:
+
+.. code-block:: python
+
+   ss.DCOPF.load_json(path)
+   ss.DCOPF.converged = False  # opt out of the new behavior
 
 v1.2.3 (2026-05-02)
 ----------------------

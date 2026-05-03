@@ -2,6 +2,7 @@
 Module for report generation.
 """
 import logging
+import os
 from collections import OrderedDict
 from typing import List, Dict, Optional
 
@@ -104,7 +105,7 @@ class Report:
         Returns
         -------
         str or None
-            The absolute path the report was written to, or ``None`` if
+            Absolute path the report was written to, or ``None`` if
             writing was skipped (``no_output=True`` and no explicit
             ``path``).
 
@@ -132,7 +133,11 @@ class Report:
         if path is not None:
             target, _ = get_export_path(system, 'report', path=path, fmt='txt')
         else:
-            target = system.files.txt
+            # ``system.files.txt`` is built from ``output_path`` which can
+            # be relative when no ``output_path`` was provided at load
+            # time. Resolve to absolute so the return/log are consistent
+            # with the explicit-path branch above.
+            target = os.path.abspath(system.files.txt)
 
         text = list()
         header = list()
