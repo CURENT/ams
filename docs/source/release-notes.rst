@@ -150,6 +150,17 @@ later resolve), reset the flag explicitly after the load:
    ss.DCOPF.load_json(path)
    ss.DCOPF.converged = False  # opt out of the new behavior
 
+**Documentation — service module selection guide:**
+
+:mod:`ams.core.service` now opens with a "service selection guide"
+table mapping common needs to the right :class:`ROperationService`
+subclass, plus a documented ``.v`` caching contract on
+:class:`~ams.core.service.RBaseService` (subclasses recompute fresh
+on each access; only :class:`~ams.core.service.ValueService` returns
+a stored value). Class definitions are regrouped by category
+(generic ops → subset/aggregation → reduction/difference →
+domain-specific → backward-compat aliases). No public API changes.
+
 v1.2
 ==========
 
