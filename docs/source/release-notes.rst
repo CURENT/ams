@@ -9,6 +9,11 @@ The APIs before v3.0.0 are in beta and may change without prior notice.
 v1.3
 ==========
 
+v1.3.1 (date TBD)
+----------------------
+
+(Pre-release — items here will ship in the next v1.3.x patch.)
+
 v1.3.0 (2026-05-03)
 ----------------------
 
