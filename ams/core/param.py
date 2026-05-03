@@ -234,6 +234,12 @@ class RParam(Param):
         Cells with no matching row default to ``NumParam.default``;
         duplicate ``(primary, secondary)`` rows raise.
         """
+        if self.hindexer is None:
+            raise ValueError(
+                f"RParam <{self.name}>: 'hindexer' is not set but "
+                f"'horizon' is — required for the 2D pivot. Set both "
+                f"together (mirrors the Var.horizon pattern)."
+            )
         try:
             primary_imodel = getattr(self.rtn.system, self.imodel)
         except AttributeError:
