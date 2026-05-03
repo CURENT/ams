@@ -225,7 +225,9 @@ class LoadScale(ROperationService):
         u_bus = self.u.owner.get(src='bus', attr='v', idx=u_idx)
         u_area = sys.Bus.get(src='area', attr='v', idx=u_bus)
         u_yloc = np.array(sys.Area.idx2uid(u_area))
-        p0s = np.multiply(self.sd.v[:, u_yloc].transpose(),
+        # sd.v is (narea, nslot) post-v1.3.0; index by area-uid on the
+        # primary axis directly to obtain the (nbus, nslot) view.
+        p0s = np.multiply(self.sd.v[u_yloc, :],
                           (ue * self.u.v)[:, np.newaxis])
         if self.sparse:
             return spr.csr_matrix(p0s)

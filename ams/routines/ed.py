@@ -7,6 +7,7 @@ import numpy as np
 from ams.core.param import RParam
 from ams.core.service import (NumOpDual, NumHstack,
                               RampSub, NumOp, LoadScale)
+from ams.utils.func import multiply_left_t
 
 from ams.routines.rted import RTED, DGBase, ESD1Base
 
@@ -39,8 +40,8 @@ class SRBase:
         self.dsrpz = NumOpDual(u=self.pdz, u2=self.dsrp, fun=np.multiply,
                                name='dsrpz', tex_name=r'd_{s,r, p, z}',
                                info='zonal spinning reserve requirement in percentage',)
-        self.dsr = NumOpDual(u=self.dsrpz, u2=self.sdT, fun=np.multiply,
-                             rfun=np.transpose,
+        self.dsr = NumOpDual(u=self.dsrpz, u2=self.sd,
+                             fun=multiply_left_t,
                              name='dsr', tex_name=r'd_{s,r,z}',
                              info='zonal spinning reserve requirement',)
 
@@ -62,26 +63,17 @@ class MPBase:
         # NOTE: update timeslot.model in dispatch model if necessary
         self.timeslot = RParam(info='Time slot for multi-period ED',
                                name='timeslot', tex_name=r't_{s,idx}',
-                               src='idx', model='EDTSlot',
+                               src='idx', model='EDSlot',
                                no_parse=True)
 
         # 2D area-load-scaling param sourced from EDSlotLoad
         # (one row per (area, slot)). Routines override `model` to
-        # `UCSlotLoad` for UC.
+        # `UCSlotLoad` for UC. Shape is (narea, nslot).
         self.sd = RParam(info='area load scaling factor',
                          name='sd', tex_name=r's_{d}',
                          src='sd', model='EDSlotLoad',
                          indexer='area', imodel='Area',
                          horizon=self.timeslot, hindexer='slot')
-
-        # Transposed (nslot, narea) view of sd, used by LoadScale and
-        # the SRBase/NSRBase reserve-requirement chain whose downstream
-        # NumOps were authored against the pre-v1.3.0 (nslot, narea)
-        # shape. Lets those untouched.
-        self.sdT = NumOp(u=self.sd, fun=np.transpose,
-                         name='sdT', tex_name=r's_{d}^{T}',
-                         info='sd transposed to (nslot, narea)',
-                         no_parse=True)
 
         self.tlv = NumOp(u=self.timeslot, fun=np.ones_like,
                          args=dict(dtype=float),
@@ -90,7 +82,7 @@ class MPBase:
                          info='time length vector',
                          no_parse=True)
 
-        self.pds = LoadScale(u=self.pd0, sd=self.sdT,
+        self.pds = LoadScale(u=self.pd0, sd=self.sd,
                              name='pds', tex_name=r'p_{d,s}',
                              info='Scaled load',)
 

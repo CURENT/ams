@@ -147,7 +147,7 @@ class TestExportCSV(unittest.TestCase):
             self.assertTrue(ss2.ED.load_csv(target))
             self.assertTrue(ss2.ED.converged)
             self.assertEqual(ss2.ED.pg.v.shape,
-                             (ss2.StaticGen.n, ss2.EDTSlot.n))
+                             (ss2.StaticGen.n, ss2.EDSlot.n))
             np.testing.assert_allclose(ss2.ED.pg.v,
                                        self.ss.ED.pg.v, atol=1e-5)
             np.testing.assert_allclose(ss2.ED.pi.v,

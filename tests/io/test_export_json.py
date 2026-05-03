@@ -104,13 +104,13 @@ class TestExportJSON(unittest.TestCase):
 
         self.assertIsNotNone(ss.ED.pg.v)
         np.testing.assert_array_equal(ss.ED.pg.v.shape,
-                                      (ss.StaticGen.n, ss.EDTSlot.n))
+                                      (ss.StaticGen.n, ss.EDSlot.n))
         self.assertIsNotNone(ss.ED.pmaxe.v)
         np.testing.assert_array_equal(ss.ED.pmaxe.v.shape,
-                                      (ss.StaticGen.n, ss.EDTSlot.n))
+                                      (ss.StaticGen.n, ss.EDSlot.n))
         self.assertIsNotNone(ss.ED.mu1.v)
         np.testing.assert_array_equal(ss.ED.mu1.v.shape,
-                                      (ss.Line.n, ss.EDTSlot.n))
+                                      (ss.Line.n, ss.EDSlot.n))
         # As of v1.2.4, a successful load marks the routine as
         # converged.
         self.assertTrue(ss.ED.converged)

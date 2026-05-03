@@ -4,8 +4,8 @@ Migrate AMS case files from the pre-v1.3.0 CSV-list TimeSlot encoding
 to the v1.3.0 paired-key encoding.
 
 Pre-v1.3.0 cases stored per-(area, slot) load scaling and per-(gen,
-slot) commitment as comma-separated lists in single ``EDTSlot.sd`` /
-``EDTSlot.ug`` / ``UCTSlot.sd`` cells. List position aligned
+slot) commitment as comma-separated lists in single ``EDSlot.sd`` /
+``EDSlot.ug`` / ``UCSlot.sd`` cells. List position aligned
 implicitly with ``Area.get_all_idxes()`` /
 ``StaticGen.get_all_idxes()``.
 
@@ -99,12 +99,12 @@ def _emit_load_rows(slot_rows: Iterable[dict], areas: list, table_name: str
         legacy = [s.get('idx') for s in slot_rows
                   if _is_legacy_cell(s.get('sd'))]
         if legacy:
+            head = legacy[:3] + (['...'] if len(legacy) > 3 else [])
             logger.warning(
                 "%s: no Area entries — dropping legacy sd from "
                 "%d slots (was not consumable by LoadScale anyway). "
                 "Slots affected: %s",
-                table_name, len(legacy), legacy[:3] + (['...']
-                if len(legacy) > 3 else []))
+                table_name, len(legacy), head)
         return []
     out = []
     for slot in slot_rows:
@@ -128,16 +128,16 @@ def _emit_load_rows(slot_rows: Iterable[dict], areas: list, table_name: str
 
 
 def _emit_gen_rows(slot_rows: Iterable[dict], gens: list) -> list[dict]:
-    """Emit ``EDSlotGen`` rows from legacy ``EDTSlot`` rows."""
+    """Emit ``EDSlotGen`` rows from legacy ``EDSlot`` rows."""
     if not gens:
         legacy = [s.get('idx') for s in slot_rows
                   if _is_legacy_cell(s.get('ug'))]
         if legacy:
+            head = legacy[:3] + (['...'] if len(legacy) > 3 else [])
             logger.warning(
-                "EDTSlot: no StaticGen entries — dropping legacy ug "
+                "EDSlot: no StaticGen entries — dropping legacy ug "
                 "from %d slots. Slots affected: %s",
-                len(legacy), legacy[:3] + (['...']
-                if len(legacy) > 3 else []))
+                len(legacy), head)
         return []
     out = []
     for slot in slot_rows:
@@ -148,7 +148,7 @@ def _emit_gen_rows(slot_rows: Iterable[dict], gens: list) -> list[dict]:
         parsed = _parse_csv_list(slot['ug'])
         if len(parsed) != len(gens):
             raise ValueError(
-                f"EDTSlot: slot {slot.get('idx')!r} has ug of "
+                f"EDSlot: slot {slot.get('idx')!r} has ug of "
                 f"length {len(parsed)}, expected {len(gens)} "
                 f"(== len(StaticGen)). File ordering: {gens}.")
         for gen_idx, ug_val in zip(gens, parsed):
@@ -160,59 +160,96 @@ def _emit_gen_rows(slot_rows: Iterable[dict], gens: list) -> list[dict]:
     return out
 
 
+def _rename_legacy_keys(data: dict) -> tuple[dict, bool]:
+    """
+    Rename pre-v1.3.0 ``EDTSlot`` / ``UCTSlot`` top-level keys to
+    ``EDSlot`` / ``UCSlot``. Idempotent.
+
+    Returns the (possibly-rewritten) dict and a ``renamed`` flag.
+    """
+    if 'EDTSlot' not in data and 'UCTSlot' not in data:
+        return data, False
+    out = {}
+    renamed = False
+    for k, v in data.items():
+        if k == 'EDTSlot':
+            out['EDSlot'] = v
+            renamed = True
+        elif k == 'UCTSlot':
+            out['UCSlot'] = v
+            renamed = True
+        else:
+            out[k] = v
+    return out, renamed
+
+
 def migrate_data(data: dict) -> tuple[dict, dict]:
     """
     Migrate an in-memory case dict from the legacy TimeSlot encoding
     to the v1.3.0 paired-key encoding.
+
+    Two transformations applied (idempotent):
+
+    * Rename top-level keys ``EDTSlot`` / ``UCTSlot`` to ``EDSlot`` /
+      ``UCSlot`` (the pre-v1.3.0 names dropped the redundant "T").
+    * Split CSV-list ``sd`` / ``ug`` cells into the new ``EDSlotLoad``
+      / ``EDSlotGen`` / ``UCSlotLoad`` per-(device, slot) tables.
 
     Returns
     -------
     new_data : dict
         Migrated case data. Safe to write to JSON / XLSX.
     summary : dict
-        ``{'ed_load': N, 'ed_gen': N, 'uc_load': N}`` row counts of
-        the new tables, plus a ``no_op`` boolean if nothing changed.
+        ``{'ed_load': N, 'ed_gen': N, 'uc_load': N, 'renamed': bool,
+        'no_op': bool}``.
     """
     out = deepcopy(data)
-    areas, gens = _device_orderings(data)
+    out, renamed = _rename_legacy_keys(out)
+    areas, gens = _device_orderings(out)
 
-    edt_legacy = data.get('EDTSlot', [])
-    uct_legacy = data.get('UCTSlot', [])
+    edt_legacy = out.get('EDSlot', [])
+    uct_legacy = out.get('UCSlot', [])
 
-    no_op = not (
+    has_legacy_cells = (
         any(_is_legacy_cell(r.get('sd')) or _is_legacy_cell(r.get('ug'))
             for r in edt_legacy)
         or any(_is_legacy_cell(r.get('sd')) for r in uct_legacy)
     )
+    no_op = not (renamed or has_legacy_cells)
     if no_op:
         return out, {'ed_load': 0, 'ed_gen': 0, 'uc_load': 0,
-                     'no_op': True}
+                     'renamed': False, 'no_op': True}
+
+    if not has_legacy_cells:
+        return out, {'ed_load': 0, 'ed_gen': 0, 'uc_load': 0,
+                     'renamed': renamed, 'no_op': False}
 
     # Slim definition tables.
     if edt_legacy:
-        out['EDTSlot'] = [_slim_definition_row(r) for r in edt_legacy]
+        out['EDSlot'] = [_slim_definition_row(r) for r in edt_legacy]
     if uct_legacy:
-        out['UCTSlot'] = [_slim_definition_row(r) for r in uct_legacy]
+        out['UCSlot'] = [_slim_definition_row(r) for r in uct_legacy]
 
     # Emit per-axis tables. Insert them adjacent to the slot
     # definitions for readability.
-    ed_load = _emit_load_rows(edt_legacy, areas, 'EDTSlot')
+    ed_load = _emit_load_rows(edt_legacy, areas, 'EDSlot')
     ed_gen = _emit_gen_rows(edt_legacy, gens)
-    uc_load = _emit_load_rows(uct_legacy, areas, 'UCTSlot')
+    uc_load = _emit_load_rows(uct_legacy, areas, 'UCSlot')
 
     # Inject in dict-order: keep the existing key order and append
     # the new keys near their definition counterparts. JSON dicts
     # preserve insertion order in Py3.7+.
     if ed_load and 'EDSlotLoad' not in out:
-        out = _insert_after(out, 'EDTSlot', 'EDSlotLoad', ed_load)
+        out = _insert_after(out, 'EDSlot', 'EDSlotLoad', ed_load)
     if ed_gen and 'EDSlotGen' not in out:
-        out = _insert_after(out, 'EDSlotLoad' if ed_load else 'EDTSlot',
+        out = _insert_after(out, 'EDSlotLoad' if ed_load else 'EDSlot',
                             'EDSlotGen', ed_gen)
     if uc_load and 'UCSlotLoad' not in out:
-        out = _insert_after(out, 'UCTSlot', 'UCSlotLoad', uc_load)
+        out = _insert_after(out, 'UCSlot', 'UCSlotLoad', uc_load)
 
     return out, {'ed_load': len(ed_load), 'ed_gen': len(ed_gen),
-                 'uc_load': len(uc_load), 'no_op': False}
+                 'uc_load': len(uc_load), 'renamed': renamed,
+                 'no_op': False}
 
 
 def _insert_after(data: dict, after_key: str, new_key: str,
@@ -322,13 +359,18 @@ def migrate_xlsx(path: Path, out_path: Path) -> dict:
     if summary.get('no_op'):
         logger.info("%s: no legacy cells, skipping", path.name)
         return summary
+    # Mirror the EDTSlot/UCTSlot -> EDSlot/UCSlot key rename in the
+    # sheet-order list so the rewritten workbook uses the new names.
+    sheet_order = ['EDSlot' if s == 'EDTSlot'
+                   else 'UCSlot' if s == 'UCTSlot'
+                   else s for s in sheet_order]
     # Ensure new sheets are inserted in the order migrate_data placed them.
     for new_sheet in ('EDSlotLoad', 'EDSlotGen', 'UCSlotLoad'):
         if new_sheet in new_data and new_sheet not in sheet_order:
-            after = {'EDSlotLoad': 'EDTSlot',
+            after = {'EDSlotLoad': 'EDSlot',
                      'EDSlotGen': 'EDSlotLoad' if 'EDSlotLoad' in sheet_order
-                                  else 'EDTSlot',
-                     'UCSlotLoad': 'UCTSlot'}[new_sheet]
+                                  else 'EDSlot',
+                     'UCSlotLoad': 'UCSlot'}[new_sheet]
             if after in sheet_order:
                 sheet_order.insert(sheet_order.index(after) + 1, new_sheet)
             else:

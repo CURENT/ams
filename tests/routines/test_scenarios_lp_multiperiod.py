@@ -15,7 +15,7 @@ results are 2-D over (gen, slot). Per-routine differences live in
   ``None`` for 1st-generation routines.
 - ``align_decimals``: precision for the alignment comparisons.
   Tighter (4) for non-storage; looser (3) for ED2ES.
-- ``loc_offtime``: tuple of EDTSlot rows used by ``test_trip_gen``
+- ``loc_offtime``: tuple of EDSlot rows used by ``test_trip_gen``
   to force the gen off. ``(0, 2, 4)`` for everything except EDES
   (``(0, 2)``) — preserved verbatim from the legacy bodies.
 
@@ -90,14 +90,21 @@ def test_init(ctx):
 
 @_PARAMETRIZE_ROUTINES
 def test_trip_gen(ctx):
-    """Verify EDTSlot.ug takes effect, and StaticGen.u is ignored."""
+    """Verify EDSlotGen.ug takes effect, and StaticGen.u is ignored."""
     _skip_if_solver_missing(ctx.spec)
 
-    # a) EDTSlot.ug.v drives per-slot generator status
+    # a) EDSlotGen.ug.v drives per-(gen, slot) generator status. Find
+    # EDSlotGen rows matching (gen=stg, slot in loc_offtime) on the
+    # long-format table and zero their ug.
     stg = 'PV_1'
-    stg_uid = ctx.ss.StaticGen.get_all_idxes().index(stg)
     loc_offtime = np.array(ctx.spec.loc_offtime)
-    ctx.ss.EDTSlot.ug.v[loc_offtime, stg_uid] = 0
+    slot_idxes = list(ctx.ss.EDSlot.idx.v)
+    offtime_slots = {slot_idxes[i] for i in loc_offtime}
+    sg_gen = ctx.ss.EDSlotGen.gen.v
+    sg_slot = ctx.ss.EDSlotGen.slot.v
+    trip_mask = np.array([(g == stg and s in offtime_slots)
+                          for g, s in zip(sg_gen, sg_slot)])
+    ctx.ss.EDSlotGen.ug.v[trip_mask] = 0
 
     ctx.rtn.run(solver=ctx.spec.solver)
     assert ctx.rtn.converged, f"{ctx.routine_id} did not converge under generator trip!"
@@ -107,9 +114,9 @@ def test_trip_gen(ctx):
         decimal=6, err_msg="Generator trip does not take effect!",
     )
 
-    ctx.ss.EDTSlot.ug.v[...] = 1  # reset for sub-test b
+    ctx.ss.EDSlotGen.ug.v[...] = 1  # reset for sub-test b
 
-    # b) StaticGen.u must NOT take effect — multiperiod ED uses EDTSlot.ug
+    # b) StaticGen.u must NOT take effect — multiperiod ED uses EDSlotGen.ug
     ctx.ss.StaticGen.set(src='u', idx=stg, attr='v', value=0)
     ctx.rtn.update()
 

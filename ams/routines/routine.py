@@ -1029,7 +1029,7 @@ class RoutineBase:
         """
         Export scheduling results to a csv file.
         For multi-period routines, the column "Time" is the time index of
-        ``timeslot.v``, which usually comes from ``EDTSlot`` or ``UCTSlot``.
+        ``timeslot.v``, which usually comes from ``EDSlot`` or ``UCSlot``.
         The rest columns are the variables registered in ``vars``.
 
         For single-period routines, the column "Time" have a pseduo value of "T1".

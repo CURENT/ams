@@ -3,7 +3,7 @@ Models for multi-period scheduling.
 
 The TimeSlot family is split into two layers:
 
-1. **Slot definitions** — :class:`EDTSlot` and :class:`UCTSlot` carry
+1. **Slot definitions** — :class:`EDSlot` and :class:`UCSlot` carry
    one row per time slot (``idx``, ``name``, ``u``). They define the
    horizon used by routine Vars (e.g. ``self.pg.horizon =
    self.timeslot``).
@@ -15,7 +15,7 @@ The TimeSlot family is split into two layers:
    :attr:`ams.opt.var.Var.horizon` pattern used on the output side).
 
 This shape replaces the pre-v1.3.0 single-table design where
-``EDTSlot`` carried CSV-list cells whose positional ordering
+``EDSlot`` carried CSV-list cells whose positional ordering
 implicitly aligned with ``StaticGen.get_all_idxes()`` /
 ``Area.get_all_idxes()``. The implicit contract is now explicit
 through ``IdxParam`` columns.
@@ -26,7 +26,7 @@ from andes.core import ModelData, NumParam, IdxParam
 from ams.core.model import Model
 
 
-class EDTSlot(ModelData, Model):
+class EDSlot(ModelData, Model):
     """
     Time slot definitions for multi-period ED.
 
@@ -40,7 +40,7 @@ class EDTSlot(ModelData, Model):
         self.group = 'Horizon'
 
 
-class UCTSlot(ModelData, Model):
+class UCSlot(ModelData, Model):
     """
     Time slot definitions for multi-period UC.
 
@@ -60,7 +60,7 @@ class EDSlotLoad(ModelData, Model):
     Per-(area, slot) area load scaling factor for ED.
 
     .. versionadded:: 1.3.0
-       Replaces the CSV-list ``EDTSlot.sd`` cell. Each row carries one
+       Replaces the CSV-list ``EDSlot.sd`` cell. Each row carries one
        scalar ``sd`` keyed by ``(area, slot)``.
     """
 
@@ -73,7 +73,7 @@ class EDSlotLoad(ModelData, Model):
                              info='area idx (primary key)',
                              mandatory=True,
                              )
-        self.slot = IdxParam(model='EDTSlot',
+        self.slot = IdxParam(model='EDSlot',
                              info='time slot idx (secondary key)',
                              mandatory=True,
                              )
@@ -89,7 +89,7 @@ class EDSlotGen(ModelData, Model):
     Per-(gen, slot) generator commitment decision for ED.
 
     .. versionadded:: 1.3.0
-       Replaces the CSV-list ``EDTSlot.ug`` cell. Each row carries one
+       Replaces the CSV-list ``EDSlot.ug`` cell. Each row carries one
        scalar ``ug`` keyed by ``(gen, slot)``.
     """
 
@@ -102,7 +102,7 @@ class EDSlotGen(ModelData, Model):
                             info='generator idx (primary key)',
                             mandatory=True,
                             )
-        self.slot = IdxParam(model='EDTSlot',
+        self.slot = IdxParam(model='EDSlot',
                              info='time slot idx (secondary key)',
                              mandatory=True,
                              )
@@ -118,7 +118,7 @@ class UCSlotLoad(ModelData, Model):
     Per-(area, slot) area load scaling factor for UC.
 
     .. versionadded:: 1.3.0
-       Replaces the CSV-list ``UCTSlot.sd`` cell. Each row carries one
+       Replaces the CSV-list ``UCSlot.sd`` cell. Each row carries one
        scalar ``sd`` keyed by ``(area, slot)``.
     """
 
@@ -131,7 +131,7 @@ class UCSlotLoad(ModelData, Model):
                              info='area idx (primary key)',
                              mandatory=True,
                              )
-        self.slot = IdxParam(model='UCTSlot',
+        self.slot = IdxParam(model='UCSlot',
                              info='time slot idx (secondary key)',
                              mandatory=True,
                              )
