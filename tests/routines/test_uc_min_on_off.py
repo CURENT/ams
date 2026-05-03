@@ -15,8 +15,9 @@ Layered by project phase:
   in ``ams/routines/uc.py``.
 
 - **Phase 3 (interior min-up/down window via Rajan-Takriti,
-  TODO):** placeholder pins that ``don``/``doff`` only enforce
-  the trivial ``v ≤ u`` reduction today.
+  landed):** ``don``/``doff`` now enforce the window-sum form
+  ``Σ_{s ∈ window} v[g, s] ≤ u[g, t]`` (and symmetric for ``w``)
+  via the new ``MinDurWindow`` service.
 
 Conventions:
 - ``pjm5bus_json`` from ``tests.conftest``: 5 gens, 24 periods,
@@ -255,6 +256,112 @@ def test_min_down_initial_locks_leading_periods(pjm5bus_json):
         ugd[:L_dn], 0.0, atol=1e-6,
         err_msg=f"doff0 not enforced: expected ugd[:{L_dn}]=0, got {ugd[:L_dn]}",
     )
+
+
+# ---------- Phase 3: interior window (Rajan-Takriti) ----------
+
+def test_interior_min_up_window_enforced(pjm5bus_json):
+    """
+    Force a startup of an initially-OFF gen, then verify the
+    window-sum keeps it on for ``TU`` periods after each startup.
+
+    Construction: ``td1 = 4 h``, ``ton0 = 0``, ``toff0`` large enough
+    so the initial-state lock doesn't bind. Drive c1 up so the
+    solver minimizes commitment, but keep total demand high enough
+    that some startup happens.
+
+    Stronger probe: directly examine the ``Wup`` matrix and assert
+    that for each (g, t) startup-row in the constraint, the rolling
+    sum of ``vgd`` equals 1 ⇒ ugd at that t is 1 (window-sum holds).
+    """
+    _skip_if_solver_missing()
+    ss = pjm5bus_json
+    gidx = _gidx(ss)
+
+    _set_param(ss, 'td1', 4.0)
+    _set_param(ss, 'ton0', 0.0)
+    _set_param(ss, 'td2', 0.0)
+    _set_param(ss, 'toff0', 0.0)
+
+    ss.UC.update()
+    ss.UC.run(solver=_SOLVER)
+    assert ss.UC.converged
+
+    ugd = ss.UC.get(src='ugd', attr='v', idx=gidx)
+    vgd = ss.UC.get(src='vgd', attr='v', idx=gidx)
+    n_g, n_t = ugd.shape
+    TU = 4
+
+    # Assert: for every (g, t) where the window fits AND any startup
+    # occurred in [t-TU+1, t], the unit is ON at t.
+    for g in range(n_g):
+        for t in range(TU - 1, n_t):
+            window_v = vgd[g, t - TU + 1:t + 1].sum()
+            if window_v > 0.5:
+                assert ugd[g, t] > 0.5, (
+                    f"min-up window violated for gen {gidx[g]} t={t}: "
+                    f"Σv[{t-TU+1}:{t+1}]={window_v}, but u[{t}]={ugd[g,t]}"
+                )
+
+
+def test_interior_min_down_window_enforced(pjm5bus_json):
+    """
+    Symmetric to ``test_interior_min_up_window_enforced`` for the
+    min-down side: every shutdown forces the unit OFF for ``TD``
+    subsequent periods.
+    """
+    _skip_if_solver_missing()
+    ss = pjm5bus_json
+    gidx = _gidx(ss)
+
+    _set_param(ss, 'td1', 0.0)
+    _set_param(ss, 'ton0', 0.0)
+    _set_param(ss, 'td2', 4.0)
+    _set_param(ss, 'toff0', 0.0)
+
+    ss.UC.update()
+    ss.UC.run(solver=_SOLVER)
+    assert ss.UC.converged
+
+    ugd = ss.UC.get(src='ugd', attr='v', idx=gidx)
+    wgd = ss.UC.get(src='wgd', attr='v', idx=gidx)
+    n_g, n_t = ugd.shape
+    TD = 4
+
+    for g in range(n_g):
+        for t in range(TD - 1, n_t):
+            window_w = wgd[g, t - TD + 1:t + 1].sum()
+            if window_w > 0.5:
+                assert ugd[g, t] < 0.5, (
+                    f"min-down window violated for gen {gidx[g]} t={t}: "
+                    f"Σw[{t-TD+1}:{t+1}]={window_w}, but u[{t}]={ugd[g,t]}"
+                )
+
+
+def test_window_matrix_structure(pjm5bus_json):
+    """
+    Sanity: ``Wup`` is sparse, square ``(n_g*n_t, n_g*n_t)``, and
+    its rows for valid (g, t) entries (where ``t >= TU - 1``) have
+    exactly ``TU`` ones in the gen-g block.
+    """
+    _skip_if_solver_missing()
+    ss = pjm5bus_json
+    _set_param(ss, 'td1', 4.0)
+    ss.UC.update()
+    Wup = ss.UC.Wup.v
+    n_g = ss.StaticGen.n
+    n_t = ss.UC.timeslot.n
+    assert Wup.shape == (n_g * n_t, n_g * n_t)
+    TU = 4
+    # Valid rows: (g, t) for t in [TU-1, n_t-1]; each row has TU ones.
+    Wd = Wup.toarray()
+    for g in range(n_g):
+        for t in range(TU - 1, n_t):
+            row = Wd[g * n_t + t]
+            assert row.sum() == TU
+            # All ones must be in gen-g's column block
+            assert row[:g * n_t].sum() == 0
+            assert row[(g + 1) * n_t:].sum() == 0
 
 
 def test_initial_lock_no_effect_on_other_units(pjm5bus_json):

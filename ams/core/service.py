@@ -19,8 +19,9 @@ Sum into zones / areas        :class:`ZonalSum`
 Ramp difference matrix        :class:`RampSub`
 Shape-only reduction matrix   inline (e.g. ``np.ones((1, u.n))``)
 Zonal load scaling            :class:`LoadScale`       (load-status aware)
-UC min on/off duration        :class:`MinDur`          (UC routines only)
+UC interior min on/off win    :class:`MinDurWindow`    (UC routines only)
 UC initial-state min on/off   :class:`MinDurInit`      (UC routines only)
+UC legacy min on/off mask     :class:`MinDur`          (deprecated; see note)
 ============================  ==========================================
 
 Notes
@@ -45,7 +46,8 @@ File layout
 4. Generic dual-input ops (``NumOpDual``)
 5. Subset / aggregation (``VarSelect``, ``ZonalSum``)
 6. Reduction / difference (``RampSub``, ``VarReduction``)
-7. Domain-specific (``LoadScale``, ``MinDur``, ``MinDurInit``)
+7. Domain-specific (``LoadScale``, ``MinDur``, ``MinDurWindow``,
+   ``MinDurInit``)
 8. Deprecated, slated for removal in v1.4.0 (``NumExpandDim``,
    ``VarReduction``)
 """
@@ -988,6 +990,91 @@ class MinDur(NumOpDual):
         if self.sparse:
             return spr.csr_matrix(tout)
         return tout
+
+
+class MinDurWindow(MinDur):
+    """
+    Build the Rajan-Takriti window-sum coefficient matrix for the
+    interior minimum on/off duration constraints in UC.
+
+    Returns a sparse ``(n_gen * n_ts, n_gen * n_ts)`` block-diagonal
+    matrix ``W`` with::
+
+        W[(g, t), (g, s)] = 1   iff   s ∈ [t - TU_g + 1, t]
+                                AND   t >= TU_g - 1
+
+    where ``TU_g = ceil(td[g] / Δt)`` (the duration in periods). Used
+    in UC as::
+
+        cp.reshape(Wup @ cp.vec(vgd, order='C'), vgd.shape, order='C')
+            - ugd <= 0
+
+    so that each (g, t) row enforces
+    ``Σ_{s ∈ window} v[g, s] ≤ u[g, t]`` (and symmetrically for
+    ``wgd`` on the off-side). Boundary periods ``t < TU_g - 1`` get
+    all-zero rows — Phase 2 (``MinDurInit``) covers those via the
+    initial-state lock.
+
+    The block-diagonal structure makes the LP relaxation of UC tight
+    in the Rajan-Takriti convex-hull sense, while the sparse
+    representation keeps memory linear in the number of nonzeros.
+
+    Parameters
+    ----------
+    u : Callable
+        Var with horizon — used for shape ``(n_gen, n_ts)`` only.
+    u2 : Callable
+        RParam carrying the per-device duration in hours
+        (``td1`` for on-side, ``td2`` for off-side).
+    name, tex_name, unit, info, vtype, no_parse, sparse : optional
+        Forwarded to :class:`MinDur` / :class:`NumOpDual`.
+
+    Notes
+    -----
+    Returns ``scipy.sparse.csr_matrix`` regardless of the ``sparse``
+    flag — the dense fallback would defeat the size advantage. The
+    flag is accepted for API parity with :class:`MinDur` only.
+    Defaults ``no_parse=True`` because the sparse output cannot be
+    wrapped in :class:`cvxpy.Parameter`; the e_str eval substitutes
+    the raw matrix at parse time.
+    """
+
+    def __init__(self,
+                 u: Callable,
+                 u2: Callable,
+                 name: str = None,
+                 tex_name: str = None,
+                 unit: str = None,
+                 info: str = None,
+                 vtype: Type = None,
+                 no_parse: bool = True,
+                 sparse: bool = False,):
+        super().__init__(u=u, u2=u2, name=name, tex_name=tex_name,
+                         unit=unit, info=info, vtype=vtype,
+                         no_parse=no_parse, sparse=sparse)
+
+    @property
+    def v(self):
+        n_g = self.u.n
+        n_t = self.u.horizon.n
+        dt = self.rtn.config.t
+
+        TU = np.ceil(np.asarray(self.u2.v).reshape(-1) / dt).astype(int)
+        TU = np.clip(TU, 1, n_t)  # guard against td=0 edge case
+
+        rows, cols = [], []
+        for g in range(n_g):
+            tu = int(TU[g])
+            for t in range(tu - 1, n_t):
+                base = g * n_t
+                for s in range(t - tu + 1, t + 1):
+                    rows.append(base + t)
+                    cols.append(base + s)
+        data = np.ones(len(rows), dtype=float)
+        return spr.csr_matrix(
+            (data, (rows, cols)),
+            shape=(n_g * n_t, n_g * n_t),
+        )
 
 
 class MinDurInit(MinDur):

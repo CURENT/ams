@@ -7,7 +7,8 @@ import numpy as np
 import pandas as pd
 
 from ams.core.param import RParam
-from ams.core.service import (NumOp, NumOpDual, MinDur, MinDurInit)
+from ams.core.service import (NumOp, NumOpDual,
+                              MinDurWindow, MinDurInit)
 from ams.utils.func import multiply_left_t
 from ams.routines.dcopf import DCOPF
 from ams.routines.rted import RTEDBase
@@ -232,19 +233,24 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
                                  e_str='zug - Mzug * ugd <= 0')
 
         # --- minimum ON/OFF duration ---
-        # Interior window (Phase 3 of uc_min_on_off will replace
-        # MinDur with a Rajan-Takriti window-sum builder; today the
-        # don/doff cells reduce to v <= u, already implied by S1).
-        self.Con = MinDur(u=self.pg, u2=self.td1,
-                          name='Con', tex_name=r'T_{on}',
-                          info='minimum ON coefficient',)
+        # Rajan-Takriti window-sum form (interior, t >= TU_g - 1):
+        #   min-up : Σ_{s ∈ [t-TU+1, t]} v[g, s] ≤ u[g, t]
+        #   min-dn : Σ_{s ∈ [t-TD+1, t]} w[g, s] ≤ 1 - u[g, t]
+        # `Wup` / `Wdn` are sparse (n_g*n_t, n_g*n_t) block-diagonal
+        # matrices; `cp.vec` flattens vgd/wgd, the matmul produces
+        # window sums, and `cp.reshape` returns to (n_g, n_t).
+        self.Wup = MinDurWindow(u=self.pg, u2=self.td1,
+                                name='Wup', tex_name=r'W_{up}',
+                                info='min-ON window-sum coefficient',)
         self.don = Constraint(info='minimum online duration',
-                              name='don', e_str='cp.multiply(Con, vgd) - ugd <= 0')
-        self.Coff = MinDur(u=self.pg, u2=self.td2,
-                           name='Coff', tex_name=r'T_{off}',
-                           info='minimum OFF coefficient',)
+                              name='don',
+                              e_str='cp.reshape(Wup @ cp.vec(vgd, order="C"), vgd.shape, order="C") - ugd <= 0')
+        self.Wdn = MinDurWindow(u=self.pg, u2=self.td2,
+                                name='Wdn', tex_name=r'W_{dn}',
+                                info='min-OFF window-sum coefficient',)
         self.doff = Constraint(info='minimum offline duration',
-                               name='doff', e_str='cp.multiply(Coff, wgd) - (1 - ugd) <= 0')
+                               name='doff',
+                               e_str='cp.reshape(Wdn @ cp.vec(wgd, order="C"), wgd.shape, order="C") - (1 - ugd) <= 0')
 
         # Initial-state min-up/down: lock leading periods based on
         # how long each unit has already been in its current state
