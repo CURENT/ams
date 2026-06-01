@@ -32,6 +32,28 @@ This changes UC dispatch and objective values relative to v1.3.0 for
 cases where commitment would otherwise change — the prior results were
 not enforcing these constraints.
 
+**Fix — PTDF routines had vacuous line/angle limits:**
+
+The 2nd-generation PTDF routines (``ED2``, ``ED2DG``, ``ED2ES``,
+``UC2``, ``UC2DG``, ``UC2ES``, ``DCOPF2``) inherited line-flow and
+angle-difference limit constraints from the 1st-generation
+(angle-based) formulation. In the angle formulation the limit
+constraints embed the bus-voltage-angle variable ``aBus``; in the
+PTDF formulation ``aBus`` is not a decision variable (it is computed
+post-solve), so the solver was free to pick any ``aBus`` that
+trivialized those constraints. As a result, the line-flow and angle
+limits were present in the model but enforced nothing on the actual
+dispatch. On uncongested cases (like the bundled ``pjm5bus_demo``)
+the dispatch was coincidentally correct; a congested case would
+silently violate real line limits.
+
+The fix re-expresses ``plflb``/``plfub`` for the multi-period PTDF
+routines in terms of the correct PTDF flow expression (``plf``
+already pointed to the PTDF formula), and disables the
+angle-difference constraints (``alflb``/``alfub``) throughout the
+PTDF hierarchy since they have no meaningful counterpart when
+``aBus`` is not an optimization variable.
+
 **Fix — generator connectivity matrix ignored online status:**
 
 :meth:`~ams.core.matprocessor.MatProcessor.build_cg` filtered the

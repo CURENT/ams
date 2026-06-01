@@ -215,3 +215,43 @@ def test_align(ctx):
 def test_pb_formula(ctx):
     """2nd-gen routines must use the non-angle pb formulation."""
     assert 'aBus' not in ctx.rtn.pb.e_str, f"Bus angle is used in {ctx.routine_id}.pb!"
+
+
+def test_congested_line_limit_ed2(pjm5bus_json):
+    """ED2 must enforce line flow limits under network congestion.
+
+    Tighten Line_2's rate_a below its unconstrained peak PTDF flow so the
+    limit actually binds during optimization.  Before the fix, the PTDF
+    routine constrained Bf@aBus (a free variable) instead of the PTDF flow,
+    making the limit vacuous.
+    """
+    ss = pjm5bus_json
+    ss.PQ.set(src='p0', attr='v', idx=['PQ_1', 'PQ_2'], value=[0.3, 0.3])
+    tight_limit = 0.65   # below peak unconstrained flow (~0.789)
+    ss.Line.set(src='rate_a', attr='v', idx='Line_2', value=tight_limit)
+
+    ss.ED.run(solver='CLARABEL')
+    assert ss.ED.converged, "ED did not converge under congestion!"
+    ss.ED2.update()
+    ss.ED2.run(solver='CLARABEL')
+    assert ss.ED2.converged, "ED2 did not converge under congestion!"
+
+    line_idx = ss.Line.idx.v
+    plf_ed2 = ss.ED2.get(src='plf', attr='v', idx=line_idx)
+    plf_ed = ss.ED.get(src='plf', attr='v', idx=line_idx)
+
+    # ED2 line flows must respect the tightened limit on Line_2
+    plf_l2 = ss.ED2.get(src='plf', attr='v', idx='Line_2')
+    assert np.all(np.abs(plf_l2) <= tight_limit + 1e-4), (
+        f"ED2 Line_2 flow {np.max(np.abs(plf_l2)):.4f} exceeds limit {tight_limit}"
+    )
+
+    # Objectives and flows must align between ED and ED2
+    np.testing.assert_almost_equal(
+        ss.ED2.obj.v, ss.ED.obj.v, decimal=3,
+        err_msg="ED2 objective does not match ED under congestion!",
+    )
+    np.testing.assert_almost_equal(
+        plf_ed2, plf_ed, decimal=3,
+        err_msg="ED2 line flows do not match ED under congestion!",
+    )

@@ -24,6 +24,16 @@ class PTDFMPBase(PTDFBase):
         # --- rewrite Expression plf: line flow---
         self.plf.e_str = "PTDF @ (Cg@pg - Cl@pds - Csh@gsh@tlv - Pbusinj@tlv)"
 
+        # ED.__init__ rewrites plflb/plfub to directly embed Bf@aBus + Pfinj@tlv.
+        # Restore the symbolic plf reference so the PTDF flow is what is bounded.
+        self.plflb.e_str = '-plf - cp.multiply(ul, rate_a)@tlv <= 0'
+        self.plfub.e_str = 'plf - cp.multiply(ul, rate_a)@tlv <= 0'
+        # alflb/alfub reference aBus which is not a decision variable in the
+        # PTDF formulation. PTDFBase already disables them; state this
+        # explicitly here so the intent is clear at this level.
+        self.alflb.is_disabled = True
+        self.alfub.is_disabled = True
+
     def _post_solve(self):
         if self.aBus.horizon is not None:
             # Calculate bus angles after solving
