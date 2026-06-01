@@ -172,12 +172,18 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
                        name='ugd', tex_name=r'u_{g,d}',
                        model='StaticGen', src='u',
                        boolean=True,)
-        # NOTE: vgd/wgd are continuous in [0, 1]: with the state
-        # equation `u[t] - u[t-1] = v[t] - w[t]`, exclusivity
-        # `v + w <= 1`, nonneg costs `csu, csd` in the objective, and
-        # `ugd` binary, the optimum has `v = max(Δu, 0)`,
-        # `w = max(-Δu, 0)` automatically. Declaring them binary is
-        # redundant and only enlarges the branching space.
+        # NOTE: vgd/wgd are relaxed to continuous [0, 1]. At any
+        # commit transition the state equation `u[t]-u[t-1] = v[t]-w[t]`
+        # with exclusivity `v + w <= 1`, nonneg v/w, and binary `ugd`
+        # already pins (v, w) to {0, 1} (Δu=±1 forces one of them to 1
+        # and the other to 0). On steady periods (Δu=0) only `v = w` is
+        # pinned, leaving a [0, 0.5] slack; strictly-positive startup/
+        # shutdown costs `csu, csd` collapse it to v=w=0, and even with
+        # zero costs the slack is free w.r.t. the binary `ugd` (the
+        # min-dur window sums remain satisfiable by the canonical
+        # v=max(Δu,0)), so the optimal commitment is unaffected.
+        # Declaring v/w binary is therefore redundant and only enlarges
+        # the branching space.
         self.vgd = Var(info='startup action',
                        horizon=self.timeslot,
                        name='vgd', tex_name=r'v_{g,d}',
@@ -301,7 +307,10 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
         # --- objective ---
         cost = 't**2 * cp.sum(c2 @ pg**2)'
         cost += '+ t * cp.sum(c1 @ pg)'
-        cost += '+ cp.sum(cp.multiply(ug, c0) @ tlv)'
+        # No-load cost is charged per period the unit is *committed*,
+        # so it must track the decision `ugd`, not the frozen initial
+        # state `ug` (broadcast c0 (ng,1) across the horizon of ugd).
+        cost += '+ cp.sum(cp.multiply(c0, ugd))'
         cost += '+ cp.sum(csu @ vgd + csd @ wgd)'
         _to_sum = 'csr @ prs + cnsr @ prns + cdp @ pdu'
         cost += f' + t * cp.sum({_to_sum})'

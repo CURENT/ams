@@ -311,8 +311,13 @@ class MatProcessor:
 
         Notes
         -----
-        Generator online status is NOT considered in its connectivity matrix.
-        The same applies for load, line, and shunt.
+        Generator online status is NOT considered in ``Cg`` — it is a
+        purely structural gen-to-bus map, because generator commitment
+        is a decision variable in the UC routines (status is applied via
+        ``ug``/``ugd`` instead). The load, line, and shunt connectivity
+        matrices (``Cl``, ``Cft``, ``Csh``) currently DO filter by their
+        element ``u`` status; reconciling them with this contract is a
+        tracked follow-up.
 
         Returns
         -------
