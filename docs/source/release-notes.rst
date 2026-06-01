@@ -12,7 +12,39 @@ v1.3
 v1.3.1 (date TBD)
 ----------------------
 
-(Pre-release — items here will ship in the next v1.3.x patch.)
+**Unit commitment minimum on/off duration — now enforced:**
+
+The :ref:`UC` family (``UC``, ``UCDG``, ``UCES``, ``UC2``, ``UC2DG``,
+``UC2ES``) previously had commitment effectively frozen in time: the
+startup/shutdown coupling used equality constraints that, under binary
+``vgd``/``wgd``, forced ``ugd[g, t] == ug0[g]`` for every period, so
+the minimum on/off duration was never enforced. The coupling is now the
+standard three-binary (Rajan & Takriti) state equation, so commitment
+can vary across the horizon. As a result:
+
+- Interior minimum on/off duration is enforced via a window-sum
+  formulation.
+- Initial-state minimum on/off duration is enforced from the
+  previously-unused ``StaticGen.ton0`` / ``toff0`` parameters (elapsed
+  on/off time at ``t=0``, in hours).
+
+This changes UC dispatch and objective values relative to v1.3.0 for
+cases where commitment would otherwise change — the prior results were
+not enforcing these constraints.
+
+**Fix — generator connectivity matrix ignored online status:**
+
+:meth:`~ams.core.matprocessor.MatProcessor.build_cg` filtered the
+generator-to-bus matrix ``Cg`` by ``StaticGen.u``, zeroing the column
+of any offline generator — contrary to its documented contract.
+Because UC optimizes commitment via ``ugd`` (and ``StaticGen.u`` only
+seeds the initial state), a generator that was offline when the
+matrices were built — e.g. one turned off by the UC initial-guess
+heuristic — became permanently invisible to the nodal (angle-based)
+network even after the optimizer re-committed it. ``Cg`` is now a
+purely structural map; offline units remain pinned to zero output
+through the existing capacity bounds. This also resolves a UCES vs
+``UC2ES`` objective mismatch.
 
 v1.3.0 (2026-05-03)
 ----------------------

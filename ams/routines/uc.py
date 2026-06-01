@@ -7,7 +7,8 @@ import numpy as np
 import pandas as pd
 
 from ams.core.param import RParam
-from ams.core.service import (NumOp, NumOpDual, MinDur)
+from ams.core.service import (NumOp, NumOpDual,
+                              MinDurWindow, MinDurInit)
 from ams.utils.func import multiply_left_t
 from ams.routines.dcopf import DCOPF
 from ams.routines.rted import RTEDBase
@@ -131,6 +132,14 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
                           name='td2', tex_name=r't_{d2}',
                           model='StaticGen', src='td2',
                           unit='h',)
+        self.ton0 = RParam(info='initial elapsed ON time',
+                           name='ton0', tex_name=r't_{on,0}',
+                           model='StaticGen', src='ton0',
+                           unit='h',)
+        self.toff0 = RParam(info='initial elapsed OFF time',
+                            name='toff0', tex_name=r't_{off,0}',
+                            model='StaticGen', src='toff0',
+                            unit='h',)
 
         self.sd.info = 'area load scaling factor for UC'
         self.sd.model = 'UCSlotLoad'
@@ -163,29 +172,42 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
                        name='ugd', tex_name=r'u_{g,d}',
                        model='StaticGen', src='u',
                        boolean=True,)
+        # NOTE: vgd/wgd are relaxed to continuous [0, 1]. At any
+        # commit transition the state equation `u[t]-u[t-1] = v[t]-w[t]`
+        # with exclusivity `v + w <= 1`, nonneg v/w, and binary `ugd`
+        # already pins (v, w) to {0, 1} (Δu=±1 forces one of them to 1
+        # and the other to 0). On steady periods (Δu=0) only `v = w` is
+        # pinned, leaving a [0, 0.5] slack; strictly-positive startup/
+        # shutdown costs `csu, csd` collapse it to v=w=0, and even with
+        # zero costs the slack is free w.r.t. the binary `ugd` (the
+        # min-dur window sums remain satisfiable by the canonical
+        # v=max(Δu,0)), so the optimal commitment is unaffected.
+        # Declaring v/w binary is therefore redundant and only enlarges
+        # the branching space.
         self.vgd = Var(info='startup action',
                        horizon=self.timeslot,
                        name='vgd', tex_name=r'v_{g,d}',
                        model='StaticGen', src='u',
-                       boolean=True,)
+                       nonneg=True,)
         self.wgd = Var(info='shutdown action',
                        horizon=self.timeslot,
                        name='wgd', tex_name=r'w_{g,d}',
                        model='StaticGen', src='u',
-                       boolean=True,)
+                       nonneg=True,)
         self.zug = Var(info='Aux var, :math:`z_{ug} = u_{g,d} * p_g`',
                        horizon=self.timeslot,
                        name='zug', tex_name=r'z_{ug}',
                        model='StaticGen', pos=True,)
-        # NOTE: actions have two parts: initial status and the rest
-        self.actv = Constraint(name='actv', info='startup action',
-                               e_str='ugd @ Mr - vgd[:, 1:] == 0',)
-        self.actv0 = Constraint(name='actv0', info='initial startup action',
-                                e_str='ugd[:, 0] - ug[:, 0]  - vgd[:, 0] == 0',)
-        self.actw = Constraint(name='actw', info='shutdown action',
-                               e_str='-ugd @ Mr - wgd[:, 1:] == 0',)
-        self.actw0 = Constraint(name='actw0', info='initial shutdown action',
-                                e_str='-ugd[:, 0] + ug[:, 0] - wgd[:, 0] == 0',)
+        # State equation `u[t] - u[t-1] = v[t] - w[t]` (Rajan-Takriti
+        # 3-bin coupling, S1) plus initial-period anchor (S0) and
+        # exclusivity (X). Replaces the prior pair of signed
+        # equalities, which under boolean v/w forced ugd constant.
+        self.state = Constraint(name='state', info='commit state equation',
+                                e_str='ugd @ Mr - vgd[:, 1:] + wgd[:, 1:] == 0',)
+        self.state0 = Constraint(name='state0', info='initial commit state equation',
+                                 e_str='ugd[:, 0] - ug[:, 0] - vgd[:, 0] + wgd[:, 0] == 0',)
+        self.vwexcl = Constraint(name='vwexcl', info='startup/shutdown exclusivity',
+                                 e_str='vgd + wgd - 1 <= 0',)
 
         self.prs.horizon = self.timeslot
         self.prs.info = '2D Spinning reserve'
@@ -217,16 +239,46 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
                                  e_str='zug - Mzug * ugd <= 0')
 
         # --- minimum ON/OFF duration ---
-        self.Con = MinDur(u=self.pg, u2=self.td1,
-                          name='Con', tex_name=r'T_{on}',
-                          info='minimum ON coefficient',)
+        # Rajan-Takriti window-sum form (interior, t >= TU_g - 1):
+        #   min-up : Σ_{s ∈ [t-TU+1, t]} v[g, s] ≤ u[g, t]
+        #   min-dn : Σ_{s ∈ [t-TD+1, t]} w[g, s] ≤ 1 - u[g, t]
+        # `Wup` / `Wdn` are sparse (n_g*n_t, n_g*n_t) block-diagonal
+        # matrices; `cp.vec` flattens vgd/wgd, the matmul produces
+        # window sums, and `cp.reshape` returns to (n_g, n_t).
+        self.Wup = MinDurWindow(u=self.pg, u2=self.td1,
+                                name='Wup', tex_name=r'W_{up}',
+                                info='min-ON window-sum coefficient',)
         self.don = Constraint(info='minimum online duration',
-                              name='don', e_str='cp.multiply(Con, vgd) - ugd <= 0')
-        self.Coff = MinDur(u=self.pg, u2=self.td2,
-                           name='Coff', tex_name=r'T_{off}',
-                           info='minimum OFF coefficient',)
+                              name='don',
+                              e_str='cp.reshape(Wup @ cp.vec(vgd, order="C"), vgd.shape, order="C") - ugd <= 0')
+        self.Wdn = MinDurWindow(u=self.pg, u2=self.td2,
+                                name='Wdn', tex_name=r'W_{dn}',
+                                info='min-OFF window-sum coefficient',)
         self.doff = Constraint(info='minimum offline duration',
-                               name='doff', e_str='cp.multiply(Coff, wgd) - (1 - ugd) <= 0')
+                               name='doff',
+                               e_str=('cp.reshape(Wdn @ cp.vec(wgd, order="C"), wgd.shape, '
+                                      'order="C") - (1 - ugd) <= 0'))
+
+        # Initial-state min-up/down: lock leading periods based on
+        # how long each unit has already been in its current state
+        # entering the horizon (`ton0`/`toff0`).
+        #   L_up[g]  = max(0, ceil((td1 - ton0)/Δt))   if ug0 == 1 else 0
+        #   L_dn[g]  = max(0, ceil((td2 - toff0)/Δt))  if ug0 == 0 else 0
+        # Defaults `ton0=toff0=0` make these masks all-zero -> no-op.
+        self.Conin = MinDurInit(u=self.pg, td=self.td1,
+                                tau0=self.ton0, ug0=self.ug, match=1,
+                                name='Conin', tex_name=r'T_{on,0}',
+                                info='initial-state min-ON coefficient',)
+        self.don0 = Constraint(info='initial-state minimum ON duration',
+                               name='don0',
+                               e_str='cp.multiply(Conin, 1 - ugd) <= 0')
+        self.Coffin = MinDurInit(u=self.pg, td=self.td2,
+                                 tau0=self.toff0, ug0=self.ug, match=0,
+                                 name='Coffin', tex_name=r'T_{off,0}',
+                                 info='initial-state min-OFF coefficient',)
+        self.doff0 = Constraint(info='initial-state minimum OFF duration',
+                                name='doff0',
+                                e_str='cp.multiply(Coffin, ugd) <= 0')
 
         # --- line ---
         self.plf.horizon = self.timeslot
@@ -256,7 +308,10 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
         # --- objective ---
         cost = 't**2 * cp.sum(c2 @ pg**2)'
         cost += '+ t * cp.sum(c1 @ pg)'
-        cost += '+ cp.sum(cp.multiply(ug, c0) @ tlv)'
+        # No-load cost is charged per period the unit is *committed*,
+        # so it must track the decision `ugd`, not the frozen initial
+        # state `ug` (broadcast c0 (ng,1) across the horizon of ugd).
+        cost += '+ cp.sum(cp.multiply(c0, ugd))'
         cost += '+ cp.sum(csu @ vgd + csd @ wgd)'
         _to_sum = 'csr @ prs + cnsr @ prns + cdp @ pdu'
         cost += f' + t * cp.sum({_to_sum})'
