@@ -372,15 +372,19 @@ class MatProcessor:
         ng = system.StaticGen.n
 
         # bus indices: idx -> uid
+        # NOTE: generator online status is intentionally NOT applied here.
+        # Cg is a purely structural gen-to-bus map (see ``build`` Notes).
+        # Commitment/status is enforced elsewhere via ``ug``/``ugd`` (e.g.
+        # the ``pg`` bounds force an offline unit to zero output). Baking
+        # status into Cg would make a unit that is offline at build time
+        # permanently invisible to the network even after UC re-commits
+        # it via ``ugd`` — the root cause of the UC2ES/UCES divergence.
         idx_gen = system.StaticGen.get_all_idxes()
-        u_gen = system.StaticGen.get(src='u', attr='v', idx=idx_gen)
-        on_gen = np.flatnonzero(u_gen)  # uid of online generators
-        on_gen_idx = [idx_gen[i] for i in on_gen]  # idx of online generators
-        on_gen_bus = system.StaticGen.get(src='bus', attr='v', idx=on_gen_idx)
+        gen_bus = system.StaticGen.get(src='bus', attr='v', idx=idx_gen)
 
-        row = np.asarray(system.Bus.idx2uid(on_gen_bus))
-        col = np.asarray(system.StaticGen.idx2uid(on_gen_idx))
-        self.Cg._v = sps.csr_matrix((np.ones(len(on_gen_idx)), (row, col)), (nb, ng))
+        row = np.asarray(system.Bus.idx2uid(gen_bus))
+        col = np.asarray(system.StaticGen.idx2uid(idx_gen))
+        self.Cg._v = sps.csr_matrix((np.ones(len(idx_gen)), (row, col)), (nb, ng))
         self.Cg.col_names = idx_gen
         self.Cg.row_names = system.Bus.idx.v
         return self.Cg._v

@@ -12,9 +12,7 @@ Per-routine differences live in `_ROUTINES`:
   the vBus scenario asserts both.
 - ``align_ref``: 2nd-generation routines compare against their 1st-
   generation counterpart (UC2 → UC, UC2DG → UCDG, UC2ES → UCES).
-- ``align_full``: ``False`` for UC2ES — generation allocation
-  diverges from UCES while the objective matches, so only obj+ugd
-  are compared. Other 2nd-gen routines compare obj/ugd/pg/aBus/plf.
+  All compare the full obj/ugd/pg/aBus/plf set.
 - ``align_ref_first``: ``True`` for UC2 — the legacy
   ``test_align_uc`` runs ``UC`` before ``UC2``, while
   ``UC2DG``/``UC2ES`` run the 2nd-gen first. Preserved verbatim.
@@ -36,7 +34,6 @@ from tests.conftest import HAS_MISOCP
 class _RoutineSpec:
     has_aBus: bool
     align_ref: object  # str or None
-    align_full: bool = True
     align_ref_first: bool = False
 
 
@@ -46,7 +43,7 @@ _ROUTINES = {
     "UCES":   _RoutineSpec(has_aBus=False, align_ref=None),
     "UC2":    _RoutineSpec(has_aBus=True,  align_ref='UC', align_ref_first=True),
     "UC2DG":  _RoutineSpec(has_aBus=True,  align_ref='UCDG'),
-    "UC2ES":  _RoutineSpec(has_aBus=True,  align_ref='UCES', align_full=False),
+    "UC2ES":  _RoutineSpec(has_aBus=True,  align_ref='UCES'),
 }
 
 _ROUTINE_IDS = list(_ROUTINES)
@@ -104,20 +101,27 @@ def test_init(ctx):
 
 @_PARAMETRIZE_ROUTINES
 def test_trip_gen(ctx):
+    """An uncommitted generator (``ugd == 0``) must produce no power.
+
+    Unlike the LP/PF families, UC *optimizes* commitment via ``ugd``;
+    ``StaticGen.u`` only seeds the pre-horizon state ``ug0`` and there
+    is no per-slot status input. The ``_initial_guess()`` warm-start is
+    a heuristic the solver is free to override, so a guessed-off unit
+    may legitimately be re-committed (e.g. UCES/UC2ES re-commit ``PV_1``
+    once ES makes it economical). The portable invariant is therefore
+    the commitment-dispatch coupling: wherever the *solved* commitment
+    is off, output is zero.
+    """
     _skip_if_solver_missing()
-    if ctx.routine_id == 'UC2ES':
-        pytest.xfail(
-            "UC2ES (PTDF + ES) finds a different optimum than UCES "
-            "(angle + ES) once commitment can vary in time. The pre-"
-            "Phase-1 stuck-commitment regime masked this divergence; "
-            "alignment is tracked under projects/uc_min_on_off."
-        )
     ctx.rtn.run(solver=_SOLVER)
     assert ctx.rtn.converged, f"{ctx.routine_id} did not converge!"
-    pg_off_gen = ctx.rtn.get(src='pg', attr='v', idx=ctx.off_gen)
+    gen_idx = ctx.ss.StaticGen.get_all_idxes()
+    ugd = np.atleast_2d(np.asarray(ctx.rtn.get(src='ugd', attr='v', idx=gen_idx)))
+    pg = np.atleast_2d(np.asarray(ctx.rtn.get(src='pg', attr='v', idx=gen_idx)))
+    off = ugd < 0.5
     np.testing.assert_almost_equal(
-        np.zeros_like(pg_off_gen), pg_off_gen, decimal=6,
-        err_msg="Off generators are not turned off!",
+        pg[off], np.zeros_like(pg[off]), decimal=6,
+        err_msg=f"{ctx.routine_id}: uncommitted generators produce power!",
     )
 
 
@@ -168,13 +172,6 @@ _ALIGN_IDS = [r for r, s in _ROUTINES.items() if s.align_ref is not None]
 def test_align(ctx):
     """2nd-gen routines must match their 1st-gen counterpart."""
     _skip_if_solver_missing()
-    if ctx.routine_id == 'UC2ES':
-        pytest.xfail(
-            "UC2ES vs UCES diverges in objective (PTDF vs angle "
-            "formulations) once UC commitment is free to vary in "
-            "time. Pre-existing alignment gap, masked before Phase 1 "
-            "of projects/uc_min_on_off."
-        )
     ref = getattr(ctx.ss, ctx.spec.align_ref)
     if ctx.spec.align_ref_first:
         ref.run(solver=_SOLVER)
@@ -198,12 +195,6 @@ def test_align(ctx):
         decimal=decimals,
         err_msg=f"ugd between {ctx.routine_id} and {ctx.spec.align_ref} not match!",
     )
-    if not ctx.spec.align_full:
-        # UC2ES vs UCES: generation allocation diverges (objective matches);
-        # pg/aBus/plf comparisons are intentionally skipped — see
-        # original test_align_uces for context.
-        return
-
     np.testing.assert_almost_equal(
         ctx.rtn.get(src='pg', attr='v', idx=pg_idx),
         ref.get(src='pg', attr='v', idx=pg_idx),
