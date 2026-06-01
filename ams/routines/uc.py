@@ -256,7 +256,8 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
                                 info='min-OFF window-sum coefficient',)
         self.doff = Constraint(info='minimum offline duration',
                                name='doff',
-                               e_str='cp.reshape(Wdn @ cp.vec(wgd, order="C"), wgd.shape, order="C") - (1 - ugd) <= 0')
+                               e_str=('cp.reshape(Wdn @ cp.vec(wgd, order="C"), wgd.shape, '
+                                      'order="C") - (1 - ugd) <= 0'))
 
         # Initial-state min-up/down: lock leading periods based on
         # how long each unit has already been in its current state

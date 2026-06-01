@@ -300,7 +300,7 @@ def test_interior_min_up_window_enforced(pjm5bus_json):
             if window_v > 0.5:
                 assert ugd[g, t] > 0.5, (
                     f"min-up window violated for gen {gidx[g]} t={t}: "
-                    f"Σv[{t-TU+1}:{t+1}]={window_v}, but u[{t}]={ugd[g,t]}"
+                    f"Σv[{t-TU+1}:{t+1}]={window_v}, but u[{t}]={ugd[g, t]}"
                 )
 
 
@@ -334,7 +334,7 @@ def test_interior_min_down_window_enforced(pjm5bus_json):
             if window_w > 0.5:
                 assert ugd[g, t] < 0.5, (
                     f"min-down window violated for gen {gidx[g]} t={t}: "
-                    f"Σw[{t-TD+1}:{t+1}]={window_w}, but u[{t}]={ugd[g,t]}"
+                    f"Σw[{t-TD+1}:{t+1}]={window_w}, but u[{t}]={ugd[g, t]}"
                 )
 
 
