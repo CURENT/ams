@@ -311,13 +311,30 @@ class MatProcessor:
 
         Notes
         -----
-        Generator online status is NOT considered in ``Cg`` — it is a
-        purely structural gen-to-bus map, because generator commitment
-        is a decision variable in the UC routines (status is applied via
-        ``ug``/``ugd`` instead). The load, line, and shunt connectivity
-        matrices (``Cl``, ``Cft``, ``Csh``) currently DO filter by their
-        element ``u`` status; reconciling them with this contract is a
-        tracked follow-up.
+        **Connectivity matrix design criterion:**
+        If an element's online/offline status is a *decision variable* in
+        the optimization (e.g. generator commitment ``ugd`` in UC), its
+        connectivity matrix must be a purely structural map — baking status
+        into the matrix would make a unit invisible to the network even after
+        the solver re-commits it. If status is *fixed at solve time* (i.e.
+        not a decision variable), filtering by ``u`` in the matrix is
+        equivalent to zeroing the corresponding parameter and is acceptable.
+
+        Under this criterion:
+
+        - ``Cg`` is structural (status-independent): generator commitment is
+          a decision variable in UC routines, so status is applied via
+          capacity bounds on ``pg``, not by zeroing columns of ``Cg``.
+        - ``Cl``, ``Csh``, ``Cft`` filter by element ``u`` status: load,
+          shunt, and line status are not decision variables in current AMS
+          routines; matrices are rebuilt via ``update()`` whenever status
+          changes, so the filtered matrices remain consistent at solve time.
+
+        A future structural refactor could make all four matrices
+        status-independent (status applied uniformly via per-element
+        parameters / bounds), which would also require making ``Bf``
+        structural (``u * b`` weighting instead of row filtering). Tracked
+        in ``projects/matprocessor_structural_connectivity``.
 
         Returns
         -------
@@ -402,6 +419,13 @@ class MatProcessor:
         -------
         Cl : scipy.sparse.csr_matrix
             Load connectivity matrix.
+
+        Notes
+        -----
+        Load online status (``PQ.u``) is applied here by excluding offline
+        loads from ``Cl``. Load status is not a decision variable in current
+        AMS routines, so this is equivalent to zeroing their contribution.
+        See ``build`` Notes for the design criterion.
         """
         system = self.system
 
@@ -431,6 +455,12 @@ class MatProcessor:
         -------
         Csh : spmatrix
             Shunt connectivity matrix.
+
+        Notes
+        -----
+        Shunt online status (``Shunt.u``) is applied here by excluding
+        offline shunts from ``Csh``. Shunt status is not a decision variable
+        in current AMS routines. See ``build`` Notes for the design criterion.
         """
         system = self.system
 
@@ -461,6 +491,14 @@ class MatProcessor:
         -------
         Cft : scipy.sparse.csr_matrix
             Line connectivity matrix.
+
+        Notes
+        -----
+        Line online status (``Line.u``) is applied here by excluding offline
+        lines from ``Cft`` and ``CftT``. ``Bf`` also excludes offline lines,
+        so the two matrices stay consistent. Line status is not a decision
+        variable in current AMS routines (no SCOPF / line switching).
+        See ``build`` Notes for the design criterion.
         """
         system = self.system
 
