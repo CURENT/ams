@@ -233,3 +233,38 @@ def test_align(ctx):
 def test_pb_formula(ctx):
     """2nd-gen routines must use the non-angle pb formulation."""
     assert 'aBus' not in ctx.rtn.pb.e_str, f"Bus angle is used in {ctx.routine_id}.pb!"
+
+
+def test_congested_line_limit_uc2(pjm5bus_json):
+    """UC2 must enforce line flow limits under network congestion.
+
+    Tighten Line_2's rate_a below its unconstrained peak PTDF flow so the
+    limit actually binds during optimization.  Before the fix, the PTDF
+    routine constrained Bf@aBus (a free variable) instead of the PTDF flow,
+    making the limit vacuous.
+    """
+    if not HAS_MISOCP:
+        pytest.skip("No MISOCP solver is available.")
+
+    ss = pjm5bus_json
+    ss.PQ.set(src='p0', attr='v', idx=['PQ_1', 'PQ_2'], value=[0.3, 0.3])
+    tight_limit = 0.65   # below peak unconstrained flow (~0.789)
+    ss.Line.set(src='rate_a', attr='v', idx='Line_2', value=tight_limit)
+
+    ss.UC.run(solver=_SOLVER)
+    assert ss.UC.converged, "UC did not converge under congestion!"
+    ss.UC2.update()
+    ss.UC2.run(solver=_SOLVER)
+    assert ss.UC2.converged, "UC2 did not converge under congestion!"
+
+    # UC2 line flows must respect the tightened limit on Line_2
+    plf_l2 = ss.UC2.get(src='plf', attr='v', idx='Line_2')
+    assert np.all(np.abs(plf_l2) <= tight_limit + 1e-4), (
+        f"UC2 Line_2 flow {np.max(np.abs(plf_l2)):.4f} exceeds limit {tight_limit}"
+    )
+
+    # Objectives must align between UC2 and UC
+    np.testing.assert_almost_equal(
+        ss.UC2.obj.v, ss.UC.obj.v, decimal=3,
+        err_msg="UC2 objective does not match UC under congestion!",
+    )

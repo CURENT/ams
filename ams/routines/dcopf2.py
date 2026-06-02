@@ -51,6 +51,11 @@ class PTDFBase:
         # Use PTDF matrix instead of Bf@aBus
         self.plf.e_str = "PTDF @ (Cg@pg - Cl@pd - Csh@gsh - Pbusinj)"
 
+        # Angle-difference limits reference aBus which is not a decision variable
+        # in the PTDF formulation (aBus is computed post-solve, not optimized).
+        self.alflb.is_disabled = True
+        self.alfub.is_disabled = True
+
         # --- rewrite nodal price ---
         # Energy price component (from power balance dual)
         self.pie = ExpressionCalc(info="Energy price",

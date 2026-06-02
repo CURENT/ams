@@ -32,6 +32,35 @@ This changes UC dispatch and objective values relative to v1.3.0 for
 cases where commitment would otherwise change — the prior results were
 not enforcing these constraints.
 
+**Fix — PTDF routines had vacuous line/angle limits:**
+
+The 2nd-generation PTDF routines inherit limit constraints from the
+1st-generation (angle-based) formulation that embed the
+bus-voltage-angle variable ``aBus``. In the PTDF formulation ``aBus``
+is not a decision variable (it is computed post-solve), so the solver
+was free to pick any ``aBus`` that trivialized those constraints.
+Two distinct defects:
+
+- **``plflb``/``plfub`` (multi-period routines: ``ED2``, ``ED2DG``,
+  ``ED2ES``, ``UC2``, ``UC2DG``, ``UC2ES``):** ``ED.__init__`` and
+  ``UC.__init__`` override these constraints to directly embed
+  ``Bf@aBus + Pfinj`` in the expression string. ``PTDFMPBase``
+  overrides ``plf.e_str`` to the PTDF formula but never overrides
+  the constraint strings — so the flow limits constrained the free
+  ``aBus``, not the actual PTDF dispatch. On uncongested cases the
+  dispatch was coincidentally correct; a congested case would
+  silently violate real line limits.
+- **``alflb``/``alfub`` (all PTDF routines including ``DCOPF2``):**
+  angle-difference limits reference ``aBus`` directly and are vacuous
+  for the same reason. These are disabled throughout the PTDF
+  hierarchy since they have no meaningful counterpart when ``aBus``
+  is not an optimization variable.
+
+The fix re-expresses ``plflb``/``plfub`` for the multi-period PTDF
+routines using the symbolic ``plf`` reference (which already resolves
+to the correct PTDF flow expression for each subclass), and disables
+``alflb``/``alfub`` in ``PTDFBase.__init__``.
+
 **Fix — generator connectivity matrix ignored online status:**
 
 :meth:`~ams.core.matprocessor.MatProcessor.build_cg` filtered the
