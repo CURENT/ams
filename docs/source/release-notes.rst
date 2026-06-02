@@ -61,6 +61,35 @@ routines using the symbolic ``plf`` reference (which already resolves
 to the correct PTDF flow expression for each subclass), and disables
 ``alflb``/``alfub`` in ``PTDFBase.__init__``.
 
+**Connectivity matrices all structural; offline elements zeroed via parameters:**
+
+``Cl``, ``Csh``, and ``Cft`` previously filtered offline loads, shunts,
+and lines out of the matrix (matching the existing structural ``Cg``
+only in spirit). All four matrices are now purely structural (topology
+only), consistent with the design criterion established in v1.3.1:
+
+- **``Cl``** — offline load demand is zeroed through the effective demand
+  parameter ``pd`` / ``pds`` (``DCPFBase.pd = pd0 * PQ.u``; ``LoadScale``
+  already applies ``PQ.u``).
+- **``Csh``** — offline shunt conductance is zeroed through the new
+  effective conductance ``gsh = gsh0 * Shunt.u`` (``DCPFBase.gsh`` is
+  now a ``NumOpDual`` instead of a raw ``RParam``).
+- **``Cft``** — offline lines carry zero susceptance in ``Bf``
+  (``b = u_line / x``), so their power-balance and flow contribution
+  is already zero without filtering.
+- **Angle-difference constraints** (``alflb``/``alfub``) in B-theta
+  routines now multiply by ``ul`` so offline line rows are suppressed
+  (constraint is trivially satisfied when ``ul = 0``).
+
+**Fix — ``UC.plflb``/``plfub`` missing line-status factor:**
+
+``UC.__init__`` wrote the flow limits as
+``cp.multiply(rate_a, tlv)`` without the line-status factor ``ul``,
+inconsistent with ``DCOPF`` (which uses ``cp.multiply(ul, rate_a)``) and
+with the ``UC2`` fix in v1.3.1. The limits are now
+``cp.multiply(ul, rate_a)@tlv``, so offline lines have their rated
+flow set to zero (matching the zero flow from ``Bf``).
+
 **Fix — generator connectivity matrix ignored online status:**
 
 :meth:`~ams.core.matprocessor.MatProcessor.build_cg` filtered the

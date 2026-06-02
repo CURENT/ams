@@ -22,6 +22,19 @@ class PTDFBase:
 
     This class provides PTDF parameters and methods for routines that need
     to use PTDF formulation instead of B-theta formulation.
+
+    Notes
+    -----
+    In the PTDF formulation, ``aBus`` (bus voltage angles) is **not** an
+    optimization variable. Line flows are computed directly from power
+    injections via the PTDF matrix; ``aBus`` is recovered post-solve via
+    back-substitution. As a consequence, angle-difference constraints
+    (``alflb``/``alfub``) — which reference ``CftT@aBus`` — are disabled:
+    they would be vacuous during optimization (``aBus`` is unbound) and
+    the theoretically correct transform to flow-domain constraints (using
+    ``plf_k = b_k * (theta_from - theta_to)``) is not implemented.
+    Users with binding angle-stability limits should use the B-theta
+    formulations (``DCOPF``, ``ED``, ``UC``) instead.
     """
 
     def __init__(self, system, config, **kwargs):

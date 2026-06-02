@@ -187,8 +187,8 @@ class ED(SRBase, MPBase, RTED):
         self.plf.info = '2D Line flow'
         self.plflb.e_str = '-Bf@aBus - Pfinj@tlv - cp.multiply(ul, rate_a)@tlv <= 0'
         self.plfub.e_str = 'Bf@aBus + Pfinj@tlv - cp.multiply(ul, rate_a)@tlv <= 0'
-        self.alflb.e_str = '-CftT@aBus + amin@tlv <= 0'
-        self.alfub.e_str = 'CftT@aBus - amax@tlv <= 0'
+        self.alflb.e_str = '-cp.multiply(ul, CftT@aBus) + amin@tlv <= 0'
+        self.alfub.e_str = 'cp.multiply(ul, CftT@aBus) - amax@tlv <= 0'
 
         self.plf.e_str = 'Bf@aBus + Pfinj@tlv'
 

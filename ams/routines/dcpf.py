@@ -31,10 +31,18 @@ class DCPFBase(RoutineBase):
                           unit='p.u.', model='StaticGen',
                           src='p0', no_parse=False,)
         # --- shunt ---
-        self.gsh = RParam(info='shunt conductance',
-                          name='gsh', tex_name=r'g_{sh}',
-                          model='Shunt', src='g',
+        self.gsh0 = RParam(info='shunt conductance (raw)',
+                           name='gsh0', tex_name=r'g_{sh,0}',
+                           model='Shunt', src='g',
+                           no_parse=True,)
+        self.ush = RParam(info='shunt connection status',
+                          name='ush', tex_name=r'u_{sh}',
+                          model='Shunt', src='u',
                           no_parse=True,)
+        self.gsh = NumOpDual(info='effective shunt conductance',
+                             name='gsh', tex_name=r'g_{sh}',
+                             u=self.gsh0, u2=self.ush,
+                             fun=np.multiply, no_parse=True,)
 
         self.buss = RParam(info='Bus slack',
                            name='buss', tex_name=r'B_{us,s}',

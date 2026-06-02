@@ -320,21 +320,18 @@ class MatProcessor:
         not a decision variable), filtering by ``u`` in the matrix is
         equivalent to zeroing the corresponding parameter and is acceptable.
 
-        Under this criterion:
+        Under this criterion, all connectivity matrices are structural:
 
-        - ``Cg`` is structural (status-independent): generator commitment is
-          a decision variable in UC routines, so status is applied via
-          capacity bounds on ``pg``, not by zeroing columns of ``Cg``.
-        - ``Cl``, ``Csh``, ``Cft`` filter by element ``u`` status: load,
-          shunt, and line status are not decision variables in current AMS
-          routines; matrices are rebuilt via ``update()`` whenever status
-          changes, so the filtered matrices remain consistent at solve time.
-
-        A future structural refactor could make all four matrices
-        status-independent (status applied uniformly via per-element
-        parameters / bounds), which would also require making ``Bf``
-        structural (``u * b`` weighting instead of row filtering). Tracked
-        in ``projects/matprocessor_structural_connectivity``.
+        - ``Cg`` is structural: generator commitment is a decision variable
+          in UC routines, so status is applied via capacity bounds on ``pg``.
+        - ``Cl`` is structural: offline loads are zeroed through the
+          effective demand ``pd`` / ``pds`` (multiplied by ``PQ.u``).
+        - ``Csh`` is structural: offline shunts are zeroed through the
+          effective conductance ``gsh`` (multiplied by ``Shunt.u``).
+        - ``Cft`` is structural: offline lines carry zero susceptance in
+          ``Bf`` (``b = u_line / x = 0``), so their power-balance
+          contribution is already zero. Angle-difference constraints
+          (``alflb``/``alfub``) multiply by ``ul`` to suppress offline rows.
 
         Returns
         -------
@@ -422,9 +419,9 @@ class MatProcessor:
 
         Notes
         -----
-        Load online status (``PQ.u``) is applied here by excluding offline
-        loads from ``Cl``. Load status is not a decision variable in current
-        AMS routines, so this is equivalent to zeroing their contribution.
+        ``Cl`` is a purely structural map (topology only). Offline load
+        contributions are zeroed through the effective demand parameter
+        ``gsh`` (``DCPFBase.pd``), which multiplies raw demand by ``PQ.u``.
         See ``build`` Notes for the design criterion.
         """
         system = self.system
@@ -435,14 +432,11 @@ class MatProcessor:
 
         # load indices: idx -> uid
         idx_load = system.PQ.idx.v
-        u_load = system.PQ.get(src='u', attr='v', idx=idx_load)
-        on_load = np.flatnonzero(u_load)
-        on_load_idx = [idx_load[i] for i in on_load]
-        on_load_bus = system.PQ.get(src='bus', attr='v', idx=on_load_idx)
+        all_load_bus = system.PQ.get(src='bus', attr='v', idx=idx_load)
 
-        row = np.array([system.Bus.idx2uid(x) for x in on_load_bus])
-        col = np.array([system.PQ.idx2uid(x) for x in on_load_idx])
-        self.Cl._v = sps.csr_matrix((np.ones(len(on_load_idx)), (row, col)), (nb, npq))
+        row = np.array([system.Bus.idx2uid(x) for x in all_load_bus])
+        col = np.array([system.PQ.idx2uid(x) for x in idx_load])
+        self.Cl._v = sps.csr_matrix((np.ones(len(idx_load)), (row, col)), (nb, npq))
         self.Cl.col_names = idx_load
         self.Cl.row_names = system.Bus.idx.v
         return self.Cl._v
@@ -458,9 +452,10 @@ class MatProcessor:
 
         Notes
         -----
-        Shunt online status (``Shunt.u``) is applied here by excluding
-        offline shunts from ``Csh``. Shunt status is not a decision variable
-        in current AMS routines. See ``build`` Notes for the design criterion.
+        ``Csh`` is a purely structural map (topology only). Offline shunt
+        contributions are zeroed through the effective conductance parameter
+        ``gsh`` (``DCPFBase.gsh``), which multiplies raw conductance by
+        ``Shunt.u``. See ``build`` Notes for the design criterion.
         """
         system = self.system
 
@@ -470,14 +465,11 @@ class MatProcessor:
 
         # shunt indices: idx -> uid
         idx_shunt = system.Shunt.idx.v
-        u_shunt = system.Shunt.get(src='u', attr='v', idx=idx_shunt)
-        on_shunt = np.flatnonzero(u_shunt)
-        on_shunt_idx = [idx_shunt[i] for i in on_shunt]
-        on_shunt_bus = system.Shunt.get(src='bus', attr='v', idx=on_shunt_idx)
+        all_shunt_bus = system.Shunt.get(src='bus', attr='v', idx=idx_shunt)
 
-        row = np.array([system.Bus.idx2uid(x) for x in on_shunt_bus])
-        col = np.array([system.Shunt.idx2uid(x) for x in on_shunt_idx])
-        self.Csh._v = sps.csr_matrix((np.ones(len(on_shunt_idx)), (row, col)), (nb, nsh))
+        row = np.array([system.Bus.idx2uid(x) for x in all_shunt_bus])
+        col = np.array([system.Shunt.idx2uid(x) for x in idx_shunt])
+        self.Csh._v = sps.csr_matrix((np.ones(len(idx_shunt)), (row, col)), (nb, nsh))
         self.Csh.col_names = idx_shunt
         self.Csh.row_names = system.Bus.idx.v
         return self.Csh._v
@@ -494,10 +486,11 @@ class MatProcessor:
 
         Notes
         -----
-        Line online status (``Line.u``) is applied here by excluding offline
-        lines from ``Cft`` and ``CftT``. ``Bf`` also excludes offline lines,
-        so the two matrices stay consistent. Line status is not a decision
-        variable in current AMS routines (no SCOPF / line switching).
+        ``Cft`` is a purely structural map (topology only). Offline lines
+        carry zero susceptance in ``Bf`` (``b = u_line / x``), so their
+        contribution to power balance and line flow is already zero without
+        filtering ``Cft``. Angle-difference constraints (``alflb``/``alfub``)
+        multiply by ``ul`` to suppress offline line rows.
         See ``build`` Notes for the design criterion.
         """
         system = self.system
@@ -508,16 +501,13 @@ class MatProcessor:
 
         # line indices: idx -> uid
         idx_line = system.Line.idx.v
-        u_line = system.Line.get(src='u', attr='v', idx=idx_line)
-        on_line = np.flatnonzero(u_line)
-        on_line_idx = [idx_line[i] for i in on_line]
-        on_line_bus1 = system.Line.get(src='bus1', attr='v', idx=on_line_idx)
-        on_line_bus2 = system.Line.get(src='bus2', attr='v', idx=on_line_idx)
+        all_bus1 = system.Line.get(src='bus1', attr='v', idx=idx_line)
+        all_bus2 = system.Line.get(src='bus2', attr='v', idx=idx_line)
 
-        data_line = np.ones(2*len(on_line_idx))
-        data_line[len(on_line_idx):] = -1
-        row_line = np.array([system.Bus.idx2uid(x) for x in on_line_bus1 + on_line_bus2])
-        col_line = np.array([system.Line.idx2uid(x) for x in on_line_idx + on_line_idx])
+        data_line = np.ones(2 * nl)
+        data_line[nl:] = -1
+        row_line = np.array([system.Bus.idx2uid(x) for x in all_bus1 + all_bus2])
+        col_line = np.array([system.Line.idx2uid(x) for x in idx_line + idx_line])
         self.Cft._v = sps.csr_matrix((data_line, (row_line, col_line)), (nb, nl))
         self.CftT._v = self.Cft._v.T
         self.Cft.col_names = idx_line
