@@ -421,7 +421,7 @@ class MatProcessor:
         -----
         ``Cl`` is a purely structural map (topology only). Offline load
         contributions are zeroed through the effective demand parameter
-        ``gsh`` (``DCPFBase.pd``), which multiplies raw demand by ``PQ.u``.
+        ``pd`` (``DCPFBase.pd``), which multiplies raw demand by ``PQ.u``.
         See ``build`` Notes for the design criterion.
         """
         system = self.system
