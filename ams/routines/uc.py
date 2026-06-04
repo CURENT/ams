@@ -9,7 +9,6 @@ import pandas as pd
 from ams.core.param import RParam
 from ams.core.service import (NumOp, NumOpDual,
                               MinDurWindow, MinDurInit)
-from ams.utils.func import multiply_left_t
 from ams.routines.dcopf import DCOPF
 from ams.routines.rted import RTEDBase
 from ams.routines.ed import SRBase, MPBase, ESD1MPBase, DGMPBase
@@ -41,10 +40,11 @@ class NSRBase:
                         model='StaticGen', nonneg=True,)
 
         self.dnsrpz = NumOpDual(u=self.pdz, u2=self.dnsrp, fun=np.multiply,
+                                rfun=np.transpose,
                                 name='dnsrpz', tex_name=r'd_{nsr, p, z}',
                                 info='zonal non-spinning reserve requirement in percentage',)
         self.dnsr = NumOpDual(u=self.dnsrpz, u2=self.sd,
-                              fun=multiply_left_t,
+                              fun=np.multiply,
                               name='dnsr', tex_name=r'd_{nsr}',
                               info='zonal non-spinning reserve requirement',
                               no_parse=True,)
@@ -283,10 +283,10 @@ class UC(SRBase, NSRBase, MPBase, RTEDBase, DCOPF):
         # --- line ---
         self.plf.horizon = self.timeslot
         self.plf.info = '2D Line flow'
-        self.plflb.e_str = '-Bf@aBus - Pfinj - cp.multiply(rate_a, tlv) <= 0'
-        self.plfub.e_str = 'Bf@aBus + Pfinj - cp.multiply(rate_a, tlv) <= 0'
-        self.alflb.e_str = '-CftT@aBus - amax@tlv <= 0'
-        self.alfub.e_str = 'CftT@aBus - amax@tlv <= 0'
+        self.plflb.e_str = '-Bf@aBus - Pfinj - cp.multiply(ul, rate_a)@tlv <= 0'
+        self.plfub.e_str = 'Bf@aBus + Pfinj - cp.multiply(ul, rate_a)@tlv <= 0'
+        self.alflb.e_str = '-cp.multiply(ul, CftT@aBus) + amin@tlv <= 0'
+        self.alfub.e_str = 'cp.multiply(ul, CftT@aBus) - amax@tlv <= 0'
 
         # --- unserved load ---
         self.pdu = Var(info='unserved demand',

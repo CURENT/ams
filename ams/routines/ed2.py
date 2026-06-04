@@ -14,6 +14,12 @@ logger = logging.getLogger(__name__)
 class PTDFMPBase(PTDFBase):
     """
     Extend :ref:`PTDFBase` for multi-period scheduling.
+
+    Notes
+    -----
+    Inherits the ``aBus`` non-decision-variable constraint from
+    :ref:`PTDFBase`: ``alflb``/``alfub`` are disabled here for the same
+    reason. See :ref:`PTDFBase` Notes for the design rationale.
     """
     def __init__(self, system, config, **kwargs):
         super().__init__(system, config, **kwargs)

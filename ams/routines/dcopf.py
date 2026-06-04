@@ -131,9 +131,11 @@ class DCOPF(DCPFBase):
         self.plfub = Constraint(info='line flow upper bound',
                                 name='plfub', e_str='plf - cp.multiply(ul, rate_a) <= 0',)
         self.alflb = Constraint(info='line angle difference lower bound',
-                                name='alflb', e_str='-CftT@aBus + amin <= 0',)
+                                name='alflb',
+                                e_str='-cp.multiply(ul, CftT@aBus) + amin <= 0',)
         self.alfub = Constraint(info='line angle difference upper bound',
-                                name='alfub', e_str='CftT@aBus - amax <= 0',)
+                                name='alfub',
+                                e_str='cp.multiply(ul, CftT@aBus) - amax <= 0',)
         # NOTE: in CVXPY, dual_variables returns a list
         self.pi = ExpressionCalc(info='LMP, dual of <pb>',
                                  name='pi', unit='$/p.u.',

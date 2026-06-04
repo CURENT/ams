@@ -7,7 +7,6 @@ import numpy as np
 from ams.core.param import RParam
 from ams.core.service import (NumOpDual, NumHstack,
                               RampSub, NumOp, LoadScale)
-from ams.utils.func import multiply_left_t
 
 from ams.routines.rted import RTED, DGBase, ESD1Base
 
@@ -38,10 +37,11 @@ class SRBase:
                        model='StaticGen', nonneg=True,)
 
         self.dsrpz = NumOpDual(u=self.pdz, u2=self.dsrp, fun=np.multiply,
+                               rfun=np.transpose,
                                name='dsrpz', tex_name=r'd_{s,r, p, z}',
                                info='zonal spinning reserve requirement in percentage',)
         self.dsr = NumOpDual(u=self.dsrpz, u2=self.sd,
-                             fun=multiply_left_t,
+                             fun=np.multiply,
                              name='dsr', tex_name=r'd_{s,r,z}',
                              info='zonal spinning reserve requirement',)
 
@@ -187,8 +187,8 @@ class ED(SRBase, MPBase, RTED):
         self.plf.info = '2D Line flow'
         self.plflb.e_str = '-Bf@aBus - Pfinj@tlv - cp.multiply(ul, rate_a)@tlv <= 0'
         self.plfub.e_str = 'Bf@aBus + Pfinj@tlv - cp.multiply(ul, rate_a)@tlv <= 0'
-        self.alflb.e_str = '-CftT@aBus + amin@tlv <= 0'
-        self.alfub.e_str = 'CftT@aBus - amax@tlv <= 0'
+        self.alflb.e_str = '-cp.multiply(ul, CftT@aBus) + amin@tlv <= 0'
+        self.alfub.e_str = 'cp.multiply(ul, CftT@aBus) - amax@tlv <= 0'
 
         self.plf.e_str = 'Bf@aBus + Pfinj@tlv'
 
