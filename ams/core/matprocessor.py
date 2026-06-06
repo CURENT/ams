@@ -1,6 +1,9 @@
 """
 Module for system matrix make.
 """
+# MatProcessor is the sole builder/owner of all its MParam instances and must
+# write directly to their _v storage; suppress the cross-object warning here.
+# pylint: disable=protected-access
 
 import logging
 from typing import Optional

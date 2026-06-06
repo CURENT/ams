@@ -162,65 +162,68 @@ class Report:
         # --- rountine data section ---
         rtns_to_collect = [rtn for rtn in system.routines.values() if rtn.converged]
         for rtn in rtns_to_collect:
-            # --- routine summary ---
-            text.append(['='*30 + f' {rtn.class_name} ' + '='*30])
-            header.append(None)
-            row_name.append(None)
-            data.append(None)
-            text.append([''])
-            header.append(['Objective Function'])
-            row_name.append([f'Value in {rtn.obj.unit}'])
-            data.append([rtn.obj.v])
-            if hasattr(rtn, 'timeslot'):
-                for slot in rtn.timeslot.v:
-                    # --- timeslot summary ---
-                    text.append(['-'*28 + f' {slot} ' + '-'*28])
-                    header.append(None)
-                    row_name.append(None)
-                    data.append(None)
-                    text_sum, header_sum, row_name_sum, data_sum = self.collect(rtn, horizon=[slot])
-                    # --- timeslot data ---
-                    text.extend(text_sum)
-                    header.extend(header_sum)
-                    row_name.extend(row_name_sum)
-                    data.extend(data_sum)
-            else:
-                # single-period
-                text_sum, header_sum, row_name_sum, data_sum = self.collect(rtn)
-                # --- routine extended ---
-                text.append([''])
-                row_name.append(
-                    ['Generation', 'Load'])
+            self._build_routine_block(rtn, text, header, row_name, data)
+        dump_data(text, header, row_name, data, target)
 
-                if hasattr(rtn, 'pd'):
-                    pd = rtn.pd.v.sum().round(DECIMALS)
-                else:
-                    pd = rtn.system.PQ.p0.v.sum().round(DECIMALS)
-                if hasattr(rtn, 'qd'):
-                    qd = rtn.qd.v.sum().round(DECIMALS)
-                else:
-                    qd = rtn.system.PQ.q0.v.sum().round(DECIMALS)
+        _, s = elapsed(t)
+        logger.info('Report saved to "%s" in %s.', target, s)
+        return target
 
-                if not hasattr(rtn, 'qg'):
-                    header.append(['P (p.u.)'])
-                    Pcol = [rtn.pg.v.sum().round(DECIMALS), pd]
-                    data.append([Pcol])
-                else:
-                    header.append(['P (p.u.)', 'Q (p.u.)'])
-                    Pcol = [rtn.pg.v.sum().round(DECIMALS), pd]
-                    Qcol = [rtn.qg.v.sum().round(DECIMALS), qd]
-                    data.append([Pcol, Qcol])
-
-                # --- routine data ---
+    def _build_routine_block(self, rtn, text, header, row_name, data):
+        """Append one converged routine's sections to the report lists."""
+        # --- routine summary ---
+        text.append(['='*30 + f' {rtn.class_name} ' + '='*30])
+        header.append(None)
+        row_name.append(None)
+        data.append(None)
+        text.append([''])
+        header.append(['Objective Function'])
+        row_name.append([f'Value in {rtn.obj.unit}'])
+        data.append([rtn.obj.v])
+        if hasattr(rtn, 'timeslot'):
+            for slot in rtn.timeslot.v:
+                # --- timeslot summary ---
+                text.append(['-'*28 + f' {slot} ' + '-'*28])
+                header.append(None)
+                row_name.append(None)
+                data.append(None)
+                text_sum, header_sum, row_name_sum, data_sum = self.collect(rtn, horizon=[slot])
+                # --- timeslot data ---
                 text.extend(text_sum)
                 header.extend(header_sum)
                 row_name.extend(row_name_sum)
                 data.extend(data_sum)
-        dump_data(text, header, row_name, data, target)
+        else:
+            # single-period
+            text_sum, header_sum, row_name_sum, data_sum = self.collect(rtn)
+            # --- routine extended ---
+            text.append([''])
+            row_name.append(['Generation', 'Load'])
 
-        _, s = elapsed(t)
-        logger.info(f'Report saved to "{target}" in {s}.')
-        return target
+            if hasattr(rtn, 'pd'):
+                pd = rtn.pd.v.sum().round(DECIMALS)
+            else:
+                pd = rtn.system.PQ.p0.v.sum().round(DECIMALS)
+            if hasattr(rtn, 'qd'):
+                qd = rtn.qd.v.sum().round(DECIMALS)
+            else:
+                qd = rtn.system.PQ.q0.v.sum().round(DECIMALS)
+
+            if not hasattr(rtn, 'qg'):
+                header.append(['P (p.u.)'])
+                Pcol = [rtn.pg.v.sum().round(DECIMALS), pd]
+                data.append([Pcol])
+            else:
+                header.append(['P (p.u.)', 'Q (p.u.)'])
+                Pcol = [rtn.pg.v.sum().round(DECIMALS), pd]
+                Qcol = [rtn.qg.v.sum().round(DECIMALS), qd]
+                data.append([Pcol, Qcol])
+
+            # --- routine data ---
+            text.extend(text_sum)
+            header.extend(header_sum)
+            row_name.extend(row_name_sum)
+            data.extend(data_sum)
 
 
 def dump_collected_data(owners: dict, text: List, header: List, row_name: List, data: List) -> None:
