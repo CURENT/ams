@@ -1,10 +1,10 @@
-.. _scripting_examples:
+.. _tutorials:
 
-Examples
-========
+Tutorials
+=========
 
-A collection of examples are presented to supplement the tutorial. The
-examples below are identical to the Jupyter Notebook in the ``examples``
+A collection of tutorials are presented to supplement the getting started guide. The
+tutorials below are identical to the Jupyter Notebook in the ``examples``
 folder of the repository
 `here <https://github.com/CURENT/ams/tree/master/examples>`__.
 

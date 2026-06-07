@@ -36,7 +36,7 @@ Quick install
 
     Working with conda?
     ^^^^^^^^^^^^^^^^^^^
-    AMS will available on conda-forge and can be installed with
+    AMS is available on conda-forge and can be installed with
     Anaconda, Miniconda, and Mambaforge:
 
     ++++++++++++++++++++++
@@ -50,7 +50,7 @@ Quick install
     Prefer pip?
     ^^^^^^^^^^^
 
-    AMS will be installed via pip from `PyPI <https://pypi.org/project/ltbams>`__.
+    AMS can be installed via pip from `PyPI <https://pypi.org/project/ltbams>`__.
 
     ++++
 

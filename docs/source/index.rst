@@ -6,20 +6,36 @@
 ==================
 AMS documentation
 ==================
-**Useful Links**: `Source Repository`_ | `Report Issues`_ | `Q&A`_  | `LTB Repository`_
-| `ANDES Repository`_
 
+
+**Download documentation**: `PDF for stable version`_ | `PDF for development version`_
+
+.. _`PDF for stable version`: https://ltb.readthedocs.io/projects/ams/downloads/en/stable/pdf/
+.. _`PDF for development version`: https://ltb.readthedocs.io/projects/ams/downloads/en/latest/pdf/
+
+
+**Useful Links**: `Binary Installer`_ | `Source Repository`_ | `Report Issues`_
+| `Q&A`_ | `Try in Jupyter Notebooks`_ | `LTB Repository`_ | `ANDES Repository`_
+
+.. _`Binary Installer`: https://pypi.org/project/ltbams/
 .. _`Source Repository`: https://github.com/CURENT/ams
 .. _`Report Issues`: https://github.com/CURENT/ams/issues
 .. _`Q&A`: https://github.com/CURENT/ams/discussions
+.. _`Try in Jupyter Notebooks`: https://mybinder.org/v2/gh/curent/ams/master
 .. _`ANDES Repository`: https://github.com/CURENT/andes
 .. _`LTB Repository`: https://github.com/CURENT/
 
-LTB AMS is an open-source packages for scheduling modeling, serving as the market
-simulator for the CURENT Large scale Testbed (LTB).
+.. image:: /images/sponsors/CURENT_Logo_NameOnTrans.png
+   :alt: CURENT Logo
+   :width: 300px
+   :height: 74.2px
 
-AMS enables **flexible** scheduling modeling and **interoprability** with the in-house
-dynamic simulator ANDES.
+LTB AMS is an open-source Python library for power system scheduling modeling and
+co-simulation with dynamics, serving as the market simulator for the CURENT Large
+scale Testbed (LTB). It implements a descriptive modeling framework for scheduling
+problems, solved via CVXPY with third-party solvers. AMS enables tight
+interoperability with the dynamic simulator ANDES for stability-constrained scheduling
+studies.
 
 .. panels::
     :card: + intro-card text-center
@@ -30,7 +46,9 @@ dynamic simulator ANDES.
     Getting started
     ^^^^^^^^^^^^^^^
 
-    New to AMS? Check out the getting started guides.
+    New to AMS? Check out the Getting Started guides. They contain an introduction
+    to the AMS command-line interface, scripting usages, as well as guides to
+    configure AMS and work with case files.
 
     +++
 
@@ -41,43 +59,49 @@ dynamic simulator ANDES.
 
     ---
 
-    Examples
-    ^^^^^^^^
+    Tutorials
+    ^^^^^^^^^
 
-    The examples of using AMS for power system scheduling study.
+    The tutorials provide in-depth usage of AMS in a Python scripting environment.
+    Scheduling studies and co-simulation with ANDES dynamics are shown with
+    explanation.
 
     +++
 
-    .. link-button:: scripting_examples
+    .. link-button:: tutorials
             :type: ref
-            :text: To the examples
+            :text: To the tutorials
             :classes: btn-block btn-secondary stretched-link
 
     ---
 
-    Model development guide
-    ^^^^^^^^^^^^^^^^^^^^^^^
+    Modeling guide
+    ^^^^^^^^^^^^^^
 
-    New scheduling modeling in AMS.
+    Looking to implement new scheduling formulations in AMS? The modeling guide
+    provides in-depth information on the design philosophy, data structure, and
+    implementation of the scheduling modeling framework.
 
     +++
 
-    .. link-button:: development
+    .. link-button:: modeling
             :type: ref
-            :text: To the development guide
+            :text: To the modeling guide
             :classes: btn-block btn-secondary stretched-link
     ---
 
-    API reference
-    ^^^^^^^^^^^^^
+    Reference
+    ^^^^^^^^^
 
-    The API reference of AMS.
+    The reference contains a detailed description of the AMS routines, models, and
+    package API. It describes how the methods work and which parameters can be used.
+    It assumes that you have an understanding of the key concepts.
 
     +++
 
-    .. link-button:: api_reference
+    .. link-button:: reference
             :type: ref
-            :text: To the API reference
+            :text: To the reference
             :classes: btn-block btn-secondary stretched-link
 
     ---
@@ -104,6 +128,4 @@ dynamic simulator ANDES.
    examples/index
    modeling/index
    release-notes
-   routineref
-   modelref
-   api
+   reference/index

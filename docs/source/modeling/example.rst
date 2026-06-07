@@ -155,7 +155,7 @@ where 'rted' is the file name, and 'RTED' is the routine name.
       ])
 
 .. note::
-      See ``examples/ex8.ipynb`` (rendered under :ref:`scripting_examples`)
+      See ``examples/ex8.ipynb`` (rendered under :ref:`tutorials`)
       for post-init customization patterns —
       ``sp.DCOPF.obj.e_str += '+ ...'`` and
       :py:meth:`ams.routines.routine.RoutineBase.addConstrs` — that do

@@ -1,11 +1,11 @@
-.. _development:
+.. _modeling:
 
-===========
-Development
-===========
+========
+Modeling
+========
 
 This chapter introduces advanced topics on modeling with AMS.
-It aims to give an in-depth explanation of flexible dispatch mdoeling
+It aims to give an in-depth explanation of the flexible scheduling modeling
 framework and the interoperation with dynamic simulation.
 
 .. toctree::
