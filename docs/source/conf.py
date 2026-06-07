@@ -32,8 +32,10 @@ extensions = [
     'matplotlib.sphinxext.plot_directive',
     'numpydoc',
     'sphinx_copybutton',
-    "nbsphinx",
+    'myst_nb',
 ]
+
+nb_execution_mode = "off"
 
 mathjax_path = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'
 

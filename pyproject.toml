@@ -52,8 +52,7 @@ doc = [
     "numpydoc",
     "sphinx-copybutton",
     "sphinx-panels",
-    "myst-parser",
-    "nbsphinx"
+    "myst-nb"
 ]
 
 [project.scripts]
