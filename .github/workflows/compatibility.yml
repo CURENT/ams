@@ -5,10 +5,25 @@ on: [push, pull_request]
 jobs:
   compat:
     name: Tests
+    continue-on-error: ${{ matrix.experimental == true }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest]
         python-version: ["3.11", "3.12", "3.13"]
+        include:
+          - os: macos-latest
+            python-version: "3.13"
+          - os: windows-latest
+            python-version: "3.13"
+          - python-version: "3.14"
+            os: ubuntu-latest
+            experimental: true
+          - python-version: "3.14"
+            os: macos-latest
+            experimental: true
+          - python-version: "3.14"
+            os: windows-latest
+            experimental: true
 
     runs-on: ${{ matrix.os }}
 
@@ -35,7 +50,7 @@ jobs:
 
     - shell: bash -el {0}
       name: Lint with flake8
-      if: github.event_name == 'push' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       run: |
         flake8 .
 

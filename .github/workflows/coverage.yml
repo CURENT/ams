@@ -1,6 +1,6 @@
 name: Coverage
 
-on: [push, pull_request]
+on: push
 
 jobs:
   cov:
@@ -30,12 +30,6 @@ jobs:
         python -m pip install -e .[dev,nlp]
 
     - shell: bash -el {0}
-      name: Lint with flake8
-      if: github.event_name == 'pull_request'
-      run: |
-        flake8 .
-
-    - shell: bash -el {0}
       name: Try installing optional packages
       run: |
         # Try installing one of the optional packages
@@ -59,7 +53,7 @@ jobs:
     - shell: bash -el {0}
       name: Test with pytest and collect coverage
       run: |
-        pytest --cov=./ --cov-report=xml
+        pytest -n auto --cov=./ --cov-report=xml
   
     - name: Upload coverage to Codacy
       if: steps.check_secret.outputs.is_set == 'true'
